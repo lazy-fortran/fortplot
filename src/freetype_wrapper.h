@@ -37,6 +37,9 @@ int ft_wrapper_render_text(const char* text, int* width, int* height, unsigned c
 // Free text bitmap buffer
 void ft_wrapper_free_text_buffer(unsigned char* buffer);
 
+// Get kerning adjustment between two characters
+int ft_wrapper_get_kerning(int left_char, int right_char);
+
 // Check if FreeType is initialized
 int ft_wrapper_is_initialized(void);
 
