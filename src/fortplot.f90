@@ -21,68 +21,53 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, show_plot
+    public :: plot, contour, show
     public :: xlabel, ylabel, title
-    public :: savefig
+    public :: savefig, figure
+    public :: add_plot, add_contour
+    
+    
+    ! Interface for overloaded show routine
+    interface show
+        module procedure show_data, show_figure
+    end interface show
+    
+    ! Global figure for simple API
+    type(figure_t), save :: fig
 
 contains
 
-    subroutine plot(x, y, filename, label, title_text, xlabel_text, ylabel_text)
-        !! Create a simple line plot with optional customization
+    subroutine plot(x, y, label)
+        !! Add a line plot to the global figure (pyplot-style)
         !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
-        !!   filename: Output filename (determines backend from extension)
         !!   label: Optional label for the plot
-        !!   title_text: Optional plot title
-        !!   xlabel_text, ylabel_text: Optional axis labels
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in) :: filename
-        character(len=*), intent(in), optional :: label, title_text, xlabel_text, ylabel_text
-        
-        type(figure_t) :: fig
-        
-        call fig%initialize()
-        
-        if (present(title_text)) call fig%set_title(title_text)
-        if (present(xlabel_text)) call fig%set_xlabel(xlabel_text)
-        if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
+        character(len=*), intent(in), optional :: label
         
         call fig%add_plot(x, y, label=label)
-        call fig%savefig(filename)
     end subroutine plot
 
-    subroutine contour(x, y, z, filename, levels, label, title_text, xlabel_text, ylabel_text)
-        !! Create a contour plot with optional customization
+    subroutine contour(x, y, z, levels, label)
+        !! Add a contour plot to the global figure (pyplot-style)
         !!
         !! Arguments:
         !!   x, y: Grid coordinate arrays
         !!   z: 2D data array for contouring
-        !!   filename: Output filename (determines backend from extension)
         !!   levels: Optional array of contour levels
         !!   label: Optional label for the plot
-        !!   title_text: Optional plot title
-        !!   xlabel_text, ylabel_text: Optional axis labels
         real(wp), dimension(:), intent(in) :: x, y
         real(wp), dimension(:,:), intent(in) :: z
-        character(len=*), intent(in) :: filename
         real(wp), dimension(:), intent(in), optional :: levels
-        character(len=*), intent(in), optional :: label, title_text, xlabel_text, ylabel_text
-        
-        type(figure_t) :: fig
-        
-        call fig%initialize()
-        
-        if (present(title_text)) call fig%set_title(title_text)
-        if (present(xlabel_text)) call fig%set_xlabel(xlabel_text)
-        if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
+        character(len=*), intent(in), optional :: label
         
         call fig%add_contour(x, y, z, levels=levels, label=label)
-        call fig%savefig(filename)
     end subroutine contour
 
-    subroutine show_plot(x, y, label, title_text, xlabel_text, ylabel_text)
+    subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text)
         !! Display a line plot in the terminal using ASCII graphics
+        !! Uses the global figure initialized by figure() subroutine
         !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
@@ -91,8 +76,6 @@ contains
         !!   xlabel_text, ylabel_text: Optional axis labels
         real(wp), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, title_text, xlabel_text, ylabel_text
-        
-        type(figure_t) :: fig
         
         call fig%initialize()
         
@@ -102,34 +85,66 @@ contains
         
         call fig%add_plot(x, y, label=label)
         call fig%show()
-    end subroutine show_plot
+    end subroutine show_data
 
-    subroutine xlabel(fig, text)
-        !! Set x-axis label for a figure
-        type(figure_t), intent(inout) :: fig
+    subroutine show_figure()
+        !! Display the global figure in terminal using ASCII graphics
+        !! Like pyplot's show() - displays current figure
+        call fig%show()
+    end subroutine show_figure
+
+    subroutine figure(width, height)
+        !! Initialize the global figure for simple API usage
+        !!  
+        !! Arguments:
+        !!   width, height: Optional figure dimensions (default: 640x480)
+        integer, intent(in), optional :: width, height
+        
+        if (present(width) .and. present(height)) then
+            call fig%initialize(width, height)
+        else
+            call fig%initialize()
+        end if
+    end subroutine figure
+
+    subroutine xlabel(text)
+        !! Set x-axis label for the global figure
         character(len=*), intent(in) :: text
         call fig%set_xlabel(text)
     end subroutine xlabel
 
-    subroutine ylabel(fig, text)
-        !! Set y-axis label for a figure
-        type(figure_t), intent(inout) :: fig
+    subroutine ylabel(text)
+        !! Set y-axis label for the global figure
         character(len=*), intent(in) :: text
         call fig%set_ylabel(text)
     end subroutine ylabel
 
-    subroutine title(fig, text)
-        !! Set title for a figure
-        type(figure_t), intent(inout) :: fig
+    subroutine title(text)
+        !! Set title for the global figure
         character(len=*), intent(in) :: text
         call fig%set_title(text)
     end subroutine title
 
-    subroutine savefig(fig, filename)
-        !! Save figure to file (backend determined by extension)
-        type(figure_t), intent(inout) :: fig
+    subroutine savefig(filename)
+        !! Save global figure to file (backend determined by extension)
         character(len=*), intent(in) :: filename
         call fig%savefig(filename)
     end subroutine savefig
+
+    subroutine add_plot(x, y, label)
+        !! Add a line plot to the global figure
+        real(wp), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: label
+        call fig%add_plot(x, y, label=label)
+    end subroutine add_plot
+
+    subroutine add_contour(x, y, z, levels, label)
+        !! Add a contour plot to the global figure
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: z
+        real(wp), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: label
+        call fig%add_contour(x, y, z, levels=levels, label=label)
+    end subroutine add_contour
 
 end module fortplot

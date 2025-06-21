@@ -13,18 +13,34 @@ contains
         real(wp), dimension(30,30) :: z_grid
         integer :: i, j
 
-        print *, "=== Simple API Examples ==="
+        print *, "=== Pyplot-Style API Examples ==="
         
         x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
         sx = sin(x)
         cx = cos(x)
         
-        ! Simple line plot
-        call plot(x, sx, 'simple_sine.png', label='sin(x)', &
-                 title_text='Simple Sine Plot', xlabel_text='x', ylabel_text='y')
+        ! Pyplot-style line plot
+        call figure()
+        call plot(x, sx, label='sin(x)')
+        call title('Simple Sine Plot')
+        call xlabel('x')
+        call ylabel('y')
+        call savefig('simple_sine.png')
         
-        ! Simple terminal display
-        call show_plot(x, sx, label='sin(x)', title_text='Sine Function')
+        ! Pyplot-style terminal display
+        call figure()
+        call plot(x, sx, label='sin(x)')
+        call title('Sine Function')
+        call show()
+        
+        ! Pyplot-style multi-line plot
+        call figure()
+        call plot(x, sx, label='sin(x)')
+        call plot(x, cx, label='cos(x)')
+        call title('Sine and Cosine')
+        call xlabel('x')
+        call ylabel('y')
+        call savefig('multi_trig.png')
         
         ! Generate contour data
         do i = 1, 30
@@ -38,11 +54,15 @@ contains
             end do
         end do
         
-        ! Simple contour plot
-        call contour(x_grid, y_grid, z_grid, 'simple_contour.png', &
-                    title_text='Simple Gaussian', xlabel_text='x', ylabel_text='y')
+        ! Pyplot-style contour plot
+        call figure()
+        call contour(x_grid, y_grid, z_grid)
+        call title('Simple Gaussian')
+        call xlabel('x')
+        call ylabel('y')
+        call savefig('simple_contour.png')
         
-        print *, "Simple API files created: simple_sine.png, simple_contour.png"
+        print *, "Pyplot-style API files created: simple_sine.png, multi_trig.png, simple_contour.png"
         print *
 
     end subroutine simple_api_examples

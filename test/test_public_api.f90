@@ -10,8 +10,13 @@ program test_public_api
     x = [(real(i, wp), i=0, size(x) - 1)]/10.0_wp
     y = sin(x)
 
-    ! Test simple plot function
-    call plot(x, y, 'simple_plot.png', label='sin(x)', title_text='Simple Plot Test')
+    ! Test pyplot-style API
+    call figure()
+    call plot(x, y, label='sin(x)')
+    call title('Simple Plot Test')
+    call xlabel('x')
+    call ylabel('y')
+    call savefig('simple_plot.png')
     
     print *, "Public API test completed - simple_plot.png created"
 
