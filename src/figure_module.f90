@@ -130,12 +130,8 @@ contains
             self%ymax_global = max(self%ymax_global, ymax)
         end if
         
-        ! Add some padding to the data range
-        call expand_range(self%xmin_global, self%xmax_global)
-        call expand_range(self%ymin_global, self%ymax_global)
-        
-        ! Calculate plot area in normalized coordinates for data plotting
-        call setup_data_coordinate_system(self)
+        ! Compute nice axis ranges and set coordinate system based on those
+        call setup_nice_coordinate_system(self)
         
         ! Draw axes and labels only for the first plot
         if (self%plot_count == 0) then
@@ -323,10 +319,39 @@ contains
     end subroutine destroy
 
     ! Utility subroutines adapted from old fortplotlib
-    subroutine setup_data_coordinate_system(self)
+    subroutine setup_nice_coordinate_system(self)
         class(figure_t), intent(inout) :: self
         real(wp) :: plot_x0, plot_y0, plot_x1, plot_y1
-        real(wp) :: data_width, data_height
+        real(wp) :: axis_width, axis_height
+        integer :: nx, ny
+        real(wp) :: xticks(20), yticks(20)
+        real(wp) :: xstep, ystep, xstart, ystart, xend, yend
+        real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
+        
+        ! Add some padding to the data range first
+        call expand_range(self%xmin_global, self%xmax_global)
+        call expand_range(self%ymin_global, self%ymax_global)
+        
+        ! Calculate nice tick intervals to determine actual axis ranges
+        call compute_ticks(self%xmin_global, self%xmax_global, nx, xstart, xend, xstep, xticks)
+        call compute_ticks(self%ymin_global, self%ymax_global, ny, ystart, yend, ystep, yticks)
+        
+        ! Use the tick ranges as our axis ranges for better alignment
+        if (nx > 0) then
+            xmin_axis = xticks(1)
+            xmax_axis = xticks(nx)
+        else
+            xmin_axis = self%xmin_global
+            xmax_axis = self%xmax_global
+        end if
+        
+        if (ny > 0) then
+            ymin_axis = yticks(1)
+            ymax_axis = yticks(ny)
+        else
+            ymin_axis = self%ymin_global
+            ymax_axis = self%ymax_global
+        end if
         
         ! Calculate plot area in normalized coordinates
         plot_x0 = self%margin_left
@@ -334,17 +359,22 @@ contains
         plot_x1 = 1.0_wp - self%margin_right
         plot_y1 = 1.0_wp - self%margin_top
         
-        ! Set coordinate system to map data range to plot area
-        ! We need to map data coordinates to the plot area (not full screen)
-        data_width = self%xmax_global - self%xmin_global
-        data_height = self%ymax_global - self%ymin_global
+        ! Set coordinate system to map axis range to plot area
+        axis_width = xmax_axis - xmin_axis
+        axis_height = ymax_axis - ymin_axis
         
-        ! Transform data coordinates to plot area coordinates
-        self%backend%x_min = real(self%xmin_global - data_width * plot_x0 / (plot_x1 - plot_x0), wp)
-        self%backend%x_max = real(self%xmax_global + data_width * (1.0_wp - plot_x1) / (plot_x1 - plot_x0), wp)
-        self%backend%y_min = real(self%ymin_global - data_height * plot_y0 / (plot_y1 - plot_y0), wp)
-        self%backend%y_max = real(self%ymax_global + data_height * (1.0_wp - plot_y1) / (plot_y1 - plot_y0), wp)
-    end subroutine setup_data_coordinate_system
+        ! Transform axis coordinates to plot area coordinates
+        self%backend%x_min = real(xmin_axis - axis_width * plot_x0 / (plot_x1 - plot_x0), wp)
+        self%backend%x_max = real(xmax_axis + axis_width * (1.0_wp - plot_x1) / (plot_x1 - plot_x0), wp)
+        self%backend%y_min = real(ymin_axis - axis_height * plot_y0 / (plot_y1 - plot_y0), wp)
+        self%backend%y_max = real(ymax_axis + axis_height * (1.0_wp - plot_y1) / (plot_y1 - plot_y0), wp)
+        
+        ! Update global ranges to match axis ranges for consistent tick calculation later
+        self%xmin_global = xmin_axis
+        self%xmax_global = xmax_axis
+        self%ymin_global = ymin_axis
+        self%ymax_global = ymax_axis
+    end subroutine setup_nice_coordinate_system
 
     subroutine expand_range(dmin, dmax)
         real(wp), intent(inout) :: dmin, dmax
