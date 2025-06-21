@@ -1,0 +1,19 @@
+name = "png_draft"
+version = "0.1.0"
+license = "license"
+author = "Christopher Albert"
+maintainer = "albert@alumni.tugraz.at"
+copyright = "Copyright 2025, Christopher Albert"
+[build]
+auto-executables = true
+auto-tests = true
+auto-examples = true
+module-naming = false
+link = ["z", "freetype"]
+[install]
+library = false
+test = false
+[fortran]
+implicit-typing = false
+implicit-external = false
+source-form = "free"
