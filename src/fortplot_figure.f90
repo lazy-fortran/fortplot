@@ -328,30 +328,20 @@ contains
         call self%backend%line(real(plot_x1, wp), real(plot_y1, wp), real(plot_x0, wp), real(plot_y1, wp))  ! top
         call self%backend%line(real(plot_x0, wp), real(plot_y1, wp), real(plot_x0, wp), real(plot_y0, wp))  ! left
 
-        ! Calculate nice tick intervals - these should match what was used in coordinate setup
-        call compute_ticks(xmin_axis, xmax_axis, nx, xstart, xend, xstep, xticks)
-        call compute_ticks(ymin_axis, ymax_axis, ny, ystart, yend, ystep, yticks)
+        ! Calculate scale-appropriate tick positions
+        call compute_scale_ticks(self, xmin_axis, xmax_axis, self%xscale, self%symlog_threshold, nx, xticks)
+        call compute_scale_ticks(self, ymin_axis, ymax_axis, self%yscale, self%symlog_threshold, ny, yticks)
 
         ! Draw x-axis ticks and labels
         call self%backend%color(0.1_wp, 0.1_wp, 0.1_wp)
-        do i = 1, nx
-            tick_x = plot_x0 + (xticks(i) - xmin_axis) / (xmax_axis - xmin_axis) * (plot_x1 - plot_x0)
-            ! Draw tick mark
-            call self%backend%line(real(tick_x, wp), real(plot_y0, wp), real(tick_x, wp), real(plot_y0 - 0.01_wp, wp))
-            ! Draw label with scale-appropriate formatting
-            call format_tick_label(xticks(i), self%xscale, self%symlog_threshold, label_text)
-            call self%backend%text(real(tick_x - 0.02_wp, wp), real(plot_y0 - 0.04_wp, wp), trim(adjustl(label_text)))
-        end do
+        call draw_axis_ticks(self, plot_x0, plot_y0, plot_x1, plot_y1, &
+                            xmin_axis, xmax_axis, xticks(1:nx), self%xscale, self%symlog_threshold, &
+                            'x', .true.)
 
-        ! Draw y-axis ticks and labels
-        do i = 1, ny
-            tick_y = plot_y0 + (yticks(i) - ymin_axis) / (ymax_axis - ymin_axis) * (plot_y1 - plot_y0)
-            ! Draw tick mark
-            call self%backend%line(real(plot_x0, wp), real(tick_y, wp), real(plot_x0 - 0.01_wp, wp), real(tick_y, wp))
-            ! Draw label with scale-appropriate formatting
-            call format_tick_label(yticks(i), self%yscale, self%symlog_threshold, label_text)
-            call self%backend%text(real(plot_x0 - 0.08_wp, wp), real(tick_y - 0.01_wp, wp), trim(adjustl(label_text)))
-        end do
+        ! Draw y-axis ticks and labels  
+        call draw_axis_ticks(self, plot_x0, plot_y0, plot_x1, plot_y1, &
+                            ymin_axis, ymax_axis, yticks(1:ny), self%yscale, self%symlog_threshold, &
+                            'y', .true.)
 
         ! Draw axis labels
         if (allocated(self%xlabel)) then
@@ -1568,5 +1558,183 @@ contains
             write(label_text, '(F0.2)') original_value
         end select
     end subroutine format_tick_label
+
+    subroutine compute_scale_ticks(self, axis_min, axis_max, scale_type, threshold, n_ticks, tick_positions)
+        !! Compute tick positions appropriate for the given scale type
+        class(figure_t), intent(in) :: self
+        real(wp), intent(in) :: axis_min, axis_max
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in) :: threshold
+        integer, intent(out) :: n_ticks
+        real(wp), intent(out) :: tick_positions(20)
+        
+        real(wp) :: tstart, tend, tstep
+        
+        select case (trim(scale_type))
+        case ('log')
+            call compute_log_ticks(axis_min, axis_max, n_ticks, tick_positions)
+        case ('symlog')
+            call compute_symlog_ticks(axis_min, axis_max, threshold, n_ticks, tick_positions)
+        case default  ! 'linear'
+            ! For linear scale, use the original compute_ticks function
+            call compute_ticks(axis_min, axis_max, n_ticks, tstart, tend, tstep, tick_positions)
+        end select
+    end subroutine compute_scale_ticks
+
+    subroutine compute_log_ticks(axis_min, axis_max, n_ticks, tick_positions)
+        !! Compute logarithmically spaced major ticks
+        real(wp), intent(in) :: axis_min, axis_max
+        integer, intent(out) :: n_ticks
+        real(wp), intent(out) :: tick_positions(20)
+        
+        integer :: decade_min, decade_max, i
+        real(wp) :: log_min, log_max
+        
+        ! Find the range in log space
+        log_min = axis_min
+        log_max = axis_max
+        
+        ! Find decades (integer powers of 10)
+        decade_min = floor(log_min)
+        decade_max = ceiling(log_max)
+        
+        n_ticks = 0
+        do i = decade_min, decade_max
+            if (real(i, wp) >= log_min .and. real(i, wp) <= log_max .and. n_ticks < 20) then
+                n_ticks = n_ticks + 1
+                tick_positions(n_ticks) = real(i, wp)
+            end if
+        end do
+        
+        ! Ensure we have at least 2 ticks
+        if (n_ticks < 2) then
+            n_ticks = 2
+            tick_positions(1) = log_min
+            tick_positions(2) = log_max
+        end if
+    end subroutine compute_log_ticks
+
+    subroutine compute_symlog_ticks(axis_min, axis_max, threshold, n_ticks, tick_positions)
+        !! Compute ticks for symmetric log scale
+        real(wp), intent(in) :: axis_min, axis_max, threshold
+        integer, intent(out) :: n_ticks
+        real(wp), intent(out) :: tick_positions(20)
+        
+        ! For symlog, use a combination approach
+        ! This is simplified - could be more sophisticated
+        integer :: i
+        real(wp) :: range, step
+        
+        range = axis_max - axis_min
+        step = range / 6.0_wp  ! Approximately 6 ticks
+        
+        n_ticks = 0
+        do i = 0, 7
+            if (n_ticks >= 20) exit
+            tick_positions(i+1) = axis_min + i * step
+            if (tick_positions(i+1) <= axis_max) then
+                n_ticks = n_ticks + 1
+            end if
+        end do
+        
+        if (n_ticks == 0) then
+            n_ticks = 2
+            tick_positions(1) = axis_min
+            tick_positions(2) = axis_max
+        end if
+    end subroutine compute_symlog_ticks
+
+    subroutine draw_axis_ticks(self, plot_x0, plot_y0, plot_x1, plot_y1, &
+                              axis_min, axis_max, major_ticks, scale_type, threshold, &
+                              axis_direction, draw_labels)
+        !! Draw major and minor ticks for an axis
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: plot_x0, plot_y0, plot_x1, plot_y1
+        real(wp), intent(in) :: axis_min, axis_max
+        real(wp), intent(in) :: major_ticks(:)
+        character(len=*), intent(in) :: scale_type, axis_direction
+        real(wp), intent(in) :: threshold
+        logical, intent(in) :: draw_labels
+        
+        integer :: i, j
+        real(wp) :: tick_pos, minor_tick_pos
+        real(wp) :: tick_x, tick_y
+        character(len=32) :: label_text
+        real(wp) :: minor_ticks(9)
+        logical :: is_x_axis
+        
+        is_x_axis = (trim(axis_direction) == 'x')
+        
+        ! Draw major ticks
+        do i = 1, size(major_ticks)
+            if (is_x_axis) then
+                tick_x = plot_x0 + (major_ticks(i) - axis_min) / (axis_max - axis_min) * &
+                         (plot_x1 - plot_x0)
+                ! Major tick mark
+                call self%backend%line(real(tick_x, wp), real(plot_y0, wp), &
+                                      real(tick_x, wp), real(plot_y0 - 0.02_wp, wp))
+                
+                if (draw_labels) then
+                    call format_tick_label(major_ticks(i), scale_type, threshold, label_text)
+                    call self%backend%text(real(tick_x - 0.02_wp, wp), real(plot_y0 - 0.04_wp, wp), &
+                                          trim(adjustl(label_text)))
+                end if
+            else
+                tick_y = plot_y0 + (major_ticks(i) - axis_min) / (axis_max - axis_min) * &
+                         (plot_y1 - plot_y0)
+                ! Major tick mark
+                call self%backend%line(real(plot_x0, wp), real(tick_y, wp), &
+                                      real(plot_x0 - 0.02_wp, wp), real(tick_y, wp))
+                
+                if (draw_labels) then
+                    call format_tick_label(major_ticks(i), scale_type, threshold, label_text)
+                    call self%backend%text(real(plot_x0 - 0.08_wp, wp), real(tick_y - 0.01_wp, wp), &
+                                          trim(adjustl(label_text)))
+                end if
+            end if
+        end do
+        
+        ! Draw minor ticks for log scale
+        if (trim(scale_type) == 'log') then
+            call self%backend%color(0.5_wp, 0.5_wp, 0.5_wp)  ! Lighter color for minor ticks
+            
+            do i = 1, size(major_ticks) - 1
+                ! Generate minor ticks between major ticks
+                call generate_log_minor_ticks(major_ticks(i), major_ticks(i+1), minor_ticks)
+                
+                do j = 1, 9
+                    if (minor_ticks(j) > major_ticks(i) .and. minor_ticks(j) < major_ticks(i+1)) then
+                        if (is_x_axis) then
+                            tick_x = plot_x0 + (minor_ticks(j) - axis_min) / (axis_max - axis_min) * &
+                                     (plot_x1 - plot_x0)
+                            call self%backend%line(real(tick_x, wp), real(plot_y0, wp), &
+                                                  real(tick_x, wp), real(plot_y0 - 0.01_wp, wp))
+                        else
+                            tick_y = plot_y0 + (minor_ticks(j) - axis_min) / (axis_max - axis_min) * &
+                                     (plot_y1 - plot_y0)
+                            call self%backend%line(real(plot_x0, wp), real(tick_y, wp), &
+                                                  real(plot_x0 - 0.01_wp, wp), real(tick_y, wp))
+                        end if
+                    end if
+                end do
+            end do
+        end if
+    end subroutine draw_axis_ticks
+
+    subroutine generate_log_minor_ticks(major_low, major_high, minor_ticks)
+        !! Generate minor tick positions between two major log ticks
+        real(wp), intent(in) :: major_low, major_high
+        real(wp), intent(out) :: minor_ticks(9)
+        
+        integer :: i
+        real(wp) :: decade_start
+        
+        ! For log scale, minor ticks are at log10(2), log10(3), ..., log10(9) within each decade
+        decade_start = major_low
+        
+        do i = 1, 9
+            minor_ticks(i) = decade_start + log10(real(i+1, wp))
+        end do
+    end subroutine generate_log_minor_ticks
 
 end module fortplot_figure
