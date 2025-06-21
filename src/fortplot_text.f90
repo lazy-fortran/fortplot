@@ -125,12 +125,6 @@ contains
             end if
             call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
             
-            ! Debug output for spacing analysis
-            if (char_code == 105 .or. char_code == 32 .or. char_code == 46) then  ! 'i', space, dot
-                print *, 'CHAR', char(char_code), ': width=', glyph_info%width, ' advance_x=', glyph_info%advance_x, &
-                         ' left=', glyph_info%left, ' top=', glyph_info%top, ' height=', glyph_info%height
-            end if
-            
             ! Apply kerning adjustment for next character
             if (i < len_trim(text)) then
                 next_char_code = iachar(text(i+1:i+1))
