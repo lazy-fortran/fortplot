@@ -97,7 +97,7 @@ contains
         real(wp), intent(out) :: pdf_x, pdf_y
         
         pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%width, wp)
-        pdf_y = (1.0_wp - (y - ctx%y_min) / (ctx%y_max - ctx%y_min)) * real(ctx%height, wp)
+        pdf_y = (y - ctx%y_min) / (ctx%y_max - ctx%y_min) * real(ctx%height, wp)
     end subroutine normalize_to_pdf_coords
 
     subroutine draw_vector_line(ctx, x1, y1, x2, y2)
