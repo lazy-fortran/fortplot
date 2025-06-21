@@ -1,5 +1,5 @@
-module pdf_module
-    use plot_context_module
+module fortplot_pdf
+    use fortplot_context
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -272,4 +272,4 @@ contains
         deallocate(bytes)
     end subroutine write_string_to_unit
 
-end module pdf_module
+end module fortplot_pdf

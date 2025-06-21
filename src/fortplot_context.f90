@@ -1,4 +1,4 @@
-module plot_context_module
+module fortplot_context
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -57,4 +57,4 @@ contains
         ctx%y_max = 1.0_wp
     end subroutine setup_canvas
 
-end module plot_context_module
+end module fortplot_context

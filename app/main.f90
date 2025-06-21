@@ -1,6 +1,6 @@
 program main
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use figure_module
+    use fortplot_figure
     implicit none
 
     real(wp), dimension(100) :: x, sx, cx

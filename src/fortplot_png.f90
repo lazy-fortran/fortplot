@@ -1,7 +1,7 @@
-module png_context_module
+module fortplot_png
     use iso_c_binding
-    use plot_context_module
-    use text_module
+    use fortplot_context
+    use fortplot_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -653,4 +653,4 @@ contains
     end function calculate_crc32
 
 
-end module png_context_module
+end module fortplot_png

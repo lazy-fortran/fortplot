@@ -1,8 +1,8 @@
-module figure_module
+module fortplot_figure
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use plot_context_module
-    use png_context_module
-    use pdf_module
+    use fortplot_context
+    use fortplot_png
+    use fortplot_pdf
     implicit none
     
     private
@@ -565,4 +565,4 @@ contains
         print '(A,F8.3,A,F8.3)', 'Y range: ', ymin, ' to ', ymax
     end subroutine show_ascii_plot
 
-end module figure_module
+end module fortplot_figure

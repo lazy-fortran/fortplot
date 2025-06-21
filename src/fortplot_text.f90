@@ -1,4 +1,4 @@
-module text_module
+module fortplot_text
     use iso_c_binding
     implicit none
     
@@ -301,4 +301,4 @@ contains
         end select
     end function get_character_pixel
 
-end module text_module
+end module fortplot_text
