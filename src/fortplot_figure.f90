@@ -325,6 +325,12 @@ contains
         call unicode_fig%initialize(80, 40, "ascii")
         if (present(title)) call unicode_fig%set_title(title)
         
+        ! Minimize margins for ASCII to use full terminal width
+        unicode_fig%margin_left = 0.02_wp     ! Minimal left margin
+        unicode_fig%margin_right = 0.02_wp    ! Minimal right margin  
+        unicode_fig%margin_bottom = 0.05_wp   ! Small bottom margin
+        unicode_fig%margin_top = 0.05_wp      ! Small top margin
+        
         ! Copy all plots from the current figure to ASCII display
         do i = 1, self%plot_count
             call unicode_fig%add_plot(self%plots(i)%x, self%plots(i)%y, color=self%plots(i)%color)
