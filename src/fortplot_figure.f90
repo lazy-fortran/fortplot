@@ -9,8 +9,17 @@ module fortplot_figure
     private
     public :: figure_t
 
+    integer, parameter :: PLOT_TYPE_LINE = 1
+    integer, parameter :: PLOT_TYPE_CONTOUR = 2
+
     type :: plot_data_t
+        integer :: plot_type = PLOT_TYPE_LINE
+        ! Line plot data
         real(wp), allocatable :: x(:), y(:)
+        ! Contour plot data
+        real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), allocatable :: contour_levels(:)
+        ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
     end type plot_data_t
@@ -50,6 +59,7 @@ module fortplot_figure
     contains
         procedure :: initialize
         procedure :: add_plot
+        procedure :: add_contour
         procedure :: savefig
         procedure :: set_xlabel
         procedure :: set_ylabel
@@ -156,6 +166,83 @@ contains
         end if
 
     end subroutine add_plot
+
+    subroutine add_contour(self, x, y, z, levels, label, color)
+        class(figure_t), intent(inout) :: self
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: z
+        real(wp), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: label
+        real(wp), dimension(3), intent(in), optional :: color
+
+        integer :: color_idx
+        real(wp), dimension(3) :: plot_color
+        integer :: n_levels
+        real(wp), allocatable :: default_levels(:)
+        integer :: i
+
+        ! Check if we have space for more plots
+        if (self%plot_count >= self%max_plots) then
+            print *, "Warning: Maximum number of plots exceeded"
+            return
+        end if
+
+        ! Ensure plots storage is initialized
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
+
+        ! Increment plot count
+        self%plot_count = self%plot_count + 1
+
+        ! Set plot type
+        self%plots(self%plot_count)%plot_type = PLOT_TYPE_CONTOUR
+
+        ! Store the contour data
+        if (allocated(self%plots(self%plot_count)%x_grid)) deallocate(self%plots(self%plot_count)%x_grid)
+        if (allocated(self%plots(self%plot_count)%y_grid)) deallocate(self%plots(self%plot_count)%y_grid)
+        if (allocated(self%plots(self%plot_count)%z_grid)) deallocate(self%plots(self%plot_count)%z_grid)
+        if (allocated(self%plots(self%plot_count)%contour_levels)) deallocate(self%plots(self%plot_count)%contour_levels)
+        
+        allocate(self%plots(self%plot_count)%x_grid(size(x)))
+        allocate(self%plots(self%plot_count)%y_grid(size(y)))
+        allocate(self%plots(self%plot_count)%z_grid(size(z,1), size(z,2)))
+        
+        self%plots(self%plot_count)%x_grid = x
+        self%plots(self%plot_count)%y_grid = y
+        self%plots(self%plot_count)%z_grid = z
+
+        ! Set contour levels
+        if (present(levels)) then
+            allocate(self%plots(self%plot_count)%contour_levels(size(levels)))
+            self%plots(self%plot_count)%contour_levels = levels
+        else
+            ! Generate default levels
+            n_levels = 10
+            allocate(self%plots(self%plot_count)%contour_levels(n_levels))
+            allocate(default_levels(n_levels))
+            do i = 1, n_levels
+                default_levels(i) = minval(z) + real(i-1, wp) * (maxval(z) - minval(z)) / real(n_levels-1, wp)
+            end do
+            self%plots(self%plot_count)%contour_levels = default_levels
+            deallocate(default_levels)
+        end if
+
+        ! Set plot color
+        if (present(color)) then
+            plot_color = color
+        else
+            color_idx = mod(self%plot_count-1, 6) + 1
+            plot_color = self%colors(:, color_idx)
+        end if
+        self%plots(self%plot_count)%color = plot_color
+
+        ! Store label if provided
+        if (present(label)) then
+            self%plots(self%plot_count)%label = label
+        end if
+
+    end subroutine add_contour
 
     subroutine draw_plot_background(self)
         class(figure_t), intent(inout) :: self
@@ -374,17 +461,7 @@ contains
         if (self%plot_count == 0) return
 
         ! Calculate global data range from all plots
-        xmin_global = minval(self%plots(1)%x)
-        xmax_global = maxval(self%plots(1)%x)
-        ymin_global = minval(self%plots(1)%y)
-        ymax_global = maxval(self%plots(1)%y)
-
-        do i = 2, self%plot_count
-            xmin_global = min(xmin_global, minval(self%plots(i)%x))
-            xmax_global = max(xmax_global, maxval(self%plots(i)%x))
-            ymin_global = min(ymin_global, minval(self%plots(i)%y))
-            ymax_global = max(ymax_global, maxval(self%plots(i)%y))
-        end do
+        call get_global_data_range(self, xmin_global, xmax_global, ymin_global, ymax_global)
 
         ! Set up coordinate system and get the actual axis ranges used
         call setup_nice_coordinate_system_with_range(self, xmin_global, xmax_global, ymin_global, ymax_global, &
@@ -400,11 +477,17 @@ contains
         do i = 1, self%plot_count
             call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
 
-            ! Draw line segments
-            do j = 1, size(self%plots(i)%x) - 1
-                call self%backend%line(real(self%plots(i)%x(j), wp), real(self%plots(i)%y(j), wp), &
-                                      real(self%plots(i)%x(j+1), wp), real(self%plots(i)%y(j+1), wp))
-            end do
+            select case (self%plots(i)%plot_type)
+            case (PLOT_TYPE_LINE)
+                ! Draw line segments
+                do j = 1, size(self%plots(i)%x) - 1
+                    call self%backend%line(real(self%plots(i)%x(j), wp), real(self%plots(i)%y(j), wp), &
+                                          real(self%plots(i)%x(j+1), wp), real(self%plots(i)%y(j+1), wp))
+                end do
+            case (PLOT_TYPE_CONTOUR)
+                ! Render contour plot (placeholder for now)
+                call render_contour_plot(self, i)
+            end select
         end do
     end subroutine render_all_plots
 
@@ -442,8 +525,15 @@ contains
         ! Clean up plot data
         if (allocated(self%plots)) then
             do i = 1, self%plot_count
+                ! Clean up line plot data
                 if (allocated(self%plots(i)%x)) deallocate(self%plots(i)%x)
                 if (allocated(self%plots(i)%y)) deallocate(self%plots(i)%y)
+                ! Clean up contour plot data
+                if (allocated(self%plots(i)%x_grid)) deallocate(self%plots(i)%x_grid)
+                if (allocated(self%plots(i)%y_grid)) deallocate(self%plots(i)%y_grid)
+                if (allocated(self%plots(i)%z_grid)) deallocate(self%plots(i)%z_grid)
+                if (allocated(self%plots(i)%contour_levels)) deallocate(self%plots(i)%contour_levels)
+                ! Clean up common data
                 if (allocated(self%plots(i)%label)) deallocate(self%plots(i)%label)
             end do
             deallocate(self%plots)
@@ -699,5 +789,73 @@ contains
         ! Set default coordinate system (will be updated with first plot)
         call setup_canvas(self%backend, w, h)
     end subroutine initialize_backend_old
+
+    subroutine get_global_data_range(self, xmin_global, xmax_global, ymin_global, ymax_global)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(out) :: xmin_global, xmax_global, ymin_global, ymax_global
+        integer :: i
+        logical :: first_plot = .true.
+
+        ! Initialize with extreme values
+        xmin_global = huge(1.0_wp)
+        xmax_global = -huge(1.0_wp)
+        ymin_global = huge(1.0_wp)
+        ymax_global = -huge(1.0_wp)
+
+        do i = 1, self%plot_count
+            select case (self%plots(i)%plot_type)
+            case (PLOT_TYPE_LINE)
+                if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
+                    if (first_plot) then
+                        xmin_global = minval(self%plots(i)%x)
+                        xmax_global = maxval(self%plots(i)%x)
+                        ymin_global = minval(self%plots(i)%y)
+                        ymax_global = maxval(self%plots(i)%y)
+                        first_plot = .false.
+                    else
+                        xmin_global = min(xmin_global, minval(self%plots(i)%x))
+                        xmax_global = max(xmax_global, maxval(self%plots(i)%x))
+                        ymin_global = min(ymin_global, minval(self%plots(i)%y))
+                        ymax_global = max(ymax_global, maxval(self%plots(i)%y))
+                    end if
+                end if
+            case (PLOT_TYPE_CONTOUR)
+                if (allocated(self%plots(i)%x_grid) .and. allocated(self%plots(i)%y_grid)) then
+                    if (first_plot) then
+                        xmin_global = minval(self%plots(i)%x_grid)
+                        xmax_global = maxval(self%plots(i)%x_grid)
+                        ymin_global = minval(self%plots(i)%y_grid)
+                        ymax_global = maxval(self%plots(i)%y_grid)
+                        first_plot = .false.
+                    else
+                        xmin_global = min(xmin_global, minval(self%plots(i)%x_grid))
+                        xmax_global = max(xmax_global, maxval(self%plots(i)%x_grid))
+                        ymin_global = min(ymin_global, minval(self%plots(i)%y_grid))
+                        ymax_global = max(ymax_global, maxval(self%plots(i)%y_grid))
+                    end if
+                end if
+            end select
+        end do
+
+        ! Fallback if no valid data found
+        if (first_plot) then
+            xmin_global = 0.0_wp
+            xmax_global = 1.0_wp
+            ymin_global = 0.0_wp
+            ymax_global = 1.0_wp
+        end if
+    end subroutine get_global_data_range
+
+    subroutine render_contour_plot(self, plot_index)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index
+        
+        ! Placeholder for contour rendering implementation
+        ! For now, just print a message indicating contour plot would be rendered
+        print *, "INFO: Contour plot rendering not yet implemented for plot", plot_index
+        print *, "      Grid size:", size(self%plots(plot_index)%x_grid), "x", size(self%plots(plot_index)%y_grid)
+        print *, "      Z range:", minval(self%plots(plot_index)%z_grid), "to", maxval(self%plots(plot_index)%z_grid)
+        print *, "      Contour levels:", size(self%plots(plot_index)%contour_levels)
+    end subroutine render_contour_plot
 
 end module fortplot_figure

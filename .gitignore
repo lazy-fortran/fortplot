@@ -3,6 +3,6 @@ build
 *.pdf
 *.png
 *.jpg
+*.txt
 fortplotlib.old/
 pyplot-fortran/
-output.txt
