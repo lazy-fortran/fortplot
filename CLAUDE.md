@@ -4,61 +4,99 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Fortran project that generates high-quality PNG images from scratch using the PNG file format specification. The project implements a pure Fortran PNG generator with advanced text rendering capabilities, creating binary PNG files with proper chunk structure, CRC32 checksums, and zlib compression.
+**fortplotlib** is a modern Fortran plotting library that provides high-quality scientific visualization with multiple output formats. It offers a clean, pyplot-style API for creating line plots and contour plots across PNG, PDF, and ASCII backends.
+
+## Quick Start
+
+```fortran
+use fortplot_figure
+type(figure_t) :: fig
+
+call fig%initialize(640, 480)
+call fig%add_plot(x, y, label="sin(x)")
+call fig%add_contour(x_grid, y_grid, z_grid, label="2D function")
+call fig%savefig('output.png')  ! Auto-detects backend from extension
+call fig%show()                 ! ASCII terminal display
+```
 
 ## Development Commands
 
-### Build and Run (Recommended)
-- `make build` - Compile the project with automatic library detection
-- `make run` - Build and execute the main program (generates 640x480 output.png)
-- `make test` - Run comprehensive test suite including FreeType tests
+- `make run` - Build and run examples (recommended)
+- `make build` - Compile the project
 - `make clean` - Clean build artifacts
-- `make check-deps` - Show detected library flags and paths
-- `make help` - Show all available targets
-
-### Manual FMP Commands (Alternative)
-- `fpm build --c-flag "-I/path/to/freetype" --link-flag "-L/path/to/libs -lfreetype -lz"`
-- `fpm run --c-flag "-I/path/to/freetype" --link-flag "-L/path/to/libs -lfreetype -lz"`
-- `fpm test --c-flag "-I/path/to/freetype" --link-flag "-L/path/to/libs -lfreetype -lz"`
 
 ## Architecture
 
-### Core Components
-- **app/main.f90**: Main PNG generator program (640x480 resolution)
-- **src/png_module.f90**: PNG file format implementation with chunk structure
-- **src/text_module.f90**: Clean text rendering interface using C wrapper
-- **src/freetype_wrapper.c**: Safe C wrapper for FreeType operations
-- **src/freetype_wrapper.h**: C interface definitions
-- **src/png_context_module.f90**: High-level plotting and text interface
-- **src/plotting_module.f90**: Coordinate system and plotting utilities
+### Unified Multi-Backend System
+- **fortplot_figure.f90**: Main plotting interface with unified architecture
+- **fortplot_png.f90**: PNG backend (raster graphics)  
+- **fortplot_pdf.f90**: PDF backend (vector graphics)
+- **fortplot_ascii.f90**: ASCII backend (terminal display)
+- **fortplot_context.f90**: Abstract backend interface
 
-### Text Rendering System
-- **Safe C Wrapper**: Uses `freetype_wrapper.c` to isolate FreeType complexity from Fortran
-- **Proper Alpha Blending**: Textbook-perfect antialiasing using `background * (1-alpha)` formula
-- **System Font Detection**: Automatically finds fonts on macOS, Linux, and Windows
-- **High Quality**: Smooth, professional text rendering at any size
+### Core Features
+- **Line Plots**: `add_plot(x, y)` for 1D data visualization
+- **Contour Plots**: `add_contour(x, y, z)` using marching squares algorithm
+- **Mixed Plotting**: Combine different plot types in same figure
+- **Auto-Detection**: Backend chosen automatically from file extension (.png, .pdf, .txt)
+- **Deferred Rendering**: Same data renders to multiple formats efficiently
 
-### Key Features
-- **C Interoperability**: Uses `iso_c_binding` for zlib and FreeType integration
-- **Binary File I/O**: Uses stream access for writing binary PNG data
-- **Chunk-based Architecture**: Implements PNG chunk structure with proper length, type, data, and CRC fields
-- **Memory Management**: Proper allocation/deallocation with C wrapper safety
-- **Cross-Platform**: Works on macOS, Linux, and Windows with pkg-config
+### Text Rendering
+- **FreeType Integration**: Professional text rendering via C wrapper
+- **System Fonts**: Auto-detects fonts on all platforms
+- **Proper Spacing**: Uses FreeType advance metrics and kerning
 
 ### Dependencies
-- **zlib**: System zlib library for PNG compression
-- **FreeType**: System FreeType library for text rendering
-- **pkg-config**: For automatic library detection (recommended)
-- **Fortran 2008**: Uses modern Fortran features including C interoperability
+- **zlib**: PNG compression
+- **FreeType**: Text rendering  
+- **pkg-config**: Library detection
+- **Fortran 2008**: Modern language features
 
-### Data Handling
-- Uses `integer(1)` for byte-level data manipulation
-- Handles signed/unsigned byte conversion for PNG format compatibility
-- Implements big-endian byte order conversion for PNG compliance
-- Safe alpha blending for smooth text antialiasing
+## Usage Patterns
 
-### Build Configuration
-- **Makefile**: Portable build system using pkg-config for dynamic library detection
-- **fpm.toml**: Fortran Package Manager configuration with C source compilation
-- **Auto-detection**: Automatically detects and compiles C wrapper alongside Fortran code
-- **Library linking**: Links against system zlib and FreeType libraries
+### Basic Plotting
+```fortran
+call fig%initialize(640, 480)
+call fig%set_title("My Plot")
+call fig%set_xlabel("x")
+call fig%set_ylabel("y")
+call fig%add_plot(x, y)
+call fig%savefig('plot.png')
+```
+
+### Contour Plotting
+```fortran
+! With default levels
+call fig%add_contour(x_grid, y_grid, z_grid)
+
+! With custom levels  
+call fig%add_contour(x_grid, y_grid, z_grid, levels=[1.0, 2.0, 3.0])
+```
+
+### Multi-Backend Output
+```fortran
+call fig%savefig('plot.png')  ! PNG backend
+call fig%savefig('plot.pdf')  ! PDF backend
+call fig%savefig('plot.txt')  ! ASCII backend
+call fig%show()               ! Terminal display
+```
+
+## Implementation Details
+
+### Contour Algorithm
+- **Marching Squares**: Industry-standard algorithm with all 16 cases
+- **Edge Interpolation**: Linear interpolation for smooth contour lines
+- **Saddle Points**: Proper handling of ambiguous configurations
+- **Level Filtering**: Automatic filtering of levels outside data range
+
+### Backend Architecture
+- **Polymorphic Design**: Abstract `plot_context` base class
+- **Unified Rendering**: Same algorithm works across all backends
+- **Coordinate Mapping**: Automatic coordinate system management
+- **Memory Safety**: Proper allocation/deallocation patterns
+
+### File Organization
+- **app/examples.f90**: Comprehensive examples and demonstrations
+- **src/fortplot_*.f90**: Core plotting modules
+- **src/freetype_wrapper.c**: C interface for text rendering
+- **Makefile**: Build system with automatic dependency detection
