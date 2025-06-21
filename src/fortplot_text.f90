@@ -51,6 +51,12 @@ module fortplot_text
             type(c_ptr), value :: buffer
         end subroutine ft_wrapper_free_text_buffer
         
+        function ft_wrapper_get_kerning(left_char, right_char) bind(C, name="ft_wrapper_get_kerning")
+            import :: c_int
+            integer(c_int), value :: left_char, right_char
+            integer(c_int) :: ft_wrapper_get_kerning
+        end function ft_wrapper_get_kerning
+        
         function ft_wrapper_is_initialized() bind(C, name="ft_wrapper_is_initialized")
             import :: c_int
             integer(c_int) :: ft_wrapper_is_initialized
@@ -96,7 +102,7 @@ contains
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
-        integer :: pen_x, pen_y, i, char_code
+        integer :: pen_x, pen_y, i, char_code, next_char_code, kerning_offset
         integer(c_int) :: error
         type(glyph_info_t) :: glyph_info
         
@@ -118,7 +124,22 @@ contains
                 cycle  ! Skip character if it can't be loaded
             end if
             call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
-            pen_x = pen_x + max(glyph_info%advance_x, 6)
+            
+            ! Apply kerning adjustment for next character
+            if (i < len_trim(text)) then
+                next_char_code = iachar(text(i+1:i+1))
+                kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
+                
+                ! For punctuation, use tighter spacing based on actual glyph width
+                if (char_code == 46 .or. char_code == 44 .or. char_code == 58 .or. char_code == 59) then  ! . , : ;
+                    pen_x = pen_x + max(glyph_info%width + glyph_info%left + 1 + kerning_offset, 3)
+                else
+                    pen_x = pen_x + max(glyph_info%advance_x + kerning_offset, 6)
+                end if
+            else
+                ! Last character - use advance_x as normal
+                pen_x = pen_x + max(glyph_info%advance_x, 6)
+            end if
             
             call ft_wrapper_free_glyph(glyph_info)
         end do

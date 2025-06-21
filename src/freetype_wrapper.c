@@ -235,6 +235,25 @@ void ft_wrapper_free_text_buffer(unsigned char* buffer) {
     }
 }
 
+// Get kerning adjustment between two characters
+int ft_wrapper_get_kerning(int left_char, int right_char) {
+    FT_Vector kerning;
+    FT_UInt left_glyph, right_glyph;
+    
+    if (!ft_wrapper.initialized || !FT_HAS_KERNING(ft_wrapper.face)) {
+        return 0;
+    }
+    
+    left_glyph = FT_Get_Char_Index(ft_wrapper.face, left_char);
+    right_glyph = FT_Get_Char_Index(ft_wrapper.face, right_char);
+    
+    if (FT_Get_Kerning(ft_wrapper.face, left_glyph, right_glyph, FT_KERNING_DEFAULT, &kerning) == 0) {
+        return kerning.x >> 6; // Convert from 26.6 fixed point to pixels
+    }
+    
+    return 0;
+}
+
 // Check if FreeType is initialized
 int ft_wrapper_is_initialized(void) {
     return ft_wrapper.initialized;
