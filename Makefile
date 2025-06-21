@@ -33,6 +33,7 @@ test:
 # Clean build artifacts
 clean:
 	echo y | fpm clean
+	rm -f *.png *.pdf *.txt
 
 # Build with release optimizations
 release:

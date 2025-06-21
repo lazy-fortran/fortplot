@@ -33,22 +33,22 @@ contains
         call title('Sine Function')
         call show()
         
-        ! Pyplot-style multi-line plot with different line styles
+        ! Simple multi-line plot  
         call figure()
-        call plot(x, sx, label='sin(x)', linestyle='-')    ! Solid
-        call plot(x, cx, label='cos(x)', linestyle='--')   ! Dashed
-        call title('Sine and Cosine with Line Styles')
+        call plot(x, sx, label='sin(x)')
+        call plot(x, cx, label='cos(x)')
+        call title('Sine and Cosine')
         call xlabel('x')
         call ylabel('y')
         call savefig('multi_trig.png')
         
-        ! Pyplot-style line style demonstration
+        ! Clear line style demonstration - all styles on simple data
         call figure()
-        call plot(x, sx, label='solid (-)', linestyle='-')
-        call plot(x, cx, label='dashed (--)', linestyle='--')
-        call plot(x, sx*0.5_wp, label='dotted (:)', linestyle=':')
-        call plot(x, cx*0.5_wp, label='dash-dot (-.)', linestyle='-.')
-        call title('Line Style Examples')
+        call plot(x, sx + 2.0_wp, label='solid (-)', linestyle='-')
+        call plot(x, sx + 1.0_wp, label='dashed (--)', linestyle='--')
+        call plot(x, sx, label='dotted (:)', linestyle=':')
+        call plot(x, sx - 1.0_wp, label='dash-dot (-.)', linestyle='-.')
+        call title('All Line Styles')
         call xlabel('x')
         call ylabel('y')
         call savefig('line_styles.png')
@@ -73,7 +73,11 @@ contains
         call ylabel('y')
         call savefig('simple_contour.png')
         
-        print *, "Pyplot-style API files created: simple_sine.png, multi_trig.png, line_styles.png, simple_contour.png"
+        print *, "Pyplot-style API files created:"
+        print *, "  - simple_sine.png (basic plot)"
+        print *, "  - multi_trig.png (multiple lines)"  
+        print *, "  - line_styles.png (all line styles)"
+        print *, "  - simple_contour.png (contour plot)"
         print *
 
     end subroutine simple_api_examples
