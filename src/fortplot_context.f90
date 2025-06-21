@@ -1,11 +1,17 @@
 module fortplot_context
+    !! Abstract base class for plotting backends
+    !!
+    !! This module defines the common interface that all plotting backends
+    !! (PNG, PDF, ASCII) must implement. Provides polymorphic interface
+    !! for unified plotting operations across different output formats.
+    !!
+    !! Author: fortplotlib contributors
+    
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: plot_context, setup_canvas
-    
-    ! Abstract base class for plot contexts
     type, abstract :: plot_context
         integer :: width, height
         real(wp) :: x_min, x_max, y_min, y_max

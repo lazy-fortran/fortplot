@@ -1,12 +1,18 @@
 module fortplot_ascii
+    !! ASCII terminal plotting backend
+    !!
+    !! This module implements text-based plotting for terminal output using
+    !! ASCII characters and Unicode box drawing characters. Provides basic
+    !! line plotting with character density mapping for visualization.
+    !!
+    !! Author: fortplotlib contributors
+    
     use fortplot_context
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: ascii_context, create_ascii_canvas
-    
-    ! ASCII plotting context for terminal output
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
@@ -20,10 +26,14 @@ module fortplot_ascii
         procedure :: save => ascii_finalize
     end type ascii_context
     
-    ! Enhanced ASCII characters for plotting
+    ! ASCII plotting constants
     character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
     character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
     character(len=*), parameter :: BOX_CHARS = '-|+++++++'
+    
+    ! Color filtering thresholds
+    real(wp), parameter :: LIGHT_COLOR_THRESHOLD = 0.8_wp
+    real(wp), parameter :: MEDIUM_COLOR_THRESHOLD = 0.7_wp
     
 contains
 

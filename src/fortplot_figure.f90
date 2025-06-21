@@ -1,4 +1,13 @@
 module fortplot_figure
+    !! High-level plotting interface with unified multi-backend support
+    !! 
+    !! This module provides the main user interface for creating scientific plots
+    !! with support for line plots, contour plots, and mixed plotting across
+    !! PNG, PDF, and ASCII backends. Uses deferred rendering for efficiency.
+    !!
+    !! Author: fortplotlib contributors
+    !! License: [Add appropriate license]
+    
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_png
@@ -65,7 +74,6 @@ module fortplot_figure
         procedure :: set_ylabel
         procedure :: set_title
         procedure :: show
-        procedure :: show_ascii
         final :: destroy
     end type figure_t
 
@@ -121,6 +129,13 @@ contains
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
+        !! Add a line plot to the figure
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the line plot
+        !!   label: Optional label for the plot legend
+        !!   linestyle: Optional line style (currently unused)
+        !!   color: Optional RGB color array [0,1] for the line
         class(figure_t), intent(inout) :: self
         real(wp), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
@@ -168,6 +183,14 @@ contains
     end subroutine add_plot
 
     subroutine add_contour(self, x, y, z, levels, label, color)
+        !! Add a contour plot to the figure using marching squares algorithm
+        !!
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays for the contour plot
+        !!   z: 2D data array for contouring (z(i,j) corresponds to (x(i), y(j)))
+        !!   levels: Optional array of contour levels (auto-generated if not provided)
+        !!   label: Optional label for the plot legend
+        !!   color: Optional RGB color array [0,1] for the contour lines
         class(figure_t), intent(inout) :: self
         real(wp), dimension(:), intent(in) :: x, y
         real(wp), dimension(:,:), intent(in) :: z
@@ -217,16 +240,8 @@ contains
             allocate(self%plots(self%plot_count)%contour_levels(size(levels)))
             self%plots(self%plot_count)%contour_levels = levels
         else
-            ! Generate default levels with small margin from data bounds
-            n_levels = 10
+            call generate_default_contour_levels(self, z, n_levels, default_levels)
             allocate(self%plots(self%plot_count)%contour_levels(n_levels))
-            allocate(default_levels(n_levels))
-            
-            ! Add 5% margin to avoid boundary effects
-            do i = 1, n_levels
-                default_levels(i) = minval(z) * 0.95_wp + maxval(z) * 0.05_wp + &
-                                   real(i-1, wp) * (maxval(z) * 0.95_wp - minval(z) * 0.05_wp) / real(n_levels-1, wp)
-            end do
             self%plots(self%plot_count)%contour_levels = default_levels
             deallocate(default_levels)
         end if
@@ -282,11 +297,6 @@ contains
 
     end subroutine draw_plot_background
 
-    subroutine draw_plot_axes(self)
-        class(figure_t), intent(inout) :: self
-        ! This is kept for compatibility but not used in new deferred rendering approach
-        print *, "Warning: draw_plot_axes called - this function is deprecated"
-    end subroutine draw_plot_axes
 
     subroutine draw_plot_axes_with_range(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
         class(figure_t), intent(inout) :: self
@@ -439,21 +449,6 @@ contains
         call self%backend%save("terminal")
     end subroutine show
 
-    subroutine show_ascii(self, x, y, n, title)
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
-        integer, intent(in) :: n
-        character(len=*), intent(in), optional :: title
-
-        ! DEPRECATED: Use show() instead for unified ASCII display
-        print *, "Warning: show_ascii is deprecated. Use show() for ASCII terminal output."
-        
-        ! Set title if provided
-        if (present(title)) call self%set_title(title)
-        
-        ! Use the new unified show method
-        call self%show()
-    end subroutine show_ascii
 
     subroutine render_all_plots(self)
         class(figure_t), intent(inout) :: self
@@ -1011,5 +1006,34 @@ contains
                                   real(line_points(4*i-1), wp), real(line_points(4*i), wp))
         end do
     end subroutine draw_contour_lines
+
+    subroutine generate_default_contour_levels(self, z_data, n_levels, levels)
+        !! Generate default contour levels with boundary margins
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: z_data(:,:)
+        integer, intent(out) :: n_levels
+        real(wp), allocatable, intent(out) :: levels(:)
+        
+        real(wp), parameter :: BOUNDARY_MARGIN = 0.05_wp  ! 5% margin
+        real(wp) :: z_min, z_max, z_range
+        real(wp) :: level_min, level_max
+        integer :: i
+        
+        n_levels = 10
+        allocate(levels(n_levels))
+        
+        z_min = minval(z_data)
+        z_max = maxval(z_data)
+        z_range = z_max - z_min
+        
+        ! Apply boundary margins to avoid edge effects
+        level_min = z_min + BOUNDARY_MARGIN * z_range
+        level_max = z_max - BOUNDARY_MARGIN * z_range
+        
+        ! Generate evenly spaced levels
+        do i = 1, n_levels
+            levels(i) = level_min + real(i-1, wp) * (level_max - level_min) / real(n_levels-1, wp)
+        end do
+    end subroutine generate_default_contour_levels
 
 end module fortplot_figure

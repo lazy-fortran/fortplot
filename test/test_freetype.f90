@@ -1,4 +1,10 @@
 program test_freetype
+    !! Comprehensive test suite for FreeType text rendering integration
+    !!
+    !! This program validates the FreeType text rendering system by testing
+    !! initialization, character rendering, positioning, and integration
+    !! with the plotting system. Generates test output files.
+    
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text
     use fortplot_png
@@ -150,11 +156,13 @@ contains
         print *, "------------------------------"
 
         ! Create a figure and add axes
-        call fig%initialize(width=300, height=200, backend="png")
+        call fig%initialize(width=300, height=200)
+        call fig%set_title("FreeType Test Output")
+        call fig%set_xlabel("x")
+        call fig%set_ylabel("y")
+        
         ! Add a dummy plot to trigger axis drawing
-        call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp])
-        ! Optionally set title or labels
-        call fig%set_title("Test PNG Output")
+        call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
 
         ! Save test file
         call fig%savefig("test_freetype_output.png")
