@@ -217,12 +217,15 @@ contains
             allocate(self%plots(self%plot_count)%contour_levels(size(levels)))
             self%plots(self%plot_count)%contour_levels = levels
         else
-            ! Generate default levels
+            ! Generate default levels with small margin from data bounds
             n_levels = 10
             allocate(self%plots(self%plot_count)%contour_levels(n_levels))
             allocate(default_levels(n_levels))
+            
+            ! Add 5% margin to avoid boundary effects
             do i = 1, n_levels
-                default_levels(i) = minval(z) + real(i-1, wp) * (maxval(z) - minval(z)) / real(n_levels-1, wp)
+                default_levels(i) = minval(z) * 0.95_wp + maxval(z) * 0.05_wp + &
+                                   real(i-1, wp) * (maxval(z) * 0.95_wp - minval(z) * 0.05_wp) / real(n_levels-1, wp)
             end do
             self%plots(self%plot_count)%contour_levels = default_levels
             deallocate(default_levels)
@@ -849,13 +852,164 @@ contains
     subroutine render_contour_plot(self, plot_index)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_index
+        integer :: level_idx
+        real(wp) :: contour_level
+        real(wp) :: z_min, z_max
         
-        ! Placeholder for contour rendering implementation
-        ! For now, just print a message indicating contour plot would be rendered
-        print *, "INFO: Contour plot rendering not yet implemented for plot", plot_index
-        print *, "      Grid size:", size(self%plots(plot_index)%x_grid), "x", size(self%plots(plot_index)%y_grid)
-        print *, "      Z range:", minval(self%plots(plot_index)%z_grid), "to", maxval(self%plots(plot_index)%z_grid)
-        print *, "      Contour levels:", size(self%plots(plot_index)%contour_levels)
+        ! Get data range for filtering valid levels
+        z_min = minval(self%plots(plot_index)%z_grid)
+        z_max = maxval(self%plots(plot_index)%z_grid)
+        
+        ! Render each contour level that falls within data range
+        do level_idx = 1, size(self%plots(plot_index)%contour_levels)
+            contour_level = self%plots(plot_index)%contour_levels(level_idx)
+            
+            ! Only render levels within the data range
+            if (contour_level > z_min .and. contour_level < z_max) then
+                call trace_contour_level(self, plot_index, contour_level)
+            end if
+        end do
     end subroutine render_contour_plot
+
+    subroutine trace_contour_level(self, plot_index, level)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index
+        real(wp), intent(in) :: level
+        integer :: nx, ny, i, j
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: z1, z2, z3, z4
+        integer :: config
+        real(wp), dimension(8) :: line_points
+        integer :: num_lines
+        
+        nx = size(self%plots(plot_index)%x_grid)
+        ny = size(self%plots(plot_index)%y_grid)
+        
+        ! Marching squares algorithm
+        do i = 1, nx-1
+            do j = 1, ny-1
+                ! Get cell corners
+                x1 = self%plots(plot_index)%x_grid(i)
+                y1 = self%plots(plot_index)%y_grid(j)
+                x2 = self%plots(plot_index)%x_grid(i+1)
+                y2 = self%plots(plot_index)%y_grid(j)
+                x3 = self%plots(plot_index)%x_grid(i+1)
+                y3 = self%plots(plot_index)%y_grid(j+1)
+                x4 = self%plots(plot_index)%x_grid(i)
+                y4 = self%plots(plot_index)%y_grid(j+1)
+                
+                z1 = self%plots(plot_index)%z_grid(i, j)
+                z2 = self%plots(plot_index)%z_grid(i+1, j)
+                z3 = self%plots(plot_index)%z_grid(i+1, j+1)
+                z4 = self%plots(plot_index)%z_grid(i, j+1)
+                
+                ! Calculate configuration
+                config = 0
+                if (z1 >= level) config = config + 1
+                if (z2 >= level) config = config + 2
+                if (z3 >= level) config = config + 4
+                if (z4 >= level) config = config + 8
+                
+                ! Get line segments for this configuration
+                call get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                                     z1, z2, z3, z4, level, line_points, num_lines)
+                
+                ! Draw the line segments
+                call draw_contour_lines(self, line_points, num_lines)
+            end do
+        end do
+    end subroutine trace_contour_level
+
+    subroutine get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                               z1, z2, z3, z4, level, line_points, num_lines)
+        integer, intent(in) :: config
+        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        real(wp), dimension(8), intent(out) :: line_points
+        integer, intent(out) :: num_lines
+        real(wp) :: xa, ya, xb, yb, xc, yc, xd, yd
+        
+        ! Interpolate edge crossing points
+        ! Edge a: between (x1,y1) and (x2,y2)
+        if (abs(z2 - z1) > 1e-10_wp) then
+            xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
+            ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
+        else
+            xa = (x1 + x2) * 0.5_wp
+            ya = (y1 + y2) * 0.5_wp
+        end if
+        
+        ! Edge b: between (x2,y2) and (x3,y3)
+        if (abs(z3 - z2) > 1e-10_wp) then
+            xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
+            yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
+        else
+            xb = (x2 + x3) * 0.5_wp
+            yb = (y2 + y3) * 0.5_wp
+        end if
+        
+        ! Edge c: between (x3,y3) and (x4,y4)
+        if (abs(z4 - z3) > 1e-10_wp) then
+            xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
+            yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
+        else
+            xc = (x3 + x4) * 0.5_wp
+            yc = (y3 + y4) * 0.5_wp
+        end if
+        
+        ! Edge d: between (x4,y4) and (x1,y1)
+        if (abs(z1 - z4) > 1e-10_wp) then
+            xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
+            yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
+        else
+            xd = (x4 + x1) * 0.5_wp
+            yd = (y4 + y1) * 0.5_wp
+        end if
+        
+        ! Determine line segments based on configuration
+        num_lines = 0
+        line_points = 0.0_wp
+        
+        select case (config)
+        case (1, 14)  ! Bottom-left corner
+            line_points(1:4) = [xa, ya, xd, yd]
+            num_lines = 1
+        case (2, 13)  ! Bottom-right corner
+            line_points(1:4) = [xa, ya, xb, yb]
+            num_lines = 1
+        case (3, 12)  ! Bottom edge
+            line_points(1:4) = [xd, yd, xb, yb]
+            num_lines = 1
+        case (4, 11)  ! Top-right corner
+            line_points(1:4) = [xb, yb, xc, yc]
+            num_lines = 1
+        case (5)      ! Saddle case - two lines
+            line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
+            num_lines = 2
+        case (6, 9)   ! Right edge
+            line_points(1:4) = [xa, ya, xc, yc]
+            num_lines = 1
+        case (7, 8)   ! Top-left corner
+            line_points(1:4) = [xd, yd, xc, yc]
+            num_lines = 1
+        case (10)     ! Saddle case - two lines
+            line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
+            num_lines = 2
+        case default  ! No lines (0, 15)
+            num_lines = 0
+        end select
+    end subroutine get_contour_lines
+
+    subroutine draw_contour_lines(self, line_points, num_lines)
+        class(figure_t), intent(inout) :: self
+        real(wp), dimension(8), intent(in) :: line_points
+        integer, intent(in) :: num_lines
+        integer :: i
+        
+        do i = 1, num_lines
+            call self%backend%line(real(line_points(4*i-3), wp), real(line_points(4*i-2), wp), &
+                                  real(line_points(4*i-1), wp), real(line_points(4*i), wp))
+        end do
+    end subroutine draw_contour_lines
 
 end module fortplot_figure
