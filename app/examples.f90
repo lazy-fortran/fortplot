@@ -4,13 +4,14 @@ program main
     implicit none
 
     real(wp), dimension(100) :: x, sx, cx
-    type(figure_t) :: png_fig, pdf_fig
+    type(figure_t) :: png_fig, pdf_fig, test_fig
     integer :: i
 
     ! Generate some data:
     x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
     sx = sin(x)
     cx = cos(x)
+    
 
     ! Create and configure PNG figure
     call png_fig%initialize(640, 480, "png")
@@ -26,8 +27,9 @@ program main
     ! Save PNG
     call png_fig%savefig('output.png')
 
-    ! Show ASCII version
-    call png_fig%show_ascii(x, sx, size(x), 'sin(x) ASCII plot')
+    ! Show ASCII version - display both sine and cosine properly
+    call png_fig%show_ascii(x, sx, size(x), 'sin(x) and cos(x) ASCII plot')
+    
 
     ! Create and configure PDF figure
     call pdf_fig%initialize(640, 480, "pdf")
