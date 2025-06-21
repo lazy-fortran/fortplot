@@ -1529,7 +1529,7 @@ contains
     end function apply_inverse_symlog_transform
 
     subroutine format_tick_label(tick_value, scale_type, threshold, label_text)
-        !! Format tick label according to scale type
+        !! Format tick label with consistent professional formatting across all scales
         real(wp), intent(in) :: tick_value
         character(len=*), intent(in) :: scale_type
         real(wp), intent(in) :: threshold
@@ -1539,25 +1539,118 @@ contains
         
         original_value = apply_inverse_scale_transform(tick_value, scale_type, threshold)
         
-        select case (trim(scale_type))
-        case ('log')
-            ! For log scale, use scientific notation or clean powers of 10
-            if (abs(original_value) >= 1000.0_wp .or. abs(original_value) <= 0.01_wp) then
-                write(label_text, '(ES8.1)') original_value
-            else
-                write(label_text, '(F0.1)') original_value
-            end if
-        case ('symlog')
-            ! For symlog, format based on the region
-            if (abs(original_value) <= threshold * 10.0_wp) then
-                write(label_text, '(F0.1)') original_value
-            else
-                write(label_text, '(ES8.1)') original_value
-            end if
-        case default  ! 'linear'
-            write(label_text, '(F0.2)') original_value
-        end select
+        ! Use unified professional formatting for all scale types
+        call format_number_professionally(original_value, label_text)
     end subroutine format_tick_label
+
+    subroutine format_number_professionally(value, formatted_text)
+        !! Format numbers with consistent professional style
+        !! Uses scientific notation for very large/small numbers, proper decimal formatting otherwise
+        real(wp), intent(in) :: value
+        character(len=*), intent(out) :: formatted_text
+        
+        real(wp) :: abs_value
+        
+        abs_value = abs(value)
+        
+        if (abs_value == 0.0_wp) then
+            formatted_text = '0'
+        else if (abs_value >= 1.0e4_wp .or. abs_value < 1.0e-2_wp) then
+            ! Scientific notation for very large or very small numbers
+            write(formatted_text, '(ES9.2)') value
+            call clean_scientific_notation(formatted_text)
+        else if (abs_value >= 1000.0_wp) then
+            ! Large integers or decimals with comma separators
+            if (abs(value - nint(value)) < 1.0e-6_wp) then
+                ! Integer formatting with commas
+                call format_integer_with_commas(nint(value), formatted_text)
+            else
+                ! Decimal with at most 1 decimal place for thousands
+                write(formatted_text, '(F0.1)') value
+            end if
+        else if (abs_value >= 1.0_wp) then
+            ! Regular numbers 1-999
+            if (abs(value - nint(value)) < 1.0e-6_wp) then
+                write(formatted_text, '(I0)') nint(value)
+            else
+                write(formatted_text, '(F0.1)') value
+            end if
+        else
+            ! Numbers between 0 and 1
+            write(formatted_text, '(F0.2)') value
+        end if
+    end subroutine format_number_professionally
+
+    subroutine clean_scientific_notation(text)
+        !! Clean up scientific notation formatting (e.g., 1.00E+03 -> 1.0×10³)
+        character(len=*), intent(inout) :: text
+        character(len=32) :: temp
+        integer :: e_pos, exp_val
+        
+        ! Find 'E' position
+        e_pos = index(text, 'E')
+        if (e_pos == 0) e_pos = index(text, 'e')
+        
+        if (e_pos > 0) then
+            ! Read the exponent
+            read(text(e_pos+1:), '(I10)') exp_val
+            
+            ! Format as 1.2×10³ style (simplified - just clean up the E notation)
+            if (exp_val >= 0) then
+                write(temp, '(A,I0)') trim(text(1:e_pos-1))//'E+', exp_val
+            else
+                write(temp, '(A,I0)') trim(text(1:e_pos-1))//'E', exp_val
+            end if
+            text = temp
+        end if
+    end subroutine clean_scientific_notation
+
+    subroutine format_integer_with_commas(value, formatted_text)
+        !! Format large integers with comma separators (e.g., 1,000)
+        integer, intent(in) :: value
+        character(len=*), intent(out) :: formatted_text
+        
+        character(len=32) :: temp
+        integer :: abs_val, len_str, i, comma_count
+        
+        abs_val = abs(value)
+        write(temp, '(I0)') abs_val
+        len_str = len_trim(temp)
+        
+        ! Count commas needed
+        comma_count = (len_str - 1) / 3
+        
+        if (comma_count == 0) then
+            ! No commas needed
+            if (value < 0) then
+                formatted_text = '-' // trim(temp)
+            else
+                formatted_text = trim(temp)
+            end if
+        else
+            ! Simple case: just add one comma for thousands
+            if (len_str == 4) then
+                if (value < 0) then
+                    formatted_text = '-' // temp(1:1) // ',' // temp(2:4)
+                else
+                    formatted_text = temp(1:1) // ',' // temp(2:4)
+                end if
+            else if (len_str == 5) then
+                if (value < 0) then
+                    formatted_text = '-' // temp(1:2) // ',' // temp(3:5)
+                else
+                    formatted_text = temp(1:2) // ',' // temp(3:5)
+                end if
+            else
+                ! Fallback for very large numbers
+                if (value < 0) then
+                    formatted_text = '-' // trim(temp)
+                else
+                    formatted_text = trim(temp)
+                end if
+            end if
+        end if
+    end subroutine format_integer_with_commas
 
     subroutine compute_scale_ticks(self, axis_min, axis_max, scale_type, threshold, n_ticks, tick_positions)
         !! Compute tick positions appropriate for the given scale type
@@ -1688,8 +1781,8 @@ contains
                 
                 if (draw_labels) then
                     call format_tick_label(major_ticks(i), scale_type, threshold, label_text)
-                    ! Right-align y-axis labels with proper spacing from tick marks
-                    call draw_right_aligned_text(self, plot_x0 - 0.025_wp, tick_y, trim(adjustl(label_text)))
+                    ! Right-align y-axis labels with more spacing from tick marks
+                    call draw_right_aligned_text(self, plot_x0 - 0.04_wp, tick_y, trim(adjustl(label_text)))
                 end if
             end if
         end do
