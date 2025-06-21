@@ -440,40 +440,44 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp) :: xmin_global, xmax_global, ymin_global, ymax_global
         real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
-        integer :: i, j
 
         if (self%plot_count == 0) return
 
-        ! Calculate global data range from all plots
         call get_global_data_range(self, xmin_global, xmax_global, ymin_global, ymax_global)
-
-        ! Set up coordinate system and get the actual axis ranges used
         call setup_nice_coordinate_system_with_range(self, xmin_global, xmax_global, ymin_global, ymax_global, &
                                                     xmin_axis, xmax_axis, ymin_axis, ymax_axis)
-
-        ! Draw background and axes using the actual axis ranges
         call draw_plot_background(self)
         call draw_plot_axes_with_range(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
-
-        ! Render all plots - map data coordinates to plot area
         call map_to_plot_area(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        call render_individual_plots(self)
+    end subroutine render_all_plots
+
+    subroutine render_individual_plots(self)
+        class(figure_t), intent(inout) :: self
+        integer :: i
 
         do i = 1, self%plot_count
             call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
 
             select case (self%plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
-                ! Draw line segments
-                do j = 1, size(self%plots(i)%x) - 1
-                    call self%backend%line(real(self%plots(i)%x(j), wp), real(self%plots(i)%y(j), wp), &
-                                          real(self%plots(i)%x(j+1), wp), real(self%plots(i)%y(j+1), wp))
-                end do
+                call render_line_plot(self, i)
             case (PLOT_TYPE_CONTOUR)
-                ! Render contour plot (placeholder for now)
                 call render_contour_plot(self, i)
             end select
         end do
-    end subroutine render_all_plots
+    end subroutine render_individual_plots
+
+    subroutine render_line_plot(self, plot_index)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index
+        integer :: j
+
+        do j = 1, size(self%plots(plot_index)%x) - 1
+            call self%backend%line(real(self%plots(plot_index)%x(j), wp), real(self%plots(plot_index)%y(j), wp), &
+                                  real(self%plots(plot_index)%x(j+1), wp), real(self%plots(plot_index)%y(j+1), wp))
+        end do
+    end subroutine render_line_plot
 
     subroutine map_to_plot_area(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
         class(figure_t), intent(inout) :: self
@@ -866,40 +870,67 @@ contains
         nx = size(self%plots(plot_index)%x_grid)
         ny = size(self%plots(plot_index)%y_grid)
         
-        ! Marching squares algorithm
         do i = 1, nx-1
             do j = 1, ny-1
-                ! Get cell corners
-                x1 = self%plots(plot_index)%x_grid(i)
-                y1 = self%plots(plot_index)%y_grid(j)
-                x2 = self%plots(plot_index)%x_grid(i+1)
-                y2 = self%plots(plot_index)%y_grid(j)
-                x3 = self%plots(plot_index)%x_grid(i+1)
-                y3 = self%plots(plot_index)%y_grid(j+1)
-                x4 = self%plots(plot_index)%x_grid(i)
-                y4 = self%plots(plot_index)%y_grid(j+1)
-                
-                z1 = self%plots(plot_index)%z_grid(i, j)
-                z2 = self%plots(plot_index)%z_grid(i+1, j)
-                z3 = self%plots(plot_index)%z_grid(i+1, j+1)
-                z4 = self%plots(plot_index)%z_grid(i, j+1)
-                
-                ! Calculate configuration
-                config = 0
-                if (z1 >= level) config = config + 1
-                if (z2 >= level) config = config + 2
-                if (z3 >= level) config = config + 4
-                if (z4 >= level) config = config + 8
-                
-                ! Get line segments for this configuration
-                call get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
-                                     z1, z2, z3, z4, level, line_points, num_lines)
-                
-                ! Draw the line segments
-                call draw_contour_lines(self, line_points, num_lines)
+                call process_contour_cell(self, plot_index, i, j, level)
             end do
         end do
     end subroutine trace_contour_level
+
+    subroutine process_contour_cell(self, plot_index, i, j, level)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index, i, j
+        real(wp), intent(in) :: level
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: z1, z2, z3, z4
+        integer :: config
+        real(wp), dimension(8) :: line_points
+        integer :: num_lines
+
+        call get_cell_coordinates(self, plot_index, i, j, x1, y1, x2, y2, x3, y3, x4, y4)
+        call get_cell_values(self, plot_index, i, j, z1, z2, z3, z4)
+        call calculate_marching_squares_config(z1, z2, z3, z4, level, config)
+        call get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                             z1, z2, z3, z4, level, line_points, num_lines)
+        call draw_contour_lines(self, line_points, num_lines)
+    end subroutine process_contour_cell
+
+    subroutine get_cell_coordinates(self, plot_index, i, j, x1, y1, x2, y2, x3, y3, x4, y4)
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_index, i, j
+        real(wp), intent(out) :: x1, y1, x2, y2, x3, y3, x4, y4
+
+        x1 = self%plots(plot_index)%x_grid(i)
+        y1 = self%plots(plot_index)%y_grid(j)
+        x2 = self%plots(plot_index)%x_grid(i+1)
+        y2 = self%plots(plot_index)%y_grid(j)
+        x3 = self%plots(plot_index)%x_grid(i+1)
+        y3 = self%plots(plot_index)%y_grid(j+1)
+        x4 = self%plots(plot_index)%x_grid(i)
+        y4 = self%plots(plot_index)%y_grid(j+1)
+    end subroutine get_cell_coordinates
+
+    subroutine get_cell_values(self, plot_index, i, j, z1, z2, z3, z4)
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_index, i, j
+        real(wp), intent(out) :: z1, z2, z3, z4
+
+        z1 = self%plots(plot_index)%z_grid(i, j)
+        z2 = self%plots(plot_index)%z_grid(i+1, j)
+        z3 = self%plots(plot_index)%z_grid(i+1, j+1)
+        z4 = self%plots(plot_index)%z_grid(i, j+1)
+    end subroutine get_cell_values
+
+    subroutine calculate_marching_squares_config(z1, z2, z3, z4, level, config)
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        integer, intent(out) :: config
+
+        config = 0
+        if (z1 >= level) config = config + 1
+        if (z2 >= level) config = config + 2
+        if (z3 >= level) config = config + 4
+        if (z4 >= level) config = config + 8
+    end subroutine calculate_marching_squares_config
 
     subroutine get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
                                z1, z2, z3, z4, level, line_points, num_lines)
@@ -910,75 +941,9 @@ contains
         integer, intent(out) :: num_lines
         real(wp) :: xa, ya, xb, yb, xc, yc, xd, yd
         
-        ! Interpolate edge crossing points
-        ! Edge a: between (x1,y1) and (x2,y2)
-        if (abs(z2 - z1) > 1e-10_wp) then
-            xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
-            ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
-        else
-            xa = (x1 + x2) * 0.5_wp
-            ya = (y1 + y2) * 0.5_wp
-        end if
-        
-        ! Edge b: between (x2,y2) and (x3,y3)
-        if (abs(z3 - z2) > 1e-10_wp) then
-            xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
-            yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
-        else
-            xb = (x2 + x3) * 0.5_wp
-            yb = (y2 + y3) * 0.5_wp
-        end if
-        
-        ! Edge c: between (x3,y3) and (x4,y4)
-        if (abs(z4 - z3) > 1e-10_wp) then
-            xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
-            yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
-        else
-            xc = (x3 + x4) * 0.5_wp
-            yc = (y3 + y4) * 0.5_wp
-        end if
-        
-        ! Edge d: between (x4,y4) and (x1,y1)
-        if (abs(z1 - z4) > 1e-10_wp) then
-            xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
-            yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
-        else
-            xd = (x4 + x1) * 0.5_wp
-            yd = (y4 + y1) * 0.5_wp
-        end if
-        
-        ! Determine line segments based on configuration
-        num_lines = 0
-        line_points = 0.0_wp
-        
-        select case (config)
-        case (1, 14)  ! Bottom-left corner
-            line_points(1:4) = [xa, ya, xd, yd]
-            num_lines = 1
-        case (2, 13)  ! Bottom-right corner
-            line_points(1:4) = [xa, ya, xb, yb]
-            num_lines = 1
-        case (3, 12)  ! Bottom edge
-            line_points(1:4) = [xd, yd, xb, yb]
-            num_lines = 1
-        case (4, 11)  ! Top-right corner
-            line_points(1:4) = [xb, yb, xc, yc]
-            num_lines = 1
-        case (5)      ! Saddle case - two lines
-            line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
-            num_lines = 2
-        case (6, 9)   ! Right edge
-            line_points(1:4) = [xa, ya, xc, yc]
-            num_lines = 1
-        case (7, 8)   ! Top-left corner
-            line_points(1:4) = [xd, yd, xc, yc]
-            num_lines = 1
-        case (10)     ! Saddle case - two lines
-            line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
-            num_lines = 2
-        case default  ! No lines (0, 15)
-            num_lines = 0
-        end select
+        call interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
+                                       z1, z2, z3, z4, level, xa, ya, xb, yb, xc, yc, xd, yd)
+        call apply_marching_squares_lookup(config, xa, ya, xb, yb, xc, yc, xd, yd, line_points, num_lines)
     end subroutine get_contour_lines
 
     subroutine draw_contour_lines(self, line_points, num_lines)
@@ -1021,5 +986,83 @@ contains
             levels(i) = level_min + real(i-1, wp) * (level_max - level_min) / real(n_levels-1, wp)
         end do
     end subroutine generate_default_contour_levels
+
+    subroutine interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
+                                         z1, z2, z3, z4, level, xa, ya, xb, yb, xc, yc, xd, yd)
+        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        real(wp), intent(out) :: xa, ya, xb, yb, xc, yc, xd, yd
+
+        if (abs(z2 - z1) > 1e-10_wp) then
+            xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
+            ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
+        else
+            xa = (x1 + x2) * 0.5_wp
+            ya = (y1 + y2) * 0.5_wp
+        end if
+        
+        if (abs(z3 - z2) > 1e-10_wp) then
+            xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
+            yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
+        else
+            xb = (x2 + x3) * 0.5_wp
+            yb = (y2 + y3) * 0.5_wp
+        end if
+        
+        if (abs(z4 - z3) > 1e-10_wp) then
+            xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
+            yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
+        else
+            xc = (x3 + x4) * 0.5_wp
+            yc = (y3 + y4) * 0.5_wp
+        end if
+        
+        if (abs(z1 - z4) > 1e-10_wp) then
+            xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
+            yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
+        else
+            xd = (x4 + x1) * 0.5_wp
+            yd = (y4 + y1) * 0.5_wp
+        end if
+    end subroutine interpolate_edge_crossings
+
+    subroutine apply_marching_squares_lookup(config, xa, ya, xb, yb, xc, yc, xd, yd, line_points, num_lines)
+        integer, intent(in) :: config
+        real(wp), intent(in) :: xa, ya, xb, yb, xc, yc, xd, yd
+        real(wp), dimension(8), intent(out) :: line_points
+        integer, intent(out) :: num_lines
+
+        num_lines = 0
+        line_points = 0.0_wp
+        
+        select case (config)
+        case (1, 14)
+            line_points(1:4) = [xa, ya, xd, yd]
+            num_lines = 1
+        case (2, 13)
+            line_points(1:4) = [xa, ya, xb, yb]
+            num_lines = 1
+        case (3, 12)
+            line_points(1:4) = [xd, yd, xb, yb]
+            num_lines = 1
+        case (4, 11)
+            line_points(1:4) = [xb, yb, xc, yc]
+            num_lines = 1
+        case (5)
+            line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
+            num_lines = 2
+        case (6, 9)
+            line_points(1:4) = [xa, ya, xc, yc]
+            num_lines = 1
+        case (7, 8)
+            line_points(1:4) = [xd, yd, xc, yc]
+            num_lines = 1
+        case (10)
+            line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
+            num_lines = 2
+        case default
+            num_lines = 0
+        end select
+    end subroutine apply_marching_squares_lookup
 
 end module fortplot_figure
