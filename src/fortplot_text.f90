@@ -125,20 +125,22 @@ contains
             end if
             call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
             
+            ! Debug output for spacing analysis
+            if (char_code == 105 .or. char_code == 32 .or. char_code == 46) then  ! 'i', space, dot
+                print *, 'CHAR', char(char_code), ': width=', glyph_info%width, ' advance_x=', glyph_info%advance_x, &
+                         ' left=', glyph_info%left, ' top=', glyph_info%top, ' height=', glyph_info%height
+            end if
+            
             ! Apply kerning adjustment for next character
             if (i < len_trim(text)) then
                 next_char_code = iachar(text(i+1:i+1))
                 kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
                 
-                ! For punctuation, use tighter spacing based on actual glyph width
-                if (char_code == 46 .or. char_code == 44 .or. char_code == 58 .or. char_code == 59) then  ! . , : ;
-                    pen_x = pen_x + max(glyph_info%width + glyph_info%left + 1 + kerning_offset, 3)
-                else
-                    pen_x = pen_x + max(glyph_info%advance_x + kerning_offset, 6)
-                end if
+                ! Use FreeType's advance_x for all characters - it contains proper spacing
+                pen_x = pen_x + glyph_info%advance_x + kerning_offset
             else
                 ! Last character - use advance_x as normal
-                pen_x = pen_x + max(glyph_info%advance_x, 6)
+                pen_x = pen_x + glyph_info%advance_x
             end if
             
             call ft_wrapper_free_glyph(glyph_info)
@@ -156,7 +158,7 @@ contains
         real :: alpha_f, bg_r, bg_g, bg_b
         
         if (glyph_info%width <= 0 .or. glyph_info%height <= 0) then
-            call render_simple_character_block(image_data, width, height, pen_x, pen_y, r, g, b)
+            ! Skip rendering for spaces and other empty glyphs - don't draw black boxes
             return
         end if
         
