@@ -134,11 +134,8 @@ contains
         call expand_range(self%xmin_global, self%xmax_global)
         call expand_range(self%ymin_global, self%ymax_global)
         
-        ! Set coordinate system for plotting area  
-        self%backend%x_min = real(self%xmin_global, wp)
-        self%backend%x_max = real(self%xmax_global, wp)
-        self%backend%y_min = real(self%ymin_global, wp)
-        self%backend%y_max = real(self%ymax_global, wp)
+        ! Calculate plot area in normalized coordinates for data plotting
+        call setup_data_coordinate_system(self)
         
         ! Draw axes and labels only for the first plot
         if (self%plot_count == 0) then
@@ -326,6 +323,29 @@ contains
     end subroutine destroy
 
     ! Utility subroutines adapted from old fortplotlib
+    subroutine setup_data_coordinate_system(self)
+        class(figure_t), intent(inout) :: self
+        real(wp) :: plot_x0, plot_y0, plot_x1, plot_y1
+        real(wp) :: data_width, data_height
+        
+        ! Calculate plot area in normalized coordinates
+        plot_x0 = self%margin_left
+        plot_y0 = self%margin_bottom
+        plot_x1 = 1.0_wp - self%margin_right
+        plot_y1 = 1.0_wp - self%margin_top
+        
+        ! Set coordinate system to map data range to plot area
+        ! We need to map data coordinates to the plot area (not full screen)
+        data_width = self%xmax_global - self%xmin_global
+        data_height = self%ymax_global - self%ymin_global
+        
+        ! Transform data coordinates to plot area coordinates
+        self%backend%x_min = real(self%xmin_global - data_width * plot_x0 / (plot_x1 - plot_x0), wp)
+        self%backend%x_max = real(self%xmax_global + data_width * (1.0_wp - plot_x1) / (plot_x1 - plot_x0), wp)
+        self%backend%y_min = real(self%ymin_global - data_height * plot_y0 / (plot_y1 - plot_y0), wp)
+        self%backend%y_max = real(self%ymax_global + data_height * (1.0_wp - plot_y1) / (plot_y1 - plot_y0), wp)
+    end subroutine setup_data_coordinate_system
+
     subroutine expand_range(dmin, dmax)
         real(wp), intent(inout) :: dmin, dmax
         real(wp) :: range, center, margin
