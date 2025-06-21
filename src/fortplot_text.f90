@@ -164,9 +164,12 @@ contains
                     alpha_f = real(int(alpha, kind=selected_int_kind(2)) + merge(256, 0, alpha < 0)) / 255.0
                     
                     ! Get background color and blend with black text
-                    bg_r = real(int(image_data(pixel_idx), kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))
-                    bg_g = real(int(image_data(pixel_idx + 1), kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 1) < 0))
-                    bg_b = real(int(image_data(pixel_idx + 2), kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
+                    bg_r = real(int(image_data(pixel_idx), &
+                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))
+                    bg_g = real(int(image_data(pixel_idx + 1), &
+                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 1) < 0))
+                    bg_b = real(int(image_data(pixel_idx + 2), &
+                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
                     
                     ! Alpha blend: background * (1-alpha) for black text
                     image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f), 1)

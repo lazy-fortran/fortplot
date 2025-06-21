@@ -220,7 +220,8 @@ contains
         pos = get_position(unit)
         write(size_str, '(I0, 1X, I0)') ctx%width, ctx%height
         call write_string_to_unit(unit, "3 0 obj")
-        write(page_str, '("<</Type /Page/Parent 2 0 R/MediaBox [0 0 ", A, "]/Contents 4 0 R/Resources <</Font <</F1 5 0 R>>>>>>>>")') trim(size_str)
+        write(page_str, '("<</Type /Page/Parent 2 0 R/MediaBox [0 0 ", A, "]&
+/Contents 4 0 R/Resources <</Font <</F1 5 0 R>>>>>>>>")') trim(size_str)
         call write_string_to_unit(unit, page_str)
         call write_string_to_unit(unit, "endobj")
     end subroutine write_page_object
