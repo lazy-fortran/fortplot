@@ -8,76 +8,31 @@ program main
 contains
 
     subroutine simple_api_examples()
-        real(wp), dimension(100) :: x, sx, cx
-        real(wp), dimension(30) :: x_grid, y_grid
-        real(wp), dimension(30,30) :: z_grid
-        integer :: i, j
+        real(wp), dimension(50) :: x, y1, y2, y3, y4
+        integer :: i
 
         print *, "=== Pyplot-Style API Examples ==="
         
-        x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
-        sx = sin(x)
-        cx = cos(x)
+        ! Generate simple data
+        x = [(real(i-1, wp) * 0.2_wp, i=1, 50)]
+        y1 = sin(x) + 2.0_wp
+        y2 = sin(x) + 1.0_wp  
+        y3 = sin(x)
+        y4 = sin(x) - 1.0_wp
         
-        ! Pyplot-style line plot
+        ! Line style demonstration - the key example
         call figure()
-        call plot(x, sx, label='sin(x)')
-        call title('Simple Sine Plot')
-        call xlabel('x')
-        call ylabel('y')
-        call savefig('simple_sine.png')
-        
-        ! Pyplot-style terminal display
-        call figure()
-        call plot(x, sx, label='sin(x)')
-        call title('Sine Function')
-        call show()
-        
-        ! Simple multi-line plot  
-        call figure()
-        call plot(x, sx, label='sin(x)')
-        call plot(x, cx, label='cos(x)')
-        call title('Sine and Cosine')
-        call xlabel('x')
-        call ylabel('y')
-        call savefig('multi_trig.png')
-        
-        ! Clear line style demonstration - all styles on simple data
-        call figure()
-        call plot(x, sx + 2.0_wp, label='solid (-)', linestyle='-')
-        call plot(x, sx + 1.0_wp, label='dashed (--)', linestyle='--')
-        call plot(x, sx, label='dotted (:)', linestyle=':')
-        call plot(x, sx - 1.0_wp, label='dash-dot (-.)', linestyle='-.')
+        call plot(x, y1, label='solid (-)', linestyle='-')
+        call plot(x, y2, label='dashed (--)', linestyle='--')
+        call plot(x, y3, label='dotted (:)', linestyle=':')
+        call plot(x, y4, label='dash-dot (-.)', linestyle='-.')
         call title('All Line Styles')
         call xlabel('x')
         call ylabel('y')
         call savefig('line_styles.png')
+        call show()
         
-        ! Generate contour data
-        do i = 1, 30
-            x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
-            y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
-        end do
-        
-        do i = 1, 30
-            do j = 1, 30
-                z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
-            end do
-        end do
-        
-        ! Pyplot-style contour plot
-        call figure()
-        call contour(x_grid, y_grid, z_grid)
-        call title('Simple Gaussian')
-        call xlabel('x')
-        call ylabel('y')
-        call savefig('simple_contour.png')
-        
-        print *, "Pyplot-style API files created:"
-        print *, "  - simple_sine.png (basic plot)"
-        print *, "  - multi_trig.png (multiple lines)"  
-        print *, "  - line_styles.png (all line styles)"
-        print *, "  - simple_contour.png (contour plot)"
+        print *, "Example created: line_styles.png"
         print *
 
     end subroutine simple_api_examples
