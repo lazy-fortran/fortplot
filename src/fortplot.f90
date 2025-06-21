@@ -26,6 +26,13 @@ module fortplot
     public :: savefig, figure
     public :: add_plot, add_contour
     
+    ! Line style constants (pyplot-style)
+    character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
+    character(len=*), parameter, public :: LINESTYLE_DASHED = '--'
+    character(len=*), parameter, public :: LINESTYLE_DOTTED = ':'
+    character(len=*), parameter, public :: LINESTYLE_DASHDOT = '-.'
+    character(len=*), parameter, public :: LINESTYLE_NONE = 'None'
+    
     
     ! Interface for overloaded show routine
     interface show
@@ -37,16 +44,17 @@ module fortplot
 
 contains
 
-    subroutine plot(x, y, label)
+    subroutine plot(x, y, label, linestyle)
         !! Add a line plot to the global figure (pyplot-style)
         !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
         !!   label: Optional label for the plot
+        !!   linestyle: Optional line style ('-', '--', '-.', ':', 'None')
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: label, linestyle
         
-        call fig%add_plot(x, y, label=label)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
     subroutine contour(x, y, z, levels, label)
@@ -131,11 +139,11 @@ contains
         call fig%savefig(filename)
     end subroutine savefig
 
-    subroutine add_plot(x, y, label)
+    subroutine add_plot(x, y, label, linestyle)
         !! Add a line plot to the global figure
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label
-        call fig%add_plot(x, y, label=label)
+        character(len=*), intent(in), optional :: label, linestyle
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine add_plot
 
     subroutine add_contour(x, y, z, levels, label)

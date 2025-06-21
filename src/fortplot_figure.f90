@@ -31,6 +31,7 @@ module fortplot_figure
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
+        character(len=:), allocatable :: linestyle
     end type plot_data_t
 
     type :: figure_t
@@ -126,7 +127,7 @@ contains
         !! Arguments:
         !!   x, y: Data arrays for the line plot
         !!   label: Optional label for the plot legend
-        !!   linestyle: Optional line style (currently unused)
+        !!   linestyle: Optional line style ('-', '--', '-.', ':', 'None')
         !!   color: Optional RGB color array [0,1] for the line
         class(figure_t), intent(inout) :: self
         real(wp), dimension(:), intent(in) :: x, y
@@ -164,6 +165,12 @@ contains
 
         if (present(label)) then
             self%plots(self%plot_count)%label = label
+        end if
+
+        if (present(linestyle)) then
+            self%plots(self%plot_count)%linestyle = linestyle
+        else
+            self%plots(self%plot_count)%linestyle = '-'  ! Default solid line
         end if
 
     end subroutine add_plot
@@ -472,12 +479,65 @@ contains
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_index
         integer :: j
+        character(len=:), allocatable :: style
+
+        if (allocated(self%plots(plot_index)%linestyle)) then
+            style = self%plots(plot_index)%linestyle
+        else
+            style = '-'
+        end if
+
+        if (style == 'None' .or. style == '') then
+            return  ! No line to draw
+        end if
 
         do j = 1, size(self%plots(plot_index)%x) - 1
-            call self%backend%line(real(self%plots(plot_index)%x(j), wp), real(self%plots(plot_index)%y(j), wp), &
-                                  real(self%plots(plot_index)%x(j+1), wp), real(self%plots(plot_index)%y(j+1), wp))
+            call render_line_segment_with_style(self, plot_index, j, j+1, style)
         end do
     end subroutine render_line_plot
+
+    subroutine render_line_segment_with_style(self, plot_index, i1, i2, linestyle)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index, i1, i2
+        character(len=*), intent(in) :: linestyle
+        
+        real(wp) :: x1, y1, x2, y2, dx, dy, length, t
+        integer :: num_segments, k
+        real(wp), parameter :: dash_length = 0.02_wp  ! 2% of plot area
+        real(wp), parameter :: dot_length = 0.005_wp  ! 0.5% of plot area
+        real(wp), parameter :: gap_length = 0.01_wp   ! 1% of plot area
+        
+        x1 = real(self%plots(plot_index)%x(i1), wp)
+        y1 = real(self%plots(plot_index)%y(i1), wp)
+        x2 = real(self%plots(plot_index)%x(i2), wp)
+        y2 = real(self%plots(plot_index)%y(i2), wp)
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        length = sqrt(dx*dx + dy*dy)
+        
+        select case (trim(linestyle))
+        case ('-')
+            ! Solid line
+            call self%backend%line(x1, y1, x2, y2)
+            
+        case ('--')
+            ! Dashed line
+            call render_dashed_line(self, x1, y1, x2, y2, dash_length, gap_length)
+            
+        case ('-.')
+            ! Dash-dot line  
+            call render_dash_dot_line(self, x1, y1, x2, y2, dash_length, dot_length, gap_length)
+            
+        case (':')
+            ! Dotted line
+            call render_dotted_line(self, x1, y1, x2, y2, dot_length, gap_length)
+            
+        case default
+            ! Unknown style, default to solid
+            call self%backend%line(x1, y1, x2, y2)
+        end select
+    end subroutine render_line_segment_with_style
 
     subroutine map_to_plot_area(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
         class(figure_t), intent(inout) :: self
@@ -1064,5 +1124,110 @@ contains
             num_lines = 0
         end select
     end subroutine apply_marching_squares_lookup
+
+    subroutine render_dashed_line(self, x1, y1, x2, y2, dash_len, gap_len)
+        !! Render a dashed line between two points
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x1, y1, x2, y2, dash_len, gap_len
+        
+        real(wp) :: dx, dy, length, pattern_len, t, t_end
+        real(wp) :: seg_x1, seg_y1, seg_x2, seg_y2
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        length = sqrt(dx*dx + dy*dy)
+        pattern_len = dash_len + gap_len
+        
+        if (length < 1e-10_wp) return
+        
+        t = 0.0_wp
+        do while (t < length)
+            t_end = min(t + dash_len, length)
+            
+            seg_x1 = x1 + (t / length) * dx
+            seg_y1 = y1 + (t / length) * dy
+            seg_x2 = x1 + (t_end / length) * dx
+            seg_y2 = y1 + (t_end / length) * dy
+            
+            call self%backend%line(seg_x1, seg_y1, seg_x2, seg_y2)
+            
+            t = t + pattern_len
+        end do
+    end subroutine render_dashed_line
+
+    subroutine render_dotted_line(self, x1, y1, x2, y2, dot_len, gap_len)
+        !! Render a dotted line between two points
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x1, y1, x2, y2, dot_len, gap_len
+        
+        real(wp) :: dx, dy, length, pattern_len, t, t_end
+        real(wp) :: seg_x1, seg_y1, seg_x2, seg_y2
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        length = sqrt(dx*dx + dy*dy)
+        pattern_len = dot_len + gap_len
+        
+        if (length < 1e-10_wp) return
+        
+        t = 0.0_wp
+        do while (t < length)
+            t_end = min(t + dot_len, length)
+            
+            seg_x1 = x1 + (t / length) * dx
+            seg_y1 = y1 + (t / length) * dy
+            seg_x2 = x1 + (t_end / length) * dx
+            seg_y2 = y1 + (t_end / length) * dy
+            
+            call self%backend%line(seg_x1, seg_y1, seg_x2, seg_y2)
+            
+            t = t + pattern_len
+        end do
+    end subroutine render_dotted_line
+
+    subroutine render_dash_dot_line(self, x1, y1, x2, y2, dash_len, dot_len, gap_len)
+        !! Render a dash-dot line between two points
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x1, y1, x2, y2, dash_len, dot_len, gap_len
+        
+        real(wp) :: dx, dy, length, pattern_len, t, t_end
+        real(wp) :: seg_x1, seg_y1, seg_x2, seg_y2
+        logical :: is_dash
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        length = sqrt(dx*dx + dy*dy)
+        pattern_len = dash_len + gap_len + dot_len + gap_len
+        
+        if (length < 1e-10_wp) return
+        
+        t = 0.0_wp
+        is_dash = .true.
+        
+        do while (t < length)
+            if (is_dash) then
+                ! Draw dash
+                t_end = min(t + dash_len, length)
+            else
+                ! Draw dot
+                t_end = min(t + dot_len, length)
+            end if
+            
+            seg_x1 = x1 + (t / length) * dx
+            seg_y1 = y1 + (t / length) * dy
+            seg_x2 = x1 + (t_end / length) * dx
+            seg_y2 = y1 + (t_end / length) * dy
+            
+            call self%backend%line(seg_x1, seg_y1, seg_x2, seg_y2)
+            
+            if (is_dash) then
+                t = t + dash_len + gap_len
+                is_dash = .false.
+            else
+                t = t + dot_len + gap_len
+                is_dash = .true.
+            end if
+        end do
+    end subroutine render_dash_dot_line
 
 end module fortplot_figure
