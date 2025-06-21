@@ -2,7 +2,7 @@ module plotting_module
     implicit none
     
     private
-    public :: plot_context, setup_canvas, draw_sine_wave, draw_coordinate_axes, save_plot
+    public :: plot_context, setup_canvas, set_coordinate_system, draw_sine_wave, draw_coordinate_axes, save_plot
     
     type, abstract :: plot_context
         integer :: width, height

@@ -1,7 +1,8 @@
 module png_context_module
     use iso_c_binding
-    use plotting_module
+    use plot_context_module
     use text_module
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
@@ -10,7 +11,7 @@ module png_context_module
     ! PNG plotting context
     type, extends(plot_context) :: png_context
         integer(1), allocatable :: image_data(:)
-        real :: current_r, current_g, current_b
+        real(wp) :: current_r, current_g, current_b
     contains
         procedure :: line => png_draw_line
         procedure :: color => png_set_color
@@ -31,22 +32,22 @@ contains
         call initialize_white_background(ctx%image_data, width, height)
         
         ! Default color (blue)
-        ctx%current_r = 0.0
-        ctx%current_g = 0.0
-        ctx%current_b = 1.0
+        ctx%current_r = 0.0_wp
+        ctx%current_g = 0.0_wp
+        ctx%current_b = 1.0_wp
     end function create_png_canvas
     
     subroutine png_draw_line(this, x1, y1, x2, y2)
         class(png_context), intent(inout) :: this
-        real, intent(in) :: x1, y1, x2, y2
-        real :: px1, py1, px2, py2
+        real(wp), intent(in) :: x1, y1, x2, y2
+        real(wp) :: px1, py1, px2, py2
         integer(1) :: r, g, b
         
         ! Convert world coordinates to pixel coordinates
-        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1) + 1.0
-        py1 = (1.0 - (y1 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1) + 1.0
-        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1) + 1.0
-        py2 = (1.0 - (y2 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1) + 1.0
+        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1, wp) + 1.0_wp
+        py1 = (1.0_wp - (y1 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1, wp) + 1.0_wp
+        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1, wp) + 1.0_wp
+        py2 = (1.0_wp - (y2 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1, wp) + 1.0_wp
         
         ! Convert color to signed bytes
         r = color_to_byte(this%current_r)
@@ -59,7 +60,7 @@ contains
     
     subroutine png_set_color(this, r, g, b)
         class(png_context), intent(inout) :: this
-        real, intent(in) :: r, g, b
+        real(wp), intent(in) :: r, g, b
         
         this%current_r = r
         this%current_g = g
@@ -68,12 +69,12 @@ contains
     
     subroutine png_draw_text(this, x, y, text)
         class(png_context), intent(inout) :: this
-        real, intent(in) :: x, y
+        real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        real :: px, py
+        real(wp) :: px, py
         
-        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1) + 1.0
-        py = (1.0 - (y - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1) + 1.0
+        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1, wp) + 1.0_wp
+        py = (1.0_wp - (y - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1, wp) + 1.0_wp
         
         call render_text_to_image(this%image_data, this%width, this%height, &
                                  int(px), int(py), text, &
@@ -91,11 +92,11 @@ contains
     end subroutine png_finalize
     
     function color_to_byte(color_val) result(byte_val)
-        real, intent(in) :: color_val
+        real(wp), intent(in) :: color_val
         integer(1) :: byte_val
         integer :: int_val
         
-        int_val = int(color_val * 255.0)
+        int_val = int(color_val * 255.0_wp)
         if (int_val > 127) then
             byte_val = int(int_val - 256, 1)
         else
@@ -126,7 +127,7 @@ contains
     subroutine draw_line_wu(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
-        real, intent(in) :: x0, y0, x1, y1
+        real(wp), intent(in) :: x0, y0, x1, y1
         integer(1), intent(in) :: r, g, b
         logical :: steep
         
@@ -142,11 +143,11 @@ contains
     subroutine draw_line_wu_impl(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b, swapped)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
-        real, intent(in) :: x0, y0, x1, y1
+        real(wp), intent(in) :: x0, y0, x1, y1
         integer(1), intent(in) :: r, g, b
         logical, intent(in) :: swapped
-        real :: dx, dy, gradient, xend, yend, xgap, xpxl1, ypxl1, xpxl2, ypxl2
-        real :: intery, x_start, y_start, x_end, y_end
+        real(wp) :: dx, dy, gradient, xend, yend, xgap, xpxl1, ypxl1, xpxl2, ypxl2
+        real(wp) :: intery, x_start, y_start, x_end, y_end
         integer :: i
         
         x_start = x0
@@ -164,7 +165,7 @@ contains
         dx = x_end - x_start
         dy = y_end - y_start
         
-        if (abs(dx) < 1e-6) then
+        if (abs(dx) < 1e-6_wp) then
             call draw_vertical_line_aa(image_data, img_w, img_h, x_start, y_start, y_end, r, g, b, swapped)
             return
         end if
@@ -173,7 +174,7 @@ contains
         
         xend = x_start
         yend = y_start + gradient * (xend - x_start)
-        xgap = 1.0 - fpart(x_start + 0.5)
+        xgap = 1.0_wp - fpart(x_start + 0.5_wp)
         xpxl1 = xend
         ypxl1 = ipart(yend)
         
@@ -186,7 +187,7 @@ contains
         
         xend = x_end
         yend = y_end + gradient * (xend - x_end)
-        xgap = fpart(x_end + 0.5)
+        xgap = fpart(x_end + 0.5_wp)
         xpxl2 = xend
         ypxl2 = ipart(yend)
         
@@ -207,24 +208,24 @@ contains
     subroutine draw_vertical_line_aa(image_data, img_w, img_h, x, y0, y1, r, g, b, swapped)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
-        real, intent(in) :: x, y0, y1
+        real(wp), intent(in) :: x, y0, y1
         integer(1), intent(in) :: r, g, b
         logical, intent(in) :: swapped
-        real :: y_start, y_end
+        real(wp) :: y_start, y_end
         integer :: i
         
         y_start = min(y0, y1)
         y_end = max(y0, y1)
         
         do i = int(y_start), int(y_end)
-            call plot_aa_pixel(image_data, img_w, img_h, int(x), i, 1.0, r, g, b, swapped)
+            call plot_aa_pixel(image_data, img_w, img_h, int(x), i, 1.0_wp, r, g, b, swapped)
         end do
     end subroutine draw_vertical_line_aa
 
     subroutine plot_aa_pixel(image_data, img_w, img_h, x, y, alpha, r, g, b, swapped)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h, x, y
-        real, intent(in) :: alpha
+        real(wp), intent(in) :: alpha
         integer(1), intent(in) :: r, g, b
         logical, intent(in) :: swapped
         integer :: px, py
@@ -243,23 +244,23 @@ contains
     subroutine blend_pixel(image_data, img_w, img_h, x, y, alpha, new_r, new_g, new_b)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h, x, y
-        real, intent(in) :: alpha
+        real(wp), intent(in) :: alpha
         integer(1), intent(in) :: new_r, new_g, new_b
         integer :: k
-        real :: inv_alpha
+        real(wp) :: inv_alpha
         integer :: bg_r, bg_g, bg_b, fg_r, fg_g, fg_b
         
         if (x < 1 .or. x > img_w .or. y < 1 .or. y > img_h) return
-        if (alpha <= 0.0) return
+        if (alpha <= 0.0_wp) return
         
         k = (y - 1) * (1 + img_w * 3) + 1 + (x - 1) * 3 + 1
         
-        if (alpha >= 1.0) then
+        if (alpha >= 1.0_wp) then
             image_data(k) = new_r
             image_data(k+1) = new_g
             image_data(k+2) = new_b
         else
-            inv_alpha = 1.0 - alpha
+            inv_alpha = 1.0_wp - alpha
             
             bg_r = int(image_data(k))
             bg_g = int(image_data(k+1))
@@ -289,19 +290,19 @@ contains
         end if
     end subroutine blend_pixel
 
-    real function ipart(x)
-        real, intent(in) :: x
-        ipart = real(int(x))
+    real(wp) function ipart(x)
+        real(wp), intent(in) :: x
+        ipart = real(int(x), wp)
     end function ipart
 
-    real function fpart(x)
-        real, intent(in) :: x
+    real(wp) function fpart(x)
+        real(wp), intent(in) :: x
         fpart = x - ipart(x)
     end function fpart
 
-    real function rfpart(x)
-        real, intent(in) :: x
-        rfpart = 1.0 - fpart(x)
+    real(wp) function rfpart(x)
+        real(wp), intent(in) :: x
+        rfpart = 1.0_wp - fpart(x)
     end function rfpart
     
     ! PNG file writing functionality

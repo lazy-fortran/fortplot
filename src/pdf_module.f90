@@ -1,5 +1,6 @@
 module pdf_module
-    use plotting_module
+    use plot_context_module
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
@@ -7,7 +8,7 @@ module pdf_module
     
     type, extends(plot_context) :: pdf_context
         character(len=:), allocatable :: content_stream
-        real :: stroke_r, stroke_g, stroke_b
+        real(wp) :: stroke_r, stroke_g, stroke_b
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
@@ -29,9 +30,9 @@ contains
         type(pdf_context), intent(inout) :: ctx
         
         ctx%content_stream = ""
-        ctx%stroke_r = 0.0
-        ctx%stroke_g = 0.0
-        ctx%stroke_b = 1.0
+        ctx%stroke_r = 0.0_wp
+        ctx%stroke_g = 0.0_wp
+        ctx%stroke_b = 1.0_wp
         
         call add_to_stream(ctx, "q")
         call add_to_stream(ctx, "2 w")
@@ -40,8 +41,8 @@ contains
     
     subroutine draw_pdf_line(this, x1, y1, x2, y2)
         class(pdf_context), intent(inout) :: this
-        real, intent(in) :: x1, y1, x2, y2
-        real :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
+        real(wp), intent(in) :: x1, y1, x2, y2
+        real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
         
         call normalize_to_pdf_coords(this, x1, y1, pdf_x1, pdf_y1)
         call normalize_to_pdf_coords(this, x2, y2, pdf_x2, pdf_y2)
@@ -50,7 +51,7 @@ contains
     
     subroutine set_pdf_color(this, r, g, b)
         class(pdf_context), intent(inout) :: this
-        real, intent(in) :: r, g, b
+        real(wp), intent(in) :: r, g, b
         character(len=50) :: color_cmd
         
         this%stroke_r = r
@@ -63,9 +64,9 @@ contains
     
     subroutine draw_pdf_text(this, x, y, text)
         class(pdf_context), intent(inout) :: this
-        real, intent(in) :: x, y
+        real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        real :: pdf_x, pdf_y
+        real(wp) :: pdf_x, pdf_y
         character(len=200) :: text_cmd
         
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
@@ -92,16 +93,16 @@ contains
 
     subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
         class(pdf_context), intent(in) :: ctx
-        real, intent(in) :: x, y
-        real, intent(out) :: pdf_x, pdf_y
+        real(wp), intent(in) :: x, y
+        real(wp), intent(out) :: pdf_x, pdf_y
         
-        pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%width)
-        pdf_y = (1.0 - (y - ctx%y_min) / (ctx%y_max - ctx%y_min)) * real(ctx%height)
+        pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%width, wp)
+        pdf_y = (1.0_wp - (y - ctx%y_min) / (ctx%y_max - ctx%y_min)) * real(ctx%height, wp)
     end subroutine normalize_to_pdf_coords
 
     subroutine draw_vector_line(ctx, x1, y1, x2, y2)
         class(pdf_context), intent(inout) :: ctx
-        real, intent(in) :: x1, y1, x2, y2
+        real(wp), intent(in) :: x1, y1, x2, y2
         character(len=50) :: move_cmd, line_cmd
         
         write(move_cmd, '(F8.2, 1X, F8.2, 1X, "m")') x1, y1
