@@ -86,43 +86,35 @@ contains
         integer :: w, h
         character(len=16) :: backend_type
 
-        ! Default size
         w = 640
         h = 480
         if (present(width)) w = width
         if (present(height)) h = height
 
-        ! Store dimensions for later use
         self%width = w
         self%height = h
         
-        ! Only initialize backend if explicitly specified
         if (present(backend)) then
             call initialize_backend_old(self, trim(backend), w, h)
         end if
-        ! If no backend specified, it will be auto-detected during savefig/show
 
-        ! Set default margins
         self%margin_left = 0.15_wp
         self%margin_right = 0.05_wp  
         self%margin_bottom = 0.15_wp
         self%margin_top = 0.05_wp
 
-        ! Initialize plot counter
         self%plot_count = 0
         self%rendered = .false.
 
-        ! Initialize color palette
         self%colors = reshape([ &
-            0.0_wp,   0.447_wp, 0.698_wp,  & ! #0072B2 (blue)
-            0.0_wp,   0.619_wp, 0.451_wp,  & ! #009E73 (green)
-            0.835_wp, 0.369_wp, 0.0_wp,    & ! #D55E00 (orange)
-            0.8_wp,   0.475_wp, 0.655_wp,  & ! #CC79A7 (purple)
-            0.941_wp, 0.894_wp, 0.259_wp,  & ! #F0E442 (yellow)
-            0.337_wp, 0.702_wp, 0.914_wp], & ! #56B4E9 (cyan)
+            0.0_wp,   0.447_wp, 0.698_wp,  &
+            0.0_wp,   0.619_wp, 0.451_wp,  &
+            0.835_wp, 0.369_wp, 0.0_wp,    &
+            0.8_wp,   0.475_wp, 0.655_wp,  &
+            0.941_wp, 0.894_wp, 0.259_wp,  &
+            0.337_wp, 0.702_wp, 0.914_wp], &
             [3,6])
 
-        ! Allocate storage for plot data
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%max_plots))
         end if
@@ -144,21 +136,17 @@ contains
         integer :: color_idx
         real(wp), dimension(3) :: plot_color
 
-        ! Check if we have space for more plots
         if (self%plot_count >= self%max_plots) then
             print *, "Warning: Maximum number of plots exceeded"
             return
         end if
 
-        ! Ensure plots storage is initialized
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%max_plots))
         end if
 
-        ! Increment plot count
         self%plot_count = self%plot_count + 1
 
-        ! Store the plot data for deferred rendering  
         if (allocated(self%plots(self%plot_count)%x)) deallocate(self%plots(self%plot_count)%x)
         if (allocated(self%plots(self%plot_count)%y)) deallocate(self%plots(self%plot_count)%y)
         allocate(self%plots(self%plot_count)%x(size(x)))
@@ -166,7 +154,6 @@ contains
         self%plots(self%plot_count)%x = x
         self%plots(self%plot_count)%y = y
 
-        ! Set plot color
         if (present(color)) then
             plot_color = color
         else
@@ -175,7 +162,6 @@ contains
         end if
         self%plots(self%plot_count)%color = plot_color
 
-        ! Store label if provided
         if (present(label)) then
             self%plots(self%plot_count)%label = label
         end if
@@ -679,14 +665,14 @@ contains
                 if (trim(filename) == 'terminal') then
                     backend_type = 'ascii'
                 else
-                    backend_type = 'png'  ! Default fallback
+                    backend_type = 'png'
                 end if
             end select
         else
             if (trim(filename) == 'terminal') then
                 backend_type = 'ascii'
             else
-                backend_type = 'png'  ! Default fallback
+                backend_type = 'png'
             end if
         end if
     end subroutine get_backend_from_filename
