@@ -27,11 +27,9 @@ contains
         
         call setup_canvas(ctx, width, height)
         
-        ! Initialize PNG image data
         allocate(ctx%image_data(height * (1 + width * 3)))
         call initialize_white_background(ctx%image_data, width, height)
         
-        ! Default color (blue)
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp
         ctx%current_b = 1.0_wp
@@ -43,18 +41,15 @@ contains
         real(wp) :: px1, py1, px2, py2
         integer(1) :: r, g, b
         
-        ! Convert world coordinates to pixel coordinates with better precision
         px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp)
         py1 = (1.0_wp - (y1 - this%y_min) / (this%y_max - this%y_min)) * real(this%height, wp)
         px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp)
         py2 = (1.0_wp - (y2 - this%y_min) / (this%y_max - this%y_min)) * real(this%height, wp)
         
-        ! Convert color to signed bytes
         r = color_to_byte(this%current_r)
         g = color_to_byte(this%current_g)
         b = color_to_byte(this%current_b)
         
-        ! Draw antialiased line with distance-based rendering (AGG-style)
         call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
     end subroutine png_draw_line
     
@@ -87,7 +82,6 @@ contains
         class(png_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        ! Use existing PNG generation functionality
         call write_png_file(filename, this%width, this%height, this%image_data)
     end subroutine png_finalize
     
@@ -112,12 +106,12 @@ contains
         
         k = 1
         do i = 1, h
-            image_data(k) = 0_1  ! Filter type (none)
+            image_data(k) = 0_1
             k = k + 1
             do j = 1, w
-                image_data(k) = -1_1     ! White background (R=255)
-                image_data(k+1) = -1_1   ! White background (G=255)
-                image_data(k+2) = -1_1   ! White background (B=255)
+                image_data(k) = -1_1
+                image_data(k+1) = -1_1
+                image_data(k+2) = -1_1
                 k = k + 3
             end do
         end do
@@ -129,7 +123,7 @@ contains
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x0, y0, x1, y1
         integer(1), intent(in) :: r, g, b
-        real(wp), parameter :: line_width = 0.75_wp  ! Half-width for 1.5 pixel line
+        real(wp), parameter :: line_width = 0.75_wp
         
         real(wp) :: dx, dy, length, nx, ny
         integer :: x_min, x_max, y_min, y_max, x, y
@@ -141,26 +135,20 @@ contains
         
         if (length < 1e-6_wp) return
         
-        ! Normalize perpendicular vector
         nx = -dy / length
         ny = dx / length
         
-        ! Calculate bounding box with margin
         x_min = max(1, int(min(x0, x1) - line_width - 1.0_wp))
         x_max = min(img_w, int(max(x0, x1) + line_width + 1.0_wp))
         y_min = max(1, int(min(y0, y1) - line_width - 1.0_wp))
         y_max = min(img_h, int(max(y0, y1) + line_width + 1.0_wp))
         
-        ! For each pixel in bounding box, calculate distance to line
         do y = y_min, y_max
             do x = x_min, x_max
                 px = real(x, wp)
                 py = real(y, wp)
                 
-                ! Calculate distance from pixel center to line segment
                 dist = distance_point_to_line_segment(px, py, x0, y0, x1, y1)
-                
-                ! Convert distance to alpha value
                 if (dist <= line_width) then
                     alpha = 1.0_wp
                 else if (dist <= line_width + 1.0_wp) then
@@ -186,20 +174,16 @@ contains
         length_sq = dx*dx + dy*dy
         
         if (length_sq < 1e-12_wp) then
-            ! Degenerate case: line segment is a point
             dist = sqrt((px - x0)**2 + (py - y0)**2)
             return
         end if
         
-        ! Project point onto line, clamped to segment
         t = ((px - x0) * dx + (py - y0) * dy) / length_sq
         t = max(0.0_wp, min(1.0_wp, t))
         
-        ! Find closest point on segment
         closest_x = x0 + t * dx
         closest_y = y0 + t * dy
         
-        ! Calculate distance
         dist = sqrt((px - closest_x)**2 + (py - closest_y)**2)
     end function distance_point_to_line_segment
 
@@ -217,7 +201,6 @@ contains
         dy = y1 - y0
         length = sqrt(dx*dx + dy*dy)
         
-        ! Adaptive subdivision based on length
         if (length > 3.0_wp) then
             subdivisions = int(length / 2.0_wp) + 1
         else
@@ -233,9 +216,7 @@ contains
         do i = 1, subdivisions
             next_x = x + step_x
             next_y = y + step_y
-            ! Draw main line with 1.5 pixel baseline width
             call draw_line_wu(image_data, img_w, img_h, x, y, next_x, next_y, r, g, b)
-            ! Add thickness for 1.5 pixel width using multiple offset lines
             call draw_line_wu(image_data, img_w, img_h, x+0.3_wp, y+0.3_wp, next_x+0.3_wp, next_y+0.3_wp, r, g, b)
             call draw_line_wu(image_data, img_w, img_h, x-0.3_wp, y+0.3_wp, next_x-0.3_wp, next_y+0.3_wp, r, g, b)
             call draw_line_wu(image_data, img_w, img_h, x+0.3_wp, y-0.3_wp, next_x+0.3_wp, next_y-0.3_wp, r, g, b)

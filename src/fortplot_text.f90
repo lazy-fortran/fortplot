@@ -79,7 +79,6 @@ contains
             return
         end if
         
-        ! Initialize FreeType using C wrapper
         error = ft_wrapper_init_system_font()
         if (error /= 0) then
             print *, "Error: Could not initialize FreeType wrapper"
@@ -121,19 +120,15 @@ contains
             
             error = ft_wrapper_render_char(char_code, glyph_info)
             if (error /= 0) then
-                cycle  ! Skip character if it can't be loaded
+                cycle
             end if
             call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
             
-            ! Apply kerning adjustment for next character
             if (i < len_trim(text)) then
                 next_char_code = iachar(text(i+1:i+1))
                 kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
-                
-                ! Use FreeType's advance_x for all characters - it contains proper spacing
                 pen_x = pen_x + glyph_info%advance_x + kerning_offset
             else
-                ! Last character - use advance_x as normal
                 pen_x = pen_x + glyph_info%advance_x
             end if
             
@@ -152,7 +147,6 @@ contains
         real :: alpha_f, bg_r, bg_g, bg_b
         
         if (glyph_info%width <= 0 .or. glyph_info%height <= 0) then
-            ! Skip rendering for spaces and other empty glyphs - don't draw black boxes
             return
         end if
         
@@ -161,13 +155,11 @@ contains
             return
         end if
         
-        ! Convert C buffer to Fortran pointer
         call c_f_pointer(glyph_info%buffer, bitmap_buffer, [glyph_info%buffer_size])
         
         glyph_x = pen_x + glyph_info%left
         glyph_y = pen_y - glyph_info%top
         
-        ! Render the bitmap onto the image with alpha blending
         do row = 0, glyph_info%height - 1
             do col = 0, glyph_info%width - 1
                 img_x = glyph_x + col
@@ -177,10 +169,7 @@ contains
                     alpha = bitmap_buffer(row * glyph_info%width + col + 1)
                     pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
                     
-                    ! Convert signed byte to unsigned and normalize to 0-1
                     alpha_f = real(int(alpha, kind=selected_int_kind(2)) + merge(256, 0, alpha < 0)) / 255.0
-                    
-                    ! Get background color and blend with black text
                     bg_r = real(int(image_data(pixel_idx), &
                         kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))
                     bg_g = real(int(image_data(pixel_idx + 1), &
@@ -188,7 +177,6 @@ contains
                     bg_b = real(int(image_data(pixel_idx + 2), &
                         kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
                     
-                    ! Alpha blend: background * (1-alpha) for black text
                     image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f), 1)
                     image_data(pixel_idx + 1) = int(bg_g * (1.0 - alpha_f), 1)
                     image_data(pixel_idx + 2) = int(bg_b * (1.0 - alpha_f), 1)
@@ -205,12 +193,10 @@ contains
         integer :: img_x, img_y, pixel_idx
         integer(1) :: black_r, black_g, black_b
         
-        ! Use black color for visibility against white background
         black_r = 0_1
         black_g = 0_1
         black_b = 0_1
         
-        ! Render a small 4x6 pixel block to represent the character
         do img_y = y, min(y + 5, height - 1)
             do img_x = x, min(x + 3, width - 1)
                 if (img_x >= 0 .and. img_y >= 0) then
@@ -234,7 +220,6 @@ contains
         max_idx = height * (1 + width * 3)
         
         
-        ! Render a simple 5x7 pixel rectangle as placeholder
         do img_y = y, min(y + 6, height - 1)
             do img_x = x, min(x + 4, width - 1)
                 if (img_x >= 0 .and. img_y >= 0) then
@@ -259,14 +244,12 @@ contains
         integer(1) :: black_r, black_g, black_b
         logical :: pixel_set
         
-        ! Use black color for text
         black_r = 0_1
         black_g = 0_1
         black_b = 0_1
         
         char_code = iachar(char)
         
-        ! Render a simple 6x8 bitmap for common characters
         do img_y = y, min(y + 7, height - 1)
             do img_x = x, min(x + 5, width - 1)
                 if (img_x >= 0 .and. img_y >= 0) then
@@ -290,7 +273,6 @@ contains
         
         pixel_set = .false.
         
-        ! Simple bitmap patterns for digits and common characters
         select case (char_code)
         case (48) ! '0'
             pixel_set = (x == 0 .or. x == 3) .and. (y >= 1 .and. y <= 6) .or. &
@@ -316,7 +298,6 @@ contains
         case (46) ! '.'
             pixel_set = y == 7 .and. x == 1
         case default
-            ! Default pattern - small filled rectangle for unknown characters
             pixel_set = (x >= 1 .and. x <= 2) .and. (y >= 2 .and. y <= 5)
         end select
     end function get_character_pixel

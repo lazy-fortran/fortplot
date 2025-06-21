@@ -20,35 +20,30 @@ program test_freetype
     test_count = 5
     passed_count = 0
 
-    ! Test 1: FreeType initialization
     if (test_freetype_initialization()) then
         passed_count = passed_count + 1
     else
         all_tests_passed = .false.
     end if
 
-    ! Test 2: Character bitmap rendering
     if (test_character_bitmap_rendering()) then
         passed_count = passed_count + 1
     else
         all_tests_passed = .false.
     end if
 
-    ! Test 3: Text positioning and spacing
     if (test_text_positioning()) then
         passed_count = passed_count + 1
     else
         all_tests_passed = .false.
     end if
 
-    ! Test 4: Integration with plotting system
     if (test_plotting_integration()) then
         passed_count = passed_count + 1
     else
         all_tests_passed = .false.
     end if
 
-    ! Test 5: PNG output generation
     if (test_png_output()) then
         passed_count = passed_count + 1
     else
@@ -77,13 +72,11 @@ contains
         print *, "Test 1: FreeType Initialization"
         print *, "--------------------------------"
 
-        ! Test FreeType library initialization
         init_success = init_text_system()
 
         if (init_success) then
             print *, "✅ FreeType library initialized successfully"
 
-            ! Clean up for next tests
             call cleanup_text_system()
             passed = .true.
         else
@@ -99,14 +92,12 @@ contains
         print *, "Test 2: Character Bitmap Rendering"
         print *, "-----------------------------------"
 
-        ! Initialize text system
         if (.not. init_text_system()) then
             print *, "❌ Could not initialize text system for bitmap test"
             passed = .false.
             return
         end if
 
-        ! Test that FreeType can be initialized and cleaned up
         print *, "✅ Character bitmap rendering module loaded successfully"
         passed = .true.
 
@@ -120,7 +111,6 @@ contains
         print *, "Test 3: Text Positioning and Spacing"
         print *, "-------------------------------------"
 
-        ! Test that text positioning functions are available
         print *, "✅ Text positioning functionality available"
         passed = .true.
     end function test_text_positioning
@@ -133,16 +123,12 @@ contains
         print *, "Test 4: Plotting System Integration"
         print *, "------------------------------------"
 
-        ! Create a test canvas
         ctx = create_png_canvas(200, 150)
-
-        ! Test if text interface is available
         call ctx%text(0.0_wp, 0.0_wp, "Test")
 
         print *, "✅ Plotting integration works (text interface callable)"
         passed = .true.
 
-        ! Note: We don't save this test canvas to avoid cluttering the directory
     end function test_plotting_integration
 
     function test_png_output() result(passed)
@@ -155,19 +141,13 @@ contains
         print *, "Test 5: PNG Output Generation"
         print *, "------------------------------"
 
-        ! Create a figure and add axes
         call fig%initialize(width=300, height=200)
         call fig%set_title("FreeType Test Output")
         call fig%set_xlabel("x")
         call fig%set_ylabel("y")
         
-        ! Add a dummy plot to trigger axis drawing
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
-
-        ! Save test file
         call fig%savefig("test_freetype_output.png")
-
-        ! Check if file was created
         inquire(file="test_freetype_output.png", exist=file_exists, iostat=iostat)
 
         if (file_exists .and. iostat == 0) then

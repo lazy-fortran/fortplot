@@ -3,10 +3,7 @@ program main
     use fortplot_figure
     implicit none
 
-    ! Run line plot examples
     call line_plot_example()
-    
-    ! Run contour plot examples
     call contour_plot_example()
 
 contains
@@ -18,27 +15,22 @@ contains
 
         print *, "=== Line Plot Example ==="
         
-        ! Generate line plot data:
         x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
         sx = sin(x)
         cx = cos(x)
         
-        ! Create and configure figure
         call fig%initialize(640, 480)
         call fig%set_xlabel("x")
         call fig%set_ylabel("y")
         call fig%set_title("Sine and Cosine Functions")
 
-        ! Add plot data
         call fig%add_plot(x, sx, label="sin(x)")
         call fig%add_plot(x, cx, label="cos(x)")
 
-        ! Save to multiple formats
         call fig%savefig('line_plot.png')
         call fig%savefig('line_plot.pdf')
         call fig%savefig('line_plot.txt')
         
-        ! Show on terminal
         call fig%show()
         
         print *, "Line plot files created: line_plot.png, line_plot.pdf, line_plot.txt"
@@ -55,13 +47,10 @@ contains
 
         print *, "=== Contour Plot Examples ==="
         
-        ! Generate contour grid
         do i = 1, 30
             x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
             y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
         end do
-
-        ! Example 1: 2D Gaussian
         print *, "Creating 2D Gaussian contour plot..."
         do i = 1, 30
             do j = 1, 30
@@ -78,7 +67,6 @@ contains
         call fig1%savefig('contour_gaussian.pdf')
         call fig1%savefig('contour_gaussian.txt')
 
-        ! Example 2: Saddle function with custom levels
         print *, "Creating saddle function contour plot with custom levels..."
         do i = 1, 30
             do j = 1, 30
@@ -96,9 +84,7 @@ contains
         call fig2%savefig('contour_saddle.pdf')
         call fig2%savefig('contour_saddle.txt')
 
-        ! Example 3: Mixed plot - contour with line overlay
         print *, "Creating mixed plot with contour and line overlay..."
-        ! Reuse Gaussian data
         do i = 1, 30
             do j = 1, 30
                 z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
@@ -110,7 +96,6 @@ contains
         call fig3%set_ylabel("y")
         call fig3%set_title("Mixed Plot: Contour + Line")
         call fig3%add_contour(x_grid, y_grid, z_grid, label="2D Gaussian")
-        ! Add a cross-section line
         call fig3%add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
         call fig3%savefig('mixed_plot.png')
         call fig3%savefig('mixed_plot.pdf')
