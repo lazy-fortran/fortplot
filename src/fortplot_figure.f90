@@ -48,6 +48,11 @@ module fortplot_figure
         real(wp) :: margin_right = 0.05_wp
         real(wp) :: margin_bottom = 0.15_wp
         real(wp) :: margin_top = 0.05_wp
+        
+        ! Scale settings
+        character(len=10) :: xscale = 'linear'
+        character(len=10) :: yscale = 'linear'
+        real(wp) :: symlog_threshold = 1.0_wp
 
         ! Colors: seaborn colorblind palette
         real(wp), dimension(3,6) :: colors = reshape([ &
@@ -74,6 +79,8 @@ module fortplot_figure
         procedure :: set_xlabel
         procedure :: set_ylabel
         procedure :: set_title
+        procedure :: set_xscale
+        procedure :: set_yscale
         procedure :: show
         final :: destroy
     end type figure_t
@@ -415,6 +422,30 @@ contains
         self%title = title
     end subroutine set_title
 
+    subroutine set_xscale(self, scale, threshold)
+        !! Set x-axis scale: 'linear', 'log', 'symlog'
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        
+        self%xscale = trim(scale)
+        if (present(threshold)) then
+            self%symlog_threshold = threshold
+        end if
+    end subroutine set_xscale
+
+    subroutine set_yscale(self, scale, threshold)
+        !! Set y-axis scale: 'linear', 'log', 'symlog'
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        
+        self%yscale = trim(scale)
+        if (present(threshold)) then
+            self%symlog_threshold = threshold
+        end if
+    end subroutine set_yscale
+
     subroutine show(self)
         class(figure_t), intent(inout) :: self
         
@@ -503,10 +534,19 @@ contains
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_index
         integer :: j
+        real(wp) :: x1, y1, x2, y2, x1_trans, y1_trans, x2_trans, y2_trans
 
         do j = 1, size(self%plots(plot_index)%x) - 1
-            call self%backend%line(real(self%plots(plot_index)%x(j), wp), real(self%plots(plot_index)%y(j), wp), &
-                                  real(self%plots(plot_index)%x(j+1), wp), real(self%plots(plot_index)%y(j+1), wp))
+            x1 = real(self%plots(plot_index)%x(j), wp)
+            y1 = real(self%plots(plot_index)%y(j), wp)
+            x2 = real(self%plots(plot_index)%x(j+1), wp)
+            y2 = real(self%plots(plot_index)%y(j+1), wp)
+            
+            ! Apply scale transformations
+            call transform_data_coordinates(self, x1, y1, x1_trans, y1_trans)
+            call transform_data_coordinates(self, x2, y2, x2_trans, y2_trans)
+            
+            call self%backend%line(x1_trans, y1_trans, x2_trans, y2_trans)
         end do
     end subroutine render_solid_line
 
@@ -522,11 +562,24 @@ contains
         logical :: drawing
         integer :: j, k, num_points
         real(wp) :: x1, y1, x2, y2, dx, dy, t, step_size
+        real(wp) :: x1_trans, y1_trans, x2_trans, y2_trans
         
-        ! Get data range for scaling
+        ! Get transformed data range for scaling
         real(wp) :: x_range, y_range, plot_scale
-        x_range = maxval(self%plots(plot_index)%x) - minval(self%plots(plot_index)%x)
-        y_range = maxval(self%plots(plot_index)%y) - minval(self%plots(plot_index)%y)
+        real(wp), allocatable :: x_trans(:), y_trans(:)
+        integer :: i
+        
+        ! Transform all data points to get proper scaling
+        allocate(x_trans(size(self%plots(plot_index)%x)))
+        allocate(y_trans(size(self%plots(plot_index)%y)))
+        
+        do i = 1, size(self%plots(plot_index)%x)
+            call transform_data_coordinates(self, self%plots(plot_index)%x(i), self%plots(plot_index)%y(i), &
+                                          x_trans(i), y_trans(i))
+        end do
+        
+        x_range = maxval(x_trans) - minval(x_trans)
+        y_range = maxval(y_trans) - minval(y_trans)
         plot_scale = max(x_range, y_range)
         
         ! Define pattern lengths (matplotlib-like)
@@ -576,16 +629,23 @@ contains
             x2 = real(self%plots(plot_index)%x(j+1), wp)
             y2 = real(self%plots(plot_index)%y(j+1), wp)
             
-            dx = x2 - x1
-            dy = y2 - y1
+            ! Apply scale transformations
+            call transform_data_coordinates(self, x1, y1, x1_trans, y1_trans)
+            call transform_data_coordinates(self, x2, y2, x2_trans, y2_trans)
+            
+            dx = x2_trans - x1_trans
+            dy = y2_trans - y1_trans
             segment_length = sqrt(dx*dx + dy*dy)
             
             if (segment_length < 1e-10_wp) cycle
             
-            call render_segment_with_pattern(self, x1, y1, x2, y2, segment_length, &
+            call render_segment_with_pattern(self, x1_trans, y1_trans, x2_trans, y2_trans, segment_length, &
                                             pattern, pattern_size, pattern_length, &
                                             current_distance, pattern_index, drawing)
         end do
+        
+        ! Clean up
+        deallocate(x_trans, y_trans)
     end subroutine render_patterned_line
 
     subroutine render_segment_with_pattern(self, x1, y1, x2, y2, segment_length, &
@@ -1000,8 +1060,9 @@ contains
     subroutine get_global_data_range(self, xmin_global, xmax_global, ymin_global, ymax_global)
         class(figure_t), intent(inout) :: self
         real(wp), intent(out) :: xmin_global, xmax_global, ymin_global, ymax_global
-        integer :: i
+        integer :: i, j
         logical :: first_plot = .true.
+        real(wp) :: x_trans, y_trans
 
         ! Initialize with extreme values
         xmin_global = huge(1.0_wp)
@@ -1013,21 +1074,27 @@ contains
             select case (self%plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
                 if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
-                    if (first_plot) then
-                        xmin_global = minval(self%plots(i)%x)
-                        xmax_global = maxval(self%plots(i)%x)
-                        ymin_global = minval(self%plots(i)%y)
-                        ymax_global = maxval(self%plots(i)%y)
-                        first_plot = .false.
-                    else
-                        xmin_global = min(xmin_global, minval(self%plots(i)%x))
-                        xmax_global = max(xmax_global, maxval(self%plots(i)%x))
-                        ymin_global = min(ymin_global, minval(self%plots(i)%y))
-                        ymax_global = max(ymax_global, maxval(self%plots(i)%y))
-                    end if
+                    ! Transform each point and find range in transformed space
+                    do j = 1, size(self%plots(i)%x)
+                        call transform_data_coordinates(self, self%plots(i)%x(j), self%plots(i)%y(j), x_trans, y_trans)
+                        
+                        if (first_plot) then
+                            xmin_global = x_trans
+                            xmax_global = x_trans
+                            ymin_global = y_trans
+                            ymax_global = y_trans
+                            first_plot = .false.
+                        else
+                            xmin_global = min(xmin_global, x_trans)
+                            xmax_global = max(xmax_global, x_trans)
+                            ymin_global = min(ymin_global, y_trans)
+                            ymax_global = max(ymax_global, y_trans)
+                        end if
+                    end do
                 end if
             case (PLOT_TYPE_CONTOUR)
                 if (allocated(self%plots(i)%x_grid) .and. allocated(self%plots(i)%y_grid)) then
+                    ! For contour plots, use original coordinates (scale transformations for contours need different handling)
                     if (first_plot) then
                         xmin_global = minval(self%plots(i)%x_grid)
                         xmax_global = maxval(self%plots(i)%x_grid)
@@ -1388,5 +1455,53 @@ contains
             end if
         end do
     end subroutine render_dash_dot_line
+
+    function apply_scale_transform(value, scale_type, threshold) result(transformed)
+        !! Apply scale transformation to a value
+        real(wp), intent(in) :: value
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in) :: threshold
+        real(wp) :: transformed
+        
+        select case (trim(scale_type))
+        case ('log')
+            if (value > 0.0_wp) then
+                transformed = log10(value)
+            else
+                transformed = -huge(1.0_wp)  ! Invalid for log scale
+            end if
+        case ('symlog')
+            transformed = apply_symlog_transform(value, threshold)
+        case default  ! 'linear'
+            transformed = value
+        end select
+    end function apply_scale_transform
+
+    function apply_symlog_transform(value, threshold) result(transformed)
+        !! Apply symmetric log transformation
+        real(wp), intent(in) :: value, threshold
+        real(wp) :: transformed
+        
+        if (abs(value) <= threshold) then
+            ! Linear region around zero
+            transformed = value / threshold
+        else if (value > threshold) then
+            ! Positive logarithmic region
+            transformed = 1.0_wp + log10(value / threshold)
+        else
+            ! Negative logarithmic region
+            transformed = -1.0_wp - log10(-value / threshold)
+        end if
+    end function apply_symlog_transform
+
+    subroutine transform_data_coordinates(self, x_in, y_in, x_out, y_out)
+        !! Transform data coordinates according to axis scales
+        class(figure_t), intent(in) :: self
+        real(wp), intent(in) :: x_in, y_in
+        real(wp), intent(out) :: x_out, y_out
+        
+        x_out = apply_scale_transform(x_in, self%xscale, self%symlog_threshold)
+        y_out = apply_scale_transform(y_in, self%yscale, self%symlog_threshold)
+    end subroutine transform_data_coordinates
 
 end module fortplot_figure
