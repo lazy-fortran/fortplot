@@ -1688,8 +1688,8 @@ contains
                 
                 if (draw_labels) then
                     call format_tick_label(major_ticks(i), scale_type, threshold, label_text)
-                    call self%backend%text(real(plot_x0 - 0.08_wp, wp), real(tick_y - 0.01_wp, wp), &
-                                          trim(adjustl(label_text)))
+                    ! Right-align y-axis labels with proper spacing from tick marks
+                    call draw_right_aligned_text(self, plot_x0 - 0.025_wp, tick_y, trim(adjustl(label_text)))
                 end if
             end if
         end do
@@ -1736,5 +1736,33 @@ contains
             minor_ticks(i) = decade_start + log10(real(i+1, wp))
         end do
     end subroutine generate_log_minor_ticks
+
+    subroutine draw_right_aligned_text(self, right_x, center_y, text)
+        !! Draw text right-aligned at the specified position
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: right_x, center_y
+        character(len=*), intent(in) :: text
+        
+        real(wp) :: text_width, text_x, text_y
+        
+        ! Estimate text width (approximate - could be more precise with actual font metrics)
+        text_width = estimate_text_width(text)
+        
+        ! Position text so it ends at right_x and is vertically centered
+        text_x = right_x - text_width
+        text_y = center_y - 0.01_wp  ! Slight vertical adjustment for better alignment
+        
+        call self%backend%text(real(text_x, wp), real(text_y, wp), text)
+    end subroutine draw_right_aligned_text
+
+    function estimate_text_width(text) result(width)
+        !! Estimate text width in normalized coordinates
+        character(len=*), intent(in) :: text
+        real(wp) :: width
+        
+        ! Simple estimation: each character is approximately 0.01 units wide
+        ! This is a rough approximation - could be improved with actual font metrics
+        width = real(len_trim(text), wp) * 0.008_wp
+    end function estimate_text_width
 
 end module fortplot_figure
