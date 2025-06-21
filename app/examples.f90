@@ -1,73 +1,99 @@
 program main
-    use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_figure
+    use fortplot
     implicit none
 
-    call line_plot_example()
-    call contour_plot_example()
+    call simple_api_examples()
+    call object_oriented_examples()
 
 contains
 
-    subroutine line_plot_example()
+    subroutine simple_api_examples()
         real(wp), dimension(100) :: x, sx, cx
-        type(figure_t) :: fig
-        integer :: i
+        real(wp), dimension(30) :: x_grid, y_grid
+        real(wp), dimension(30,30) :: z_grid
+        integer :: i, j
 
-        print *, "=== Line Plot Example ==="
+        print *, "=== Simple API Examples ==="
         
         x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
         sx = sin(x)
         cx = cos(x)
         
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("Sine and Cosine Functions")
-
-        call fig%add_plot(x, sx, label="sin(x)")
-        call fig%add_plot(x, cx, label="cos(x)")
-
-        call fig%savefig('line_plot.png')
-        call fig%savefig('line_plot.pdf')
-        call fig%savefig('line_plot.txt')
+        ! Simple line plot
+        call plot(x, sx, 'simple_sine.png', label='sin(x)', &
+                 title_text='Simple Sine Plot', xlabel_text='x', ylabel_text='y')
         
-        call fig%show()
+        ! Simple terminal display
+        call show_plot(x, sx, label='sin(x)', title_text='Sine Function')
         
-        print *, "Line plot files created: line_plot.png, line_plot.pdf, line_plot.txt"
+        ! Generate contour data
+        do i = 1, 30
+            x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
+            y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
+        end do
+        
+        do i = 1, 30
+            do j = 1, 30
+                z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
+            end do
+        end do
+        
+        ! Simple contour plot
+        call contour(x_grid, y_grid, z_grid, 'simple_contour.png', &
+                    title_text='Simple Gaussian', xlabel_text='x', ylabel_text='y')
+        
+        print *, "Simple API files created: simple_sine.png, simple_contour.png"
         print *
 
-    end subroutine line_plot_example
+    end subroutine simple_api_examples
 
-    subroutine contour_plot_example()
+    subroutine object_oriented_examples()
+        real(wp), dimension(100) :: x, sx, cx
         real(wp), dimension(30) :: x_grid, y_grid
         real(wp), dimension(30,30) :: z_grid
         real(wp), dimension(5) :: custom_levels
         type(figure_t) :: fig1, fig2, fig3
         integer :: i, j
 
-        print *, "=== Contour Plot Examples ==="
+        print *, "=== Object-Oriented API Examples ==="
         
+        x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
+        sx = sin(x)
+        cx = cos(x)
+        
+        ! Multi-line plot using OO interface
+        call fig1%initialize(640, 480)
+        call fig1%set_xlabel("x")
+        call fig1%set_ylabel("y")
+        call fig1%set_title("Sine and Cosine Functions")
+        call fig1%add_plot(x, sx, label="sin(x)")
+        call fig1%add_plot(x, cx, label="cos(x)")
+        call fig1%savefig('multi_line.png')
+        call fig1%savefig('multi_line.pdf')
+        call fig1%savefig('multi_line.txt')
+        
+        ! Generate contour grid
         do i = 1, 30
             x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
             y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
         end do
-        print *, "Creating 2D Gaussian contour plot..."
+
+        ! Gaussian contour
         do i = 1, 30
             do j = 1, 30
                 z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
             end do
         end do
 
-        call fig1%initialize(640, 480)
-        call fig1%set_xlabel("x")
-        call fig1%set_ylabel("y")
-        call fig1%set_title("2D Gaussian Function")
-        call fig1%add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
-        call fig1%savefig('contour_gaussian.png')
-        call fig1%savefig('contour_gaussian.pdf')
-        call fig1%savefig('contour_gaussian.txt')
+        call fig2%initialize(640, 480)
+        call fig2%set_xlabel("x")
+        call fig2%set_ylabel("y")
+        call fig2%set_title("2D Gaussian Function")
+        call fig2%add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
+        call fig2%savefig('contour_gaussian.png')
+        call fig2%savefig('contour_gaussian.pdf')
 
-        print *, "Creating saddle function contour plot with custom levels..."
+        ! Saddle function with custom levels
         do i = 1, 30
             do j = 1, 30
                 z_grid(i,j) = x_grid(i)**2 - y_grid(j)**2
@@ -75,46 +101,21 @@ contains
         end do
 
         custom_levels = [-4.0_wp, -2.0_wp, 0.0_wp, 2.0_wp, 4.0_wp]
-        call fig2%initialize(640, 480)
-        call fig2%set_xlabel("x")
-        call fig2%set_ylabel("y")
-        call fig2%set_title("Saddle Function (x²-y²)")
-        call fig2%add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="x²-y²")
-        call fig2%savefig('contour_saddle.png')
-        call fig2%savefig('contour_saddle.pdf')
-        call fig2%savefig('contour_saddle.txt')
-
-        print *, "Creating mixed plot with contour and line overlay..."
-        do i = 1, 30
-            do j = 1, 30
-                z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
-            end do
-        end do
-
         call fig3%initialize(640, 480)
         call fig3%set_xlabel("x")
         call fig3%set_ylabel("y")
         call fig3%set_title("Mixed Plot: Contour + Line")
-        call fig3%add_contour(x_grid, y_grid, z_grid, label="2D Gaussian")
+        call fig3%add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="x²-y²")
         call fig3%add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
         call fig3%savefig('mixed_plot.png')
         call fig3%savefig('mixed_plot.pdf')
-        call fig3%savefig('mixed_plot.txt')
 
-        print *, "Contour plot files created:"
-        print *, "  - contour_gaussian.png/pdf/txt (2D Gaussian)"
-        print *, "  - contour_saddle.png/pdf/txt (Saddle function)"
-        print *, "  - mixed_plot.png/pdf/txt (Contour + Line)"
+        print *, "Object-oriented API files created:"
+        print *, "  - multi_line.png/pdf/txt (Multiple line plots)"
+        print *, "  - contour_gaussian.png/pdf (2D Gaussian contours)"
+        print *, "  - mixed_plot.png/pdf (Contour + line combination)"
         print *
 
-        print *, "=== Summary ==="
-        print *, "Successfully demonstrated:"
-        print *, "  ✓ Line plots with multiple backends"
-        print *, "  ✓ Contour plots with default levels"
-        print *, "  ✓ Contour plots with custom levels"
-        print *, "  ✓ Mixed plots (contour + line)"
-        print *, "  ✓ Unified architecture across PNG, PDF, ASCII"
-
-    end subroutine contour_plot_example
+    end subroutine object_oriented_examples
 
 end program main
