@@ -47,6 +47,8 @@ contains
         call xlabel('x')
         call ylabel('exp(0.2x)')
         call savefig('log_scale.png')
+        call savefig('log_scale.pdf')
+        call savefig('log_scale.txt')
         
         call figure()
         call plot(x_exp, y_symlog)
@@ -55,8 +57,10 @@ contains
         call xlabel('x') 
         call ylabel('x³ - 50x')
         call savefig('symlog_scale.png')
+        call savefig('symlog_scale.pdf')
+        call savefig('symlog_scale.txt')
         
-        print *, "Scale examples created: log_scale.png, symlog_scale.png"
+        print *, "Scale examples created: log_scale.png/pdf/txt, symlog_scale.png/pdf/txt"
         print *
 
     end subroutine simple_api_examples
