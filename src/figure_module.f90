@@ -8,9 +8,16 @@ module figure_module
     private
     public :: figure_t
     
+    type :: plot_data_t
+        real(wp), allocatable :: x(:), y(:)
+        real(wp), dimension(3) :: color
+        character(len=:), allocatable :: label
+    end type plot_data_t
+    
     type :: figure_t
         class(plot_context), allocatable :: backend
         integer :: plot_count = 0
+        logical :: rendered = .false.
         
         ! Plot area settings
         real(wp) :: margin_left = 0.15_wp
@@ -28,9 +35,9 @@ module figure_module
             0.337_wp, 0.702_wp, 0.914_wp], & ! #56B4E9 (cyan)
             [3,6])
             
-        ! Data range tracking
-        real(wp) :: xmin_global, xmax_global, ymin_global, ymax_global
-        logical :: first_plot = .true.
+        ! Store all plot data for deferred rendering
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: max_plots = 20
         
         ! Labels
         character(len=:), allocatable :: xlabel, ylabel, title
@@ -93,7 +100,10 @@ contains
         call setup_canvas(self%backend, w, h)
         
         self%plot_count = 0
-        self%first_plot = .true.
+        self%rendered = .false.
+        
+        ! Allocate storage for plot data
+        allocate(self%plots(self%max_plots))
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -102,59 +112,41 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), dimension(3), intent(in), optional :: color
         
-        real(wp) :: xmin, xmax, ymin, ymax
-        integer :: i, color_idx
+        integer :: color_idx
         real(wp), dimension(3) :: plot_color
         
         if (.not. allocated(self%backend)) then
             call self%initialize()
         end if
         
-        ! Find data range
-        xmin = minval(x)
-        xmax = maxval(x)
-        ymin = minval(y)
-        ymax = maxval(y)
-        
-        ! Update global range or set it for first plot
-        if (self%first_plot) then
-            self%xmin_global = xmin
-            self%xmax_global = xmax
-            self%ymin_global = ymin
-            self%ymax_global = ymax
-            self%first_plot = .false.
-        else
-            self%xmin_global = min(self%xmin_global, xmin)
-            self%xmax_global = max(self%xmax_global, xmax)
-            self%ymin_global = min(self%ymin_global, ymin)
-            self%ymax_global = max(self%ymax_global, ymax)
+        ! Check if we have space for more plots
+        if (self%plot_count >= self%max_plots) then
+            print *, "Warning: Maximum number of plots exceeded"
+            return
         end if
         
-        ! Compute nice axis ranges and set coordinate system based on those
-        call setup_nice_coordinate_system(self)
+        ! Increment plot count
+        self%plot_count = self%plot_count + 1
         
-        ! Draw axes and labels only for the first plot
-        if (self%plot_count == 0) then
-            call draw_plot_background(self)
-            call draw_plot_axes(self)
-        end if
+        ! Store the plot data for deferred rendering
+        allocate(self%plots(self%plot_count)%x(size(x)))
+        allocate(self%plots(self%plot_count)%y(size(y)))
+        self%plots(self%plot_count)%x = x
+        self%plots(self%plot_count)%y = y
         
-        ! Get plot color
+        ! Set plot color
         if (present(color)) then
             plot_color = color
         else
-            self%plot_count = self%plot_count + 1
             color_idx = mod(self%plot_count-1, 6) + 1
             plot_color = self%colors(:, color_idx)
         end if
+        self%plots(self%plot_count)%color = plot_color
         
-        ! Set color and draw the line
-        call self%backend%color(plot_color(1), plot_color(2), plot_color(3))
-        
-        ! Draw line segments
-        do i = 1, size(x) - 1
-            call self%backend%line(real(x(i), wp), real(y(i), wp), real(x(i+1), wp), real(y(i+1), wp))
-        end do
+        ! Store label if provided
+        if (present(label)) then
+            self%plots(self%plot_count)%label = label
+        end if
         
     end subroutine add_plot
     
@@ -195,6 +187,13 @@ contains
     
     subroutine draw_plot_axes(self)
         class(figure_t), intent(inout) :: self
+        ! This is kept for compatibility but not used in new deferred rendering approach
+        print *, "Warning: draw_plot_axes called - this function is deprecated"
+    end subroutine draw_plot_axes
+    
+    subroutine draw_plot_axes_with_range(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
         real(wp) :: plot_x0, plot_y0, plot_x1, plot_y1
         integer :: nx, ny
         real(wp) :: xticks(20), yticks(20)
@@ -222,14 +221,14 @@ contains
         call self%backend%line(real(plot_x1, wp), real(plot_y1, wp), real(plot_x0, wp), real(plot_y1, wp))  ! top
         call self%backend%line(real(plot_x0, wp), real(plot_y1, wp), real(plot_x0, wp), real(plot_y0, wp))  ! left
         
-        ! Calculate nice tick intervals
-        call compute_ticks(self%xmin_global, self%xmax_global, nx, xstart, xend, xstep, xticks)
-        call compute_ticks(self%ymin_global, self%ymax_global, ny, ystart, yend, ystep, yticks)
+        ! Calculate nice tick intervals - these should match what was used in coordinate setup
+        call compute_ticks(xmin_axis, xmax_axis, nx, xstart, xend, xstep, xticks)
+        call compute_ticks(ymin_axis, ymax_axis, ny, ystart, yend, ystep, yticks)
         
         ! Draw x-axis ticks and labels
         call self%backend%color(0.1_wp, 0.1_wp, 0.1_wp)
         do i = 1, nx
-            tick_x = plot_x0 + (xticks(i) - self%xmin_global) / (self%xmax_global - self%xmin_global) * (plot_x1 - plot_x0)
+            tick_x = plot_x0 + (xticks(i) - xmin_axis) / (xmax_axis - xmin_axis) * (plot_x1 - plot_x0)
             ! Draw tick mark
             call self%backend%line(real(tick_x, wp), real(plot_y0, wp), real(tick_x, wp), real(plot_y0 - 0.01_wp, wp))
             ! Draw label
@@ -239,7 +238,7 @@ contains
         
         ! Draw y-axis ticks and labels
         do i = 1, ny
-            tick_y = plot_y0 + (yticks(i) - self%ymin_global) / (self%ymax_global - self%ymin_global) * (plot_y1 - plot_y0)
+            tick_y = plot_y0 + (yticks(i) - ymin_axis) / (ymax_axis - ymin_axis) * (plot_y1 - plot_y0)
             ! Draw tick mark
             call self%backend%line(real(plot_x0, wp), real(tick_y, wp), real(plot_x0 - 0.01_wp, wp), real(tick_y, wp))
             ! Draw label
@@ -260,7 +259,7 @@ contains
             call self%backend%text(real((plot_x0 + plot_x1) / 2.0_wp - 0.05_wp, wp), real(plot_y1 + 0.02_wp, wp), self%title)
         end if
         
-    end subroutine draw_plot_axes
+    end subroutine draw_plot_axes_with_range
 
     subroutine savefig(self, filename)
         class(figure_t), intent(inout) :: self
@@ -269,6 +268,12 @@ contains
         if (.not. allocated(self%backend)) then
             print *, "Error: Figure not initialized"
             return
+        end if
+        
+        ! Render all plots if not already done
+        if (.not. self%rendered) then
+            call render_all_plots(self)
+            self%rendered = .true.
         end if
         
         call self%backend%save(filename)
@@ -310,48 +315,54 @@ contains
         call show_ascii_plot(x, y, n, title)
     end subroutine show_ascii
 
-    subroutine destroy(self)
-        type(figure_t), intent(inout) :: self
-        if (allocated(self%backend)) deallocate(self%backend)
-        if (allocated(self%xlabel)) deallocate(self%xlabel)
-        if (allocated(self%ylabel)) deallocate(self%ylabel)
-        if (allocated(self%title)) deallocate(self%title)
-    end subroutine destroy
-
-    ! Utility subroutines adapted from old fortplotlib
-    subroutine setup_nice_coordinate_system(self)
+    subroutine render_all_plots(self)
         class(figure_t), intent(inout) :: self
+        real(wp) :: xmin_global, xmax_global, ymin_global, ymax_global
+        real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
+        integer :: i, j
+        
+        if (self%plot_count == 0) return
+        
+        ! Calculate global data range from all plots
+        xmin_global = minval(self%plots(1)%x)
+        xmax_global = maxval(self%plots(1)%x)
+        ymin_global = minval(self%plots(1)%y)
+        ymax_global = maxval(self%plots(1)%y)
+        
+        do i = 2, self%plot_count
+            xmin_global = min(xmin_global, minval(self%plots(i)%x))
+            xmax_global = max(xmax_global, maxval(self%plots(i)%x))
+            ymin_global = min(ymin_global, minval(self%plots(i)%y))
+            ymax_global = max(ymax_global, maxval(self%plots(i)%y))
+        end do
+        
+        ! Set up coordinate system and get the actual axis ranges used
+        call setup_nice_coordinate_system_with_range(self, xmin_global, xmax_global, ymin_global, ymax_global, &
+                                                    xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        
+        ! Draw background and axes using the actual axis ranges
+        call draw_plot_background(self)
+        call draw_plot_axes_with_range(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        
+        ! Render all plots - map data coordinates to plot area
+        call map_to_plot_area(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        
+        do i = 1, self%plot_count
+            call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
+            
+            ! Draw line segments
+            do j = 1, size(self%plots(i)%x) - 1
+                call self%backend%line(real(self%plots(i)%x(j), wp), real(self%plots(i)%y(j), wp), &
+                                      real(self%plots(i)%x(j+1), wp), real(self%plots(i)%y(j+1), wp))
+            end do
+        end do
+    end subroutine render_all_plots
+
+    subroutine map_to_plot_area(self, xmin_axis, xmax_axis, ymin_axis, ymax_axis)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
         real(wp) :: plot_x0, plot_y0, plot_x1, plot_y1
         real(wp) :: axis_width, axis_height
-        integer :: nx, ny
-        real(wp) :: xticks(20), yticks(20)
-        real(wp) :: xstep, ystep, xstart, ystart, xend, yend
-        real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
-        
-        ! Add some padding to the data range first
-        call expand_range(self%xmin_global, self%xmax_global)
-        call expand_range(self%ymin_global, self%ymax_global)
-        
-        ! Calculate nice tick intervals to determine actual axis ranges
-        call compute_ticks(self%xmin_global, self%xmax_global, nx, xstart, xend, xstep, xticks)
-        call compute_ticks(self%ymin_global, self%ymax_global, ny, ystart, yend, ystep, yticks)
-        
-        ! Use the tick ranges as our axis ranges for better alignment
-        if (nx > 0) then
-            xmin_axis = xticks(1)
-            xmax_axis = xticks(nx)
-        else
-            xmin_axis = self%xmin_global
-            xmax_axis = self%xmax_global
-        end if
-        
-        if (ny > 0) then
-            ymin_axis = yticks(1)
-            ymax_axis = yticks(ny)
-        else
-            ymin_axis = self%ymin_global
-            ymax_axis = self%ymax_global
-        end if
         
         ! Calculate plot area in normalized coordinates
         plot_x0 = self%margin_left
@@ -359,22 +370,92 @@ contains
         plot_x1 = 1.0_wp - self%margin_right
         plot_y1 = 1.0_wp - self%margin_top
         
-        ! Set coordinate system to map axis range to plot area
+        ! Set coordinate system to map axis range to plot area within normalized coordinates
         axis_width = xmax_axis - xmin_axis
         axis_height = ymax_axis - ymin_axis
         
-        ! Transform axis coordinates to plot area coordinates
         self%backend%x_min = real(xmin_axis - axis_width * plot_x0 / (plot_x1 - plot_x0), wp)
         self%backend%x_max = real(xmax_axis + axis_width * (1.0_wp - plot_x1) / (plot_x1 - plot_x0), wp)
         self%backend%y_min = real(ymin_axis - axis_height * plot_y0 / (plot_y1 - plot_y0), wp)
         self%backend%y_max = real(ymax_axis + axis_height * (1.0_wp - plot_y1) / (plot_y1 - plot_y0), wp)
+    end subroutine map_to_plot_area
+
+    subroutine destroy(self)
+        type(figure_t), intent(inout) :: self
+        integer :: i
         
-        ! Update global ranges to match axis ranges for consistent tick calculation later
-        self%xmin_global = xmin_axis
-        self%xmax_global = xmax_axis
-        self%ymin_global = ymin_axis
-        self%ymax_global = ymax_axis
-    end subroutine setup_nice_coordinate_system
+        if (allocated(self%backend)) deallocate(self%backend)
+        if (allocated(self%xlabel)) deallocate(self%xlabel)
+        if (allocated(self%ylabel)) deallocate(self%ylabel)
+        if (allocated(self%title)) deallocate(self%title)
+        
+        ! Clean up plot data
+        if (allocated(self%plots)) then
+            do i = 1, self%plot_count
+                if (allocated(self%plots(i)%x)) deallocate(self%plots(i)%x)
+                if (allocated(self%plots(i)%y)) deallocate(self%plots(i)%y)
+                if (allocated(self%plots(i)%label)) deallocate(self%plots(i)%label)
+            end do
+            deallocate(self%plots)
+        end if
+    end subroutine destroy
+
+    ! Utility subroutines adapted from old fortplotlib
+    subroutine setup_nice_coordinate_system_with_range(self, xmin_data, xmax_data, ymin_data, ymax_data, &
+                                                      xmin_axis_out, xmax_axis_out, ymin_axis_out, ymax_axis_out)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: xmin_data, xmax_data, ymin_data, ymax_data
+        real(wp), intent(out) :: xmin_axis_out, xmax_axis_out, ymin_axis_out, ymax_axis_out
+        real(wp) :: plot_x0, plot_y0, plot_x1, plot_y1
+        real(wp) :: axis_width, axis_height
+        integer :: nx, ny
+        real(wp) :: xticks(20), yticks(20)
+        real(wp) :: xstep, ystep, xstart, ystart, xend, yend
+        real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
+        real(wp) :: xmin_expanded, xmax_expanded, ymin_expanded, ymax_expanded
+        
+        ! Add some padding to the data range first
+        xmin_expanded = xmin_data
+        xmax_expanded = xmax_data
+        ymin_expanded = ymin_data
+        ymax_expanded = ymax_data
+        call expand_range(xmin_expanded, xmax_expanded)
+        call expand_range(ymin_expanded, ymax_expanded)
+        
+        ! Calculate nice tick intervals to determine actual axis ranges
+        call compute_ticks(xmin_expanded, xmax_expanded, nx, xstart, xend, xstep, xticks)
+        call compute_ticks(ymin_expanded, ymax_expanded, ny, ystart, yend, ystep, yticks)
+        
+        ! Use the tick ranges as our axis ranges for better alignment
+        if (nx > 0) then
+            xmin_axis = xticks(1)
+            xmax_axis = xticks(nx)
+        else
+            xmin_axis = xmin_expanded
+            xmax_axis = xmax_expanded
+        end if
+        
+        if (ny > 0) then
+            ymin_axis = yticks(1)
+            ymax_axis = yticks(ny)
+        else
+            ymin_axis = ymin_expanded
+            ymax_axis = ymax_expanded
+        end if
+        
+        ! Return the axis ranges
+        xmin_axis_out = xmin_axis
+        xmax_axis_out = xmax_axis
+        ymin_axis_out = ymin_axis
+        ymax_axis_out = ymax_axis
+        
+        ! Set coordinate system to directly map axis range to full canvas
+        ! The drawing functions will handle the plot area mapping
+        self%backend%x_min = real(xmin_axis, wp)
+        self%backend%x_max = real(xmax_axis, wp)
+        self%backend%y_min = real(ymin_axis, wp)
+        self%backend%y_max = real(ymax_axis, wp)
+    end subroutine setup_nice_coordinate_system_with_range
 
     subroutine expand_range(dmin, dmax)
         real(wp), intent(inout) :: dmin, dmax

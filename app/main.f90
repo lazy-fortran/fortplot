@@ -18,7 +18,8 @@ program main
     call png_fig%set_ylabel("y")
     call png_fig%set_title("Sine and Cosine Functions")
 
-    ! Plot data
+    ! Plot data - sine first since it has range [-1,1], cosine has range [-1,1] 
+    ! Both should have same range, but let's plot sine first to establish coordinate system
     call png_fig%add_plot(x, sx)
     call png_fig%add_plot(x, cx)
 
