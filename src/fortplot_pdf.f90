@@ -36,6 +36,8 @@ contains
         
         call add_to_stream(ctx, "q")
         call add_to_stream(ctx, "2 w")
+        call add_to_stream(ctx, "1 J")
+        call add_to_stream(ctx, "1 j")
         call add_to_stream(ctx, "0 0 1 RG")
     end subroutine initialize_pdf_stream
     
