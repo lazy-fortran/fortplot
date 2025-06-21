@@ -338,8 +338,8 @@ contains
             tick_x = plot_x0 + (xticks(i) - xmin_axis) / (xmax_axis - xmin_axis) * (plot_x1 - plot_x0)
             ! Draw tick mark
             call self%backend%line(real(tick_x, wp), real(plot_y0, wp), real(tick_x, wp), real(plot_y0 - 0.01_wp, wp))
-            ! Draw label
-            write(label_text, '(F0.2)') xticks(i)
+            ! Draw label with scale-appropriate formatting
+            call format_tick_label(xticks(i), self%xscale, self%symlog_threshold, label_text)
             call self%backend%text(real(tick_x - 0.02_wp, wp), real(plot_y0 - 0.04_wp, wp), trim(adjustl(label_text)))
         end do
 
@@ -348,8 +348,8 @@ contains
             tick_y = plot_y0 + (yticks(i) - ymin_axis) / (ymax_axis - ymin_axis) * (plot_y1 - plot_y0)
             ! Draw tick mark
             call self%backend%line(real(plot_x0, wp), real(tick_y, wp), real(plot_x0 - 0.01_wp, wp), real(tick_y, wp))
-            ! Draw label
-            write(label_text, '(F0.2)') yticks(i)
+            ! Draw label with scale-appropriate formatting
+            call format_tick_label(yticks(i), self%yscale, self%symlog_threshold, label_text)
             call self%backend%text(real(plot_x0 - 0.08_wp, wp), real(tick_y - 0.01_wp, wp), trim(adjustl(label_text)))
         end do
 
@@ -1503,5 +1503,70 @@ contains
         x_out = apply_scale_transform(x_in, self%xscale, self%symlog_threshold)
         y_out = apply_scale_transform(y_in, self%yscale, self%symlog_threshold)
     end subroutine transform_data_coordinates
+
+    function apply_inverse_scale_transform(transformed_value, scale_type, threshold) result(original)
+        !! Convert transformed coordinate back to original value for tick labeling
+        real(wp), intent(in) :: transformed_value
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in) :: threshold
+        real(wp) :: original
+        
+        select case (trim(scale_type))
+        case ('log')
+            original = 10.0_wp**transformed_value
+        case ('symlog')
+            original = apply_inverse_symlog_transform(transformed_value, threshold)
+        case default  ! 'linear'
+            original = transformed_value
+        end select
+    end function apply_inverse_scale_transform
+
+    function apply_inverse_symlog_transform(transformed, threshold) result(original)
+        !! Convert symlog transformed value back to original
+        real(wp), intent(in) :: transformed, threshold
+        real(wp) :: original
+        
+        if (abs(transformed) <= 1.0_wp) then
+            ! Linear region
+            original = transformed * threshold
+        else if (transformed > 1.0_wp) then
+            ! Positive logarithmic region
+            original = threshold * 10.0_wp**(transformed - 1.0_wp)
+        else
+            ! Negative logarithmic region
+            original = -threshold * 10.0_wp**(-transformed - 1.0_wp)
+        end if
+    end function apply_inverse_symlog_transform
+
+    subroutine format_tick_label(tick_value, scale_type, threshold, label_text)
+        !! Format tick label according to scale type
+        real(wp), intent(in) :: tick_value
+        character(len=*), intent(in) :: scale_type
+        real(wp), intent(in) :: threshold
+        character(len=*), intent(out) :: label_text
+        
+        real(wp) :: original_value
+        
+        original_value = apply_inverse_scale_transform(tick_value, scale_type, threshold)
+        
+        select case (trim(scale_type))
+        case ('log')
+            ! For log scale, use scientific notation or clean powers of 10
+            if (abs(original_value) >= 1000.0_wp .or. abs(original_value) <= 0.01_wp) then
+                write(label_text, '(ES8.1)') original_value
+            else
+                write(label_text, '(F0.1)') original_value
+            end if
+        case ('symlog')
+            ! For symlog, format based on the region
+            if (abs(original_value) <= threshold * 10.0_wp) then
+                write(label_text, '(F0.1)') original_value
+            else
+                write(label_text, '(ES8.1)') original_value
+            end if
+        case default  ! 'linear'
+            write(label_text, '(F0.2)') original_value
+        end select
+    end subroutine format_tick_label
 
 end module fortplot_figure
