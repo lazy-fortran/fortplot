@@ -19,6 +19,10 @@ module fortplot_figure
         class(plot_context), allocatable :: backend
         integer :: plot_count = 0
         logical :: rendered = .false.
+        
+        ! Figure dimensions
+        integer :: width = 640
+        integer :: height = 480
 
         ! Plot area settings
         real(wp) :: margin_left = 0.15_wp
@@ -70,47 +74,40 @@ contains
         if (present(width)) w = width
         if (present(height)) h = height
 
-        ! Default backend
-        backend_type = "png"
-        if (present(backend)) backend_type = trim(backend)
+        ! Store dimensions for later use
+        self%width = w
+        self%height = h
+        
+        ! Only initialize backend if explicitly specified
+        if (present(backend)) then
+            call initialize_backend_old(self, trim(backend), w, h)
+        end if
+        ! If no backend specified, it will be auto-detected during savefig/show
 
-        ! Initialize appropriate backend
-        select case (trim(backend_type))
-        case ("png")
-            allocate(png_context :: self%backend)
-            select type(ctx => self%backend)
-            type is (png_context)
-                ctx = create_png_canvas(w, h)
-            end select
-        case ("pdf")
-            allocate(pdf_context :: self%backend)
-            select type(ctx => self%backend)
-            type is (pdf_context)
-                ctx = create_pdf_canvas(w, h)
-            end select
-        case ("ascii", "unicode", "terminal")
-            allocate(ascii_context :: self%backend)
-            select type(ctx => self%backend)
-            type is (ascii_context)
-                ctx = create_ascii_canvas(w, h)
-            end select
-        case default
-            print *, "Unknown backend: ", trim(backend_type), ", using PNG"
-            allocate(png_context :: self%backend)
-            select type(ctx => self%backend)
-            type is (png_context)
-                ctx = create_png_canvas(w, h)
-            end select
-        end select
+        ! Set default margins
+        self%margin_left = 0.15_wp
+        self%margin_right = 0.05_wp  
+        self%margin_bottom = 0.15_wp
+        self%margin_top = 0.05_wp
 
-        ! Set default coordinate system (will be updated with first plot)
-        call setup_canvas(self%backend, w, h)
-
+        ! Initialize plot counter
         self%plot_count = 0
         self%rendered = .false.
 
+        ! Initialize color palette
+        self%colors = reshape([ &
+            0.0_wp,   0.447_wp, 0.698_wp,  & ! #0072B2 (blue)
+            0.0_wp,   0.619_wp, 0.451_wp,  & ! #009E73 (green)
+            0.835_wp, 0.369_wp, 0.0_wp,    & ! #D55E00 (orange)
+            0.8_wp,   0.475_wp, 0.655_wp,  & ! #CC79A7 (purple)
+            0.941_wp, 0.894_wp, 0.259_wp,  & ! #F0E442 (yellow)
+            0.337_wp, 0.702_wp, 0.914_wp], & ! #56B4E9 (cyan)
+            [3,6])
+
         ! Allocate storage for plot data
-        allocate(self%plots(self%max_plots))
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -122,20 +119,23 @@ contains
         integer :: color_idx
         real(wp), dimension(3) :: plot_color
 
-        if (.not. allocated(self%backend)) then
-            call self%initialize()
-        end if
-
         ! Check if we have space for more plots
         if (self%plot_count >= self%max_plots) then
             print *, "Warning: Maximum number of plots exceeded"
             return
         end if
 
+        ! Ensure plots storage is initialized
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
+
         ! Increment plot count
         self%plot_count = self%plot_count + 1
 
-        ! Store the plot data for deferred rendering
+        ! Store the plot data for deferred rendering  
+        if (allocated(self%plots(self%plot_count)%x)) deallocate(self%plots(self%plot_count)%x)
+        if (allocated(self%plots(self%plot_count)%y)) deallocate(self%plots(self%plot_count)%y)
         allocate(self%plots(self%plot_count)%x(size(x)))
         allocate(self%plots(self%plot_count)%y(size(y)))
         self%plots(self%plot_count)%x = x
@@ -271,14 +271,29 @@ contains
     subroutine savefig(self, filename)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
+        character(len=20) :: backend_type
+        logical :: backend_changed
 
+        ! Auto-detect backend from filename extension
+        call get_backend_from_filename(filename, backend_type)
+        
+        ! Check if we need to switch backends
+        backend_changed = .false.
         if (.not. allocated(self%backend)) then
-            print *, "Error: Figure not initialized"
-            return
+            call initialize_backend(self, backend_type)
+            backend_changed = .true.
+        else
+            ! Check if current backend matches required backend
+            if (.not. backend_matches_type(self%backend, backend_type)) then
+                deallocate(self%backend)
+                call initialize_backend(self, backend_type)
+                backend_changed = .true.
+                self%rendered = .false.  ! Need to re-render with new backend
+            end if
         end if
 
-        ! Render all plots if not already done
-        if (.not. self%rendered) then
+        ! Render all plots if not already done or backend changed
+        if (.not. self%rendered .or. backend_changed) then
             call render_all_plots(self)
             self%rendered = .true.
         end if
@@ -309,7 +324,29 @@ contains
 
     subroutine show(self)
         class(figure_t), intent(inout) :: self
-        print *, "Show functionality not implemented in this version"
+        
+        ! Default to ASCII terminal output for show
+        if (.not. allocated(self%backend)) then
+            call initialize_backend(self, "ascii")
+        else
+            ! Switch to ASCII backend for show regardless of current backend
+            if (.not. backend_matches_type(self%backend, "ascii")) then
+                deallocate(self%backend)
+                call initialize_backend(self, "ascii")
+                self%rendered = .false.
+            end if
+        end if
+        
+        ! Minimize margins for ASCII display
+        call set_ascii_margins(self)
+        
+        ! Render and display
+        if (.not. self%rendered) then
+            call render_all_plots(self)
+            self%rendered = .true.
+        end if
+        
+        call self%backend%save("terminal")
     end subroutine show
 
     subroutine show_ascii(self, x, y, n, title)
@@ -318,25 +355,14 @@ contains
         integer, intent(in) :: n
         character(len=*), intent(in), optional :: title
 
-        ! Create a temporary unicode figure for ASCII display
-        type(figure_t) :: unicode_fig
-        integer :: i
-
-        call unicode_fig%initialize(80, 40, "ascii")
-        if (present(title)) call unicode_fig%set_title(title)
+        ! DEPRECATED: Use show() instead for unified ASCII display
+        print *, "Warning: show_ascii is deprecated. Use show() for ASCII terminal output."
         
-        ! Minimize margins for ASCII to use full terminal width
-        unicode_fig%margin_left = 0.02_wp     ! Minimal left margin
-        unicode_fig%margin_right = 0.02_wp    ! Minimal right margin  
-        unicode_fig%margin_bottom = 0.05_wp   ! Small bottom margin
-        unicode_fig%margin_top = 0.05_wp      ! Small top margin
+        ! Set title if provided
+        if (present(title)) call self%set_title(title)
         
-        ! Copy all plots from the current figure to ASCII display
-        do i = 1, self%plot_count
-            call unicode_fig%add_plot(self%plots(i)%x, self%plots(i)%y, color=self%plots(i)%color)
-        end do
-        
-        call unicode_fig%savefig("terminal")
+        ! Use the new unified show method
+        call self%show()
     end subroutine show_ascii
 
     subroutine render_all_plots(self)
@@ -539,5 +565,139 @@ contains
         end do
     end subroutine compute_ticks
 
+    ! Helper functions for unified backend management
+    
+    subroutine get_backend_from_filename(filename, backend_type)
+        character(len=*), intent(in) :: filename
+        character(len=*), intent(out) :: backend_type
+        integer :: dot_pos
+        character(len=10) :: extension
+        
+        ! Find the last dot in filename
+        dot_pos = index(filename, '.', back=.true.)
+        
+        if (dot_pos > 0) then
+            extension = filename(dot_pos+1:)
+            call to_lowercase(extension)
+            
+            select case (trim(extension))
+            case ('png')
+                backend_type = 'png'
+            case ('pdf')
+                backend_type = 'pdf'
+            case ('txt', 'ascii')
+                backend_type = 'ascii'
+            case default
+                if (trim(filename) == 'terminal') then
+                    backend_type = 'ascii'
+                else
+                    backend_type = 'png'  ! Default fallback
+                end if
+            end select
+        else
+            if (trim(filename) == 'terminal') then
+                backend_type = 'ascii'
+            else
+                backend_type = 'png'  ! Default fallback
+            end if
+        end if
+    end subroutine get_backend_from_filename
+    
+    logical function backend_matches_type(backend, type_name)
+        class(plot_context), intent(in) :: backend
+        character(len=*), intent(in) :: type_name
+        
+        select type (backend)
+        type is (png_context)
+            backend_matches_type = (trim(type_name) == 'png')
+        type is (pdf_context)
+            backend_matches_type = (trim(type_name) == 'pdf')
+        type is (ascii_context)
+            backend_matches_type = (trim(type_name) == 'ascii')
+        class default
+            backend_matches_type = .false.
+        end select
+    end function backend_matches_type
+    
+    subroutine initialize_backend(self, backend_type)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: backend_type
+        
+        select case (trim(backend_type))
+        case ('png')
+            allocate(png_context :: self%backend)
+            self%backend = create_png_canvas(self%width, self%height)
+        case ('pdf')
+            allocate(pdf_context :: self%backend)
+            self%backend = create_pdf_canvas(self%width, self%height)
+        case ('ascii')
+            allocate(ascii_context :: self%backend)
+            self%backend = create_ascii_canvas(80, 40)
+        case default
+            print *, "Error: Unsupported backend type: ", trim(backend_type)
+            ! Fallback to PNG
+            allocate(png_context :: self%backend)
+            self%backend = create_png_canvas(self%width, self%height)
+        end select
+    end subroutine initialize_backend
+    
+    subroutine set_ascii_margins(self)
+        class(figure_t), intent(inout) :: self
+        
+        ! Set minimal margins for ASCII display
+        self%margin_left = 0.02_wp
+        self%margin_right = 0.02_wp  
+        self%margin_bottom = 0.05_wp
+        self%margin_top = 0.05_wp
+    end subroutine set_ascii_margins
+    
+    subroutine to_lowercase(str)
+        character(len=*), intent(inout) :: str
+        integer :: i, ascii_val
+        
+        do i = 1, len_trim(str)
+            ascii_val = iachar(str(i:i))
+            if (ascii_val >= 65 .and. ascii_val <= 90) then  ! A-Z
+                str(i:i) = achar(ascii_val + 32)  ! Convert to lowercase
+            end if
+        end do
+    end subroutine to_lowercase
+    
+    subroutine initialize_backend_old(self, backend_type, w, h)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: backend_type
+        integer, intent(in) :: w, h
+        
+        select case (trim(backend_type))
+        case ("png")
+            allocate(png_context :: self%backend)
+            select type(ctx => self%backend)
+            type is (png_context)
+                ctx = create_png_canvas(w, h)
+            end select
+        case ("pdf")
+            allocate(pdf_context :: self%backend)
+            select type(ctx => self%backend)
+            type is (pdf_context)
+                ctx = create_pdf_canvas(w, h)
+            end select
+        case ("ascii", "unicode", "terminal")
+            allocate(ascii_context :: self%backend)
+            select type(ctx => self%backend)
+            type is (ascii_context)
+                ctx = create_ascii_canvas(w, h)
+            end select
+        case default
+            print *, "Unknown backend: ", trim(backend_type), ", using PNG"
+            allocate(png_context :: self%backend)
+            select type(ctx => self%backend)
+            type is (png_context)
+                ctx = create_png_canvas(w, h)
+            end select
+        end select
+
+        ! Set default coordinate system (will be updated with first plot)
+        call setup_canvas(self%backend, w, h)
+    end subroutine initialize_backend_old
 
 end module fortplot_figure
