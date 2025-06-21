@@ -3,3 +3,5 @@ build
 *.pdf
 *.png
 *.jpg
+fortplotlib.old/
+pyplot-fortran/
