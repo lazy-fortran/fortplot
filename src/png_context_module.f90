@@ -54,8 +54,8 @@ contains
         g = color_to_byte(this%current_g)
         b = color_to_byte(this%current_b)
         
-        ! Draw antialiased line with adaptive subdivision
-        call draw_line_adaptive(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
+        ! Draw antialiased line with distance-based rendering (AGG-style)
+        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
     end subroutine png_draw_line
     
     subroutine png_set_color(this, r, g, b)
@@ -123,6 +123,86 @@ contains
         end do
     end subroutine initialize_white_background
     
+    ! Distance-based antialiasing algorithm (AGG-style)
+    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x0, y0, x1, y1
+        integer(1), intent(in) :: r, g, b
+        real(wp), parameter :: line_width = 0.75_wp  ! Half-width for 1.5 pixel line
+        
+        real(wp) :: dx, dy, length, nx, ny
+        integer :: x_min, x_max, y_min, y_max, x, y
+        real(wp) :: px, py, dist, alpha
+        
+        dx = x1 - x0
+        dy = y1 - y0
+        length = sqrt(dx*dx + dy*dy)
+        
+        if (length < 1e-6_wp) return
+        
+        ! Normalize perpendicular vector
+        nx = -dy / length
+        ny = dx / length
+        
+        ! Calculate bounding box with margin
+        x_min = max(1, int(min(x0, x1) - line_width - 1.0_wp))
+        x_max = min(img_w, int(max(x0, x1) + line_width + 1.0_wp))
+        y_min = max(1, int(min(y0, y1) - line_width - 1.0_wp))
+        y_max = min(img_h, int(max(y0, y1) + line_width + 1.0_wp))
+        
+        ! For each pixel in bounding box, calculate distance to line
+        do y = y_min, y_max
+            do x = x_min, x_max
+                px = real(x, wp)
+                py = real(y, wp)
+                
+                ! Calculate distance from pixel center to line segment
+                dist = distance_point_to_line_segment(px, py, x0, y0, x1, y1)
+                
+                ! Convert distance to alpha value
+                if (dist <= line_width) then
+                    alpha = 1.0_wp
+                else if (dist <= line_width + 1.0_wp) then
+                    alpha = line_width + 1.0_wp - dist
+                else
+                    alpha = 0.0_wp
+                end if
+                
+                if (alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, alpha, r, g, b)
+                end if
+            end do
+        end do
+    end subroutine draw_line_distance_aa
+    
+    ! Calculate distance from point to line segment
+    real(wp) function distance_point_to_line_segment(px, py, x0, y0, x1, y1) result(dist)
+        real(wp), intent(in) :: px, py, x0, y0, x1, y1
+        real(wp) :: dx, dy, length_sq, t, closest_x, closest_y
+        
+        dx = x1 - x0
+        dy = y1 - y0
+        length_sq = dx*dx + dy*dy
+        
+        if (length_sq < 1e-12_wp) then
+            ! Degenerate case: line segment is a point
+            dist = sqrt((px - x0)**2 + (py - y0)**2)
+            return
+        end if
+        
+        ! Project point onto line, clamped to segment
+        t = ((px - x0) * dx + (py - y0) * dy) / length_sq
+        t = max(0.0_wp, min(1.0_wp, t))
+        
+        ! Find closest point on segment
+        closest_x = x0 + t * dx
+        closest_y = y0 + t * dy
+        
+        ! Calculate distance
+        dist = sqrt((px - closest_x)**2 + (py - closest_y)**2)
+    end function distance_point_to_line_segment
+
     ! Adaptive line drawing algorithm 
     subroutine draw_line_adaptive(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
         integer(1), intent(inout) :: image_data(*)
@@ -153,11 +233,13 @@ contains
         do i = 1, subdivisions
             next_x = x + step_x
             next_y = y + step_y
-            ! Draw main line
+            ! Draw main line with 1.5 pixel baseline width
             call draw_line_wu(image_data, img_w, img_h, x, y, next_x, next_y, r, g, b)
-            ! Add slight thickness with offset lines
-            call draw_line_wu(image_data, img_w, img_h, x+0.5_wp, y, next_x+0.5_wp, next_y, r, g, b)
-            call draw_line_wu(image_data, img_w, img_h, x, y+0.5_wp, next_x, next_y+0.5_wp, r, g, b)
+            ! Add thickness for 1.5 pixel width using multiple offset lines
+            call draw_line_wu(image_data, img_w, img_h, x+0.3_wp, y+0.3_wp, next_x+0.3_wp, next_y+0.3_wp, r, g, b)
+            call draw_line_wu(image_data, img_w, img_h, x-0.3_wp, y+0.3_wp, next_x-0.3_wp, next_y+0.3_wp, r, g, b)
+            call draw_line_wu(image_data, img_w, img_h, x+0.3_wp, y-0.3_wp, next_x+0.3_wp, next_y-0.3_wp, r, g, b)
+            call draw_line_wu(image_data, img_w, img_h, x-0.3_wp, y-0.3_wp, next_x-0.3_wp, next_y-0.3_wp, r, g, b)
             x = next_x
             y = next_y
         end do
