@@ -6,17 +6,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **fortplotlib** is a modern Fortran plotting library that provides high-quality scientific visualization with multiple output formats. It offers a clean, pyplot-style API for creating line plots and contour plots across PNG, PDF, and ASCII backends.
 
-## Quick Start
+## Public API
 
+fortplotlib provides two interfaces to suit different needs:
+
+### Simple Functional API (Recommended for Quick Plots)
 ```fortran
-use fortplot_figure
+use fortplot
+
+! Simple line plot
+call plot(x, y, 'simple_plot.png', title_text='My Plot', xlabel_text='x', ylabel_text='y')
+
+! Simple contour plot  
+call contour(x_grid, y_grid, z_grid, 'contour.png', title_text='2D Function')
+
+! ASCII terminal display
+call show_plot(x, y, label='data', title_text='Terminal Plot')
+```
+
+### Object-Oriented API (For Complex Multi-Plot Figures)
+```fortran
+use fortplot
 type(figure_t) :: fig
 
 call fig%initialize(640, 480)
-call fig%add_plot(x, y, label="sin(x)")
-call fig%add_contour(x_grid, y_grid, z_grid, label="2D function")
-call fig%savefig('output.png')  ! Auto-detects backend from extension
-call fig%show()                 ! ASCII terminal display
+call fig%set_title("Multi-Plot Figure")
+call fig%add_plot(x1, y1, label="Dataset 1")
+call fig%add_plot(x2, y2, label="Dataset 2") 
+call fig%add_contour(x_grid, y_grid, z_grid)
+call fig%savefig('complex_figure.png')
+```
+
+### Helper Routines
+```fortran
+! Quick labeling for simple plots
+call xlabel('X axis label')
+call ylabel('Y axis label')  
+call title('Plot title')
+call savefig('output.png')
 ```
 
 ## Development Commands
