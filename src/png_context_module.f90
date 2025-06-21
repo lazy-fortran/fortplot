@@ -43,19 +43,19 @@ contains
         real(wp) :: px1, py1, px2, py2
         integer(1) :: r, g, b
         
-        ! Convert world coordinates to pixel coordinates
-        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1, wp) + 1.0_wp
-        py1 = (1.0_wp - (y1 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1, wp) + 1.0_wp
-        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%width - 1, wp) + 1.0_wp
-        py2 = (1.0_wp - (y2 - this%y_min) / (this%y_max - this%y_min)) * real(this%height - 1, wp) + 1.0_wp
+        ! Convert world coordinates to pixel coordinates with better precision
+        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp)
+        py1 = (1.0_wp - (y1 - this%y_min) / (this%y_max - this%y_min)) * real(this%height, wp)
+        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp)
+        py2 = (1.0_wp - (y2 - this%y_min) / (this%y_max - this%y_min)) * real(this%height, wp)
         
         ! Convert color to signed bytes
         r = color_to_byte(this%current_r)
         g = color_to_byte(this%current_g)
         b = color_to_byte(this%current_b)
         
-        ! Draw antialiased line
-        call draw_line_wu(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
+        ! Draw antialiased line with adaptive subdivision
+        call draw_line_adaptive(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
     end subroutine png_draw_line
     
     subroutine png_set_color(this, r, g, b)
@@ -123,6 +123,111 @@ contains
         end do
     end subroutine initialize_white_background
     
+    ! Adaptive line drawing algorithm 
+    subroutine draw_line_adaptive(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x0, y0, x1, y1
+        integer(1), intent(in) :: r, g, b
+        real(wp) :: dx, dy, length
+        integer :: subdivisions, i
+        real(wp) :: step_x, step_y, x, y, next_x, next_y
+        
+        dx = x1 - x0
+        dy = y1 - y0
+        length = sqrt(dx*dx + dy*dy)
+        
+        ! Adaptive subdivision based on length
+        if (length > 3.0_wp) then
+            subdivisions = int(length / 2.0_wp) + 1
+        else
+            subdivisions = 1
+        end if
+        
+        step_x = dx / real(subdivisions, wp)
+        step_y = dy / real(subdivisions, wp)
+        
+        x = x0
+        y = y0
+        
+        do i = 1, subdivisions
+            next_x = x + step_x
+            next_y = y + step_y
+            ! Draw main line
+            call draw_line_wu(image_data, img_w, img_h, x, y, next_x, next_y, r, g, b)
+            ! Add slight thickness with offset lines
+            call draw_line_wu(image_data, img_w, img_h, x+0.5_wp, y, next_x+0.5_wp, next_y, r, g, b)
+            call draw_line_wu(image_data, img_w, img_h, x, y+0.5_wp, next_x, next_y+0.5_wp, r, g, b)
+            x = next_x
+            y = next_y
+        end do
+    end subroutine draw_line_adaptive
+
+    ! Improved line drawing algorithm
+    subroutine draw_line_improved(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x0, y0, x1, y1
+        integer(1), intent(in) :: r, g, b
+        real(wp) :: dx, dy, length, step_x, step_y, x, y
+        integer :: steps, i
+        real(wp), parameter :: line_width = 1.5_wp
+        
+        dx = x1 - x0
+        dy = y1 - y0
+        length = sqrt(dx*dx + dy*dy)
+        
+        if (length < 1e-6_wp) return
+        
+        steps = max(int(length * 2), 1)
+        step_x = dx / real(steps, wp)
+        step_y = dy / real(steps, wp)
+        
+        x = x0
+        y = y0
+        
+        do i = 0, steps
+            call draw_thick_point(image_data, img_w, img_h, x, y, line_width, r, g, b)
+            x = x + step_x
+            y = y + step_y
+        end do
+    end subroutine draw_line_improved
+    
+    subroutine draw_thick_point(image_data, img_w, img_h, cx, cy, width, r, g, b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, width
+        integer(1), intent(in) :: r, g, b
+        integer :: ix, iy, x, y
+        real(wp) :: dx, dy, dist, alpha, half_width
+        
+        half_width = width * 0.5_wp
+        ix = int(cx)
+        iy = int(cy)
+        
+        do y = iy - int(half_width) - 1, iy + int(half_width) + 1
+            do x = ix - int(half_width) - 1, ix + int(half_width) + 1
+                if (x >= 1 .and. x <= img_w .and. y >= 1 .and. y <= img_h) then
+                    dx = real(x, wp) - cx
+                    dy = real(y, wp) - cy
+                    dist = sqrt(dx*dx + dy*dy)
+                    
+                    if (dist <= half_width) then
+                        alpha = 1.0_wp
+                    else if (dist <= half_width + 1.0_wp) then
+                        alpha = half_width + 1.0_wp - dist
+                    else
+                        alpha = 0.0_wp
+                    end if
+                    
+                    if (alpha > 0.0_wp) then
+                        call blend_pixel(image_data, img_w, img_h, x, y, alpha, r, g, b)
+                    end if
+                end if
+            end do
+        end do
+    end subroutine draw_thick_point
+
     ! Wu's line algorithm and supporting functions
     subroutine draw_line_wu(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
         integer(1), intent(inout) :: image_data(*)
@@ -292,12 +397,12 @@ contains
 
     real(wp) function ipart(x)
         real(wp), intent(in) :: x
-        ipart = real(int(x), wp)
+        ipart = floor(x)
     end function ipart
 
     real(wp) function fpart(x)
         real(wp), intent(in) :: x
-        fpart = x - ipart(x)
+        fpart = x - floor(x)
     end function fpart
 
     real(wp) function rfpart(x)
