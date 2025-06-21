@@ -9,6 +9,7 @@ contains
 
     subroutine simple_api_examples()
         real(wp), dimension(50) :: x, y1, y2, y3, y4
+        real(wp), dimension(50) :: x_exp, y_exp, y_symlog
         integer :: i
 
         print *, "=== Pyplot-Style API Examples ==="
@@ -33,6 +34,29 @@ contains
         call show()
         
         print *, "Example created: line_styles.png"
+        
+        ! Scale demonstration
+        x_exp = [(real(i, wp), i=1, 50)]
+        y_exp = exp(x_exp * 0.2_wp)
+        y_symlog = x_exp**3 - 50.0_wp * x_exp
+        
+        call figure()
+        call plot(x_exp, y_exp)
+        call set_yscale('log')
+        call title('Log Scale Example')
+        call xlabel('x')
+        call ylabel('exp(0.2x)')
+        call savefig('log_scale.png')
+        
+        call figure()
+        call plot(x_exp, y_symlog)
+        call set_yscale('symlog', 10.0_wp)
+        call title('Symlog Scale Example')
+        call xlabel('x') 
+        call ylabel('x³ - 50x')
+        call savefig('symlog_scale.png')
+        
+        print *, "Scale examples created: log_scale.png, symlog_scale.png"
         print *
 
     end subroutine simple_api_examples

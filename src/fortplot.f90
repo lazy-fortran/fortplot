@@ -25,6 +25,7 @@ module fortplot
     public :: xlabel, ylabel, title
     public :: savefig, figure
     public :: add_plot, add_contour
+    public :: set_xscale, set_yscale
     
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
@@ -154,5 +155,19 @@ contains
         character(len=*), intent(in), optional :: label
         call fig%add_contour(x, y, z, levels=levels, label=label)
     end subroutine add_contour
+
+    subroutine set_xscale(scale, threshold)
+        !! Set x-axis scale for the global figure
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        call fig%set_xscale(scale, threshold)
+    end subroutine set_xscale
+
+    subroutine set_yscale(scale, threshold)
+        !! Set y-axis scale for the global figure  
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        call fig%set_yscale(scale, threshold)
+    end subroutine set_yscale
 
 end module fortplot
