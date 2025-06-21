@@ -320,10 +320,16 @@ contains
 
         ! Create a temporary unicode figure for ASCII display
         type(figure_t) :: unicode_fig
+        integer :: i
 
-        call unicode_fig%initialize(80, 24, "unicode")
+        call unicode_fig%initialize(80, 40, "ascii")
         if (present(title)) call unicode_fig%set_title(title)
-        call unicode_fig%add_plot(x(1:n), y(1:n))
+        
+        ! Copy all plots from the current figure to ASCII display
+        do i = 1, self%plot_count
+            call unicode_fig%add_plot(self%plots(i)%x, self%plots(i)%y, color=self%plots(i)%color)
+        end do
+        
         call unicode_fig%savefig("terminal")
     end subroutine show_ascii
 

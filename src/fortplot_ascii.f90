@@ -20,8 +20,9 @@ module fortplot_ascii
         procedure :: save => ascii_finalize
     end type ascii_context
     
-    ! ASCII characters for plotting
-    character(len=*), parameter :: ASCII_CHARS = '.*#@'
+    ! Enhanced ASCII characters for plotting
+    character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
+    character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
     character(len=*), parameter :: BOX_CHARS = '-|+++++++'
     
 contains
@@ -32,7 +33,7 @@ contains
         integer :: w, h
         
         w = 80
-        h = 24
+        h = 40
         if (present(width)) w = width
         if (present(height)) h = height
         
@@ -59,11 +60,25 @@ contains
         integer :: steps, i, px, py
         character(len=1) :: line_char
         
-        ! Choose line character based on color (simple mapping)
-        if (this%current_g > 0.5_wp) then
-            line_char = '*'  ! Green plots get asterisks
-        else if (this%current_b > 0.5_wp) then
-            line_char = 'o'  ! Blue plots get circles
+        ! Skip drawing if color is too light (grid lines, background elements)
+        ! Grid lines typically use light gray like (0.9, 0.9, 0.9)
+        if (this%current_r > 0.8_wp .and. this%current_g > 0.8_wp .and. this%current_b > 0.8_wp) then
+            return  ! Don't draw light-colored grid lines in ASCII
+        end if
+        
+        ! Choose line character based on color with better mapping
+        if (this%current_g > 0.7_wp) then
+            line_char = '@'  ! Bright green gets dense character
+        else if (this%current_g > 0.3_wp) then
+            line_char = '#'  ! Medium green gets hash
+        else if (this%current_b > 0.7_wp) then
+            line_char = '*'  ! Bright blue gets asterisk
+        else if (this%current_b > 0.3_wp) then
+            line_char = 'o'  ! Medium blue gets circle
+        else if (this%current_r > 0.7_wp) then
+            line_char = '%'  ! Red gets percent
+        else if (this%current_r > 0.3_wp) then
+            line_char = '+'  ! Medium red gets plus
         else
             line_char = '.'  ! Default to dots
         end if
@@ -74,7 +89,8 @@ contains
         
         if (length < 1e-6_wp) return
         
-        steps = int(length * 2) + 1
+        ! Use higher resolution line drawing with antialiasing effect
+        steps = max(int(length * 4), max(abs(int(dx)), abs(int(dy)))) + 1
         step_x = dx / real(steps, wp)
         step_y = dy / real(steps, wp)
         
@@ -86,9 +102,15 @@ contains
             px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 1, wp)) + 1
             py = this%plot_height - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 1, wp))
             
-            ! Check bounds and set character
+            ! Check bounds and set character - allow overwriting for better multiple plot support
             if (px >= 1 .and. px <= this%plot_width .and. py >= 1 .and. py <= this%plot_height) then
-                this%canvas(py, px) = line_char
+                ! If space is empty, use the new character
+                if (this%canvas(py, px) == ' ') then
+                    this%canvas(py, px) = line_char
+                ! If space is occupied, use a blend character to show overlap
+                else if (this%canvas(py, px) /= line_char) then
+                    this%canvas(py, px) = get_blend_char(this%canvas(py, px), line_char)
+                end if
             end if
             
             x = x + step_x
@@ -186,5 +208,70 @@ contains
         ! Write bottom border
         write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
     end subroutine output_to_file
+
+    integer function get_char_density(char)
+        character(len=1), intent(in) :: char
+        
+        select case (char)
+        case (' ')
+            get_char_density = 0
+        case ('.')
+            get_char_density = 1
+        case (':')
+            get_char_density = 2
+        case ('-')
+            get_char_density = 2
+        case ('=')
+            get_char_density = 3
+        case ('+')
+            get_char_density = 3
+        case ('o')
+            get_char_density = 4
+        case ('*')
+            get_char_density = 5
+        case ('#')
+            get_char_density = 6
+        case ('%')
+            get_char_density = 7
+        case ('@')
+            get_char_density = 8
+        case default
+            get_char_density = 9  ! Unicode blocks get highest priority
+        end select
+    end function get_char_density
+
+    character(len=1) function get_blend_char(char1, char2)
+        character(len=1), intent(in) :: char1, char2
+        
+        ! When two different plot characters overlap, use a distinctive blend character
+        ! This prevents one plot from completely overwriting another
+        select case (char1)
+        case ('*')  ! Blue sine
+            if (char2 == '#' .or. char2 == '@') then
+                get_blend_char = '%'  ! Blend of sine and cosine
+            else
+                get_blend_char = char1
+            end if
+        case ('#')  ! Green cosine  
+            if (char2 == '*' .or. char2 == 'o') then
+                get_blend_char = '%'  ! Blend of sine and cosine
+            else
+                get_blend_char = char1
+            end if
+        case ('@')  ! Bright green
+            if (char2 == '*' .or. char2 == 'o') then
+                get_blend_char = '%'  ! Blend character
+            else
+                get_blend_char = char1
+            end if
+        case default
+            ! For other combinations, keep the higher density character
+            if (get_char_density(char2) > get_char_density(char1)) then
+                get_blend_char = char2
+            else
+                get_blend_char = char1
+            end if
+        end select
+    end function get_blend_char
 
 end module fortplot_ascii
