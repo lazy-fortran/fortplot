@@ -26,6 +26,7 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 
 ## File Organization
 
+**Library Sources**: Place library sources in `src/` directory
 **Debugging**: Place debugging sources in `app/` directory and execute with `make run`
 **Unit Tests**: Place unit tests in `test/` directory  
 **Examples**: Place examples in `example/` directory
