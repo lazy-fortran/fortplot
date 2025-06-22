@@ -2,7 +2,8 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context
     use fortplot_text
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions, &
+                                   calculate_tick_labels
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -654,6 +655,7 @@ contains
         integer :: i
         real(wp) :: x_positions(10), y_positions(10)
         integer :: num_x, num_y
+        character(len=20) :: x_labels(10), y_labels(10)
         
         ! Set color to black for axes
         ctx%current_r = 0.0_wp
@@ -663,9 +665,12 @@ contains
         ! Draw plot frame using common functionality
         call draw_png_frame(ctx)
         
-        ! Draw tick marks
+        ! Draw tick marks and labels
         call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
+        call calculate_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels)
+        call calculate_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels)
         call draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        call draw_png_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
     end subroutine draw_axes_and_labels
     
     subroutine draw_png_frame(ctx)
@@ -727,5 +732,33 @@ contains
                                       0_1, 0_1, 0_1)
         end do
     end subroutine draw_png_tick_marks
+    
+    subroutine draw_png_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        !! Draw tick labels for PNG backend like matplotlib
+        type(png_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        character(len=*), intent(in) :: x_labels(:), y_labels(:)
+        integer, intent(in) :: num_x, num_y
+        integer :: i
+        real(wp) :: label_x, label_y
+        
+        ! Draw X-axis labels (below the X-axis)
+        do i = 1, num_x
+            label_x = x_positions(i)
+            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 15, wp)  ! 15 pixels below axis
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y), trim(x_labels(i)), &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end do
+        
+        ! Draw Y-axis labels (to the left of the Y-axis)
+        do i = 1, num_y
+            label_x = real(ctx%plot_area%left - 35, wp)  ! 35 pixels left of axis
+            label_y = y_positions(i)
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y), trim(y_labels(i)), &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end do
+    end subroutine draw_png_tick_labels
 
 end module fortplot_png

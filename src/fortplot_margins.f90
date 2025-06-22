@@ -10,6 +10,7 @@ module fortplot_margins
     
     private
     public :: plot_margins_t, calculate_plot_area, draw_basic_axes_frame, get_axis_tick_positions
+    public :: calculate_tick_labels, format_tick_value
     
     ! Standard matplotlib-style margins
     type :: plot_margins_t
@@ -93,5 +94,76 @@ contains
         call draw_line_proc(left, top, left, bottom)      ! Left edge
         call draw_line_proc(right, top, right, bottom)    ! Right edge
     end subroutine draw_basic_axes_frame
+
+    subroutine calculate_tick_labels(data_min, data_max, num_ticks, labels)
+        !! Calculate appropriate tick labels based on data range like matplotlib
+        real(wp), intent(in) :: data_min, data_max
+        integer, intent(in) :: num_ticks
+        character(len=20), intent(out) :: labels(:)
+        
+        integer :: i
+        real(wp) :: value, range, step
+        
+        range = data_max - data_min
+        if (num_ticks <= 1) return
+        
+        step = range / real(num_ticks - 1, wp)
+        
+        do i = 1, num_ticks
+            value = data_min + real(i - 1, wp) * step
+            labels(i) = format_tick_value(value, range)
+        end do
+    end subroutine calculate_tick_labels
+
+    function format_tick_value(value, range) result(formatted)
+        !! Format tick value based on data range like matplotlib
+        real(wp), intent(in) :: value, range
+        character(len=20) :: formatted
+        real(wp) :: abs_value
+        
+        abs_value = abs(value)
+        
+        if (abs_value < 1.0e-10_wp) then
+            formatted = '0'
+        else if (range >= 100.0_wp .or. abs_value >= 1000.0_wp) then
+            ! Use integer format for large ranges
+            write(formatted, '(I0)') nint(value)
+        else if (range >= 10.0_wp .or. abs_value >= 10.0_wp) then
+            ! 1 decimal place for medium ranges
+            write(formatted, '(F0.1)') value
+            call remove_trailing_zeros(formatted)
+        else if (range >= 1.0_wp .or. abs_value >= 1.0_wp) then
+            ! 2 decimal places for small ranges
+            write(formatted, '(F0.2)') value
+            call remove_trailing_zeros(formatted)
+        else
+            ! 3 decimal places for very small ranges
+            write(formatted, '(F0.3)') value
+            call remove_trailing_zeros(formatted)
+        end if
+    end function format_tick_value
+
+    subroutine remove_trailing_zeros(str)
+        !! Remove trailing zeros from decimal representation
+        character(len=*), intent(inout) :: str
+        integer :: i, decimal_pos
+        
+        decimal_pos = index(str, '.')
+        if (decimal_pos == 0) return  ! No decimal point
+        
+        ! Remove trailing zeros
+        do i = len_trim(str), decimal_pos + 1, -1
+            if (str(i:i) == '0') then
+                str(i:i) = ' '
+            else
+                exit
+            end if
+        end do
+        
+        ! Remove trailing decimal point if all decimals were zeros
+        if (len_trim(str) == decimal_pos) then
+            str(decimal_pos:decimal_pos) = ' '
+        end if
+    end subroutine remove_trailing_zeros
 
 end module fortplot_margins
