@@ -3,7 +3,7 @@ module fortplot_text
     implicit none
     
     private
-    public :: init_text_system, cleanup_text_system, render_text_to_image
+    public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width
     
     ! Glyph information structure (matches C wrapper)
     type, bind(C) :: glyph_info_t
@@ -95,6 +95,45 @@ contains
             text_system_initialized = .false.
         end if
     end subroutine cleanup_text_system
+
+    function calculate_text_width(text) result(width)
+        !! Calculate the pixel width of text for proper alignment
+        character(len=*), intent(in) :: text
+        integer :: width
+        integer :: i, char_code, next_char_code, kerning_offset
+        integer(c_int) :: error
+        type(glyph_info_t) :: glyph_info
+        
+        if (.not. text_system_initialized) then
+            if (.not. init_text_system()) then
+                width = len(text) * 8  ! Fallback: 8 pixels per character
+                return
+            end if
+        end if
+        
+        width = 0
+        do i = 1, len_trim(text)
+            char_code = iachar(text(i:i))
+            error = ft_wrapper_render_char(char_code, glyph_info)
+            if (error == 0) then
+                ! Add glyph advance (spacing to next character)
+                width = width + glyph_info%advance_x / 64  ! Advance is in 1/64 pixel units
+                
+                ! Add kerning if not the last character
+                if (i < len_trim(text)) then
+                    next_char_code = iachar(text(i+1:i+1))
+                    kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
+                    width = width + kerning_offset / 64
+                end if
+                
+                ! Clean up glyph buffer
+                call ft_wrapper_free_glyph(glyph_info)
+            else
+                ! Fallback for unsupported characters
+                width = width + 8
+            end if
+        end do
+    end function calculate_text_width
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
         integer(1), intent(inout) :: image_data(*)

@@ -2,6 +2,7 @@ module fortplot_pdf
     use fortplot_context
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
+    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -382,10 +383,14 @@ contains
         bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
         left = real(ctx%plot_area%left, wp)
         
-        ! Draw X-axis labels (below the X-axis)
+        ! Draw X-axis labels with proper spacing and center alignment
         do i = 1, num_x
-            label_x = x_positions(i)
-            label_y = bottom - 15.0_wp  ! 15 points below axis
+            ! Use common positioning (with PNG coordinates) then convert to PDF
+            call calculate_x_label_position(x_positions(i), real(ctx%plot_area%bottom, wp), &
+                                          real(ctx%plot_area%height, wp), trim(x_labels(i)), &
+                                          label_x, label_y)
+            ! Convert to PDF coordinates (Y is flipped)
+            label_y = bottom - (label_y - real(ctx%plot_area%bottom + ctx%plot_area%height, wp))
             
             call add_to_stream(ctx, "BT")
             write(text_cmd, '("/F1 8 Tf")')
@@ -397,9 +402,11 @@ contains
             call add_to_stream(ctx, "ET")
         end do
         
-        ! Draw Y-axis labels (to the left of the Y-axis)
+        ! Draw Y-axis labels with right alignment and proper spacing
         do i = 1, num_y
-            label_x = left - 25.0_wp  ! 25 points left of axis
+            ! Use common positioning
+            call calculate_y_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
+                                          trim(y_labels(i)), label_x, label_y)
             ! Convert Y position to PDF coordinates
             label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
