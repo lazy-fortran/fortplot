@@ -35,17 +35,9 @@ program line_styles
     call title('Complete Line Style Reference')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('example/line_styles/line_style_reference.png')
-    call savefig('example/line_styles/line_style_reference.pdf')
-    
-    ! Terminal display to show line styles in ASCII
-    call figure()
-    call plot(x, y1, label='Solid', linestyle='-')
-    call plot(x, y2, label='Dashed', linestyle='--')
-    call plot(x, y3, label='Dotted', linestyle=':')
-    call plot(x, y4, label='Dash-dot', linestyle='-.')
-    call title('Line Styles in Terminal')
-    call show()
+    call savefig('example/line_styles/line_styles.png')
+    call savefig('example/line_styles/line_styles.pdf')
+    call savefig('example/line_styles/line_styles.txt')
     
     print *, "Line style examples completed!"
     print *, "Files created: line_style_reference.png, line_style_reference.pdf"
