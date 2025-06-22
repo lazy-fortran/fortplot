@@ -4,6 +4,7 @@ module fortplot_png
     use fortplot_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
+    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -757,19 +758,20 @@ contains
         integer :: i
         real(wp) :: label_x, label_y
         
-        ! Draw X-axis labels (below the X-axis)
+        ! Draw X-axis labels with proper spacing and center alignment
         do i = 1, num_x
-            label_x = x_positions(i)
-            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 15, wp)  ! 15 pixels below axis
+            call calculate_x_label_position(x_positions(i), real(ctx%plot_area%bottom, wp), &
+                                          real(ctx%plot_area%height, wp), trim(x_labels(i)), &
+                                          label_x, label_y)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(x_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
         end do
         
-        ! Draw Y-axis labels (to the left of the Y-axis)
+        ! Draw Y-axis labels with right alignment and proper spacing
         do i = 1, num_y
-            label_x = real(ctx%plot_area%left - 35, wp)  ! 35 pixels left of axis
-            label_y = y_positions(i)
+            call calculate_y_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
+                                          trim(y_labels(i)), label_x, label_y)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(y_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
