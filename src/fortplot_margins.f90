@@ -131,14 +131,17 @@ contains
         else if (range >= 10.0_wp .or. abs_value >= 10.0_wp) then
             ! 1 decimal place for medium ranges
             write(formatted, '(F0.1)') value
+            call ensure_leading_zero(formatted)
             call remove_trailing_zeros(formatted)
         else if (range >= 1.0_wp .or. abs_value >= 1.0_wp) then
             ! 2 decimal places for small ranges
             write(formatted, '(F0.2)') value
+            call ensure_leading_zero(formatted)
             call remove_trailing_zeros(formatted)
         else
             ! 3 decimal places for very small ranges
             write(formatted, '(F0.3)') value
+            call ensure_leading_zero(formatted)
             call remove_trailing_zeros(formatted)
         end if
     end function format_tick_value
@@ -165,5 +168,22 @@ contains
             str(decimal_pos:decimal_pos) = ' '
         end if
     end subroutine remove_trailing_zeros
+
+    subroutine ensure_leading_zero(str)
+        !! Ensure numbers like .5 become 0.5 for readability
+        character(len=*), intent(inout) :: str
+        character(len=len(str)) :: temp
+        
+        str = adjustl(str)  ! Remove leading spaces
+        if (len_trim(str) > 0) then
+            if (str(1:1) == '.') then
+                temp = '0' // trim(str)
+                str = temp
+            else if (str(1:2) == '-.') then
+                temp = '-0' // str(2:len_trim(str))
+                str = temp
+            end if
+        end if
+    end subroutine ensure_leading_zero
 
 end module fortplot_margins
