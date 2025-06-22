@@ -19,9 +19,9 @@ contains
 
     subroutine test_should_generate_proper_log_ticks_wide_range()
         !! Test log tick generation for wide decade ranges
-        print *, "Testing: Wide log range should generate major ticks only"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Wide log range should generate major ticks only"
         
         ! Test 6 decades - should generate major ticks at powers of 10
         call calculate_tick_labels_log(1.0_wp, 1.0e6_wp, 8, labels)
@@ -38,9 +38,9 @@ contains
 
     subroutine test_should_generate_subticks_narrow_range()
         !! Test log tick generation for narrow ranges (should include subticks)
-        print *, "Testing: Narrow log range should include subticks"
-        
         character(len=20) :: labels(15)
+        
+        print *, "Testing: Narrow log range should include subticks"
         
         ! Test 1.5 decades - should generate subticks
         call calculate_tick_labels_log(1.0_wp, 30.0_wp, 15, labels)
@@ -58,9 +58,9 @@ contains
 
     subroutine test_should_handle_fractional_log_range()
         !! Test log ticks in fractional ranges
-        print *, "Testing: Fractional log range should be handled properly"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Fractional log range should be handled properly"
         
         call calculate_tick_labels_log(0.001_wp, 1.0_wp, 8, labels)
         
@@ -72,9 +72,9 @@ contains
 
     subroutine test_should_generate_symlog_ticks_with_zero()
         !! Test symlog tick generation across zero
-        print *, "Testing: Symlog should include zero and symmetric ticks"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Symlog should include zero and symmetric ticks"
         
         call calculate_tick_labels_symlog(-100.0_wp, 100.0_wp, 1.0_wp, 8, labels)
         
@@ -85,9 +85,9 @@ contains
 
     subroutine test_should_handle_symlog_linear_region()
         !! Test symlog behavior in linear region
-        print *, "Testing: Symlog linear region should use appropriate spacing"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Symlog linear region should use appropriate spacing"
         
         ! Range entirely within linear threshold
         call calculate_tick_labels_symlog(-0.5_wp, 0.5_wp, 1.0_wp, 5, labels)
@@ -98,9 +98,9 @@ contains
 
     subroutine test_should_format_scientific_notation()
         !! Test scientific notation formatting for extreme values
-        print *, "Testing: Extreme values should use scientific notation"
-        
         character(len=20) :: labels(5)
+        
+        print *, "Testing: Extreme values should use scientific notation"
         
         ! Very large range
         call calculate_tick_labels_log(1.0e-6_wp, 1.0e6_wp, 5, labels)

@@ -20,10 +20,10 @@ contains
 
     subroutine test_should_handle_very_small_ranges()
         !! Test case from debug_small_range.f90: range 1.23 to 1.27
-        print *, "Testing: Very small range (1.23 to 1.27) should generate proper ticks"
-        
         character(len=20) :: labels(5)
         integer :: i
+        
+        print *, "Testing: Very small range (1.23 to 1.27) should generate proper ticks"
         
         call calculate_tick_labels(1.23_wp, 1.27_wp, 5, labels)
         
@@ -43,9 +43,9 @@ contains
 
     subroutine test_should_handle_log_range_1_to_1000()
         !! Test case from debug_log_test.f90: log range 1-1000
-        print *, "Testing: Log range 1-1000 should generate powers of 10"
-        
         character(len=20) :: labels(4)
+        
+        print *, "Testing: Log range 1-1000 should generate powers of 10"
         
         call calculate_tick_labels_log(1.0_wp, 1000.0_wp, 4, labels)
         
@@ -58,11 +58,11 @@ contains
 
     subroutine test_should_handle_symlog_crossing_zero()
         !! Test case from debug_log_test.f90: symlog range -10 to 10
-        print *, "Testing: Symlog range -10 to 10 should handle zero crossing"
-        
         character(len=20) :: labels(5)
         integer :: i
         logical :: has_zero, has_negative, has_positive
+        
+        print *, "Testing: Symlog range -10 to 10 should handle zero crossing"
         
         call calculate_tick_labels_symlog(-10.0_wp, 10.0_wp, 1.0_wp, 5, labels)
         
@@ -84,9 +84,9 @@ contains
 
     subroutine test_should_handle_precision_edge_cases()
         !! Test precision edge cases that might cause formatting issues
-        print *, "Testing: Precision edge cases should be handled gracefully"
-        
         character(len=20) :: labels(5)
+        
+        print *, "Testing: Precision edge cases should be handled gracefully"
         
         ! Test very close to zero
         call calculate_tick_labels(-1.0e-10_wp, 1.0e-10_wp, 3, labels)
@@ -103,9 +103,9 @@ contains
 
     subroutine test_should_format_fractional_ticks()
         !! Test case from debug_tick_format.f90: formatting fractional values
-        print *, "Testing: Fractional tick values should be formatted properly"
-        
         character(len=20) :: labels(5)
+        
+        print *, "Testing: Fractional tick values should be formatted properly"
         
         call calculate_tick_labels(0.1_wp, 0.2_wp, 3, labels)
         
@@ -118,10 +118,10 @@ contains
 
     subroutine test_should_demonstrate_consistent_formatting()
         !! Test case from debug_consistent_ticks.f90: consistent formatting across ranges
-        print *, "Testing: Consistent formatting should work across different ranges"
-        
         character(len=20) :: labels(5), labels_large(4), labels_small(3)
         integer :: i
+        
+        print *, "Testing: Consistent formatting should work across different ranges"
         
         ! Test case 1: Range 0.0 to 1.0
         call calculate_tick_labels(0.0_wp, 1.0_wp, 5, labels)
@@ -145,10 +145,11 @@ contains
 
     subroutine test_should_validate_formatting_conditions()
         !! Test case from debug_conditions.f90: formatting condition logic
+        character(len=20) :: labels(3)
+        
         print *, "Testing: Formatting conditions should work correctly"
         
         ! This indirectly tests the formatting conditions through actual tick generation
-        character(len=20) :: labels(3)
         
         ! Test medium range (should trigger condition 4 from debug)
         call calculate_tick_labels(0.0_wp, 1.0_wp, 3, labels)

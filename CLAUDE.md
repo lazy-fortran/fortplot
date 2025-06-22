@@ -25,6 +25,7 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 
 - `make run` - Build and run examples (default development workflow)
 - `make build` - Compile the project
+- `make test` - Run all unit tests in test/ directory
 - `make clean` - Clean build artifacts
 
 ## File Organization
@@ -62,12 +63,14 @@ end program
 - Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
 - Use procedure pointers for backend-agnostic operations  
 - Centralize constants and magic numbers in one place
+- ✓ IMPLEMENTED: All scales (linear, log, symlog) use consistent tick formatting via shared `format_tick_value()` function
 
 **KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness - **MANDATORY**
 - Write clear, readable code over "clever" optimizations
 - Use straightforward algorithms unless performance demands complexity
 - Prefer explicit over implicit behavior
 - Choose clear variable names over short abbreviations
+- ✓ IMPLEMENTED: Coordinate transformation properly separated - original coordinates for tick generation, transformed coordinates for data rendering
 
 ```fortran
 ! DRY: Common functionality extracted to shared module
