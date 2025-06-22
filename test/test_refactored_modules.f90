@@ -98,7 +98,6 @@ contains
     subroutine start_test(test_name)
         character(len=*), intent(in) :: test_name
         write(*, '(A, A)') 'Running test: ', test_name
-        test_count = test_count + 1
     end subroutine start_test
 
     subroutine end_test()
@@ -110,6 +109,7 @@ contains
         logical, intent(in) :: condition
         character(len=*), intent(in) :: description
         
+        test_count = test_count + 1
         if (condition) then
             write(*, '(A, A)') '  PASS: ', description
             pass_count = pass_count + 1

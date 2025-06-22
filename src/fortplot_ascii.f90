@@ -42,10 +42,9 @@ contains
         type(ascii_context) :: ctx
         integer :: w, h
         
+        ! ASCII backend always uses fixed character dimensions
         w = 80
         h = 40
-        if (present(width)) w = width
-        if (present(height)) h = height
         
         call setup_canvas(ctx, w, h)
         
@@ -67,6 +66,8 @@ contains
         real(wp) :: dx, dy, length, step_x, step_y, x, y
         integer :: steps, i, px, py
         character(len=1) :: line_char
+        
+        ! print *, "ASCII DRAW: Called with", x1, y1, "to", x2, y2
         
         if (this%current_r > 0.8_wp .and. this%current_g > 0.8_wp .and. this%current_b > 0.8_wp) then
             return
@@ -105,6 +106,11 @@ contains
             ! Map to usable plot area (excluding 1-char border on each side)
             px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
             py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
+            
+            ! Debug first few points
+            ! if (i < 3) then
+            !     print *, "ASCII DEBUG: px,py=", px, py, "canvas:", this%plot_width, "x", this%plot_height
+            ! end if
             
             if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
                 if (this%canvas(py, px) == ' ') then
@@ -185,6 +191,7 @@ contains
             write(unit, '(A)') repeat('=', len_trim(this%title_text))
         end if
         
+        ! print *, "ASCII OUTPUT: Using width=", this%plot_width, "height=", this%plot_height
         write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
         do i = 1, this%plot_height
             write(unit, '(A)', advance='no') '|'

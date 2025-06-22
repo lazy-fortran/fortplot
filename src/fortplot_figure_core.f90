@@ -107,7 +107,9 @@ contains
         if (present(width)) self%width = width
         if (present(height)) self%height = height
         
-        allocate(self%plots(self%max_plots))
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
         self%plot_count = 0
         self%rendered = .false.
         
@@ -161,10 +163,12 @@ contains
         
         backend_type = get_backend_from_filename(filename)
         
-        if (.not. allocated(self%backend)) then
-            call initialize_backend(self%backend, backend_type, self%width, self%height)
-        end if
+        ! Always reinitialize backend for correct format
+        if (allocated(self%backend)) deallocate(self%backend)
+        call initialize_backend(self%backend, backend_type, self%width, self%height)
         
+        ! Reset rendered flag to force re-rendering for new backend
+        self%rendered = .false.
         call render_figure(self)
         call self%backend%save(filename)
         
@@ -176,7 +180,8 @@ contains
         class(figure_t), intent(inout) :: self
         
         if (.not. allocated(self%backend)) then
-            call initialize_backend(self%backend, 'ascii', self%width, self%height)
+            ! Use reasonable ASCII dimensions instead of figure dimensions
+            call initialize_backend(self%backend, 'ascii', 80, 24)
         end if
         
         call render_figure(self)
@@ -262,6 +267,8 @@ contains
         self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
         
         ! Store data
+        if (allocated(self%plots(plot_idx)%x)) deallocate(self%plots(plot_idx)%x)
+        if (allocated(self%plots(plot_idx)%y)) deallocate(self%plots(plot_idx)%y)
         allocate(self%plots(plot_idx)%x(size(x)))
         allocate(self%plots(plot_idx)%y(size(y)))
         self%plots(plot_idx)%x = x
@@ -301,6 +308,9 @@ contains
         self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
         
         ! Store grid data
+        if (allocated(self%plots(plot_idx)%x_grid)) deallocate(self%plots(plot_idx)%x_grid)
+        if (allocated(self%plots(plot_idx)%y_grid)) deallocate(self%plots(plot_idx)%y_grid)
+        if (allocated(self%plots(plot_idx)%z_grid)) deallocate(self%plots(plot_idx)%z_grid)
         allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
         allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
         allocate(self%plots(plot_idx)%z_grid(size(z_grid,1), size(z_grid,2)))
@@ -318,6 +328,7 @@ contains
         
         ! Handle contour levels
         if (present(levels)) then
+            if (allocated(self%plots(plot_idx)%contour_levels)) deallocate(self%plots(plot_idx)%contour_levels)
             allocate(self%plots(plot_idx)%contour_levels(size(levels)))
             self%plots(plot_idx)%contour_levels = levels
         else
@@ -363,27 +374,111 @@ contains
     
     subroutine calculate_figure_data_ranges(self)
         class(figure_t), intent(inout) :: self
-        ! Implementation will use utilities module
+        integer :: i
+        real(wp) :: x_min, x_max, y_min, y_max
+        logical :: first_plot
+        
+        if (self%plot_count == 0) return
+        
+        first_plot = .true.
+        
+        do i = 1, self%plot_count
+            if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
+                if (first_plot) then
+                    x_min = minval(self%plots(i)%x)
+                    x_max = maxval(self%plots(i)%x)
+                    y_min = minval(self%plots(i)%y)
+                    y_max = maxval(self%plots(i)%y)
+                    first_plot = .false.
+                else
+                    x_min = min(x_min, minval(self%plots(i)%x))
+                    x_max = max(x_max, maxval(self%plots(i)%x))
+                    y_min = min(y_min, minval(self%plots(i)%y))
+                    y_max = max(y_max, maxval(self%plots(i)%y))
+                end if
+            end if
+        end do
+        
+        if (.not. self%xlim_set) then
+            self%x_min = x_min
+            self%x_max = x_max
+        end if
+        
+        if (.not. self%ylim_set) then
+            self%y_min = y_min
+            self%y_max = y_max
+        end if
+        
+        ! print *, "DEBUG: Data ranges - X:", self%x_min, "to", self%x_max, "Y:", self%y_min, "to", self%y_max
     end subroutine calculate_figure_data_ranges
     
     subroutine setup_coordinate_system(self)
         class(figure_t), intent(inout) :: self
-        ! Implementation will use scales module
+        
+        if (.not. self%xlim_set .or. .not. self%ylim_set) then
+            call calculate_figure_data_ranges(self)
+        end if
+        
+        ! Set backend data coordinate ranges
+        self%backend%x_min = self%x_min
+        self%backend%x_max = self%x_max
+        self%backend%y_min = self%y_min
+        self%backend%y_max = self%y_max
     end subroutine setup_coordinate_system
     
     subroutine render_figure_background(self)
         class(figure_t), intent(inout) :: self
-        ! Implementation will use backend directly
+        ! Clear the background - backend-specific implementation not needed
+        ! Background is handled by backend initialization
     end subroutine render_figure_background
     
     subroutine render_figure_axes(self)
         class(figure_t), intent(inout) :: self
-        ! Implementation will use axes module
+        
+        ! print *, "DEBUG: Rendering axes with ranges X:", self%x_min, "to", self%x_max, "Y:", self%y_min, "to", self%y_max
+        
+        ! Set axis color to black
+        call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Draw X axis (horizontal line at y=0 or y_min)
+        call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
+        
+        ! Draw Y axis (vertical line at x=0 or x_min)
+        call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
     end subroutine render_figure_axes
     
     subroutine render_all_plots(self)
         class(figure_t), intent(inout) :: self
-        ! Implementation will delegate to specialized renderers
+        integer :: i
+        
+        do i = 1, self%plot_count
+            if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
+                call render_line_plot(self, i)
+            end if
+        end do
     end subroutine render_all_plots
+
+    subroutine render_line_plot(self, plot_idx)
+        !! Render a single line plot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        integer :: i
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%x)) return
+        if (size(self%plots(plot_idx)%x) < 2) return
+        
+        ! Set color
+        call self%backend%color(self%plots(plot_idx)%color(1), &
+                               self%plots(plot_idx)%color(2), &
+                               self%plots(plot_idx)%color(3))
+        
+        ! Draw line segments using data coordinates
+        do i = 1, size(self%plots(plot_idx)%x) - 1
+            call self%backend%line(self%plots(plot_idx)%x(i), self%plots(plot_idx)%y(i), &
+                                  self%plots(plot_idx)%x(i+1), self%plots(plot_idx)%y(i+1))
+        end do
+    end subroutine render_line_plot
 
 end module fortplot_figure_core

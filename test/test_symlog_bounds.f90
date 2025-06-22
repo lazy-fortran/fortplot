@@ -25,7 +25,7 @@ program test_symlog_bounds
     call test_fig%set_yscale('symlog', 10.0_wp)
     call test_fig%savefig('test_symlog_bounds_check.png')
     
-    if (.not. allocated(fig%backend)) then
+    if (.not. allocated(test_fig%backend)) then
         print *, "❌ FAIL: Backend not allocated"
         stop 1
     end if
