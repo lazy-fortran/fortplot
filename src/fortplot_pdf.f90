@@ -84,7 +84,7 @@ contains
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
         
         call add_to_stream(this, "BT")
-        write(text_cmd, '("/F1 8 Tf")') 
+        write(text_cmd, '("/F1 12 Tf")') 
         call add_to_stream(this, text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') pdf_x, pdf_y
         call add_to_stream(this, text_cmd)
@@ -393,7 +393,7 @@ contains
             label_y = bottom - (label_y - real(ctx%plot_area%bottom + ctx%plot_area%height, wp))
             
             call add_to_stream(ctx, "BT")
-            write(text_cmd, '("/F1 8 Tf")')
+            write(text_cmd, '("/F1 12 Tf")')
             call add_to_stream(ctx, text_cmd)
             write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
             call add_to_stream(ctx, text_cmd)
@@ -412,7 +412,7 @@ contains
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
             
             call add_to_stream(ctx, "BT")
-            write(text_cmd, '("/F1 8 Tf")')
+            write(text_cmd, '("/F1 12 Tf")')
             call add_to_stream(ctx, text_cmd)
             write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
             call add_to_stream(ctx, text_cmd)

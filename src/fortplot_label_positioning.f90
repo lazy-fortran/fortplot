@@ -14,7 +14,7 @@ module fortplot_label_positioning
     integer, parameter :: LABEL_SPACING_X = 20  ! Pixels below X-axis (further from axis)
     integer, parameter :: LABEL_SPACING_Y = 10  ! Pixels left of Y-axis (minimum)
     integer, parameter :: TEXT_HEIGHT = 12      ! Approximate text height for centering
-    integer, parameter :: Y_LABEL_OFFSET = 2    ! Pixels up from center for better alignment
+    integer, parameter :: Y_LABEL_OFFSET = 4    ! Pixels down from center for better alignment
     
 contains
 
@@ -63,9 +63,9 @@ contains
         ! Position text_width pixels to the left of plot area, plus spacing
         label_x = plot_left - real(text_width, wp) - LABEL_SPACING_Y
         
-        ! Vertically center the label with the tick mark, slightly above center
+        ! Vertically center the label with the tick mark, slightly below center
         ! Adjust for text baseline (text renders from baseline, not center)
-        ! Move up more for better visual alignment with tick marks
+        ! Move down slightly for better visual alignment with tick marks (PNG Y increases down)
         label_y = tick_y + real(Y_LABEL_OFFSET, wp)
     end subroutine calculate_y_label_position
 
