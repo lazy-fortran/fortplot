@@ -397,6 +397,20 @@ contains
                     y_min = min(y_min, apply_scale_transform(minval(self%plots(i)%y), self%yscale, self%symlog_threshold))
                     y_max = max(y_max, apply_scale_transform(maxval(self%plots(i)%y), self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
+                if (first_plot) then
+                    ! Apply scale transformations to contour grid ranges
+                    x_min = apply_scale_transform(minval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold)
+                    x_max = apply_scale_transform(maxval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold)
+                    y_min = apply_scale_transform(minval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold)
+                    y_max = apply_scale_transform(maxval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                else
+                    x_min = min(x_min, apply_scale_transform(minval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold))
+                    x_max = max(x_max, apply_scale_transform(maxval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold))
+                    y_min = min(y_min, apply_scale_transform(minval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold))
+                    y_max = max(y_max, apply_scale_transform(maxval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold))
+                end if
             end if
         end do
         
@@ -453,6 +467,9 @@ contains
         integer :: i
         
         do i = 1, self%plot_count
+            ! Set color for this plot
+            call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
+            
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
                 call render_line_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
@@ -479,80 +496,236 @@ contains
         ! Skip drawing if linestyle is 'None'
         if (linestyle == 'None') return
         
-        ! Set color
-        call self%backend%color(self%plots(plot_idx)%color(1), &
-                               self%plots(plot_idx)%color(2), &
-                               self%plots(plot_idx)%color(3))
-        
         ! Draw line segments using transformed coordinates with linestyle
         call draw_line_with_style(self, plot_idx, linestyle)
     end subroutine render_line_plot
 
     subroutine render_contour_plot(self, plot_idx)
-        !! Render a single contour plot
+        !! Render a single contour plot using proper marching squares algorithm
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
-        integer :: i, j, level_idx
-        real(wp) :: level_value
+        integer :: level_idx
+        real(wp) :: contour_level
+        real(wp) :: z_min, z_max
         
         if (plot_idx > self%plot_count) return
         if (.not. allocated(self%plots(plot_idx)%z_grid)) return
         
-        ! Set contour color (for now use a single color)
-        call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        ! Get data range for filtering valid levels
+        z_min = minval(self%plots(plot_idx)%z_grid)
+        z_max = maxval(self%plots(plot_idx)%z_grid)
         
-        ! Simple contour implementation: draw lines where z crosses contour levels
+        ! Render each contour level that falls within data range
         if (allocated(self%plots(plot_idx)%contour_levels)) then
             do level_idx = 1, size(self%plots(plot_idx)%contour_levels)
-                level_value = self%plots(plot_idx)%contour_levels(level_idx)
-                call draw_contour_level(self, plot_idx, level_value)
+                contour_level = self%plots(plot_idx)%contour_levels(level_idx)
+                
+                ! Only render levels within the data range
+                if (contour_level > z_min .and. contour_level < z_max) then
+                    call trace_contour_level(self, plot_idx, contour_level)
+                end if
             end do
         else
             ! Draw a few default contour levels
-            call draw_contour_level(self, plot_idx, 0.1_wp)
-            call draw_contour_level(self, plot_idx, 0.5_wp)
-            call draw_contour_level(self, plot_idx, 0.9_wp)
+            call trace_contour_level(self, plot_idx, z_min + 0.2_wp * (z_max - z_min))
+            call trace_contour_level(self, plot_idx, z_min + 0.5_wp * (z_max - z_min))
+            call trace_contour_level(self, plot_idx, z_min + 0.8_wp * (z_max - z_min))
         end if
     end subroutine render_contour_plot
 
-    subroutine draw_contour_level(self, plot_idx, level_value)
-        !! Draw a single contour level using simple grid-based approach
+    subroutine trace_contour_level(self, plot_idx, level)
+        !! Trace a single contour level using marching squares
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
-        real(wp), intent(in) :: level_value
-        integer :: i, j
-        real(wp) :: x1, y1, x2, y2, z1, z2, z3, z4
-        real(wp) :: dx, dy
+        real(wp), intent(in) :: level
+        integer :: nx, ny, i, j
         
-        ! Get grid spacing
-        dx = self%plots(plot_idx)%x_grid(2) - self%plots(plot_idx)%x_grid(1)
-        dy = self%plots(plot_idx)%y_grid(2) - self%plots(plot_idx)%y_grid(1)
+        nx = size(self%plots(plot_idx)%x_grid)
+        ny = size(self%plots(plot_idx)%y_grid)
         
-        ! Simple marching squares algorithm - check each grid cell
-        do i = 1, size(self%plots(plot_idx)%x_grid) - 1
-            do j = 1, size(self%plots(plot_idx)%y_grid) - 1
-                z1 = self%plots(plot_idx)%z_grid(i, j)
-                z2 = self%plots(plot_idx)%z_grid(i+1, j)
-                z3 = self%plots(plot_idx)%z_grid(i+1, j+1)
-                z4 = self%plots(plot_idx)%z_grid(i, j+1)
-                
-                ! Check if contour level crosses this cell
-                if ((z1 <= level_value .and. z3 > level_value) .or. &
-                    (z1 > level_value .and. z3 <= level_value) .or. &
-                    (z2 <= level_value .and. z4 > level_value) .or. &
-                    (z2 > level_value .and. z4 <= level_value)) then
-                    
-                    ! Draw approximate contour line through cell center
-                    x1 = self%plots(plot_idx)%x_grid(i) + dx * 0.5_wp
-                    y1 = self%plots(plot_idx)%y_grid(j) + dy * 0.5_wp
-                    x2 = x1 + dx * 0.2_wp
-                    y2 = y1 + dy * 0.2_wp
-                    
-                    call self%backend%line(x1, y1, x2, y2)
-                end if
+        do i = 1, nx-1
+            do j = 1, ny-1
+                call process_contour_cell(self, plot_idx, i, j, level)
             end do
         end do
-    end subroutine draw_contour_level
+    end subroutine trace_contour_level
+
+    subroutine process_contour_cell(self, plot_idx, i, j, level)
+        !! Process a single grid cell for contour extraction
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx, i, j
+        real(wp), intent(in) :: level
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: z1, z2, z3, z4
+        integer :: config
+        real(wp), dimension(8) :: line_points
+        integer :: num_lines
+
+        call get_cell_coordinates(self, plot_idx, i, j, x1, y1, x2, y2, x3, y3, x4, y4)
+        call get_cell_values(self, plot_idx, i, j, z1, z2, z3, z4)
+        call calculate_marching_squares_config(z1, z2, z3, z4, level, config)
+        call get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                             z1, z2, z3, z4, level, line_points, num_lines)
+        call draw_contour_lines(self, line_points, num_lines)
+    end subroutine process_contour_cell
+
+    subroutine get_cell_coordinates(self, plot_idx, i, j, x1, y1, x2, y2, x3, y3, x4, y4)
+        !! Get the coordinates of the four corners of a grid cell
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx, i, j
+        real(wp), intent(out) :: x1, y1, x2, y2, x3, y3, x4, y4
+
+        x1 = self%plots(plot_idx)%x_grid(i)
+        y1 = self%plots(plot_idx)%y_grid(j)
+        x2 = self%plots(plot_idx)%x_grid(i+1)
+        y2 = self%plots(plot_idx)%y_grid(j)
+        x3 = self%plots(plot_idx)%x_grid(i+1)
+        y3 = self%plots(plot_idx)%y_grid(j+1)
+        x4 = self%plots(plot_idx)%x_grid(i)
+        y4 = self%plots(plot_idx)%y_grid(j+1)
+    end subroutine get_cell_coordinates
+
+    subroutine get_cell_values(self, plot_idx, i, j, z1, z2, z3, z4)
+        !! Get the data values at the four corners of a grid cell
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx, i, j
+        real(wp), intent(out) :: z1, z2, z3, z4
+
+        z1 = self%plots(plot_idx)%z_grid(i, j)
+        z2 = self%plots(plot_idx)%z_grid(i+1, j)
+        z3 = self%plots(plot_idx)%z_grid(i+1, j+1)
+        z4 = self%plots(plot_idx)%z_grid(i, j+1)
+    end subroutine get_cell_values
+
+    subroutine calculate_marching_squares_config(z1, z2, z3, z4, level, config)
+        !! Calculate marching squares configuration for a cell
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        integer, intent(out) :: config
+
+        config = 0
+        if (z1 >= level) config = config + 1
+        if (z2 >= level) config = config + 2
+        if (z3 >= level) config = config + 4
+        if (z4 >= level) config = config + 8
+    end subroutine calculate_marching_squares_config
+
+    subroutine get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                               z1, z2, z3, z4, level, line_points, num_lines)
+        !! Get contour line segments for a cell based on marching squares configuration
+        integer, intent(in) :: config
+        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        real(wp), dimension(8), intent(out) :: line_points
+        integer, intent(out) :: num_lines
+        real(wp) :: xa, ya, xb, yb, xc, yc, xd, yd
+        
+        call interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
+                                       z1, z2, z3, z4, level, xa, ya, xb, yb, xc, yc, xd, yd)
+        call apply_marching_squares_lookup(config, xa, ya, xb, yb, xc, yc, xd, yd, line_points, num_lines)
+    end subroutine get_contour_lines
+
+    subroutine interpolate_edge_crossings(x1, y1, x2, y2, x3, y3, x4, y4, &
+                                         z1, z2, z3, z4, level, xa, ya, xb, yb, xc, yc, xd, yd)
+        !! Interpolate where contour level crosses cell edges
+        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp), intent(in) :: z1, z2, z3, z4, level
+        real(wp), intent(out) :: xa, ya, xb, yb, xc, yc, xd, yd
+
+        ! Edge 1-2 (bottom)
+        if (abs(z2 - z1) > 1e-10_wp) then
+            xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
+            ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
+        else
+            xa = (x1 + x2) * 0.5_wp
+            ya = (y1 + y2) * 0.5_wp
+        end if
+        
+        ! Edge 2-3 (right)
+        if (abs(z3 - z2) > 1e-10_wp) then
+            xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
+            yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
+        else
+            xb = (x2 + x3) * 0.5_wp
+            yb = (y2 + y3) * 0.5_wp
+        end if
+        
+        ! Edge 3-4 (top)
+        if (abs(z4 - z3) > 1e-10_wp) then
+            xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
+            yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
+        else
+            xc = (x3 + x4) * 0.5_wp
+            yc = (y3 + y4) * 0.5_wp
+        end if
+        
+        ! Edge 4-1 (left)
+        if (abs(z1 - z4) > 1e-10_wp) then
+            xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
+            yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
+        else
+            xd = (x4 + x1) * 0.5_wp
+            yd = (y4 + y1) * 0.5_wp
+        end if
+    end subroutine interpolate_edge_crossings
+
+    subroutine apply_marching_squares_lookup(config, xa, ya, xb, yb, xc, yc, xd, yd, line_points, num_lines)
+        !! Apply marching squares lookup table to get line segments
+        integer, intent(in) :: config
+        real(wp), intent(in) :: xa, ya, xb, yb, xc, yc, xd, yd
+        real(wp), dimension(8), intent(out) :: line_points
+        integer, intent(out) :: num_lines
+
+        num_lines = 0
+        line_points = 0.0_wp
+        
+        select case (config)
+        case (1, 14)
+            line_points(1:4) = [xa, ya, xd, yd]
+            num_lines = 1
+        case (2, 13)
+            line_points(1:4) = [xa, ya, xb, yb]
+            num_lines = 1
+        case (3, 12)
+            line_points(1:4) = [xd, yd, xb, yb]
+            num_lines = 1
+        case (4, 11)
+            line_points(1:4) = [xb, yb, xc, yc]
+            num_lines = 1
+        case (5)
+            line_points(1:8) = [xa, ya, xd, yd, xb, yb, xc, yc]
+            num_lines = 2
+        case (6, 9)
+            line_points(1:4) = [xa, ya, xc, yc]
+            num_lines = 1
+        case (7, 8)
+            line_points(1:4) = [xd, yd, xc, yc]
+            num_lines = 1
+        case (10)
+            line_points(1:8) = [xa, ya, xb, yb, xc, yc, xd, yd]
+            num_lines = 2
+        case default
+            num_lines = 0
+        end select
+    end subroutine apply_marching_squares_lookup
+
+    subroutine draw_contour_lines(self, line_points, num_lines)
+        !! Draw the contour line segments with proper coordinate transformation
+        class(figure_t), intent(inout) :: self
+        real(wp), dimension(8), intent(in) :: line_points
+        integer, intent(in) :: num_lines
+        integer :: i
+        real(wp) :: x1_trans, y1_trans, x2_trans, y2_trans
+        
+        do i = 1, num_lines
+            ! Apply scale transformations to contour line endpoints
+            x1_trans = apply_scale_transform(line_points(4*i-3), self%xscale, self%symlog_threshold)
+            y1_trans = apply_scale_transform(line_points(4*i-2), self%yscale, self%symlog_threshold)
+            x2_trans = apply_scale_transform(line_points(4*i-1), self%xscale, self%symlog_threshold)
+            y2_trans = apply_scale_transform(line_points(4*i), self%yscale, self%symlog_threshold)
+            
+            call self%backend%line(x1_trans, y1_trans, x2_trans, y2_trans)
+        end do
+    end subroutine draw_contour_lines
 
     subroutine draw_line_with_style(self, plot_idx, linestyle)
         !! Draw line segments with specified linestyle pattern using continuous pattern approach
