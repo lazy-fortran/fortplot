@@ -102,10 +102,11 @@ contains
         y = y1
         
         do i = 0, steps
-            px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 1, wp)) + 1
-            py = this%plot_height - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 1, wp))
+            ! Map to usable plot area (excluding 1-char border on each side)
+            px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
+            py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
             
-            if (px >= 1 .and. px <= this%plot_width .and. py >= 1 .and. py <= this%plot_height) then
+            if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
                 if (this%canvas(py, px) == ' ') then
                     this%canvas(py, px) = line_char
                 else if (this%canvas(py, px) /= line_char) then
