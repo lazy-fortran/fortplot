@@ -11,3 +11,4 @@ pyplot-fortran/
 example/*/*.png
 example/*/*.pdf
 example/*/*.txt
+.aider*
