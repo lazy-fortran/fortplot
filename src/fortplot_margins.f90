@@ -97,11 +97,12 @@ contains
 
     subroutine calculate_tick_labels(data_min, data_max, num_ticks, labels)
         !! Calculate appropriate tick labels based on data range like matplotlib
+        !! Ensures all labels have consistent formatting (same decimal places)
         real(wp), intent(in) :: data_min, data_max
         integer, intent(in) :: num_ticks
         character(len=20), intent(out) :: labels(:)
         
-        integer :: i
+        integer :: i, decimal_places
         real(wp) :: value, range, step
         
         range = data_max - data_min
@@ -109,9 +110,12 @@ contains
         
         step = range / real(num_ticks - 1, wp)
         
+        ! Determine consistent formatting for entire range
+        decimal_places = determine_decimal_places(range, step)
+        
         do i = 1, num_ticks
             value = data_min + real(i - 1, wp) * step
-            labels(i) = format_tick_value(value, range)
+            labels(i) = format_tick_value_consistent(value, decimal_places)
         end do
     end subroutine calculate_tick_labels
 
@@ -185,5 +189,50 @@ contains
             end if
         end if
     end subroutine ensure_leading_zero
+
+    function determine_decimal_places(range, step) result(decimal_places)
+        !! Determine appropriate number of decimal places for consistent formatting
+        !! following matplotlib's approach
+        real(wp), intent(in) :: range, step
+        integer :: decimal_places
+        
+        if (range >= 100.0_wp) then
+            ! Large ranges use integer formatting
+            decimal_places = 0
+        else if (step >= 1.0_wp) then
+            ! Step size >= 1 suggests integer or minimal decimal formatting
+            decimal_places = 0
+        else if (step >= 0.1_wp) then
+            ! Medium step size - use 1 decimal place
+            decimal_places = 1
+        else if (step >= 0.01_wp) then
+            ! Small step size - use 2 decimal places
+            decimal_places = 2
+        else
+            ! Very small step size - use 3 decimal places
+            decimal_places = 3
+        end if
+    end function determine_decimal_places
+
+    function format_tick_value_consistent(value, decimal_places) result(formatted)
+        !! Format tick value with consistent number of decimal places
+        real(wp), intent(in) :: value
+        integer, intent(in) :: decimal_places
+        character(len=20) :: formatted
+        
+        if (abs(value) < 1.0e-10_wp) then
+            if (decimal_places == 0) then
+                formatted = '0'
+            else
+                write(formatted, '(F0.' // char(decimal_places + 48) // ')') 0.0_wp
+                call ensure_leading_zero(formatted)
+            end if
+        else if (decimal_places == 0) then
+            write(formatted, '(I0)') nint(value)
+        else
+            write(formatted, '(F0.' // char(decimal_places + 48) // ')') value
+            call ensure_leading_zero(formatted)
+        end if
+    end function format_tick_value_consistent
 
 end module fortplot_margins
