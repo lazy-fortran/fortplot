@@ -385,16 +385,17 @@ contains
         do i = 1, self%plot_count
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
                 if (first_plot) then
-                    x_min = minval(self%plots(i)%x)
-                    x_max = maxval(self%plots(i)%x)
-                    y_min = minval(self%plots(i)%y)
-                    y_max = maxval(self%plots(i)%y)
+                    ! Apply scale transformations to data ranges
+                    x_min = apply_scale_transform(minval(self%plots(i)%x), self%xscale, self%symlog_threshold)
+                    x_max = apply_scale_transform(maxval(self%plots(i)%x), self%xscale, self%symlog_threshold)
+                    y_min = apply_scale_transform(minval(self%plots(i)%y), self%yscale, self%symlog_threshold)
+                    y_max = apply_scale_transform(maxval(self%plots(i)%y), self%yscale, self%symlog_threshold)
                     first_plot = .false.
                 else
-                    x_min = min(x_min, minval(self%plots(i)%x))
-                    x_max = max(x_max, maxval(self%plots(i)%x))
-                    y_min = min(y_min, minval(self%plots(i)%y))
-                    y_max = max(y_max, maxval(self%plots(i)%y))
+                    x_min = min(x_min, apply_scale_transform(minval(self%plots(i)%x), self%xscale, self%symlog_threshold))
+                    x_max = max(x_max, apply_scale_transform(maxval(self%plots(i)%x), self%xscale, self%symlog_threshold))
+                    y_min = min(y_min, apply_scale_transform(minval(self%plots(i)%y), self%yscale, self%symlog_threshold))
+                    y_max = max(y_max, apply_scale_transform(maxval(self%plots(i)%y), self%yscale, self%symlog_threshold))
                 end if
             end if
         end do
@@ -454,6 +455,8 @@ contains
         do i = 1, self%plot_count
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
                 call render_line_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
+                call render_contour_plot(self, i)
             end if
         end do
     end subroutine render_all_plots
@@ -474,11 +477,82 @@ contains
                                self%plots(plot_idx)%color(2), &
                                self%plots(plot_idx)%color(3))
         
-        ! Draw line segments using data coordinates
+        ! Draw line segments using transformed coordinates
         do i = 1, size(self%plots(plot_idx)%x) - 1
-            call self%backend%line(self%plots(plot_idx)%x(i), self%plots(plot_idx)%y(i), &
-                                  self%plots(plot_idx)%x(i+1), self%plots(plot_idx)%y(i+1))
+            ! Apply scale transformations
+            x1_screen = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+            y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+            x2_screen = apply_scale_transform(self%plots(plot_idx)%x(i+1), self%xscale, self%symlog_threshold)
+            y2_screen = apply_scale_transform(self%plots(plot_idx)%y(i+1), self%yscale, self%symlog_threshold)
+            
+            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
         end do
     end subroutine render_line_plot
+
+    subroutine render_contour_plot(self, plot_idx)
+        !! Render a single contour plot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        integer :: i, j, level_idx
+        real(wp) :: level_value
+        
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%z_grid)) return
+        
+        ! Set contour color (for now use a single color)
+        call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Simple contour implementation: draw lines where z crosses contour levels
+        if (allocated(self%plots(plot_idx)%contour_levels)) then
+            do level_idx = 1, size(self%plots(plot_idx)%contour_levels)
+                level_value = self%plots(plot_idx)%contour_levels(level_idx)
+                call draw_contour_level(self, plot_idx, level_value)
+            end do
+        else
+            ! Draw a few default contour levels
+            call draw_contour_level(self, plot_idx, 0.1_wp)
+            call draw_contour_level(self, plot_idx, 0.5_wp)
+            call draw_contour_level(self, plot_idx, 0.9_wp)
+        end if
+    end subroutine render_contour_plot
+
+    subroutine draw_contour_level(self, plot_idx, level_value)
+        !! Draw a single contour level using simple grid-based approach
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: level_value
+        integer :: i, j
+        real(wp) :: x1, y1, x2, y2, z1, z2, z3, z4
+        real(wp) :: dx, dy
+        
+        ! Get grid spacing
+        dx = self%plots(plot_idx)%x_grid(2) - self%plots(plot_idx)%x_grid(1)
+        dy = self%plots(plot_idx)%y_grid(2) - self%plots(plot_idx)%y_grid(1)
+        
+        ! Simple marching squares algorithm - check each grid cell
+        do i = 1, size(self%plots(plot_idx)%x_grid) - 1
+            do j = 1, size(self%plots(plot_idx)%y_grid) - 1
+                z1 = self%plots(plot_idx)%z_grid(i, j)
+                z2 = self%plots(plot_idx)%z_grid(i+1, j)
+                z3 = self%plots(plot_idx)%z_grid(i+1, j+1)
+                z4 = self%plots(plot_idx)%z_grid(i, j+1)
+                
+                ! Check if contour level crosses this cell
+                if ((z1 <= level_value .and. z3 > level_value) .or. &
+                    (z1 > level_value .and. z3 <= level_value) .or. &
+                    (z2 <= level_value .and. z4 > level_value) .or. &
+                    (z2 > level_value .and. z4 <= level_value)) then
+                    
+                    ! Draw approximate contour line through cell center
+                    x1 = self%plots(plot_idx)%x_grid(i) + dx * 0.5_wp
+                    y1 = self%plots(plot_idx)%y_grid(j) + dy * 0.5_wp
+                    x2 = x1 + dx * 0.2_wp
+                    y2 = y1 + dy * 0.2_wp
+                    
+                    call self%backend%line(x1, y1, x2, y2)
+                end if
+            end do
+        end do
+    end subroutine draw_contour_level
 
 end module fortplot_figure_core
