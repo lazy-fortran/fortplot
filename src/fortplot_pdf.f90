@@ -1,14 +1,18 @@
 module fortplot_pdf
     use fortplot_context
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
-    public :: pdf_context, create_pdf_canvas
+    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels
     
     type, extends(plot_context) :: pdf_context
         character(len=:), allocatable :: content_stream
         real(wp) :: stroke_r, stroke_g, stroke_b
+        ! Plot area calculations (using common margin functionality)  
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
@@ -24,6 +28,10 @@ contains
         
         call setup_canvas(ctx, width, height)
         call initialize_pdf_stream(ctx)
+        
+        ! Set up matplotlib-style margins using common module
+        ctx%margins = plot_margins_t()  ! Use defaults
+        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
     end function create_pdf_canvas
 
     subroutine initialize_pdf_stream(ctx)
@@ -98,8 +106,11 @@ contains
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         
-        pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%width, wp)
-        pdf_y = (y - ctx%y_min) / (ctx%y_max - ctx%y_min) * real(ctx%height, wp)
+        ! Transform coordinates to plot area (like matplotlib)
+        ! Note: PDF coordinates have Y=0 at bottom (same as plot coordinates)
+        pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%plot_area%width, wp) + real(ctx%plot_area%left, wp)
+        pdf_y = (y - ctx%y_min) / (ctx%y_max - ctx%y_min) * real(ctx%plot_area%height, wp) + &
+                real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
     end subroutine normalize_to_pdf_coords
 
     subroutine draw_vector_line(ctx, x1, y1, x2, y2)
@@ -222,8 +233,8 @@ contains
         pos = get_position(unit)
         write(size_str, '(I0, 1X, I0)') ctx%width, ctx%height
         call write_string_to_unit(unit, "3 0 obj")
-        write(page_str, '("<</Type /Page/Parent 2 0 R/MediaBox [0 0 ", A, "]&
-/Contents 4 0 R/Resources <</Font <</F1 5 0 R>>>>>>>>")') trim(size_str)
+        page_str = "<</Type /Page/Parent 2 0 R/MediaBox [0 0 " // trim(size_str) // "]" // &
+                   "/Contents 4 0 R/Resources <</Font <</F1 5 0 R>>>>>>>>"
         call write_string_to_unit(unit, page_str)
         call write_string_to_unit(unit, "endobj")
     end subroutine write_page_object
@@ -274,5 +285,68 @@ contains
         write(unit) bytes
         deallocate(bytes)
     end subroutine write_string_to_unit
+
+    subroutine draw_pdf_axes_and_labels(ctx)
+        !! Draw plot axes and frame for PDF backend
+        type(pdf_context), intent(inout) :: ctx
+        real(wp) :: x_positions(10), y_positions(10)
+        integer :: num_x, num_y
+        
+        ! Set color to black for axes
+        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Draw plot frame using common functionality via procedure pointer
+        call draw_pdf_frame(ctx)
+        
+        ! Draw tick marks
+        call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
+        call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+    end subroutine draw_pdf_axes_and_labels
+    
+    subroutine draw_pdf_frame(ctx)
+        !! Draw the plot frame for PDF backend
+        type(pdf_context), intent(inout) :: ctx
+        real(wp) :: left, right, top, bottom
+        
+        ! Calculate frame coordinates (PDF coordinates Y=0 at bottom)
+        left = real(ctx%plot_area%left, wp)
+        right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
+        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
+        top = real(ctx%height - ctx%plot_area%bottom, wp)
+        
+        ! Draw frame (rectangle)
+        call draw_vector_line(ctx, left, bottom, right, bottom)  ! Bottom edge
+        call draw_vector_line(ctx, left, top, right, top)        ! Top edge
+        call draw_vector_line(ctx, left, bottom, left, top)      ! Left edge  
+        call draw_vector_line(ctx, right, bottom, right, top)    ! Right edge
+    end subroutine draw_pdf_frame
+    
+    subroutine draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        !! Draw tick marks for PDF backend
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x, num_y
+        integer :: i
+        real(wp) :: bottom, top, left, right, pdf_y_pos
+        
+        ! Calculate axis positions
+        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
+        top = real(ctx%height - ctx%plot_area%bottom, wp)
+        left = real(ctx%plot_area%left, wp)
+        right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
+        
+        ! Draw X-axis tick marks (at bottom of plot)
+        do i = 1, num_x
+            call draw_vector_line(ctx, x_positions(i), bottom, x_positions(i), bottom - 5.0_wp)
+        end do
+        
+        ! Draw Y-axis tick marks (at left of plot)  
+        do i = 1, num_y
+            ! Convert Y position to PDF coordinates
+            pdf_y_pos = real(ctx%height - ctx%plot_area%bottom, wp) - &
+                       (y_positions(i) - real(ctx%plot_area%bottom, wp))
+            call draw_vector_line(ctx, left, pdf_y_pos, left - 5.0_wp, pdf_y_pos)
+        end do
+    end subroutine draw_pdf_tick_marks
 
 end module fortplot_pdf
