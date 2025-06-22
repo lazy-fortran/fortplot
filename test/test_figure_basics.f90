@@ -104,7 +104,6 @@ contains
     subroutine start_test(test_name)
         character(len=*), intent(in) :: test_name
         write(*, '(A, A)') 'Running test: ', test_name
-        test_count = test_count + 1
     end subroutine start_test
 
     subroutine end_test()
@@ -117,6 +116,7 @@ contains
         character(len=*), intent(in) :: description
         real(wp), parameter :: tolerance = 1.0e-10_wp
         
+        test_count = test_count + 1
         if (abs(actual - expected) < tolerance) then
             write(*, '(A, A)') '  PASS: ', description
             pass_count = pass_count + 1
@@ -129,6 +129,7 @@ contains
         logical, intent(in) :: condition
         character(len=*), intent(in) :: description
         
+        test_count = test_count + 1
         if (condition) then
             write(*, '(A, A)') '  PASS: ', description
             pass_count = pass_count + 1

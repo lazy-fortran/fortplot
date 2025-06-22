@@ -64,16 +64,14 @@ contains
         
         select case (trim(backend_type))
         case ('png')
-            allocate(png_context :: backend)
+            backend = create_png_canvas(width, height)
         case ('pdf')
-            allocate(pdf_context :: backend)
+            backend = create_pdf_canvas(width, height)
         case ('ascii')
-            allocate(ascii_context :: backend)
+            backend = create_ascii_canvas(width, height)
         case default
-            allocate(png_context :: backend)
+            backend = create_png_canvas(width, height)
         end select
-        
-        call setup_canvas(backend, width, height)
     end subroutine initialize_backend
 
     function to_lowercase(input) result(output)
