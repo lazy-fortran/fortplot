@@ -8,9 +8,11 @@ module fortplot_margins
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
+    intrinsic :: floor, log10
+    
     private
     public :: plot_margins_t, calculate_plot_area, draw_basic_axes_frame, get_axis_tick_positions
-    public :: calculate_tick_labels, format_tick_value
+    public :: calculate_tick_labels, format_tick_value, calculate_nice_axis_limits
     
     ! Standard matplotlib-style margins
     type :: plot_margins_t
@@ -96,26 +98,34 @@ contains
     end subroutine draw_basic_axes_frame
 
     subroutine calculate_tick_labels(data_min, data_max, num_ticks, labels)
-        !! Calculate appropriate tick labels based on data range like matplotlib
-        !! Ensures all labels have consistent formatting (same decimal places)
+        !! Calculate appropriate tick labels at nice locations like matplotlib
+        !! Ensures all labels have consistent formatting and nice round numbers
         real(wp), intent(in) :: data_min, data_max
         integer, intent(in) :: num_ticks
         character(len=20), intent(out) :: labels(:)
         
-        integer :: i, decimal_places
-        real(wp) :: value, range, step
+        integer :: i, decimal_places, actual_num_ticks
+        real(wp) :: nice_min, nice_max, nice_step
+        real(wp) :: tick_locations(size(labels))
         
-        range = data_max - data_min
         if (num_ticks <= 1) return
         
-        step = range / real(num_ticks - 1, wp)
+        ! Find nice tick locations using matplotlib-style algorithm
+        call find_nice_tick_locations(data_min, data_max, num_ticks, &
+                                     nice_min, nice_max, nice_step, &
+                                     tick_locations, actual_num_ticks)
         
-        ! Determine consistent formatting for entire range
-        decimal_places = determine_decimal_places(range, step)
+        ! Determine consistent formatting for the nice step size
+        decimal_places = determine_decimal_places_from_step(nice_step)
         
-        do i = 1, num_ticks
-            value = data_min + real(i - 1, wp) * step
-            labels(i) = format_tick_value_consistent(value, decimal_places)
+        ! Format the nice tick locations
+        do i = 1, min(actual_num_ticks, size(labels))
+            labels(i) = format_tick_value_consistent(tick_locations(i), decimal_places)
+        end do
+        
+        ! Clear unused labels
+        do i = actual_num_ticks + 1, size(labels)
+            labels(i) = ''
         end do
     end subroutine calculate_tick_labels
 
@@ -234,5 +244,99 @@ contains
             call ensure_leading_zero(formatted)
         end if
     end function format_tick_value_consistent
+
+    subroutine find_nice_tick_locations(data_min, data_max, target_num_ticks, &
+                                       nice_min, nice_max, nice_step, &
+                                       tick_locations, actual_num_ticks)
+        !! Find nice tick locations following matplotlib's MaxNLocator algorithm
+        real(wp), intent(in) :: data_min, data_max
+        integer, intent(in) :: target_num_ticks
+        real(wp), intent(out) :: nice_min, nice_max, nice_step
+        real(wp), intent(out) :: tick_locations(:)
+        integer, intent(out) :: actual_num_ticks
+        
+        real(wp) :: range, rough_step, magnitude, normalized_step
+        real(wp) :: nice_normalized_step, current_tick
+        integer :: i
+        
+        range = data_max - data_min
+        if (range <= 0.0_wp) then
+            tick_locations(1) = data_min
+            actual_num_ticks = 1
+            return
+        end if
+        
+        ! Calculate rough step size
+        rough_step = range / real(max(target_num_ticks - 1, 1), wp)
+        
+        ! Find magnitude and normalize
+        magnitude = 10.0_wp ** floor(log10(rough_step))
+        normalized_step = rough_step / magnitude
+        
+        ! Choose nice normalized step (1, 2, 5, 10)
+        if (normalized_step <= 1.0_wp) then
+            nice_normalized_step = 1.0_wp
+        else if (normalized_step <= 2.0_wp) then
+            nice_normalized_step = 2.0_wp
+        else if (normalized_step <= 5.0_wp) then
+            nice_normalized_step = 5.0_wp
+        else
+            nice_normalized_step = 10.0_wp
+        end if
+        
+        nice_step = nice_normalized_step * magnitude
+        
+        ! Find nice boundaries (implement ceil manually)
+        nice_min = floor(data_min / nice_step) * nice_step
+        nice_max = floor(data_max / nice_step + 1.0_wp) * nice_step
+        
+        ! Generate tick locations
+        actual_num_ticks = 0
+        current_tick = nice_min
+        do i = 1, size(tick_locations)
+            if (current_tick > nice_max + 1.0e-10_wp) exit
+            actual_num_ticks = actual_num_ticks + 1
+            tick_locations(i) = current_tick
+            current_tick = current_tick + nice_step
+        end do
+    end subroutine find_nice_tick_locations
+
+    function determine_decimal_places_from_step(step) result(decimal_places)
+        !! Determine decimal places based on step size for nice formatting
+        real(wp), intent(in) :: step
+        integer :: decimal_places
+        
+        if (step >= 1.0_wp) then
+            decimal_places = 0
+        else if (step >= 0.1_wp) then
+            decimal_places = 1
+        else if (step >= 0.01_wp) then
+            decimal_places = 2
+        else if (step >= 0.001_wp) then
+            decimal_places = 3
+        else
+            decimal_places = 4
+        end if
+    end function determine_decimal_places_from_step
+
+    subroutine calculate_nice_axis_limits(data_min, data_max, target_num_ticks, &
+                                         nice_min, nice_max)
+        !! Calculate nice axis limits that encompass the data like matplotlib
+        !! The axis limits are set to nice round numbers based on tick locations
+        real(wp), intent(in) :: data_min, data_max
+        integer, intent(in) :: target_num_ticks
+        real(wp), intent(out) :: nice_min, nice_max
+        
+        real(wp) :: nice_step, tick_locations(20)
+        integer :: actual_num_ticks
+        
+        ! Use the same algorithm as tick calculation to find nice boundaries
+        call find_nice_tick_locations(data_min, data_max, target_num_ticks, &
+                                     nice_min, nice_max, nice_step, &
+                                     tick_locations, actual_num_ticks)
+        
+        ! The nice_min and nice_max from find_nice_tick_locations are already
+        ! appropriate axis limits that encompass the data
+    end subroutine calculate_nice_axis_limits
 
 end module fortplot_margins

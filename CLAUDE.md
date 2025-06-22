@@ -1,6 +1,9 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides **MANDATORY** guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+**⚠️ CRITICAL: YOU MUST ADHERE TO ALL PRINCIPLES BELOW ⚠️**
+These are not suggestions - they are strict requirements that MUST be followed in every code change.
 
 ## Project Overview
 
@@ -41,22 +44,26 @@ end program
 
 ## Coding Standards
 
-### SOLID Principles (Adapted for Fortran)
+### SOLID Principles (Adapted for Fortran) - MANDATORY
 
-**S - Single Responsibility**: Each routine has one clear purpose, max 30 lines
-**O - Open/Closed**: Extend through inheritance/composition, not modification  
-**L - Liskov Substitution**: Derived types must work wherever base types do
-**I - Interface Segregation**: Keep interfaces focused and minimal
-**D - Dependency Inversion**: Depend on abstractions (abstract types), not concrete implementations
+**⚠️ CRITICAL: ALL SOLID PRINCIPLES MUST BE FOLLOWED ⚠️**
 
-### DRY and KISS Principles
+**S - Single Responsibility**: Each routine has one clear purpose, max 30 lines - **ENFORCED**
+**O - Open/Closed**: Extend through inheritance/composition, not modification - **REQUIRED**
+**L - Liskov Substitution**: Derived types must work wherever base types do - **MANDATORY**
+**I - Interface Segregation**: Keep interfaces focused and minimal - **ENFORCED**
+**D - Dependency Inversion**: Depend on abstractions (abstract types), not concrete implementations - **REQUIRED**
 
-**DRY - Don't Repeat Yourself**: Extract common functionality into shared modules
+### DRY and KISS Principles - MANDATORY
+
+**⚠️ CRITICAL: DRY AND KISS ARE STRICTLY ENFORCED ⚠️**
+
+**DRY - Don't Repeat Yourself**: Extract common functionality into shared modules - **REQUIRED**
 - Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
-- Use procedure pointers for backend-agnostic operations
+- Use procedure pointers for backend-agnostic operations  
 - Centralize constants and magic numbers in one place
 
-**KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness
+**KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness - **MANDATORY**
 - Write clear, readable code over "clever" optimizations
 - Use straightforward algorithms unless performance demands complexity
 - Prefer explicit over implicit behavior
@@ -70,7 +77,9 @@ use fortplot_margins, only: plot_margins_t, calculate_plot_area
 pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
 ```
 
-### Test-Driven Development
+### Test-Driven Development (MANDATORY)
+
+**⚠️ CRITICAL: TDD IS REQUIRED FOR ALL FEATURES ⚠️**
 
 1. **Write failing test first** in `test/test_*.f90`
 2. **Run with `make run`** to confirm failure
@@ -89,12 +98,45 @@ contains
 end program
 ```
 
-### Code Organization
+### Debug Scripts MUST Become Unit Tests
 
-**Routine Size**: Max 30 lines, single responsibility
-**Naming**: Use descriptive verbs (`calculate_bounds` not `calc`)
-**Placement**: Helper routines after caller, shared utilities at module end
-**Comments**: Only for complex algorithms, let code self-document
+**⚠️ MANDATORY: ALL DEBUG SCRIPTS MUST BE CONVERTED TO TESTS ⚠️**
+
+When creating debug scripts in `app/debug_*.f90` for development:
+1. **Debug scripts are temporary** - use them to understand behavior
+2. **Extract corner cases** - identify edge cases and boundary conditions  
+3. **Convert to unit tests** - move all corner cases to `test/test_*.f90`
+4. **Delete debug scripts** - or keep only as examples if educational
+
+Example workflow:
+```fortran
+! app/debug_tick_format.f90 - TEMPORARY debugging
+program debug_tick_format
+    ! Test various edge cases...
+    call test_small_range()
+    call test_large_range()
+    call test_zero_crossing()
+end program
+
+! MUST become test/test_tick_format.f90 - PERMANENT unit tests
+program test_tick_format
+    call test_should_handle_small_ranges()
+    call test_should_handle_large_ranges()
+    call test_should_handle_zero_crossing()
+    print *, "All tick format tests passed!"
+end program
+```
+
+**Corner cases discovered during debugging are GOLD** - they reveal real-world scenarios that must be tested to prevent regressions.
+
+### Code Organization (MANDATORY RULES)
+
+**⚠️ CRITICAL: THESE RULES ARE NON-NEGOTIABLE ⚠️**
+
+**Routine Size**: Max 30 lines, single responsibility - **NO EXCEPTIONS**
+**Naming**: Use descriptive verbs (`calculate_bounds` not `calc`) - **REQUIRED**
+**Placement**: Helper routines after caller, shared utilities at module end - **ENFORCED**
+**Comments**: Only for complex algorithms, let code self-document - **MANDATORY**
 
 ### Refactoring Strategy
 
@@ -115,7 +157,9 @@ subroutine process_data()
 end subroutine
 ```
 
-### Misc
+### Misc - STRICTLY ENFORCED
 
-- Always explicitly import with `use only`. No wildcard imports allowed.
-- Use `implicit none` in all modules and programs
+**⚠️ CRITICAL: THESE RULES HAVE NO EXCEPTIONS ⚠️**
+
+- Always explicitly import with `use only`. No wildcard imports allowed. - **MANDATORY**
+- Use `implicit none` in all modules and programs - **REQUIRED**
