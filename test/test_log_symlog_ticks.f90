@@ -2,7 +2,7 @@ program test_log_symlog_ticks
     !! Test that log and symlog scales generate appropriate tick locations
     !! and maintain correct coordinate positioning following TDD principles
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_margins, only: calculate_tick_labels
+    use fortplot_ticks, only: calculate_tick_labels
     implicit none
     
     call test_should_handle_log_scale_ranges()

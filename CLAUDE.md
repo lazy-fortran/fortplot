@@ -79,13 +79,17 @@ pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
 
 ### Test-Driven Development (MANDATORY)
 
-**⚠️ CRITICAL: TDD IS REQUIRED FOR ALL FEATURES ⚠️**
+**⚠️ CRITICAL: TDD IS MANDATORY FOR ALL FEATURES AND REFACTORING ⚠️**
+
+**NO EXCEPTIONS: Every code change MUST follow TDD approach**
 
 1. **Write failing test first** in `test/test_*.f90`
 2. **Run with `make run`** to confirm failure
 3. **Write minimal code** to make test pass
 4. **Refactor** while keeping tests green
 5. **Repeat** for next feature
+
+**TDD is not optional** - it is the foundation of all development in this codebase.
 
 ```fortran
 ! test/test_new_feature.f90

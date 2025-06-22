@@ -2,7 +2,7 @@ program test_debug_corner_cases
     !! Comprehensive tests for all corner cases discovered during debugging
     !! Following TDD principles and matplotlib compatibility requirements
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_margins, only: calculate_tick_labels
+    use fortplot_ticks, only: calculate_tick_labels
     implicit none
     
     call test_case_0123_to_0789()

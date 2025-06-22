@@ -1,7 +1,7 @@
 program test_tick_labels
     !! Test tick label functionality following TDD principles
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_margins, only: calculate_tick_labels, format_tick_value
+    use fortplot_ticks, only: calculate_tick_labels, format_tick_value
     implicit none
     
     call test_should_format_small_numbers()

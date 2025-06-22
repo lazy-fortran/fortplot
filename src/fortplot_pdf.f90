@@ -1,7 +1,7 @@
 module fortplot_pdf
     use fortplot_context
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions, &
-                                   calculate_tick_labels
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
+    use fortplot_ticks, only: calculate_tick_labels
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
