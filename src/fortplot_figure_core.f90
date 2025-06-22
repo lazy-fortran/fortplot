@@ -462,31 +462,30 @@ contains
     end subroutine render_all_plots
 
     subroutine render_line_plot(self, plot_idx)
-        !! Render a single line plot
+        !! Render a single line plot with linestyle support
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         integer :: i
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        character(len=:), allocatable :: linestyle
         
         if (plot_idx > self%plot_count) return
         if (.not. allocated(self%plots(plot_idx)%x)) return
         if (size(self%plots(plot_idx)%x) < 2) return
+        
+        ! Get linestyle for this plot
+        linestyle = self%plots(plot_idx)%linestyle
+        
+        ! Skip drawing if linestyle is 'None'
+        if (linestyle == 'None') return
         
         ! Set color
         call self%backend%color(self%plots(plot_idx)%color(1), &
                                self%plots(plot_idx)%color(2), &
                                self%plots(plot_idx)%color(3))
         
-        ! Draw line segments using transformed coordinates
-        do i = 1, size(self%plots(plot_idx)%x) - 1
-            ! Apply scale transformations
-            x1_screen = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
-            y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
-            x2_screen = apply_scale_transform(self%plots(plot_idx)%x(i+1), self%xscale, self%symlog_threshold)
-            y2_screen = apply_scale_transform(self%plots(plot_idx)%y(i+1), self%yscale, self%symlog_threshold)
-            
-            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
-        end do
+        ! Draw line segments using transformed coordinates with linestyle
+        call draw_line_with_style(self, plot_idx, linestyle)
     end subroutine render_line_plot
 
     subroutine render_contour_plot(self, plot_idx)
@@ -554,5 +553,192 @@ contains
             end do
         end do
     end subroutine draw_contour_level
+
+    subroutine draw_line_with_style(self, plot_idx, linestyle)
+        !! Draw line segments with specified linestyle pattern using continuous pattern approach
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in) :: linestyle
+        
+        if (linestyle == '-' .or. linestyle == 'solid') then
+            ! Solid line - draw all segments normally
+            call render_solid_line(self, plot_idx)
+        else
+            ! Patterned line - render with continuous pattern
+            call render_patterned_line(self, plot_idx, linestyle)
+        end if
+    end subroutine draw_line_with_style
+
+    subroutine render_solid_line(self, plot_idx)
+        !! Render solid line by drawing all segments
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        integer :: i
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        
+        do i = 1, size(self%plots(plot_idx)%x) - 1
+            ! Apply scale transformations
+            x1_screen = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+            y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+            x2_screen = apply_scale_transform(self%plots(plot_idx)%x(i+1), self%xscale, self%symlog_threshold)
+            y2_screen = apply_scale_transform(self%plots(plot_idx)%y(i+1), self%yscale, self%symlog_threshold)
+            
+            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
+        end do
+    end subroutine render_solid_line
+
+    subroutine render_patterned_line(self, plot_idx, linestyle)
+        !! Render line with continuous pattern across segments (matplotlib-style)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in) :: linestyle
+        
+        real(wp) :: current_distance, segment_length
+        real(wp) :: dash_len, dot_len, gap_len
+        real(wp) :: pattern(20), pattern_length
+        integer :: pattern_size, pattern_index
+        logical :: drawing
+        integer :: i
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen, dx, dy
+        
+        ! Get transformed data range for proper pattern scaling
+        real(wp) :: x_range, y_range, plot_scale
+        real(wp), allocatable :: x_trans(:), y_trans(:)
+        
+        ! Transform all data points to get proper scaling
+        allocate(x_trans(size(self%plots(plot_idx)%x)))
+        allocate(y_trans(size(self%plots(plot_idx)%y)))
+        
+        do i = 1, size(self%plots(plot_idx)%x)
+            x_trans(i) = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+            y_trans(i) = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+        end do
+        
+        x_range = maxval(x_trans) - minval(x_trans)
+        y_range = maxval(y_trans) - minval(y_trans)
+        plot_scale = max(x_range, y_range)
+        
+        ! Define pattern lengths (matplotlib-like)
+        dash_len = plot_scale * 0.03_wp    ! 3% of range
+        dot_len = plot_scale * 0.005_wp    ! 0.5% of range  
+        gap_len = plot_scale * 0.015_wp    ! 1.5% of range
+        
+        ! Define patterns like matplotlib
+        select case (trim(linestyle))
+        case ('--')
+            ! Dashed: [dash, gap, dash, gap, ...]
+            pattern_size = 2
+            pattern(1) = dash_len  ! dash
+            pattern(2) = gap_len   ! gap
+            
+        case (':')
+            ! Dotted: [dot, gap, dot, gap, ...]
+            pattern_size = 2
+            pattern(1) = dot_len   ! dot
+            pattern(2) = gap_len   ! gap
+            
+        case ('-.')
+            ! Dash-dot: [dash, gap, dot, gap, dash, gap, dot, gap, ...]
+            pattern_size = 4
+            pattern(1) = dash_len  ! dash
+            pattern(2) = gap_len   ! gap
+            pattern(3) = dot_len   ! dot
+            pattern(4) = gap_len   ! gap
+            
+        case default
+            ! Unknown pattern, fall back to solid
+            call render_solid_line(self, plot_idx)
+            deallocate(x_trans, y_trans)
+            return
+        end select
+        
+        ! Calculate total pattern length
+        pattern_length = sum(pattern(1:pattern_size))
+        
+        ! Render with continuous pattern
+        current_distance = 0.0_wp
+        pattern_index = 1
+        drawing = .true.  ! Start drawing
+        
+        do i = 1, size(self%plots(plot_idx)%x) - 1
+            x1_screen = x_trans(i)
+            y1_screen = y_trans(i)
+            x2_screen = x_trans(i+1)
+            y2_screen = y_trans(i+1)
+            
+            dx = x2_screen - x1_screen
+            dy = y2_screen - y1_screen
+            segment_length = sqrt(dx*dx + dy*dy)
+            
+            if (segment_length < 1e-10_wp) cycle
+            
+            call render_segment_with_pattern(self, x1_screen, y1_screen, x2_screen, y2_screen, segment_length, &
+                                            pattern, pattern_size, pattern_length, &
+                                            current_distance, pattern_index, drawing)
+        end do
+        
+        ! Clean up
+        deallocate(x_trans, y_trans)
+    end subroutine render_patterned_line
+
+    subroutine render_segment_with_pattern(self, x1, y1, x2, y2, segment_length, &
+                                          pattern, pattern_size, pattern_length, &
+                                          current_distance, pattern_index, drawing)
+        !! Render single segment with continuous pattern state
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x1, y1, x2, y2, segment_length
+        real(wp), intent(in) :: pattern(:), pattern_length
+        integer, intent(in) :: pattern_size
+        real(wp), intent(inout) :: current_distance
+        integer, intent(inout) :: pattern_index
+        logical, intent(inout) :: drawing
+        
+        real(wp) :: dx, dy, remaining_distance, pattern_remaining
+        real(wp) :: t_start, t_end, seg_x1, seg_y1, seg_x2, seg_y2
+        
+        dx = x2 - x1
+        dy = y2 - y1
+        remaining_distance = segment_length
+        t_start = 0.0_wp
+        
+        do while (remaining_distance > 1e-10_wp)
+            ! How much of current pattern element is left?
+            pattern_remaining = pattern(pattern_index) - current_distance
+            
+            if (pattern_remaining <= remaining_distance) then
+                ! Complete this pattern element within current segment
+                t_end = t_start + pattern_remaining / segment_length
+                
+                if (drawing) then
+                    seg_x1 = x1 + t_start * dx
+                    seg_y1 = y1 + t_start * dy
+                    seg_x2 = x1 + t_end * dx
+                    seg_y2 = y1 + t_end * dy
+                    call self%backend%line(seg_x1, seg_y1, seg_x2, seg_y2)
+                end if
+                
+                ! Move to next pattern element
+                remaining_distance = remaining_distance - pattern_remaining
+                t_start = t_end
+                current_distance = 0.0_wp
+                pattern_index = mod(pattern_index, pattern_size) + 1
+                drawing = .not. drawing  ! Alternate between drawing and not drawing
+            else
+                ! Pattern element extends beyond this segment
+                t_end = 1.0_wp
+                
+                if (drawing) then
+                    seg_x1 = x1 + t_start * dx
+                    seg_y1 = y1 + t_start * dy
+                    seg_x2 = x2
+                    seg_y2 = y2
+                    call self%backend%line(seg_x1, seg_y1, seg_x2, seg_y2)
+                end if
+                
+                current_distance = current_distance + remaining_distance
+                remaining_distance = 0.0_wp
+            end if
+        end do
+    end subroutine render_segment_with_pattern
 
 end module fortplot_figure_core
