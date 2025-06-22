@@ -10,6 +10,7 @@ auto-tests = true
 auto-examples = true
 module-naming = false
 link = ["z", "freetype"]
+
 [install]
 library = false
 test = false

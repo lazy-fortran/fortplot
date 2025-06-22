@@ -1,4 +1,4 @@
-program line_style_examples
+program line_styles
     !! Comprehensive demonstration of line styles in fortplotlib
     !! 
     !! This example shows all available line styles:
@@ -35,8 +35,8 @@ program line_style_examples
     call title('Complete Line Style Reference')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('line_style_reference.png')
-    call savefig('line_style_reference.pdf')
+    call savefig('example/line_styles/line_style_reference.png')
+    call savefig('example/line_styles/line_style_reference.pdf')
     
     ! Terminal display to show line styles in ASCII
     call figure()
@@ -52,4 +52,4 @@ program line_style_examples
     print *, "Note: 'None' linestyle creates invisible lines (no output)"
     print *
     
-end program line_style_examples
+end program line_styles

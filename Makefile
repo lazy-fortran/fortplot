@@ -24,7 +24,7 @@ build:
 
 # Build and run the main program
 run:
-	fpm run $(FPM_FLAGS)
+	fpm run $(FPM_FLAGS) --example
 
 # Run tests
 test:
@@ -34,6 +34,7 @@ test:
 clean:
 	echo y | fpm clean
 	rm -f *.png *.pdf *.txt
+	find example/ -name "*.png" -o -name "*.pdf" -o -name "*.txt" | xargs rm -f
 
 # Build with release optimizations
 release:
