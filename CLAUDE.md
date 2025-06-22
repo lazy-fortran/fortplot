@@ -93,3 +93,8 @@ subroutine process_data()
     call apply_antialiasing_filters()
 end subroutine
 ```
+
+### Misc
+
+- Always explicitly import with `use only`. No wildcard imports allowed.
+- Use `implicit none` in all modules and programs
