@@ -1708,29 +1708,68 @@ contains
     end subroutine compute_log_ticks
 
     subroutine compute_symlog_ticks(axis_min, axis_max, threshold, n_ticks, tick_positions)
-        !! Compute ticks for symmetric log scale
+        !! Compute ticks for symmetric log scale with proper spacing
         real(wp), intent(in) :: axis_min, axis_max, threshold
         integer, intent(out) :: n_ticks
         real(wp), intent(out) :: tick_positions(20)
         
-        ! For symlog, use a combination approach
-        ! This is simplified - could be more sophisticated
-        integer :: i
-        real(wp) :: range, step
+        real(wp) :: tick_candidates(20)
+        real(wp) :: candidate_val, transformed_val
+        integer :: i, candidate_count
         
-        range = axis_max - axis_min
-        step = range / 6.0_wp  ! Approximately 6 ticks
+        ! Generate candidate tick values in original space, then transform
+        candidate_count = 0
         
-        n_ticks = 0
-        do i = 0, 7
-            if (n_ticks >= 20) exit
-            tick_positions(i+1) = axis_min + i * step
-            if (tick_positions(i+1) <= axis_max) then
-                n_ticks = n_ticks + 1
+        ! Add zero if it's in range
+        if (0.0_wp >= apply_inverse_scale_transform(axis_min, 'symlog', threshold) .and. &
+            0.0_wp <= apply_inverse_scale_transform(axis_max, 'symlog', threshold)) then
+            candidate_count = candidate_count + 1
+            tick_candidates(candidate_count) = apply_scale_transform(0.0_wp, 'symlog', threshold)
+        end if
+        
+        ! Add positive powers of 10 * threshold
+        do i = 1, 6
+            candidate_val = real(i, wp) * threshold
+            transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
+            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
+                candidate_count = candidate_count + 1
+                tick_candidates(candidate_count) = transformed_val
+            end if
+            
+            candidate_val = 10.0_wp**i * threshold
+            transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
+            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
+                candidate_count = candidate_count + 1
+                tick_candidates(candidate_count) = transformed_val
             end if
         end do
         
-        if (n_ticks == 0) then
+        ! Add negative powers of 10 * threshold
+        do i = 1, 6
+            candidate_val = -real(i, wp) * threshold
+            transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
+            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
+                candidate_count = candidate_count + 1
+                tick_candidates(candidate_count) = transformed_val
+            end if
+            
+            candidate_val = -10.0_wp**i * threshold
+            transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
+            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
+                candidate_count = candidate_count + 1
+                tick_candidates(candidate_count) = transformed_val
+            end if
+        end do
+        
+        ! Sort candidates and copy to output
+        call sort_array(tick_candidates, candidate_count)
+        n_ticks = min(candidate_count, 20)
+        do i = 1, n_ticks
+            tick_positions(i) = tick_candidates(i)
+        end do
+        
+        ! Ensure we have at least 2 ticks
+        if (n_ticks < 2) then
             n_ticks = 2
             tick_positions(1) = axis_min
             tick_positions(2) = axis_max
@@ -1857,5 +1896,23 @@ contains
         ! This is a rough approximation - could be improved with actual font metrics
         width = real(len_trim(text), wp) * 0.008_wp
     end function estimate_text_width
+
+    subroutine sort_array(arr, n)
+        !! Simple bubble sort for small arrays
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: n
+        integer :: i, j
+        real(wp) :: temp
+        
+        do i = 1, n-1
+            do j = 1, n-i
+                if (arr(j) > arr(j+1)) then
+                    temp = arr(j)
+                    arr(j) = arr(j+1)
+                    arr(j+1) = temp
+                end if
+            end do
+        end do
+    end subroutine sort_array
 
 end module fortplot_figure
