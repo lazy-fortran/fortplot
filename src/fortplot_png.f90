@@ -651,12 +651,14 @@ contains
     end function calculate_crc32
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
-                                   x_min_orig, x_max_orig, y_min_orig, y_max_orig)
+                                   x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                   title, xlabel, ylabel)
         !! Draw plot axes and frame with scale-aware tick generation
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
         integer :: i
         real(wp) :: x_positions(10), y_positions(10)
         integer :: num_x, num_y
@@ -687,6 +689,9 @@ contains
         end if
         call draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
         call draw_png_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        
+        ! Draw title and axis labels
+        call draw_png_title_and_labels(ctx, title, xlabel, ylabel)
     end subroutine draw_axes_and_labels
     
     subroutine draw_png_frame(ctx)
@@ -777,5 +782,39 @@ contains
                                      0_1, 0_1, 0_1)  ! Black text
         end do
     end subroutine draw_png_tick_labels
+    
+    subroutine draw_png_title_and_labels(ctx, title, xlabel, ylabel)
+        !! Draw figure title and axis labels
+        type(png_context), intent(inout) :: ctx
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        real(wp) :: label_x, label_y
+        
+        ! Draw title at top center of plot
+        if (present(title)) then
+            label_x = real(ctx%width, wp) / 2.0_wp
+            label_y = real(ctx%plot_area%bottom - 25, wp)  ! 25 pixels above plot area
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y), trim(title), &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end if
+        
+        ! Draw X-axis label centered below plot
+        if (present(xlabel)) then
+            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
+            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 50, wp)  ! Below tick labels
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y), trim(xlabel), &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end if
+        
+        ! Draw Y-axis label rotated on left side
+        if (present(ylabel)) then
+            label_x = real(20, wp)  ! Far left margin
+            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp)
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y), trim(ylabel), &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end if
+    end subroutine draw_png_title_and_labels
 
 end module fortplot_png
