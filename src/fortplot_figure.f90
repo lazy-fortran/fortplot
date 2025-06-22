@@ -16,7 +16,7 @@ module fortplot_figure
     implicit none
 
     private
-    public :: figure_t
+    public :: figure_t, apply_scale_transform, transform_x_coordinate, transform_y_coordinate
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
@@ -53,6 +53,10 @@ module fortplot_figure
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
         real(wp) :: symlog_threshold = 1.0_wp
+        
+        ! Axis limits
+        real(wp) :: x_min, x_max, y_min, y_max
+        logical :: xlim_set = .false., ylim_set = .false.
 
         ! Colors: seaborn colorblind palette
         real(wp), dimension(3,6) :: colors = reshape([ &
@@ -81,6 +85,8 @@ module fortplot_figure
         procedure :: set_title
         procedure :: set_xscale
         procedure :: set_yscale
+        procedure :: set_xlim
+        procedure :: set_ylim
         procedure :: show
         final :: destroy
     end type figure_t
@@ -435,6 +441,26 @@ contains
             self%symlog_threshold = threshold
         end if
     end subroutine set_yscale
+
+    subroutine set_xlim(self, x_min, x_max)
+        !! Set x-axis limits
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_min, x_max
+        
+        self%x_min = x_min
+        self%x_max = x_max
+        self%xlim_set = .true.
+    end subroutine set_xlim
+
+    subroutine set_ylim(self, y_min, y_max)
+        !! Set y-axis limits
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: y_min, y_max
+        
+        self%y_min = y_min
+        self%y_max = y_max
+        self%ylim_set = .true.
+    end subroutine set_ylim
 
     subroutine show(self)
         class(figure_t), intent(inout) :: self
@@ -811,20 +837,34 @@ contains
         real(wp) :: xmin_axis, xmax_axis, ymin_axis, ymax_axis
         real(wp) :: xmin_expanded, xmax_expanded, ymin_expanded, ymax_expanded
 
-        ! Add some padding to the data range first
-        xmin_expanded = xmin_data
-        xmax_expanded = xmax_data
-        ymin_expanded = ymin_data
-        ymax_expanded = ymax_data
-        call expand_range(xmin_expanded, xmax_expanded)
-        call expand_range(ymin_expanded, ymax_expanded)
+        ! Use custom limits if set, otherwise use data-based ranges
+        if (self%xlim_set) then
+            xmin_expanded = self%x_min
+            xmax_expanded = self%x_max
+        else
+            xmin_expanded = xmin_data
+            xmax_expanded = xmax_data
+            call expand_range(xmin_expanded, xmax_expanded)
+        end if
+        
+        if (self%ylim_set) then
+            ymin_expanded = self%y_min
+            ymax_expanded = self%y_max
+        else
+            ymin_expanded = ymin_data
+            ymax_expanded = ymax_data
+            call expand_range(ymin_expanded, ymax_expanded)
+        end if
 
         ! Calculate nice tick intervals to determine actual axis ranges
         call compute_ticks(xmin_expanded, xmax_expanded, nx, xstart, xend, xstep, xticks)
         call compute_ticks(ymin_expanded, ymax_expanded, ny, ystart, yend, ystep, yticks)
 
-        ! Use the tick ranges as our axis ranges for better alignment
-        if (nx > 0) then
+        ! Use custom limits as axis ranges if set, otherwise use tick ranges for alignment
+        if (self%xlim_set) then
+            xmin_axis = self%x_min
+            xmax_axis = self%x_max
+        else if (nx > 0) then
             xmin_axis = xticks(1)
             xmax_axis = xticks(nx)
         else
@@ -832,7 +872,10 @@ contains
             xmax_axis = xmax_expanded
         end if
 
-        if (ny > 0) then
+        if (self%ylim_set) then
+            ymin_axis = self%y_min
+            ymax_axis = self%y_max
+        else if (ny > 0) then
             ymin_axis = yticks(1)
             ymax_axis = yticks(ny)
         else
@@ -1528,6 +1571,37 @@ contains
         end if
     end function apply_inverse_symlog_transform
 
+    function transform_x_coordinate(x, x_min, x_max, width) result(x_screen)
+        !! Transform data x-coordinate to screen coordinate
+        !! Extracted from backend-specific coordinate transformation logic
+        real(wp), intent(in) :: x, x_min, x_max
+        integer, intent(in) :: width
+        real(wp) :: x_screen
+        
+        x_screen = (x - x_min) / (x_max - x_min) * real(width, wp)
+    end function transform_x_coordinate
+
+    function transform_y_coordinate(y, y_min, y_max, height, invert) result(y_screen)
+        !! Transform data y-coordinate to screen coordinate
+        !! Extracted from backend-specific coordinate transformation logic
+        real(wp), intent(in) :: y, y_min, y_max
+        integer, intent(in) :: height
+        logical, intent(in), optional :: invert
+        real(wp) :: y_screen
+        logical :: do_invert
+        
+        do_invert = .false.
+        if (present(invert)) do_invert = invert
+        
+        if (do_invert) then
+            ! Inverted Y-axis for screen coordinates (PNG, ASCII)
+            y_screen = (1.0_wp - (y - y_min) / (y_max - y_min)) * real(height, wp)
+        else
+            ! Direct Y-axis mapping (PDF)
+            y_screen = (y - y_min) / (y_max - y_min) * real(height, wp)
+        end if
+    end function transform_y_coordinate
+
     subroutine format_tick_label(tick_value, scale_type, threshold, label_text)
         !! Format tick label with consistent professional formatting across all scales
         real(wp), intent(in) :: tick_value
@@ -1714,67 +1788,139 @@ contains
         real(wp), intent(out) :: tick_positions(20)
         
         real(wp) :: tick_candidates(20)
-        real(wp) :: candidate_val, transformed_val
-        integer :: i, candidate_count
+        integer :: candidate_count
         
-        ! Generate candidate tick values in original space, then transform
+        ! Generate all candidate tick values
+        call generate_symlog_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        
+        ! Sort and select final tick positions
+        call finalize_tick_positions(tick_candidates, candidate_count, axis_min, axis_max, n_ticks, tick_positions)
+    end subroutine compute_symlog_ticks
+
+    subroutine generate_symlog_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        !! Generate candidate tick values for symlog scale
+        real(wp), intent(in) :: axis_min, axis_max, threshold
+        real(wp), intent(out) :: tick_candidates(20)
+        integer, intent(out) :: candidate_count
+        
         candidate_count = 0
         
-        ! Add zero if it's in range
+        ! Add zero tick if in range
+        call add_zero_tick_candidate(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        
+        ! Add positive scale tick candidates
+        call add_positive_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        
+        ! Add negative scale tick candidates
+        call add_negative_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+    end subroutine generate_symlog_tick_candidates
+
+    subroutine add_zero_tick_candidate(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        !! Add zero tick if it's within the axis range
+        real(wp), intent(in) :: axis_min, axis_max, threshold
+        real(wp), intent(inout) :: tick_candidates(20)
+        integer, intent(inout) :: candidate_count
+        
         if (0.0_wp >= apply_inverse_scale_transform(axis_min, 'symlog', threshold) .and. &
             0.0_wp <= apply_inverse_scale_transform(axis_max, 'symlog', threshold)) then
             candidate_count = candidate_count + 1
             tick_candidates(candidate_count) = apply_scale_transform(0.0_wp, 'symlog', threshold)
         end if
+    end subroutine add_zero_tick_candidate
+
+    subroutine add_positive_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        !! Add positive powers of 10 * threshold as tick candidates
+        real(wp), intent(in) :: axis_min, axis_max, threshold
+        real(wp), intent(inout) :: tick_candidates(20)
+        integer, intent(inout) :: candidate_count
         
-        ! Add positive powers of 10 * threshold
+        integer :: i
+        real(wp) :: candidate_val, transformed_val
+        
         do i = 1, 6
+            ! Linear multiples of threshold
             candidate_val = real(i, wp) * threshold
             transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
-            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
-                candidate_count = candidate_count + 1
-                tick_candidates(candidate_count) = transformed_val
-            end if
+            call add_candidate_if_valid(transformed_val, axis_min, axis_max, tick_candidates, candidate_count)
             
+            ! Logarithmic powers of 10 * threshold
             candidate_val = 10.0_wp**i * threshold
             transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
-            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
-                candidate_count = candidate_count + 1
-                tick_candidates(candidate_count) = transformed_val
-            end if
+            call add_candidate_if_valid(transformed_val, axis_min, axis_max, tick_candidates, candidate_count)
         end do
+    end subroutine add_positive_tick_candidates
+
+    subroutine add_negative_tick_candidates(axis_min, axis_max, threshold, tick_candidates, candidate_count)
+        !! Add negative powers of 10 * threshold as tick candidates
+        real(wp), intent(in) :: axis_min, axis_max, threshold
+        real(wp), intent(inout) :: tick_candidates(20)
+        integer, intent(inout) :: candidate_count
         
-        ! Add negative powers of 10 * threshold
+        integer :: i
+        real(wp) :: candidate_val, transformed_val
+        
         do i = 1, 6
+            ! Linear multiples of threshold
             candidate_val = -real(i, wp) * threshold
             transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
-            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
-                candidate_count = candidate_count + 1
-                tick_candidates(candidate_count) = transformed_val
-            end if
+            call add_candidate_if_valid(transformed_val, axis_min, axis_max, tick_candidates, candidate_count)
             
+            ! Logarithmic powers of 10 * threshold
             candidate_val = -10.0_wp**i * threshold
             transformed_val = apply_scale_transform(candidate_val, 'symlog', threshold)
-            if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
-                candidate_count = candidate_count + 1
-                tick_candidates(candidate_count) = transformed_val
-            end if
+            call add_candidate_if_valid(transformed_val, axis_min, axis_max, tick_candidates, candidate_count)
         end do
+    end subroutine add_negative_tick_candidates
+
+    subroutine add_candidate_if_valid(transformed_val, axis_min, axis_max, tick_candidates, candidate_count)
+        !! Add candidate to list if it's within range and there's space
+        real(wp), intent(in) :: transformed_val, axis_min, axis_max
+        real(wp), intent(inout) :: tick_candidates(20)
+        integer, intent(inout) :: candidate_count
         
-        ! Sort candidates and copy to output
-        call sort_array(tick_candidates, candidate_count)
+        if (transformed_val >= axis_min .and. transformed_val <= axis_max .and. candidate_count < 20) then
+            candidate_count = candidate_count + 1
+            tick_candidates(candidate_count) = transformed_val
+        end if
+    end subroutine add_candidate_if_valid
+
+    subroutine finalize_tick_positions(tick_candidates, candidate_count, axis_min, axis_max, n_ticks, tick_positions)
+        !! Sort candidates and apply fallback logic to ensure valid tick positions
+        real(wp), intent(in) :: tick_candidates(20)
+        integer, intent(in) :: candidate_count
+        real(wp), intent(in) :: axis_min, axis_max
+        integer, intent(out) :: n_ticks
+        real(wp), intent(out) :: tick_positions(20)
+        
+        real(wp) :: sorted_candidates(20)
+        integer :: i
+        
+        ! Copy and sort candidates
+        sorted_candidates(1:candidate_count) = tick_candidates(1:candidate_count)
+        call sort_array(sorted_candidates, candidate_count)
+        
+        ! Copy sorted candidates to output
         n_ticks = min(candidate_count, 20)
         do i = 1, n_ticks
-            tick_positions(i) = tick_candidates(i)
+            tick_positions(i) = sorted_candidates(i)
         end do
         
-        ! Ensure we have at least 2 ticks
+        ! Apply fallback logic for insufficient ticks
+        call apply_tick_fallback_logic(n_ticks, tick_positions, axis_min, axis_max)
+    end subroutine finalize_tick_positions
+
+    subroutine apply_tick_fallback_logic(n_ticks, tick_positions, axis_min, axis_max)
+        !! Ensure we have at least 2 ticks by using axis bounds as fallback
+        integer, intent(inout) :: n_ticks
+        real(wp), intent(inout) :: tick_positions(20)
+        real(wp), intent(in) :: axis_min, axis_max
+        
         if (n_ticks < 2) then
             n_ticks = 2
             tick_positions(1) = axis_min
             tick_positions(2) = axis_max
         end if
-    end subroutine compute_symlog_ticks
+    end subroutine apply_tick_fallback_logic
 
     subroutine draw_axis_ticks(self, plot_x0, plot_y0, plot_x1, plot_y1, &
                               axis_min, axis_max, major_ticks, scale_type, threshold, &
