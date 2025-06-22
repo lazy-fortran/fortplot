@@ -49,6 +49,27 @@ end program
 **I - Interface Segregation**: Keep interfaces focused and minimal
 **D - Dependency Inversion**: Depend on abstractions (abstract types), not concrete implementations
 
+### DRY and KISS Principles
+
+**DRY - Don't Repeat Yourself**: Extract common functionality into shared modules
+- Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
+- Use procedure pointers for backend-agnostic operations
+- Centralize constants and magic numbers in one place
+
+**KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness
+- Write clear, readable code over "clever" optimizations
+- Use straightforward algorithms unless performance demands complexity
+- Prefer explicit over implicit behavior
+- Choose clear variable names over short abbreviations
+
+```fortran
+! DRY: Common functionality extracted to shared module
+use fortplot_margins, only: plot_margins_t, calculate_plot_area
+
+! KISS: Clear, simple coordinate transformation
+pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
+```
+
 ### Test-Driven Development
 
 1. **Write failing test first** in `test/test_*.f90`

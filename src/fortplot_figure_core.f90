@@ -14,6 +14,7 @@ module fortplot_figure_core
     use fortplot_utils
     use fortplot_axes
     use fortplot_png, only: png_context, draw_axes_and_labels
+    use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     implicit none
 
     private
@@ -456,10 +457,12 @@ contains
         ! Set axis color to black
         call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
         
-        ! For PNG backend, use matplotlib-style axes with margins
+        ! Use matplotlib-style axes with margins for backends that support it
         select type (backend => self%backend)
         type is (png_context)
             call draw_axes_and_labels(backend)
+        type is (pdf_context)
+            call draw_pdf_axes_and_labels(backend)
         class default
             ! For other backends, use simple axes
             call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)

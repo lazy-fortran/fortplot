@@ -2,6 +2,7 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context
     use fortplot_text
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -12,9 +13,9 @@ module fortplot_png
     type, extends(plot_context) :: png_context
         integer(1), allocatable :: image_data(:)
         real(wp) :: current_r, current_g, current_b
-        ! Plot area calculations (margins like matplotlib)
-        integer :: plot_left, plot_bottom, plot_width, plot_height
-        real(wp) :: margin_left, margin_right, margin_bottom, margin_top
+        ! Plot area calculations (using common margin functionality)
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
     contains
         procedure :: line => png_draw_line
         procedure :: color => png_set_color
@@ -37,17 +38,9 @@ contains
         ctx%current_g = 0.0_wp
         ctx%current_b = 1.0_wp
         
-        ! Set up matplotlib-style margins (15% left/bottom, 5% right/top)
-        ctx%margin_left = 0.15_wp
-        ctx%margin_right = 0.05_wp
-        ctx%margin_bottom = 0.15_wp
-        ctx%margin_top = 0.05_wp
-        
-        ! Calculate plot area like matplotlib (note: PNG Y=0 is at top)
-        ctx%plot_left = int(ctx%margin_left * real(width, wp)) + 1
-        ctx%plot_bottom = int(ctx%margin_top * real(height, wp)) + 1  ! Top margin becomes bottom in PNG coords
-        ctx%plot_width = width - int((ctx%margin_left + ctx%margin_right) * real(width, wp))
-        ctx%plot_height = height - int((ctx%margin_bottom + ctx%margin_top) * real(height, wp))
+        ! Set up matplotlib-style margins using common module
+        ctx%margins = plot_margins_t()  ! Use defaults
+        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
     end function create_png_canvas
     
     subroutine png_draw_line(this, x1, y1, x2, y2)
@@ -58,12 +51,12 @@ contains
         
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: PNG Y=0 at top, so we need to flip Y coordinates
-        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp) + real(this%plot_left, wp)
-        py1 = real(this%plot_bottom + this%plot_height, wp) - &
-              (y1 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height, wp)
-        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp) + real(this%plot_left, wp)
-        py2 = real(this%plot_bottom + this%plot_height, wp) - &
-              (y2 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height, wp)
+        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+        py1 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+              (y1 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
+        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+        py2 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+              (y2 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
         
         r = color_to_byte(this%current_r)
         g = color_to_byte(this%current_g)
@@ -89,9 +82,9 @@ contains
         
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: PNG Y=0 at top, so we need to flip Y coordinates
-        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp) + real(this%plot_left, wp)
-        py = real(this%plot_bottom + this%plot_height, wp) - &
-             (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height, wp)
+        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+        py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+             (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
         
         call render_text_to_image(this%image_data, this%width, this%height, &
                                  int(px), int(py), text, &
@@ -659,63 +652,80 @@ contains
         !! Draw plot axes and frame like matplotlib
         type(png_context), intent(inout) :: ctx
         integer :: i
-        real(wp) :: tick_spacing_x, tick_spacing_y, tick_pos
-        integer :: num_ticks_x, num_ticks_y
-        integer :: x_axis_y, y_axis_x
+        real(wp) :: x_positions(10), y_positions(10)
+        integer :: num_x, num_y
         
         ! Set color to black for axes
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp
         ctx%current_b = 0.0_wp
         
-        ! Calculate axis positions (PNG coordinates with Y=0 at top)
-        x_axis_y = ctx%plot_bottom + ctx%plot_height  ! X-axis at bottom of plot area (top in PNG coords)
-        y_axis_x = ctx%plot_left    ! Y-axis at left of plot area
+        ! Draw plot frame using common functionality
+        call draw_png_frame(ctx)
         
-        ! Draw plot frame (like matplotlib) - note PNG Y coordinate system
+        ! Draw tick marks
+        call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
+        call draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+    end subroutine draw_axes_and_labels
+    
+    subroutine draw_png_frame(ctx)
+        !! Draw the plot frame for PNG backend
+        type(png_context), intent(inout) :: ctx
+        
+        ! Draw plot frame (PNG coordinates with Y=0 at top)
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_left, wp), real(ctx%plot_bottom + ctx%plot_height, wp), &
-                                  real(ctx%plot_left + ctx%plot_width, wp), real(ctx%plot_bottom + ctx%plot_height, wp), &
+                                  real(ctx%plot_area%left, wp), &
+                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
+                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1)  ! Bottom edge (top in PNG)
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_left, wp), real(ctx%plot_bottom, wp), &
-                                  real(ctx%plot_left, wp), real(ctx%plot_bottom + ctx%plot_height, wp), &
+                                  real(ctx%plot_area%left, wp), &
+                                  real(ctx%plot_area%bottom, wp), &
+                                  real(ctx%plot_area%left, wp), &
+                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1)  ! Left edge
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_left + ctx%plot_width, wp), real(ctx%plot_bottom, wp), &
-                                  real(ctx%plot_left + ctx%plot_width, wp), real(ctx%plot_bottom + ctx%plot_height, wp), &
+                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
+                                  real(ctx%plot_area%bottom, wp), &
+                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
+                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1)  ! Right edge
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_left, wp), real(ctx%plot_bottom, wp), &
-                                  real(ctx%plot_left + ctx%plot_width, wp), real(ctx%plot_bottom, wp), &
+                                  real(ctx%plot_area%left, wp), &
+                                  real(ctx%plot_area%bottom, wp), &
+                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
+                                  real(ctx%plot_area%bottom, wp), &
                                   0_1, 0_1, 0_1)  ! Top edge (bottom in PNG)
-        
-        ! Draw some basic tick marks
-        num_ticks_x = 5
-        num_ticks_y = 5
-        tick_spacing_x = real(ctx%plot_width, wp) / real(num_ticks_x - 1, wp)
-        tick_spacing_y = real(ctx%plot_height, wp) / real(num_ticks_y - 1, wp)
+    end subroutine draw_png_frame
+    
+    subroutine draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        !! Draw tick marks for PNG backend
+        type(png_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x, num_y
+        integer :: i
         
         ! Draw X-axis tick marks (at bottom of plot - top in PNG coords)
-        do i = 0, num_ticks_x - 1
-            tick_pos = real(ctx%plot_left, wp) + real(i, wp) * tick_spacing_x
+        do i = 1, num_x
             call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                      tick_pos, real(ctx%plot_bottom + ctx%plot_height, wp), &
-                                      tick_pos, real(ctx%plot_bottom + ctx%plot_height + 5, wp), &
+                                      x_positions(i), &
+                                      real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                      x_positions(i), &
+                                      real(ctx%plot_area%bottom + ctx%plot_area%height + 5, wp), &
                                       0_1, 0_1, 0_1)
         end do
         
         ! Draw Y-axis tick marks (at left of plot)
-        do i = 0, num_ticks_y - 1
-            tick_pos = real(ctx%plot_bottom, wp) + real(i, wp) * tick_spacing_y
+        do i = 1, num_y
             call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
-                                      real(ctx%plot_left, wp), tick_pos, &
-                                      real(ctx%plot_left - 5, wp), tick_pos, &
+                                      real(ctx%plot_area%left, wp), y_positions(i), &
+                                      real(ctx%plot_area%left - 5, wp), y_positions(i), &
                                       0_1, 0_1, 0_1)
         end do
-    end subroutine draw_axes_and_labels
+    end subroutine draw_png_tick_marks
 
 end module fortplot_png
