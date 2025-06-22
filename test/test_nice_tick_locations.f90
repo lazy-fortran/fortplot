@@ -2,7 +2,7 @@ program test_nice_tick_locations
     !! Test that tick locations are placed at nice round numbers like matplotlib
     !! and have appropriate precision following TDD principles
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_margins, only: calculate_tick_labels
+    use fortplot_ticks, only: calculate_tick_labels
     implicit none
     
     call test_should_place_ticks_at_nice_locations()

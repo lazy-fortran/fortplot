@@ -2,7 +2,7 @@ program test_consistent_tick_digits
     !! Test that all tick labels on an axis have consistent number of digits
     !! following matplotlib's behavior for professional appearance
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_margins, only: calculate_tick_labels
+    use fortplot_ticks, only: calculate_tick_labels
     implicit none
     
     call test_should_have_consistent_decimal_places()
