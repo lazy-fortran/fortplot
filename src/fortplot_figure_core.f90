@@ -61,8 +61,9 @@ module fortplot_figure_core
         character(len=10) :: yscale = 'linear'
         real(wp) :: symlog_threshold = 1.0_wp
         
-        ! Axis limits
-        real(wp) :: x_min, x_max, y_min, y_max
+        ! Axis limits - separate original and transformed ranges
+        real(wp) :: x_min, x_max, y_min, y_max  ! Original data ranges for tick generation
+        real(wp) :: x_min_transformed, x_max_transformed, y_min_transformed, y_max_transformed  ! Transformed for rendering
         logical :: xlim_set = .false., ylim_set = .false.
 
         ! Color palette: seaborn colorblind palette
@@ -377,7 +378,8 @@ contains
     subroutine calculate_figure_data_ranges(self)
         class(figure_t), intent(inout) :: self
         integer :: i
-        real(wp) :: x_min, x_max, y_min, y_max
+        real(wp) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp) :: x_min_trans, x_max_trans, y_min_trans, y_max_trans
         logical :: first_plot
         
         if (self%plot_count == 0) return
@@ -387,46 +389,82 @@ contains
         do i = 1, self%plot_count
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
                 if (first_plot) then
-                    ! Apply scale transformations to data ranges
-                    x_min = apply_scale_transform(minval(self%plots(i)%x), self%xscale, self%symlog_threshold)
-                    x_max = apply_scale_transform(maxval(self%plots(i)%x), self%xscale, self%symlog_threshold)
-                    y_min = apply_scale_transform(minval(self%plots(i)%y), self%yscale, self%symlog_threshold)
-                    y_max = apply_scale_transform(maxval(self%plots(i)%y), self%yscale, self%symlog_threshold)
+                    ! Store ORIGINAL data ranges for tick generation
+                    x_min_orig = minval(self%plots(i)%x)
+                    x_max_orig = maxval(self%plots(i)%x)
+                    y_min_orig = minval(self%plots(i)%y)
+                    y_max_orig = maxval(self%plots(i)%y)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                     first_plot = .false.
                 else
-                    x_min = min(x_min, apply_scale_transform(minval(self%plots(i)%x), self%xscale, self%symlog_threshold))
-                    x_max = max(x_max, apply_scale_transform(maxval(self%plots(i)%x), self%xscale, self%symlog_threshold))
-                    y_min = min(y_min, apply_scale_transform(minval(self%plots(i)%y), self%yscale, self%symlog_threshold))
-                    y_max = max(y_max, apply_scale_transform(maxval(self%plots(i)%y), self%yscale, self%symlog_threshold))
+                    ! Update original ranges
+                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
+                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
+                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
+                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
                 end if
             else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 if (first_plot) then
-                    ! Apply scale transformations to contour grid ranges
-                    x_min = apply_scale_transform(minval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold)
-                    x_max = apply_scale_transform(maxval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold)
-                    y_min = apply_scale_transform(minval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold)
-                    y_max = apply_scale_transform(maxval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold)
+                    ! Store ORIGINAL contour grid ranges
+                    x_min_orig = minval(self%plots(i)%x_grid)
+                    x_max_orig = maxval(self%plots(i)%x_grid)
+                    y_min_orig = minval(self%plots(i)%y_grid)
+                    y_max_orig = maxval(self%plots(i)%y_grid)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                     first_plot = .false.
                 else
-                    x_min = min(x_min, apply_scale_transform(minval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold))
-                    x_max = max(x_max, apply_scale_transform(maxval(self%plots(i)%x_grid), self%xscale, self%symlog_threshold))
-                    y_min = min(y_min, apply_scale_transform(minval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold))
-                    y_max = max(y_max, apply_scale_transform(maxval(self%plots(i)%y_grid), self%yscale, self%symlog_threshold))
+                    ! Update original ranges
+                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x_grid))
+                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x_grid))
+                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y_grid))
+                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y_grid))
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x_grid), &
+                                                                         self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x_grid), &
+                                                                         self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y_grid), &
+                                                                         self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y_grid), &
+                                                                         self%yscale, self%symlog_threshold))
                 end if
             end if
         end do
         
         if (.not. self%xlim_set) then
-            self%x_min = x_min
-            self%x_max = x_max
+            self%x_min = x_min_orig  ! Backend gets ORIGINAL coordinates for tick generation
+            self%x_max = x_max_orig
+            self%x_min_transformed = x_min_trans  ! Store transformed for rendering
+            self%x_max_transformed = x_max_trans
         end if
         
         if (.not. self%ylim_set) then
-            self%y_min = y_min
-            self%y_max = y_max
+            self%y_min = y_min_orig  ! Backend gets ORIGINAL coordinates for tick generation  
+            self%y_max = y_max_orig
+            self%y_min_transformed = y_min_trans  ! Store transformed for rendering
+            self%y_max_transformed = y_max_trans
         end if
-        
-        ! print *, "DEBUG: Data ranges - X:", self%x_min, "to", self%x_max, "Y:", self%y_min, "to", self%y_max
     end subroutine calculate_figure_data_ranges
     
     subroutine setup_coordinate_system(self)
@@ -436,11 +474,11 @@ contains
             call calculate_figure_data_ranges(self)
         end if
         
-        ! Set backend data coordinate ranges
-        self%backend%x_min = self%x_min
-        self%backend%x_max = self%x_max
-        self%backend%y_min = self%y_min
-        self%backend%y_max = self%y_max
+        ! Set backend data coordinate ranges to TRANSFORMED coordinates for data rendering
+        self%backend%x_min = self%x_min_transformed
+        self%backend%x_max = self%x_max_transformed
+        self%backend%y_min = self%y_min_transformed
+        self%backend%y_max = self%y_max_transformed
     end subroutine setup_coordinate_system
     
     subroutine render_figure_background(self)
@@ -460,9 +498,11 @@ contains
         ! Use matplotlib-style axes with margins for backends that support it
         select type (backend => self%backend)
         type is (png_context)
-            call draw_axes_and_labels(backend)
+            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                    self%x_min, self%x_max, self%y_min, self%y_max)
         type is (pdf_context)
-            call draw_pdf_axes_and_labels(backend)
+            call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                        self%x_min, self%x_max, self%y_min, self%y_max)
         class default
             ! For other backends, use simple axes
             call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)

@@ -16,6 +16,7 @@ module fortplot_ticks
     private
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
+    public :: generate_scale_aware_tick_labels
     
 contains
 
@@ -258,43 +259,6 @@ contains
         end if
     end function determine_decimal_places_from_step
 
-    function format_log_tick_value(value) result(formatted)
-        !! Format logarithmic tick values appropriately for scientific notation
-        real(wp), intent(in) :: value
-        character(len=20) :: formatted
-        
-        if (abs(value) < 1.0e-10_wp) then
-            formatted = '0'
-        else if (value >= 1000.0_wp) then
-            ! Use scientific notation for very large values
-            write(formatted, '(ES8.1)') value
-        else if (value >= 1.0_wp) then
-            write(formatted, '(I0)') nint(value)
-        else if (value >= 0.001_wp) then
-            write(formatted, '(F0.3)') value
-            call ensure_leading_zero(formatted)
-            call remove_trailing_zeros(formatted)
-        else
-            ! Use scientific notation for very small values
-            write(formatted, '(ES8.1)') value
-        end if
-    end function format_log_tick_value
-
-    function format_symlog_tick_value(value) result(formatted)
-        !! Format symlog tick values appropriately
-        real(wp), intent(in) :: value
-        character(len=20) :: formatted
-        
-        if (abs(value) < 1.0e-10_wp) then
-            formatted = '0'
-        else if (abs(value) >= 1.0_wp) then
-            write(formatted, '(I0)') nint(value)
-        else
-            write(formatted, '(F0.2)') value
-            call ensure_leading_zero(formatted)
-            call remove_trailing_zeros(formatted)
-        end if
-    end function format_symlog_tick_value
 
 
     subroutine generate_log_tick_locations(data_min, data_max, num_ticks, labels)
@@ -343,7 +307,7 @@ contains
             
             if (tick_value >= data_min .and. tick_value <= data_max) then
                 actual_num_ticks = actual_num_ticks + 1
-                labels(actual_num_ticks) = format_log_tick_value(tick_value)
+                labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
             end if
         end do
         
@@ -374,7 +338,7 @@ contains
             tick_value = decade_start
             if (tick_value >= data_min .and. tick_value <= data_max) then
                 actual_num_ticks = actual_num_ticks + 1
-                labels(actual_num_ticks) = format_log_tick_value(tick_value)
+                labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
             end if
             
             ! Add subticks within this decade
@@ -386,7 +350,7 @@ contains
                 if (tick_value >= data_min .and. tick_value <= data_max .and. &
                     tick_value < 10.0_wp ** (power + 1)) then
                     actual_num_ticks = actual_num_ticks + 1
-                    labels(actual_num_ticks) = format_log_tick_value(tick_value)
+                    labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
                 end if
             end do
             
@@ -417,9 +381,9 @@ contains
         call calculate_symlog_ticks(data_min, data_max, linear_threshold, &
                                    tick_locations, actual_num_ticks)
         
-        ! Format the tick locations
+        ! Format the tick locations using consistent formatting
         do i = 1, min(actual_num_ticks, size(labels))
-            labels(i) = format_symlog_tick_value(tick_locations(i))
+            labels(i) = format_tick_value(tick_locations(i), data_max - data_min)
         end do
         
         ! Clear unused labels
@@ -578,5 +542,33 @@ contains
             end do
         end do
     end subroutine simple_sort
+
+    subroutine generate_scale_aware_tick_labels(data_min, data_max, num_ticks, labels, scale, threshold)
+        !! Generate tick labels based on scale type - common function for all backends
+        real(wp), intent(in) :: data_min, data_max
+        integer, intent(in) :: num_ticks
+        character(len=20), intent(out) :: labels(:)
+        character(len=*), intent(in), optional :: scale
+        real(wp), intent(in), optional :: threshold
+        
+        character(len=10) :: scale_type
+        real(wp) :: symlog_threshold
+        
+        ! Set defaults
+        scale_type = 'linear'
+        if (present(scale)) scale_type = scale
+        symlog_threshold = 1.0_wp
+        if (present(threshold)) symlog_threshold = threshold
+        
+        ! Generate labels based on scale type
+        select case (trim(scale_type))
+        case ('log')
+            call calculate_tick_labels_log(data_min, data_max, num_ticks, labels)
+        case ('symlog')
+            call calculate_tick_labels_symlog(data_min, data_max, symlog_threshold, num_ticks, labels)
+        case default  ! 'linear'
+            call calculate_tick_labels(data_min, data_max, num_ticks, labels)
+        end select
+    end subroutine generate_scale_aware_tick_labels
 
 end module fortplot_ticks

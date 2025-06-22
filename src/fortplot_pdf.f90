@@ -1,7 +1,7 @@
 module fortplot_pdf
     use fortplot_context
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
-    use fortplot_ticks, only: calculate_tick_labels
+    use fortplot_ticks, only: generate_scale_aware_tick_labels
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -287,9 +287,13 @@ contains
         deallocate(bytes)
     end subroutine write_string_to_unit
 
-    subroutine draw_pdf_axes_and_labels(ctx)
-        !! Draw plot axes and frame for PDF backend
+    subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
+                                      x_min_orig, x_max_orig, y_min_orig, y_max_orig)
+        !! Draw plot axes and frame for PDF backend with scale-aware tick generation
         type(pdf_context), intent(inout) :: ctx
+        character(len=*), intent(in), optional :: xscale, yscale
+        real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         real(wp) :: x_positions(10), y_positions(10)
         integer :: num_x, num_y
         character(len=20) :: x_labels(10), y_labels(10)
@@ -300,10 +304,21 @@ contains
         ! Draw plot frame using common functionality via procedure pointer
         call draw_pdf_frame(ctx)
         
-        ! Draw tick marks and labels
+        ! Draw tick marks and labels with scale-aware generation
         call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
-        call calculate_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels)
-        call calculate_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels)
+        
+        ! Use original coordinates for tick generation if provided, otherwise use backend coordinates
+        if (present(x_min_orig) .and. present(x_max_orig)) then
+            call generate_scale_aware_tick_labels(x_min_orig, x_max_orig, num_x, x_labels, xscale, symlog_threshold)
+        else
+            call generate_scale_aware_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels, xscale, symlog_threshold)
+        end if
+        
+        if (present(y_min_orig) .and. present(y_max_orig)) then
+            call generate_scale_aware_tick_labels(y_min_orig, y_max_orig, num_y, y_labels, yscale, symlog_threshold)
+        else
+            call generate_scale_aware_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels, yscale, symlog_threshold)
+        end if
         call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
         call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
     end subroutine draw_pdf_axes_and_labels
