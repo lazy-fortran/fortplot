@@ -1,6 +1,7 @@
 module fortplot_pdf
     use fortplot_context
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions, &
+                                   calculate_tick_labels
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -291,6 +292,7 @@ contains
         type(pdf_context), intent(inout) :: ctx
         real(wp) :: x_positions(10), y_positions(10)
         integer :: num_x, num_y
+        character(len=20) :: x_labels(10), y_labels(10)
         
         ! Set color to black for axes
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -298,9 +300,12 @@ contains
         ! Draw plot frame using common functionality via procedure pointer
         call draw_pdf_frame(ctx)
         
-        ! Draw tick marks
+        ! Draw tick marks and labels
         call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
+        call calculate_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels)
+        call calculate_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels)
         call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
     end subroutine draw_pdf_axes_and_labels
     
     subroutine draw_pdf_frame(ctx)
@@ -348,5 +353,51 @@ contains
             call draw_vector_line(ctx, left, pdf_y_pos, left - 5.0_wp, pdf_y_pos)
         end do
     end subroutine draw_pdf_tick_marks
+    
+    subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        !! Draw tick labels for PDF backend like matplotlib
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        character(len=*), intent(in) :: x_labels(:), y_labels(:)
+        integer, intent(in) :: num_x, num_y
+        integer :: i
+        real(wp) :: label_x, label_y, bottom, left
+        character(len=200) :: text_cmd
+        
+        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
+        left = real(ctx%plot_area%left, wp)
+        
+        ! Draw X-axis labels (below the X-axis)
+        do i = 1, num_x
+            label_x = x_positions(i)
+            label_y = bottom - 15.0_wp  ! 15 points below axis
+            
+            call add_to_stream(ctx, "BT")
+            write(text_cmd, '("/F1 8 Tf")')
+            call add_to_stream(ctx, text_cmd)
+            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
+            call add_to_stream(ctx, text_cmd)
+            write(text_cmd, '("(", A, ") Tj")') trim(x_labels(i))
+            call add_to_stream(ctx, text_cmd)
+            call add_to_stream(ctx, "ET")
+        end do
+        
+        ! Draw Y-axis labels (to the left of the Y-axis)
+        do i = 1, num_y
+            label_x = left - 25.0_wp  ! 25 points left of axis
+            ! Convert Y position to PDF coordinates
+            label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+                     (y_positions(i) - real(ctx%plot_area%bottom, wp))
+            
+            call add_to_stream(ctx, "BT")
+            write(text_cmd, '("/F1 8 Tf")')
+            call add_to_stream(ctx, text_cmd)
+            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
+            call add_to_stream(ctx, text_cmd)
+            write(text_cmd, '("(", A, ") Tj")') trim(y_labels(i))
+            call add_to_stream(ctx, text_cmd)
+            call add_to_stream(ctx, "ET")
+        end do
+    end subroutine draw_pdf_tick_labels
 
 end module fortplot_pdf
