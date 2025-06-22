@@ -65,6 +65,11 @@ module fortplot_figure_core
         real(wp) :: x_min, x_max, y_min, y_max  ! Original data ranges for tick generation
         real(wp) :: x_min_transformed, x_max_transformed, y_min_transformed, y_max_transformed  ! Transformed for rendering
         logical :: xlim_set = .false., ylim_set = .false.
+        
+        ! Figure and axis labels
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
 
         ! Color palette: seaborn colorblind palette
         real(wp), dimension(3,6) :: colors = reshape([ &
@@ -79,9 +84,6 @@ module fortplot_figure_core
         ! Store all plot data for deferred rendering
         type(plot_data_t), allocatable :: plots(:)
         integer :: max_plots = 20
-
-        ! Labels
-        character(len=:), allocatable :: xlabel, ylabel, title
 
     contains
         procedure :: initialize
@@ -499,10 +501,12 @@ contains
         select type (backend => self%backend)
         type is (png_context)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                    self%x_min, self%x_max, self%y_min, self%y_max)
+                                    self%x_min, self%x_max, self%y_min, self%y_max, &
+                                    self%title, self%xlabel, self%ylabel)
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                        self%x_min, self%x_max, self%y_min, self%y_max)
+                                        self%x_min, self%x_max, self%y_min, self%y_max, &
+                                        self%title, self%xlabel, self%ylabel)
         class default
             ! For other backends, use simple axes
             call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)

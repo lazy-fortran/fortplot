@@ -289,12 +289,14 @@ contains
     end subroutine write_string_to_unit
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
-                                      x_min_orig, x_max_orig, y_min_orig, y_max_orig)
+                                      x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                      title, xlabel, ylabel)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
         type(pdf_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp) :: x_positions(10), y_positions(10)
         integer :: num_x, num_y
         character(len=20) :: x_labels(10), y_labels(10)
@@ -322,6 +324,9 @@ contains
         end if
         call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
         call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        
+        ! Draw title and axis labels
+        call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
     end subroutine draw_pdf_axes_and_labels
     
     subroutine draw_pdf_frame(ctx)
@@ -421,5 +426,33 @@ contains
             call add_to_stream(ctx, "ET")
         end do
     end subroutine draw_pdf_tick_labels
+    
+    subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+        !! Draw figure title and axis labels for PDF
+        type(pdf_context), intent(inout) :: ctx
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        real(wp) :: label_x, label_y
+        
+        ! Draw title at top center of plot
+        if (present(title)) then
+            label_x = real(ctx%width, wp) / 2.0_wp
+            label_y = real(ctx%height - ctx%plot_area%bottom + 30, wp)  ! Above plot area
+            call draw_pdf_text(ctx, label_x, label_y, trim(title))
+        end if
+        
+        ! Draw X-axis label centered below plot
+        if (present(xlabel)) then
+            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
+            label_y = real(ctx%height - ctx%plot_area%bottom - 60, wp)  ! Below tick labels
+            call draw_pdf_text(ctx, label_x, label_y, trim(xlabel))
+        end if
+        
+        ! Draw Y-axis label on left side
+        if (present(ylabel)) then
+            label_x = real(30, wp)  ! Left margin
+            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
+            call draw_pdf_text(ctx, label_x, label_y, trim(ylabel))
+        end if
+    end subroutine draw_pdf_title_and_labels
 
 end module fortplot_pdf
