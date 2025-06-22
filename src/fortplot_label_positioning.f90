@@ -10,24 +10,34 @@ module fortplot_label_positioning
     public :: calculate_x_label_position, calculate_y_label_position
     public :: LABEL_SPACING_X, LABEL_SPACING_Y
     
-    ! Constants for consistent spacing across backends
-    integer, parameter :: LABEL_SPACING_X = 25  ! Pixels below X-axis
+    ! Constants for consistent spacing across backends (matplotlib-style)
+    integer, parameter :: LABEL_SPACING_X = 8   ! Pixels below X-axis (closer like matplotlib)
     integer, parameter :: LABEL_SPACING_Y = 10  ! Pixels left of Y-axis (minimum)
+    integer, parameter :: TEXT_HEIGHT = 12      ! Approximate text height for centering
     
 contains
 
     subroutine calculate_x_label_position(tick_x, plot_bottom, plot_height, label_text, label_x, label_y)
-        !! Calculate X-axis label position with proper spacing and center alignment
+        !! Calculate X-axis label position with matplotlib-style centering and spacing
         real(wp), intent(in) :: tick_x, plot_bottom, plot_height
         character(len=*), intent(in) :: label_text
         real(wp), intent(out) :: label_x, label_y
-        integer :: text_width
+        integer :: text_width, fallback_width
+        
+        ! Try to calculate actual text width
+        text_width = calculate_text_width(label_text)
+        
+        ! Fallback if text width calculation fails (returns 0)
+        if (text_width <= 0) then
+            ! Approximate: 8 pixels per character (reasonable for typical fonts)
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
         
         ! Center the label horizontally under the tick mark
-        text_width = calculate_text_width(label_text)
         label_x = tick_x - real(text_width, wp) / 2.0_wp
         
-        ! Position below the plot area with adequate spacing
+        ! Position below the plot area with matplotlib-style closer spacing
         label_y = plot_bottom + plot_height + LABEL_SPACING_X
     end subroutine calculate_x_label_position
 
@@ -53,7 +63,8 @@ contains
         label_x = plot_left - real(text_width, wp) - LABEL_SPACING_Y
         
         ! Vertically center the label with the tick mark
-        label_y = tick_y
+        ! Adjust for text baseline (text renders from baseline, not center)
+        label_y = tick_y + real(TEXT_HEIGHT, wp) / 2.0_wp
     end subroutine calculate_y_label_position
 
 end module fortplot_label_positioning
