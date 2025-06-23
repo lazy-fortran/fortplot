@@ -13,6 +13,7 @@ module fortplot_pdf
     type, extends(plot_context) :: pdf_context
         character(len=:), allocatable :: content_stream
         real(wp) :: stroke_r, stroke_g, stroke_b
+        real(wp) :: current_line_width = 1.0_wp  ! Track current line width
         ! Plot area calculations (using common margin functionality)  
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
@@ -21,6 +22,7 @@ module fortplot_pdf
         procedure :: color => set_pdf_color
         procedure :: text => draw_pdf_text
         procedure :: save => write_pdf_file
+        procedure :: set_line_width => set_pdf_line_width
     end type pdf_context
     
 contains
@@ -44,9 +46,10 @@ contains
         ctx%stroke_r = 0.0_wp
         ctx%stroke_g = 0.0_wp
         ctx%stroke_b = 1.0_wp
+        ctx%current_line_width = 1.0_wp  ! Default thin line width for axes
         
         call add_to_stream(ctx, "q")
-        call add_to_stream(ctx, "2 w")
+        call add_to_stream(ctx, "1 w")  ! Set default line width to 1 point (for axes)
         call add_to_stream(ctx, "1 J")
         call add_to_stream(ctx, "1 j")
         call add_to_stream(ctx, "0 0 1 RG")
@@ -74,6 +77,19 @@ contains
         write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
         call add_to_stream(this, color_cmd)
     end subroutine set_pdf_color
+    
+    subroutine set_pdf_line_width(this, width)
+        !! Set line width for PDF drawing
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: width
+        character(len=20) :: width_cmd
+        
+        if (abs(width - this%current_line_width) > 1e-6_wp) then
+            this%current_line_width = width
+            write(width_cmd, '(F4.1, 1X, "w")') width
+            call add_to_stream(this, width_cmd)
+        end if
+    end subroutine set_pdf_line_width
     
     subroutine draw_pdf_text(this, x, y, text)
         class(pdf_context), intent(inout) :: this

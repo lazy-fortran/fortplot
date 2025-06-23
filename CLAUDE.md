@@ -263,6 +263,10 @@ end subroutine
 
 - Always explicitly import with `use only`. No wildcard imports allowed. - **MANDATORY**
 - Use `implicit none` in all modules and programs - **REQUIRED**
+- **ALL variable declarations MUST come before any executable code in routines** - **MANDATORY**
+  - Variables, parameters, and type declarations first
+  - Then executable statements and assignments
+  - Fortran requires this strict ordering
 
 ## Known Regressions and Reference Points
 

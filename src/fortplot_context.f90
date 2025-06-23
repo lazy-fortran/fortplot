@@ -20,6 +20,7 @@ module fortplot_context
         procedure(color_interface), deferred :: color
         procedure(text_interface), deferred :: text
         procedure(save_interface), deferred :: save
+        procedure(line_width_interface), deferred :: set_line_width
     end type plot_context
     
     abstract interface
@@ -47,6 +48,12 @@ module fortplot_context
             class(plot_context), intent(inout) :: this
             character(len=*), intent(in) :: filename
         end subroutine save_interface
+        
+        subroutine line_width_interface(this, width)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: width
+        end subroutine line_width_interface
     end interface
 
 contains

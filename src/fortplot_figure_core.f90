@@ -651,6 +651,12 @@ contains
         ! Skip drawing if linestyle is 'None'
         if (linestyle == 'None') return
         
+        ! Set thicker line width for plot data in PDF only
+        select type(backend => self%backend)
+        type is (pdf_context)
+            call backend%set_line_width(2.0_wp)
+        end select
+        
         ! Draw line segments using transformed coordinates with linestyle
         call draw_line_with_style(self, plot_idx, linestyle)
     end subroutine render_line_plot
