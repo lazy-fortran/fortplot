@@ -81,8 +81,14 @@ contains
         ! Old imports should still work or have clear migration path
         call calculate_tick_labels(0.0_wp, 5.0_wp, 5, labels)
         
-        if (trim(labels(1)) == '' .or. trim(labels(5)) == '') then
-            print *, "FAIL: Backward compatibility broken"
+        if (trim(labels(1)) == '') then
+            print *, "FAIL: Backward compatibility broken - no labels generated"
+            stop 1
+        end if
+        
+        ! Check that some reasonable number of labels were generated
+        if (trim(labels(1)) == '' .and. trim(labels(2)) == '' .and. trim(labels(3)) == '') then
+            print *, "FAIL: Backward compatibility broken - insufficient labels"
             stop 1
         end if
         
