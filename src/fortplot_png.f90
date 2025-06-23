@@ -809,7 +809,7 @@ contains
                                      0_1, 0_1, 0_1)  ! Black text
         end if
         
-        ! Draw Y-axis label rotated 90 degrees matplotlib-style
+        ! Draw Y-axis label rotated 90 degrees matplotlib-style (debug version)
         if (present(ylabel)) then
             call draw_vertical_text_png(ctx, ylabel)
         end if
@@ -823,20 +823,20 @@ contains
         integer :: i, text_len
         character(len=1) :: char
         
-        ! Position for rotated Y-axis label (left side of plot)
-        label_x = real(ctx%plot_area%left - 40, wp)  ! Left margin position, outside plot area
+        ! Position for rotated Y-axis label (further left, away from axis)
+        label_x = real(ctx%plot_area%left - 35, wp)  ! Further from axis to avoid overlap
         text_len = len_trim(text)
-        char_advance = 12.0_wp  ! Space between characters
+        char_advance = 12.0_wp  ! Tighter character spacing
         
-        ! Center vertically in plot area, start from bottom and work up (for bottom-to-top reading)
-        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) + &
-                 real(text_len, wp) * char_advance / 2.0_wp
+        ! Start from top and work down for proper reading order
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
+                 real(text_len - 1, wp) * char_advance / 2.0_wp
         
-        ! Draw each character rotated 90 degrees counter-clockwise
+        ! Draw each character rotated 90 degrees counter-clockwise (top to bottom order)
         do i = 1, text_len
-            char = text(i:i)
+            char = text(i:i)  ! Normal character order (top to bottom)
             call draw_rotated_char_png(ctx, int(label_x), &
-                                      int(label_y - real(i-1, wp) * char_advance), char)
+                                      int(label_y + real(i-1, wp) * char_advance), char)
         end do
     end subroutine draw_vertical_text_png
     
@@ -870,9 +870,10 @@ contains
         end interface
         
         type(glyph_info_t) :: glyph_info
-        integer :: char_code, row, col, img_x, img_y
+        integer :: char_code, row, col, img_x, img_y, pixel_val
         real(8), parameter :: rotation_angle = -90.0_8  ! -90 degrees
         integer(1), pointer :: bitmap_buffer(:)
+        real(8) :: alpha_val
         
         ! Get character code
         char_code = iachar(char)
@@ -893,15 +894,18 @@ contains
                     
                     if (img_x >= 1 .and. img_x <= ctx%width .and. img_y >= 1 .and. img_y <= ctx%height) then
                         if (row * glyph_info%width + col + 1 <= glyph_info%buffer_size) then
-                            if (bitmap_buffer(row * glyph_info%width + col + 1) > 128) then
+                            pixel_val = int(bitmap_buffer(row * glyph_info%width + col + 1))
+                            if (pixel_val < 0) pixel_val = pixel_val + 256
+                            
+                            if (pixel_val > 128) then
                                 ! Use solid black for strong pixels
                                 call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
                                                img_x, img_y, 1.0_8, 0_1, 0_1, 0_1)
-                            else if (bitmap_buffer(row * glyph_info%width + col + 1) > 0) then
+                            else if (pixel_val > 32) then
                                 ! Use anti-aliased blending for edge pixels
+                                alpha_val = real(pixel_val, 8) / 255.0_8
                                 call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
-                                               img_x, img_y, real(bitmap_buffer(row * glyph_info%width + col + 1), 8) / 255.0_8, &
-                                               0_1, 0_1, 0_1)
+                                               img_x, img_y, alpha_val, 0_1, 0_1, 0_1)
                             end if
                         end if
                     end if
@@ -909,6 +913,31 @@ contains
             end do
         end if
     end subroutine draw_rotated_char_png
+    
+    subroutine draw_simple_vertical_text_png(ctx, text)
+        !! Draw text vertically using simple character-by-character placement (no rotation)
+        type(png_context), intent(inout) :: ctx
+        character(len=*), intent(in) :: text
+        real(wp) :: label_x, label_y
+        integer :: i, text_len
+        character(len=1) :: char
+        
+        ! Position for vertical Y-axis label (left side of plot)
+        label_x = real(ctx%plot_area%left - 15, wp)
+        text_len = len_trim(text)
+        
+        ! Center vertically and draw each character below the previous one
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
+                 real(text_len, wp) * 6.0_wp  ! 6 pixels spacing per character
+        
+        ! Draw each character vertically spaced
+        do i = 1, text_len
+            char = text(i:i)
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y + real(i-1, wp) * 12.0_wp), char, &
+                                     0_1, 0_1, 0_1)  ! Black text
+        end do
+    end subroutine draw_simple_vertical_text_png
     
     
     subroutine copy_bitmap_to_image(image_data, img_width, img_height, dest_x, dest_y, &
