@@ -14,6 +14,7 @@ module fortplot_figure_core
     use fortplot_utils
     use fortplot_axes
     use fortplot_colormap
+    use fortplot_legend
     use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     implicit none
@@ -88,6 +89,10 @@ module fortplot_figure_core
 
         ! Store all plot data for deferred rendering
         type(plot_data_t), allocatable :: plots(:)
+        
+        ! Legend support following SOLID principles
+        type(legend_t) :: legend_data
+        logical :: show_legend = .false.
         integer :: max_plots = 20
 
     contains
@@ -103,6 +108,7 @@ module fortplot_figure_core
         procedure :: set_yscale
         procedure :: set_xlim
         procedure :: set_ylim
+        procedure :: legend => figure_legend
         procedure :: show
         final :: destroy
     end type figure_t
@@ -123,6 +129,9 @@ contains
         end if
         self%plot_count = 0
         self%rendered = .false.
+        
+        ! Initialize legend following SOLID principles  
+        self%show_legend = .false.
         
         ! Initialize backend if specified
         if (present(backend)) then
@@ -450,6 +459,11 @@ contains
         
         ! Render individual plots
         call render_all_plots(self)
+        
+        ! Render legend if requested (following SOLID principles)
+        if (self%show_legend) then
+            call legend_render(self%legend_data, self%backend)
+        end if
         
         self%rendered = .true.
     end subroutine render_figure
@@ -1105,5 +1119,36 @@ contains
             end if
         end do
     end subroutine render_segment_with_pattern
+
+    subroutine figure_legend(self, location)
+        !! Add legend to figure following SOLID principles
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in), optional :: location
+        integer :: i
+        
+        ! Initialize legend if not already done
+        if (.not. allocated(self%legend_data%entries)) then
+            allocate(self%legend_data%entries(0))
+            self%legend_data%num_entries = 0
+        end if
+        
+        ! Set legend position if specified  
+        if (present(location)) then
+            call self%legend_data%set_position(location)
+        end if
+        
+        ! Populate legend with labeled plots (DRY principle)
+        do i = 1, self%plot_count
+            if (allocated(self%plots(i)%label)) then
+                if (len_trim(self%plots(i)%label) > 0) then
+                    call self%legend_data%add_entry(self%plots(i)%label, &
+                                             self%plots(i)%color, &
+                                             self%plots(i)%linestyle)
+                end if
+            end if
+        end do
+        
+        self%show_legend = .true.
+    end subroutine figure_legend
 
 end module fortplot_figure_core
