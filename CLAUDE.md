@@ -24,6 +24,7 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 ## Development Commands
 
 - `make run` - Build and run examples (default development workflow)
+- `make ref` - Generate Python matplotlib reference plots for visual comparison
 - `make build` - Compile the project
 - `make test` - Run all unit tests in test/ directory
 - `make clean` - Clean build artifacts

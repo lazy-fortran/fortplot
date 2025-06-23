@@ -13,7 +13,7 @@ ALL_LIBS = $(FREETYPE_LIBS) $(ZLIB_LIBS)
 # FPM commands with full library support
 FPM_FLAGS = --c-flag "$(ALL_CFLAGS)" --link-flag "$(ALL_LIBS)"
 
-.PHONY: all build run test clean help check-deps
+.PHONY: all build run test clean help check-deps ref
 
 # Default target
 all: build
@@ -29,6 +29,15 @@ run:
 # Run tests
 test:
 	fpm test $(FPM_FLAGS)
+
+# Generate Python reference plots for visual comparison
+ref:
+	@echo "Generating Python matplotlib reference plots..."
+	@python3 example/basic_plots/basic_plots_ref.py
+	@python3 example/line_styles/line_styles_ref.py
+	@python3 example/scale_examples/scale_examples_ref.py
+	@python3 example/contour_demo/contour_demo_ref.py
+	@echo "Reference plots generated! Compare *_ref.png files with fortplotlib output."
 
 # Clean build artifacts
 clean:
@@ -60,7 +69,8 @@ check-deps:
 help:
 	@echo "Available targets:"
 	@echo "  build       - Compile the project"
-	@echo "  run         - Build and run the main program"
+	@echo "  run         - Build and run all examples"
+	@echo "  ref         - Generate Python matplotlib reference plots"
 	@echo "  test        - Run all tests"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
