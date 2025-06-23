@@ -42,9 +42,11 @@ contains
         type(ascii_context) :: ctx
         integer :: w, h
         
-        ! ASCII backend always uses fixed character dimensions
+        ! ASCII backend uses 4:3 aspect ratio accounting for terminal character dimensions
+        ! Terminal chars are ~1.5x taller than wide, so for 4:3 visual ratio:
+        ! 80 chars wide × (3/4) × (1/1.5) = 80 × 0.75 × 0.67 ≈ 40 → 30 chars high
         w = 80
-        h = 40
+        h = 30
         
         call setup_canvas(ctx, w, h)
         
