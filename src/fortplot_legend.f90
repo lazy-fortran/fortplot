@@ -173,14 +173,14 @@ contains
     end subroutine render_ascii_legend
     
     subroutine render_standard_legend(legend, backend, legend_x, legend_y)
-        !! Render standard legend for PNG/PDF backends
+        !! Render standard legend for PNG/PDF backends with white background box
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
         real(wp) :: line_x1, line_x2, line_y, text_x, text_y
         real(wp) :: data_width, data_height, entry_spacing, line_length_data, text_padding_data
+        real(wp) :: box_x1, box_y1, box_x2, box_y2, box_width, box_height, box_padding
         integer :: i
-        
         
         ! Calculate data coordinate scaling
         data_width = backend%x_max - backend%x_min
@@ -188,6 +188,25 @@ contains
         line_length_data = data_width * 0.05_wp      ! 5% of data width for line
         text_padding_data = data_width * 0.01_wp     ! 1% padding
         entry_spacing = data_height * 0.05_wp        ! 5% spacing between entries
+        box_padding = data_width * 0.01_wp           ! Box padding
+        
+        ! Calculate legend box dimensions
+        box_width = line_length_data + text_padding_data + data_width * 0.15_wp + 2.0_wp * box_padding
+        box_height = real(legend%num_entries, wp) * entry_spacing + 2.0_wp * box_padding
+        
+        ! Calculate box corners
+        box_x1 = legend_x - box_padding
+        box_y1 = legend_y + box_padding
+        box_x2 = box_x1 + box_width
+        box_y2 = box_y1 - box_height
+        
+        ! Draw white background box (temporarily store current color)
+        call backend%color(1.0_wp, 1.0_wp, 1.0_wp)  ! White background
+        call draw_legend_box(backend, box_x1, box_y1, box_x2, box_y2)
+        
+        ! Draw black border
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black border
+        call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
         
         do i = 1, legend%num_entries
             ! Calculate line position using data coordinate scaling
@@ -206,7 +225,8 @@ contains
                               legend%entries(i)%color(3))
             call backend%line(line_x1, line_y, line_x2, line_y)
             
-            ! Draw legend text
+            ! Draw legend text in black
+            call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text
             call backend%text(text_x, text_y, legend%entries(i)%label)
         end do
     end subroutine render_standard_legend
@@ -278,5 +298,35 @@ contains
             end select
         end select
     end subroutine calculate_legend_position
+
+    subroutine draw_legend_box(backend, x1, y1, x2, y2)
+        !! Draw filled white rectangle for legend background
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x1, y1, x2, y2
+        
+        ! Draw filled rectangle by drawing horizontal lines
+        real(wp) :: y, dy
+        integer :: num_lines, i
+        
+        num_lines = 50  ! Number of horizontal lines to fill the box
+        dy = abs(y1 - y2) / real(num_lines, wp)
+        
+        do i = 0, num_lines
+            y = y1 - real(i, wp) * dy
+            call backend%line(x1, y, x2, y)
+        end do
+    end subroutine draw_legend_box
+
+    subroutine draw_legend_border(backend, x1, y1, x2, y2)
+        !! Draw black border around legend box
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x1, y1, x2, y2
+        
+        ! Draw rectangle border
+        call backend%line(x1, y1, x2, y1)  ! Top
+        call backend%line(x2, y1, x2, y2)  ! Right  
+        call backend%line(x2, y2, x1, y2)  ! Bottom
+        call backend%line(x1, y2, x1, y1)  ! Left
+    end subroutine draw_legend_border
 
 end module fortplot_legend
