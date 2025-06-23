@@ -3,6 +3,7 @@ module fortplot_pdf
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
+    use fortplot_text, only: calculate_text_width
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -111,18 +112,23 @@ contains
     end subroutine draw_pdf_text_direct
 
     subroutine draw_pdf_text_bold(this, x, y, text)
-        !! Draw bold text at direct PDF coordinates for titles
+        !! Draw bold text at direct PDF coordinates for titles with center alignment
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=200) :: text_cmd
+        real(wp) :: text_width, centered_x
+        
+        ! Calculate actual text width using FreeType for accurate centering
+        text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
+        centered_x = x - text_width / 2.0_wp
         
         call add_to_stream(this, "BT")
         write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
         call add_to_stream(this, text_cmd)
         call add_to_stream(this, "2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
         call add_to_stream(this, "0.5 w")  ! Line width for stroke
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
         call add_to_stream(this, text_cmd)
         write(text_cmd, '("(", A, ") Tj")') trim(text)
         call add_to_stream(this, text_cmd)
@@ -473,16 +479,16 @@ contains
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            ! Position title closer to plot area like matplotlib - tighter spacing
-            ! PDF Y=0 is bottom, so title should be just above plot area
-            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height - 15, wp)
+            ! Position title at top of PDF - high Y value for PDF coordinates (Y=0 at bottom)
+            ! Just below the top edge, similar to matplotlib spacing
+            label_y = real(ctx%height - 25, wp)  ! 25 pixels down from top edge
             call draw_pdf_text_bold(ctx, label_x, label_y, trim(title))
         end if
         
         ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
-            ! Center horizontally on plot area (direct PDF coordinates)
-            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
+            ! Center the xlabel text properly using actual text width
+            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - real(calculate_text_width(trim(xlabel)), wp) / 2.0_wp
             ! Position below x-axis tick labels - closer to matplotlib style
             ! X-axis tick labels are around Y=51, so position xlabel below them
             label_y = real(25, wp)  ! 25 pixels from bottom edge of PDF
