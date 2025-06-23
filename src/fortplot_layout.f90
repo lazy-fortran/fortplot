@@ -13,12 +13,12 @@ module fortplot_layout
     private
     public :: plot_margins_t, plot_area_t, calculate_plot_area
     
-    ! Standard matplotlib-style margins
+    ! Matplotlib-style margins (better balanced for title and label space)
     type :: plot_margins_t
-        real(wp) :: left = 0.15_wp     ! 15% left margin
+        real(wp) :: left = 0.125_wp    ! 12.5% left margin (space for y-labels)
         real(wp) :: right = 0.05_wp    ! 5% right margin  
-        real(wp) :: bottom = 0.15_wp   ! 15% bottom margin
-        real(wp) :: top = 0.05_wp      ! 5% top margin
+        real(wp) :: bottom = 0.11_wp   ! 11% bottom margin (space for x-labels)
+        real(wp) :: top = 0.095_wp     ! 9.5% top margin (space for title)
     end type plot_margins_t
     
     ! Plot area geometry
