@@ -471,8 +471,8 @@ contains
         write(text_cmd, '("/F1 12 Tf")')
         call add_to_stream(ctx, text_cmd)
         
-        ! Rotation matrix: [cos(90) -sin(90) sin(90) cos(90) x y] = [0 -1 1 0 x y]
-        write(text_cmd, '("0 -1 1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
+        ! Rotation matrix for -90 degrees (counter-clockwise): [cos(-90) -sin(-90) sin(-90) cos(-90) x y] = [0 1 -1 0 x y]
+        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
         call add_to_stream(ctx, text_cmd)
         
         write(text_cmd, '("(", A, ") Tj")') trim(text)
