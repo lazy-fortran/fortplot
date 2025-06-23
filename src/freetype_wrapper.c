@@ -163,7 +163,7 @@ int ft_wrapper_render_char_rotated(int char_code, glyph_info_t* glyph_info, doub
     // Convert angle to radians
     double angle_rad = angle_degrees * 3.14159265359 / 180.0;
     
-    // Set up transformation matrix for rotation
+    // Set up transformation matrix for rotation only
     matrix.xx = (FT_Fixed)(cos(angle_rad) * 0x10000L);
     matrix.xy = (FT_Fixed)(-sin(angle_rad) * 0x10000L);
     matrix.yx = (FT_Fixed)(sin(angle_rad) * 0x10000L);
