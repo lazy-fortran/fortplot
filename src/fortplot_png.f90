@@ -823,16 +823,16 @@ contains
         integer :: i, text_len
         character(len=1) :: char
         
-        ! Position for rotated Y-axis label
-        label_x = real(25, wp)  ! Left margin position
+        ! Position for rotated Y-axis label (left side of plot)
+        label_x = real(ctx%plot_area%left - 40, wp)  ! Left margin position, outside plot area
         text_len = len_trim(text)
         char_advance = 12.0_wp  ! Space between characters
         
-        ! Start from bottom and work up (for bottom-to-top reading)
+        ! Center vertically in plot area, start from bottom and work up (for bottom-to-top reading)
         label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) + &
                  real(text_len, wp) * char_advance / 2.0_wp
         
-        ! Draw each character rotated 90 degrees
+        ! Draw each character rotated 90 degrees counter-clockwise
         do i = 1, text_len
             char = text(i:i)
             call draw_rotated_char_png(ctx, int(label_x), &
