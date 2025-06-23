@@ -5,7 +5,7 @@ program test_module_separation
     ! Test imports for proposed new module structure
     use fortplot_layout, only: plot_margins_t, calculate_plot_area
     use fortplot_ticks, only: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
-    use fortplot_axes, only: draw_basic_axes_frame, get_axis_tick_positions
+    use fortplot_margins, only: draw_basic_axes_frame, get_axis_tick_positions
     implicit none
     
     call test_should_separate_layout_concerns()
