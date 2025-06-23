@@ -36,8 +36,9 @@ contains
         call fig%add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
         call fig%savefig('example/contour_demo/contour_gaussian.png')
         call fig%savefig('example/contour_demo/contour_gaussian.pdf')
+        call fig%savefig('example/contour_demo/contour_gaussian.txt')
         
-        print *, "Created: contour_gaussian.png/pdf"
+        print *, "Created: contour_gaussian.png/pdf/txt"
         
     end subroutine gaussian_contours
 
@@ -70,8 +71,9 @@ contains
         call fig%add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
         call fig%savefig('example/contour_demo/mixed_plot.png')
         call fig%savefig('example/contour_demo/mixed_plot.pdf')
+        call fig%savefig('example/contour_demo/mixed_plot.txt')
         
-        print *, "Created: mixed_plot.png/pdf"
+        print *, "Created: mixed_plot.png/pdf/txt"
         
     end subroutine mixed_contour_line_plot
 
