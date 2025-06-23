@@ -109,6 +109,26 @@ contains
         call add_to_stream(this, text_cmd)
         call add_to_stream(this, "ET")
     end subroutine draw_pdf_text_direct
+
+    subroutine draw_pdf_text_bold(this, x, y, text)
+        !! Draw bold text at direct PDF coordinates for titles
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=200) :: text_cmd
+        
+        call add_to_stream(this, "BT")
+        write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
+        call add_to_stream(this, text_cmd)
+        call add_to_stream(this, "2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
+        call add_to_stream(this, "0.5 w")  ! Line width for stroke
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
+        call add_to_stream(this, text_cmd)
+        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        call add_to_stream(this, text_cmd)
+        call add_to_stream(this, "0 Tr")  ! Reset to normal text rendering
+        call add_to_stream(this, "ET")
+    end subroutine draw_pdf_text_bold
     
     subroutine write_pdf_file(this, filename)
         class(pdf_context), intent(inout) :: this
@@ -453,18 +473,19 @@ contains
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            ! Position title in the top margin area - high Y value for PDF coordinates
-            ! PDF Y=0 is bottom, so title should be near height - margin
-            label_y = real(ctx%height - 30, wp)  ! 30 pixels down from top edge
-            call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))
+            ! Position title closer to plot area like matplotlib - tighter spacing
+            ! PDF Y=0 is bottom, so title should be just above plot area
+            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height - 15, wp)
+            call draw_pdf_text_bold(ctx, label_x, label_y, trim(title))
         end if
         
         ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
             ! Center horizontally on plot area (direct PDF coordinates)
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
-            ! Position below tick labels with adequate spacing (direct PDF coordinates)  
-            label_y = real(ctx%height - ctx%plot_area%bottom - 45, wp)
+            ! Position below x-axis tick labels - closer to matplotlib style
+            ! X-axis tick labels are around Y=51, so position xlabel below them
+            label_y = real(25, wp)  ! 25 pixels from bottom edge of PDF
             call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
         end if
         
