@@ -816,29 +816,123 @@ contains
     end subroutine draw_png_title_and_labels
     
     subroutine draw_vertical_text_png(ctx, text)
-        !! Draw text rotated 90 degrees by rendering each character rotated
+        !! Draw text rotated 90 degrees by rendering each character rotated with kerning
+        use iso_c_binding, only: c_int, c_double
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
-        real(wp) :: label_x, label_y, char_advance
-        integer :: i, text_len
+        real(wp) :: label_x, label_y, total_height, current_y, kerning_adj
+        integer :: i, text_len, char_code, next_char_code
         character(len=1) :: char
+        integer, allocatable :: char_heights(:)
         
         ! Position for rotated Y-axis label (further left, away from axis)
         label_x = real(ctx%plot_area%left - 35, wp)  ! Further from axis to avoid overlap
         text_len = len_trim(text)
-        char_advance = 12.0_wp  ! Tighter character spacing
         
-        ! Start from top and work down for proper reading order
-        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
-                 real(text_len - 1, wp) * char_advance / 2.0_wp
+        ! Calculate individual character heights and kerning using FreeType metrics
+        allocate(char_heights(text_len))
+        total_height = 0.0_wp
+        
+        do i = 1, text_len
+            char = text(i:i)
+            char_code = iachar(char)
+            char_heights(i) = get_char_advance_height(char_code)
+            total_height = total_height + real(char_heights(i), wp)
+            
+            ! Add kerning adjustment for character pairs (except last character)
+            if (i < text_len) then
+                next_char_code = iachar(text(i+1:i+1))
+                kerning_adj = real(get_kerning_adjustment(char_code, next_char_code), wp)
+                total_height = total_height + kerning_adj
+            end if
+        end do
+        
+        ! Start position centered vertically
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - total_height / 2.0_wp
+        current_y = label_y
         
         ! Draw each character rotated 90 degrees counter-clockwise (bottom to top order)
         do i = 1, text_len
             char = text(text_len + 1 - i:text_len + 1 - i)  ! Reverse character order (bottom to top)
-            call draw_rotated_char_png(ctx, int(label_x), &
-                                      int(label_y + real(i-1, wp) * char_advance), char)
+            call draw_rotated_char_png(ctx, int(label_x), int(current_y), char)
+            current_y = current_y + real(char_heights(text_len + 1 - i), wp)
+            
+            ! Apply kerning for character pairs (except last character in reversed order)
+            if (i < text_len) then
+                char_code = iachar(text(text_len + 1 - i:text_len + 1 - i))
+                next_char_code = iachar(text(text_len - i:text_len - i))
+                kerning_adj = real(get_kerning_adjustment(char_code, next_char_code), wp)
+                current_y = current_y + kerning_adj
+            end if
         end do
+        
+        deallocate(char_heights)
     end subroutine draw_vertical_text_png
+    
+    function get_char_advance_height(char_code) result(advance_height)
+        !! Get character advance height using FreeType metrics
+        use iso_c_binding, only: c_int, c_double
+        integer, intent(in) :: char_code
+        integer :: advance_height
+        
+        ! Local glyph info type (matches C wrapper)
+        type, bind(C) :: glyph_info_t
+            integer(c_int) :: width
+            integer(c_int) :: height
+            integer(c_int) :: left
+            integer(c_int) :: top
+            integer(c_int) :: advance_x
+            type(c_ptr) :: buffer
+            integer(c_int) :: buffer_size
+        end type glyph_info_t
+        
+        ! Interface for FreeType character rendering
+        interface
+            function ft_wrapper_render_char(char_code, glyph_info) bind(C, name="ft_wrapper_render_char")
+                import :: c_int, glyph_info_t
+                integer(c_int), value :: char_code
+                type(glyph_info_t), intent(out) :: glyph_info
+                integer(c_int) :: ft_wrapper_render_char
+            end function ft_wrapper_render_char
+            
+            subroutine ft_wrapper_free_glyph(glyph_info) bind(C, name="ft_wrapper_free_glyph")
+                import :: glyph_info_t
+                type(glyph_info_t), intent(inout) :: glyph_info
+            end subroutine ft_wrapper_free_glyph
+        end interface
+        
+        type(glyph_info_t) :: glyph_info
+        
+        ! Get glyph metrics from FreeType
+        if (ft_wrapper_render_char(char_code, glyph_info) == 0) then
+            ! For vertical text, use the character's actual height
+            advance_height = glyph_info%height
+            call ft_wrapper_free_glyph(glyph_info)
+        else
+            ! Fallback for failed character rendering
+            advance_height = 12
+        end if
+    end function get_char_advance_height
+    
+    function get_kerning_adjustment(left_char, right_char) result(kerning_pixels)
+        !! Get kerning adjustment between two characters using FreeType
+        use iso_c_binding, only: c_int
+        integer, intent(in) :: left_char, right_char
+        integer :: kerning_pixels
+        
+        ! Interface for FreeType kerning function
+        interface
+            function ft_wrapper_get_kerning(left_char, right_char) bind(C, name="ft_wrapper_get_kerning")
+                import :: c_int
+                integer(c_int), value :: left_char, right_char
+                integer(c_int) :: ft_wrapper_get_kerning
+            end function ft_wrapper_get_kerning
+        end interface
+        
+        ! Get kerning from FreeType and scale for vertical text
+        ! For vertical text, we apply a fraction of horizontal kerning
+        kerning_pixels = ft_wrapper_get_kerning(left_char, right_char) / 3
+    end function get_kerning_adjustment
     
     subroutine draw_rotated_char_png(ctx, x, y, char)
         !! Draw a single character rotated 90 degrees counter-clockwise using FreeType
