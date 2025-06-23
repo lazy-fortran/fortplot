@@ -832,9 +832,9 @@ contains
         label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
                  real(text_len - 1, wp) * char_advance / 2.0_wp
         
-        ! Draw each character rotated 90 degrees counter-clockwise (top to bottom order)
+        ! Draw each character rotated 90 degrees counter-clockwise (bottom to top order)
         do i = 1, text_len
-            char = text(i:i)  ! Normal character order (top to bottom)
+            char = text(text_len + 1 - i:text_len + 1 - i)  ! Reverse character order (bottom to top)
             call draw_rotated_char_png(ctx, int(label_x), &
                                       int(label_y + real(i-1, wp) * char_advance), char)
         end do
@@ -871,7 +871,7 @@ contains
         
         type(glyph_info_t) :: glyph_info
         integer :: char_code, row, col, img_x, img_y, pixel_val
-        real(8), parameter :: rotation_angle = -90.0_8  ! -90 degrees
+        real(8), parameter :: rotation_angle = 90.0_8  ! +90 degrees
         integer(1), pointer :: bitmap_buffer(:)
         real(8) :: alpha_val
         
