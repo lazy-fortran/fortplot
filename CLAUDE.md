@@ -23,18 +23,88 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 
 ## Development Commands
 
-- `make run` - Build and run examples (default development workflow)
-- `make ref` - Generate Python matplotlib reference plots for visual comparison
-- `make build` - Compile the project
+**⚠️ CRITICAL: ALWAYS USE MAKE FOR ALL DEVELOPMENT TASKS ⚠️**
+
+All development work must use the Makefile. Never run `fpm` commands directly.
+
+### Primary Development Commands
+
+- `make run` - Build and run all examples (default development workflow)
+- `make debug` - Build and run apps in app/ directory for debugging
 - `make test` - Run all unit tests in test/ directory
-- `make clean` - Clean build artifacts
+- `make build` - Compile the project
+- `make clean` - Clean build artifacts and generated plots
+
+### Reference and Release Commands
+
+- `make ref` - Generate Python matplotlib reference plots for visual comparison
+- `make release` - Build with release optimizations
+- `make run-release` - Run optimized build
+- `make check-deps` - Show detected library flags and dependencies
+- `make help` - Show all available targets
+
+### Command Line Arguments Support
+
+All make targets support passing additional fpm arguments. Use `ARGS` to pass extra parameters:
+
+```bash
+# Run specific example
+make run ARGS="--example basic_plots"
+
+# Run specific test
+make test ARGS="--target test_specific_feature"
+
+# Run specific app for debugging
+make debug ARGS="--target debug_feature"
+
+# Build with verbose output
+make build ARGS="--verbose"
+```
 
 ## File Organization
 
 **Library Sources**: Place library sources in `src/` directory
-**Debugging**: Place debugging sources in `app/` directory and execute with `make run`
+**Debugging**: Place debugging sources in `app/` directory and execute with `make debug`
 **Unit Tests**: Place unit tests in `test/` directory  
 **Examples**: Place examples in `example/` directory
+
+### FPM Automatic Discovery
+
+FPM automatically discovers all sources and resolves module dependencies when run via make:
+
+- **Sources**: All `.f90` files in `src/`, `example/`, `test/`, and `app/` are automatically found
+- **Dependencies**: Module dependencies are automatically resolved - no manual specification needed
+- **Executables**: Each program in `example/`, `test/`, or `app/` becomes a buildable target
+
+### Finding Available Targets
+
+To discover available executable targets:
+
+```bash
+# List example programs
+ls example/
+
+# List test programs  
+ls test/
+
+# List debug/app programs
+ls app/
+
+# Find available modules in src/
+grep -r "^module " src/
+```
+
+Example usage with discovered targets:
+```bash
+# Run specific example
+make run ARGS="--example basic_plots"
+
+# Run specific test
+make test ARGS="--target test_figure_basics" 
+
+# Run specific debug app
+make debug ARGS="--target debug_symlog_data"
+```
 
 ```fortran
 ! app/debug_feature.f90 - For debugging/development
