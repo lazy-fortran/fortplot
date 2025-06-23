@@ -13,6 +13,9 @@ ALL_LIBS = $(FREETYPE_LIBS) $(ZLIB_LIBS)
 # FPM commands with full library support
 FPM_FLAGS = --c-flag "$(ALL_CFLAGS)" --link-flag "$(ALL_LIBS)"
 
+# Allow additional arguments to be passed
+ARGS ?=
+
 .PHONY: all build run test clean help check-deps ref
 
 # Default target
@@ -20,15 +23,19 @@ all: build
 
 # Build the project
 build:
-	fpm build $(FPM_FLAGS)
+	fpm build $(FPM_FLAGS) $(ARGS)
 
-# Build and run the main program
+# Build and run the examples
 run:
-	fpm run $(FPM_FLAGS) --example
+	fpm run $(FPM_FLAGS) --example $(ARGS)
+
+# Build and run the apps for debugging
+debug:
+	fpm run $(FPM_FLAGS) $(ARGS)
 
 # Run tests
 test:
-	fpm test $(FPM_FLAGS)
+	fpm test $(FPM_FLAGS) $(ARGS)
 
 # Generate Python reference plots for visual comparison
 ref:
@@ -47,11 +54,11 @@ clean:
 
 # Build with release optimizations
 release:
-	fpm build --profile release $(FPM_FLAGS)
+	fpm build --profile release $(FPM_FLAGS) $(ARGS)
 
 # Run with release optimizations
 run-release:
-	fpm run --profile release $(FPM_FLAGS)
+	fpm run --profile release $(FPM_FLAGS) $(ARGS)
 
 # Check dependencies and show detected flags
 check-deps:
@@ -70,6 +77,7 @@ help:
 	@echo "Available targets:"
 	@echo "  build       - Compile the project"
 	@echo "  run         - Build and run all examples"
+	@echo "  debug       - Build and run apps for debugging"
 	@echo "  ref         - Generate Python matplotlib reference plots"
 	@echo "  test        - Run all tests"
 	@echo "  clean       - Clean build artifacts"
@@ -77,6 +85,11 @@ help:
 	@echo "  run-release - Run optimized build"
 	@echo "  check-deps  - Show detected library flags"
 	@echo "  help        - Show this help message"
+	@echo ""
+	@echo "Pass additional fpm arguments using ARGS variable:"
+	@echo "  make run ARGS=\"--example basic_plots\""
+	@echo "  make test ARGS=\"--target test_specific\""
+	@echo "  make debug ARGS=\"--target debug_feature\""
 	@echo ""
 	@echo "This project uses FreeType for text rendering via a C wrapper."
 	@echo "Library detection uses pkg-config for portability."
