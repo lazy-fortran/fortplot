@@ -121,6 +121,7 @@ contains
     subroutine legend_render(this, backend)
         !! Render legend following Liskov Substitution
         !! Works with any backend that implements plot_context interface
+        use fortplot_ascii, only: ascii_context
         class(legend_t), intent(in) :: this
         class(plot_context), intent(inout) :: backend
         real(wp) :: legend_x, legend_y, line_x1, line_x2, line_y
@@ -132,52 +133,132 @@ contains
         ! Calculate legend position based on backend dimensions
         call calculate_legend_position(this, backend, legend_x, legend_y)
         
-        ! Render each legend entry
-        do i = 1, this%num_entries
+        ! Backend-specific legend rendering
+        select type (backend)
+        type is (ascii_context)
+            ! ASCII-specific legend rendering with compact layout
+            call render_ascii_legend(this, backend, legend_x, legend_y)
+        class default
+            ! Standard legend rendering for PNG/PDF
+            call render_standard_legend(this, backend, legend_x, legend_y)
+        end select
+    end subroutine legend_render
+    
+    subroutine render_ascii_legend(legend, backend, legend_x, legend_y)
+        !! Render compact ASCII legend with proper formatting
+        type(legend_t), intent(in) :: legend
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: legend_x, legend_y
+        integer :: i
+        real(wp) :: text_x, text_y
+        character(len=20) :: legend_line
+        
+        do i = 1, legend%num_entries
+            ! For ASCII, arrange entries vertically going downward
+            text_x = legend_x
+            text_y = legend_y + real(i-1, wp)  ! Go downward: y+0, y+1, y+2, etc.
+            
+            ! Ensure text fits within canvas bounds  
+            text_y = max(1.0_wp, min(text_y, real(28, wp)))  ! Leave space for bottom border
+            
+            ! Set color for this entry
+            call backend%color(legend%entries(i)%color(1), &
+                              legend%entries(i)%color(2), &
+                              legend%entries(i)%color(3))
+            
+            ! Create compact legend entry: "-- Label"
+            legend_line = "-- " // trim(legend%entries(i)%label)
+            call backend%text(text_x, text_y, legend_line)
+        end do
+    end subroutine render_ascii_legend
+    
+    subroutine render_standard_legend(legend, backend, legend_x, legend_y)
+        !! Render standard legend for PNG/PDF backends
+        type(legend_t), intent(in) :: legend
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: legend_x, legend_y
+        real(wp) :: line_x1, line_x2, line_y, text_x, text_y
+        integer :: i
+        
+        do i = 1, legend%num_entries
             ! Calculate line position
-            line_x1 = legend_x + this%x_offset
-            line_x2 = line_x1 + this%line_length
-            line_y = legend_y + real(i-1, wp) * this%entry_height
+            line_x1 = legend_x + legend%x_offset
+            line_x2 = line_x1 + legend%line_length
+            line_y = legend_y + real(i-1, wp) * legend%entry_height
             
             ! Set color and draw legend line
-            call backend%color(this%entries(i)%color(1), &
-                              this%entries(i)%color(2), &
-                              this%entries(i)%color(3))
+            call backend%color(legend%entries(i)%color(1), &
+                              legend%entries(i)%color(2), &
+                              legend%entries(i)%color(3))
             call backend%line(line_x1, line_y, line_x2, line_y)
             
             ! Draw legend text
-            text_x = line_x2 + this%text_padding
+            text_x = line_x2 + legend%text_padding
             text_y = line_y
-            call backend%text(text_x, text_y, this%entries(i)%label)
+            call backend%text(text_x, text_y, legend%entries(i)%label)
         end do
-    end subroutine legend_render
+    end subroutine render_standard_legend
     
     subroutine calculate_legend_position(legend, backend, x, y)
         !! Calculate legend position based on backend and position setting
         !! Interface Segregation: Only depends on backend dimensions
+        use fortplot_ascii, only: ascii_context
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
-        real(wp) :: total_height
+        real(wp) :: total_height, legend_width, margin_x, margin_y
         
-        total_height = real(legend%num_entries, wp) * legend%entry_height
-        
-        select case (legend%position)
-        case (LEGEND_UPPER_LEFT)
-            x = 20.0_wp
-            y = 20.0_wp
-        case (LEGEND_UPPER_RIGHT)
-            x = real(backend%width, wp) - 150.0_wp  ! Estimate legend width
-            y = 20.0_wp
-        case (LEGEND_LOWER_LEFT)
-            x = 20.0_wp
-            y = real(backend%height, wp) - total_height - 20.0_wp
-        case (LEGEND_LOWER_RIGHT)
-            x = real(backend%width, wp) - 150.0_wp
-            y = real(backend%height, wp) - total_height - 20.0_wp
-        case default
-            x = real(backend%width, wp) - 150.0_wp
-            y = 20.0_wp
+        ! Backend-specific positioning
+        select type (backend)
+        type is (ascii_context)
+            ! ASCII backend - use character coordinates
+            legend_width = 15.0_wp  ! Estimated characters for legend
+            margin_x = 2.0_wp      ! 2 character margin
+            margin_y = 1.0_wp      ! 1 line margin
+            total_height = real(legend%num_entries, wp) * 1.0_wp  ! 1 line per entry
+            
+            select case (legend%position)
+            case (LEGEND_UPPER_LEFT)
+                x = margin_x
+                y = margin_y
+            case (LEGEND_UPPER_RIGHT)
+                x = real(backend%width, wp) - legend_width - margin_x
+                y = margin_y + 2.0_wp  ! Start lower to leave room for multiple entries
+            case (LEGEND_LOWER_LEFT)
+                x = margin_x
+                y = real(backend%height, wp) - total_height - margin_y
+            case (LEGEND_LOWER_RIGHT)
+                x = real(backend%width, wp) - legend_width - margin_x
+                y = real(backend%height, wp) - total_height - margin_y
+            case default
+                x = real(backend%width, wp) - legend_width - margin_x
+                y = margin_y
+            end select
+            
+        class default
+            ! PNG/PDF backends - use pixel coordinates
+            legend_width = 150.0_wp
+            margin_x = 20.0_wp
+            margin_y = 20.0_wp
+            total_height = real(legend%num_entries, wp) * legend%entry_height
+            
+            select case (legend%position)
+            case (LEGEND_UPPER_LEFT)
+                x = margin_x
+                y = margin_y
+            case (LEGEND_UPPER_RIGHT)
+                x = real(backend%width, wp) - legend_width
+                y = margin_y
+            case (LEGEND_LOWER_LEFT)
+                x = margin_x
+                y = real(backend%height, wp) - total_height - margin_y
+            case (LEGEND_LOWER_RIGHT)
+                x = real(backend%width, wp) - legend_width
+                y = real(backend%height, wp) - total_height - margin_y
+            case default
+                x = real(backend%width, wp) - legend_width
+                y = margin_y
+            end select
         end select
     end subroutine calculate_legend_position
 

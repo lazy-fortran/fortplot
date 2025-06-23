@@ -22,6 +22,7 @@ module fortplot_ascii
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
+        logical :: title_set = .false.  ! Track if title was explicitly set
         type(text_element_t), allocatable :: text_elements(:)
         integer :: num_text_elements = 0
         real(wp) :: current_r, current_g, current_b
@@ -32,6 +33,7 @@ module fortplot_ascii
         procedure :: color => ascii_set_color
         procedure :: text => ascii_draw_text
         procedure :: save => ascii_finalize
+        procedure :: set_title => ascii_set_title
     end type ascii_context
     
     ! ASCII plotting constants
@@ -67,6 +69,7 @@ contains
         ! Initialize text elements storage (start with capacity for 20 text elements)
         allocate(ctx%text_elements(20))
         ctx%num_text_elements = 0
+        ctx%title_set = .false.
         
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp 
@@ -154,8 +157,8 @@ contains
         character(len=*), intent(in) :: text
         integer :: text_x, text_y
         
-        ! Store the first text as title for backwards compatibility
-        if (.not. allocated(this%title_text)) then
+        ! Only store as title if not explicitly set and no title allocated yet
+        if (.not. this%title_set .and. .not. allocated(this%title_text)) then
             this%title_text = text
         end if
         
@@ -163,9 +166,17 @@ contains
         if (this%num_text_elements < size(this%text_elements)) then
             this%num_text_elements = this%num_text_elements + 1
             
-            ! Convert to canvas coordinates
-            text_x = nint((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp))
-            text_y = nint((this%y_max - y) / (this%y_max - this%y_min) * real(this%plot_height, wp))
+            ! Convert coordinates - check if already in screen coordinates
+            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
+                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
+                ! Already in screen coordinates (e.g., from legend)
+                text_x = nint(x)
+                text_y = nint(y)
+            else
+                ! Convert from data coordinates to canvas coordinates
+                text_x = nint((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp))
+                text_y = nint((this%y_max - y) / (this%y_max - this%y_min) * real(this%plot_height, wp))
+            end if
             
             ! Clamp to canvas bounds
             text_x = max(1, min(text_x, this%plot_width - len_trim(text)))
@@ -179,6 +190,15 @@ contains
             this%text_elements(this%num_text_elements)%color_b = this%current_b
         end if
     end subroutine ascii_draw_text
+    
+    subroutine ascii_set_title(this, title)
+        !! Explicitly set title for ASCII backend
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: title
+        
+        this%title_text = title
+        this%title_set = .true.
+    end subroutine ascii_set_title
     
     subroutine ascii_finalize(this, filename)
         class(ascii_context), intent(inout) :: this
@@ -204,8 +224,8 @@ contains
         call render_text_elements_to_canvas(this)
         
         if (allocated(this%title_text)) then
-            print '(A)', this%title_text
-            print '(A)', repeat('=', len_trim(this%title_text))
+            print '(A)', ''  ! Empty line before title
+            call print_centered_title(this%title_text, this%plot_width)
         end if
         
         print '(A)', '+' // repeat('-', this%plot_width) // '+'
@@ -229,8 +249,8 @@ contains
         call render_text_elements_to_canvas(this)
         
         if (allocated(this%title_text)) then
-            write(unit, '(A)') this%title_text
-            write(unit, '(A)') repeat('=', len_trim(this%title_text))
+            write(unit, '(A)') ''  ! Empty line before title
+            call write_centered_title(unit, this%title_text, this%plot_width)
         end if
         
         ! print *, "ASCII OUTPUT: Using width=", this%plot_width, "height=", this%plot_height
@@ -346,5 +366,40 @@ contains
             end do
         end do
     end subroutine render_text_elements_to_canvas
+
+    subroutine print_centered_title(title, width)
+        !! Print centered title to terminal
+        character(len=*), intent(in) :: title
+        integer, intent(in) :: width
+        integer :: padding, title_len
+        character(len=:), allocatable :: centered_title
+        
+        title_len = len_trim(title)
+        if (title_len >= width) then
+            print '(A)', trim(title)
+        else
+            padding = (width - title_len) / 2
+            centered_title = repeat(' ', padding) // trim(title)
+            print '(A)', centered_title
+        end if
+    end subroutine print_centered_title
+
+    subroutine write_centered_title(unit, title, width)
+        !! Write centered title to file
+        integer, intent(in) :: unit
+        character(len=*), intent(in) :: title
+        integer, intent(in) :: width
+        integer :: padding, title_len
+        character(len=:), allocatable :: centered_title
+        
+        title_len = len_trim(title)
+        if (title_len >= width) then
+            write(unit, '(A)') trim(title)
+        else
+            padding = (width - title_len) / 2
+            centered_title = repeat(' ', padding) // trim(title)
+            write(unit, '(A)') centered_title
+        end if
+    end subroutine write_centered_title
 
 end module fortplot_ascii
