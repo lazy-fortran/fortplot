@@ -93,6 +93,23 @@ contains
         call add_to_stream(this, "ET")
     end subroutine draw_pdf_text
     
+    subroutine draw_pdf_text_direct(this, x, y, text)
+        !! Draw text at direct PDF coordinates (no data coordinate transformation)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=200) :: text_cmd
+        
+        call add_to_stream(this, "BT")
+        write(text_cmd, '("/F1 12 Tf")') 
+        call add_to_stream(this, text_cmd)
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
+        call add_to_stream(this, text_cmd)
+        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        call add_to_stream(this, text_cmd)
+        call add_to_stream(this, "ET")
+    end subroutine draw_pdf_text_direct
+    
     subroutine write_pdf_file(this, filename)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
@@ -439,16 +456,16 @@ contains
             ! Position title in the top margin area, centered between top edge and plot area
             ! Top margin spans from top to ctx%height - ctx%plot_area%bottom - ctx%plot_area%height
             label_y = real(ctx%height - (ctx%plot_area%bottom + ctx%plot_area%height) / 2, wp)
-            call draw_pdf_text(ctx, label_x, label_y, trim(title))
+            call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))
         end if
         
         ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
-            ! Center horizontally on plot area
+            ! Center horizontally on plot area (direct PDF coordinates)
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
-            ! Position below tick labels with adequate spacing (match PNG backend)
+            ! Position below tick labels with adequate spacing (direct PDF coordinates)  
             label_y = real(ctx%height - ctx%plot_area%bottom - 45, wp)
-            call draw_pdf_text(ctx, label_x, label_y, trim(xlabel))
+            call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
         end if
         
         ! Draw Y-axis label rotated 90 degrees matplotlib-style
