@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 // Simple wrapper structure to hide FreeType complexity from Fortran
 typedef struct {
@@ -138,6 +139,77 @@ int ft_wrapper_render_char(int char_code, glyph_info_t* glyph_info) {
         glyph_info->buffer = NULL;
         glyph_info->buffer_size = 0;
     }
+    
+    return 0;
+}
+
+// Render character with rotation (angle in degrees)
+int ft_wrapper_render_char_rotated(int char_code, glyph_info_t* glyph_info, double angle_degrees) {
+    FT_Error error;
+    FT_GlyphSlot slot;
+    FT_Matrix matrix;
+    FT_Vector pen;
+    
+    if (!ft_wrapper.initialized) {
+        fprintf(stderr, "FreeType: Not initialized\n");
+        return -1;
+    }
+    
+    if (!glyph_info) {
+        fprintf(stderr, "FreeType: Invalid glyph_info pointer\n");
+        return -1;
+    }
+    
+    // Convert angle to radians
+    double angle_rad = angle_degrees * 3.14159265359 / 180.0;
+    
+    // Set up transformation matrix for rotation
+    matrix.xx = (FT_Fixed)(cos(angle_rad) * 0x10000L);
+    matrix.xy = (FT_Fixed)(-sin(angle_rad) * 0x10000L);
+    matrix.yx = (FT_Fixed)(sin(angle_rad) * 0x10000L);
+    matrix.yy = (FT_Fixed)(cos(angle_rad) * 0x10000L);
+    
+    // Set transformation
+    FT_Set_Transform(ft_wrapper.face, &matrix, NULL);
+    
+    // Load and render the character
+    error = FT_Load_Char(ft_wrapper.face, char_code, FT_LOAD_RENDER);
+    if (error) {
+        fprintf(stderr, "FreeType: Failed to load character %d (error %d)\n", char_code, error);
+        // Reset transformation
+        FT_Set_Transform(ft_wrapper.face, NULL, NULL);
+        return -1;
+    }
+    
+    slot = ft_wrapper.face->glyph;
+    
+    // Copy glyph information
+    glyph_info->width = slot->bitmap.width;
+    glyph_info->height = slot->bitmap.rows;
+    glyph_info->left = slot->bitmap_left;
+    glyph_info->top = slot->bitmap_top;
+    glyph_info->advance_x = slot->advance.x >> 6;
+    
+    // Copy bitmap data
+    int buffer_size = glyph_info->width * glyph_info->height;
+    if (buffer_size > 0 && slot->bitmap.buffer) {
+        glyph_info->buffer = malloc(buffer_size);
+        if (glyph_info->buffer) {
+            memcpy(glyph_info->buffer, slot->bitmap.buffer, buffer_size);
+            glyph_info->buffer_size = buffer_size;
+        } else {
+            fprintf(stderr, "FreeType: Failed to allocate bitmap buffer\n");
+            // Reset transformation
+            FT_Set_Transform(ft_wrapper.face, NULL, NULL);
+            return -1;
+        }
+    } else {
+        glyph_info->buffer = NULL;
+        glyph_info->buffer_size = 0;
+    }
+    
+    // Reset transformation for subsequent normal text
+    FT_Set_Transform(ft_wrapper.face, NULL, NULL);
     
     return 0;
 }
