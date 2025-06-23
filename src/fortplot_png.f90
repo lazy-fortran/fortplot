@@ -15,6 +15,7 @@ module fortplot_png
     type, extends(plot_context) :: png_context
         integer(1), allocatable :: image_data(:)
         real(wp) :: current_r, current_g, current_b
+        real(wp) :: current_line_width = 1.0_wp  ! Track current line width
         ! Plot area calculations (using common margin functionality)
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
@@ -64,7 +65,7 @@ contains
         g = color_to_byte(this%current_g)
         b = color_to_byte(this%current_b)
         
-        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b)
+        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, 0.5_wp)
     end subroutine png_draw_line
     
     subroutine png_set_color(this, r, g, b)
@@ -135,16 +136,19 @@ contains
     end subroutine initialize_white_background
     
     ! Distance-based antialiasing algorithm (AGG-style)
-    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b)
+    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b, width)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: x0, y0, x1, y1
         integer(1), intent(in) :: r, g, b
-        real(wp), parameter :: line_width = 0.75_wp
+        real(wp), intent(in) :: width
+        real(wp) :: line_width
         
         real(wp) :: dx, dy, length, nx, ny
         integer :: x_min, x_max, y_min, y_max, x, y
         real(wp) :: px, py, dist, alpha
+        
+        line_width = width
         
         dx = x1 - x0
         dy = y1 - y0
@@ -251,7 +255,7 @@ contains
         integer(1), intent(in) :: r, g, b
         real(wp) :: dx, dy, length, step_x, step_y, x, y
         integer :: steps, i
-        real(wp), parameter :: line_width = 1.5_wp
+        real(wp), parameter :: line_width = 0.75_wp
         
         dx = x1 - x0
         dy = y1 - y0
@@ -704,28 +708,28 @@ contains
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1)  ! Bottom edge (top in PNG)
+                                  0_1, 0_1, 0_1, 0.1_wp)  ! Bottom edge (top in PNG)
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1)  ! Left edge
+                                  0_1, 0_1, 0_1, 0.1_wp)  ! Left edge
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1)  ! Right edge
+                                  0_1, 0_1, 0_1, 0.1_wp)  ! Right edge
         
         call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom, wp), &
-                                  0_1, 0_1, 0_1)  ! Top edge (bottom in PNG)
+                                  0_1, 0_1, 0_1, 0.1_wp)  ! Top edge (bottom in PNG)
     end subroutine draw_png_frame
     
     subroutine draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
@@ -742,7 +746,7 @@ contains
                                       real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                       x_positions(i), &
                                       real(ctx%plot_area%bottom + ctx%plot_area%height + 5, wp), &
-                                      0_1, 0_1, 0_1)
+                                      0_1, 0_1, 0_1, 0.1_wp)
         end do
         
         ! Draw Y-axis tick marks (at left of plot)
@@ -750,7 +754,7 @@ contains
             call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
                                       real(ctx%plot_area%left, wp), y_positions(i), &
                                       real(ctx%plot_area%left - 5, wp), y_positions(i), &
-                                      0_1, 0_1, 0_1)
+                                      0_1, 0_1, 0_1, 0.1_wp)
         end do
     end subroutine draw_png_tick_marks
     
