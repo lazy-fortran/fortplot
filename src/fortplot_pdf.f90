@@ -119,8 +119,12 @@ contains
         character(len=200) :: text_cmd
         real(wp) :: text_width, centered_x
         
-        ! Calculate actual text width using FreeType for accurate centering
+        ! Calculate text width for centering (fallback to character estimation if FreeType fails)
         text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
+        if (text_width <= 0.0_wp) then
+            ! Fallback: estimate 8 pixels per character for 14pt font
+            text_width = real(len_trim(text) * 8, wp)
+        end if
         centered_x = x - text_width / 2.0_wp
         
         call add_to_stream(this, "BT")
@@ -474,7 +478,7 @@ contains
         !! Draw figure title and axis labels for PDF
         type(pdf_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp) :: label_x, label_y
+        real(wp) :: label_x, label_y, text_width
         
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
@@ -487,8 +491,12 @@ contains
         
         ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
-            ! Center the xlabel text properly using actual text width
-            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - real(calculate_text_width(trim(xlabel)), wp) / 2.0_wp
+            ! Center the xlabel text properly using text width with fallback
+            text_width = real(calculate_text_width(trim(xlabel)), wp)
+            if (text_width <= 0.0_wp) then
+                text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char for 12pt
+            end if
+            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
             ! Position below x-axis tick labels - closer to matplotlib style
             ! X-axis tick labels are around Y=51, so position xlabel below them
             label_y = real(25, wp)  ! 25 pixels from bottom edge of PDF
