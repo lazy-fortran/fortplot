@@ -433,26 +433,51 @@ contains
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp) :: label_x, label_y
         
-        ! Draw title at top center of plot
+        ! Draw title at top center of plot (higher position)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            label_y = real(ctx%height - ctx%plot_area%bottom + 30, wp)  ! Above plot area
+            label_y = real(ctx%height - 30, wp)  ! Much higher up near top
             call draw_pdf_text(ctx, label_x, label_y, trim(title))
         end if
         
-        ! Draw X-axis label centered below plot
+        ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
+            ! Center horizontally on plot area
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
-            label_y = real(ctx%height - ctx%plot_area%bottom - 60, wp)  ! Below tick labels
+            ! Position below tick labels with adequate spacing
+            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height - 45, wp)
             call draw_pdf_text(ctx, label_x, label_y, trim(xlabel))
         end if
         
-        ! Draw Y-axis label on left side
+        ! Draw Y-axis label rotated 90 degrees matplotlib-style
         if (present(ylabel)) then
-            label_x = real(30, wp)  ! Left margin
-            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
-            call draw_pdf_text(ctx, label_x, label_y, trim(ylabel))
+            call draw_vertical_text_pdf(ctx, ylabel)
         end if
     end subroutine draw_pdf_title_and_labels
+    
+    subroutine draw_vertical_text_pdf(ctx, text)
+        !! Draw text rotated 90 degrees using PDF text matrix
+        type(pdf_context), intent(inout) :: ctx
+        character(len=*), intent(in) :: text
+        real(wp) :: label_x, label_y
+        character(len=200) :: text_cmd
+        
+        ! Position for rotated Y-axis label
+        label_x = real(40, wp)  ! Left margin position
+        label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
+        
+        ! Set up 90-degree rotation using PDF text matrix
+        call add_to_stream(ctx, "BT")
+        write(text_cmd, '("/F1 12 Tf")')
+        call add_to_stream(ctx, text_cmd)
+        
+        ! Rotation matrix: [cos(90) -sin(90) sin(90) cos(90) x y] = [0 -1 1 0 x y]
+        write(text_cmd, '("0 -1 1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
+        call add_to_stream(ctx, text_cmd)
+        
+        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        call add_to_stream(ctx, text_cmd)
+        call add_to_stream(ctx, "ET")
+    end subroutine draw_vertical_text_pdf
 
 end module fortplot_pdf

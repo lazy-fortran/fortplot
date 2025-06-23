@@ -1,7 +1,7 @@
 module fortplot_png
     use iso_c_binding
     use fortplot_context
-    use fortplot_text
+    use fortplot_text, only: render_text_to_image
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
@@ -789,32 +789,55 @@ contains
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp) :: label_x, label_y
         
-        ! Draw title at top center of plot
+        ! Draw title at top center of plot (larger and higher)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            label_y = real(ctx%plot_area%bottom - 25, wp)  ! 25 pixels above plot area
+            label_y = real(30, wp)  ! Much higher up near top of canvas
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(title), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
         
-        ! Draw X-axis label centered below plot
+        ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
+            ! Center horizontally on plot area
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
-            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 50, wp)  ! Below tick labels
+            ! Position below tick labels with adequate spacing
+            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 45, wp)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(xlabel), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
         
-        ! Draw Y-axis label rotated on left side
+        ! Draw Y-axis label rotated 90 degrees matplotlib-style
         if (present(ylabel)) then
-            label_x = real(20, wp)  ! Far left margin
-            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(ylabel), &
-                                     0_1, 0_1, 0_1)  ! Black text
+            call draw_vertical_text_png(ctx, ylabel)
         end if
     end subroutine draw_png_title_and_labels
+    
+    subroutine draw_vertical_text_png(ctx, text)
+        !! Draw text vertically (each character below the previous)
+        type(png_context), intent(inout) :: ctx
+        character(len=*), intent(in) :: text
+        real(wp) :: label_x, label_y
+        integer :: i, text_len
+        character(len=1) :: char
+        
+        ! Position for vertical Y-axis label
+        label_x = real(25, wp)  ! Left margin position
+        text_len = len_trim(text)
+        
+        ! Start from top of centered position
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
+                 real(text_len * 12, wp) / 2.0_wp
+        
+        ! Draw each character vertically spaced
+        do i = 1, text_len
+            char = text(i:i)
+            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+                                     int(label_x), int(label_y + real(i-1, wp) * 12.0_wp), &
+                                     char, 0_1, 0_1, 0_1)  ! Black text
+        end do
+    end subroutine draw_vertical_text_png
 
 end module fortplot_png

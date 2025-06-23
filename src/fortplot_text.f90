@@ -1,9 +1,10 @@
 module fortplot_text
     use iso_c_binding
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
-    public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width
+    public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, render_rotated_text_to_image
     
     ! Glyph information structure (matches C wrapper)
     type, bind(C) :: glyph_info_t
@@ -31,7 +32,15 @@ module fortplot_text
             integer(c_int), value :: char_code
             type(glyph_info_t), intent(out) :: glyph_info
             integer(c_int) :: ft_wrapper_render_char
-        end function ft_wrapper_render_char
+        end function
+        
+        function ft_wrapper_render_char_rotated(char_code, glyph_info, angle) bind(C, name="ft_wrapper_render_char_rotated")
+            import :: c_int, c_double, glyph_info_t
+            integer(c_int), value :: char_code
+            type(glyph_info_t), intent(out) :: glyph_info
+            real(c_double), value :: angle
+            integer(c_int) :: ft_wrapper_render_char_rotated
+        end function ft_wrapper_render_char_rotated
         
         subroutine ft_wrapper_free_glyph(glyph_info) bind(C, name="ft_wrapper_free_glyph")
             import :: glyph_info_t
@@ -340,5 +349,44 @@ contains
             pixel_set = (x >= 1 .and. x <= 2) .and. (y >= 2 .and. y <= 5)
         end select
     end function get_character_pixel
+
+    subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
+        !! Render rotated text to PNG image using FreeType transformation
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: width, height, x, y
+        character(len=*), intent(in) :: text
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: angle  ! Rotation angle in degrees
+        
+        integer :: i, char_code, pen_x, pen_y
+        integer(c_int) :: error
+        type(glyph_info_t) :: glyph_info
+        real(c_double) :: angle_c
+        
+        if (.not. text_system_initialized) then
+            if (.not. init_text_system()) then
+                return
+            end if
+        end if
+        
+        pen_x = x
+        pen_y = y
+        angle_c = real(angle, c_double)
+        
+        do i = 1, len_trim(text)
+            char_code = iachar(text(i:i))
+            error = ft_wrapper_render_char_rotated(char_code, glyph_info, angle_c)
+            if (error == 0) then
+                ! Render the rotated glyph using existing helper
+                call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
+                
+                ! Advance text position (rotated advance)
+                pen_x = pen_x + int(real(glyph_info%advance_x) * cos(angle * 3.14159265359_wp / 180.0_wp))
+                pen_y = pen_y + int(real(glyph_info%advance_x) * sin(angle * 3.14159265359_wp / 180.0_wp))
+            end if
+            
+            call ft_wrapper_free_glyph(glyph_info)
+        end do
+    end subroutine render_rotated_text_to_image
 
 end module fortplot_text
