@@ -13,9 +13,17 @@ module fortplot_ascii
     
     private
     public :: ascii_context, create_ascii_canvas
+    type :: text_element_t
+        character(len=:), allocatable :: text
+        integer :: x, y
+        real(wp) :: color_r, color_g, color_b
+    end type text_element_t
+
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
+        type(text_element_t), allocatable :: text_elements(:)
+        integer :: num_text_elements = 0
         real(wp) :: current_r, current_g, current_b
         integer :: plot_width = 80
         integer :: plot_height = 24
@@ -55,6 +63,10 @@ contains
         
         allocate(ctx%canvas(h, w))
         ctx%canvas = ' '
+        
+        ! Initialize text elements storage (start with capacity for 20 text elements)
+        allocate(ctx%text_elements(20))
+        ctx%num_text_elements = 0
         
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp 
@@ -140,9 +152,31 @@ contains
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        integer :: text_x, text_y
         
+        ! Store the first text as title for backwards compatibility
         if (.not. allocated(this%title_text)) then
             this%title_text = text
+        end if
+        
+        ! Store text element for later rendering
+        if (this%num_text_elements < size(this%text_elements)) then
+            this%num_text_elements = this%num_text_elements + 1
+            
+            ! Convert to canvas coordinates
+            text_x = nint((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp))
+            text_y = nint((this%y_max - y) / (this%y_max - this%y_min) * real(this%plot_height, wp))
+            
+            ! Clamp to canvas bounds
+            text_x = max(1, min(text_x, this%plot_width - len_trim(text)))
+            text_y = max(1, min(text_y, this%plot_height))
+            
+            this%text_elements(this%num_text_elements)%text = trim(text)
+            this%text_elements(this%num_text_elements)%x = text_x
+            this%text_elements(this%num_text_elements)%y = text_y
+            this%text_elements(this%num_text_elements)%color_r = this%current_r
+            this%text_elements(this%num_text_elements)%color_g = this%current_g
+            this%text_elements(this%num_text_elements)%color_b = this%current_b
         end if
     end subroutine ascii_draw_text
     
@@ -166,6 +200,9 @@ contains
         class(ascii_context), intent(inout) :: this
         integer :: i, j
         
+        ! Render text elements to canvas before output
+        call render_text_elements_to_canvas(this)
+        
         if (allocated(this%title_text)) then
             print '(A)', this%title_text
             print '(A)', repeat('=', len_trim(this%title_text))
@@ -187,6 +224,9 @@ contains
         class(ascii_context), intent(inout) :: this
         integer, intent(in) :: unit
         integer :: i, j
+        
+        ! Render text elements to canvas before output
+        call render_text_elements_to_canvas(this)
         
         if (allocated(this%title_text)) then
             write(unit, '(A)') this%title_text
@@ -267,5 +307,44 @@ contains
             end if
         end select
     end function get_blend_char
+
+    subroutine render_text_elements_to_canvas(this)
+        !! Render stored text elements onto the ASCII canvas
+        class(ascii_context), intent(inout) :: this
+        integer :: i, j, text_len, char_idx
+        character(len=1) :: text_char
+        
+        ! Render each stored text element
+        do i = 1, this%num_text_elements
+            text_len = len_trim(this%text_elements(i)%text)
+            
+            ! Draw each character of the text
+            do char_idx = 1, text_len
+                j = this%text_elements(i)%x + char_idx - 1
+                
+                ! Check bounds
+                if (j >= 1 .and. j <= this%plot_width .and. &
+                    this%text_elements(i)%y >= 1 .and. this%text_elements(i)%y <= this%plot_height) then
+                    
+                    text_char = this%text_elements(i)%text(char_idx:char_idx)
+                    
+                    ! Choose character based on text color (simple color mapping)
+                    if (this%text_elements(i)%color_r > 0.7_wp) then
+                        text_char = text_char  ! Keep original for red text
+                    else if (this%text_elements(i)%color_g > 0.7_wp) then
+                        text_char = text_char  ! Keep original for green text
+                    else if (this%text_elements(i)%color_b > 0.7_wp) then
+                        text_char = text_char  ! Keep original for blue text
+                    end if
+                    
+                    ! Only overwrite space or lower density characters
+                    if (this%canvas(this%text_elements(i)%y, j) == ' ' .or. &
+                        get_char_density(text_char) > get_char_density(this%canvas(this%text_elements(i)%y, j))) then
+                        this%canvas(this%text_elements(i)%y, j) = text_char
+                    end if
+                end if
+            end do
+        end do
+    end subroutine render_text_elements_to_canvas
 
 end module fortplot_ascii
