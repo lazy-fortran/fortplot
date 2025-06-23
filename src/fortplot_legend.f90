@@ -178,13 +178,27 @@ contains
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
         real(wp) :: line_x1, line_x2, line_y, text_x, text_y
+        real(wp) :: data_width, data_height, entry_spacing, line_length_data, text_padding_data
         integer :: i
         
+        
+        ! Calculate data coordinate scaling
+        data_width = backend%x_max - backend%x_min
+        data_height = backend%y_max - backend%y_min
+        line_length_data = data_width * 0.05_wp      ! 5% of data width for line
+        text_padding_data = data_width * 0.01_wp     ! 1% padding
+        entry_spacing = data_height * 0.05_wp        ! 5% spacing between entries
+        
         do i = 1, legend%num_entries
-            ! Calculate line position
-            line_x1 = legend_x + legend%x_offset
-            line_x2 = line_x1 + legend%line_length
-            line_y = legend_y + real(i-1, wp) * legend%entry_height
+            ! Calculate line position using data coordinate scaling
+            line_x1 = legend_x
+            line_x2 = line_x1 + line_length_data
+            line_y = legend_y - real(i-1, wp) * entry_spacing  ! Go downward in Y
+            
+            ! Draw legend text
+            text_x = line_x2 + text_padding_data
+            text_y = line_y
+            
             
             ! Set color and draw legend line
             call backend%color(legend%entries(i)%color(1), &
@@ -193,8 +207,6 @@ contains
             call backend%line(line_x1, line_y, line_x2, line_y)
             
             ! Draw legend text
-            text_x = line_x2 + legend%text_padding
-            text_y = line_y
             call backend%text(text_x, text_y, legend%entries(i)%label)
         end do
     end subroutine render_standard_legend
@@ -207,6 +219,7 @@ contains
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
         real(wp) :: total_height, legend_width, margin_x, margin_y
+        real(wp) :: data_width, data_height, legend_width_data, margin_x_data, margin_y_data
         
         ! Backend-specific positioning
         select type (backend)
@@ -236,28 +249,32 @@ contains
             end select
             
         class default
-            ! PNG/PDF backends - use pixel coordinates
-            legend_width = 150.0_wp
-            margin_x = 20.0_wp
-            margin_y = 20.0_wp
-            total_height = real(legend%num_entries, wp) * legend%entry_height
+            ! PNG/PDF backends - use data coordinates
+            ! Convert to data coordinate system
+            
+            data_width = backend%x_max - backend%x_min
+            data_height = backend%y_max - backend%y_min
+            legend_width_data = data_width * 0.2_wp    ! 20% of data width
+            margin_x_data = data_width * 0.05_wp       ! 5% margin
+            margin_y_data = data_height * 0.05_wp      ! 5% margin
+            total_height = real(legend%num_entries, wp) * data_height * 0.05_wp  ! 5% per entry
             
             select case (legend%position)
             case (LEGEND_UPPER_LEFT)
-                x = margin_x
-                y = margin_y
+                x = backend%x_min + margin_x_data
+                y = backend%y_max - margin_y_data
             case (LEGEND_UPPER_RIGHT)
-                x = real(backend%width, wp) - legend_width
-                y = margin_y
+                x = backend%x_max - legend_width_data - margin_x_data
+                y = backend%y_max - margin_y_data
             case (LEGEND_LOWER_LEFT)
-                x = margin_x
-                y = real(backend%height, wp) - total_height - margin_y
+                x = backend%x_min + margin_x_data
+                y = backend%y_min + total_height + margin_y_data
             case (LEGEND_LOWER_RIGHT)
-                x = real(backend%width, wp) - legend_width
-                y = real(backend%height, wp) - total_height - margin_y
+                x = backend%x_max - legend_width_data - margin_x_data
+                y = backend%y_min + total_height + margin_y_data
             case default
-                x = real(backend%width, wp) - legend_width
-                y = margin_y
+                x = backend%x_max - legend_width_data - margin_x_data
+                y = backend%y_max - margin_y_data
             end select
         end select
     end subroutine calculate_legend_position
