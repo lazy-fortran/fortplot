@@ -36,8 +36,10 @@ contains
         call fig%set_title("2D Gaussian - Default Colorblind-Safe Colormap")
         call fig%add_contour_filled(x_grid, y_grid, z_grid)  ! Uses default 'crest' colormap
         call fig%savefig('example/colored_contours/gaussian_default.png')
+        call fig%savefig('example/colored_contours/gaussian_default.pdf')
+        call fig%savefig('example/colored_contours/gaussian_default.txt')
         
-        print *, "Created: gaussian_default.png"
+        print *, "Created: gaussian_default.png/pdf/txt"
     end subroutine default_gaussian_example
 
     subroutine plasma_saddle_example()
@@ -71,8 +73,10 @@ contains
         call fig%set_title("Saddle Function - Plasma Colormap")
         call fig%add_contour_filled(x_grid, y_grid, z_grid, levels=custom_levels, colormap="plasma")
         call fig%savefig('example/colored_contours/saddle_plasma.png')
+        call fig%savefig('example/colored_contours/saddle_plasma.pdf')
+        call fig%savefig('example/colored_contours/saddle_plasma.txt')
         
-        print *, "Created: saddle_plasma.png"
+        print *, "Created: saddle_plasma.png/pdf/txt"
     end subroutine plasma_saddle_example
 
     subroutine mixed_colormap_comparison()
@@ -103,6 +107,8 @@ contains
         call fig1%set_title("Ripple Function - Inferno Colormap")
         call fig1%add_contour_filled(x_grid, y_grid, z_grid, colormap="inferno")
         call fig1%savefig('example/colored_contours/ripple_inferno.png')
+        call fig1%savefig('example/colored_contours/ripple_inferno.pdf')
+        call fig1%savefig('example/colored_contours/ripple_inferno.txt')
 
         ! Coolwarm colormap
         call fig2%initialize(640, 480)
@@ -111,6 +117,8 @@ contains
         call fig2%set_title("Ripple Function - Coolwarm Colormap")
         call fig2%add_contour_filled(x_grid, y_grid, z_grid, colormap="coolwarm")
         call fig2%savefig('example/colored_contours/ripple_coolwarm.png')
+        call fig2%savefig('example/colored_contours/ripple_coolwarm.pdf')
+        call fig2%savefig('example/colored_contours/ripple_coolwarm.txt')
 
         ! Jet colormap
         call fig3%initialize(640, 480)
@@ -119,8 +127,10 @@ contains
         call fig3%set_title("Ripple Function - Jet Colormap")
         call fig3%add_contour_filled(x_grid, y_grid, z_grid, colormap="jet")
         call fig3%savefig('example/colored_contours/ripple_jet.png')
+        call fig3%savefig('example/colored_contours/ripple_jet.pdf')
+        call fig3%savefig('example/colored_contours/ripple_jet.txt')
         
-        print *, "Created: ripple_inferno.png, ripple_coolwarm.png, ripple_jet.png"
+        print *, "Created: ripple_inferno.png/pdf/txt, ripple_coolwarm.png/pdf/txt, ripple_jet.png/pdf/txt"
         print *, "Colormap comparison complete!"
     end subroutine mixed_colormap_comparison
 

@@ -25,8 +25,10 @@ contains
         call xlabel('x')
         call ylabel('sin(x)')
         call savefig('example/basic_plots/simple_plot.png')
+        call savefig('example/basic_plots/simple_plot.pdf')
+        call savefig('example/basic_plots/simple_plot.txt')
         
-        print *, "Created: simple_plot.png"
+        print *, "Created: simple_plot.png/pdf/txt"
         
     end subroutine simple_plots
 

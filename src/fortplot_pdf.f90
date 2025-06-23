@@ -433,10 +433,12 @@ contains
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp) :: label_x, label_y
         
-        ! Draw title at top center of plot (higher position)
+        ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            label_y = real(ctx%height - 30, wp)  ! Much higher up near top
+            ! Position title in the top margin area, centered between top edge and plot area
+            ! Top margin spans from top to ctx%height - ctx%plot_area%bottom - ctx%plot_area%height
+            label_y = real(ctx%height - (ctx%plot_area%bottom + ctx%plot_area%height) / 2, wp)
             call draw_pdf_text(ctx, label_x, label_y, trim(title))
         end if
         
@@ -444,8 +446,8 @@ contains
         if (present(xlabel)) then
             ! Center horizontally on plot area
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp)
-            ! Position below tick labels with adequate spacing
-            label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height - 45, wp)
+            ! Position below tick labels with adequate spacing (match PNG backend)
+            label_y = real(ctx%height - ctx%plot_area%bottom - 45, wp)
             call draw_pdf_text(ctx, label_x, label_y, trim(xlabel))
         end if
         
