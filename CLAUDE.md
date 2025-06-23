@@ -29,7 +29,7 @@ All development work must use the Makefile. Never run `fpm` commands directly.
 
 ### Primary Development Commands
 
-- `make run` - Build and run all examples (default development workflow)
+- `make example` - Build and run all examples (default development workflow)
 - `make debug` - Build and run apps in app/ directory for debugging
 - `make test` - Run all unit tests in test/ directory
 - `make build` - Compile the project
@@ -49,7 +49,7 @@ All make targets support passing additional fpm arguments. Use `ARGS` to pass ex
 
 ```bash
 # Run specific example
-make run ARGS="--example basic_plots"
+make example ARGS="basic_plots"
 
 # Run specific test
 make test ARGS="--target test_specific_feature"
@@ -97,7 +97,7 @@ grep -r "^module " src/
 Example usage with discovered targets:
 ```bash
 # Run specific example
-make run ARGS="--example basic_plots"
+make example ARGS="basic_plots"
 
 # Run specific test
 make test ARGS="--target test_figure_basics" 
@@ -158,7 +158,7 @@ pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
 **NO EXCEPTIONS: Every code change MUST follow TDD approach**
 
 1. **Write failing test first** in `test/test_*.f90`
-2. **Run with `make run`** to confirm failure
+2. **Run with `make test`** to confirm failure
 3. **Write minimal code** to make test pass
 4. **Refactor** while keeping tests green
 5. **Repeat** for next feature

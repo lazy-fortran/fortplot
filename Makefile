@@ -16,7 +16,7 @@ FPM_FLAGS = --c-flag "$(ALL_CFLAGS)" --link-flag "$(ALL_LIBS)"
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build run test clean help check-deps ref
+.PHONY: all build example debug test clean help check-deps ref
 
 # Default target
 all: build
@@ -26,7 +26,7 @@ build:
 	fpm build $(FPM_FLAGS) $(ARGS)
 
 # Build and run the examples
-run:
+example:
 	fpm run $(FPM_FLAGS) --example $(ARGS)
 
 # Build and run the apps for debugging
@@ -76,7 +76,7 @@ check-deps:
 help:
 	@echo "Available targets:"
 	@echo "  build       - Compile the project"
-	@echo "  run         - Build and run all examples"
+	@echo "  example     - Build and run all examples"
 	@echo "  debug       - Build and run apps for debugging"
 	@echo "  ref         - Generate Python matplotlib reference plots"
 	@echo "  test        - Run all tests"
@@ -87,7 +87,7 @@ help:
 	@echo "  help        - Show this help message"
 	@echo ""
 	@echo "Pass additional fpm arguments using ARGS variable:"
-	@echo "  make run ARGS=\"--example basic_plots\""
+	@echo "  make example ARGS=\"basic_plots\""
 	@echo "  make test ARGS=\"--target test_specific\""
 	@echo "  make debug ARGS=\"--target debug_feature\""
 	@echo ""

@@ -453,9 +453,9 @@ contains
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            ! Position title in the top margin area, centered between top edge and plot area
-            ! Top margin spans from top to ctx%height - ctx%plot_area%bottom - ctx%plot_area%height
-            label_y = real(ctx%height - (ctx%plot_area%bottom + ctx%plot_area%height) / 2, wp)
+            ! Position title in the top margin area - high Y value for PDF coordinates
+            ! PDF Y=0 is bottom, so title should be near height - margin
+            label_y = real(ctx%height - 30, wp)  ! 30 pixels down from top edge
             call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))
         end if
         
