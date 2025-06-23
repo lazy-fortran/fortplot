@@ -21,11 +21,12 @@ contains
 
     subroutine test_should_eliminate_duplicate_functions()
         !! Test that functions exist only in ticks module, not duplicated
+        character(len=20) :: labels(10)
+        
         print *, "Testing: Duplicate functions should be eliminated"
         
         ! This test ensures we use only fortplot_ticks module
         ! If we successfully import from ticks module, duplication is resolved
-        character(len=20) :: labels(10)
         
         call calculate_tick_labels(0.0_wp, 10.0_wp, 5, labels)
         call assert_not_empty(labels(1), "Linear tick calculation should work from ticks module")
@@ -39,10 +40,10 @@ contains
 
     subroutine test_should_calculate_linear_ticks_consistently()
         !! Test consistent linear tick calculation
-        print *, "Testing: Linear ticks should be calculated consistently"
-        
         character(len=20) :: labels(10)
         real(wp) :: nice_min, nice_max
+        
+        print *, "Testing: Linear ticks should be calculated consistently"
         
         ! Test basic range
         call calculate_tick_labels(0.0_wp, 10.0_wp, 6, labels)
@@ -58,9 +59,9 @@ contains
 
     subroutine test_should_calculate_log_ticks_with_proper_powers()
         !! Test logarithmic tick calculation produces proper powers of 10
-        print *, "Testing: Log ticks should use proper powers of 10"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Log ticks should use proper powers of 10"
         
         ! Test range spanning multiple decades
         call calculate_tick_labels_log(1.0_wp, 1000.0_wp, 5, labels)
@@ -78,16 +79,16 @@ contains
 
     subroutine test_should_calculate_symlog_ticks_correctly()
         !! Test symmetric logarithmic tick calculation
-        print *, "Testing: Symlog ticks should handle linear and log regions"
-        
         character(len=20) :: labels(10)
+        logical :: has_zero, has_positive, has_negative
+        integer :: i
+        
+        print *, "Testing: Symlog ticks should handle linear and log regions"
         
         ! Test symmetric range crossing zero
         call calculate_tick_labels_symlog(-100.0_wp, 100.0_wp, 1.0_wp, 5, labels)
         
         ! Should include zero and symmetric values
-        logical :: has_zero, has_positive, has_negative
-        integer :: i
         
         has_zero = .false.
         has_positive = .false.
@@ -104,9 +105,9 @@ contains
 
     subroutine test_should_format_tick_values_consistently()
         !! Test consistent tick value formatting
-        print *, "Testing: Tick values should be formatted consistently"
-        
         character(len=20) :: result
+        
+        print *, "Testing: Tick values should be formatted consistently"
         
         ! Test integer values
         result = format_tick_value(5.0_wp, 10.0_wp)
@@ -123,9 +124,9 @@ contains
 
     subroutine test_should_calculate_nice_axis_limits()
         !! Test nice axis limit calculation
-        print *, "Testing: Nice axis limits should encompass data with round numbers"
-        
         real(wp) :: nice_min, nice_max
+        
+        print *, "Testing: Nice axis limits should encompass data with round numbers"
         
         ! Test data that should expand to nice limits
         call calculate_nice_axis_limits(1.3_wp, 8.7_wp, 5, nice_min, nice_max)
@@ -140,9 +141,9 @@ contains
 
     subroutine test_should_handle_edge_cases()
         !! Test edge cases and error conditions
-        print *, "Testing: Edge cases should be handled gracefully"
-        
         character(len=20) :: labels(10)
+        
+        print *, "Testing: Edge cases should be handled gracefully"
         
         ! Test zero range
         call calculate_tick_labels(5.0_wp, 5.0_wp, 5, labels)
