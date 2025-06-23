@@ -14,8 +14,8 @@ contains
         
         print *, "=== Basic Plots ==="
         
-        ! Generate simple sine data
-        x = [(real(i-1, wp) * 0.2_wp, i=1, 50)]
+        ! Generate simple sine data - show 2 complete periods (0 to 4π)
+        x = [(real(i-1, wp) * 4.0_wp * 3.141592653589793_wp / 49.0_wp, i=1, 50)]
         y = sin(x)
         
         ! Simple plot using functional API
