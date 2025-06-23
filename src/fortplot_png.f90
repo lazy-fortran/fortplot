@@ -1,7 +1,7 @@
 module fortplot_png
     use iso_c_binding
     use fortplot_context
-    use fortplot_text, only: render_text_to_image
+    use fortplot_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
@@ -816,28 +816,130 @@ contains
     end subroutine draw_png_title_and_labels
     
     subroutine draw_vertical_text_png(ctx, text)
-        !! Draw text vertically (each character below the previous)
+        !! Draw text rotated 90 degrees by rendering each character rotated
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
-        real(wp) :: label_x, label_y
+        real(wp) :: label_x, label_y, char_advance
         integer :: i, text_len
         character(len=1) :: char
         
-        ! Position for vertical Y-axis label
+        ! Position for rotated Y-axis label
         label_x = real(25, wp)  ! Left margin position
         text_len = len_trim(text)
+        char_advance = 12.0_wp  ! Space between characters
         
-        ! Start from top of centered position
-        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
-                 real(text_len * 12, wp) / 2.0_wp
+        ! Start from bottom and work up (for bottom-to-top reading)
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) + &
+                 real(text_len, wp) * char_advance / 2.0_wp
         
-        ! Draw each character vertically spaced
+        ! Draw each character rotated 90 degrees
         do i = 1, text_len
             char = text(i:i)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y + real(i-1, wp) * 12.0_wp), &
-                                     char, 0_1, 0_1, 0_1)  ! Black text
+            call draw_rotated_char_png(ctx, int(label_x), &
+                                      int(label_y - real(i-1, wp) * char_advance), char)
         end do
     end subroutine draw_vertical_text_png
+    
+    subroutine draw_rotated_char_png(ctx, x, y, char)
+        !! Draw a single character rotated 90 degrees counter-clockwise using FreeType
+        use iso_c_binding, only: c_int, c_double, c_associated, c_f_pointer, c_ptr
+        type(png_context), intent(inout) :: ctx
+        integer, intent(in) :: x, y
+        character(len=1), intent(in) :: char
+        
+        ! Local glyph info type (matches C wrapper)
+        type, bind(C) :: glyph_info_t
+            integer(c_int) :: width
+            integer(c_int) :: height
+            integer(c_int) :: left
+            integer(c_int) :: top
+            integer(c_int) :: advance_x
+            type(c_ptr) :: buffer
+            integer(c_int) :: buffer_size
+        end type glyph_info_t
+        
+        ! Local interface for FreeType rotation function
+        interface
+            function ft_wrapper_render_char_rotated(char_code, glyph_info, angle) bind(C, name="ft_wrapper_render_char_rotated")
+                import :: c_int, c_double, glyph_info_t
+                integer(c_int), value :: char_code
+                type(glyph_info_t), intent(out) :: glyph_info
+                real(c_double), value :: angle
+                integer(c_int) :: ft_wrapper_render_char_rotated
+            end function ft_wrapper_render_char_rotated
+        end interface
+        
+        type(glyph_info_t) :: glyph_info
+        integer :: char_code, row, col, img_x, img_y
+        real(8), parameter :: rotation_angle = -90.0_8  ! -90 degrees
+        integer(1), pointer :: bitmap_buffer(:)
+        
+        ! Get character code
+        char_code = iachar(char)
+        
+        ! Render rotated character using FreeType
+        if (ft_wrapper_render_char_rotated(char_code, glyph_info, rotation_angle) == 0) then
+            if (glyph_info%width <= 0 .or. glyph_info%height <= 0) return
+            if (.not. c_associated(glyph_info%buffer)) return
+            
+            ! Convert C pointer to Fortran array
+            call c_f_pointer(glyph_info%buffer, bitmap_buffer, [glyph_info%buffer_size])
+            
+            ! Copy rotated glyph to image
+            do row = 0, glyph_info%height - 1
+                do col = 0, glyph_info%width - 1
+                    img_x = x + glyph_info%left + col
+                    img_y = y - glyph_info%top + row
+                    
+                    if (img_x >= 1 .and. img_x <= ctx%width .and. img_y >= 1 .and. img_y <= ctx%height) then
+                        if (row * glyph_info%width + col + 1 <= glyph_info%buffer_size) then
+                            if (bitmap_buffer(row * glyph_info%width + col + 1) > 128) then
+                                ! Use solid black for strong pixels
+                                call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
+                                               img_x, img_y, 1.0_8, 0_1, 0_1, 0_1)
+                            else if (bitmap_buffer(row * glyph_info%width + col + 1) > 0) then
+                                ! Use anti-aliased blending for edge pixels
+                                call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
+                                               img_x, img_y, real(bitmap_buffer(row * glyph_info%width + col + 1), 8) / 255.0_8, &
+                                               0_1, 0_1, 0_1)
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+        end if
+    end subroutine draw_rotated_char_png
+    
+    
+    subroutine copy_bitmap_to_image(image_data, img_width, img_height, dest_x, dest_y, &
+                                   bitmap, bmp_width, bmp_height)
+        !! Copy a small bitmap to the main image at specified position
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_width, img_height, dest_x, dest_y
+        integer(1), intent(in) :: bitmap(*)
+        integer, intent(in) :: bmp_width, bmp_height
+        
+        integer :: i, j, src_idx, dst_idx, pixel_x, pixel_y
+        
+        do j = 1, bmp_height
+            do i = 1, bmp_width
+                pixel_x = dest_x + i - 1
+                pixel_y = dest_y + j - 1
+                
+                ! Check bounds
+                if (pixel_x >= 0 .and. pixel_x < img_width .and. &
+                    pixel_y >= 0 .and. pixel_y < img_height) then
+                    
+                    src_idx = ((j-1) * bmp_width + (i-1)) * 3 + 1
+                    dst_idx = (pixel_y * img_width + pixel_x) * 3 + 1
+                    
+                    ! Only copy non-white pixels (simple transparency)
+                    if (bitmap(src_idx) < 250 .or. bitmap(src_idx+1) < 250 .or. bitmap(src_idx+2) < 250) then
+                        image_data(dst_idx:dst_idx+2) = bitmap(src_idx:src_idx+2)
+                    end if
+                end if
+            end do
+        end do
+    end subroutine copy_bitmap_to_image
 
 end module fortplot_png
