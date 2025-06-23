@@ -226,9 +226,10 @@ contains
                     bg_b = real(int(image_data(pixel_idx + 2), &
                         kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
                     
-                    image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f), 1)
-                    image_data(pixel_idx + 1) = int(bg_g * (1.0 - alpha_f), 1)
-                    image_data(pixel_idx + 2) = int(bg_b * (1.0 - alpha_f), 1)
+                    ! Proper alpha blending: result = background * (1-alpha) + foreground * alpha
+                    image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f) + real(int(r) + merge(256, 0, r < 0)) * alpha_f, 1)
+                    image_data(pixel_idx + 1) = int(bg_g * (1.0 - alpha_f) + real(int(g) + merge(256, 0, g < 0)) * alpha_f, 1)
+                    image_data(pixel_idx + 2) = int(bg_b * (1.0 - alpha_f) + real(int(b) + merge(256, 0, b < 0)) * alpha_f, 1)
                 end if
             end do
         end do
