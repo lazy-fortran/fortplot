@@ -171,3 +171,25 @@ end subroutine
 
 - Always explicitly import with `use only`. No wildcard imports allowed. - **MANDATORY**
 - Use `implicit none` in all modules and programs - **REQUIRED**
+
+## Known Regressions and Reference Points
+
+**⚠️ IMPORTANT: Track working functionality to prevent regression**
+
+### Working Baseline: Commit f47d82635ae2bf789f3c74ff7ffc9d7e84b56488
+
+This commit represents the last known working state before major refactoring where certain features were functioning correctly:
+
+- **Y-axis text rotation and positioning** - Working correctly in PNG backend
+- **FreeType-based character rotation** - Properly implemented  
+- **Matplotlib-style label positioning** - Correct placement and orientation
+
+**Use this commit as reference when fixing regressions introduced during refactoring.**
+
+### Recently Fixed Regressions
+
+- **Y-axis label positioning in PNG** - Fixed: Labels were appearing on right side instead of left side
+  - **Issue**: Y-axis labels positioned incorrectly after refactoring
+  - **Root Cause**: Hardcoded positioning instead of relative to plot_area%left
+  - **Fix**: Changed `label_x = real(25, wp)` to `label_x = real(ctx%plot_area%left - 40, wp)`
+  - **Status**: ✅ RESOLVED
