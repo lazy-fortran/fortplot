@@ -789,10 +789,12 @@ contains
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp) :: label_x, label_y
         
-        ! Draw title at top center of plot (larger and higher)
+        ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
             label_x = real(ctx%width, wp) / 2.0_wp
-            label_y = real(30, wp)  ! Much higher up near top of canvas
+            ! Position title in the top margin area, centered between top edge and plot area
+            ! Top margin spans from y=0 to y=plot_area%bottom, so place title at middle
+            label_y = real(ctx%plot_area%bottom, wp) / 2.0_wp
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(title), &
                                      0_1, 0_1, 0_1)  ! Black text
