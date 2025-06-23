@@ -787,12 +787,16 @@ contains
         !! Draw figure title and axis labels
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp) :: label_x, label_y
+        real(wp) :: label_x, label_y, text_width
         
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
-            ! Center the title text properly
-            label_x = real(ctx%width, wp) / 2.0_wp - real(calculate_text_width(trim(title)), wp) / 2.0_wp
+            ! Center the title text properly with fallback
+            text_width = real(calculate_text_width(trim(title)), wp)
+            if (text_width <= 0.0_wp) then
+                text_width = real(len_trim(title) * 7, wp)  ! 7 pixels per char fallback
+            end if
+            label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
             ! Position title in the top margin area, centered between top edge and plot area
             ! Top margin spans from y=0 to y=plot_area%bottom, so place title at middle
             label_y = real(ctx%plot_area%bottom, wp) / 2.0_wp
@@ -803,8 +807,12 @@ contains
         
         ! Draw X-axis label properly centered below plot
         if (present(xlabel)) then
-            ! Center the xlabel text properly
-            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - real(calculate_text_width(trim(xlabel)), wp) / 2.0_wp
+            ! Center the xlabel text properly with fallback
+            text_width = real(calculate_text_width(trim(xlabel)), wp)
+            if (text_width <= 0.0_wp) then
+                text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char fallback
+            end if
+            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
             ! Position below tick labels with adequate spacing
             label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 45, wp)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
