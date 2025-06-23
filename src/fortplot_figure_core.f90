@@ -13,6 +13,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
+    use fortplot_colormap
     use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     implicit none
@@ -33,6 +34,10 @@ module fortplot_figure_core
         ! Contour plot data
         real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), allocatable :: contour_levels(:)
+        ! Color contour properties
+        logical :: use_color_levels = .false.
+        character(len=20) :: colormap = 'crest'
+        logical :: show_colorbar = .true.
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -89,6 +94,7 @@ module fortplot_figure_core
         procedure :: initialize
         procedure :: add_plot
         procedure :: add_contour
+        procedure :: add_contour_filled
         procedure :: savefig
         procedure :: set_xlabel
         procedure :: set_ylabel
@@ -159,6 +165,25 @@ contains
         call add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         call update_data_ranges(self)
     end subroutine add_contour
+
+    subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+        !! Add filled contour plot with color levels
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in), optional :: levels(:)
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+        call update_data_ranges(self)
+    end subroutine add_contour_filled
 
     subroutine savefig(self, filename)
         !! Save figure to file with backend auto-detection
@@ -324,6 +349,9 @@ contains
         self%plots(plot_idx)%y_grid = y_grid
         self%plots(plot_idx)%z_grid = z_grid
         
+        ! Set default contour properties
+        self%plots(plot_idx)%use_color_levels = .false.
+        
         ! Handle label
         if (present(label)) then
             self%plots(plot_idx)%label = label
@@ -340,6 +368,63 @@ contains
             call generate_default_contour_levels(self%plots(plot_idx))
         end if
     end subroutine add_contour_plot_data
+
+    subroutine add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
+        !! Add colored contour plot data to internal storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in), optional :: levels(:)
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        integer :: plot_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        ! Store grid data
+        if (allocated(self%plots(plot_idx)%x_grid)) deallocate(self%plots(plot_idx)%x_grid)
+        if (allocated(self%plots(plot_idx)%y_grid)) deallocate(self%plots(plot_idx)%y_grid)
+        if (allocated(self%plots(plot_idx)%z_grid)) deallocate(self%plots(plot_idx)%z_grid)
+        allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
+        allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
+        allocate(self%plots(plot_idx)%z_grid(size(z_grid,1), size(z_grid,2)))
+        
+        self%plots(plot_idx)%x_grid = x_grid
+        self%plots(plot_idx)%y_grid = y_grid
+        self%plots(plot_idx)%z_grid = z_grid
+        
+        ! Set color contour properties
+        self%plots(plot_idx)%use_color_levels = .true.
+        
+        if (present(colormap)) then
+            self%plots(plot_idx)%colormap = colormap
+        else
+            self%plots(plot_idx)%colormap = 'crest'
+        end if
+        
+        if (present(show_colorbar)) then
+            self%plots(plot_idx)%show_colorbar = show_colorbar
+        else
+            self%plots(plot_idx)%show_colorbar = .true.
+        end if
+        
+        ! Handle label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        ! Handle contour levels
+        if (present(levels)) then
+            if (allocated(self%plots(plot_idx)%contour_levels)) deallocate(self%plots(plot_idx)%contour_levels)
+            allocate(self%plots(plot_idx)%contour_levels(size(levels)))
+            self%plots(plot_idx)%contour_levels = levels
+        else
+            call generate_default_contour_levels(self%plots(plot_idx))
+        end if
+    end subroutine add_colored_contour_plot_data
 
     subroutine update_data_ranges(self)
         !! Update figure data ranges after adding plots
@@ -373,8 +458,26 @@ contains
     ! These will delegate to specialized modules
     
     subroutine generate_default_contour_levels(plot_data)
+        !! Generate default contour levels for a plot
         type(plot_data_t), intent(inout) :: plot_data
-        ! Implementation will use utilities from contour module
+        real(wp) :: z_min, z_max, dz
+        integer :: i, n_levels
+        
+        if (.not. allocated(plot_data%z_grid)) return
+        
+        z_min = minval(plot_data%z_grid)
+        z_max = maxval(plot_data%z_grid)
+        
+        ! Generate 10 evenly spaced levels by default
+        n_levels = 10
+        if (allocated(plot_data%contour_levels)) deallocate(plot_data%contour_levels)
+        allocate(plot_data%contour_levels(n_levels))
+        
+        dz = (z_max - z_min) / real(n_levels + 1, wp)
+        
+        do i = 1, n_levels
+            plot_data%contour_levels(i) = z_min + real(i, wp) * dz
+        end do
     end subroutine generate_default_contour_levels
     
     subroutine calculate_figure_data_ranges(self)
@@ -559,6 +662,7 @@ contains
         integer :: level_idx
         real(wp) :: contour_level
         real(wp) :: z_min, z_max
+        real(wp), dimension(3) :: level_color
         
         if (plot_idx > self%plot_count) return
         if (.not. allocated(self%plots(plot_idx)%z_grid)) return
@@ -574,16 +678,46 @@ contains
                 
                 ! Only render levels within the data range
                 if (contour_level > z_min .and. contour_level < z_max) then
+                    ! Set color based on contour level
+                    if (self%plots(plot_idx)%use_color_levels) then
+                        call colormap_value_to_color(contour_level, z_min, z_max, &
+                                                   self%plots(plot_idx)%colormap, level_color)
+                        call self%backend%color(level_color(1), level_color(2), level_color(3))
+                    end if
+                    
                     call trace_contour_level(self, plot_idx, contour_level)
                 end if
             end do
         else
-            ! Draw a few default contour levels
-            call trace_contour_level(self, plot_idx, z_min + 0.2_wp * (z_max - z_min))
-            call trace_contour_level(self, plot_idx, z_min + 0.5_wp * (z_max - z_min))
-            call trace_contour_level(self, plot_idx, z_min + 0.8_wp * (z_max - z_min))
+            ! Draw a few default contour levels with colors
+            call render_default_contour_levels(self, plot_idx, z_min, z_max)
         end if
     end subroutine render_contour_plot
+
+    subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
+        !! Render default contour levels with optional coloring
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: z_min, z_max
+        real(wp), dimension(3) :: level_color
+        real(wp) :: level_values(3)
+        integer :: i
+        
+        level_values = [z_min + 0.2_wp * (z_max - z_min), &
+                       z_min + 0.5_wp * (z_max - z_min), &
+                       z_min + 0.8_wp * (z_max - z_min)]
+        
+        do i = 1, 3
+            ! Set color based on contour level
+            if (self%plots(plot_idx)%use_color_levels) then
+                call colormap_value_to_color(level_values(i), z_min, z_max, &
+                                           self%plots(plot_idx)%colormap, level_color)
+                call self%backend%color(level_color(1), level_color(2), level_color(3))
+            end if
+            
+            call trace_contour_level(self, plot_idx, level_values(i))
+        end do
+    end subroutine render_default_contour_levels
 
     subroutine trace_contour_level(self, plot_idx, level)
         !! Trace a single contour level using marching squares

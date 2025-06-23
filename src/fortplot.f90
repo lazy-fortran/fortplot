@@ -21,10 +21,10 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, show
+    public :: plot, contour, contour_filled, show
     public :: xlabel, ylabel, title
     public :: savefig, figure
-    public :: add_plot, add_contour
+    public :: add_plot, add_contour, add_contour_filled
     public :: set_xscale, set_yscale
     
     ! Line style constants (pyplot-style)
@@ -73,6 +73,26 @@ contains
         
         call fig%add_contour(x, y, z, levels=levels, label=label)
     end subroutine contour
+
+    subroutine contour_filled(x, y, z, levels, colormap, show_colorbar, label)
+        !! Add a filled contour plot with color levels to the global figure
+        !!
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays
+        !!   z: 2D data array for contouring
+        !!   levels: Optional array of contour levels
+        !!   colormap: Optional colormap name ('crest' (default), 'viridis', 'plasma', 'rocket', 'mako', 'flare', etc.)
+        !!   show_colorbar: Optional flag to show colorbar
+        !!   label: Optional label for the plot
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: z
+        real(wp), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
+                                   show_colorbar=show_colorbar, label=label)
+    end subroutine contour_filled
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text)
         !! Display a line plot in the terminal using ASCII graphics
@@ -155,6 +175,17 @@ contains
         character(len=*), intent(in), optional :: label
         call fig%add_contour(x, y, z, levels=levels, label=label)
     end subroutine add_contour
+
+    subroutine add_contour_filled(x, y, z, levels, colormap, show_colorbar, label)
+        !! Add a filled contour plot with color levels to the global figure
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: z
+        real(wp), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
+                                   show_colorbar=show_colorbar, label=label)
+    end subroutine add_contour_filled
 
     subroutine set_xscale(scale, threshold)
         !! Set x-axis scale for the global figure
