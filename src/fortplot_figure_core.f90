@@ -17,6 +17,7 @@ module fortplot_figure_core
     use fortplot_legend
     use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
+    use fortplot_ascii, only: ascii_context
     implicit none
 
     private
@@ -624,6 +625,13 @@ contains
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
                                         self%title, self%xlabel, self%ylabel)
+        type is (ascii_context)
+            ! ASCII backend: explicitly set title and draw simple axes
+            if (allocated(self%title)) then
+                call backend%set_title(self%title)
+            end if
+            call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
+            call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
         class default
             ! For other backends, use simple axes
             call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
