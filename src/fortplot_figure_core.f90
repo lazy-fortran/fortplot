@@ -95,6 +95,9 @@ module fortplot_figure_core
         type(legend_t) :: legend_data
         logical :: show_legend = .false.
         integer :: max_plots = 20
+        
+        ! Line drawing properties
+        real(wp) :: current_line_width = 1.0_wp
 
     contains
         procedure :: initialize
@@ -109,6 +112,7 @@ module fortplot_figure_core
         procedure :: set_yscale
         procedure :: set_xlim
         procedure :: set_ylim
+        procedure :: set_line_width
         procedure :: legend => figure_legend
         procedure :: show
         final :: destroy
@@ -283,6 +287,14 @@ contains
         self%y_max = y_max
         self%ylim_set = .true.
     end subroutine set_ylim
+
+    subroutine set_line_width(self, width)
+        !! Set line width for subsequent plot operations
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: width
+        
+        self%current_line_width = width
+    end subroutine set_line_width
 
     subroutine destroy(self)
         !! Clean up figure resources
@@ -673,11 +685,8 @@ contains
         ! Skip drawing if linestyle is 'None'
         if (linestyle == 'None') return
         
-        ! Set thicker line width for plot data in PDF only
-        select type(backend => self%backend)
-        type is (pdf_context)
-            call backend%set_line_width(2.0_wp)
-        end select
+        ! Set line width for all backends
+        call self%backend%set_line_width(self%current_line_width)
         
         ! Draw line segments using transformed coordinates with linestyle
         call draw_line_with_style(self, plot_idx, linestyle)

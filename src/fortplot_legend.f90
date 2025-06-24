@@ -173,34 +173,44 @@ contains
     end subroutine render_ascii_legend
     
     subroutine render_standard_legend(legend, backend, legend_x, legend_y)
-        !! Render standard legend for PNG/PDF backends with white background box
+        !! Render standard legend for PNG/PDF backends with improved sizing
+        !! Uses shared legend_layout module for DRY compliance
+        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
         real(wp) :: line_x1, line_x2, line_y, text_x, text_y
-        real(wp) :: data_width, data_height, entry_spacing, line_length_data, text_padding_data
-        real(wp) :: box_x1, box_y1, box_x2, box_y2, box_width, box_height, box_padding
+        real(wp) :: data_width, data_height
+        real(wp) :: box_x1, box_y1, box_x2, box_y2
+        type(legend_box_t) :: box
+        character(len=:), allocatable :: labels(:)
         integer :: i
         
-        ! Calculate data coordinate scaling
+        ! Extract labels for box calculation
+        allocate(character(len=50) :: labels(legend%num_entries))
+        do i = 1, legend%num_entries
+            labels(i) = legend%entries(i)%label
+        end do
+        
+        ! Calculate data coordinate dimensions
         data_width = backend%x_max - backend%x_min
         data_height = backend%y_max - backend%y_min
-        line_length_data = data_width * 0.05_wp      ! 5% of data width for line
-        text_padding_data = data_width * 0.01_wp     ! 1% padding
-        entry_spacing = data_height * 0.05_wp        ! 5% spacing between entries
-        box_padding = data_width * 0.01_wp           ! Box padding
         
-        ! Calculate legend box dimensions
-        box_width = line_length_data + text_padding_data + data_width * 0.15_wp + 2.0_wp * box_padding
-        box_height = real(legend%num_entries, wp) * entry_spacing + 2.0_wp * box_padding
+        ! Use shared layout calculation for improved sizing
+        box = calculate_legend_box(labels, data_width, data_height, &
+                                  legend%num_entries, legend%position)
         
-        ! Calculate box corners
-        box_x1 = legend_x - box_padding
-        box_y1 = legend_y + box_padding
-        box_x2 = box_x1 + box_width
-        box_y2 = box_y1 - box_height
+        ! Adjust box position to use provided legend_x, legend_y as reference
+        box%x = legend_x - box%padding
+        box%y = legend_y + box%padding
         
-        ! Draw white background box (temporarily store current color)
+        ! Calculate box corners using improved dimensions
+        box_x1 = box%x
+        box_y1 = box%y
+        box_x2 = box_x1 + box%width
+        box_y2 = box_y1 - box%height
+        
+        ! Draw white background box
         call backend%color(1.0_wp, 1.0_wp, 1.0_wp)  ! White background
         call draw_legend_box(backend, box_x1, box_y1, box_x2, box_y2)
         
@@ -209,15 +219,14 @@ contains
         call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
         
         do i = 1, legend%num_entries
-            ! Calculate line position using data coordinate scaling
+            ! Calculate line position using improved spacing
             line_x1 = legend_x
-            line_x2 = line_x1 + line_length_data
-            line_y = legend_y - real(i-1, wp) * entry_spacing  ! Go downward in Y
+            line_x2 = line_x1 + box%line_length
+            line_y = legend_y - real(i-1, wp) * box%entry_height  ! Use calculated entry height
             
-            ! Draw legend text
-            text_x = line_x2 + text_padding_data
+            ! Improved text positioning with better spacing
+            text_x = line_x2 + box%text_spacing
             text_y = line_y
-            
             
             ! Set color and draw legend line
             call backend%color(legend%entries(i)%color(1), &
@@ -229,17 +238,23 @@ contains
             call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text
             call backend%text(text_x, text_y, legend%entries(i)%label)
         end do
+        
+        deallocate(labels)
     end subroutine render_standard_legend
     
     subroutine calculate_legend_position(legend, backend, x, y)
         !! Calculate legend position based on backend and position setting
         !! Interface Segregation: Only depends on backend dimensions
         use fortplot_ascii, only: ascii_context
+        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
         real(wp) :: total_height, legend_width, margin_x, margin_y
         real(wp) :: data_width, data_height, legend_width_data, margin_x_data, margin_y_data
+        type(legend_box_t) :: box
+        character(len=:), allocatable :: labels(:)
+        integer :: i
         
         ! Backend-specific positioning
         select type (backend)
@@ -269,33 +284,32 @@ contains
             end select
             
         class default
-            ! PNG/PDF backends - use data coordinates
-            ! Convert to data coordinate system
+            ! PNG/PDF backends - use improved layout calculations
             
-            data_width = backend%x_max - backend%x_min
-            data_height = backend%y_max - backend%y_min
-            legend_width_data = data_width * 0.2_wp    ! 20% of data width
-            margin_x_data = data_width * 0.05_wp       ! 5% margin
-            margin_y_data = data_height * 0.05_wp      ! 5% margin
-            total_height = real(legend%num_entries, wp) * data_height * 0.05_wp  ! 5% per entry
-            
-            select case (legend%position)
-            case (LEGEND_UPPER_LEFT)
-                x = backend%x_min + margin_x_data
-                y = backend%y_max - margin_y_data
-            case (LEGEND_UPPER_RIGHT)
-                x = backend%x_max - legend_width_data - margin_x_data
-                y = backend%y_max - margin_y_data
-            case (LEGEND_LOWER_LEFT)
-                x = backend%x_min + margin_x_data
-                y = backend%y_min + total_height + margin_y_data
-            case (LEGEND_LOWER_RIGHT)
-                x = backend%x_max - legend_width_data - margin_x_data
-                y = backend%y_min + total_height + margin_y_data
-            case default
-                x = backend%x_max - legend_width_data - margin_x_data
-                y = backend%y_max - margin_y_data
-            end select
+            ! Extract labels for box calculation
+            if (legend%num_entries > 0) then
+                allocate(character(len=50) :: labels(legend%num_entries))
+                do i = 1, legend%num_entries
+                    labels(i) = legend%entries(i)%label
+                end do
+                
+                data_width = backend%x_max - backend%x_min
+                data_height = backend%y_max - backend%y_min
+                
+                ! Use improved layout calculation
+                box = calculate_legend_box(labels, data_width, data_height, &
+                                          legend%num_entries, legend%position)
+                
+                ! Convert box position to backend coordinates
+                x = backend%x_min + box%x
+                y = backend%y_min + box%y
+                
+                deallocate(labels)
+            else
+                ! Fallback for empty legend
+                x = backend%x_max - backend%x_max * 0.2_wp
+                y = backend%y_max - backend%y_max * 0.05_wp
+            end if
         end select
     end subroutine calculate_legend_position
 
@@ -318,9 +332,19 @@ contains
     end subroutine draw_legend_box
 
     subroutine draw_legend_border(backend, x1, y1, x2, y2)
-        !! Draw black border around legend box
+        !! Draw thin border around legend box matching axes frame style
+        use fortplot_png, only: png_context
+        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
+        
+        ! Set thin line width to match axes frame style 
+        select type (backend)
+        type is (png_context)
+            call backend%set_line_width(0.1_wp)  ! Thin border for PNG like axes
+        type is (pdf_context)
+            call backend%set_line_width(1.0_wp)  ! Standard border for PDF like axes
+        end select
         
         ! Draw rectangle border
         call backend%line(x1, y1, x2, y1)  ! Top
