@@ -5,6 +5,13 @@ This file provides **MANDATORY** guidance to Claude Code (claude.ai/code) when w
 **⚠️ CRITICAL: YOU MUST ADHERE TO ALL PRINCIPLES BELOW ⚠️**
 These are not suggestions - they are strict requirements that MUST be followed in every code change.
 
+**⚠️ COMMUNICATION REQUIREMENTS ⚠️**
+- Keep responses minimal and direct
+- No flattery, congratulations, or celebration language
+- Be brutally honest about issues and mistakes
+- Answer questions with facts only
+- Skip explanations unless specifically requested
+
 ## Project Overview
 
 **fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.

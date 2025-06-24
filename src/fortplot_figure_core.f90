@@ -685,8 +685,8 @@ contains
         ! Skip drawing if linestyle is 'None'
         if (linestyle == 'None') return
         
-        ! Set line width for all backends
-        call self%backend%set_line_width(self%current_line_width)
+        ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
+        call self%backend%set_line_width(2.0_wp)
         
         ! Draw line segments using transformed coordinates with linestyle
         call draw_line_with_style(self, plot_idx, linestyle)
