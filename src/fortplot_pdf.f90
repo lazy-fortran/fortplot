@@ -10,10 +10,16 @@ module fortplot_pdf
     private
     public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels
     
+    type :: pdf_graphics_state
+        !! Encapsulates PDF's mutable graphics state to provide clean API
+        real(wp) :: line_width = 1.0_wp
+        real(wp) :: stroke_r = 0.0_wp, stroke_g = 0.0_wp, stroke_b = 1.0_wp
+        real(wp) :: fill_r = 0.0_wp, fill_g = 0.0_wp, fill_b = 0.0_wp
+    end type pdf_graphics_state
+
     type, extends(plot_context) :: pdf_context
         character(len=:), allocatable :: content_stream
-        real(wp) :: stroke_r, stroke_g, stroke_b
-        real(wp) :: current_line_width = 1.0_wp  ! Track current line width
+        type(pdf_graphics_state) :: current_state  ! Track current PDF state
         ! Plot area calculations (using common margin functionality)  
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
@@ -23,6 +29,8 @@ module fortplot_pdf
         procedure :: text => draw_pdf_text
         procedure :: save => write_pdf_file
         procedure :: set_line_width => set_pdf_line_width
+        procedure :: save_graphics_state => pdf_save_state
+        procedure :: restore_graphics_state => pdf_restore_state
     end type pdf_context
     
 contains
@@ -43,10 +51,11 @@ contains
         type(pdf_context), intent(inout) :: ctx
         
         ctx%content_stream = ""
-        ctx%stroke_r = 0.0_wp
-        ctx%stroke_g = 0.0_wp
-        ctx%stroke_b = 1.0_wp
-        ctx%current_line_width = 1.0_wp  ! Default thin line width for axes
+        ! Initialize graphics state
+        ctx%current_state%line_width = 1.0_wp
+        ctx%current_state%stroke_r = 0.0_wp
+        ctx%current_state%stroke_g = 0.0_wp
+        ctx%current_state%stroke_b = 1.0_wp
         
         call add_to_stream(ctx, "q")
         call add_to_stream(ctx, "1 w")  ! Set default line width to 1 point (for axes)
@@ -70,12 +79,18 @@ contains
         real(wp), intent(in) :: r, g, b
         character(len=50) :: color_cmd
         
-        this%stroke_r = r
-        this%stroke_g = g  
-        this%stroke_b = b
-        
-        write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
-        call add_to_stream(this, color_cmd)
+        ! Only update PDF state if color actually changed (avoid redundant operations)
+        if (abs(this%current_state%stroke_r - r) > 1e-6_wp .or. &
+            abs(this%current_state%stroke_g - g) > 1e-6_wp .or. &
+            abs(this%current_state%stroke_b - b) > 1e-6_wp) then
+            
+            this%current_state%stroke_r = r
+            this%current_state%stroke_g = g  
+            this%current_state%stroke_b = b
+            
+            write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
+            call add_to_stream(this, color_cmd)
+        end if
     end subroutine set_pdf_color
     
     subroutine set_pdf_line_width(this, width)
@@ -84,8 +99,8 @@ contains
         real(wp), intent(in) :: width
         character(len=20) :: width_cmd
         
-        if (abs(width - this%current_line_width) > 1e-6_wp) then
-            this%current_line_width = width
+        if (abs(width - this%current_state%line_width) > 1e-6_wp) then
+            this%current_state%line_width = width
             write(width_cmd, '(F4.1, 1X, "w")') width
             call add_to_stream(this, width_cmd)
         end if
@@ -128,32 +143,15 @@ contains
     end subroutine draw_pdf_text_direct
 
     subroutine draw_pdf_text_bold(this, x, y, text)
-        !! Draw bold text at direct PDF coordinates for titles with center alignment
+        !! Draw bold text using isolated graphics state (no global state pollution)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=200) :: text_cmd
-        real(wp) :: text_width, centered_x
         
-        ! Calculate text width for centering (fallback to character estimation if FreeType fails)
-        text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
-        if (text_width <= 0.0_wp) then
-            ! Fallback: estimate 8 pixels per character for 14pt font
-            text_width = real(len_trim(text) * 8, wp)
-        end if
-        centered_x = x - text_width / 2.0_wp
-        
-        call add_to_stream(this, "BT")
-        write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
-        call add_to_stream(this, "0.5 w")  ! Line width for stroke
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
-        call add_to_stream(this, text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "0 Tr")  ! Reset to normal text rendering
-        call add_to_stream(this, "ET")
+        ! Use PDF's q/Q operators to isolate state changes
+        call this%save_graphics_state()
+        call draw_bold_text_isolated(this, x, y, text)
+        call this%restore_graphics_state()
     end subroutine draw_pdf_text_bold
     
     subroutine write_pdf_file(this, filename)
@@ -549,5 +547,49 @@ contains
         call add_to_stream(ctx, text_cmd)
         call add_to_stream(ctx, "ET")
     end subroutine draw_vertical_text_pdf
+
+    ! Graphics state management routines - encapsulate PDF's mutable global state
+    
+    subroutine pdf_save_state(this)
+        !! Save current graphics state using PDF's q operator
+        class(pdf_context), intent(inout) :: this
+        call add_to_stream(this, "q")
+    end subroutine pdf_save_state
+    
+    subroutine pdf_restore_state(this)
+        !! Restore graphics state using PDF's Q operator  
+        class(pdf_context), intent(inout) :: this
+        call add_to_stream(this, "Q")
+    end subroutine pdf_restore_state
+    
+    
+    subroutine draw_bold_text_isolated(this, x, y, text)
+        !! Draw bold text in isolated state (called via with_graphics_state)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=200) :: text_cmd
+        real(wp) :: text_width, centered_x
+        
+        ! Calculate text width for centering (fallback to character estimation if FreeType fails)
+        text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
+        if (text_width <= 0.0_wp) then
+            ! Fallback: estimate 8 pixels per character for 14pt font
+            text_width = real(len_trim(text) * 8, wp)
+        end if
+        centered_x = x - text_width / 2.0_wp
+        
+        call add_to_stream(this, "BT")
+        write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
+        call add_to_stream(this, text_cmd)
+        call add_to_stream(this, "2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
+        call add_to_stream(this, "0.5 w")  ! Line width for stroke (isolated - won't affect main state)
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
+        call add_to_stream(this, text_cmd)
+        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        call add_to_stream(this, text_cmd)
+        call add_to_stream(this, "0 Tr")  ! Reset to normal text rendering
+        call add_to_stream(this, "ET")
+    end subroutine draw_bold_text_isolated
 
 end module fortplot_pdf
