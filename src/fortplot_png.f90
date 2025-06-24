@@ -24,6 +24,7 @@ module fortplot_png
         procedure :: color => png_set_color
         procedure :: text => png_draw_text
         procedure :: save => png_finalize
+        procedure :: set_line_width => png_set_line_width
     end type png_context
     
 contains
@@ -65,7 +66,7 @@ contains
         g = color_to_byte(this%current_g)
         b = color_to_byte(this%current_b)
         
-        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, 0.5_wp)
+        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, this%current_line_width)
     end subroutine png_draw_line
     
     subroutine png_set_color(this, r, g, b)
@@ -76,6 +77,15 @@ contains
         this%current_g = g
         this%current_b = b
     end subroutine png_set_color
+    
+    subroutine png_set_line_width(this, width)
+        !! Set line width for PNG drawing
+        class(png_context), intent(inout) :: this
+        real(wp), intent(in) :: width
+        
+        ! Store the line width for use in drawing operations
+        this%current_line_width = width
+    end subroutine png_set_line_width
     
     subroutine png_draw_text(this, x, y, text)
         class(png_context), intent(inout) :: this

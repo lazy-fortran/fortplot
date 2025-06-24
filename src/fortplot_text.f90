@@ -4,8 +4,8 @@ module fortplot_text
     implicit none
     
     private
-    public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, render_rotated_text_to_image, &
-              ft_wrapper_render_char_rotated, glyph_info_t
+    public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
+    public :: render_rotated_text_to_image, ft_wrapper_render_char_rotated, glyph_info_t
     
     ! Glyph information structure (matches C wrapper)
     type, bind(C) :: glyph_info_t
@@ -113,37 +113,95 @@ contains
         integer :: i, char_code, next_char_code, kerning_offset
         integer(c_int) :: error
         type(glyph_info_t) :: glyph_info
+        logical :: use_freetype
+        
+        ! Try FreeType if available, otherwise use simple estimation
+        use_freetype = .false.
+        if (.not. text_system_initialized) then
+            use_freetype = init_text_system()
+        else
+            use_freetype = .true.
+        end if
+        
+        if (use_freetype) then
+            ! Try FreeType first
+            width = 0
+            do i = 1, len_trim(text)
+                char_code = iachar(text(i:i))
+                error = ft_wrapper_render_char(char_code, glyph_info)
+                if (error == 0) then
+                    ! Use advance_x if available, otherwise use glyph width + spacing
+                    if (glyph_info%advance_x > 0) then
+                        width = width + glyph_info%advance_x / 64  ! Advance is in 1/64 pixel units
+                    else if (glyph_info%width > 0) then
+                        ! Fallback: use glyph width + reasonable spacing
+                        width = width + glyph_info%width + 2  ! Add 2 pixels spacing
+                    else
+                        ! Final fallback: reasonable character width
+                        width = width + 9  ! Average character width
+                    end if
+                    
+                    ! Add kerning if not the last character
+                    if (i < len_trim(text)) then
+                        next_char_code = iachar(text(i+1:i+1))
+                        kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
+                        width = width + kerning_offset / 64
+                    end if
+                    
+                    ! Clean up glyph buffer
+                    call ft_wrapper_free_glyph(glyph_info)
+                else
+                    ! Fallback for unsupported characters
+                    width = width + 9
+                end if
+            end do
+            
+            ! If width is still 0, FreeType failed completely
+            if (width == 0) then
+                use_freetype = .false.
+            end if
+        end if
+        
+        if (.not. use_freetype) then
+            ! Simple reliable estimation: ~9 pixels per character for typical fonts
+            width = len_trim(text) * 9
+        end if
+        
+    end function calculate_text_width
+
+    function calculate_text_height(text) result(height)
+        !! Calculate the pixel height of text for proper legend box sizing
+        character(len=*), intent(in) :: text
+        integer :: height
+        integer :: i, char_code
+        integer(c_int) :: error
+        type(glyph_info_t) :: glyph_info
         
         if (.not. text_system_initialized) then
             if (.not. init_text_system()) then
-                width = len(text) * 8  ! Fallback: 8 pixels per character
+                height = 16  ! Fallback: typical font height
                 return
             end if
         end if
         
-        width = 0
+        height = 0
         do i = 1, len_trim(text)
             char_code = iachar(text(i:i))
             error = ft_wrapper_render_char(char_code, glyph_info)
             if (error == 0) then
-                ! Add glyph advance (spacing to next character)
-                width = width + glyph_info%advance_x / 64  ! Advance is in 1/64 pixel units
-                
-                ! Add kerning if not the last character
-                if (i < len_trim(text)) then
-                    next_char_code = iachar(text(i+1:i+1))
-                    kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
-                    width = width + kerning_offset / 64
-                end if
-                
-                ! Clean up glyph buffer
+                ! Get the character height
+                height = max(height, glyph_info%height)
                 call ft_wrapper_free_glyph(glyph_info)
             else
                 ! Fallback for unsupported characters
-                width = width + 8
+                height = max(height, 16)
             end if
         end do
-    end function calculate_text_width
+        
+        ! Ensure minimum reasonable height
+        if (height <= 0) height = 16
+        
+    end function calculate_text_height
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
         integer(1), intent(inout) :: image_data(*)

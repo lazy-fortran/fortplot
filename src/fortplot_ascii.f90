@@ -32,6 +32,7 @@ module fortplot_ascii
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
         procedure :: text => ascii_draw_text
+        procedure :: set_line_width => ascii_set_line_width
         procedure :: save => ascii_finalize
         procedure :: set_title => ascii_set_title
     end type ascii_context
@@ -150,6 +151,15 @@ contains
         this%current_g = g
         this%current_b = b
     end subroutine ascii_set_color
+    
+    subroutine ascii_set_line_width(this, width)
+        !! Set line width for ASCII context (no-op as ASCII uses fixed character width)
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: width
+        
+        ! ASCII context doesn't support variable line widths
+        ! This is a no-op to satisfy the interface
+    end subroutine ascii_set_line_width
     
     subroutine ascii_draw_text(this, x, y, text)
         class(ascii_context), intent(inout) :: this
