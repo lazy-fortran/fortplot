@@ -503,7 +503,7 @@ contains
             call draw_pdf_text_bold(ctx, label_x, label_y, trim(title))
         end if
         
-        ! Draw X-axis label properly centered below plot
+        ! Draw X-axis label properly centered below plot (matplotlib-style)
         if (present(xlabel)) then
             ! Center the xlabel text properly using text width with fallback
             text_width = real(calculate_text_width(trim(xlabel)), wp)
@@ -511,9 +511,8 @@ contains
                 text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char for 12pt
             end if
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
-            ! Position below x-axis tick labels - closer to matplotlib style
-            ! X-axis tick labels are around Y=51, so position xlabel below them
-            label_y = real(25, wp)  ! 25 pixels from bottom edge of PDF
+            ! Position below tick labels with matplotlib-style spacing (35 pixels from plot area)
+            label_y = real(ctx%plot_area%bottom - 35, wp)  ! Consistent with PNG spacing
             call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
         end if
         
@@ -530,8 +529,8 @@ contains
         real(wp) :: label_x, label_y
         character(len=200) :: text_cmd
         
-        ! Position for rotated Y-axis label
-        label_x = real(40, wp)  ! Left margin position
+        ! Position for rotated Y-axis label (consistent with PNG backend)
+        label_x = real(ctx%plot_area%left - 35, wp)  ! Consistent with PNG spacing
         label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
         
         ! Set up 90-degree rotation using PDF text matrix

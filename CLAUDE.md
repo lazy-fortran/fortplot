@@ -175,16 +175,25 @@ pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
 ### Test-Driven Development (MANDATORY)
 
 **⚠️ CRITICAL: TDD IS MANDATORY FOR ALL FEATURES AND REFACTORING ⚠️**
+**⚠️ WRITE TESTS FIRST - NO EXCEPTIONS ⚠️**
+**⚠️ DO NOT WRITE ANY CODE WITHOUT A FAILING TEST FIRST ⚠️**
 
-**NO EXCEPTIONS: Every code change MUST follow TDD approach**
+**MANDATORY TDD WORKFLOW - NEVER DEVIATE:**
 
-1. **Write failing test first** in `test/test_*.f90`
-2. **Run with `make test`** to confirm failure
-3. **Write minimal code** to make test pass
-4. **Refactor** while keeping tests green
-5. **Repeat** for next feature
+1. **WRITE FAILING TEST FIRST** in `test/test_*.f90` - **ALWAYS START HERE**
+2. **RUN `make test`** to confirm the test fails (RED)
+3. **Write minimal code** to make test pass (GREEN)
+4. **Refactor** while keeping tests green (REFACTOR)
+5. **Repeat RED-GREEN-REFACTOR** for next feature
+
+**FORBIDDEN:**
+- Writing implementation code before tests
+- Changing code without a test covering the change
+- Assuming existing code works without tests
+- Skipping tests "just this once"
 
 **TDD is not optional** - it is the foundation of all development in this codebase.
+**TESTS FIRST, ALWAYS. NO CODE WITHOUT TESTS.**
 
 ```fortran
 ! test/test_new_feature.f90

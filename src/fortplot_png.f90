@@ -826,7 +826,7 @@ contains
                                      0_1, 0_1, 0_1)  ! Black text
         end if
         
-        ! Draw X-axis label properly centered below plot
+        ! Draw X-axis label properly centered below plot (matplotlib-style)
         if (present(xlabel)) then
             ! Center the xlabel text properly with fallback
             text_width = real(calculate_text_width(trim(xlabel)), wp)
@@ -834,8 +834,8 @@ contains
                 text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char fallback
             end if
             label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
-            ! Position below tick labels with adequate spacing
-            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 45, wp)
+            ! Position below tick labels with matplotlib-style spacing (35 pixels from plot bottom)
+            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 35, wp)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(xlabel), &
                                      0_1, 0_1, 0_1)  ! Black text

@@ -11,8 +11,8 @@ module fortplot_label_positioning
     public :: LABEL_SPACING_X, LABEL_SPACING_Y
     
     ! Constants for consistent spacing across backends (matplotlib-style)
-    integer, parameter :: LABEL_SPACING_X = 20  ! Pixels below X-axis (further from axis)
-    integer, parameter :: LABEL_SPACING_Y = 10  ! Pixels left of Y-axis (minimum)
+    integer, parameter :: LABEL_SPACING_X = 25  ! Pixels below X-axis tick labels
+    integer, parameter :: LABEL_SPACING_Y = 15  ! Pixels left of Y-axis tick labels  
     integer, parameter :: TEXT_HEIGHT = 12      ! Approximate text height for centering
     integer, parameter :: Y_LABEL_OFFSET = 4    ! Pixels down from center for better alignment
     
