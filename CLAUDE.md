@@ -264,6 +264,82 @@ subroutine process_data()
 end subroutine
 ```
 
+### State Management - CRITICALLY IMPORTANT
+
+**⚠️ MUTABLE GLOBAL STATE IS THE SOURCE OF ALL EVIL AND MUST BE AVOIDED AT ALL COST ⚠️**
+
+**MANDATORY PRINCIPLES:**
+- **NO GLOBAL MUTABLE STATE** - All state must be explicitly passed as parameters
+- **IMMUTABLE BY DEFAULT** - Prefer immutable data structures and pure functions
+- **EXPLICIT STATE MANAGEMENT** - Always save/restore state when temporarily modifying context
+- **STATELESS OPERATIONS** - Functions should not rely on hidden global state
+- **CLEAR OWNERSHIP** - Each piece of state must have a clear owner and scope
+
+**Examples of FORBIDDEN patterns:**
+```fortran
+! BAD: Global mutable state
+module bad_module
+    real(wp) :: global_line_width = 1.0_wp  ! FORBIDDEN
+    logical :: drawing_enabled = .true.     ! FORBIDDEN
+end module
+
+! BAD: Hidden state mutations
+subroutine bad_draw_text(ctx, text)
+    ! Modifies line width globally without restoring
+    call ctx%set_line_width(0.5_wp)  ! FORBIDDEN - corrupts state
+    ! ... draw text ...
+    ! Missing: restore original line width
+end subroutine
+```
+
+**REQUIRED patterns:**
+```fortran
+! GOOD: Explicit state save/restore
+subroutine good_draw_text(ctx, text)
+    real(wp) :: saved_width
+    saved_width = ctx%current_line_width  ! Save state
+    call ctx%set_line_width(0.5_wp)      ! Modify
+    ! ... draw text ...
+    call ctx%set_line_width(saved_width) ! Restore - MANDATORY
+end subroutine
+
+! GOOD: Pure functions with explicit parameters
+pure function calculate_position(x, y, offset) result(new_pos)
+    ! No hidden state dependencies
+end function
+```
+
+### Constants and Magic Numbers - STRICTLY ENFORCED
+
+**⚠️ MAGIC NUMBER CONSTANTS ARE FORBIDDEN ⚠️**
+
+**MANDATORY PRINCIPLES:**
+- **NO MAGIC NUMBERS** - If a number has meaning, it MUST be a named constant
+- **DESCRIPTIVE NAMES** - Constant names must clearly indicate their purpose
+- **CENTRALIZED CONSTANTS** - Group related constants in parameter declarations
+- **DOCUMENTED PURPOSE** - Each constant should have a clear comment explaining its meaning
+
+**Examples of FORBIDDEN patterns:**
+```fortran
+! BAD: Magic numbers scattered throughout code
+real(wp) :: margin = 0.15_wp           ! FORBIDDEN - what does 0.15 mean?
+call set_font_size(14)                 ! FORBIDDEN - why 14?
+if (error < 1e-6_wp) then             ! FORBIDDEN - what precision requirement?
+```
+
+**REQUIRED patterns:**
+```fortran
+! GOOD: Named constants with clear meaning
+real(wp), parameter :: DEFAULT_MARGIN_FRACTION = 0.15_wp     ! 15% of plot area
+integer, parameter :: TITLE_FONT_SIZE = 14                   ! Points for titles
+real(wp), parameter :: NUMERICAL_TOLERANCE = 1.0e-6_wp      ! Floating point comparison threshold
+
+! Usage
+real(wp) :: margin = DEFAULT_MARGIN_FRACTION
+call set_font_size(TITLE_FONT_SIZE)
+if (error < NUMERICAL_TOLERANCE) then
+```
+
 ### Misc - STRICTLY ENFORCED
 
 **⚠️ CRITICAL: THESE RULES HAVE NO EXCEPTIONS ⚠️**
