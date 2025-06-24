@@ -78,7 +78,7 @@ make build ARGS="--verbose"
 ## External References and Inspiration
 
 **Matplotlib Source Code**: Located in `external/matplotlib/` for layout, styling, and API reference
-- **Core Reference**: `external/matplotlib/src/lib/matplotlib/` contains the main matplotlib implementation
+- **Core Reference**: `external/matplotlib/lib/matplotlib/` contains the main matplotlib implementation
 - Use for understanding margin calculations, text positioning, plot layout algorithms
 - Reference for color schemes, tick generation, and professional plot styling
 - Study layout managers and backend implementations for consistency
@@ -340,6 +340,49 @@ call set_font_size(TITLE_FONT_SIZE)
 if (error < NUMERICAL_TOLERANCE) then
 ```
 
+### Backend Specialization and Polymorphism - STRICTLY ENFORCED
+
+**⚠️ CRITICAL: NO SCATTERED DISPATCH LOGIC ALLOWED ⚠️**
+
+**MANDATORY PRINCIPLES:**
+- **NO SELECT TYPE IN BUSINESS LOGIC** - Backend-specific behavior must be handled in the backend implementations
+- **SPECIALIZATION AT INITIALIZATION** - Configure backend-specific behavior when the backend is created
+- **POLYMORPHIC INTERFACES** - Use abstract interfaces to hide backend differences from calling code
+- **ENCAPSULATED SCALING** - Each backend handles its own coordinate/value scaling internally
+
+**Examples of FORBIDDEN patterns:**
+```fortran
+! BAD: Scattered dispatch logic in business code
+select type (backend => self%backend)
+type is (png_context)
+    call backend%set_line_width(0.1_wp)  ! FORBIDDEN - dispatch in caller
+type is (pdf_context) 
+    call backend%set_line_width(2.0_wp)  ! FORBIDDEN - backend knowledge in caller
+end select
+```
+
+**REQUIRED patterns:**
+```fortran
+! GOOD: Backend handles its own scaling internally
+call self%backend%set_line_width(2.0_wp)  ! Same call for all backends
+
+! In PNG backend implementation:
+subroutine png_set_line_width(this, width)
+    this%current_line_width = width * 0.05_wp  ! PNG-specific scaling
+end subroutine
+
+! In PDF backend implementation:  
+subroutine pdf_set_line_width(this, width)
+    this%current_line_width = width  ! PDF uses width directly
+end subroutine
+```
+
+**This ensures:**
+- Business logic remains backend-agnostic
+- Backend-specific knowledge stays encapsulated
+- Easy to add new backends without modifying existing code
+- Cleaner, more maintainable architecture
+
 ### Misc - STRICTLY ENFORCED
 
 **⚠️ CRITICAL: THESE RULES HAVE NO EXCEPTIONS ⚠️**
@@ -350,6 +393,7 @@ if (error < NUMERICAL_TOLERANCE) then
   - Variables, parameters, and type declarations first
   - Then executable statements and assignments
   - Fortran requires this strict ordering
+- **cd COMMAND IS FORBIDDEN** - Never use `cd` in bash commands. Use absolute paths instead. - **MANDATORY**
 
 ## Known Regressions and Reference Points
 
