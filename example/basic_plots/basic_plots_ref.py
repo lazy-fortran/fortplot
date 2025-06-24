@@ -11,8 +11,8 @@ def simple_plots():
     """Simple plot using matplotlib - equivalent to Fortran functional API"""
     print("=== Basic Plots (Python Reference) ===")
     
-    # Generate simple sine data (same as Fortran)
-    x = np.arange(50) * 0.2
+    # Generate simple sine data - show 2 complete periods (0 to 4π) - exactly like Fortran
+    x = np.arange(50) * 4.0 * np.pi / 49.0
     y = np.sin(x)
     
     # Simple plot
@@ -21,7 +21,6 @@ def simple_plots():
     plt.title('Simple Sine Wave')
     plt.xlabel('x')
     plt.ylabel('sin(x)')
-    plt.legend()
     plt.savefig('example/basic_plots/simple_plot_ref.png')
     plt.close()
     
@@ -29,20 +28,19 @@ def simple_plots():
 
 def multi_line_plot():
     """Multi-line plot using matplotlib - equivalent to Fortran OO interface"""
-    # Generate data (same as Fortran)
+    # Generate data exactly like Fortran: x from 0 to 99, divided by 5
     x = np.arange(100) / 5.0
     sx = np.sin(x)
     cx = np.cos(x)
     
-    # Multi-line plot
+    # Multi-line plot - match Fortran exactly
     plt.figure(figsize=(6.4, 4.8))
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Sine and Cosine Functions")
     plt.plot(x, sx, label="sin(x)")
     plt.plot(x, cx, label="cos(x)")
-    plt.legend()
-    plt.grid(True, alpha=0.3)
+    plt.legend()  # Add legend for labeled plots - same as Fortran
     plt.savefig('example/basic_plots/multi_line_ref.png')
     plt.savefig('example/basic_plots/multi_line_ref.pdf')
     plt.close()
