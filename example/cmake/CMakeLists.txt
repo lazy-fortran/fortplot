@@ -10,7 +10,7 @@ include(FetchContent)
 # Fetch and build fortplotlib using CMake
 FetchContent_Declare(
     fortplotlib
-    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../..
+    GIT_REPOSITORY https://github.com/krystophny/fortplotlib
 )
 FetchContent_MakeAvailable(fortplotlib)
 
