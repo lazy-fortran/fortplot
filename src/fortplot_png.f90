@@ -2,6 +2,8 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context
     use fortplot_text
+    use fortplot_raster, only: raster_image_t, create_raster_image, initialize_white_background, &
+                              color_to_byte, draw_line_distance_aa, blend_pixel, composite_image
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -11,13 +13,11 @@ module fortplot_png
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png, initialize_white_background
+    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png
 
     ! PNG plotting context
     type, extends(plot_context) :: png_context
-        integer(1), allocatable :: image_data(:)
-        real(wp) :: current_r, current_g, current_b
-        real(wp) :: current_line_width = 1.0_wp  ! Track current line width
+        type(raster_image_t) :: raster
         ! Plot area calculations (using common margin functionality)
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
@@ -37,12 +37,7 @@ contains
 
         call setup_canvas(ctx, width, height)
 
-        allocate(ctx%image_data(height * (1 + width * 3)))
-        call initialize_white_background(ctx%image_data, width, height)
-
-        ctx%current_r = 0.0_wp
-        ctx%current_g = 0.0_wp
-        ctx%current_b = 1.0_wp
+        ctx%raster = create_raster_image(width, height)
 
         ! Set up matplotlib-style margins using common module
         ctx%margins = plot_margins_t()  ! Use defaults
@@ -64,20 +59,16 @@ contains
         py2 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
               (y2 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
 
-        r = color_to_byte(this%current_r)
-        g = color_to_byte(this%current_g)
-        b = color_to_byte(this%current_b)
+        call this%raster%get_color_bytes(r, g, b)
 
-        call draw_line_distance_aa(this%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, this%current_line_width)
+        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, this%raster%current_line_width)
     end subroutine png_draw_line
 
     subroutine png_set_color(this, r, g, b)
         class(png_context), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
 
-        this%current_r = r
-        this%current_g = g
-        this%current_b = b
+        call this%raster%set_color(r, g, b)
     end subroutine png_set_color
 
     subroutine png_set_line_width(this, width)
@@ -89,10 +80,10 @@ contains
         ! Map common width values to appropriate PNG pixel thickness
         if (abs(width - 2.0_wp) < 1e-6_wp) then
             ! Plot data lines: use 0.5 for main plot visibility
-            this%current_line_width = 0.5_wp
+            this%raster%current_line_width = 0.5_wp
         else
             ! Axes and other elements: use 0.1 for fine lines
-            this%current_line_width = 0.1_wp
+            this%raster%current_line_width = 0.1_wp
         end if
     end subroutine png_set_line_width
 
@@ -101,6 +92,7 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: px, py
+        integer(1) :: r, g, b
 
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: PNG Y=0 at top, so we need to flip Y coordinates
@@ -108,188 +100,23 @@ contains
         py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
              (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
 
-        call render_text_to_image(this%image_data, this%width, this%height, &
-                                 int(px), int(py), text, &
-                                 color_to_byte(this%current_r), &
-                                 color_to_byte(this%current_g), &
-                                 color_to_byte(this%current_b))
+        call this%raster%get_color_bytes(r, g, b)
+        call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                 int(px), int(py), text, r, g, b)
     end subroutine png_draw_text
 
     subroutine png_finalize(this, filename)
         class(png_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
 
-        call write_png_file(filename, this%width, this%height, this%image_data)
+        call write_png_file(filename, this%width, this%height, this%raster%image_data)
     end subroutine png_finalize
 
-    function color_to_byte(color_val) result(byte_val)
-        real(wp), intent(in) :: color_val
-        integer(1) :: byte_val
-        integer :: int_val
 
-        int_val = int(color_val * 255.0_wp)
-        if (int_val > 127) then
-            byte_val = int(int_val - 256, 1)
-        else
-            byte_val = int(int_val, 1)
-        end if
-    end function color_to_byte
 
-    ! Include necessary functions from png_module
-    subroutine initialize_white_background(image_data, w, h)
-        integer(1), intent(out) :: image_data(*)
-        integer, intent(in) :: w, h
-        integer :: i, j, k
 
-        k = 1
-        do i = 1, h
-            image_data(k) = 0_1
-            k = k + 1
-            do j = 1, w
-                image_data(k) = -1_1
-                image_data(k+1) = -1_1
-                image_data(k+2) = -1_1
-                k = k + 3
-            end do
-        end do
-    end subroutine initialize_white_background
 
-    ! Distance-based antialiasing algorithm (AGG-style)
-    subroutine draw_line_distance_aa(image_data, img_w, img_h, x0, y0, x1, y1, r, g, b, width)
-        integer(1), intent(inout) :: image_data(*)
-        integer, intent(in) :: img_w, img_h
-        real(wp), intent(in) :: x0, y0, x1, y1
-        integer(1), intent(in) :: r, g, b
-        real(wp), intent(in) :: width
-        real(wp) :: line_width
 
-        real(wp) :: dx, dy, length, nx, ny
-        integer :: x_min, x_max, y_min, y_max, x, y
-        real(wp) :: px, py, dist, alpha
-
-        line_width = width
-
-        dx = x1 - x0
-        dy = y1 - y0
-        length = sqrt(dx*dx + dy*dy)
-
-        if (length < 1e-6_wp) return
-
-        nx = -dy / length
-        ny = dx / length
-
-        x_min = max(1, int(min(x0, x1) - line_width - 1.0_wp))
-        x_max = min(img_w, int(max(x0, x1) + line_width + 1.0_wp))
-        y_min = max(1, int(min(y0, y1) - line_width - 1.0_wp))
-        y_max = min(img_h, int(max(y0, y1) + line_width + 1.0_wp))
-
-        do y = y_min, y_max
-            do x = x_min, x_max
-                px = real(x, wp)
-                py = real(y, wp)
-
-                dist = distance_point_to_line_segment(px, py, x0, y0, x1, y1)
-                if (dist <= line_width) then
-                    alpha = 1.0_wp
-                else if (dist <= line_width + 1.0_wp) then
-                    alpha = line_width + 1.0_wp - dist
-                else
-                    alpha = 0.0_wp
-                end if
-
-                if (alpha > 0.0_wp) then
-                    call blend_pixel(image_data, img_w, img_h, x, y, alpha, r, g, b)
-                end if
-            end do
-        end do
-    end subroutine draw_line_distance_aa
-
-    ! Calculate distance from point to line segment
-    real(wp) function distance_point_to_line_segment(px, py, x0, y0, x1, y1) result(dist)
-        real(wp), intent(in) :: px, py, x0, y0, x1, y1
-        real(wp) :: dx, dy, length_sq, t, closest_x, closest_y
-
-        dx = x1 - x0
-        dy = y1 - y0
-        length_sq = dx*dx + dy*dy
-
-        if (length_sq < 1e-12_wp) then
-            dist = sqrt((px - x0)**2 + (py - y0)**2)
-            return
-        end if
-
-        t = ((px - x0) * dx + (py - y0) * dy) / length_sq
-        t = max(0.0_wp, min(1.0_wp, t))
-
-        closest_x = x0 + t * dx
-        closest_y = y0 + t * dy
-
-        dist = sqrt((px - closest_x)**2 + (py - closest_y)**2)
-    end function distance_point_to_line_segment
-
-    subroutine blend_pixel(image_data, img_w, img_h, x, y, alpha, new_r, new_g, new_b)
-        integer(1), intent(inout) :: image_data(*)
-        integer, intent(in) :: img_w, img_h, x, y
-        real(wp), intent(in) :: alpha
-        integer(1), intent(in) :: new_r, new_g, new_b
-        integer :: k
-        real(wp) :: inv_alpha
-        integer :: bg_r, bg_g, bg_b, fg_r, fg_g, fg_b
-
-        if (x < 1 .or. x > img_w .or. y < 1 .or. y > img_h) return
-        if (alpha <= 0.0_wp) return
-
-        k = (y - 1) * (1 + img_w * 3) + 1 + (x - 1) * 3 + 1
-
-        if (alpha >= 1.0_wp) then
-            image_data(k) = new_r
-            image_data(k+1) = new_g
-            image_data(k+2) = new_b
-        else
-            inv_alpha = 1.0_wp - alpha
-
-            bg_r = int(image_data(k))
-            bg_g = int(image_data(k+1))
-            bg_b = int(image_data(k+2))
-            if (bg_r < 0) bg_r = bg_r + 256
-            if (bg_g < 0) bg_g = bg_g + 256
-            if (bg_b < 0) bg_b = bg_b + 256
-
-            fg_r = int(new_r)
-            fg_g = int(new_g)
-            fg_b = int(new_b)
-            if (fg_r < 0) fg_r = fg_r + 256
-            if (fg_g < 0) fg_g = fg_g + 256
-            if (fg_b < 0) fg_b = fg_b + 256
-
-            bg_r = int(inv_alpha * real(bg_r) + alpha * real(fg_r))
-            bg_g = int(inv_alpha * real(bg_g) + alpha * real(fg_g))
-            bg_b = int(inv_alpha * real(bg_b) + alpha * real(fg_b))
-
-            if (bg_r > 127) bg_r = bg_r - 256
-            if (bg_g > 127) bg_g = bg_g - 256
-            if (bg_b > 127) bg_b = bg_b - 256
-
-            image_data(k) = int(bg_r, 1)
-            image_data(k+1) = int(bg_g, 1)
-            image_data(k+2) = int(bg_b, 1)
-        end if
-    end subroutine blend_pixel
-
-    real(wp) function ipart(x)
-        real(wp), intent(in) :: x
-        ipart = floor(x)
-    end function ipart
-
-    real(wp) function fpart(x)
-        real(wp), intent(in) :: x
-        fpart = x - floor(x)
-    end function fpart
-
-    real(wp) function rfpart(x)
-        real(wp), intent(in) :: x
-        rfpart = 1.0_wp - fpart(x)
-    end function rfpart
 
     ! PNG file writing functionality
     subroutine write_png_file(filename, width, height, image_data)
@@ -466,9 +293,7 @@ contains
         character(len=20) :: x_labels(10), y_labels(10)
 
         ! Set color to black for axes
-        ctx%current_r = 0.0_wp
-        ctx%current_g = 0.0_wp
-        ctx%current_b = 0.0_wp
+        call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
 
         ! Draw plot frame using common functionality
         call draw_png_frame(ctx)
@@ -500,28 +325,28 @@ contains
         type(png_context), intent(inout) :: ctx
 
         ! Draw plot frame (PNG coordinates with Y=0 at top)
-        call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1, 0.1_wp)  ! Bottom edge (top in PNG)
 
-        call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1, 0.1_wp)  ! Left edge
 
-        call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
                                   real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                   0_1, 0_1, 0_1, 0.1_wp)  ! Right edge
 
-        call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                   real(ctx%plot_area%left, wp), &
                                   real(ctx%plot_area%bottom, wp), &
                                   real(ctx%plot_area%left + ctx%plot_area%width, wp), &
@@ -538,7 +363,7 @@ contains
 
         ! Draw X-axis tick marks (at bottom of plot - top in PNG coords)
         do i = 1, num_x
-            call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+            call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                       x_positions(i), &
                                       real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                       x_positions(i), &
@@ -548,7 +373,7 @@ contains
 
         ! Draw Y-axis tick marks (at left of plot)
         do i = 1, num_y
-            call draw_line_distance_aa(ctx%image_data, ctx%width, ctx%height, &
+            call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                       real(ctx%plot_area%left, wp), y_positions(i), &
                                       real(ctx%plot_area%left - 5, wp), y_positions(i), &
                                       0_1, 0_1, 0_1, 0.1_wp)
@@ -569,7 +394,7 @@ contains
             call calculate_x_tick_label_position(x_positions(i), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                                trim(x_labels(i)), label_x, label_y)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(x_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
         end do
@@ -578,7 +403,7 @@ contains
         do i = 1, num_y
             call calculate_y_tick_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
                                                trim(y_labels(i)), label_x, label_y)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(y_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
         end do
@@ -600,7 +425,7 @@ contains
             label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
             ! Position title in the top margin area (matplotlib uses ~25px from top)
             label_y = 25.0_wp
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(title), &
                                      0_1, 0_1, 0_1)  ! Black text, normal weight (non-bold)
         end if
@@ -610,7 +435,7 @@ contains
             call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                                trim(xlabel), label_x, label_y)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
+            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(xlabel), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
@@ -664,44 +489,13 @@ contains
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
                                            real(ctx%plot_area%left, wp), text, label_x, label_y)
         
-        call composite_image(ctx%image_data, ctx%width, ctx%height, &
+        call composite_image(ctx%raster%image_data, ctx%width, ctx%height, &
                             rotated_buffer, buf_height, buf_width, &
                             int(label_x - buf_height/2), int(label_y - buf_width/2))
         
         deallocate(text_buffer, rotated_buffer)
     end subroutine draw_rotated_ylabel_png
 
-    subroutine composite_image(main_image, main_width, main_height, &
-                              overlay_image, overlay_width, overlay_height, dest_x, dest_y)
-        !! Composite overlay image onto main image at specified position
-        integer(1), intent(inout) :: main_image(*)
-        integer, intent(in) :: main_width, main_height
-        integer(1), intent(in) :: overlay_image(*)
-        integer, intent(in) :: overlay_width, overlay_height, dest_x, dest_y
-        integer :: x, y, src_idx, dst_idx, img_x, img_y
-        
-        do y = 1, overlay_height
-            do x = 1, overlay_width
-                img_x = dest_x + x - 1
-                img_y = dest_y + y - 1
-                
-                ! Check bounds
-                if (img_x >= 1 .and. img_x <= main_width .and. &
-                    img_y >= 1 .and. img_y <= main_height) then
-                    
-                    src_idx = (y - 1) * (1 + overlay_width * 3) + 1 + (x - 1) * 3 + 1
-                    dst_idx = (img_y - 1) * (1 + main_width * 3) + 1 + (img_x - 1) * 3 + 1
-                    
-                    ! Copy non-white pixels (white is -1_1 in signed byte representation)
-                    if (overlay_image(src_idx) /= -1_1 .or. &
-                        overlay_image(src_idx+1) /= -1_1 .or. &
-                        overlay_image(src_idx+2) /= -1_1) then
-                        main_image(dst_idx:dst_idx+2) = overlay_image(src_idx:src_idx+2)
-                    end if
-                end if
-            end do
-        end do
-    end subroutine composite_image
 
 
 

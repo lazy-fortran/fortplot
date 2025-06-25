@@ -1,7 +1,7 @@
 program test_ylabel_positioning
     !! Debug Y-axis label rendering step by step
     use fortplot_text, only: init_text_system, render_text_to_image, calculate_text_width, calculate_text_height
-    use fortplot_png, only: initialize_white_background
+    use fortplot_raster, only: initialize_white_background
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -43,9 +43,9 @@ program test_ylabel_positioning
     
     ! Step 4: Count non-white pixels in buffer
     non_white_pixels = 0
-    do i = 1, buf_height * (1 + buf_width * 3), 3
+    do i = 2, buf_height * (1 + buf_width * 3) - 2, 3
         ! Skip row byte, check RGB values (white is -1_1 which is 255 unsigned)
-        if (test_buffer(i+1) /= -1_1 .or. test_buffer(i+2) /= -1_1 .or. test_buffer(i+3) /= -1_1) then
+        if (test_buffer(i) /= -1_1 .or. test_buffer(i+1) /= -1_1 .or. test_buffer(i+2) /= -1_1) then
             non_white_pixels = non_white_pixels + 1
         end if
     end do
@@ -64,9 +64,9 @@ program test_ylabel_positioning
     print *, "Buffer format check:"
     print *, "  Expected white pixel: -1, -1, -1"
     print *, "  First few pixels:"
-    do i = 1, min(30, buf_height * (1 + buf_width * 3)), 3
-        if (i <= 3) then
-            print *, "    Pixel", (i+2)/3, ":", int(test_buffer(i+1)), int(test_buffer(i+2)), int(test_buffer(i+3))
+    do i = 2, min(30, buf_height * (1 + buf_width * 3) - 2), 3
+        if (i <= 5) then
+            print *, "    Pixel", (i-2)/3 + 1, ":", int(test_buffer(i)), int(test_buffer(i+1)), int(test_buffer(i+2))
         end if
     end do
     
