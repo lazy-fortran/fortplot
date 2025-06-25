@@ -496,9 +496,4 @@ contains
         deallocate(text_buffer, rotated_buffer)
     end subroutine draw_rotated_ylabel_png
 
-
-
-
-
-
 end module fortplot_png

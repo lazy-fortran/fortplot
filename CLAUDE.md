@@ -69,15 +69,15 @@ make build ARGS="--verbose"
 **Unit Tests**: Place unit tests in `test/` directory
 **Examples**: Place examples in `example/` directory
 
-## External References and Inspiration
+## Third party References and Inspiration
 
-**Matplotlib Source Code**: Located in `external/matplotlib/` for layout, styling, and API reference
-- **Core Reference**: `external/matplotlib/lib/matplotlib/` contains the main matplotlib implementation
+**Matplotlib Source Code**: Located in `thirdparty/matplotlib/` for layout, styling, and API reference
+- **Core Reference**: `thirdparty/matplotlib/lib/matplotlib/` contains the main matplotlib implementation
 - Use for understanding margin calculations, text positioning, plot layout algorithms
 - Reference for color schemes, tick generation, and professional plot styling
 - Study layout managers and backend implementations for consistency
 
-**Pyplot-Fortran Wrapper**: Located in `external/pyplot-fortran/src/pyplot_module.F90`
+**Pyplot-Fortran Wrapper**: Located in `thirdparty/pyplot-fortran/src/pyplot_module.F90`
 - **API Inspiration**: Study the Fortran wrapper patterns and interface design
 - Reference for clean Fortran API design and Python integration patterns
 - Learn from error handling and parameter passing approaches
@@ -200,12 +200,12 @@ contains
 end program
 ```
 
-**⚠️ CRITICAL: ALWAYS REFERENCE EXTERNAL SOURCES WHEN IMPLEMENTING FEATURES ⚠️**
+**⚠️ CRITICAL: ALWAYS REFERENCE THIRD PARTY SOURCES WHEN IMPLEMENTING FEATURES ⚠️**
 
 When implementing new features or improving existing ones:
-1. **Check matplotlib implementation** in `external/matplotlib/src/lib/matplotlib/` first
+1. **Check matplotlib implementation** in `thirdparty/matplotlib/src/lib/matplotlib/` first
 2. **Study layout and styling patterns** to ensure consistency with professional plotting standards
-3. **Reference pyplot-fortran** in `external/pyplot-fortran/src/pyplot_module.F90` for clean API design patterns
+3. **Reference pyplot-fortran** in `thirdparty/pyplot-fortran/src/pyplot_module.F90` for clean API design patterns
 4. **Test against matplotlib output** using `make ref` to generate reference plots for comparison
 
 ### Debug Scripts MUST Become Unit Tests
