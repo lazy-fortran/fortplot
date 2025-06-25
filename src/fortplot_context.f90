@@ -21,6 +21,7 @@ module fortplot_context
         procedure(text_interface), deferred :: text
         procedure(save_interface), deferred :: save
         procedure(line_width_interface), deferred :: set_line_width
+        procedure(marker_interface), deferred :: draw_marker
     end type plot_context
     
     abstract interface
@@ -54,6 +55,13 @@ module fortplot_context
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: width
         end subroutine line_width_interface
+
+        subroutine marker_interface(this, x, y, style)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y
+            character(len=*), intent(in) :: style
+        end subroutine marker_interface
     end interface
 
 contains

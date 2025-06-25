@@ -42,6 +42,7 @@ module fortplot_raster
         procedure :: text => raster_draw_text
         procedure :: set_line_width => raster_set_line_width
         procedure :: save => raster_save_dummy
+        procedure :: draw_marker => raster_draw_marker
     end type raster_context
 
 contains
@@ -465,6 +466,48 @@ contains
         print *, "Error: raster_context cannot save files directly. Use a concrete backend like PNG."
         stop
     end subroutine raster_save_dummy
+
+    subroutine raster_draw_marker(this, x, y, style)
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: style
+        real(wp) :: px, py
+        integer(1) :: r, g, b
+
+        ! Transform coordinates to plot area
+        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+        py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+             (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
+
+        call this%raster%get_color_bytes(r, g, b)
+
+        if (trim(style) == 'o') then
+            call draw_circle(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, r, g, b)
+        end if
+    end subroutine raster_draw_marker
+
+    subroutine draw_circle(image_data, img_w, img_h, cx, cy, radius, r, g, b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, radius
+        integer(1), intent(in) :: r, g, b
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: dist_sq
+
+        x_min = max(1, int(cx - radius))
+        x_max = min(img_w, int(cx + radius))
+        y_min = max(1, int(cy - radius))
+        y_max = min(img_h, int(cy + radius))
+
+        do y = y_min, y_max
+            do x = x_min, x_max
+                dist_sq = (real(x, wp) - cx)**2 + (real(y, wp) - cy)**2
+                if (dist_sq <= radius**2) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, 1.0_wp, r, g, b)
+                end if
+            end do
+        end do
+    end subroutine draw_circle
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &

@@ -45,6 +45,7 @@ module fortplot_figure_core
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
+        character(len=:), allocatable :: marker
     end type plot_data_t
 
     type :: figure_t
@@ -145,11 +146,11 @@ contains
         end if
     end subroutine initialize
 
-    subroutine add_plot(self, x, y, label, linestyle, color)
+    subroutine add_plot(self, x, y, label, linestyle, color, marker)
         !! Add line plot data to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         
         if (self%plot_count >= self%max_plots) then
@@ -159,7 +160,7 @@ contains
         
         self%plot_count = self%plot_count + 1
         
-        call add_line_plot_data(self, x, y, label, linestyle, color)
+        call add_line_plot_data(self, x, y, label, linestyle, color, marker)
         call update_data_ranges(self)
     end subroutine add_plot
 
@@ -224,11 +225,12 @@ contains
         !! Display figure in ASCII terminal
         class(figure_t), intent(inout) :: self
         
-        if (.not. allocated(self%backend)) then
-            ! Use reasonable ASCII dimensions instead of figure dimensions
-            call initialize_backend(self%backend, 'ascii', 80, 24)
-        end if
+        ! Always reinitialize backend for ASCII output
+        if (allocated(self%backend)) deallocate(self%backend)
+        call initialize_backend(self%backend, 'ascii', 80, 24)
         
+        ! Reset rendered flag to force re-rendering for new backend
+        self%rendered = .false.
         call render_figure(self)
         call self%backend%save("terminal")
     end subroutine show
@@ -307,11 +309,11 @@ contains
 
     ! Private helper routines (implementation details)
     
-    subroutine add_line_plot_data(self, x, y, label, linestyle, color)
+    subroutine add_line_plot_data(self, x, y, label, linestyle, color, marker)
         !! Add line plot data to internal storage
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: color(3)
         
         integer :: plot_idx, color_idx
@@ -338,6 +340,12 @@ contains
             self%plots(plot_idx)%linestyle = linestyle
         else
             self%plots(plot_idx)%linestyle = 'solid'
+        end if
+
+        if (present(marker)) then
+            self%plots(plot_idx)%marker = marker
+        else
+            self%plots(plot_idx)%marker = 'None'
         end if
         
         if (present(color)) then
@@ -701,7 +709,32 @@ contains
         
         ! Draw line segments using transformed coordinates with linestyle
         call draw_line_with_style(self, plot_idx, linestyle)
+
+        ! Render markers at each data point
+        call render_markers(self, plot_idx)
     end subroutine render_line_plot
+
+    subroutine render_markers(self, plot_idx)
+        !! Render markers at each data point
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=:), allocatable :: marker
+        integer :: i
+        real(wp) :: x_trans, y_trans
+
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%marker)) return
+
+        marker = self%plots(plot_idx)%marker
+        if (marker == 'None') return
+
+        do i = 1, size(self%plots(plot_idx)%x)
+            x_trans = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+            y_trans = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(x_trans, y_trans, marker)
+        end do
+
+    end subroutine render_markers
 
     subroutine render_contour_plot(self, plot_idx)
         !! Render a single contour plot using proper marching squares algorithm
@@ -1171,7 +1204,8 @@ contains
                 if (len_trim(self%plots(i)%label) > 0) then
                     call self%legend_data%add_entry(self%plots(i)%label, &
                                              self%plots(i)%color, &
-                                             self%plots(i)%linestyle)
+                                             self%plots(i)%linestyle, &
+                                             self%plots(i)%marker)
                 end if
             end if
         end do

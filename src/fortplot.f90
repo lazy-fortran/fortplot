@@ -24,7 +24,7 @@ module fortplot
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, show
-    public :: xlabel, ylabel, title
+    public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled
     public :: set_xscale, set_yscale
@@ -35,6 +35,14 @@ module fortplot
     character(len=*), parameter, public :: LINESTYLE_DOTTED = ':'
     character(len=*), parameter, public :: LINESTYLE_DASHDOT = '-.'
     character(len=*), parameter, public :: LINESTYLE_NONE = 'None'
+
+    ! Marker style constants (pyplot-style)
+    character(len=*), parameter, public :: MARKER_CIRCLE = 'o'
+    character(len=*), parameter, public :: MARKER_DOT = '.'
+    character(len=*), parameter, public :: MARKER_CROSS = 'x'
+    character(len=*), parameter, public :: MARKER_PLUS = '+'
+    character(len=*), parameter, public :: MARKER_STAR = '*'
+    character(len=*), parameter, public :: MARKER_NONE = 'None'
     
     
     ! Interface for overloaded show routine
@@ -47,17 +55,18 @@ module fortplot
 
 contains
 
-    subroutine plot(x, y, label, linestyle)
+    subroutine plot(x, y, label, linestyle, marker)
         !! Add a line plot to the global figure (pyplot-style)
         !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
         !!   label: Optional label for the plot
         !!   linestyle: Optional line style ('-', '--', '-.', ':', 'None')
+        !!   marker: Optional marker style ('o', '.', 'x', '+', '*', 'None')
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label, linestyle
+        character(len=*), intent(in), optional :: label, linestyle, marker
         
-        call fig%add_plot(x, y, label=label, linestyle=linestyle)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle, marker=marker)
     end subroutine plot
 
     subroutine contour(x, y, z, levels, label)
@@ -156,17 +165,24 @@ contains
         call fig%set_title(text)
     end subroutine title
 
+    subroutine legend(location)
+        !! Show legend for the global figure
+        character(len=*), intent(in), optional :: location
+
+        call fig%legend(location=location)
+    end subroutine legend
+
     subroutine savefig(filename)
         !! Save global figure to file (backend determined by extension)
         character(len=*), intent(in) :: filename
         call fig%savefig(filename)
     end subroutine savefig
 
-    subroutine add_plot(x, y, label, linestyle)
+    subroutine add_plot(x, y, label, linestyle, marker)
         !! Add a line plot to the global figure
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label, linestyle
-        call fig%add_plot(x, y, label=label, linestyle=linestyle)
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        call fig%add_plot(x, y, label=label, linestyle=linestyle, marker=marker)
     end subroutine add_plot
 
     subroutine add_contour(x, y, z, levels, label)
