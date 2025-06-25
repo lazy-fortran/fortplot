@@ -12,7 +12,7 @@ module fortplot_raster
 
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
-    public :: initialize_white_background, color_to_byte
+    public :: initialize_white_background, initialize_transparent_background, color_to_byte
     public :: draw_line_distance_aa, blend_pixel, composite_image, composite_bitmap_to_raster
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
     public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
@@ -96,6 +96,26 @@ contains
             end do
         end do
     end subroutine initialize_white_background
+
+    subroutine initialize_transparent_background(image_data, w, h)
+        !! Initialize image buffer with transparent background (special marker values)
+        integer(1), intent(out) :: image_data(*)
+        integer, intent(in) :: w, h
+        integer :: i, j, k
+        
+        k = 1
+        do i = 1, h
+            image_data(k) = 0_1
+            k = k + 1
+            do j = 1, w
+                ! Use a special marker value for transparency (different from white -1_1)
+                image_data(k) = -2_1      ! R: transparent marker
+                image_data(k+1) = -2_1    ! G: transparent marker  
+                image_data(k+2) = -2_1    ! B: transparent marker
+                k = k + 3
+            end do
+        end do
+    end subroutine initialize_transparent_background
 
     function color_to_byte(color_val) result(byte_val)
         real(wp), intent(in) :: color_val
@@ -277,10 +297,10 @@ contains
                 if (raster_x >= 1 .and. raster_x <= raster_width .and. &
                     raster_y >= 1 .and. raster_y <= raster_height) then
                     
-                    ! Skip white pixels (don't composite background)
-                    if (bitmap(x, y, 1) /= -1_1 .or. &
-                        bitmap(x, y, 2) /= -1_1 .or. &
-                        bitmap(x, y, 3) /= -1_1) then
+                    ! Skip transparent pixels (don't composite background)
+                    if (bitmap(x, y, 1) /= -2_1 .or. &
+                        bitmap(x, y, 2) /= -2_1 .or. &
+                        bitmap(x, y, 3) /= -2_1) then
                         
                         raster_idx = (raster_y - 1) * (1 + raster_width * 3) + 1 + (raster_x - 1) * 3 + 1
                         raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
@@ -319,16 +339,28 @@ contains
         integer :: i, j, buf_idx
         
         allocate(temp_buffer(height * (1 + width * 3)))
+        ! Initialize with white background for proper text rendering
         call initialize_white_background(temp_buffer, width, height)
         call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
         
-        ! Convert PNG buffer to bitmap
+        ! Convert PNG buffer to bitmap, converting white pixels to transparent
         do j = 1, height
             do i = 1, width
                 buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
-                bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
-                bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
-                bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
+                ! Convert white pixels to transparent, keep others as-is
+                if (temp_buffer(buf_idx) == -1_1 .and. &
+                    temp_buffer(buf_idx + 1) == -1_1 .and. &
+                    temp_buffer(buf_idx + 2) == -1_1) then
+                    ! White pixel -> make transparent
+                    bitmap(i, j, 1) = -2_1
+                    bitmap(i, j, 2) = -2_1
+                    bitmap(i, j, 3) = -2_1
+                else
+                    ! Non-white pixel -> keep as-is (text)
+                    bitmap(i, j, 1) = temp_buffer(buf_idx)
+                    bitmap(i, j, 2) = temp_buffer(buf_idx + 1)
+                    bitmap(i, j, 3) = temp_buffer(buf_idx + 2)
+                end if
             end do
         end do
         
@@ -350,7 +382,7 @@ contains
     end subroutine rotate_bitmap_90_cw
 
     subroutine rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)
-        !! Rotate bitmap 90 degrees counter-clockwise: (x,y) -> (src_height-y+1, x)
+        !! Rotate bitmap 90 degrees counter-clockwise: (x,y) -> (y, src_width-x+1)
         integer(1), intent(in) :: src_bitmap(:,:,:)
         integer(1), intent(out) :: dst_bitmap(:,:,:)
         integer, intent(in) :: src_width, src_height
@@ -358,7 +390,7 @@ contains
         
         do j = 1, src_height
             do i = 1, src_width
-                dst_bitmap(src_height - j + 1, i, :) = src_bitmap(i, j, :)
+                dst_bitmap(j, src_width - i + 1, :) = src_bitmap(i, j, :)
             end do
         end do
     end subroutine rotate_bitmap_90_ccw
@@ -502,10 +534,14 @@ contains
             call generate_scale_aware_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels, yscale, symlog_threshold)
         end if
         call draw_raster_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        
+        ! Draw title and X-axis label first (they don't conflict with tick labels)
+        call draw_raster_title_and_xlabel(ctx, title, xlabel)
+        
+        ! Draw tick labels
         call draw_raster_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-
-        ! Draw title and axis labels
-        call draw_raster_title_and_labels(ctx, title, xlabel, ylabel)
+        
+        ! Note: Y-axis label is now drawn in render_figure after all plots to avoid being overwritten
     end subroutine draw_axes_and_labels
 
     subroutine draw_raster_frame(ctx)
@@ -597,10 +633,10 @@ contains
         end do
     end subroutine draw_raster_tick_labels
 
-    subroutine draw_raster_title_and_labels(ctx, title, xlabel, ylabel)
-        !! Draw figure title and axis labels
+    subroutine draw_raster_title_and_xlabel(ctx, title, xlabel)
+        !! Draw figure title and X-axis label (but not Y-axis label)
         class(raster_context), intent(inout) :: ctx
-        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        character(len=*), intent(in), optional :: title, xlabel
         real(wp) :: label_x, label_y, text_width
 
         ! Draw title at top center with proper margin (matplotlib-style)
@@ -627,12 +663,7 @@ contains
                                      int(label_x), int(label_y), trim(xlabel), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
-
-        ! Draw Y-axis label rotated 90 degrees using render-then-rotate approach
-        if (present(ylabel)) then
-            call draw_rotated_ylabel_raster(ctx, ylabel)
-        end if
-    end subroutine draw_raster_title_and_labels
+    end subroutine draw_raster_title_and_xlabel
 
     subroutine draw_rotated_ylabel_raster(ctx, text)
         !! Draw Y-axis label by rendering text then rotating the bitmap 90 degrees
@@ -653,7 +684,7 @@ contains
         
         ! Create 2D RGB bitmap for text
         allocate(text_bitmap(buf_width, buf_height, 3))
-        text_bitmap = -1_1  ! White background (255 in unsigned byte)
+        text_bitmap = -2_1  ! Transparent background marker
         
         ! Render text to bitmap
         call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
@@ -668,11 +699,72 @@ contains
                                            real(ctx%plot_area%left, wp), text, label_x, label_y)
         
         ! Composite rotated bitmap directly onto main image buffer
+        ! Note: After correct rotation, centering needs adjustment
         call composite_bitmap_to_raster(ctx%raster%image_data, ctx%width, ctx%height, &
                                        rotated_bitmap, buf_height, buf_width, &
-                                       int(label_x - buf_height/2), int(label_y - buf_width/2))
+                                       int(label_x), int(label_y - buf_width/2))
         
         deallocate(text_bitmap, rotated_bitmap)
     end subroutine draw_rotated_ylabel_raster
+
+    subroutine draw_rotated_ylabel_raster_with_spacing(ctx, text, y_labels, num_y)
+        !! Draw Y-axis label with proper spacing based on actual Y-tick label widths
+        class(raster_context), intent(inout) :: ctx
+        character(len=*), intent(in) :: text
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_y
+        real(wp) :: label_x, label_y
+        integer :: text_width, text_height, padding
+        integer :: buf_width, buf_height, i, j, src_x, src_y, dst_x, dst_y
+        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        integer :: max_tick_width, tick_width, actual_tick_space
+        
+        ! Calculate actual maximum width of Y-tick labels
+        max_tick_width = 0
+        do i = 1, num_y
+            tick_width = calculate_text_width(trim(y_labels(i)))
+            if (tick_width <= 0) then
+                tick_width = len_trim(y_labels(i)) * 8  ! Fallback estimate
+            end if
+            max_tick_width = max(max_tick_width, tick_width)
+        end do
+        
+        ! Calculate text dimensions and position
+        text_width = calculate_text_width(trim(text))
+        text_height = calculate_text_height(trim(text))
+        
+        padding = 2
+        buf_width = text_width + 2 * padding  
+        buf_height = text_height + 2 * padding
+        
+        ! Create 2D RGB bitmap for text
+        allocate(text_bitmap(buf_width, buf_height, 3))
+        text_bitmap = -2_1  ! Transparent background marker
+        
+        ! Render text to bitmap
+        call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
+                                  padding, padding, trim(text))
+        
+        ! Rotate bitmap 90 degrees counter-clockwise (text reads bottom to top)
+        allocate(rotated_bitmap(buf_height, buf_width, 3))
+        call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, buf_width, buf_height)
+        
+        ! Calculate position using actual tick label spacing
+        actual_tick_space = max_tick_width + 10  ! 10px spacing same as Y_TICK_SPACING
+        label_x = real(ctx%plot_area%left, wp) - real(actual_tick_space, wp) - 8.0_wp - real(buf_height, wp) / 2.0_wp
+        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - real(buf_width, wp) / 2.0_wp
+        
+        ! Ensure minimum visibility
+        if (label_x < 5.0_wp) then
+            label_x = 5.0_wp
+        end if
+        
+        ! Composite rotated bitmap directly onto main image buffer
+        call composite_bitmap_to_raster(ctx%raster%image_data, ctx%width, ctx%height, &
+                                       rotated_bitmap, buf_height, buf_width, &
+                                       int(label_x), int(label_y))
+        
+        deallocate(text_bitmap, rotated_bitmap)
+    end subroutine draw_rotated_ylabel_raster_with_spacing
 
 end module fortplot_raster

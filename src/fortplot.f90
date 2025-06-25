@@ -19,6 +19,8 @@ module fortplot
 
     implicit none
 
+    private
+
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, show
