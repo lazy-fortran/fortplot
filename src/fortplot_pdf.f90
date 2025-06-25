@@ -498,11 +498,16 @@ contains
         
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
-            label_x = real(ctx%width, wp) / 2.0_wp
+            ! Center horizontally across the entire figure width (like matplotlib)
+            text_width = real(calculate_text_width(trim(title)), wp)
+            if (text_width <= 0.0_wp) then
+                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
+            end if
+            label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
             ! Position title at top of PDF - high Y value for PDF coordinates (Y=0 at bottom)
             ! Just below the top edge, similar to matplotlib spacing
             label_y = real(ctx%height - 25, wp)  ! 25 pixels down from top edge
-            call draw_pdf_text_bold(ctx, label_x, label_y, trim(title))
+            call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))  ! Normal weight (non-bold)
         end if
         
         ! Draw X-axis label using proper axis label positioning
