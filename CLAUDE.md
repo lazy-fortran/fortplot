@@ -34,6 +34,8 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 
 All development work must use the Makefile. Never run `fpm` commands directly.
 
+**⚠️ SPELLING: It is "fpm" (Fortran Package Manager) - NEVER "fmp" ⚠️**
+
 ### Primary Development Commands
 
 - `make example` - Build and run all examples (default development workflow)
