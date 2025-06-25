@@ -934,12 +934,13 @@ contains
         
         ! Get glyph metrics from FreeType
         if (ft_wrapper_render_char(char_code, glyph_info) == 0) then
-            ! For vertical text, use the character's actual height
-            advance_height = glyph_info%height
+            ! For better vertical text spacing, use more consistent height
+            ! Base on font line height rather than individual character height
+            advance_height = 15  ! Consistent spacing for better readability
             call ft_wrapper_free_glyph(glyph_info)
         else
             ! Fallback for failed character rendering
-            advance_height = 12
+            advance_height = 15
         end if
     end function get_char_advance_height
     
