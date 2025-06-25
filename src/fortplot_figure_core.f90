@@ -16,6 +16,7 @@ module fortplot_figure_core
     use fortplot_colormap
     use fortplot_legend
     use fortplot_png, only: png_context, draw_axes_and_labels
+    use fortplot_raster, only: draw_rotated_ylabel_raster
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
     implicit none
@@ -472,6 +473,16 @@ contains
         
         ! Render individual plots
         call render_all_plots(self)
+        
+        ! Render Y-axis label ABSOLUTELY LAST (after everything else)
+        select type (backend => self%backend)
+        type is (png_context)
+            if (allocated(self%ylabel)) then
+                call draw_rotated_ylabel_raster(backend, self%ylabel)
+            end if
+        type is (pdf_context)
+            ! PDF handles this differently - already done in draw_pdf_axes_and_labels
+        end select
         
         ! Render legend if requested (following SOLID principles)
         if (self%show_legend) then
