@@ -44,14 +44,6 @@ All development work must use the Makefile. Never run `fpm` commands directly.
 - `make build` - Compile the project
 - `make clean` - Clean build artifacts and generated plots
 
-### Reference and Release Commands
-
-- `make ref` - Generate Python matplotlib reference plots for visual comparison
-- `make release` - Build with release optimizations
-- `make run-release` - Run optimized build
-- `make check-deps` - Show detected library flags and dependencies
-- `make help` - Show all available targets
-
 ### Command Line Arguments Support
 
 All make targets support passing additional fpm arguments. Use `ARGS` to pass extra parameters:
@@ -74,7 +66,7 @@ make build ARGS="--verbose"
 
 **Library Sources**: Place library sources in `src/` directory
 **Debugging**: Place debugging sources in `app/` directory and execute with `make debug`
-**Unit Tests**: Place unit tests in `test/` directory  
+**Unit Tests**: Place unit tests in `test/` directory
 **Examples**: Place examples in `example/` directory
 
 ## External References and Inspiration
@@ -85,7 +77,7 @@ make build ARGS="--verbose"
 - Reference for color schemes, tick generation, and professional plot styling
 - Study layout managers and backend implementations for consistency
 
-**Pyplot-Fortran Wrapper**: Located in `external/pyplot-fortran/src/pyplot_module.F90`  
+**Pyplot-Fortran Wrapper**: Located in `external/pyplot-fortran/src/pyplot_module.F90`
 - **API Inspiration**: Study the Fortran wrapper patterns and interface design
 - Reference for clean Fortran API design and Python integration patterns
 - Learn from error handling and parameter passing approaches
@@ -107,7 +99,7 @@ To discover available executable targets:
 # List example programs
 ls example/
 
-# List test programs  
+# List test programs
 ls test/
 
 # List debug/app programs
@@ -123,7 +115,7 @@ Example usage with discovered targets:
 make example ARGS="basic_plots"
 
 # Run specific test
-make test ARGS="--target test_figure_basics" 
+make test ARGS="--target test_figure_basics"
 
 # Run specific debug app
 make debug ARGS="--target debug_symlog_data"
@@ -155,7 +147,7 @@ end program
 
 **DRY - Don't Repeat Yourself**: Extract common functionality into shared modules - **REQUIRED**
 - Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
-- Use procedure pointers for backend-agnostic operations  
+- Use procedure pointers for backend-agnostic operations
 - Centralize constants and magic numbers in one place
 - ✓ IMPLEMENTED: All scales (linear, log, symlog) use consistent tick formatting via shared `format_tick_value()` function
 
@@ -222,7 +214,7 @@ When implementing new features or improving existing ones:
 
 When creating debug scripts in `app/debug_*.f90` for development:
 1. **Debug scripts are temporary** - use them to understand behavior
-2. **Extract corner cases** - identify edge cases and boundary conditions  
+2. **Extract corner cases** - identify edge cases and boundary conditions
 3. **Convert to unit tests** - move all corner cases to `test/test_*.f90`
 4. **Delete debug scripts** - or keep only as examples if educational
 
@@ -263,7 +255,7 @@ Extract commented blocks into well-named routines:
 ! BEFORE: Comments explain complex logic
 subroutine process_data()
     ! Validate inputs
-    ! Transform coordinates  
+    ! Transform coordinates
     ! Apply filters
 end subroutine
 
@@ -367,7 +359,7 @@ if (error < NUMERICAL_TOLERANCE) then
 select type (backend => self%backend)
 type is (png_context)
     call backend%set_line_width(0.1_wp)  ! FORBIDDEN - dispatch in caller
-type is (pdf_context) 
+type is (pdf_context)
     call backend%set_line_width(2.0_wp)  ! FORBIDDEN - backend knowledge in caller
 end select
 ```
@@ -382,7 +374,7 @@ subroutine png_set_line_width(this, width)
     this%current_line_width = width * 0.05_wp  ! PNG-specific scaling
 end subroutine
 
-! In PDF backend implementation:  
+! In PDF backend implementation:
 subroutine pdf_set_line_width(this, width)
     this%current_line_width = width  ! PDF uses width directly
 end subroutine
@@ -415,7 +407,7 @@ end subroutine
 This commit represents the last known working state before major refactoring where certain features were functioning correctly:
 
 - **Y-axis text rotation and positioning** - Working correctly in PNG backend
-- **FreeType-based character rotation** - Properly implemented  
+- **FreeType-based character rotation** - Properly implemented
 - **Matplotlib-style label positioning** - Correct placement and orientation
 
 **Use this commit as reference when fixing regressions introduced during refactoring.**

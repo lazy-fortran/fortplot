@@ -4,7 +4,9 @@ module fortplot_png
     use fortplot_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
-    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
+    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
+                                         calculate_x_tick_label_position, calculate_y_tick_label_position, &
+                                         calculate_x_axis_label_position, calculate_y_axis_label_position
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -784,20 +786,20 @@ contains
         integer :: i
         real(wp) :: label_x, label_y
         
-        ! Draw X-axis labels with proper spacing and center alignment
+        ! Draw X-axis tick labels with proper spacing and center alignment
         do i = 1, num_x
-            call calculate_x_label_position(x_positions(i), real(ctx%plot_area%bottom, wp), &
-                                          real(ctx%plot_area%height, wp), trim(x_labels(i)), &
-                                          label_x, label_y)
+            call calculate_x_tick_label_position(x_positions(i), &
+                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                               trim(x_labels(i)), label_x, label_y)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(x_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
         end do
         
-        ! Draw Y-axis labels with right alignment and proper spacing
+        ! Draw Y-axis tick labels with right alignment and proper spacing
         do i = 1, num_y
-            call calculate_y_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
-                                          trim(y_labels(i)), label_x, label_y)
+            call calculate_y_tick_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
+                                               trim(y_labels(i)), label_x, label_y)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(y_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
@@ -826,16 +828,11 @@ contains
                                      0_1, 0_1, 0_1)  ! Black text
         end if
         
-        ! Draw X-axis label properly centered below plot (matplotlib-style)
+        ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
-            ! Center the xlabel text properly with fallback
-            text_width = real(calculate_text_width(trim(xlabel)), wp)
-            if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char fallback
-            end if
-            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
-            ! Position below tick labels with matplotlib-style spacing (35 pixels from plot bottom)
-            label_y = real(ctx%plot_area%bottom + ctx%plot_area%height + 35, wp)
+            call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
+                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                               trim(xlabel), label_x, label_y)
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(xlabel), &
                                      0_1, 0_1, 0_1)  ! Black text
@@ -857,8 +854,10 @@ contains
         character(len=1) :: char
         integer, allocatable :: char_heights(:)
         
-        ! Position for rotated Y-axis label (further left, away from axis)
-        label_x = real(ctx%plot_area%left - 35, wp)  ! Further from axis to avoid overlap
+        ! Position for rotated Y-axis label using proper axis label positioning
+        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
+                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
+        ! For vertical text, we use the calculated X position but override Y positioning below
         text_len = len_trim(text)
         
         ! Calculate individual character heights and kerning using FreeType metrics
@@ -879,9 +878,8 @@ contains
             end if
         end do
         
-        ! Start position centered vertically
-        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - total_height / 2.0_wp
-        current_y = label_y
+        ! Start position centered vertically (using the calculated center from axis label function)
+        current_y = label_y - total_height / 2.0_wp
         
         ! Draw each character rotated 90 degrees counter-clockwise (bottom to top order)
         do i = 1, text_len

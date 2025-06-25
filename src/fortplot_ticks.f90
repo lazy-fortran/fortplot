@@ -16,7 +16,7 @@ module fortplot_ticks
     private
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
-    public :: generate_scale_aware_tick_labels
+    public :: generate_scale_aware_tick_labels, format_tick_value_smart
     
 contains
 
@@ -41,9 +41,9 @@ contains
         ! Determine consistent formatting for the nice step size
         decimal_places = determine_decimal_places_from_step(nice_step)
         
-        ! Format the nice tick locations
+        ! Format the nice tick locations with smart formatting (max 8 chars for clean appearance)
         do i = 1, min(actual_num_ticks, size(labels))
-            labels(i) = format_tick_value_consistent(tick_locations(i), decimal_places)
+            labels(i) = format_tick_value_smart(tick_locations(i), 8)
         end do
         
         ! Clear unused labels
@@ -570,5 +570,56 @@ contains
             call calculate_tick_labels(data_min, data_max, num_ticks, labels)
         end select
     end subroutine generate_scale_aware_tick_labels
+
+    function format_tick_value_smart(value, max_chars) result(formatted)
+        !! Smart tick value formatting with automatic exponential notation for long labels
+        !! Limits output to max_chars and uses exponential notation when needed
+        real(wp), intent(in) :: value
+        integer, intent(in) :: max_chars
+        character(len=20) :: formatted
+        character(len=20) :: temp_format
+        real(wp) :: abs_value
+        integer :: exponent
+        
+        abs_value = abs(value)
+        
+        ! Handle zero
+        if (abs_value < 1.0e-10_wp) then
+            formatted = '0'
+            return
+        end if
+        
+        ! Try normal formatting first
+        if (abs_value >= 1000.0_wp .or. abs_value < 0.001_wp) then
+            ! Large or very small numbers - use exponential notation
+            write(formatted, '(ES8.1)') value
+        else if (abs_value >= 100.0_wp) then
+            ! Integer format for hundreds
+            write(formatted, '(I0)') nint(value)
+        else if (abs_value >= 10.0_wp) then
+            ! 1 decimal place
+            write(formatted, '(F0.1)') value
+            call remove_trailing_zeros(formatted)
+        else if (abs_value >= 1.0_wp) then
+            ! 2 decimal places
+            write(formatted, '(F0.2)') value
+            call remove_trailing_zeros(formatted)
+        else
+            ! Small numbers - up to 3 decimal places
+            write(formatted, '(F0.3)') value
+            call remove_trailing_zeros(formatted)
+        end if
+        
+        ! If formatted string is too long, use exponential notation
+        if (len_trim(formatted) > max_chars) then
+            if (max_chars >= 7) then
+                write(formatted, '(ES7.0)') value
+            else
+                write(formatted, '(ES6.0)') value
+            end if
+        end if
+        
+        call ensure_leading_zero(formatted)
+    end function format_tick_value_smart
 
 end module fortplot_ticks
