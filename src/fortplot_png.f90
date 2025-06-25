@@ -11,7 +11,7 @@ module fortplot_png
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels
+    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png, initialize_white_background
 
     ! PNG plotting context
     type, extends(plot_context) :: png_context
@@ -844,86 +844,87 @@ contains
     end subroutine draw_png_title_and_labels
 
     subroutine draw_rotated_ylabel_png(ctx, text)
-        !! Draw Y-axis label by rendering text to buffer then rotating 90 degrees
+        !! Draw Y-axis label by rendering text then rotating the image 90 degrees
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
-        integer :: text_width, text_height
-        integer(1), allocatable :: text_buffer(:)
-        integer :: buf_width, buf_height, padding
+        integer :: text_width, text_height, padding
+        integer :: buf_width, buf_height, i, j, src_idx, dst_idx
+        integer(1), allocatable :: text_buffer(:), rotated_buffer(:)
         
-        ! Calculate text dimensions
+        ! Calculate text dimensions and position
         text_width = calculate_text_width(trim(text))
         text_height = calculate_text_height(trim(text))
         
-        ! Add padding around text for clean rotation
-        padding = 4
-        buf_width = text_width + 2 * padding
+        padding = 2
+        buf_width = text_width + 2 * padding  
         buf_height = text_height + 2 * padding
         
-        ! Create temporary image buffer for text (white background)
+        ! Create text buffer and render text normally
         allocate(text_buffer(buf_height * (1 + buf_width * 3)))
         call initialize_white_background(text_buffer, buf_width, buf_height)
-        
-        ! Render text to temporary buffer
         call render_text_to_image(text_buffer, buf_width, buf_height, &
                                  padding, padding, trim(text), &
                                  0_1, 0_1, 0_1)  ! Black text
         
-        ! Calculate final position for rotated text
+        ! Create rotated buffer (dimensions swapped for 90-degree rotation)
+        allocate(rotated_buffer(buf_width * (1 + buf_height * 3)))
+        call initialize_white_background(rotated_buffer, buf_height, buf_width)
+        
+        ! Rotate image 90 degrees clockwise: (x,y) -> (y, width-1-x)
+        do j = 1, buf_height
+            do i = 1, buf_width
+                src_idx = (j - 1) * (1 + buf_width * 3) + 1 + (i - 1) * 3 + 1
+                dst_idx = (i - 1) * (1 + buf_height * 3) + 1 + (buf_height - j) * 3 + 1
+                
+                ! Copy RGB values
+                rotated_buffer(dst_idx:dst_idx+2) = text_buffer(src_idx:src_idx+2)
+            end do
+        end do
+        
+        ! Calculate position and composite rotated text onto main image
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
                                            real(ctx%plot_area%left, wp), text, label_x, label_y)
         
-        ! Composite rotated text onto main image (90 degrees clockwise)
-        ! Adjust position to account for rotation - the rotated text dimensions are swapped
-        call composite_rotated_text(ctx%image_data, ctx%width, ctx%height, &
-                                   text_buffer, buf_width, buf_height, &
-                                   int(label_x - buf_height/2), int(label_y - buf_width/2))
+        call composite_image(ctx%image_data, ctx%width, ctx%height, &
+                            rotated_buffer, buf_height, buf_width, &
+                            int(label_x - buf_height/2), int(label_y - buf_width/2))
         
-        deallocate(text_buffer)
+        deallocate(text_buffer, rotated_buffer)
     end subroutine draw_rotated_ylabel_png
 
-    subroutine composite_rotated_text(main_image, main_width, main_height, &
-                                     text_image, text_width, text_height, dest_x, dest_y)
-        !! Composite text image rotated 90 degrees clockwise onto main image
+    subroutine composite_image(main_image, main_width, main_height, &
+                              overlay_image, overlay_width, overlay_height, dest_x, dest_y)
+        !! Composite overlay image onto main image at specified position
         integer(1), intent(inout) :: main_image(*)
         integer, intent(in) :: main_width, main_height
-        integer(1), intent(in) :: text_image(*)
-        integer, intent(in) :: text_width, text_height, dest_x, dest_y
-        integer :: src_x, src_y, dst_x, dst_y, src_idx, dst_idx
-        integer :: src_r, src_g, src_b
+        integer(1), intent(in) :: overlay_image(*)
+        integer, intent(in) :: overlay_width, overlay_height, dest_x, dest_y
+        integer :: x, y, src_idx, dst_idx, img_x, img_y
         
-        do src_y = 1, text_height
-            do src_x = 1, text_width
-                ! 90 degree clockwise rotation around center: (x,y) -> (y, width - x + 1)  
-                dst_x = dest_x + src_y - 1
-                dst_y = dest_y + text_width - src_x
+        do y = 1, overlay_height
+            do x = 1, overlay_width
+                img_x = dest_x + x - 1
+                img_y = dest_y + y - 1
                 
                 ! Check bounds
-                if (dst_x >= 1 .and. dst_x <= main_width .and. &
-                    dst_y >= 1 .and. dst_y <= main_height) then
+                if (img_x >= 1 .and. img_x <= main_width .and. &
+                    img_y >= 1 .and. img_y <= main_height) then
                     
-                    src_idx = (src_y - 1) * (1 + text_width * 3) + 1 + (src_x - 1) * 3 + 1
-                    dst_idx = (dst_y - 1) * (1 + main_width * 3) + 1 + (dst_x - 1) * 3 + 1
+                    src_idx = (y - 1) * (1 + overlay_width * 3) + 1 + (x - 1) * 3 + 1
+                    dst_idx = (img_y - 1) * (1 + main_width * 3) + 1 + (img_x - 1) * 3 + 1
                     
-                    ! Get source pixel values (handle signed bytes)
-                    src_r = int(text_image(src_idx))
-                    src_g = int(text_image(src_idx+1))
-                    src_b = int(text_image(src_idx+2))
-                    if (src_r < 0) src_r = src_r + 256
-                    if (src_g < 0) src_g = src_g + 256
-                    if (src_b < 0) src_b = src_b + 256
-                    
-                    ! Copy non-white pixels (anything that's not pure white 255,255,255)
-                    if (src_r < 255 .or. src_g < 255 .or. src_b < 255) then
-                        main_image(dst_idx) = text_image(src_idx)
-                        main_image(dst_idx+1) = text_image(src_idx+1)
-                        main_image(dst_idx+2) = text_image(src_idx+2)
+                    ! Copy non-white pixels (white is -1_1 in signed byte representation)
+                    if (overlay_image(src_idx) /= -1_1 .or. &
+                        overlay_image(src_idx+1) /= -1_1 .or. &
+                        overlay_image(src_idx+2) /= -1_1) then
+                        main_image(dst_idx:dst_idx+2) = overlay_image(src_idx:src_idx+2)
                     end if
                 end if
             end do
         end do
-    end subroutine composite_rotated_text
+    end subroutine composite_image
+
 
 
 
