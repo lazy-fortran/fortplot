@@ -13,7 +13,7 @@ module fortplot_raster
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
     public :: initialize_white_background, color_to_byte
-    public :: draw_line_distance_aa, blend_pixel, composite_image
+    public :: draw_line_distance_aa, blend_pixel, composite_image, composite_bitmap_to_raster
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
     public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
     public :: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
@@ -258,6 +258,39 @@ contains
             end do
         end do
     end subroutine composite_image
+
+    subroutine composite_bitmap_to_raster(raster_buffer, raster_width, raster_height, &
+                                         bitmap, bitmap_width, bitmap_height, dest_x, dest_y)
+        !! Composite 3D RGB bitmap directly onto raster image buffer
+        integer(1), intent(inout) :: raster_buffer(*)
+        integer, intent(in) :: raster_width, raster_height
+        integer(1), intent(in) :: bitmap(:,:,:)
+        integer, intent(in) :: bitmap_width, bitmap_height, dest_x, dest_y
+        integer :: x, y, raster_x, raster_y, raster_idx
+        
+        do y = 1, bitmap_height
+            do x = 1, bitmap_width
+                raster_x = dest_x + x - 1
+                raster_y = dest_y + y - 1
+                
+                ! Check bounds
+                if (raster_x >= 1 .and. raster_x <= raster_width .and. &
+                    raster_y >= 1 .and. raster_y <= raster_height) then
+                    
+                    ! Skip white pixels (don't composite background)
+                    if (bitmap(x, y, 1) /= -1_1 .or. &
+                        bitmap(x, y, 2) /= -1_1 .or. &
+                        bitmap(x, y, 3) /= -1_1) then
+                        
+                        raster_idx = (raster_y - 1) * (1 + raster_width * 3) + 1 + (raster_x - 1) * 3 + 1
+                        raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
+                        raster_buffer(raster_idx + 1) = bitmap(x, y, 2)  ! G
+                        raster_buffer(raster_idx + 2) = bitmap(x, y, 3)  ! B
+                    end if
+                end if
+            end do
+        end do
+    end subroutine composite_bitmap_to_raster
 
     real(wp) function ipart(x)
         real(wp), intent(in) :: x
@@ -602,13 +635,13 @@ contains
     end subroutine draw_raster_title_and_labels
 
     subroutine draw_rotated_ylabel_raster(ctx, text)
-        !! Draw Y-axis label by rendering text then rotating the image 90 degrees
+        !! Draw Y-axis label by rendering text then rotating the bitmap 90 degrees
         class(raster_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
         integer :: text_width, text_height, padding
-        integer :: buf_width, buf_height, i, j
-        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:), rotated_buffer(:)
+        integer :: buf_width, buf_height, i, j, src_x, src_y, dst_x, dst_y
+        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
         
         ! Calculate text dimensions and position
         text_width = calculate_text_width(trim(text))
@@ -630,19 +663,16 @@ contains
         allocate(rotated_bitmap(buf_height, buf_width, 3))
         call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, buf_width, buf_height)
         
-        ! Convert rotated bitmap to raster buffer
-        allocate(rotated_buffer(buf_width * (1 + buf_height * 3)))
-        call bitmap_to_png_buffer(rotated_bitmap, buf_height, buf_width, rotated_buffer)
-        
-        ! Calculate position and composite rotated text onto main image
+        ! Calculate position and composite rotated bitmap directly onto main image
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
                                            real(ctx%plot_area%left, wp), text, label_x, label_y)
         
-        call composite_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                            rotated_buffer, buf_height, buf_width, &
-                            int(label_x - buf_height/2), int(label_y - buf_width/2))
+        ! Composite rotated bitmap directly onto main image buffer
+        call composite_bitmap_to_raster(ctx%raster%image_data, ctx%width, ctx%height, &
+                                       rotated_bitmap, buf_height, buf_width, &
+                                       int(label_x - buf_height/2), int(label_y - buf_width/2))
         
-        deallocate(text_bitmap, rotated_bitmap, rotated_buffer)
+        deallocate(text_bitmap, rotated_bitmap)
     end subroutine draw_rotated_ylabel_raster
 
 end module fortplot_raster
