@@ -26,6 +26,7 @@ module fortplot_legend
         character(len=:), allocatable :: label
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: linestyle
+        character(len=:), allocatable :: marker
     end type legend_entry_t
     
     type :: legend_t
@@ -68,12 +69,12 @@ contains
         legend%text_padding = 10.0_wp
     end subroutine initialize_legend
     
-    subroutine legend_add_entry(this, label, color, linestyle)
+    subroutine legend_add_entry(this, label, color, linestyle, marker)
         !! Add entry following Open/Closed principle
         class(legend_t), intent(inout) :: this
         character(len=*), intent(in) :: label
         real(wp), dimension(3), intent(in) :: color
-        character(len=*), intent(in), optional :: linestyle
+        character(len=*), intent(in), optional :: linestyle, marker
         type(legend_entry_t), allocatable :: temp_entries(:)
         integer :: new_size
         
@@ -92,6 +93,11 @@ contains
             temp_entries(new_size)%linestyle = linestyle
         else
             temp_entries(new_size)%linestyle = "-"
+        end if
+        if (present(marker)) then
+            temp_entries(new_size)%marker = marker
+        else
+            temp_entries(new_size)%marker = "None"
         end if
         
         ! Replace entries array
@@ -233,6 +239,13 @@ contains
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
             call backend%line(line_x1, line_y, line_x2, line_y)
+
+            ! Draw marker in the middle of the line
+            if (allocated(legend%entries(i)%marker)) then
+                if (legend%entries(i)%marker /= 'None') then
+                    call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, line_y, legend%entries(i)%marker)
+                end if
+            end if
             
             ! Draw legend text in black
             call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text

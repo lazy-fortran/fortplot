@@ -38,6 +38,7 @@ module fortplot_pdf
         procedure :: set_line_width => set_pdf_line_width
         procedure :: save_graphics_state => pdf_save_graphics_state
         procedure :: restore_graphics_state => pdf_restore_graphics_state
+        procedure :: draw_marker => draw_pdf_marker
     end type pdf_context
     
 contains
@@ -624,5 +625,38 @@ contains
         class(pdf_stream_writer), intent(inout) :: this
         call this%add_to_stream("Q")
     end subroutine pdf_restore_state
+
+    subroutine draw_pdf_marker(this, x, y, style)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: style
+        real(wp) :: pdf_x, pdf_y
+
+        call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
+
+        if (trim(style) == 'o') then
+            call draw_pdf_circle(this, pdf_x, pdf_y, 5.0_wp)
+        end if
+    end subroutine draw_pdf_marker
+
+    subroutine draw_pdf_circle(this, cx, cy, radius)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: cx, cy, radius
+        character(len=200) :: circle_cmd
+
+        ! Draw a circle using bezier curves
+        call this%stream_writer%add_to_stream("q")
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx + radius, cy
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx + radius, cy + 0.552284749831_wp * radius, cx + 0.552284749831_wp * radius, cy + radius, cx, cy + radius
+        call this%stream_writer%add_to_stream(circle_cmd)
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx - 0.552284749831_wp * radius, cy + radius, cx - radius, cy + 0.552284749831_wp * radius, cx - radius, cy
+        call this%stream_writer%add_to_stream(circle_cmd)
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx - radius, cy - 0.552284749831_wp * radius, cx - 0.552284749831_wp * radius, cy - radius, cx, cy - radius
+        call this%stream_writer%add_to_stream(circle_cmd)
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx + 0.552284749831_wp * radius, cy - radius, cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
+        call this%stream_writer%add_to_stream(circle_cmd)
+        call this%stream_writer%add_to_stream("f")
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine draw_pdf_circle
 
 end module fortplot_pdf

@@ -35,6 +35,7 @@ module fortplot_ascii
         procedure :: set_line_width => ascii_set_line_width
         procedure :: save => ascii_finalize
         procedure :: set_title => ascii_set_title
+        procedure :: draw_marker => ascii_draw_marker
     end type ascii_context
     
     ! ASCII plotting constants
@@ -411,5 +412,27 @@ contains
             write(unit, '(A)') centered_title
         end if
     end subroutine write_centered_title
+
+    subroutine ascii_draw_marker(this, x, y, style)
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: style
+        integer :: px, py
+        character(len=1) :: marker_char
+
+        ! Map to usable plot area (excluding 1-char border on each side)
+        px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
+        py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
+
+        if (trim(style) == 'o') then
+            marker_char = 'o'
+        else
+            marker_char = '*'
+        end if
+
+        if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
+            this%canvas(py, px) = marker_char
+        end if
+    end subroutine ascii_draw_marker
 
 end module fortplot_ascii
