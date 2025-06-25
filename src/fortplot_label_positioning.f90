@@ -1,16 +1,26 @@
 module fortplot_label_positioning
-    !! Common tick label positioning calculations for all backends
-    !! Follows DRY principle by centralizing positioning logic
+    !! Separate positioning for tick labels vs axis labels
+    !! Follows matplotlib exact spacing measurements
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width
     implicit none
     
     private
+    ! Legacy functions for backward compatibility
     public :: calculate_x_label_position, calculate_y_label_position
+    ! New separate functions for tick vs axis labels
+    public :: calculate_x_tick_label_position, calculate_y_tick_label_position
+    public :: calculate_x_axis_label_position, calculate_y_axis_label_position
     public :: LABEL_SPACING_X, LABEL_SPACING_Y
     
-    ! Constants for consistent spacing across backends (matplotlib-style)
+    ! Matplotlib-exact spacing constants
+    integer, parameter :: X_TICK_SPACING = 15    ! X-tick labels: 15px below plot
+    integer, parameter :: Y_TICK_SPACING = 10    ! Y-tick labels: 10px left of plot (right edge)
+    integer, parameter :: X_AXIS_SPACING = 40    ! X-axis label: 40px below plot  
+    integer, parameter :: Y_AXIS_SPACING = 70    ! Y-axis label: right edge 10px from left edge
+    
+    ! Legacy constants for backward compatibility
     integer, parameter :: LABEL_SPACING_X = 25  ! Pixels below X-axis tick labels
     integer, parameter :: LABEL_SPACING_Y = 15  ! Pixels left of Y-axis tick labels  
     integer, parameter :: TEXT_HEIGHT = 12      ! Approximate text height for centering
@@ -68,5 +78,99 @@ contains
         ! Move down slightly for better visual alignment with tick marks (PNG Y increases down)
         label_y = tick_y + real(Y_LABEL_OFFSET, wp)
     end subroutine calculate_y_label_position
+
+    subroutine calculate_x_tick_label_position(tick_x, plot_bottom, label_text, label_x, label_y)
+        !! Calculate X-axis tick label position (15px below plot)
+        real(wp), intent(in) :: tick_x, plot_bottom
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width
+        
+        ! Calculate text width for centering
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! Center horizontally on tick mark
+        label_x = tick_x - real(text_width, wp) / 2.0_wp
+        
+        ! Position 15 pixels below plot bottom (matplotlib exact)
+        label_y = plot_bottom + real(X_TICK_SPACING, wp)
+    end subroutine calculate_x_tick_label_position
+
+    subroutine calculate_y_tick_label_position(tick_y, plot_left, label_text, label_x, label_y)
+        !! Calculate Y-axis tick label position (right edge 10px left of plot)
+        real(wp), intent(in) :: tick_y, plot_left
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width
+        
+        ! Calculate text width for right alignment
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! Right-align: right edge 10 pixels left of plot
+        label_x = plot_left - real(Y_TICK_SPACING, wp) - real(text_width, wp)
+        
+        ! Vertically center on tick mark
+        label_y = tick_y
+    end subroutine calculate_y_tick_label_position
+
+    subroutine calculate_x_axis_label_position(center_x, plot_bottom, label_text, label_x, label_y)
+        !! Calculate X-axis label position (40px below plot)
+        real(wp), intent(in) :: center_x, plot_bottom
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width
+        
+        ! Calculate text width for centering
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! Center horizontally
+        label_x = center_x - real(text_width, wp) / 2.0_wp
+        
+        ! Position 40 pixels below plot bottom (matplotlib exact)
+        label_y = plot_bottom + real(X_AXIS_SPACING, wp)
+    end subroutine calculate_x_axis_label_position
+
+    subroutine calculate_y_axis_label_position(center_y, plot_left, label_text, label_x, label_y)
+        !! Calculate Y-axis label position with proper spacing from tick labels
+        real(wp), intent(in) :: center_y, plot_left
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width, tick_label_space
+        
+        ! Calculate text width for right alignment
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! For simple plots like sin(x), tick labels are typically short (like "0.5", "-1.0")
+        ! Estimate realistic space: 4 chars * 6 pixels = 24 pixels for typical tick labels
+        tick_label_space = 4 * 6  ! 24 pixels for typical short tick labels
+        
+        ! Position Y-axis label left of tick labels with 8 pixel gap
+        label_x = plot_left - real(tick_label_space, wp) - 8.0_wp - real(text_width, wp)
+        
+        ! Ensure minimum visibility - if calculated position is too far left, use reasonable fallback
+        if (label_x < 5.0_wp) then
+            ! Fallback: position with minimal but visible spacing
+            label_x = max(5.0_wp, plot_left - real(tick_label_space, wp) - 8.0_wp)
+        end if
+        
+        ! Vertically center
+        label_y = center_y
+    end subroutine calculate_y_axis_label_position
 
 end module fortplot_label_positioning

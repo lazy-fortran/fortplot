@@ -2,7 +2,9 @@ module fortplot_pdf
     use fortplot_context
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
-    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position
+    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
+                                         calculate_x_tick_label_position, calculate_y_tick_label_position, &
+                                         calculate_x_axis_label_position, calculate_y_axis_label_position
     use fortplot_text, only: calculate_text_width
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -449,12 +451,12 @@ contains
         bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
         left = real(ctx%plot_area%left, wp)
         
-        ! Draw X-axis labels with proper spacing and center alignment
+        ! Draw X-axis tick labels with proper spacing and center alignment
         do i = 1, num_x
-            ! Use common positioning (with PNG coordinates) then convert to PDF
-            call calculate_x_label_position(x_positions(i), real(ctx%plot_area%bottom, wp), &
-                                          real(ctx%plot_area%height, wp), trim(x_labels(i)), &
-                                          label_x, label_y)
+            ! Use tick label positioning (with PNG coordinates) then convert to PDF
+            call calculate_x_tick_label_position(x_positions(i), &
+                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                               trim(x_labels(i)), label_x, label_y)
             ! Convert to PDF coordinates (Y is flipped)
             label_y = bottom - (label_y - real(ctx%plot_area%bottom + ctx%plot_area%height, wp))
             
@@ -468,11 +470,11 @@ contains
             call add_to_stream(ctx, "ET")
         end do
         
-        ! Draw Y-axis labels with right alignment and proper spacing
+        ! Draw Y-axis tick labels with right alignment and proper spacing
         do i = 1, num_y
-            ! Use common positioning
-            call calculate_y_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
-                                          trim(y_labels(i)), label_x, label_y)
+            ! Use tick label positioning
+            call calculate_y_tick_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
+                                               trim(y_labels(i)), label_x, label_y)
             ! Convert Y position to PDF coordinates
             label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
@@ -503,16 +505,13 @@ contains
             call draw_pdf_text_bold(ctx, label_x, label_y, trim(title))
         end if
         
-        ! Draw X-axis label properly centered below plot (matplotlib-style)
+        ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
-            ! Center the xlabel text properly using text width with fallback
-            text_width = real(calculate_text_width(trim(xlabel)), wp)
-            if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(xlabel) * 7, wp)  ! 7 pixels per char for 12pt
-            end if
-            label_x = real(ctx%plot_area%left + ctx%plot_area%width / 2, wp) - text_width / 2.0_wp
-            ! Position below tick labels with matplotlib-style spacing (35 pixels from plot area)
-            label_y = real(ctx%plot_area%bottom - 35, wp)  ! Consistent with PNG spacing
+            call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
+                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
+                                               trim(xlabel), label_x, label_y)
+            ! Convert to PDF coordinates
+            label_y = real(ctx%plot_area%bottom - 40, wp)  ! 40px below plot (matplotlib exact)
             call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
         end if
         
@@ -529,8 +528,10 @@ contains
         real(wp) :: label_x, label_y
         character(len=200) :: text_cmd
         
-        ! Position for rotated Y-axis label (consistent with PNG backend)
-        label_x = real(ctx%plot_area%left - 35, wp)  ! Consistent with PNG spacing
+        ! Position for rotated Y-axis label using proper axis label positioning
+        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
+                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
+        ! Convert to PDF coordinates (Y is flipped)
         label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
         
         ! Set up 90-degree rotation using PDF text matrix
