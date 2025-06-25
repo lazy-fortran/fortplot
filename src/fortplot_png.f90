@@ -4,7 +4,7 @@ module fortplot_png
     use fortplot_text
     use fortplot_raster, only: raster_image_t, create_raster_image, initialize_white_background, &
                               color_to_byte, draw_line_distance_aa, blend_pixel, composite_image, &
-                              render_text_to_bitmap, rotate_bitmap_90_cw, bitmap_to_png_buffer
+                              render_text_to_bitmap, rotate_bitmap_90_ccw, bitmap_to_png_buffer
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -14,7 +14,7 @@ module fortplot_png
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png
+    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png, write_png_file
 
     ! PNG plotting context
     type, extends(plot_context) :: png_context
@@ -472,9 +472,9 @@ contains
         call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
                                   padding, padding, trim(text))
         
-        ! Rotate bitmap 90 degrees clockwise
+        ! Rotate bitmap 90 degrees counter-clockwise (text reads bottom to top)
         allocate(rotated_bitmap(buf_height, buf_width, 3))
-        call rotate_bitmap_90_cw(text_bitmap, rotated_bitmap, buf_width, buf_height)
+        call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, buf_width, buf_height)
         
         ! Convert rotated bitmap to PNG buffer
         allocate(rotated_buffer(buf_width * (1 + buf_height * 3)))
