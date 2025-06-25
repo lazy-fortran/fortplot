@@ -1,5 +1,6 @@
 module fortplot_pdf
     use fortplot_context
+    use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -12,16 +13,20 @@ module fortplot_pdf
     private
     public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels
     
-    type :: pdf_graphics_state
-        !! Encapsulates PDF's mutable graphics state to provide clean API
-        real(wp) :: line_width = 1.0_wp
-        real(wp) :: stroke_r = 0.0_wp, stroke_g = 0.0_wp, stroke_b = 1.0_wp
-        real(wp) :: fill_r = 0.0_wp, fill_g = 0.0_wp, fill_b = 0.0_wp
-    end type pdf_graphics_state
+    type, extends(vector_stream_writer) :: pdf_stream_writer
+    contains
+        procedure :: write_command => pdf_write_command
+        procedure :: write_move => pdf_write_move
+        procedure :: write_line => pdf_write_line
+        procedure :: write_stroke => pdf_write_stroke
+        procedure :: write_color => pdf_write_color
+        procedure :: write_line_width => pdf_write_line_width
+        procedure :: save_state => pdf_save_state
+        procedure :: restore_state => pdf_restore_state
+    end type pdf_stream_writer
 
     type, extends(plot_context) :: pdf_context
-        character(len=:), allocatable :: content_stream
-        type(pdf_graphics_state) :: current_state  ! Track current PDF state
+        type(pdf_stream_writer) :: stream_writer
         ! Plot area calculations (using common margin functionality)  
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
@@ -31,8 +36,8 @@ module fortplot_pdf
         procedure :: text => draw_pdf_text
         procedure :: save => write_pdf_file
         procedure :: set_line_width => set_pdf_line_width
-        procedure :: save_graphics_state => pdf_save_state
-        procedure :: restore_graphics_state => pdf_restore_state
+        procedure :: save_graphics_state => pdf_save_graphics_state
+        procedure :: restore_graphics_state => pdf_restore_graphics_state
     end type pdf_context
     
 contains
@@ -52,18 +57,13 @@ contains
     subroutine initialize_pdf_stream(ctx)
         type(pdf_context), intent(inout) :: ctx
         
-        ctx%content_stream = ""
-        ! Initialize graphics state
-        ctx%current_state%line_width = 1.0_wp
-        ctx%current_state%stroke_r = 0.0_wp
-        ctx%current_state%stroke_g = 0.0_wp
-        ctx%current_state%stroke_b = 1.0_wp
+        call ctx%stream_writer%initialize_stream()
         
-        call add_to_stream(ctx, "q")
-        call add_to_stream(ctx, "1 w")  ! Set default line width to 1 point (for axes)
-        call add_to_stream(ctx, "1 J")
-        call add_to_stream(ctx, "1 j")
-        call add_to_stream(ctx, "0 0 1 RG")
+        call ctx%stream_writer%add_to_stream("q")
+        call ctx%stream_writer%add_to_stream("1 w")  ! Set default line width to 1 point (for axes)
+        call ctx%stream_writer%add_to_stream("1 J")
+        call ctx%stream_writer%add_to_stream("1 j")
+        call ctx%stream_writer%add_to_stream("0 0 1 RG")
     end subroutine initialize_pdf_stream
     
     subroutine draw_pdf_line(this, x1, y1, x2, y2)
@@ -73,39 +73,22 @@ contains
         
         call normalize_to_pdf_coords(this, x1, y1, pdf_x1, pdf_y1)
         call normalize_to_pdf_coords(this, x2, y2, pdf_x2, pdf_y2)
-        call draw_vector_line(this, pdf_x1, pdf_y1, pdf_x2, pdf_y2)
+        call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
     end subroutine draw_pdf_line
     
     subroutine set_pdf_color(this, r, g, b)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
-        character(len=50) :: color_cmd
         
-        ! Only update PDF state if color actually changed (avoid redundant operations)
-        if (abs(this%current_state%stroke_r - r) > 1e-6_wp .or. &
-            abs(this%current_state%stroke_g - g) > 1e-6_wp .or. &
-            abs(this%current_state%stroke_b - b) > 1e-6_wp) then
-            
-            this%current_state%stroke_r = r
-            this%current_state%stroke_g = g  
-            this%current_state%stroke_b = b
-            
-            write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
-            call add_to_stream(this, color_cmd)
-        end if
+        call this%stream_writer%set_vector_color(r, g, b)
     end subroutine set_pdf_color
     
     subroutine set_pdf_line_width(this, width)
         !! Set line width for PDF drawing
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: width
-        character(len=20) :: width_cmd
         
-        if (abs(width - this%current_state%line_width) > 1e-6_wp) then
-            this%current_state%line_width = width
-            write(width_cmd, '(F4.1, 1X, "w")') width
-            call add_to_stream(this, width_cmd)
-        end if
+        call this%stream_writer%set_vector_line_width(width)
     end subroutine set_pdf_line_width
     
     subroutine draw_pdf_text(this, x, y, text)
@@ -117,14 +100,14 @@ contains
         
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
         
-        call add_to_stream(this, "BT")
+        call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
-        call add_to_stream(this, text_cmd)
+        call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') pdf_x, pdf_y
-        call add_to_stream(this, text_cmd)
+        call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "ET")
+        call this%stream_writer%add_to_stream(text_cmd)
+        call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text
     
     subroutine draw_pdf_text_direct(this, x, y, text)
@@ -134,14 +117,14 @@ contains
         character(len=*), intent(in) :: text
         character(len=200) :: text_cmd
         
-        call add_to_stream(this, "BT")
+        call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
-        call add_to_stream(this, text_cmd)
+        call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
-        call add_to_stream(this, text_cmd)
+        call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "ET")
+        call this%stream_writer%add_to_stream(text_cmd)
+        call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text_direct
 
     subroutine draw_pdf_text_bold(this, x, y, text)
@@ -151,9 +134,9 @@ contains
         character(len=*), intent(in) :: text
         
         ! Use PDF's q/Q operators to isolate state changes
-        call this%save_graphics_state()
+        call this%stream_writer%save_state()
         call draw_bold_text_isolated(this, x, y, text)
-        call this%restore_graphics_state()
+        call this%stream_writer%restore_state()
     end subroutine draw_pdf_text_bold
     
     subroutine write_pdf_file(this, filename)
@@ -186,26 +169,16 @@ contains
         write(move_cmd, '(F8.2, 1X, F8.2, 1X, "m")') x1, y1
         write(line_cmd, '(F8.2, 1X, F8.2, 1X, "l")') x2, y2
         
-        call add_to_stream(ctx, move_cmd)
-        call add_to_stream(ctx, line_cmd)
-        call add_to_stream(ctx, "S")
+        call ctx%stream_writer%add_to_stream(move_cmd)
+        call ctx%stream_writer%add_to_stream(line_cmd)
+        call ctx%stream_writer%add_to_stream("S")
     end subroutine draw_vector_line
 
     subroutine finalize_pdf_stream(ctx)
         type(pdf_context), intent(inout) :: ctx
-        call add_to_stream(ctx, "Q")
+        call ctx%stream_writer%add_to_stream("Q")
     end subroutine finalize_pdf_stream
 
-    subroutine add_to_stream(ctx, command)
-        type(pdf_context), intent(inout) :: ctx
-        character(len=*), intent(in) :: command
-        
-        if (allocated(ctx%content_stream)) then
-            ctx%content_stream = ctx%content_stream // command // char(10)
-        else
-            ctx%content_stream = command // char(10)
-        end if
-    end subroutine add_to_stream
     
     subroutine create_pdf_document(unit, filename, ctx)
         integer, intent(out) :: unit
@@ -311,11 +284,11 @@ contains
         character(len=50) :: len_str
         
         pos = get_position(unit)
-        write(len_str, '("/Length ", I0)') len(ctx%content_stream)
+        write(len_str, '("/Length ", I0)') len(ctx%stream_writer%content_stream)
         call write_string_to_unit(unit, "4 0 obj")
         call write_string_to_unit(unit, "<<" // trim(len_str) // ">>")
         call write_string_to_unit(unit, "stream")
-        call write_string_to_unit(unit, ctx%content_stream)
+        call write_string_to_unit(unit, ctx%stream_writer%content_stream)
         call write_string_to_unit(unit, "endstream")
         call write_string_to_unit(unit, "endobj")
     end subroutine write_content_object
@@ -460,14 +433,14 @@ contains
             ! Convert to PDF coordinates (Y is flipped)
             label_y = bottom - (label_y - real(ctx%plot_area%bottom + ctx%plot_area%height, wp))
             
-            call add_to_stream(ctx, "BT")
+            call ctx%stream_writer%add_to_stream("BT")
             write(text_cmd, '("/F1 12 Tf")')
-            call add_to_stream(ctx, text_cmd)
+            call ctx%stream_writer%add_to_stream(text_cmd)
             write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call add_to_stream(ctx, text_cmd)
+            call ctx%stream_writer%add_to_stream(text_cmd)
             write(text_cmd, '("(", A, ") Tj")') trim(x_labels(i))
-            call add_to_stream(ctx, text_cmd)
-            call add_to_stream(ctx, "ET")
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            call ctx%stream_writer%add_to_stream("ET")
         end do
         
         ! Draw Y-axis tick labels with right alignment and proper spacing
@@ -479,14 +452,14 @@ contains
             label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
             
-            call add_to_stream(ctx, "BT")
+            call ctx%stream_writer%add_to_stream("BT")
             write(text_cmd, '("/F1 12 Tf")')
-            call add_to_stream(ctx, text_cmd)
+            call ctx%stream_writer%add_to_stream(text_cmd)
             write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call add_to_stream(ctx, text_cmd)
+            call ctx%stream_writer%add_to_stream(text_cmd)
             write(text_cmd, '("(", A, ") Tj")') trim(y_labels(i))
-            call add_to_stream(ctx, text_cmd)
-            call add_to_stream(ctx, "ET")
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            call ctx%stream_writer%add_to_stream("ET")
         end do
     end subroutine draw_pdf_tick_labels
     
@@ -540,32 +513,32 @@ contains
         label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
         
         ! Set up 90-degree rotation using PDF text matrix
-        call add_to_stream(ctx, "BT")
+        call ctx%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")')
-        call add_to_stream(ctx, text_cmd)
+        call ctx%stream_writer%add_to_stream(text_cmd)
         
         ! Rotation matrix for -90 degrees (counter-clockwise): [cos(-90) -sin(-90) sin(-90) cos(-90) x y] = [0 1 -1 0 x y]
         write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
-        call add_to_stream(ctx, text_cmd)
+        call ctx%stream_writer%add_to_stream(text_cmd)
         
         write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call add_to_stream(ctx, text_cmd)
-        call add_to_stream(ctx, "ET")
+        call ctx%stream_writer%add_to_stream(text_cmd)
+        call ctx%stream_writer%add_to_stream("ET")
     end subroutine draw_vertical_text_pdf
 
     ! Graphics state management routines - encapsulate PDF's mutable global state
     
-    subroutine pdf_save_state(this)
+    subroutine pdf_save_graphics_state(this)
         !! Save current graphics state using PDF's q operator
         class(pdf_context), intent(inout) :: this
-        call add_to_stream(this, "q")
-    end subroutine pdf_save_state
+        call this%stream_writer%save_state()
+    end subroutine pdf_save_graphics_state
     
-    subroutine pdf_restore_state(this)
+    subroutine pdf_restore_graphics_state(this)
         !! Restore graphics state using PDF's Q operator  
         class(pdf_context), intent(inout) :: this
-        call add_to_stream(this, "Q")
-    end subroutine pdf_restore_state
+        call this%stream_writer%restore_state()
+    end subroutine pdf_restore_graphics_state
     
     
     subroutine draw_bold_text_isolated(this, x, y, text)
@@ -584,17 +557,72 @@ contains
         end if
         centered_x = x - text_width / 2.0_wp
         
-        call add_to_stream(this, "BT")
+        call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
-        call add_to_stream(this, "0.5 w")  ! Line width for stroke (isolated - won't affect main state)
+        call this%stream_writer%add_to_stream(text_cmd)
+        call this%stream_writer%add_to_stream("2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
+        call this%stream_writer%add_to_stream("0.5 w")  ! Line width for stroke (isolated - won't affect main state)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
-        call add_to_stream(this, text_cmd)
+        call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call add_to_stream(this, text_cmd)
-        call add_to_stream(this, "0 Tr")  ! Reset to normal text rendering
-        call add_to_stream(this, "ET")
+        call this%stream_writer%add_to_stream(text_cmd)
+        call this%stream_writer%add_to_stream("0 Tr")  ! Reset to normal text rendering
+        call this%stream_writer%add_to_stream("ET")
     end subroutine draw_bold_text_isolated
+
+    ! PDF-specific vector interface implementations
+    
+    subroutine pdf_write_command(this, command)
+        class(pdf_stream_writer), intent(inout) :: this
+        character(len=*), intent(in) :: command
+        call this%add_to_stream(command)
+    end subroutine pdf_write_command
+    
+    subroutine pdf_write_move(this, x, y)
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=50) :: move_cmd
+        write(move_cmd, '(F8.2, 1X, F8.2, 1X, "m")') x, y
+        call this%add_to_stream(move_cmd)
+    end subroutine pdf_write_move
+    
+    subroutine pdf_write_line(this, x, y)
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=50) :: line_cmd
+        write(line_cmd, '(F8.2, 1X, F8.2, 1X, "l")') x, y
+        call this%add_to_stream(line_cmd)
+    end subroutine pdf_write_line
+    
+    subroutine pdf_write_stroke(this)
+        class(pdf_stream_writer), intent(inout) :: this
+        call this%add_to_stream("S")
+    end subroutine pdf_write_stroke
+    
+    subroutine pdf_write_color(this, r, g, b)
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: r, g, b
+        character(len=50) :: color_cmd
+        write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
+        call this%add_to_stream(color_cmd)
+    end subroutine pdf_write_color
+    
+    subroutine pdf_write_line_width(this, width)
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: width
+        character(len=20) :: width_cmd
+        write(width_cmd, '(F4.1, 1X, "w")') width
+        call this%add_to_stream(width_cmd)
+    end subroutine pdf_write_line_width
+    
+    subroutine pdf_save_state(this)
+        class(pdf_stream_writer), intent(inout) :: this
+        call this%add_to_stream("q")
+    end subroutine pdf_save_state
+    
+    subroutine pdf_restore_state(this)
+        class(pdf_stream_writer), intent(inout) :: this
+        call this%add_to_stream("Q")
+    end subroutine pdf_restore_state
 
 end module fortplot_pdf
