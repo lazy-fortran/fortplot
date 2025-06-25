@@ -107,65 +107,43 @@ contains
     end subroutine cleanup_text_system
 
     function calculate_text_width(text) result(width)
-        !! Calculate the pixel width of text for proper alignment
+        !! Calculate the pixel width of text for proper alignment using FreeType
         character(len=*), intent(in) :: text
         integer :: width
         integer :: i, char_code, next_char_code, kerning_offset
         integer(c_int) :: error
         type(glyph_info_t) :: glyph_info
-        logical :: use_freetype
         
-        ! Try FreeType if available, otherwise use simple estimation
-        use_freetype = .false.
+        ! Initialize text system if not already done
         if (.not. text_system_initialized) then
-            use_freetype = init_text_system()
-        else
-            use_freetype = .true.
-        end if
-        
-        if (use_freetype) then
-            ! Try FreeType first
-            width = 0
-            do i = 1, len_trim(text)
-                char_code = iachar(text(i:i))
-                error = ft_wrapper_render_char(char_code, glyph_info)
-                if (error == 0) then
-                    ! Use advance_x if available, otherwise use glyph width + spacing
-                    if (glyph_info%advance_x > 0) then
-                        width = width + glyph_info%advance_x / 64  ! Advance is in 1/64 pixel units
-                    else if (glyph_info%width > 0) then
-                        ! Fallback: use glyph width + reasonable spacing
-                        width = width + glyph_info%width + 2  ! Add 2 pixels spacing
-                    else
-                        ! Final fallback: reasonable character width
-                        width = width + 9  ! Average character width
-                    end if
-                    
-                    ! Add kerning if not the last character
-                    if (i < len_trim(text)) then
-                        next_char_code = iachar(text(i+1:i+1))
-                        kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
-                        width = width + kerning_offset / 64
-                    end if
-                    
-                    ! Clean up glyph buffer
-                    call ft_wrapper_free_glyph(glyph_info)
-                else
-                    ! Fallback for unsupported characters
-                    width = width + 9
-                end if
-            end do
-            
-            ! If width is still 0, FreeType failed completely
-            if (width == 0) then
-                use_freetype = .false.
+            if (.not. init_text_system()) then
+                print *, "ERROR: FreeType initialization failed in calculate_text_width"
+                stop 1
             end if
         end if
         
-        if (.not. use_freetype) then
-            ! Simple reliable estimation: ~9 pixels per character for typical fonts
-            width = len_trim(text) * 9
-        end if
+        width = 0
+        do i = 1, len_trim(text)
+            char_code = iachar(text(i:i))
+            error = ft_wrapper_render_char(char_code, glyph_info)
+            if (error == 0) then
+                ! Use advance_x directly (already in pixels, matches render_text_to_image)
+                width = width + glyph_info%advance_x
+                
+                ! Add kerning if not the last character  
+                if (i < len_trim(text)) then
+                    next_char_code = iachar(text(i+1:i+1))
+                    kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
+                    width = width + kerning_offset
+                end if
+                
+                ! Clean up glyph buffer
+                call ft_wrapper_free_glyph(glyph_info)
+            else
+                print *, "ERROR: FreeType failed to render character:", char_code
+                stop 1
+            end if
+        end do
         
     end function calculate_text_width
 

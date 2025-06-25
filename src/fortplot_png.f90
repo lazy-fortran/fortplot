@@ -837,185 +837,94 @@ contains
                                      0_1, 0_1, 0_1)  ! Black text
         end if
 
-        ! Draw Y-axis label rotated 90 degrees matplotlib-style (debug version)
+        ! Draw Y-axis label rotated 90 degrees using render-then-rotate approach
         if (present(ylabel)) then
-            call draw_vertical_text_png(ctx, ylabel)
+            call draw_rotated_ylabel_png(ctx, ylabel)
         end if
     end subroutine draw_png_title_and_labels
 
-    subroutine draw_vertical_text_png(ctx, text)
-        !! Draw text rotated 90 degrees by rendering each character rotated with kerning
-        use iso_c_binding, only: c_int, c_double
-        type(png_context), intent(inout) :: ctx
-        character(len=*), intent(in) :: text
-        real(wp) :: label_x, label_y, total_height, current_y, kerning_adj
-        integer :: i, text_len, char_code, next_char_code
-        character(len=1) :: char
-        integer, allocatable :: char_heights(:)
-
-        ! Position for rotated Y-axis label using proper axis label positioning
-        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
-                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
-        ! For vertical text, we use the calculated X position but override Y positioning below
-        text_len = len_trim(text)
-
-        ! Calculate individual character heights and kerning using FreeType metrics
-        allocate(char_heights(text_len))
-        total_height = 0.0_wp
-
-        do i = 1, text_len
-            char = text(i:i)
-            char_code = iachar(char)
-            char_heights(i) = calculate_text_width(char)  ! For 90° rotation, width becomes vertical advance
-            total_height = total_height + real(char_heights(i), wp)
-
-            ! Add kerning adjustment for character pairs (except last character)
-            if (i < text_len) then
-                next_char_code = iachar(text(i+1:i+1))
-                kerning_adj = real(get_kerning_adjustment(char_code, next_char_code), wp)
-                total_height = total_height + kerning_adj
-            end if
-        end do
-
-        ! Start position centered vertically (using the calculated center from axis label function)
-        current_y = label_y - total_height / 2.0_wp
-
-        ! Draw each character rotated 90 degrees counter-clockwise (bottom to top order)
-        do i = 1, text_len
-            char = text(text_len + 1 - i:text_len + 1 - i)  ! Reverse character order (bottom to top)
-            call draw_rotated_char_png(ctx, int(label_x), int(current_y), char)
-            current_y = current_y + real(char_heights(text_len + 1 - i), wp)
-
-            ! Apply kerning for character pairs (except last character in reversed order)
-            if (i < text_len) then
-                char_code = iachar(text(text_len + 1 - i:text_len + 1 - i))
-                next_char_code = iachar(text(text_len - i:text_len - i))
-                kerning_adj = real(get_kerning_adjustment(char_code, next_char_code), wp)
-                current_y = current_y + kerning_adj
-            end if
-        end do
-
-        deallocate(char_heights)
-    end subroutine draw_vertical_text_png
-
-    function get_kerning_adjustment(left_char, right_char) result(kerning_pixels)
-        !! Get kerning adjustment between two characters using FreeType
-        use iso_c_binding, only: c_int
-        integer, intent(in) :: left_char, right_char
-        integer :: kerning_pixels
-
-        ! Interface for FreeType kerning function
-        interface
-            function ft_wrapper_get_kerning(left_char, right_char) bind(C, name="ft_wrapper_get_kerning")
-                import :: c_int
-                integer(c_int), value :: left_char, right_char
-                integer(c_int) :: ft_wrapper_get_kerning
-            end function ft_wrapper_get_kerning
-        end interface
-
-        ! Get kerning from FreeType and scale for vertical text
-        ! For vertical text, we apply a fraction of horizontal kerning
-        kerning_pixels = ft_wrapper_get_kerning(left_char, right_char) / 3
-    end function get_kerning_adjustment
-
-    subroutine draw_rotated_char_png(ctx, x, y, char)
-        !! Draw a single character rotated 90 degrees counter-clockwise using FreeType
-        use iso_c_binding, only: c_int, c_double, c_associated, c_f_pointer, c_ptr
-        type(png_context), intent(inout) :: ctx
-        integer, intent(in) :: x, y
-        character(len=1), intent(in) :: char
-
-        ! Local glyph info type (matches C wrapper)
-        type, bind(C) :: glyph_info_t
-            integer(c_int) :: width
-            integer(c_int) :: height
-            integer(c_int) :: left
-            integer(c_int) :: top
-            integer(c_int) :: advance_x
-            type(c_ptr) :: buffer
-            integer(c_int) :: buffer_size
-        end type glyph_info_t
-
-        ! Local interface for FreeType rotation function
-        interface
-            function ft_wrapper_render_char_rotated(char_code, glyph_info, angle) bind(C, name="ft_wrapper_render_char_rotated")
-                import :: c_int, c_double, glyph_info_t
-                integer(c_int), value :: char_code
-                type(glyph_info_t), intent(out) :: glyph_info
-                real(c_double), value :: angle
-                integer(c_int) :: ft_wrapper_render_char_rotated
-            end function ft_wrapper_render_char_rotated
-        end interface
-
-        type(glyph_info_t) :: glyph_info
-        integer :: char_code, row, col, img_x, img_y, pixel_val
-        real(8), parameter :: rotation_angle = 90.0_8  ! +90 degrees
-        integer(1), pointer :: bitmap_buffer(:)
-        real(8) :: alpha_val
-
-        ! Get character code
-        char_code = iachar(char)
-
-        ! Render rotated character using FreeType
-        if (ft_wrapper_render_char_rotated(char_code, glyph_info, rotation_angle) == 0) then
-            if (glyph_info%width <= 0 .or. glyph_info%height <= 0) return
-            if (.not. c_associated(glyph_info%buffer)) return
-
-            ! Convert C pointer to Fortran array
-            call c_f_pointer(glyph_info%buffer, bitmap_buffer, [glyph_info%buffer_size])
-
-            ! Copy rotated glyph to image
-            do row = 0, glyph_info%height - 1
-                do col = 0, glyph_info%width - 1
-                    img_x = x + glyph_info%left + col
-                    img_y = y - glyph_info%top + row
-
-                    if (img_x >= 1 .and. img_x <= ctx%width .and. img_y >= 1 .and. img_y <= ctx%height) then
-                        if (row * glyph_info%width + col + 1 <= glyph_info%buffer_size) then
-                            pixel_val = int(bitmap_buffer(row * glyph_info%width + col + 1))
-                            if (pixel_val < 0) pixel_val = pixel_val + 256
-
-                            if (pixel_val > 128) then
-                                ! Use solid black for strong pixels
-                                call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
-                                               img_x, img_y, 1.0_8, 0_1, 0_1, 0_1)
-                            else if (pixel_val > 32) then
-                                ! Use anti-aliased blending for edge pixels
-                                alpha_val = real(pixel_val, 8) / 255.0_8
-                                call blend_pixel(ctx%image_data, ctx%width, ctx%height, &
-                                               img_x, img_y, alpha_val, 0_1, 0_1, 0_1)
-                            end if
-                        end if
-                    end if
-                end do
-            end do
-        end if
-    end subroutine draw_rotated_char_png
-
-    subroutine draw_simple_vertical_text_png(ctx, text)
-        !! Draw text vertically using simple character-by-character placement (no rotation)
+    subroutine draw_rotated_ylabel_png(ctx, text)
+        !! Draw Y-axis label by rendering text to buffer then rotating 90 degrees
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
-        integer :: i, text_len
-        character(len=1) :: char
+        integer :: text_width, text_height
+        integer(1), allocatable :: text_buffer(:)
+        integer :: buf_width, buf_height, padding
+        
+        ! Calculate text dimensions
+        text_width = calculate_text_width(trim(text))
+        text_height = calculate_text_height(trim(text))
+        
+        ! Add padding around text for clean rotation
+        padding = 4
+        buf_width = text_width + 2 * padding
+        buf_height = text_height + 2 * padding
+        
+        ! Create temporary image buffer for text (white background)
+        allocate(text_buffer(buf_height * (1 + buf_width * 3)))
+        call initialize_white_background(text_buffer, buf_width, buf_height)
+        
+        ! Render text to temporary buffer
+        call render_text_to_image(text_buffer, buf_width, buf_height, &
+                                 padding, padding, trim(text), &
+                                 0_1, 0_1, 0_1)  ! Black text
+        
+        ! Calculate final position for rotated text
+        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
+                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
+        
+        ! Composite rotated text onto main image (90 degrees clockwise)
+        ! Adjust position to account for rotation - the rotated text dimensions are swapped
+        call composite_rotated_text(ctx%image_data, ctx%width, ctx%height, &
+                                   text_buffer, buf_width, buf_height, &
+                                   int(label_x - buf_height/2), int(label_y - buf_width/2))
+        
+        deallocate(text_buffer)
+    end subroutine draw_rotated_ylabel_png
 
-        ! Position for vertical Y-axis label (left side of plot)
-        label_x = real(ctx%plot_area%left - 15, wp)
-        text_len = len_trim(text)
-
-        ! Center vertically and draw each character below the previous one
-        label_y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp) - &
-                 real(text_len, wp) * 6.0_wp  ! 6 pixels spacing per character
-
-        ! Draw each character vertically spaced
-        do i = 1, text_len
-            char = text(i:i)
-            call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y + real(i-1, wp) * 12.0_wp), char, &
-                                     0_1, 0_1, 0_1)  ! Black text
+    subroutine composite_rotated_text(main_image, main_width, main_height, &
+                                     text_image, text_width, text_height, dest_x, dest_y)
+        !! Composite text image rotated 90 degrees clockwise onto main image
+        integer(1), intent(inout) :: main_image(*)
+        integer, intent(in) :: main_width, main_height
+        integer(1), intent(in) :: text_image(*)
+        integer, intent(in) :: text_width, text_height, dest_x, dest_y
+        integer :: src_x, src_y, dst_x, dst_y, src_idx, dst_idx
+        integer :: src_r, src_g, src_b
+        
+        do src_y = 1, text_height
+            do src_x = 1, text_width
+                ! 90 degree clockwise rotation around center: (x,y) -> (y, width - x + 1)  
+                dst_x = dest_x + src_y - 1
+                dst_y = dest_y + text_width - src_x
+                
+                ! Check bounds
+                if (dst_x >= 1 .and. dst_x <= main_width .and. &
+                    dst_y >= 1 .and. dst_y <= main_height) then
+                    
+                    src_idx = (src_y - 1) * (1 + text_width * 3) + 1 + (src_x - 1) * 3 + 1
+                    dst_idx = (dst_y - 1) * (1 + main_width * 3) + 1 + (dst_x - 1) * 3 + 1
+                    
+                    ! Get source pixel values (handle signed bytes)
+                    src_r = int(text_image(src_idx))
+                    src_g = int(text_image(src_idx+1))
+                    src_b = int(text_image(src_idx+2))
+                    if (src_r < 0) src_r = src_r + 256
+                    if (src_g < 0) src_g = src_g + 256
+                    if (src_b < 0) src_b = src_b + 256
+                    
+                    ! Copy non-white pixels (anything that's not pure white 255,255,255)
+                    if (src_r < 255 .or. src_g < 255 .or. src_b < 255) then
+                        main_image(dst_idx) = text_image(src_idx)
+                        main_image(dst_idx+1) = text_image(src_idx+1)
+                        main_image(dst_idx+2) = text_image(src_idx+2)
+                    end if
+                end if
+            end do
         end do
-    end subroutine draw_simple_vertical_text_png
+    end subroutine composite_rotated_text
+
 
 
     subroutine copy_bitmap_to_image(image_data, img_width, img_height, dest_x, dest_y, &
