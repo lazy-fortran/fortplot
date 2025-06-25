@@ -33,18 +33,20 @@ target_link_libraries(your_target fortplotlib::fortplotlib)
 
 ### Plot types
 - [x] Line
-- [ ] Contour
+- [x] Contour
 - [ ] Image
 - [ ] Surface
 
 ### Backends
 - [x] PNG
 - [x] PDF
-- [ ] ASCII
+- [x] ASCII
 - [ ] Interactive
 
 ### Misc
-- [ ] Custom line styles
-- [ ] Logarithmic scales
+- [x] Custom line styles
+- [x] Markers
+- [x] Logarithmic scales
 - [ ] Secondary axes
 - [ ] Math text
+- [ ] Animations
