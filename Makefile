@@ -49,7 +49,7 @@ ref:
 # Clean build artifacts
 clean:
 	echo y | fpm clean
-	rm -f *.png *.pdf *.txt
+	rm -f *.png *.pdf
 	find example/ -name "*.png" -o -name "*.pdf" -o -name "*.txt" | xargs rm -f
 
 # Build with release optimizations
