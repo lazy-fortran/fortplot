@@ -814,18 +814,17 @@ contains
         
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
-            ! Center the title text properly with fallback
+            ! Center horizontally across the entire figure width (like matplotlib)
             text_width = real(calculate_text_width(trim(title)), wp)
             if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(title) * 7, wp)  ! 7 pixels per char fallback
+                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
             end if
             label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
-            ! Position title in the top margin area, centered between top edge and plot area
-            ! Top margin spans from y=0 to y=plot_area%bottom, so place title at middle
-            label_y = real(ctx%plot_area%bottom, wp) / 2.0_wp
+            ! Position title in the top margin area (matplotlib uses ~25px from top)
+            label_y = 25.0_wp
             call render_text_to_image(ctx%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(title), &
-                                     0_1, 0_1, 0_1)  ! Black text
+                                     0_1, 0_1, 0_1)  ! Black text, normal weight (non-bold)
         end if
         
         ! Draw X-axis label using proper axis label positioning
