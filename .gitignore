@@ -3,6 +3,7 @@ build
 *.pdf
 *.png
 *.jpg
+*.bmp
 *.txt
 *.mod
 
