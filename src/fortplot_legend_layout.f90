@@ -37,7 +37,7 @@ contains
         
         if (num_entries == 0) then
             box%width = 0.0_wp
-            box%height = 0.0_wp
+            box%height = 0.1_wp
             return
         end if
         
@@ -64,48 +64,50 @@ contains
         integer :: i, text_width_pixels, text_height_pixels, max_text_height_pixels
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
         logical :: freetype_available
-        
+        real(wp) :: entry_text_width
+        character(len=:), allocatable :: trimmed_label
+        integer, parameter :: fudge_pixels = 2
+
         ! Initialize FreeType for measurements
         freetype_available = init_text_system()
-        
+
         ! Calculate data-to-pixel conversion ratio (approximate)
-        ! Standard plot is ~640x480 pixels, data range varies
         data_to_pixel_ratio_x = 640.0_wp / data_width  
         data_to_pixel_ratio_y = 480.0_wp / data_height
-        
+
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
         max_text_height_pixels = 16  ! Default font height
-        
+
         do i = 1, size(labels)
+            trimmed_label = trim(labels(i))
             if (freetype_available) then
-                ! Use actual FreeType measurements
-                text_width_pixels = calculate_text_width(labels(i))
-                text_height_pixels = calculate_text_height(labels(i))
+                ! Use actual FreeType measurements, add fudge factor for overhang
+                text_width_pixels = calculate_text_width(trimmed_label) + fudge_pixels
+                text_height_pixels = calculate_text_height(trimmed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
-                
-                ! Convert pixel measurements to data coordinates
-                max_text_width = max(max_text_width, real(text_width_pixels, wp) / data_to_pixel_ratio_x)
-                total_text_width = total_text_width + real(text_width_pixels, wp) / data_to_pixel_ratio_x
+                entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
                 ! Fallback estimation if FreeType not available
-                max_text_width = max(max_text_width, real(len_trim(labels(i)), wp) * data_width * 0.012_wp)
-                total_text_width = total_text_width + real(len_trim(labels(i)), wp) * data_width * 0.012_wp
+                entry_text_width = real(len_trim(trimmed_label), wp) * data_width * 0.012_wp
             end if
+            total_text_width = total_text_width + entry_text_width
+            max_text_width = max(max_text_width, entry_text_width)
         end do
-        
+
         ! Set legend box components based on actual measurements (matplotlib-style tight spacing)
         box%padding = 4.0_wp / data_to_pixel_ratio_x      ! 4 pixels padding (further reduced)
         box%line_length = 16.0_wp / data_to_pixel_ratio_x  ! 16 pixels for legend line 
         box%text_spacing = 4.0_wp / data_to_pixel_ratio_x  ! 4 pixels between line and text
-        
+
         ! Calculate entry height based on actual text height with matplotlib-style minimal spacing
         box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y  ! Just text height, no extra spacing
-        
+
         ! Calculate total box dimensions - very tight fit like matplotlib
-        box%width = box%line_length + box%text_spacing + max_text_width + 2.0_wp * box%padding
+        ! Add extra right padding for visual comfort
+        box%width = box%line_length + box%text_spacing + max_text_width + 4.0_wp * box%padding
         box%height = real(size(labels), wp) * box%entry_height + 1.0_wp * box%padding  ! Minimal padding for height
-        
+
     end subroutine calculate_optimal_legend_dimensions
     
     function get_actual_text_dimensions(label, data_to_pixel_x, data_to_pixel_y) result(dimensions)
