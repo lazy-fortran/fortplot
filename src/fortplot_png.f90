@@ -1,33 +1,17 @@
 module fortplot_png
     use iso_c_binding
-    use fortplot_context
-    use fortplot_text
-    use fortplot_raster, only: raster_image_t, create_raster_image, initialize_white_background, &
-                              color_to_byte, draw_line_distance_aa, blend_pixel, composite_image, &
-                              render_text_to_bitmap, rotate_bitmap_90_ccw, bitmap_to_png_buffer
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
-    use fortplot_ticks, only: generate_scale_aware_tick_labels
-    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
-                                         calculate_x_tick_label_position, calculate_y_tick_label_position, &
-                                         calculate_x_axis_label_position, calculate_y_axis_label_position
+    use fortplot_context, only: setup_canvas
+    use fortplot_raster, only: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png, write_png_file
 
-    ! PNG plotting context
-    type, extends(plot_context) :: png_context
-        type(raster_image_t) :: raster
-        ! Plot area calculations (using common margin functionality)
-        type(plot_margins_t) :: margins
-        type(plot_area_t) :: plot_area
+    ! PNG plotting context - extends raster context and adds PNG file I/O
+    type, extends(raster_context) :: png_context
     contains
-        procedure :: line => png_draw_line
-        procedure :: color => png_set_color
-        procedure :: text => png_draw_text
         procedure :: save => png_finalize
-        procedure :: set_line_width => png_set_line_width
     end type png_context
 
 contains
@@ -35,76 +19,19 @@ contains
     function create_png_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
         type(png_context) :: ctx
+        type(raster_context) :: raster_base
 
+        ! Create raster canvas and copy components to PNG context
+        raster_base = create_raster_canvas(width, height)
+        
+        ! Initialize PNG context with same data as raster context
         call setup_canvas(ctx, width, height)
-
-        ctx%raster = create_raster_image(width, height)
-
-        ! Set up matplotlib-style margins using common module
-        ctx%margins = plot_margins_t()  ! Use defaults
-        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
+        ctx%raster = raster_base%raster
+        ctx%margins = raster_base%margins
+        ctx%plot_area = raster_base%plot_area
     end function create_png_canvas
 
-    subroutine png_draw_line(this, x1, y1, x2, y2)
-        class(png_context), intent(inout) :: this
-        real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp) :: px1, py1, px2, py2
-        integer(1) :: r, g, b
-
-        ! Transform coordinates to plot area (like matplotlib)
-        ! Note: PNG Y=0 at top, so we need to flip Y coordinates
-        px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
-        py1 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
-              (y1 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
-        px2 = (x2 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
-        py2 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
-              (y2 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
-
-        call this%raster%get_color_bytes(r, g, b)
-
-        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, this%raster%current_line_width)
-    end subroutine png_draw_line
-
-    subroutine png_set_color(this, r, g, b)
-        class(png_context), intent(inout) :: this
-        real(wp), intent(in) :: r, g, b
-
-        call this%raster%set_color(r, g, b)
-    end subroutine png_set_color
-
-    subroutine png_set_line_width(this, width)
-        !! Set line width for PNG drawing with automatic scaling for pixel rendering
-        class(png_context), intent(inout) :: this
-        real(wp), intent(in) :: width
-
-        ! PNG needs specific line widths due to pixel-based rendering
-        ! Map common width values to appropriate PNG pixel thickness
-        if (abs(width - 2.0_wp) < 1e-6_wp) then
-            ! Plot data lines: use 0.5 for main plot visibility
-            this%raster%current_line_width = 0.5_wp
-        else
-            ! Axes and other elements: use 0.1 for fine lines
-            this%raster%current_line_width = 0.1_wp
-        end if
-    end subroutine png_set_line_width
-
-    subroutine png_draw_text(this, x, y, text)
-        class(png_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        real(wp) :: px, py
-        integer(1) :: r, g, b
-
-        ! Transform coordinates to plot area (like matplotlib)
-        ! Note: PNG Y=0 at top, so we need to flip Y coordinates
-        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
-        py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
-             (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
-
-        call this%raster%get_color_bytes(r, g, b)
-        call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                 int(px), int(py), text, r, g, b)
-    end subroutine png_draw_text
+    ! All drawing methods are inherited from raster_context
 
     subroutine png_finalize(this, filename)
         class(png_context), intent(inout) :: this
@@ -112,12 +39,6 @@ contains
 
         call write_png_file(filename, this%width, this%height, this%raster%image_data)
     end subroutine png_finalize
-
-
-
-
-
-
 
     ! PNG file writing functionality
     subroutine write_png_file(filename, width, height, image_data)
@@ -279,216 +200,11 @@ contains
         crc = crc32(0_c_int32_t, c_loc(data), int(len, c_int))
     end function calculate_crc32
 
-    subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
-                                   x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                   title, xlabel, ylabel)
-        !! Draw plot axes and frame with scale-aware tick generation
-        type(png_context), intent(inout) :: ctx
-        character(len=*), intent(in), optional :: xscale, yscale
-        real(wp), intent(in), optional :: symlog_threshold
-        real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
-        character(len=*), intent(in), optional :: title, xlabel, ylabel
-        integer :: i
-        real(wp) :: x_positions(10), y_positions(10)
-        integer :: num_x, num_y
-        character(len=20) :: x_labels(10), y_labels(10)
-
-        ! Set color to black for axes
-        call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-
-        ! Draw plot frame using common functionality
-        call draw_png_frame(ctx)
-
-        ! Draw tick marks and labels with scale-aware generation
-        call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
-
-        ! Use original coordinates for tick generation if provided, otherwise use backend coordinates
-        if (present(x_min_orig) .and. present(x_max_orig)) then
-            call generate_scale_aware_tick_labels(x_min_orig, x_max_orig, num_x, x_labels, xscale, symlog_threshold)
-        else
-            call generate_scale_aware_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels, xscale, symlog_threshold)
-        end if
-
-        if (present(y_min_orig) .and. present(y_max_orig)) then
-            call generate_scale_aware_tick_labels(y_min_orig, y_max_orig, num_y, y_labels, yscale, symlog_threshold)
-        else
-            call generate_scale_aware_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels, yscale, symlog_threshold)
-        end if
-        call draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        call draw_png_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-
-        ! Draw title and axis labels
-        call draw_png_title_and_labels(ctx, title, xlabel, ylabel)
-    end subroutine draw_axes_and_labels
-
-    subroutine draw_png_frame(ctx)
-        !! Draw the plot frame for PNG backend
-        type(png_context), intent(inout) :: ctx
-
-        ! Draw plot frame (PNG coordinates with Y=0 at top)
-        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_area%left, wp), &
-                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
-                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1, 0.1_wp)  ! Bottom edge (top in PNG)
-
-        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_area%left, wp), &
-                                  real(ctx%plot_area%bottom, wp), &
-                                  real(ctx%plot_area%left, wp), &
-                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1, 0.1_wp)  ! Left edge
-
-        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
-                                  real(ctx%plot_area%bottom, wp), &
-                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
-                                  real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                  0_1, 0_1, 0_1, 0.1_wp)  ! Right edge
-
-        call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                  real(ctx%plot_area%left, wp), &
-                                  real(ctx%plot_area%bottom, wp), &
-                                  real(ctx%plot_area%left + ctx%plot_area%width, wp), &
-                                  real(ctx%plot_area%bottom, wp), &
-                                  0_1, 0_1, 0_1, 0.1_wp)  ! Top edge (bottom in PNG)
-    end subroutine draw_png_frame
-
-    subroutine draw_png_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        !! Draw tick marks for PNG backend
-        type(png_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        integer, intent(in) :: num_x, num_y
-        integer :: i
-
-        ! Draw X-axis tick marks (at bottom of plot - top in PNG coords)
-        do i = 1, num_x
-            call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                      x_positions(i), &
-                                      real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                      x_positions(i), &
-                                      real(ctx%plot_area%bottom + ctx%plot_area%height + 5, wp), &
-                                      0_1, 0_1, 0_1, 0.1_wp)
-        end do
-
-        ! Draw Y-axis tick marks (at left of plot)
-        do i = 1, num_y
-            call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
-                                      real(ctx%plot_area%left, wp), y_positions(i), &
-                                      real(ctx%plot_area%left - 5, wp), y_positions(i), &
-                                      0_1, 0_1, 0_1, 0.1_wp)
-        end do
-    end subroutine draw_png_tick_marks
-
-    subroutine draw_png_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels for PNG backend like matplotlib
-        type(png_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        character(len=*), intent(in) :: x_labels(:), y_labels(:)
-        integer, intent(in) :: num_x, num_y
-        integer :: i
-        real(wp) :: label_x, label_y
-
-        ! Draw X-axis tick labels with proper spacing and center alignment
-        do i = 1, num_x
-            call calculate_x_tick_label_position(x_positions(i), &
-                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(x_labels(i)), label_x, label_y)
-            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(x_labels(i)), &
-                                     0_1, 0_1, 0_1)  ! Black text
-        end do
-
-        ! Draw Y-axis tick labels with right alignment and proper spacing
-        do i = 1, num_y
-            call calculate_y_tick_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
-                                               trim(y_labels(i)), label_x, label_y)
-            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(y_labels(i)), &
-                                     0_1, 0_1, 0_1)  ! Black text
-        end do
-    end subroutine draw_png_tick_labels
-
-    subroutine draw_png_title_and_labels(ctx, title, xlabel, ylabel)
-        !! Draw figure title and axis labels
-        type(png_context), intent(inout) :: ctx
-        character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp) :: label_x, label_y, text_width
-
-        ! Draw title at top center with proper margin (matplotlib-style)
-        if (present(title)) then
-            ! Center horizontally across the entire figure width (like matplotlib)
-            text_width = real(calculate_text_width(trim(title)), wp)
-            if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
-            end if
-            label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
-            ! Position title in the top margin area (matplotlib uses ~25px from top)
-            label_y = 25.0_wp
-            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(title), &
-                                     0_1, 0_1, 0_1)  ! Black text, normal weight (non-bold)
-        end if
-
-        ! Draw X-axis label using proper axis label positioning
-        if (present(xlabel)) then
-            call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
-                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(xlabel), label_x, label_y)
-            call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(xlabel), &
-                                     0_1, 0_1, 0_1)  ! Black text
-        end if
-
-        ! Draw Y-axis label rotated 90 degrees using render-then-rotate approach
-        if (present(ylabel)) then
-            call draw_rotated_ylabel_png(ctx, ylabel)
-        end if
-    end subroutine draw_png_title_and_labels
-
+    ! Wrapper for draw_rotated_ylabel_raster to maintain PNG API compatibility
     subroutine draw_rotated_ylabel_png(ctx, text)
-        !! Draw Y-axis label by rendering text then rotating the image 90 degrees
         type(png_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
-        real(wp) :: label_x, label_y
-        integer :: text_width, text_height, padding
-        integer :: buf_width, buf_height, i, j
-        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:), rotated_buffer(:)
-        
-        ! Calculate text dimensions and position
-        text_width = calculate_text_width(trim(text))
-        text_height = calculate_text_height(trim(text))
-        
-        padding = 2
-        buf_width = text_width + 2 * padding  
-        buf_height = text_height + 2 * padding
-        
-        ! Create 2D RGB bitmap for text
-        allocate(text_bitmap(buf_width, buf_height, 3))
-        text_bitmap = -1_1  ! White background (255 in unsigned byte)
-        
-        ! Render text to bitmap
-        call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
-                                  padding, padding, trim(text))
-        
-        ! Rotate bitmap 90 degrees counter-clockwise (text reads bottom to top)
-        allocate(rotated_bitmap(buf_height, buf_width, 3))
-        call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, buf_width, buf_height)
-        
-        ! Convert rotated bitmap to PNG buffer
-        allocate(rotated_buffer(buf_width * (1 + buf_height * 3)))
-        call bitmap_to_png_buffer(rotated_bitmap, buf_height, buf_width, rotated_buffer)
-        
-        ! Calculate position and composite rotated text onto main image
-        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
-                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
-        
-        call composite_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                            rotated_buffer, buf_height, buf_width, &
-                            int(label_x - buf_height/2), int(label_y - buf_width/2))
-        
-        deallocate(text_bitmap, rotated_bitmap, rotated_buffer)
+        call draw_rotated_ylabel_raster(ctx, text)
     end subroutine draw_rotated_ylabel_png
 
 
