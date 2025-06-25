@@ -8,7 +8,7 @@ module fortplot_raster
     public :: initialize_white_background, color_to_byte
     public :: draw_line_distance_aa, blend_pixel, composite_image
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
-    public :: render_text_to_bitmap, rotate_bitmap_90_cw, bitmap_to_png_buffer
+    public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
 
@@ -293,6 +293,20 @@ contains
             end do
         end do
     end subroutine rotate_bitmap_90_cw
+
+    subroutine rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)
+        !! Rotate bitmap 90 degrees counter-clockwise: (x,y) -> (src_height-y+1, x)
+        integer(1), intent(in) :: src_bitmap(:,:,:)
+        integer(1), intent(out) :: dst_bitmap(:,:,:)
+        integer, intent(in) :: src_width, src_height
+        integer :: i, j
+        
+        do j = 1, src_height
+            do i = 1, src_width
+                dst_bitmap(src_height - j + 1, i, :) = src_bitmap(i, j, :)
+            end do
+        end do
+    end subroutine rotate_bitmap_90_ccw
 
     subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
         !! Convert 3D RGB bitmap to PNG buffer format
