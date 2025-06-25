@@ -3,7 +3,8 @@ module fortplot_png
     use fortplot_context
     use fortplot_text
     use fortplot_raster, only: raster_image_t, create_raster_image, initialize_white_background, &
-                              color_to_byte, draw_line_distance_aa, blend_pixel, composite_image
+                              color_to_byte, draw_line_distance_aa, blend_pixel, composite_image, &
+                              render_text_to_bitmap, rotate_bitmap_90_cw, bitmap_to_png_buffer
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -452,8 +453,8 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
         integer :: text_width, text_height, padding
-        integer :: buf_width, buf_height, i, j, src_idx, dst_idx
-        integer(1), allocatable :: text_buffer(:), rotated_buffer(:)
+        integer :: buf_width, buf_height, i, j
+        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:), rotated_buffer(:)
         
         ! Calculate text dimensions and position
         text_width = calculate_text_width(trim(text))
@@ -463,27 +464,21 @@ contains
         buf_width = text_width + 2 * padding  
         buf_height = text_height + 2 * padding
         
-        ! Create text buffer and render text normally
-        allocate(text_buffer(buf_height * (1 + buf_width * 3)))
-        call initialize_white_background(text_buffer, buf_width, buf_height)
-        call render_text_to_image(text_buffer, buf_width, buf_height, &
-                                 padding, padding, trim(text), &
-                                 0_1, 0_1, 0_1)  ! Black text
+        ! Create 2D RGB bitmap for text
+        allocate(text_bitmap(buf_width, buf_height, 3))
+        text_bitmap = -1_1  ! White background (255 in unsigned byte)
         
-        ! Create rotated buffer (dimensions swapped for 90-degree rotation)
+        ! Render text to bitmap
+        call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
+                                  padding, padding, trim(text))
+        
+        ! Rotate bitmap 90 degrees clockwise
+        allocate(rotated_bitmap(buf_height, buf_width, 3))
+        call rotate_bitmap_90_cw(text_bitmap, rotated_bitmap, buf_width, buf_height)
+        
+        ! Convert rotated bitmap to PNG buffer
         allocate(rotated_buffer(buf_width * (1 + buf_height * 3)))
-        call initialize_white_background(rotated_buffer, buf_height, buf_width)
-        
-        ! Rotate image 90 degrees clockwise: (x,y) -> (y, width-1-x)
-        do j = 1, buf_height
-            do i = 1, buf_width
-                src_idx = (j - 1) * (1 + buf_width * 3) + 1 + (i - 1) * 3 + 1
-                dst_idx = (i - 1) * (1 + buf_height * 3) + 1 + (buf_height - j) * 3 + 1
-                
-                ! Copy RGB values
-                rotated_buffer(dst_idx:dst_idx+2) = text_buffer(src_idx:src_idx+2)
-            end do
-        end do
+        call bitmap_to_png_buffer(rotated_bitmap, buf_height, buf_width, rotated_buffer)
         
         ! Calculate position and composite rotated text onto main image
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
@@ -493,7 +488,8 @@ contains
                             rotated_buffer, buf_height, buf_width, &
                             int(label_x - buf_height/2), int(label_y - buf_width/2))
         
-        deallocate(text_buffer, rotated_buffer)
+        deallocate(text_bitmap, rotated_bitmap, rotated_buffer)
     end subroutine draw_rotated_ylabel_png
+
 
 end module fortplot_png

@@ -8,6 +8,7 @@ module fortplot_raster
     public :: initialize_white_background, color_to_byte
     public :: draw_line_distance_aa, blend_pixel, composite_image
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
+    public :: render_text_to_bitmap, rotate_bitmap_90_cw, bitmap_to_png_buffer
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
 
@@ -250,5 +251,66 @@ contains
         real(wp), intent(in) :: x
         rfpart = 1.0_wp - fpart(x)
     end function rfpart
+
+    subroutine render_text_to_bitmap(bitmap, width, height, x, y, text)
+        !! Render text to RGB bitmap by using existing PNG rendering then converting
+        use fortplot_text, only: render_text_to_image
+        integer(1), intent(inout) :: bitmap(:,:,:)
+        integer, intent(in) :: width, height, x, y
+        character(len=*), intent(in) :: text
+        
+        ! Create temporary PNG buffer for text rendering
+        integer(1), allocatable :: temp_buffer(:)
+        integer :: i, j, buf_idx
+        
+        allocate(temp_buffer(height * (1 + width * 3)))
+        call initialize_white_background(temp_buffer, width, height)
+        call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
+        
+        ! Convert PNG buffer to bitmap
+        do j = 1, height
+            do i = 1, width
+                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
+                bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
+                bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
+            end do
+        end do
+        
+        deallocate(temp_buffer)
+    end subroutine render_text_to_bitmap
+
+    subroutine rotate_bitmap_90_cw(src_bitmap, dst_bitmap, src_width, src_height)
+        !! Rotate bitmap 90 degrees clockwise: (x,y) -> (y, src_width-x+1)
+        integer(1), intent(in) :: src_bitmap(:,:,:)
+        integer(1), intent(out) :: dst_bitmap(:,:,:)
+        integer, intent(in) :: src_width, src_height
+        integer :: i, j
+        
+        do j = 1, src_height
+            do i = 1, src_width
+                dst_bitmap(j, src_width - i + 1, :) = src_bitmap(i, j, :)
+            end do
+        end do
+    end subroutine rotate_bitmap_90_cw
+
+    subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
+        !! Convert 3D RGB bitmap to PNG buffer format
+        integer(1), intent(in) :: bitmap(:,:,:)
+        integer, intent(in) :: width, height
+        integer(1), intent(out) :: buffer(:)
+        integer :: i, j, buf_idx
+        
+        call initialize_white_background(buffer, width, height)
+        
+        do j = 1, height
+            do i = 1, width
+                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buffer(buf_idx)     = bitmap(i, j, 1) ! R
+                buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
+                buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
+            end do
+        end do
+    end subroutine bitmap_to_png_buffer
 
 end module fortplot_raster

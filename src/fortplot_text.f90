@@ -5,7 +5,7 @@ module fortplot_text
     
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
-    public :: render_rotated_text_to_image, ft_wrapper_render_char_rotated, glyph_info_t
+    public :: render_rotated_text_to_image, ft_wrapper_render_char_rotated, glyph_info_t, ft_wrapper_free_glyph
     
     ! Glyph information structure (matches C wrapper)
     type, bind(C) :: glyph_info_t
