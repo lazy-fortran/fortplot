@@ -182,10 +182,11 @@ contains
         !! Render standard legend for PNG/PDF backends with improved sizing
         !! Uses shared legend_layout module for DRY compliance
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
+        use fortplot_text, only: calculate_text_height
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
-        real(wp) :: line_x1, line_x2, line_y, text_x, text_y
+        real(wp) :: line_x1, line_x2, line_y, text_x, text_y, text_offset
         real(wp) :: data_width, data_height
         real(wp) :: box_x1, box_y1, box_x2, box_y2
         type(legend_box_t) :: box
@@ -230,9 +231,10 @@ contains
             line_x2 = line_x1 + box%line_length
             line_y = legend_y - real(i-1, wp) * box%entry_height  ! Use calculated entry height
             
-            ! Improved text positioning with better spacing
+            ! Improved text positioning with better spacing and vertical centering
             text_x = line_x2 + box%text_spacing
-            text_y = line_y
+            ! Shift text down by half a line height for better centering
+            text_y = line_y - box%entry_height * 0.5_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
@@ -247,10 +249,12 @@ contains
                 call backend%line(line_x1, line_y, line_x2, line_y)
             end if
 
-            ! Draw marker in the middle of the line
+            ! Draw marker in the middle of the line, shifted down by 0.25 line height
             if (allocated(legend%entries(i)%marker)) then
                 if (legend%entries(i)%marker /= 'None') then
-                    call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, line_y, legend%entries(i)%marker)
+                    call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
+                                            line_y - box%entry_height * 0.25_wp, &
+                                            legend%entries(i)%marker)
                 end if
             end if
             
