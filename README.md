@@ -1,4 +1,5 @@
-# Fortplotlib
+# ![fortplotlib logo](media/logo.jpg)
+
 Fortran-native plotting inspired by Python's matplotlib.pyplot and https://github.com/jacobwilliams/pyplot-fortran .
 
 ## Requirements
