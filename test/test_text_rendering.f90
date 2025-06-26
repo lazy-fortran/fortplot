@@ -142,7 +142,7 @@ contains
         print *, "------------------------------"
 
         call fig%initialize(width=300, height=200)
-        call fig%set_title("FreeType Test Output")
+        call fig%set_title("Test Text Output")
         call fig%set_xlabel("x")
         call fig%set_ylabel("y")
         

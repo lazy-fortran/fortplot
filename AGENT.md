@@ -254,20 +254,6 @@ When implementing new features or improving existing ones:
   - Fortran requires this strict ordering
 - **cd COMMAND IS FORBIDDEN** - Never use `cd` in bash commands. Use absolute paths instead. - **MANDATORY**
 
-## Known Regressions and Reference Points
-
-**⚠️ IMPORTANT: Track working functionality to prevent regression**
-
-### Working Baseline: Commit f47d82635ae2bf789f3c74ff7ffc9d7e84b56488
-
-This commit represents the last known working state before major refactoring where certain features were functioning correctly:
-
-- **Y-axis text rotation and positioning** - Working correctly in PNG backend
-- **FreeType-based character rotation** - Properly implemented
-- **Matplotlib-style label positioning** - Correct placement and orientation
-
-**Use this commit as reference when fixing regressions introduced during refactoring.**
-
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
