@@ -668,15 +668,15 @@ contains
         
         do
             ! Read BFINAL bit
-            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 1, i)
+            call read_bits(input_data, input_len, byte_pos, bit_buffer, bits_available, 1, i)
             final_block = (i == 1)
             
             ! Read BTYPE (2 bits)
-            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 2, block_type)
+            call read_bits(input_data, input_len, byte_pos, bit_buffer, bits_available, 2, block_type)
             
             if (block_type == 0) then
                 ! Uncompressed block
-                call skip_to_byte_boundary(byte_pos, bit_pos, bit_buffer, bits_available)
+                call skip_to_byte_boundary(byte_pos, bit_buffer, bits_available)
                 
                 ! Read LEN and NLEN
                 block_len = iand(int(input_data(byte_pos)), 255) + &
@@ -710,15 +710,15 @@ contains
             else if (block_type == 1) then
                 ! Fixed Huffman codes
                 call setup_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)
-                call decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call decompress_huffman_block(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                             literal_codes, literal_lengths, distance_codes, distance_lengths, &
                                             output_data, output_pos, output_size, history, history_pos)
                 
             else if (block_type == 2) then
                 ! Dynamic Huffman codes
-                call read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                                literal_codes, literal_lengths, distance_codes, distance_lengths)
-                call decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call decompress_huffman_block(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                             literal_codes, literal_lengths, distance_codes, distance_lengths, &
                                             output_data, output_pos, output_size, history, history_pos)
             else
@@ -746,46 +746,37 @@ contains
         end if
     end subroutine deflate_decompress
     
-    subroutine read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, num_bits, result)
+    subroutine read_bits(input_data, input_len, byte_pos, bit_buffer, bits_available, num_bits, result)
         !! Read bits from input stream (LSB first)
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
-        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
+        integer, intent(inout) :: byte_pos, bit_buffer, bits_available
         integer, intent(in) :: num_bits
         integer, intent(out) :: result
         
-        integer :: need_bits
+        integer :: k
         
         result = 0
-        need_bits = num_bits
         
-        do while (need_bits > 0)
-            if (bits_available == 0) then
-                if (byte_pos > input_len) then
-                    result = 0 ! Should not happen in valid stream
-                    return
-                end if
-                bit_buffer = iand(int(input_data(byte_pos)), 255)
-                byte_pos = byte_pos + 1
-                bits_available = 8
+        do while (bits_available < num_bits)
+            if (byte_pos > input_len) then
+                result = 0 ! Error or end of stream
+                return
             end if
-            
-            if (need_bits <= bits_available) then
-                result = ior(result, ishft(iand(bit_buffer, (ishft(1, need_bits) - 1)), num_bits - need_bits))
-                bit_buffer = ishft(bit_buffer, -need_bits)
-                bits_available = bits_available - need_bits
-                need_bits = 0
-            else
-                result = ior(result, ishft(bit_buffer, num_bits - need_bits))
-                need_bits = need_bits - bits_available
-                bits_available = 0
-            end if
+            bit_buffer = ior(bit_buffer, ishft(iand(int(input_data(byte_pos)), 255), bits_available))
+            byte_pos = byte_pos + 1
+            bits_available = bits_available + 8
         end do
+        
+        k = iand(bit_buffer, (ishft(1, num_bits) - 1))
+        bit_buffer = ishft(bit_buffer, -num_bits)
+        bits_available = bits_available - num_bits
+        result = k
     end subroutine read_bits
     
-    subroutine skip_to_byte_boundary(byte_pos, bit_pos, bit_buffer, bits_available)
+    subroutine skip_to_byte_boundary(byte_pos, bit_buffer, bits_available)
         !! Skip to next byte boundary
-        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
+        integer, intent(inout) :: byte_pos, bit_buffer, bits_available
         
         if (bits_available < 8) then
             bits_available = 0
@@ -825,8 +816,8 @@ contains
         end do
     end subroutine setup_fixed_huffman_tables
     
-    subroutine read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
-                                         literal_codes, literal_lengths, distance_codes, distance_lengths)
+    subroutine read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_pos, &
+            bit_buffer, bits_available, literal_codes, literal_lengths, distance_codes, distance_lengths)
         !! Read dynamic Huffman tables from the bitstream
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
@@ -929,13 +920,13 @@ contains
         end do
     end subroutine build_huffman_table
     
-    subroutine decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+    subroutine decompress_huffman_block(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                        literal_codes, literal_lengths, distance_codes, distance_lengths, &
                                        output_data, output_pos, output_size, history, history_pos)
         !! Decompress a Huffman-coded block
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
-        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
+        integer :: byte_pos, bit_pos, bit_buffer, bits_available
         integer, intent(in) :: literal_codes(0:), literal_lengths(0:)
         integer, intent(in) :: distance_codes(0:), distance_lengths(0:)
         integer(int8), intent(inout), allocatable :: output_data(:)
@@ -948,7 +939,7 @@ contains
         
         do
             ! Decode next symbol
-            call decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+            call decode_huffman_symbol(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                      literal_codes, literal_lengths, 0, 287, symbol)
             
             if (symbol < 256) then
@@ -974,10 +965,10 @@ contains
                 
             else
                 ! Length/distance pair
-                length = decode_length(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available)
-                call decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+                length = decode_length(symbol, input_data, input_len, byte_pos, bit_buffer, bits_available)
+                call decode_huffman_symbol(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                          distance_codes, distance_lengths, 0, 31, symbol)
-                distance = decode_distance(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available)
+                distance = decode_distance(symbol, input_data, input_len, byte_pos, bit_buffer, bits_available)
                 
                 ! Copy from history
                 do i = 1, length
@@ -1002,17 +993,17 @@ contains
         end do
     end subroutine decompress_huffman_block
     
-    subroutine decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+    subroutine decode_huffman_symbol(input_data, input_len, byte_pos, bit_buffer, bits_available, &
                                     codes, lengths, min_code, max_code, symbol)
         !! Decode a Huffman symbol (simplified linear search)
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
-        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
+        integer, intent(inout) :: byte_pos, bit_buffer, bits_available
         integer, intent(in) :: codes(0:), lengths(0:)
         integer, intent(in) :: min_code, max_code
         integer, intent(out) :: symbol
         
-        integer :: code, code_len, i, bit
+        integer :: code, code_len, bit
         
         code = 0
         code_len = 0
@@ -1020,7 +1011,7 @@ contains
         ! Decode symbol by reading one bit at a time
         do
             code_len = code_len + 1
-            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 1, bit)
+            call read_bits(input_data, input_len, byte_pos, bit_buffer, bits_available, 1, bit)
             code = ior(ishft(code, 1), bit)
             
             do symbol = min_code, max_code
@@ -1035,12 +1026,12 @@ contains
         symbol = 256  ! Default to end-of-block on error
     end subroutine decode_huffman_symbol
     
-    function decode_length(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available) result(length)
+    function decode_length(symbol, input_data, input_len, byte_pos, bit_buffer, bits_available) result(length)
         !! Decode length from length symbol, reading extra bits if needed
         integer, intent(in) :: symbol
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
-        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
+        integer :: byte_pos, bit_pos, bit_buffer, bits_available
         integer :: length
         integer :: extra_bits, extra_val
         
@@ -1078,7 +1069,7 @@ contains
             distance = symbol + 1
         else
             extra_bits = (symbol - 2) / 2
-            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, extra_bits, extra_val)
+            extra_val = read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available)
             distance = ishft(mod(symbol, 2) + 2, extra_bits) + 1 + extra_val
         end if
     end function decode_distance
