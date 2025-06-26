@@ -25,6 +25,9 @@ module fortplot_raster
         integer :: width, height
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 1.0_wp
         real(wp) :: current_line_width = 1.0_wp
+        ! Marker colors - separate edge and face colors
+        real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp
+        real(wp) :: marker_face_r = 1.0_wp, marker_face_g = 0.0_wp, marker_face_b = 0.0_wp
     contains
         procedure :: set_color => raster_set_color
         procedure :: get_color_bytes => raster_get_color_bytes
@@ -43,6 +46,7 @@ module fortplot_raster
         procedure :: set_line_width => raster_set_line_width
         procedure :: save => raster_save_dummy
         procedure :: draw_marker => raster_draw_marker
+        procedure :: set_marker_colors => raster_set_marker_colors
     end type raster_context
 
 contains
@@ -413,7 +417,8 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
 
-        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, px1, py1, px2, py2, r, g, b, this%raster%current_line_width)
+        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
+                                    px1, py1, px2, py2, r, g, b, this%raster%current_line_width)
     end subroutine raster_draw_line
 
     subroutine raster_set_color_context(this, r, g, b)
@@ -482,32 +487,106 @@ contains
         call this%raster%get_color_bytes(r, g, b)
 
         if (trim(style) == 'o') then
-            call draw_circle(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, r, g, b)
+            call draw_circle_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                                           this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
+                                           this%raster%marker_face_r, this%raster%marker_face_g, this%raster%marker_face_b)
         end if
     end subroutine raster_draw_marker
 
-    subroutine draw_circle(image_data, img_w, img_h, cx, cy, radius, r, g, b)
+    subroutine raster_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        real(wp), intent(in) :: face_r, face_g, face_b
+
+        this%raster%marker_edge_r = edge_r
+        this%raster%marker_edge_g = edge_g
+        this%raster%marker_edge_b = edge_b
+        this%raster%marker_face_r = face_r
+        this%raster%marker_face_g = face_g
+        this%raster%marker_face_b = face_b
+    end subroutine raster_set_marker_colors
+
+    subroutine draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
+                                          edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, radius
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        real(wp), intent(in) :: face_r, face_g, face_b
+        integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
+        integer(1) :: face_r_byte, face_g_byte, face_b_byte
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: distance, face_alpha, edge_alpha
+        real(wp), parameter :: EDGE_WIDTH = 1.0_wp
+        real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
+
+        ! Convert colors to bytes
+        edge_r_byte = int(edge_r * 255.0_wp, 1)
+        edge_g_byte = int(edge_g * 255.0_wp, 1)
+        edge_b_byte = int(edge_b * 255.0_wp, 1)
+        face_r_byte = int(face_r * 255.0_wp, 1)
+        face_g_byte = int(face_g * 255.0_wp, 1)
+        face_b_byte = int(face_b * 255.0_wp, 1)
+
+        x_min = max(1, int(cx - radius - EDGE_SMOOTHING))
+        x_max = min(img_w, int(cx + radius + EDGE_SMOOTHING))
+        y_min = max(1, int(cy - radius - EDGE_SMOOTHING))
+        y_max = min(img_h, int(cy + radius + EDGE_SMOOTHING))
+
+        do y = y_min, y_max
+            do x = x_min, x_max
+                distance = sqrt((real(x, wp) - cx)**2 + (real(y, wp) - cy)**2)
+                
+                ! Calculate face (fill) alpha
+                if (distance <= radius - EDGE_WIDTH - EDGE_SMOOTHING) then
+                    face_alpha = 1.0_wp
+                else if (distance <= radius - EDGE_WIDTH + EDGE_SMOOTHING) then
+                    face_alpha = 1.0_wp - (distance - (radius - EDGE_WIDTH - EDGE_SMOOTHING)) / (2.0_wp * EDGE_SMOOTHING)
+                    face_alpha = max(0.0_wp, min(1.0_wp, face_alpha))
+                else
+                    face_alpha = 0.0_wp
+                end if
+                
+                ! Calculate edge (outline) alpha
+                if (distance >= radius - EDGE_WIDTH - EDGE_SMOOTHING .and. distance <= radius + EDGE_SMOOTHING) then
+                    if (distance <= radius - EDGE_SMOOTHING) then
+                        edge_alpha = 1.0_wp
+                    else
+                        edge_alpha = 1.0_wp - (distance - (radius - EDGE_SMOOTHING)) / (2.0_wp * EDGE_SMOOTHING)
+                        edge_alpha = max(0.0_wp, min(1.0_wp, edge_alpha))
+                    end if
+                else
+                    edge_alpha = 0.0_wp
+                end if
+                
+                ! Draw face first, then edge on top
+                if (face_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, face_alpha, face_r_byte, face_g_byte, face_b_byte)
+                end if
+                if (edge_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, edge_alpha, edge_r_byte, edge_g_byte, edge_b_byte)
+                end if
+            end do
+        end do
+    end subroutine draw_circle_with_edge_face
+
+    subroutine draw_circle_antialiased(image_data, img_w, img_h, cx, cy, radius, r, g, b)
+        !! Convenience wrapper for single-color antialiased circles
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: cx, cy, radius
         integer(1), intent(in) :: r, g, b
-        integer :: x, y, x_min, x_max, y_min, y_max
-        real(wp) :: dist_sq
-
-        x_min = max(1, int(cx - radius))
-        x_max = min(img_w, int(cx + radius))
-        y_min = max(1, int(cy - radius))
-        y_max = min(img_h, int(cy + radius))
-
-        do y = y_min, y_max
-            do x = x_min, x_max
-                dist_sq = (real(x, wp) - cx)**2 + (real(y, wp) - cy)**2
-                if (dist_sq <= radius**2) then
-                    call blend_pixel(image_data, img_w, img_h, x, y, 1.0_wp, r, g, b)
-                end if
-            end do
-        end do
-    end subroutine draw_circle
+        real(wp) :: color_r, color_g, color_b
+        
+        ! Convert bytes to normalized colors
+        color_r = real(r, wp) / 255.0_wp
+        color_g = real(g, wp) / 255.0_wp  
+        color_b = real(b, wp) / 255.0_wp
+        
+        ! Use same color for both edge and face
+        call draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
+                                        color_r, color_g, color_b, color_r, color_g, color_b)
+    end subroutine draw_circle_antialiased
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &

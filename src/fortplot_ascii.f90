@@ -36,6 +36,7 @@ module fortplot_ascii
         procedure :: save => ascii_finalize
         procedure :: set_title => ascii_set_title
         procedure :: draw_marker => ascii_draw_marker
+        procedure :: set_marker_colors => ascii_set_marker_colors
     end type ascii_context
     
     ! ASCII plotting constants
@@ -434,5 +435,14 @@ contains
             this%canvas(py, px) = marker_char
         end if
     end subroutine ascii_draw_marker
+
+    subroutine ascii_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        real(wp), intent(in) :: face_r, face_g, face_b
+        
+        ! ASCII backend doesn't support separate marker colors
+        ! This is a stub implementation for interface compliance
+    end subroutine ascii_set_marker_colors
 
 end module fortplot_ascii

@@ -39,6 +39,7 @@ module fortplot_pdf
         procedure :: save_graphics_state => pdf_save_graphics_state
         procedure :: restore_graphics_state => pdf_restore_graphics_state
         procedure :: draw_marker => draw_pdf_marker
+        procedure :: set_marker_colors => pdf_set_marker_colors
     end type pdf_context
     
 contains
@@ -639,6 +640,15 @@ contains
         end if
     end subroutine draw_pdf_marker
 
+    subroutine pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        real(wp), intent(in) :: face_r, face_g, face_b
+        
+        ! PDF backend doesn't support separate marker colors yet
+        ! This is a stub implementation for interface compliance
+    end subroutine pdf_set_marker_colors
+
     subroutine draw_pdf_circle(this, cx, cy, radius)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: cx, cy, radius
@@ -647,13 +657,21 @@ contains
         ! Draw a circle using bezier curves
         call this%stream_writer%add_to_stream("q")
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx + radius, cy
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx + radius, cy + 0.552284749831_wp * radius, cx + 0.552284749831_wp * radius, cy + radius, cx, cy + radius
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
+             cx + radius, cy + 0.552284749831_wp * radius, &
+             cx + 0.552284749831_wp * radius, cy + radius, cx, cy + radius
         call this%stream_writer%add_to_stream(circle_cmd)
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx - 0.552284749831_wp * radius, cy + radius, cx - radius, cy + 0.552284749831_wp * radius, cx - radius, cy
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
+             cx - 0.552284749831_wp * radius, cy + radius, &
+             cx - radius, cy + 0.552284749831_wp * radius, cx - radius, cy
         call this%stream_writer%add_to_stream(circle_cmd)
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx - radius, cy - 0.552284749831_wp * radius, cx - 0.552284749831_wp * radius, cy - radius, cx, cy - radius
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
+             cx - radius, cy - 0.552284749831_wp * radius, &
+             cx - 0.552284749831_wp * radius, cy - radius, cx, cy - radius
         call this%stream_writer%add_to_stream(circle_cmd)
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') cx + 0.552284749831_wp * radius, cy - radius, cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
+        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
+             cx + 0.552284749831_wp * radius, cy - radius, &
+             cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
         call this%stream_writer%add_to_stream(circle_cmd)
         call this%stream_writer%add_to_stream("f")
         call this%stream_writer%add_to_stream("Q")
