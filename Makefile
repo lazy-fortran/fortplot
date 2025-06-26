@@ -50,7 +50,7 @@ ref:
 clean:
 	echo y | fpm clean
 	rm -f *.png *.pdf
-	find example/ -name "*.png" -o -name "*.pdf" -o -name "*.txt" | xargs rm -f
+	find example/ -name "*.png" -o -name "*.pdf" -o -name "*.txt" -not -name "CMakeLists.txt" | xargs rm -f
 
 # Build with release optimizations
 release:
