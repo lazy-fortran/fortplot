@@ -6,7 +6,7 @@ module fortplot_png
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels, draw_rotated_ylabel_png, write_png_file
+    public :: png_context, create_png_canvas, draw_axes_and_labels, write_png_file
 
     ! PNG plotting context - extends raster context and adds PNG file I/O
     type, extends(raster_context) :: png_context
@@ -200,12 +200,6 @@ contains
         crc = crc32(0_c_int32_t, c_loc(data), int(len, c_int))
     end function calculate_crc32
 
-    ! Wrapper for draw_rotated_ylabel_raster to maintain PNG API compatibility
-    subroutine draw_rotated_ylabel_png(ctx, text)
-        type(png_context), intent(inout) :: ctx
-        character(len=*), intent(in) :: text
-        call draw_rotated_ylabel_raster(ctx, text)
-    end subroutine draw_rotated_ylabel_png
 
 
 end module fortplot_png

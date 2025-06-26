@@ -30,18 +30,10 @@ contains
             call plasma_colormap(t, color)
         case ('inferno')
             call inferno_colormap(t, color)
-        case ('magma')
-            call magma_colormap(t, color)
         case ('coolwarm')
             call coolwarm_colormap(t, color)
         case ('jet')
             call jet_colormap(t, color)
-        case ('rocket')
-            call rocket_colormap(t, color)
-        case ('mako')
-            call mako_colormap(t, color)
-        case ('flare')
-            call flare_colormap(t, color)
         case default
             call crest_colormap(t, color)  ! Use colorblind-friendly as default
         end select
@@ -101,17 +93,6 @@ contains
         call interpolate_colormap(t, r_points, g_points, b_points, color)
     end subroutine inferno_colormap
 
-    subroutine magma_colormap(t, color)
-        !! Magma colormap implementation
-        real(wp), intent(in) :: t
-        real(wp), dimension(3), intent(out) :: color
-        
-        real(wp), dimension(5) :: r_points = [0.001_wp, 0.232_wp, 0.586_wp, 0.869_wp, 0.987_wp]
-        real(wp), dimension(5) :: g_points = [0.000_wp, 0.059_wp, 0.207_wp, 0.488_wp, 0.991_wp]
-        real(wp), dimension(5) :: b_points = [0.014_wp, 0.437_wp, 0.520_wp, 0.508_wp, 0.749_wp]
-        
-        call interpolate_colormap(t, r_points, g_points, b_points, color)
-    end subroutine magma_colormap
 
     subroutine coolwarm_colormap(t, color)
         !! Cool-warm diverging colormap
@@ -150,41 +131,8 @@ contains
         call interpolate_colormap(t, r_points, g_points, b_points, color)
     end subroutine crest_colormap
 
-    subroutine rocket_colormap(t, color)
-        !! Rocket colormap - seaborn perceptually uniform, dark to bright
-        real(wp), intent(in) :: t
-        real(wp), dimension(3), intent(out) :: color
-        
-        real(wp), dimension(5) :: r_points = [0.0_wp, 0.267_wp, 0.647_wp, 0.914_wp, 0.992_wp]
-        real(wp), dimension(5) :: g_points = [0.0_wp, 0.114_wp, 0.306_wp, 0.624_wp, 0.906_wp]
-        real(wp), dimension(5) :: b_points = [0.075_wp, 0.216_wp, 0.341_wp, 0.424_wp, 0.525_wp]
-        
-        call interpolate_colormap(t, r_points, g_points, b_points, color)
-    end subroutine rocket_colormap
 
-    subroutine mako_colormap(t, color)
-        !! Mako colormap - seaborn perceptually uniform, teal-like
-        real(wp), intent(in) :: t
-        real(wp), dimension(3), intent(out) :: color
-        
-        real(wp), dimension(5) :: r_points = [0.043_wp, 0.157_wp, 0.314_wp, 0.553_wp, 0.851_wp]
-        real(wp), dimension(5) :: g_points = [0.055_wp, 0.259_wp, 0.467_wp, 0.694_wp, 0.902_wp]
-        real(wp), dimension(5) :: b_points = [0.141_wp, 0.427_wp, 0.565_wp, 0.647_wp, 0.765_wp]
-        
-        call interpolate_colormap(t, r_points, g_points, b_points, color)
-    end subroutine mako_colormap
 
-    subroutine flare_colormap(t, color)
-        !! Flare colormap - seaborn perceptually uniform, orange-like
-        real(wp), intent(in) :: t
-        real(wp), dimension(3), intent(out) :: color
-        
-        real(wp), dimension(5) :: r_points = [0.867_wp, 0.941_wp, 0.965_wp, 0.898_wp, 0.722_wp]
-        real(wp), dimension(5) :: g_points = [0.522_wp, 0.447_wp, 0.318_wp, 0.169_wp, 0.063_wp]
-        real(wp), dimension(5) :: b_points = [0.322_wp, 0.176_wp, 0.098_wp, 0.051_wp, 0.039_wp]
-        
-        call interpolate_colormap(t, r_points, g_points, b_points, color)
-    end subroutine flare_colormap
 
     subroutine interpolate_colormap(t, r_points, g_points, b_points, color)
         !! Interpolate between color control points

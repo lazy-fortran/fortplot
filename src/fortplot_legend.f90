@@ -12,7 +12,7 @@ module fortplot_legend
     implicit none
     
     private
-    public :: legend_t, legend_entry_t, create_legend, initialize_legend, legend_render
+    public :: legend_t, legend_entry_t, create_legend, legend_render
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     
     ! Legend position constants
@@ -55,19 +55,6 @@ contains
         legend%num_entries = 0
     end function create_legend
     
-    subroutine initialize_legend(legend)
-        !! Initialize legend components
-        type(legend_t), intent(inout) :: legend
-        
-        allocate(legend%entries(0))
-        legend%num_entries = 0
-        legend%position = LEGEND_UPPER_RIGHT
-        legend%x_offset = 10.0_wp
-        legend%y_offset = 10.0_wp
-        legend%entry_height = 20.0_wp
-        legend%line_length = 30.0_wp
-        legend%text_padding = 10.0_wp
-    end subroutine initialize_legend
     
     subroutine legend_add_entry(this, label, color, linestyle, marker)
         !! Add entry following Open/Closed principle
