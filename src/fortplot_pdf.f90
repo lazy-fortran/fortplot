@@ -40,6 +40,7 @@ module fortplot_pdf
         procedure :: restore_graphics_state => pdf_restore_graphics_state
         procedure :: draw_marker => draw_pdf_marker
         procedure :: set_marker_colors => pdf_set_marker_colors
+        procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
     end type pdf_context
     
 contains
@@ -648,6 +649,16 @@ contains
         ! PDF backend doesn't support separate marker colors yet
         ! This is a stub implementation for interface compliance
     end subroutine pdf_set_marker_colors
+
+    subroutine pdf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
+                                                face_r, face_g, face_b, face_alpha)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        
+        ! PDF backend doesn't support separate marker colors or transparency yet
+        ! This is a stub implementation for interface compliance
+    end subroutine pdf_set_marker_colors_with_alpha
 
     subroutine draw_pdf_circle(this, cx, cy, radius)
         class(pdf_context), intent(inout) :: this

@@ -25,9 +25,9 @@ module fortplot_raster
         integer :: width, height
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 1.0_wp
         real(wp) :: current_line_width = 1.0_wp
-        ! Marker colors - separate edge and face colors
-        real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp
-        real(wp) :: marker_face_r = 1.0_wp, marker_face_g = 0.0_wp, marker_face_b = 0.0_wp
+        ! Marker colors - separate edge and face colors with alpha
+        real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp, marker_edge_alpha = 1.0_wp
+        real(wp) :: marker_face_r = 1.0_wp, marker_face_g = 0.0_wp, marker_face_b = 0.0_wp, marker_face_alpha = 1.0_wp
     contains
         procedure :: set_color => raster_set_color
         procedure :: get_color_bytes => raster_get_color_bytes
@@ -47,6 +47,7 @@ module fortplot_raster
         procedure :: save => raster_save_dummy
         procedure :: draw_marker => raster_draw_marker
         procedure :: set_marker_colors => raster_set_marker_colors
+        procedure :: set_marker_colors_with_alpha => raster_set_marker_colors_with_alpha
     end type raster_context
 
 contains
@@ -489,7 +490,21 @@ contains
         if (trim(style) == 'o') then
             call draw_circle_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
-                                           this%raster%marker_face_r, this%raster%marker_face_g, this%raster%marker_face_b)
+                                           this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
+                                           this%raster%marker_face_b, this%raster%marker_face_alpha)
+        else if (trim(style) == 's') then
+            call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                                           this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
+                                           this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
+                                           this%raster%marker_face_b, this%raster%marker_face_alpha)
+        else if (trim(style) == 'D') then
+            call draw_diamond_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
+                                            this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
+                                            this%raster%marker_face_b, this%raster%marker_face_alpha)
+        else if (trim(style) == 'x') then
+            call draw_x_marker(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                               this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b)
         end if
     end subroutine raster_draw_marker
 
@@ -501,22 +516,40 @@ contains
         this%raster%marker_edge_r = edge_r
         this%raster%marker_edge_g = edge_g
         this%raster%marker_edge_b = edge_b
+        this%raster%marker_edge_alpha = 1.0_wp  ! Default to opaque
         this%raster%marker_face_r = face_r
         this%raster%marker_face_g = face_g
         this%raster%marker_face_b = face_b
+        this%raster%marker_face_alpha = 1.0_wp  ! Default to opaque
     end subroutine raster_set_marker_colors
 
+    subroutine raster_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
+                                                   face_r, face_g, face_b, face_alpha)
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+
+        this%raster%marker_edge_r = edge_r
+        this%raster%marker_edge_g = edge_g
+        this%raster%marker_edge_b = edge_b
+        this%raster%marker_edge_alpha = edge_alpha
+        this%raster%marker_face_r = face_r
+        this%raster%marker_face_g = face_g
+        this%raster%marker_face_b = face_b
+        this%raster%marker_face_alpha = face_alpha
+    end subroutine raster_set_marker_colors_with_alpha
+
     subroutine draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
-                                          edge_r, edge_g, edge_b, face_r, face_g, face_b)
+                                          edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: img_w, img_h
         real(wp), intent(in) :: cx, cy, radius
-        real(wp), intent(in) :: edge_r, edge_g, edge_b
-        real(wp), intent(in) :: face_r, face_g, face_b
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
         integer(1) :: face_r_byte, face_g_byte, face_b_byte
         integer :: x, y, x_min, x_max, y_min, y_max
-        real(wp) :: distance, face_alpha, edge_alpha
+        real(wp) :: distance, antialiasing_face_alpha, antialiasing_edge_alpha
         real(wp), parameter :: EDGE_WIDTH = 1.0_wp
         real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
 
@@ -537,34 +570,39 @@ contains
             do x = x_min, x_max
                 distance = sqrt((real(x, wp) - cx)**2 + (real(y, wp) - cy)**2)
                 
-                ! Calculate face (fill) alpha
+                ! Calculate antialiasing alpha for face (fill)
                 if (distance <= radius - EDGE_WIDTH - EDGE_SMOOTHING) then
-                    face_alpha = 1.0_wp
+                    antialiasing_face_alpha = 1.0_wp
                 else if (distance <= radius - EDGE_WIDTH + EDGE_SMOOTHING) then
-                    face_alpha = 1.0_wp - (distance - (radius - EDGE_WIDTH - EDGE_SMOOTHING)) / (2.0_wp * EDGE_SMOOTHING)
-                    face_alpha = max(0.0_wp, min(1.0_wp, face_alpha))
+                    antialiasing_face_alpha = 1.0_wp - (distance - (radius - EDGE_WIDTH - EDGE_SMOOTHING)) &
+                                             / (2.0_wp * EDGE_SMOOTHING)
+                    antialiasing_face_alpha = max(0.0_wp, min(1.0_wp, antialiasing_face_alpha))
                 else
-                    face_alpha = 0.0_wp
+                    antialiasing_face_alpha = 0.0_wp
                 end if
                 
-                ! Calculate edge (outline) alpha
-                if (distance >= radius - EDGE_WIDTH - EDGE_SMOOTHING .and. distance <= radius + EDGE_SMOOTHING) then
+                ! Calculate antialiasing alpha for edge (outline)
+                if (distance >= radius - EDGE_WIDTH - EDGE_SMOOTHING .and. &
+                    distance <= radius + EDGE_SMOOTHING) then
                     if (distance <= radius - EDGE_SMOOTHING) then
-                        edge_alpha = 1.0_wp
+                        antialiasing_edge_alpha = 1.0_wp
                     else
-                        edge_alpha = 1.0_wp - (distance - (radius - EDGE_SMOOTHING)) / (2.0_wp * EDGE_SMOOTHING)
-                        edge_alpha = max(0.0_wp, min(1.0_wp, edge_alpha))
+                        antialiasing_edge_alpha = 1.0_wp - (distance - (radius - EDGE_SMOOTHING)) &
+                                             / (2.0_wp * EDGE_SMOOTHING)
+                        antialiasing_edge_alpha = max(0.0_wp, min(1.0_wp, antialiasing_edge_alpha))
                     end if
                 else
-                    edge_alpha = 0.0_wp
+                    antialiasing_edge_alpha = 0.0_wp
                 end if
                 
-                ! Draw face first, then edge on top
-                if (face_alpha > 0.0_wp) then
-                    call blend_pixel(image_data, img_w, img_h, x, y, face_alpha, face_r_byte, face_g_byte, face_b_byte)
+                ! Combine user alpha with antialiasing alpha and draw face first, then edge on top
+                if (antialiasing_face_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, face_alpha * antialiasing_face_alpha, &
+                                     face_r_byte, face_g_byte, face_b_byte)
                 end if
-                if (edge_alpha > 0.0_wp) then
-                    call blend_pixel(image_data, img_w, img_h, x, y, edge_alpha, edge_r_byte, edge_g_byte, edge_b_byte)
+                if (antialiasing_edge_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, edge_alpha * antialiasing_edge_alpha, &
+                                     edge_r_byte, edge_g_byte, edge_b_byte)
                 end if
             end do
         end do
@@ -585,8 +623,200 @@ contains
         
         ! Use same color for both edge and face
         call draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
-                                        color_r, color_g, color_b, color_r, color_g, color_b)
+                                        color_r, color_g, color_b, 1.0_wp, color_r, color_g, color_b, 1.0_wp)
     end subroutine draw_circle_antialiased
+
+    subroutine draw_square_with_edge_face(image_data, img_w, img_h, cx, cy, size, &
+                                          edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, size
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
+        integer(1) :: face_r_byte, face_g_byte, face_b_byte
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: half_size, antialiasing_face_alpha, antialiasing_edge_alpha
+        real(wp), parameter :: EDGE_WIDTH = 1.0_wp
+        real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
+
+        ! Convert colors to bytes
+        edge_r_byte = int(edge_r * 255.0_wp, 1)
+        edge_g_byte = int(edge_g * 255.0_wp, 1)
+        edge_b_byte = int(edge_b * 255.0_wp, 1)
+        face_r_byte = int(face_r * 255.0_wp, 1)
+        face_g_byte = int(face_g * 255.0_wp, 1)
+        face_b_byte = int(face_b * 255.0_wp, 1)
+
+        half_size = size * 0.5_wp
+        x_min = max(1, int(cx - half_size - EDGE_SMOOTHING))
+        x_max = min(img_w, int(cx + half_size + EDGE_SMOOTHING))
+        y_min = max(1, int(cy - half_size - EDGE_SMOOTHING))
+        y_max = min(img_h, int(cy + half_size + EDGE_SMOOTHING))
+
+        do y = y_min, y_max
+            do x = x_min, x_max
+                ! Calculate distance from square boundary
+                call calculate_square_distance(real(x, wp), real(y, wp), cx, cy, half_size, &
+                                               EDGE_WIDTH, EDGE_SMOOTHING, antialiasing_face_alpha, antialiasing_edge_alpha)
+                
+                ! Draw face first, then edge on top
+                if (antialiasing_face_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, face_alpha * antialiasing_face_alpha, &
+                                     face_r_byte, face_g_byte, face_b_byte)
+                end if
+                if (antialiasing_edge_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, edge_alpha * antialiasing_edge_alpha, &
+                                     edge_r_byte, edge_g_byte, edge_b_byte)
+                end if
+            end do
+        end do
+    end subroutine draw_square_with_edge_face
+
+    subroutine calculate_square_distance(px, py, cx, cy, half_size, edge_width, edge_smoothing, &
+                                          antialiasing_face_alpha, antialiasing_edge_alpha)
+        real(wp), intent(in) :: px, py, cx, cy, half_size, edge_width, edge_smoothing
+        real(wp), intent(out) :: antialiasing_face_alpha, antialiasing_edge_alpha
+        real(wp) :: dx, dy, dist_to_edge
+
+        dx = abs(px - cx)
+        dy = abs(py - cy)
+        dist_to_edge = max(dx, dy)  ! Distance to square boundary using max norm
+
+        ! Calculate face (fill) alpha
+        if (dist_to_edge <= half_size - edge_width - edge_smoothing) then
+            antialiasing_face_alpha = 1.0_wp
+        else if (dist_to_edge <= half_size - edge_width + edge_smoothing) then
+            antialiasing_face_alpha = 1.0_wp - (dist_to_edge - (half_size - edge_width - edge_smoothing)) &
+                                     / (2.0_wp * edge_smoothing)
+            antialiasing_face_alpha = max(0.0_wp, min(1.0_wp, antialiasing_face_alpha))
+        else
+            antialiasing_face_alpha = 0.0_wp
+        end if
+
+        ! Calculate edge (outline) alpha
+        if (dist_to_edge >= half_size - edge_width - edge_smoothing .and. dist_to_edge <= half_size + edge_smoothing) then
+            if (dist_to_edge <= half_size - edge_smoothing) then
+                antialiasing_edge_alpha = 1.0_wp
+            else
+                antialiasing_edge_alpha = 1.0_wp - (dist_to_edge - (half_size - edge_smoothing)) / (2.0_wp * edge_smoothing)
+                antialiasing_edge_alpha = max(0.0_wp, min(1.0_wp, antialiasing_edge_alpha))
+            end if
+        else
+            antialiasing_edge_alpha = 0.0_wp
+        end if
+    end subroutine calculate_square_distance
+
+    subroutine draw_diamond_with_edge_face(image_data, img_w, img_h, cx, cy, size, &
+                                           edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, size
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
+        integer(1) :: face_r_byte, face_g_byte, face_b_byte
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: half_size, antialiasing_face_alpha, antialiasing_edge_alpha
+        real(wp), parameter :: EDGE_WIDTH = 1.0_wp
+        real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
+
+        ! Convert colors to bytes
+        edge_r_byte = int(edge_r * 255.0_wp, 1)
+        edge_g_byte = int(edge_g * 255.0_wp, 1)
+        edge_b_byte = int(edge_b * 255.0_wp, 1)
+        face_r_byte = int(face_r * 255.0_wp, 1)
+        face_g_byte = int(face_g * 255.0_wp, 1)
+        face_b_byte = int(face_b * 255.0_wp, 1)
+
+        half_size = size * 0.5_wp
+        x_min = max(1, int(cx - half_size - EDGE_SMOOTHING))
+        x_max = min(img_w, int(cx + half_size + EDGE_SMOOTHING))
+        y_min = max(1, int(cy - half_size - EDGE_SMOOTHING))
+        y_max = min(img_h, int(cy + half_size + EDGE_SMOOTHING))
+
+        do y = y_min, y_max
+            do x = x_min, x_max
+                ! Calculate distance from diamond boundary
+                call calculate_diamond_distance(real(x, wp), real(y, wp), cx, cy, half_size, &
+                                                EDGE_WIDTH, EDGE_SMOOTHING, antialiasing_face_alpha, antialiasing_edge_alpha)
+                
+                ! Draw face first, then edge on top
+                if (antialiasing_face_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, face_alpha * antialiasing_face_alpha, &
+                                     face_r_byte, face_g_byte, face_b_byte)
+                end if
+                if (antialiasing_edge_alpha > 0.0_wp) then
+                    call blend_pixel(image_data, img_w, img_h, x, y, edge_alpha * antialiasing_edge_alpha, &
+                                     edge_r_byte, edge_g_byte, edge_b_byte)
+                end if
+            end do
+        end do
+    end subroutine draw_diamond_with_edge_face
+
+    subroutine calculate_diamond_distance(px, py, cx, cy, half_size, edge_width, edge_smoothing, &
+                                           antialiasing_face_alpha, antialiasing_edge_alpha)
+        real(wp), intent(in) :: px, py, cx, cy, half_size, edge_width, edge_smoothing
+        real(wp), intent(out) :: antialiasing_face_alpha, antialiasing_edge_alpha
+        real(wp) :: dx, dy, dist_to_edge
+
+        dx = abs(px - cx)
+        dy = abs(py - cy)
+        dist_to_edge = dx + dy  ! Distance to diamond boundary using Manhattan distance
+
+        ! Calculate face (fill) alpha
+        if (dist_to_edge <= half_size - edge_width - edge_smoothing) then
+            antialiasing_face_alpha = 1.0_wp
+        else if (dist_to_edge <= half_size - edge_width + edge_smoothing) then
+            antialiasing_face_alpha = 1.0_wp - (dist_to_edge - (half_size - edge_width - edge_smoothing)) &
+                                     / (2.0_wp * edge_smoothing)
+            antialiasing_face_alpha = max(0.0_wp, min(1.0_wp, antialiasing_face_alpha))
+        else
+            antialiasing_face_alpha = 0.0_wp
+        end if
+
+        ! Calculate edge (outline) alpha
+        if (dist_to_edge >= half_size - edge_width - edge_smoothing .and. dist_to_edge <= half_size + edge_smoothing) then
+            if (dist_to_edge <= half_size - edge_smoothing) then
+                antialiasing_edge_alpha = 1.0_wp
+            else
+                antialiasing_edge_alpha = 1.0_wp - (dist_to_edge - (half_size - edge_smoothing)) / (2.0_wp * edge_smoothing)
+                antialiasing_edge_alpha = max(0.0_wp, min(1.0_wp, antialiasing_edge_alpha))
+            end if
+        else
+            antialiasing_edge_alpha = 0.0_wp
+        end if
+    end subroutine calculate_diamond_distance
+
+    subroutine draw_x_marker(image_data, img_w, img_h, cx, cy, size, edge_r, edge_g, edge_b)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, size
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
+        real(wp) :: half_size, line_width
+        
+        ! Convert colors to bytes
+        edge_r_byte = int(edge_r * 255.0_wp, 1)
+        edge_g_byte = int(edge_g * 255.0_wp, 1)
+        edge_b_byte = int(edge_b * 255.0_wp, 1)
+
+        half_size = size * 0.5_wp
+        line_width = 1.0_wp
+
+        ! Draw diagonal lines from corners to form an X
+        ! Top-left to bottom-right
+        call draw_line_distance_aa(image_data, img_w, img_h, &
+                                   cx - half_size, cy - half_size, &
+                                   cx + half_size, cy + half_size, &
+                                   edge_r_byte, edge_g_byte, edge_b_byte, line_width)
+        
+        ! Top-right to bottom-left
+        call draw_line_distance_aa(image_data, img_w, img_h, &
+                                   cx + half_size, cy - half_size, &
+                                   cx - half_size, cy + half_size, &
+                                   edge_r_byte, edge_g_byte, edge_b_byte, line_width)
+    end subroutine draw_x_marker
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &

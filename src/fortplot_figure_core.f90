@@ -696,21 +696,21 @@ contains
         
         if (plot_idx > self%plot_count) return
         if (.not. allocated(self%plots(plot_idx)%x)) return
-        if (size(self%plots(plot_idx)%x) < 2) return
+        if (size(self%plots(plot_idx)%x) < 1) return
         
         ! Get linestyle for this plot
         linestyle = self%plots(plot_idx)%linestyle
         
-        ! Skip drawing if linestyle is 'None'
-        if (linestyle == 'None') return
-        
-        ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
-        call self%backend%set_line_width(2.0_wp)
-        
-        ! Draw line segments using transformed coordinates with linestyle
-        call draw_line_with_style(self, plot_idx, linestyle)
+        ! Draw lines only if linestyle is not 'None' and we have at least 2 points
+        if (linestyle /= 'None' .and. size(self%plots(plot_idx)%x) >= 2) then
+            ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
+            call self%backend%set_line_width(2.0_wp)
+            
+            ! Draw line segments using transformed coordinates with linestyle
+            call draw_line_with_style(self, plot_idx, linestyle)
+        end if
 
-        ! Render markers at each data point
+        ! Always render markers regardless of linestyle (matplotlib behavior)
         call render_markers(self, plot_idx)
     end subroutine render_line_plot
 

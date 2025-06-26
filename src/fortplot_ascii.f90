@@ -37,6 +37,7 @@ module fortplot_ascii
         procedure :: set_title => ascii_set_title
         procedure :: draw_marker => ascii_draw_marker
         procedure :: set_marker_colors => ascii_set_marker_colors
+        procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
     end type ascii_context
     
     ! ASCII plotting constants
@@ -444,5 +445,15 @@ contains
         ! ASCII backend doesn't support separate marker colors
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors
+
+    subroutine ascii_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
+                                                  face_r, face_g, face_b, face_alpha)
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        
+        ! ASCII backend doesn't support separate marker colors or transparency
+        ! This is a stub implementation for interface compliance
+    end subroutine ascii_set_marker_colors_with_alpha
 
 end module fortplot_ascii

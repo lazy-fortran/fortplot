@@ -23,6 +23,7 @@ module fortplot_context
         procedure(line_width_interface), deferred :: set_line_width
         procedure(marker_interface), deferred :: draw_marker
         procedure(marker_colors_interface), deferred :: set_marker_colors
+        procedure(marker_colors_alpha_interface), deferred :: set_marker_colors_with_alpha
     end type plot_context
     
     abstract interface
@@ -70,6 +71,13 @@ module fortplot_context
             real(wp), intent(in) :: edge_r, edge_g, edge_b
             real(wp), intent(in) :: face_r, face_g, face_b
         end subroutine marker_colors_interface
+
+        subroutine marker_colors_alpha_interface(this, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+            real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        end subroutine marker_colors_alpha_interface
     end interface
 
 contains
