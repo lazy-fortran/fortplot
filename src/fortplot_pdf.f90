@@ -609,6 +609,14 @@ contains
         write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
         call this%add_to_stream(color_cmd)
     end subroutine pdf_write_color
+
+    subroutine pdf_write_fill_color(this, r, g, b)
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: r, g, b
+        character(len=50) :: color_cmd
+        write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "rg")') r, g, b
+        call this%add_to_stream(color_cmd)
+    end subroutine pdf_write_fill_color
     
     subroutine pdf_write_line_width(this, width)
         class(pdf_stream_writer), intent(inout) :: this
@@ -637,7 +645,13 @@ contains
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
 
         if (trim(style) == 'o') then
-            call draw_pdf_circle(this, pdf_x, pdf_y, 5.0_wp)
+            call draw_pdf_circle_with_outline(this, pdf_x, pdf_y, 5.0_wp)
+        else if (trim(style) == 's') then
+            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, 5.0_wp)
+        else if (trim(style) == 'D') then
+            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, 5.0_wp)
+        else if (trim(style) == 'x') then
+            call draw_pdf_x_marker(this, pdf_x, pdf_y, 5.0_wp)
         end if
     end subroutine draw_pdf_marker
 
@@ -660,12 +674,12 @@ contains
         ! This is a stub implementation for interface compliance
     end subroutine pdf_set_marker_colors_with_alpha
 
-    subroutine draw_pdf_circle(this, cx, cy, radius)
+    subroutine draw_pdf_circle_with_outline(this, cx, cy, radius)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: cx, cy, radius
         character(len=200) :: circle_cmd
 
-        ! Draw a circle using bezier curves
+        ! Draw a circle using bezier curves with current fill color and black outline
         call this%stream_writer%add_to_stream("q")
         
         ! Move to starting point
@@ -696,9 +710,93 @@ contains
              cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
         call this%stream_writer%add_to_stream(circle_cmd)
         
-        ! Fill and restore graphics state
+        ! Set fill color to current stroke color, then fill and stroke with black outline
+        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
+                                  this%stream_writer%current_state%stroke_g, &
+                                  this%stream_writer%current_state%stroke_b)
         call this%stream_writer%add_to_stream("f")
+        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
+        call this%stream_writer%add_to_stream("S")
         call this%stream_writer%add_to_stream("Q")
-    end subroutine draw_pdf_circle
+    end subroutine draw_pdf_circle_with_outline
+
+    subroutine draw_pdf_square_with_outline(this, cx, cy, size)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: cx, cy, size
+        character(len=200) :: rect_cmd
+        real(wp) :: half_size
+
+        half_size = size * 0.5_wp
+        call this%stream_writer%add_to_stream("q")
+        
+        ! Draw rectangle
+        write(rect_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "re")') &
+             cx - half_size, cy - half_size, size, size
+        call this%stream_writer%add_to_stream(rect_cmd)
+        
+        ! Set fill color to current stroke color, then fill and stroke with black outline
+        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
+                                  this%stream_writer%current_state%stroke_g, &
+                                  this%stream_writer%current_state%stroke_b)
+        call this%stream_writer%add_to_stream("f")
+        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
+        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine draw_pdf_square_with_outline
+
+    subroutine draw_pdf_diamond_with_outline(this, cx, cy, size)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: cx, cy, size
+        character(len=200) :: diamond_cmd
+        real(wp) :: half_size
+
+        half_size = size * 0.5_wp
+        call this%stream_writer%add_to_stream("q")
+        
+        ! Draw diamond as four lines
+        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx, cy + half_size  ! Top
+        call this%stream_writer%add_to_stream(diamond_cmd)
+        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy  ! Right
+        call this%stream_writer%add_to_stream(diamond_cmd)
+        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx, cy - half_size  ! Bottom
+        call this%stream_writer%add_to_stream(diamond_cmd)
+        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx - half_size, cy  ! Left
+        call this%stream_writer%add_to_stream(diamond_cmd)
+        call this%stream_writer%add_to_stream("h")  ! Close path
+        
+        ! Set fill color to current stroke color, then fill and stroke with black outline
+        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
+                                  this%stream_writer%current_state%stroke_g, &
+                                  this%stream_writer%current_state%stroke_b)
+        call this%stream_writer%add_to_stream("f")
+        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
+        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine draw_pdf_diamond_with_outline
+
+    subroutine draw_pdf_x_marker(this, cx, cy, size)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: cx, cy, size
+        character(len=200) :: x_cmd
+        real(wp) :: half_size
+
+        half_size = size * 0.5_wp
+        call this%stream_writer%add_to_stream("q")
+        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black color for X
+        
+        ! Draw X as two diagonal lines
+        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx - half_size, cy - half_size
+        call this%stream_writer%add_to_stream(x_cmd)
+        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy + half_size
+        call this%stream_writer%add_to_stream(x_cmd)
+        call this%stream_writer%add_to_stream("S")
+        
+        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx - half_size, cy + half_size
+        call this%stream_writer%add_to_stream(x_cmd)
+        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy - half_size
+        call this%stream_writer%add_to_stream(x_cmd)
+        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine draw_pdf_x_marker
 
 end module fortplot_pdf
