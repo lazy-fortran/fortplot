@@ -159,8 +159,16 @@ contains
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
             
-            ! Create compact legend entry: "-- Label"
-            legend_line = "-- " // trim(legend%entries(i)%label)
+            ! Create legend entry with actual marker character or line symbol
+            if (allocated(legend%entries(i)%marker) .and. &
+                trim(legend%entries(i)%marker) /= '' .and. &
+                trim(legend%entries(i)%marker) /= 'None') then
+                ! Show marker character
+                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // " " // trim(legend%entries(i)%label)
+            else
+                ! Show line symbol for line-only plots
+                legend_line = "-- " // trim(legend%entries(i)%label)
+            end if
             call backend%text(text_x, text_y, legend_line)
         end do
     end subroutine render_ascii_legend
@@ -363,5 +371,41 @@ contains
         call backend%line(x2, y2, x1, y2)  ! Bottom
         call backend%line(x1, y2, x1, y1)  ! Left
     end subroutine draw_legend_border
+
+    pure function get_ascii_marker_char(marker_style) result(marker_char)
+        !! Convert marker style to ASCII character (same logic as ascii backend)
+        character(len=*), intent(in) :: marker_style
+        character(len=1) :: marker_char
+        
+        ! Map marker styles to distinct ASCII characters for visual differentiation
+        select case (trim(marker_style))
+        case ('o')
+            marker_char = 'o'  ! Circle
+        case ('s')
+            marker_char = '#'  ! Square
+        case ('D', 'd')
+            marker_char = '%'  ! Diamond
+        case ('x')
+            marker_char = 'x'  ! Cross
+        case ('+')
+            marker_char = '+'  ! Plus
+        case ('*')
+            marker_char = '*'  ! Star
+        case ('^')
+            marker_char = '^'  ! Triangle up
+        case ('v')
+            marker_char = 'v'  ! Triangle down
+        case ('<')
+            marker_char = '<'  ! Triangle left
+        case ('>')
+            marker_char = '>'  ! Triangle right
+        case ('p')
+            marker_char = 'P'  ! Pentagon
+        case ('h', 'H')
+            marker_char = 'H'  ! Hexagon
+        case default
+            marker_char = '*'  ! Default fallback
+        end select
+    end function get_ascii_marker_char
 
 end module fortplot_legend
