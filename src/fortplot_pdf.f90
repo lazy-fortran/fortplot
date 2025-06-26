@@ -647,9 +647,9 @@ contains
         if (trim(style) == 'o') then
             call draw_pdf_circle_with_outline(this, pdf_x, pdf_y, 5.0_wp)
         else if (trim(style) == 's') then
-            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, 5.0_wp)
+            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, 6.0_wp)
         else if (trim(style) == 'D') then
-            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, 5.0_wp)
+            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, 6.0_wp)
         else if (trim(style) == 'x') then
             call draw_pdf_x_marker(this, pdf_x, pdf_y, 5.0_wp)
         end if
