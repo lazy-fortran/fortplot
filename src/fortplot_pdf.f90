@@ -667,23 +667,36 @@ contains
 
         ! Draw a circle using bezier curves
         call this%stream_writer%add_to_stream("q")
+        
+        ! Move to starting point
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx + radius, cy
+        call this%stream_writer%add_to_stream(circle_cmd)
+        
+        ! First quadrant
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
              cx + radius, cy + 0.552284749831_wp * radius, &
              cx + 0.552284749831_wp * radius, cy + radius, cx, cy + radius
         call this%stream_writer%add_to_stream(circle_cmd)
+        
+        ! Second quadrant  
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
              cx - 0.552284749831_wp * radius, cy + radius, &
              cx - radius, cy + 0.552284749831_wp * radius, cx - radius, cy
         call this%stream_writer%add_to_stream(circle_cmd)
+        
+        ! Third quadrant
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
              cx - radius, cy - 0.552284749831_wp * radius, &
              cx - 0.552284749831_wp * radius, cy - radius, cx, cy - radius
         call this%stream_writer%add_to_stream(circle_cmd)
+        
+        ! Fourth quadrant
         write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
              cx + 0.552284749831_wp * radius, cy - radius, &
              cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
         call this%stream_writer%add_to_stream(circle_cmd)
+        
+        ! Fill and restore graphics state
         call this%stream_writer%add_to_stream("f")
         call this%stream_writer%add_to_stream("Q")
     end subroutine draw_pdf_circle
