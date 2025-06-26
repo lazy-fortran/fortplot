@@ -488,10 +488,15 @@ contains
         call this%raster%get_color_bytes(r, g, b)
 
         if (trim(style) == 'o') then
-            call draw_circle_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
-                                           this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
-                                           this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
-                                           this%raster%marker_face_b, this%raster%marker_face_alpha)
+            ! Draw filled circle with thin black outline
+            ! First draw the filled circle at full size
+            call draw_circle_antialiased(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                                         color_to_byte(this%raster%current_r), &
+                                         color_to_byte(this%raster%current_g), &
+                                         color_to_byte(this%raster%current_b))
+            ! Then draw black outline at same size (will blend over the edge)
+            call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+                                                 0_1, 0_1, 0_1)
         else if (trim(style) == 's') then
             call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
@@ -625,6 +630,39 @@ contains
         call draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
                                         color_r, color_g, color_b, 1.0_wp, color_r, color_g, color_b, 1.0_wp)
     end subroutine draw_circle_antialiased
+
+    subroutine draw_circle_outline_antialiased(image_data, img_w, img_h, cx, cy, radius, r, g, b)
+        !! Draw antialiased circle outline that blends properly with inside/outside
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: cx, cy, radius
+        integer(1), intent(in) :: r, g, b
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: distance, alpha
+        real(wp), parameter :: LINE_WIDTH = 1.0_wp
+        
+        x_min = max(1, int(cx - radius - 1.0_wp))
+        x_max = min(img_w, int(cx + radius + 1.0_wp))
+        y_min = max(1, int(cy - radius - 1.0_wp))
+        y_max = min(img_h, int(cy + radius + 1.0_wp))
+        
+        do y = y_min, y_max
+            do x = x_min, x_max
+                distance = sqrt((real(x, wp) - cx)**2 + (real(y, wp) - cy)**2)
+                
+                ! Draw outline at the circle boundary
+                if (abs(distance - radius) <= LINE_WIDTH) then
+                    alpha = 1.0_wp - abs(distance - radius) / LINE_WIDTH
+                    alpha = max(0.0_wp, min(1.0_wp, alpha))
+                    if (alpha > 0.0_wp) then
+                        ! Blend outline color directly - the antialiasing effect comes from
+                        ! the alpha blending with the existing background (fill or canvas)
+                        call blend_pixel(image_data, img_w, img_h, x, y, alpha, r, g, b)
+                    end if
+                end if
+            end do
+        end do
+    end subroutine draw_circle_outline_antialiased
 
     subroutine draw_square_with_edge_face(image_data, img_w, img_h, cx, cy, size, &
                                           edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
