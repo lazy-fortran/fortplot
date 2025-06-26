@@ -7,6 +7,10 @@ zlib and freetype with development headers.
 
 ## Usage
 
+```
+use fortplot
+```
+
 ### Stateful API
 ```fortran
     call figure()
@@ -19,7 +23,6 @@ zlib and freetype with development headers.
 
 ### Object-Oriented API
 ```fortran
-    use fortplotlib
     type(figure_t) :: fig
 
     call fig%initialize()
