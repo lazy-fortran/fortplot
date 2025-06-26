@@ -1,12 +1,12 @@
 program test_legend_systematic_sizing
-    !! TDD test for systematic legend sizing using FreeType text metrics
+    !! TDD test for systematic legend sizing using text system metrics
     !! This test defines the expected behavior for proper content-based sizing
     use fortplot
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
-    call test_freetype_text_measurement()
+    call test_text_system_measurement()
     call test_legend_content_based_sizing()
     call test_thin_border_styling()
     call test_matplotlib_reference_comparison()
@@ -14,16 +14,16 @@ program test_legend_systematic_sizing
     
 contains
 
-    subroutine test_freetype_text_measurement()
-        !! Test that we can measure text width and height accurately using FreeType
+    subroutine test_text_system_measurement()
+        !! Test that we can measure text width and height accurately using text system
         integer :: width_sin, width_cos, width_long
         integer :: height_sin, height_cos, height_long
         logical :: success
         
-        ! Initialize FreeType if needed
+        ! Initialize text system if needed
         success = init_text_system()
         if (.not. success) then
-            print *, "SKIP: FreeType not available for text measurement"
+            print *, "SKIP: Text system not available for text measurement"
             return
         end if
         
@@ -57,8 +57,8 @@ contains
             stop 1
         end if
         
-        print *, "PASS: FreeType text measurement working correctly"
-    end subroutine test_freetype_text_measurement
+        print *, "PASS: Text system measurement working correctly"
+    end subroutine test_text_system_measurement
 
     subroutine test_legend_content_based_sizing()
         !! Test that legend box is sized based on actual content dimensions

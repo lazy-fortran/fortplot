@@ -160,7 +160,7 @@ void stb_wrapper_get_codepoint_bitmap_box(const stb_fontinfo_wrapper_t *wrapper,
 }
 
 /*
- * Allocate and render character bitmap
+ * Allocate and render character bitmap with clean antialiasing
  * Returns pointer to 8-bit grayscale bitmap, must be freed with stb_wrapper_free_bitmap
  */
 unsigned char* stb_wrapper_get_codepoint_bitmap(const stb_fontinfo_wrapper_t *wrapper, 
@@ -175,11 +175,13 @@ unsigned char* stb_wrapper_get_codepoint_bitmap(const stb_fontinfo_wrapper_t *wr
     }
     
     stb_font_context_t *context = (stb_font_context_t*)wrapper->private_data;
+    
+    /* Use clean, simple antialiasing without oversampling */
     return stbtt_GetCodepointBitmap(&context->font_info, scale_x, scale_y, codepoint, width, height, xoff, yoff);
 }
 
 /*
- * Render character into provided buffer
+ * Render character into provided buffer with clean antialiasing
  */
 void stb_wrapper_make_codepoint_bitmap(const stb_fontinfo_wrapper_t *wrapper, unsigned char *output,
                                       int out_w, int out_h, int out_stride,
@@ -189,6 +191,8 @@ void stb_wrapper_make_codepoint_bitmap(const stb_fontinfo_wrapper_t *wrapper, un
     }
     
     stb_font_context_t *context = (stb_font_context_t*)wrapper->private_data;
+    
+    /* Use clean, simple antialiasing without oversampling */
     stbtt_MakeCodepointBitmap(&context->font_info, output, out_w, out_h, out_stride, scale_x, scale_y, codepoint);
 }
 
