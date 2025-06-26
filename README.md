@@ -1,6 +1,6 @@
 # ![fortplotlib logo](media/logo.jpg)
 
-Fortran-native plotting inspired by Python's matplotlib.pyplot and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change.
 
 ## Requirements
 zlib and freetype with development headers.
