@@ -1,196 +1,126 @@
 module fortplot_text
     use iso_c_binding
+    use fortplot_stb_truetype
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
-    public :: render_rotated_text_to_image, ft_wrapper_render_char_rotated, glyph_info_t, ft_wrapper_free_glyph
+    public :: render_rotated_text_to_image
     
-    ! Glyph information structure (matches C wrapper)
-    type, bind(C) :: glyph_info_t
-        integer(c_int) :: width
-        integer(c_int) :: height
-        integer(c_int) :: left
-        integer(c_int) :: top
-        integer(c_int) :: advance_x
-        type(c_ptr) :: buffer
-        integer(c_int) :: buffer_size
-    end type glyph_info_t
+    ! Constants for text rendering
+    integer, parameter :: DEFAULT_FONT_SIZE = 16
+    real(wp), parameter :: PI = 3.14159265359_wp
 
-    ! FreeType wrapper C interfaces
-    interface
-        function ft_wrapper_init_system_font() bind(C, name="ft_wrapper_init_system_font")
-            import :: c_int
-            integer(c_int) :: ft_wrapper_init_system_font
-        end function ft_wrapper_init_system_font
-        
-        subroutine ft_wrapper_cleanup() bind(C, name="ft_wrapper_cleanup")
-        end subroutine ft_wrapper_cleanup
-        
-        function ft_wrapper_render_char(char_code, glyph_info) bind(C, name="ft_wrapper_render_char")
-            import :: c_int, glyph_info_t
-            integer(c_int), value :: char_code
-            type(glyph_info_t), intent(out) :: glyph_info
-            integer(c_int) :: ft_wrapper_render_char
-        end function
-        
-        function ft_wrapper_render_char_rotated(char_code, glyph_info, angle) bind(C, name="ft_wrapper_render_char_rotated")
-            import :: c_int, c_double, glyph_info_t
-            integer(c_int), value :: char_code
-            type(glyph_info_t), intent(out) :: glyph_info
-            real(c_double), value :: angle
-            integer(c_int) :: ft_wrapper_render_char_rotated
-        end function ft_wrapper_render_char_rotated
-        
-        subroutine ft_wrapper_free_glyph(glyph_info) bind(C, name="ft_wrapper_free_glyph")
-            import :: glyph_info_t
-            type(glyph_info_t), intent(inout) :: glyph_info
-        end subroutine ft_wrapper_free_glyph
-        
-        function ft_wrapper_render_text(text, width, height, buffer) bind(C, name="ft_wrapper_render_text")
-            import :: c_char, c_int, c_ptr
-            character(kind=c_char), intent(in) :: text(*)
-            integer(c_int), intent(out) :: width, height
-            type(c_ptr), intent(out) :: buffer
-            integer(c_int) :: ft_wrapper_render_text
-        end function ft_wrapper_render_text
-        
-        subroutine ft_wrapper_free_text_buffer(buffer) bind(C, name="ft_wrapper_free_text_buffer")
-            import :: c_ptr
-            type(c_ptr), value :: buffer
-        end subroutine ft_wrapper_free_text_buffer
-        
-        function ft_wrapper_get_kerning(left_char, right_char) bind(C, name="ft_wrapper_get_kerning")
-            import :: c_int
-            integer(c_int), value :: left_char, right_char
-            integer(c_int) :: ft_wrapper_get_kerning
-        end function ft_wrapper_get_kerning
-        
-        function ft_wrapper_is_initialized() bind(C, name="ft_wrapper_is_initialized")
-            import :: c_int
-            integer(c_int) :: ft_wrapper_is_initialized
-        end function ft_wrapper_is_initialized
-    end interface
+    ! Module state
+    type(stb_fontinfo_t) :: global_font
+    logical :: font_initialized = .false.
+    real(wp) :: font_scale = 0.0_wp
     
-    ! Module variables
-    logical :: text_system_initialized = .false.
     
 contains
 
     function init_text_system() result(success)
+        !! Initialize STB TrueType font system
         logical :: success
-        integer(c_int) :: error
+        character(len=256) :: font_paths(3)
+        integer :: i
         
         success = .false.
         
-        if (text_system_initialized) then
+        if (font_initialized) then
             success = .true.
             return
         end if
         
-        error = ft_wrapper_init_system_font()
-        if (error /= 0) then
-            print *, "Error: Could not initialize FreeType wrapper"
-            return
+        ! Try multiple common font paths
+        font_paths(1) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+        font_paths(2) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        font_paths(3) = "/System/Library/Fonts/Helvetica.ttc"
+        
+        do i = 1, 3
+            if (stb_init_font(global_font, trim(font_paths(i)))) then
+                font_scale = stb_scale_for_pixel_height(global_font, real(DEFAULT_FONT_SIZE, wp))
+                font_initialized = .true.
+                success = .true.
+                exit
+            end if
+        end do
+        
+        if (.not. success) then
+            print *, "Error: Could not initialize STB TrueType - no fonts found"
         end if
         
-        text_system_initialized = .true.
-        success = .true.
     end function init_text_system
 
     subroutine cleanup_text_system()
-        if (text_system_initialized) then
-            call ft_wrapper_cleanup()
-            text_system_initialized = .false.
+        !! Clean up STB TrueType font system
+        if (font_initialized) then
+            call stb_cleanup_font(global_font)
+            font_initialized = .false.
+            font_scale = 0.0_wp
         end if
     end subroutine cleanup_text_system
 
     function calculate_text_width(text) result(width)
-        !! Calculate the pixel width of text for proper alignment using FreeType
+        !! Calculate the pixel width of text using STB TrueType
         character(len=*), intent(in) :: text
         integer :: width
-        integer :: i, char_code, next_char_code, kerning_offset
-        integer(c_int) :: error
-        type(glyph_info_t) :: glyph_info
+        integer :: i, char_code, advance_width, left_side_bearing
         
         ! Initialize text system if not already done
-        if (.not. text_system_initialized) then
+        if (.not. font_initialized) then
             if (.not. init_text_system()) then
-                print *, "ERROR: FreeType initialization failed in calculate_text_width"
-                stop 1
+                print *, "ERROR: STB TrueType initialization failed in calculate_text_width"
+                width = len_trim(text) * 8  ! Fallback estimate
+                return
             end if
         end if
         
         width = 0
         do i = 1, len_trim(text)
             char_code = iachar(text(i:i))
-            error = ft_wrapper_render_char(char_code, glyph_info)
-            if (error == 0) then
-                ! Use advance_x directly (already in pixels, matches render_text_to_image)
-                width = width + glyph_info%advance_x
-                
-                ! Add kerning if not the last character  
-                if (i < len_trim(text)) then
-                    next_char_code = iachar(text(i+1:i+1))
-                    kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
-                    width = width + kerning_offset
-                end if
-                
-                ! Clean up glyph buffer
-                call ft_wrapper_free_glyph(glyph_info)
-            else
-                print *, "ERROR: FreeType failed to render character:", char_code
-                stop 1
-            end if
+            call stb_get_codepoint_hmetrics(global_font, char_code, advance_width, left_side_bearing)
+            ! Scale to pixel coordinates
+            width = width + int(real(advance_width) * font_scale)
         end do
         
     end function calculate_text_width
 
     function calculate_text_height(text) result(height)
-        !! Calculate the pixel height of text for proper legend box sizing
+        !! Calculate the pixel height of text using STB TrueType
         character(len=*), intent(in) :: text
         integer :: height
-        integer :: i, char_code
-        integer(c_int) :: error
-        type(glyph_info_t) :: glyph_info
+        integer :: ascent, descent, line_gap
         
-        if (.not. text_system_initialized) then
+        if (.not. font_initialized) then
             if (.not. init_text_system()) then
-                height = 16  ! Fallback: typical font height
+                height = DEFAULT_FONT_SIZE  ! Fallback
                 return
             end if
         end if
         
-        height = 0
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
-            error = ft_wrapper_render_char(char_code, glyph_info)
-            if (error == 0) then
-                ! Get the character height
-                height = max(height, glyph_info%height)
-                call ft_wrapper_free_glyph(glyph_info)
-            else
-                ! Fallback for unsupported characters
-                height = max(height, 16)
-            end if
-        end do
+        ! Get font metrics and scale to pixels
+        call stb_get_font_vmetrics(global_font, ascent, descent, line_gap)
+        height = int(real(ascent - descent) * font_scale)
         
         ! Ensure minimum reasonable height
-        if (height <= 0) height = 16
+        if (height <= 0) height = DEFAULT_FONT_SIZE
         
     end function calculate_text_height
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
+        !! Render text to image using STB TrueType
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
-        integer :: pen_x, pen_y, i, char_code, next_char_code, kerning_offset
-        integer(c_int) :: error
-        type(glyph_info_t) :: glyph_info
+        integer :: pen_x, pen_y, i, char_code
+        integer :: advance_width, left_side_bearing
+        type(c_ptr) :: bitmap_ptr
+        integer :: bmp_width, bmp_height, xoff, yoff
         
-        if (.not. text_system_initialized) then
+        if (.not. font_initialized) then
             if (.not. init_text_system()) then
                 call render_simple_placeholder(image_data, width, height, x, y, r, g, b)
                 return
@@ -203,73 +133,74 @@ contains
         do i = 1, len_trim(text)
             char_code = iachar(text(i:i))
             
-            error = ft_wrapper_render_char(char_code, glyph_info)
-            if (error /= 0) then
-                cycle
-            end if
-            call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
+            ! Get character bitmap
+            bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
+                                                 bmp_width, bmp_height, xoff, yoff)
             
-            if (i < len_trim(text)) then
-                next_char_code = iachar(text(i+1:i+1))
-                kerning_offset = ft_wrapper_get_kerning(char_code, next_char_code)
-                pen_x = pen_x + glyph_info%advance_x + kerning_offset
-            else
-                pen_x = pen_x + glyph_info%advance_x
+            if (c_associated(bitmap_ptr)) then
+                call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
+                                     bitmap_ptr, bmp_width, bmp_height, xoff, yoff, r, g, b)
+                call stb_free_bitmap(bitmap_ptr)
             end if
             
-            call ft_wrapper_free_glyph(glyph_info)
+            ! Advance pen position
+            call stb_get_codepoint_hmetrics(global_font, char_code, advance_width, left_side_bearing)
+            pen_x = pen_x + int(real(advance_width) * font_scale)
         end do
     end subroutine render_text_to_image
 
-    subroutine render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
+    subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
+                               bmp_width, bmp_height, xoff, yoff, r, g, b)
+        !! Render STB TrueType glyph bitmap to image
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, pen_x, pen_y
-        type(glyph_info_t), intent(in) :: glyph_info
+        type(c_ptr), intent(in) :: bitmap_ptr
+        integer, intent(in) :: bmp_width, bmp_height, xoff, yoff
         integer(1), intent(in) :: r, g, b
-        integer(1), pointer :: bitmap_buffer(:)
+        integer(c_int8_t), pointer :: bitmap_buffer(:)
         integer :: glyph_x, glyph_y, img_x, img_y, row, col, pixel_idx
-        integer(1) :: alpha
+        integer :: alpha_int
         real :: alpha_f, bg_r, bg_g, bg_b
         
-        if (glyph_info%width <= 0 .or. glyph_info%height <= 0) then
+        if (bmp_width <= 0 .or. bmp_height <= 0) then
             return
         end if
         
-        if (.not. c_associated(glyph_info%buffer)) then
-            call render_simple_character_block(image_data, width, height, pen_x, pen_y, r, g, b)
-            return
-        end if
+        call c_f_pointer(bitmap_ptr, bitmap_buffer, [bmp_width * bmp_height])
         
-        call c_f_pointer(glyph_info%buffer, bitmap_buffer, [glyph_info%buffer_size])
+        glyph_x = pen_x + xoff
+        glyph_y = pen_y + yoff  ! STB yoff is negative for characters above baseline
         
-        glyph_x = pen_x + glyph_info%left
-        glyph_y = pen_y - glyph_info%top
-        
-        do row = 0, glyph_info%height - 1
-            do col = 0, glyph_info%width - 1
+        do row = 0, bmp_height - 1
+            do col = 0, bmp_width - 1
                 img_x = glyph_x + col
                 img_y = glyph_y + row
                 
                 if (img_x >= 0 .and. img_x < width .and. img_y >= 0 .and. img_y < height) then
-                    alpha = bitmap_buffer(row * glyph_info%width + col + 1)
-                    pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
+                    ! Convert signed int8 to unsigned (0-255 range)
+                    alpha_int = int(bitmap_buffer(row * bmp_width + col + 1))
+                    if (alpha_int < 0) alpha_int = alpha_int + 256
                     
-                    alpha_f = real(int(alpha, kind=selected_int_kind(2)) + merge(256, 0, alpha < 0)) / 255.0
-                    bg_r = real(int(image_data(pixel_idx), &
-                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))
-                    bg_g = real(int(image_data(pixel_idx + 1), &
-                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 1) < 0))
-                    bg_b = real(int(image_data(pixel_idx + 2), &
-                        kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
-                    
-                    ! Proper alpha blending: result = background * (1-alpha) + foreground * alpha
-                    image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f) + real(int(r) + merge(256, 0, r < 0)) * alpha_f, 1)
-                    image_data(pixel_idx + 1) = int(bg_g * (1.0 - alpha_f) + real(int(g) + merge(256, 0, g < 0)) * alpha_f, 1)
-                    image_data(pixel_idx + 2) = int(bg_b * (1.0 - alpha_f) + real(int(b) + merge(256, 0, b < 0)) * alpha_f, 1)
+                    if (alpha_int > 0) then  ! Only render non-transparent pixels
+                        pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
+                        
+                        alpha_f = real(alpha_int) / 255.0
+                        bg_r = real(int(image_data(pixel_idx), &
+                            kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))
+                        bg_g = real(int(image_data(pixel_idx + 1), &
+                            kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 1) < 0))
+                        bg_b = real(int(image_data(pixel_idx + 2), &
+                            kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx + 2) < 0))
+                        
+                        ! Alpha blending
+                        image_data(pixel_idx) = int(bg_r * (1.0 - alpha_f) + real(int(r) + merge(256, 0, r < 0)) * alpha_f, 1)
+                        image_data(pixel_idx + 1) = int(bg_g * (1.0 - alpha_f) + real(int(g) + merge(256, 0, g < 0)) * alpha_f, 1)
+                        image_data(pixel_idx + 2) = int(bg_b * (1.0 - alpha_f) + real(int(b) + merge(256, 0, b < 0)) * alpha_f, 1)
+                    end if
                 end if
             end do
         end do
-    end subroutine render_glyph_from_wrapper
+    end subroutine render_stb_glyph
     
 
     subroutine render_simple_character_block(image_data, width, height, x, y, r, g, b)
@@ -389,7 +320,7 @@ contains
     end function get_character_pixel
 
     subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
-        !! Render rotated text to PNG image using FreeType transformation
+        !! Render rotated text to PNG image using STB TrueType (simplified rotation)
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -397,11 +328,12 @@ contains
         real(wp), intent(in) :: angle  ! Rotation angle in degrees
         
         integer :: i, char_code, pen_x, pen_y
-        integer(c_int) :: error
-        type(glyph_info_t) :: glyph_info
-        real(c_double) :: angle_c
+        integer :: advance_width, left_side_bearing
+        type(c_ptr) :: bitmap_ptr
+        integer :: bmp_width, bmp_height, xoff, yoff
+        real(wp) :: cos_a, sin_a
         
-        if (.not. text_system_initialized) then
+        if (.not. font_initialized) then
             if (.not. init_text_system()) then
                 return
             end if
@@ -409,21 +341,27 @@ contains
         
         pen_x = x
         pen_y = y
-        angle_c = real(angle, c_double)
+        cos_a = cos(angle * PI / 180.0_wp)
+        sin_a = sin(angle * PI / 180.0_wp)
         
+        ! For now, render text normally (STB doesn't have built-in rotation)
+        ! TODO: Implement proper bitmap rotation if needed
         do i = 1, len_trim(text)
             char_code = iachar(text(i:i))
-            error = ft_wrapper_render_char_rotated(char_code, glyph_info, angle_c)
-            if (error == 0) then
-                ! Render the rotated glyph using existing helper
-                call render_glyph_from_wrapper(image_data, width, height, pen_x, pen_y, glyph_info, r, g, b)
-                
-                ! Advance text position (rotated advance)
-                pen_x = pen_x + int(real(glyph_info%advance_x) * cos(angle * 3.14159265359_wp / 180.0_wp))
-                pen_y = pen_y + int(real(glyph_info%advance_x) * sin(angle * 3.14159265359_wp / 180.0_wp))
+            
+            bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
+                                                 bmp_width, bmp_height, xoff, yoff)
+            
+            if (c_associated(bitmap_ptr)) then
+                call render_stb_glyph(image_data, width, height, pen_x, pen_y, &
+                                     bitmap_ptr, bmp_width, bmp_height, xoff, yoff, r, g, b)
+                call stb_free_bitmap(bitmap_ptr)
             end if
             
-            call ft_wrapper_free_glyph(glyph_info)
+            ! Advance with rotation
+            call stb_get_codepoint_hmetrics(global_font, char_code, advance_width, left_side_bearing)
+            pen_x = pen_x + int(real(advance_width) * font_scale * cos_a)
+            pen_y = pen_y + int(real(advance_width) * font_scale * sin_a)
         end do
     end subroutine render_rotated_text_to_image
 
