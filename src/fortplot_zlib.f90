@@ -9,6 +9,8 @@ module fortplot_zlib
     public :: zlib_compress, zlib_decompress, crc32_calculate
     public :: zlib_test_roundtrip
     
+    private :: bit_reverse
+
     ! Deflate compression constants
     integer, parameter :: MAX_MATCH = 258
     integer, parameter :: MIN_MATCH = 3
@@ -167,7 +169,7 @@ contains
         end if
         
         ! Skip zlib header (2 bytes) and decompress deflate stream
-        call deflate_decompress(input_data(3), input_len - 6, decompressed_block, decompressed_len)
+        call deflate_decompress(input_data(3:input_len-4), input_len - 6, decompressed_block, decompressed_len)
         
         if (.not. allocated(decompressed_block) .or. decompressed_len <= 0) then
             output_len = 0
@@ -212,7 +214,7 @@ contains
         
         ! Hash table for LZ77
         integer :: hash_table(0:HASH_SIZE-1)
-        integer :: hash_chain(MAX_DISTANCE)
+        integer :: hash_chain(WINDOW_SIZE)
         
         ! Huffman tables (fixed Huffman for simplicity)
         integer :: literal_codes(0:285)
@@ -223,7 +225,7 @@ contains
         ! Output bit buffer
         integer(int8), allocatable :: bit_buffer(:)
         integer :: bit_pos, byte_pos
-        integer :: i, pos, match_len, match_dist, block_len
+        integer :: i, pos, match_len, match_dist
         integer :: hash_val
         
         ! Initialize fixed Huffman tables
@@ -233,48 +235,53 @@ contains
         hash_table = -1
         hash_chain = -1
         
-        ! Allocate bit buffer (worst case: no compression, minimum 64 bytes)
+        ! Allocate bit buffer (worst case: no compression, plus some overhead)
         allocate(bit_buffer(max(64, input_len * 2)))
         bit_pos = 0
         byte_pos = 1
         
-        ! Handle data in blocks (max 65535 bytes per uncompressed block)
+        ! Write deflate block header: BFINAL=1 (last block), BTYPE=01 (fixed Huffman)
+        call write_bits(bit_buffer, bit_pos, byte_pos, 1, 1)
+        call write_bits(bit_buffer, bit_pos, byte_pos, 1, 2)  ! BTYPE=01
+        
         pos = 1
         do while (pos <= input_len)
-            block_len = min(65535, input_len - pos + 1)
+            ! Find longest match
+            call find_longest_match(input_data, pos, input_len, hash_table, hash_chain, match_len, match_dist)
             
-            ! Write deflate block header
-            if (pos + block_len - 1 >= input_len) then
-                call write_bits(bit_buffer, bit_pos, byte_pos, 1, 1)  ! BFINAL=1 (last block)
+            if (match_len >= MIN_MATCH) then
+                ! Encode length-distance pair
+                call encode_length_distance(bit_buffer, bit_pos, byte_pos, match_len, match_dist, &
+                                            literal_codes, literal_lengths, distance_codes, distance_lengths)
+                
+                ! Update hash table for the matched string
+                do i = 0, match_len - 1
+                    if (pos + i <= input_len) then
+                        hash_val = calculate_hash(input_data, pos + i, input_len)
+                        call update_hash_table(hash_table, hash_chain, hash_val, pos + i)
+                    end if
+                end do
+                pos = pos + match_len
             else
-                call write_bits(bit_buffer, bit_pos, byte_pos, 0, 1)  ! BFINAL=0 (not last block)
+                ! Encode literal
+                call encode_literal(bit_buffer, bit_pos, byte_pos, input_data(pos), literal_codes, literal_lengths)
+                
+                ! Update hash table
+                if (pos <= input_len) then
+                    hash_val = calculate_hash(input_data, pos, input_len)
+                    call update_hash_table(hash_table, hash_chain, hash_val, pos)
+                end if
+                pos = pos + 1
             end if
-            call write_bits(bit_buffer, bit_pos, byte_pos, 0, 2)  ! BTYPE=00 (uncompressed)
-            
-            ! Align to byte boundary for uncompressed block
-            if (bit_pos > 0) then
-                byte_pos = byte_pos + 1
-                bit_pos = 0
-            end if
-            
-            ! Write LEN (little endian)
-            bit_buffer(byte_pos) = int(iand(block_len, 255), int8)
-            bit_buffer(byte_pos + 1) = int(iand(ishft(block_len, -8), 255), int8)
-            byte_pos = byte_pos + 2
-            
-            ! Write NLEN (one's complement of LEN)
-            bit_buffer(byte_pos) = int(iand(not(block_len), 255), int8)
-            bit_buffer(byte_pos + 1) = int(iand(ishft(not(block_len), -8), 255), int8)
-            byte_pos = byte_pos + 2
-            
-            ! Copy literal data for this block
-            do i = pos, pos + block_len - 1
-                bit_buffer(byte_pos) = input_data(i)
-                byte_pos = byte_pos + 1
-            end do
-            
-            pos = pos + block_len
         end do
+        
+        ! Encode end-of-block marker (code 256)
+        call write_bits(bit_buffer, bit_pos, byte_pos, bit_reverse(literal_codes(256), literal_lengths(256)), literal_lengths(256))
+        
+        ! Align to byte boundary
+        if (bit_pos > 0) then
+            byte_pos = byte_pos + 1
+        end if
         
         ! Copy result
         output_len = byte_pos - 1
@@ -339,9 +346,9 @@ contains
         integer :: hash_val
         
         if (pos + 2 <= data_len) then
-            hash_val = iand(ior(ior(ishft(int(data(pos)), 16), &
-                                   ishft(int(data(pos+1)), 8)), &
-                               int(data(pos+2))), HASH_SIZE - 1)
+            hash_val = iand(ior(ior(ishft(iand(int(data(pos)), 255), 16), &
+                                   ishft(iand(int(data(pos+1)), 255), 8)), &
+                               iand(int(data(pos+2)), 255)), HASH_SIZE - 1)
         else
             hash_val = 0
         end if
@@ -355,7 +362,7 @@ contains
         
         integer :: chain_pos
         
-        chain_pos = iand(pos, MAX_DISTANCE - 1) + 1
+        chain_pos = iand(pos, WINDOW_SIZE - 1) + 1
         hash_chain(chain_pos) = hash_table(hash_val)
         hash_table(hash_val) = pos
     end subroutine update_hash_table
@@ -401,7 +408,7 @@ contains
             end if
             
             ! Follow hash chain
-            chain_pos = iand(candidate_pos, MAX_DISTANCE - 1) + 1
+            chain_pos = iand(candidate_pos, WINDOW_SIZE - 1) + 1
             candidate_pos = hash_chain(chain_pos)
             chain_length = chain_length + 1
         end do
@@ -442,7 +449,7 @@ contains
         integer :: lit_val
         
         lit_val = iand(int(literal), 255)  ! Ensure 0-255 range
-        call write_bits(buffer, bit_pos, byte_pos, codes(lit_val), lengths(lit_val))
+        call write_bits(buffer, bit_pos, byte_pos, bit_reverse(codes(lit_val), lengths(lit_val)), lengths(lit_val))
     end subroutine encode_literal
     
     subroutine encode_length_distance(buffer, bit_pos, byte_pos, length, distance, &
@@ -459,14 +466,14 @@ contains
         
         ! Encode length
         call get_length_code(length, length_code, length_extra_bits, length_extra)
-        call write_bits(buffer, bit_pos, byte_pos, literal_codes(length_code), literal_lengths(length_code))
+        call write_bits(buffer, bit_pos, byte_pos, bit_reverse(literal_codes(length_code), literal_lengths(length_code)), literal_lengths(length_code))
         if (length_extra_bits > 0) then
             call write_bits(buffer, bit_pos, byte_pos, length_extra, length_extra_bits)
         end if
         
         ! Encode distance
         call get_distance_code(distance, distance_code, distance_extra_bits, distance_extra)
-        call write_bits(buffer, bit_pos, byte_pos, distance_codes(distance_code), distance_lengths(distance_code))
+        call write_bits(buffer, bit_pos, byte_pos, bit_reverse(distance_codes(distance_code), distance_lengths(distance_code)), distance_lengths(distance_code))
         if (distance_extra_bits > 0) then
             call write_bits(buffer, bit_pos, byte_pos, distance_extra, distance_extra_bits)
         end if
@@ -638,18 +645,19 @@ contains
         integer :: distance_codes(0:31), distance_lengths(0:31)
         
         ! Output buffer management
-        integer, parameter :: MAX_OUTPUT = 1000000  ! 1MB max output
-        integer :: output_pos
+        integer, parameter :: INITIAL_OUTPUT_SIZE = 65536
+        integer :: output_pos, output_size
         
         ! History buffer for LZ77
-        integer(int8) :: history(MAX_DISTANCE)
+        integer(int8) :: history(WINDOW_SIZE)
         integer :: history_pos
         
         ! Temporary buffer for resizing
         integer(int8), allocatable :: temp_buffer(:)
         
         output_len = 0
-        allocate(output_data(MAX_OUTPUT))
+        output_size = INITIAL_OUTPUT_SIZE
+        allocate(output_data(output_size))
         output_pos = 0
         
         bit_pos = 0
@@ -660,11 +668,11 @@ contains
         
         do
             ! Read BFINAL bit
-            call read_bits(input_data, byte_pos, bit_pos, bit_buffer, bits_available, 1, i)
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 1, i)
             final_block = (i == 1)
             
             ! Read BTYPE (2 bits)
-            call read_bits(input_data, byte_pos, bit_pos, bit_buffer, bits_available, 2, block_type)
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 2, block_type)
             
             if (block_type == 0) then
                 ! Uncompressed block
@@ -682,16 +690,18 @@ contains
                 ! Copy literal data
                 do i = 1, block_len
                     output_pos = output_pos + 1
-                    if (output_pos > MAX_OUTPUT) then
-                        output_len = 0
+                    if (output_pos > output_size) then
+                        ! Resize output buffer
+                        allocate(temp_buffer(output_size * 2))
+                        temp_buffer(1:output_size) = output_data(1:output_size)
                         deallocate(output_data)
-                        allocate(output_data(1))
-                        return
+                        call move_alloc(temp_buffer, output_data)
+                        output_size = output_size * 2
                     end if
                     output_data(output_pos) = input_data(byte_pos)
                     
                     ! Update history
-                    history_pos = mod(history_pos, MAX_DISTANCE) + 1
+                    history_pos = mod(history_pos, WINDOW_SIZE) + 1
                     history(history_pos) = input_data(byte_pos)
                     
                     byte_pos = byte_pos + 1
@@ -700,17 +710,17 @@ contains
             else if (block_type == 1) then
                 ! Fixed Huffman codes
                 call setup_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)
-                call decompress_huffman_block(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                             literal_codes, literal_lengths, distance_codes, distance_lengths, &
-                                            output_data, output_pos, history, history_pos, MAX_OUTPUT)
+                                            output_data, output_pos, output_size, history, history_pos)
                 
             else if (block_type == 2) then
                 ! Dynamic Huffman codes
-                call read_dynamic_huffman_tables(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                                literal_codes, literal_lengths, distance_codes, distance_lengths)
-                call decompress_huffman_block(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+                call decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                             literal_codes, literal_lengths, distance_codes, distance_lengths, &
-                                            output_data, output_pos, history, history_pos, MAX_OUTPUT)
+                                            output_data, output_pos, output_size, history, history_pos)
             else
                 ! Invalid block type
                 output_len = 0
@@ -725,17 +735,21 @@ contains
         output_len = output_pos
         
         ! Resize output to actual size
-        if (output_len > 0 .and. output_len < MAX_OUTPUT) then
+        if (output_len > 0 .and. output_len < output_size) then
             allocate(temp_buffer(output_len))
             temp_buffer(1:output_len) = output_data(1:output_len)
             deallocate(output_data)
             call move_alloc(temp_buffer, output_data)
+        else if (output_len == 0) then
+            deallocate(output_data)
+            allocate(output_data(1))
         end if
     end subroutine deflate_decompress
     
-    subroutine read_bits(input_data, byte_pos, bit_pos, bit_buffer, bits_available, num_bits, result)
+    subroutine read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, num_bits, result)
         !! Read bits from input stream (LSB first)
         integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
         integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer, intent(in) :: num_bits
         integer, intent(out) :: result
@@ -747,13 +761,17 @@ contains
         
         do while (need_bits > 0)
             if (bits_available == 0) then
+                if (byte_pos > input_len) then
+                    result = 0 ! Should not happen in valid stream
+                    return
+                end if
                 bit_buffer = iand(int(input_data(byte_pos)), 255)
                 byte_pos = byte_pos + 1
                 bits_available = 8
             end if
             
             if (need_bits <= bits_available) then
-                result = ior(result, ishft(iand(bit_buffer, ishft(1, need_bits) - 1), num_bits - need_bits))
+                result = ior(result, ishft(iand(bit_buffer, (ishft(1, need_bits) - 1)), num_bits - need_bits))
                 bit_buffer = ishft(bit_buffer, -need_bits)
                 bits_available = bits_available - need_bits
                 need_bits = 0
@@ -780,29 +798,24 @@ contains
         integer, intent(out) :: literal_codes(0:), literal_lengths(0:)
         integer, intent(out) :: distance_codes(0:), distance_lengths(0:)
         
-        integer :: i, code
+        integer :: i
         
         ! Fixed literal/length codes
-        code = 0
         do i = 0, 143
             literal_lengths(i) = 8
-            literal_codes(i) = code
-            code = code + 1
+            literal_codes(i) = i + 48
         end do
         do i = 144, 255
             literal_lengths(i) = 9
-            literal_codes(i) = code
-            code = code + 1
+            literal_codes(i) = i - 144 + 400
         end do
         do i = 256, 279
             literal_lengths(i) = 7
-            literal_codes(i) = code
-            code = code + 1
+            literal_codes(i) = i - 256
         end do
         do i = 280, 287
             literal_lengths(i) = 8
-            literal_codes(i) = code
-            code = code + 1
+            literal_codes(i) = i - 280 + 192
         end do
         
         ! Fixed distance codes (all 5 bits)
@@ -812,47 +825,147 @@ contains
         end do
     end subroutine setup_fixed_huffman_tables
     
-    subroutine read_dynamic_huffman_tables(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+    subroutine read_dynamic_huffman_tables(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                          literal_codes, literal_lengths, distance_codes, distance_lengths)
-        !! Read dynamic Huffman tables (simplified implementation)
+        !! Read dynamic Huffman tables from the bitstream
         integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
         integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer, intent(out) :: literal_codes(0:), literal_lengths(0:)
         integer, intent(out) :: distance_codes(0:), distance_lengths(0:)
         
-        ! For now, fall back to fixed tables for dynamic blocks
-        call setup_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)
+        integer :: hlit, hdist, hclen, i, j, len
+        integer :: code_len_codes(0:18)
+        integer :: code_len_lengths(0:18)
+        integer :: lengths(0:287+31)
+        integer, parameter :: code_len_order(0:18) = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]
+        
+        call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 5, hlit)
+        call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 5, hdist)
+        call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 4, hclen)
+        
+        hlit = hlit + 257
+        hdist = hdist + 1
+        hclen = hclen + 4
+        
+        ! Read code lengths for the code length alphabet
+        code_len_lengths = 0
+        do i = 0, hclen - 1
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 3, len)
+            code_len_lengths(code_len_order(i)) = len
+        end do
+        
+        ! Build Huffman table for code lengths
+        call build_huffman_table(code_len_codes, code_len_lengths, 0, 18)
+        
+        ! Read literal/length and distance code lengths
+        i = 0
+        do while (i < hlit + hdist)
+            call decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
+                                     code_len_codes, code_len_lengths, 0, 18, j)
+            if (j <= 15) then
+                lengths(i) = j
+                i = i + 1
+            else if (j == 16) then
+                call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 2, len)
+                len = len + 3
+                do while (len > 0)
+                    lengths(i) = lengths(i-1)
+                    i = i + 1
+                    len = len - 1
+                end do
+            else if (j == 17) then
+                call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 3, len)
+                len = len + 3
+                do while (len > 0)
+                    lengths(i) = 0
+                    i = i + 1
+                    len = len - 1
+                end do
+            else if (j == 18) then
+                call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 7, len)
+                len = len + 11
+                do while (len > 0)
+                    lengths(i) = 0
+                    i = i + 1
+                    len = len - 1
+                end do
+            end if
+        end do
+        
+        ! Build literal/length and distance Huffman tables
+        call build_huffman_table(literal_codes, lengths, 0, hlit - 1)
+        call build_huffman_table(distance_codes, lengths(hlit:), 0, hdist - 1)
     end subroutine read_dynamic_huffman_tables
+
+    subroutine build_huffman_table(codes, lengths, min_code, max_code)
+        !! Build a Huffman table from a set of code lengths
+        integer, intent(out) :: codes(0:)
+        integer, intent(in) :: lengths(0:)
+        integer, intent(in) :: min_code, max_code
+        
+        integer :: bl_count(0:15)
+        integer :: next_code(0:15)
+        integer :: i, code, len
+        
+        bl_count = 0
+        do i = min_code, max_code
+            bl_count(lengths(i)) = bl_count(lengths(i)) + 1
+        end do
+        
+        code = 0
+        bl_count(0) = 0
+        do i = 1, 15
+            code = ishft(code + bl_count(i-1), 1)
+            next_code(i) = code
+        end do
+        
+        do i = min_code, max_code
+            len = lengths(i)
+            if (len /= 0) then
+                codes(i) = next_code(len)
+                next_code(len) = next_code(len) + 1
+            end if
+        end do
+    end subroutine build_huffman_table
     
-    subroutine decompress_huffman_block(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+    subroutine decompress_huffman_block(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                        literal_codes, literal_lengths, distance_codes, distance_lengths, &
-                                       output_data, output_pos, history, history_pos, max_output)
+                                       output_data, output_pos, output_size, history, history_pos)
         !! Decompress a Huffman-coded block
         integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
         integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer, intent(in) :: literal_codes(0:), literal_lengths(0:)
         integer, intent(in) :: distance_codes(0:), distance_lengths(0:)
-        integer(int8), intent(inout) :: output_data(:)
-        integer, intent(inout) :: output_pos
+        integer(int8), intent(inout), allocatable :: output_data(:)
+        integer, intent(inout) :: output_pos, output_size
         integer(int8), intent(inout) :: history(:)
         integer, intent(inout) :: history_pos
-        integer, intent(in) :: max_output
         
         integer :: symbol, length, distance, i, back_pos
+        integer(int8), allocatable :: temp_buffer(:)
         
         do
             ! Decode next symbol
-            call decode_huffman_symbol(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+            call decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                      literal_codes, literal_lengths, 0, 287, symbol)
             
             if (symbol < 256) then
                 ! Literal byte
                 output_pos = output_pos + 1
-                if (output_pos > max_output) return
+                if (output_pos > output_size) then
+                    ! Resize output buffer
+                    allocate(temp_buffer(output_size * 2))
+                    temp_buffer(1:output_size) = output_data(1:output_size)
+                    deallocate(output_data)
+                    call move_alloc(temp_buffer, output_data)
+                    output_size = output_size * 2
+                end if
                 output_data(output_pos) = int(symbol, int8)
                 
                 ! Update history
-                history_pos = mod(history_pos, MAX_DISTANCE) + 1
+                history_pos = mod(history_pos, WINDOW_SIZE) + 1
                 history(history_pos) = int(symbol, int8)
                 
             else if (symbol == 256) then
@@ -861,76 +974,127 @@ contains
                 
             else
                 ! Length/distance pair
-                length = decode_length(symbol)
-                call decode_huffman_symbol(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+                length = decode_length(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available)
+                call decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                          distance_codes, distance_lengths, 0, 31, symbol)
-                distance = decode_distance(symbol)
+                distance = decode_distance(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available)
                 
                 ! Copy from history
                 do i = 1, length
                     back_pos = history_pos - distance
-                    if (back_pos <= 0) back_pos = back_pos + MAX_DISTANCE
+                    if (back_pos <= 0) back_pos = back_pos + WINDOW_SIZE
                     
                     output_pos = output_pos + 1
-                    if (output_pos > max_output) return
+                    if (output_pos > output_size) then
+                        ! Resize output buffer
+                        allocate(temp_buffer(output_size * 2))
+                        temp_buffer(1:output_size) = output_data(1:output_size)
+                        deallocate(output_data)
+                        call move_alloc(temp_buffer, output_data)
+                        output_size = output_size * 2
+                    end if
                     output_data(output_pos) = history(back_pos)
                     
-                    history_pos = mod(history_pos, MAX_DISTANCE) + 1
+                    history_pos = mod(history_pos, WINDOW_SIZE) + 1
                     history(history_pos) = history(back_pos)
                 end do
             end if
         end do
     end subroutine decompress_huffman_block
     
-    subroutine decode_huffman_symbol(input_data, byte_pos, bit_pos, bit_buffer, bits_available, &
+    subroutine decode_huffman_symbol(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, &
                                     codes, lengths, min_code, max_code, symbol)
         !! Decode a Huffman symbol (simplified linear search)
         integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
         integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer, intent(in) :: codes(0:), lengths(0:)
         integer, intent(in) :: min_code, max_code
         integer, intent(out) :: symbol
         
-        integer :: code, code_len, i
+        integer :: code, code_len, i, bit
         
         code = 0
-        ! Simple linear search (inefficient but correct)
-        do code_len = 1, 15
-            call read_bits(input_data, byte_pos, bit_pos, bit_buffer, bits_available, 1, i)
-            code = code * 2 + i
+        code_len = 0
+        
+        ! Decode symbol by reading one bit at a time
+        do
+            code_len = code_len + 1
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, 1, bit)
+            code = ior(ishft(code, 1), bit)
             
             do symbol = min_code, max_code
-                if (lengths(symbol) == code_len .and. codes(symbol) == code) return
+                if (lengths(symbol) == code_len .and. codes(symbol) == code) then
+                    return
+                end if
             end do
+            
+            if (code_len >= 15) exit ! Max code length
         end do
         
         symbol = 256  ! Default to end-of-block on error
     end subroutine decode_huffman_symbol
     
-    function decode_length(symbol) result(length)
-        !! Decode length from length symbol
+    function decode_length(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available) result(length)
+        !! Decode length from length symbol, reading extra bits if needed
         integer, intent(in) :: symbol
+        integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
+        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer :: length
+        integer :: extra_bits, extra_val
+        
+        if (symbol < 257 .or. symbol > 285) then
+            length = 0 ! Invalid symbol
+            return
+        end if
         
         if (symbol <= 264) then
             length = symbol - 254
         else if (symbol <= 284) then
-            length = 11 + (symbol - 265) * 4  ! Simplified
-        else
+            extra_bits = (symbol - 261) / 4
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, extra_bits, extra_val)
+            length = ishft(mod(symbol - 261, 4) + 4, extra_bits) + 3 + extra_val
+        else ! symbol == 285
             length = 258
         end if
     end function decode_length
     
-    function decode_distance(symbol) result(distance)
-        !! Decode distance from distance symbol
+    function decode_distance(symbol, input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available) result(distance)
+        !! Decode distance from distance symbol, reading extra bits if needed
         integer, intent(in) :: symbol
+        integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
+        integer, intent(inout) :: byte_pos, bit_pos, bit_buffer, bits_available
         integer :: distance
+        integer :: extra_bits, extra_val
+        
+        if (symbol < 0 .or. symbol > 29) then
+            distance = 0 ! Invalid symbol
+            return
+        end if
         
         if (symbol <= 3) then
             distance = symbol + 1
         else
-            distance = 5 + (symbol - 4) * 2  ! Simplified
+            extra_bits = (symbol - 2) / 2
+            call read_bits(input_data, input_len, byte_pos, bit_pos, bit_buffer, bits_available, extra_bits, extra_val)
+            distance = ishft(mod(symbol, 2) + 2, extra_bits) + 1 + extra_val
         end if
     end function decode_distance
+
+    function bit_reverse(value, num_bits) result(reversed_value)
+        !! Reverses the bits of a given value up to num_bits.
+        integer, intent(in) :: value, num_bits
+        integer :: reversed_value
+        integer :: i
+        
+        reversed_value = 0
+        do i = 0, num_bits - 1
+            if (iand(ishft(value, -i), 1) == 1) then
+                reversed_value = ior(reversed_value, ishft(1, num_bits - 1 - i))
+            end if
+        end do
+    end function bit_reverse
 
 end module fortplot_zlib
