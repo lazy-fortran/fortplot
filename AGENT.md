@@ -97,7 +97,7 @@ To discover available executable targets:
 
 ```bash
 # List example programs
-ls example/
+find example/ -name "*.f90" -not -name "CMakeLists.txt"
 
 # List test programs
 ls test/
@@ -149,22 +149,12 @@ end program
 - Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
 - Use procedure pointers for backend-agnostic operations
 - Centralize constants and magic numbers in one place
-- ✓ IMPLEMENTED: All scales (linear, log, symlog) use consistent tick formatting via shared `format_tick_value()` function
 
 **KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness - **MANDATORY**
 - Write clear, readable code over "clever" optimizations
 - Use straightforward algorithms unless performance demands complexity
 - Prefer explicit over implicit behavior
 - Choose clear variable names over short abbreviations
-- ✓ IMPLEMENTED: Coordinate transformation properly separated - original coordinates for tick generation, transformed coordinates for data rendering
-
-```fortran
-! DRY: Common functionality extracted to shared module
-use fortplot_margins, only: plot_margins_t, calculate_plot_area
-
-! KISS: Clear, simple coordinate transformation
-pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * plot_width + plot_left
-```
 
 ### Test-Driven Development (MANDATORY)
 
@@ -208,37 +198,6 @@ When implementing new features or improving existing ones:
 3. **Reference pyplot-fortran** in `thirdparty/pyplot-fortran/src/pyplot_module.F90` for clean API design patterns
 4. **Test against matplotlib output** using `make ref` to generate reference plots for comparison
 
-### Debug Scripts MUST Become Unit Tests
-
-**⚠️ MANDATORY: ALL DEBUG SCRIPTS MUST BE CONVERTED TO TESTS ⚠️**
-
-When creating debug scripts in `app/debug_*.f90` for development:
-1. **Debug scripts are temporary** - use them to understand behavior
-2. **Extract corner cases** - identify edge cases and boundary conditions
-3. **Convert to unit tests** - move all corner cases to `test/test_*.f90`
-4. **Delete debug scripts** - or keep only as examples if educational
-
-Example workflow:
-```fortran
-! app/debug_tick_format.f90 - TEMPORARY debugging
-program debug_tick_format
-    ! Test various edge cases...
-    call test_small_range()
-    call test_large_range()
-    call test_zero_crossing()
-end program
-
-! MUST become test/test_tick_format.f90 - PERMANENT unit tests
-program test_tick_format
-    call test_should_handle_small_ranges()
-    call test_should_handle_large_ranges()
-    call test_should_handle_zero_crossing()
-    print *, "All tick format tests passed!"
-end program
-```
-
-**Corner cases discovered during debugging are GOLD** - they reveal real-world scenarios that must be tested to prevent regressions.
-
 ### Code Organization (MANDATORY RULES)
 
 **⚠️ CRITICAL: THESE RULES ARE NON-NEGOTIABLE ⚠️**
@@ -247,25 +206,6 @@ end program
 **Naming**: Use descriptive verbs (`calculate_bounds` not `calc`) - **REQUIRED**
 **Placement**: Helper routines after caller, shared utilities at module end - **ENFORCED**
 **Comments**: Only for complex algorithms, let code self-document - **MANDATORY**
-
-### Refactoring Strategy
-
-Extract commented blocks into well-named routines:
-```fortran
-! BEFORE: Comments explain complex logic
-subroutine process_data()
-    ! Validate inputs
-    ! Transform coordinates
-    ! Apply filters
-end subroutine
-
-! AFTER: Routine names explain purpose
-subroutine process_data()
-    call validate_input_data()
-    call transform_coordinates()
-    call apply_antialiasing_filters()
-end subroutine
-```
 
 ### State Management - CRITICALLY IMPORTANT
 
@@ -278,40 +218,6 @@ end subroutine
 - **STATELESS OPERATIONS** - Functions should not rely on hidden global state
 - **CLEAR OWNERSHIP** - Each piece of state must have a clear owner and scope
 
-**Examples of FORBIDDEN patterns:**
-```fortran
-! BAD: Global mutable state
-module bad_module
-    real(wp) :: global_line_width = 1.0_wp  ! FORBIDDEN
-    logical :: drawing_enabled = .true.     ! FORBIDDEN
-end module
-
-! BAD: Hidden state mutations
-subroutine bad_draw_text(ctx, text)
-    ! Modifies line width globally without restoring
-    call ctx%set_line_width(0.5_wp)  ! FORBIDDEN - corrupts state
-    ! ... draw text ...
-    ! Missing: restore original line width
-end subroutine
-```
-
-**REQUIRED patterns:**
-```fortran
-! GOOD: Explicit state save/restore
-subroutine good_draw_text(ctx, text)
-    real(wp) :: saved_width
-    saved_width = ctx%current_line_width  ! Save state
-    call ctx%set_line_width(0.5_wp)      ! Modify
-    ! ... draw text ...
-    call ctx%set_line_width(saved_width) ! Restore - MANDATORY
-end subroutine
-
-! GOOD: Pure functions with explicit parameters
-pure function calculate_position(x, y, offset) result(new_pos)
-    ! No hidden state dependencies
-end function
-```
-
 ### Constants and Magic Numbers - STRICTLY ENFORCED
 
 **⚠️ MAGIC NUMBER CONSTANTS ARE FORBIDDEN ⚠️**
@@ -322,27 +228,6 @@ end function
 - **CENTRALIZED CONSTANTS** - Group related constants in parameter declarations
 - **DOCUMENTED PURPOSE** - Each constant should have a clear comment explaining its meaning
 
-**Examples of FORBIDDEN patterns:**
-```fortran
-! BAD: Magic numbers scattered throughout code
-real(wp) :: margin = 0.15_wp           ! FORBIDDEN - what does 0.15 mean?
-call set_font_size(14)                 ! FORBIDDEN - why 14?
-if (error < 1e-6_wp) then             ! FORBIDDEN - what precision requirement?
-```
-
-**REQUIRED patterns:**
-```fortran
-! GOOD: Named constants with clear meaning
-real(wp), parameter :: DEFAULT_MARGIN_FRACTION = 0.15_wp     ! 15% of plot area
-integer, parameter :: TITLE_FONT_SIZE = 14                   ! Points for titles
-real(wp), parameter :: NUMERICAL_TOLERANCE = 1.0e-6_wp      ! Floating point comparison threshold
-
-! Usage
-real(wp) :: margin = DEFAULT_MARGIN_FRACTION
-call set_font_size(TITLE_FONT_SIZE)
-if (error < NUMERICAL_TOLERANCE) then
-```
-
 ### Backend Specialization and Polymorphism - STRICTLY ENFORCED
 
 **⚠️ CRITICAL: NO SCATTERED DISPATCH LOGIC ALLOWED ⚠️**
@@ -352,39 +237,6 @@ if (error < NUMERICAL_TOLERANCE) then
 - **SPECIALIZATION AT INITIALIZATION** - Configure backend-specific behavior when the backend is created
 - **POLYMORPHIC INTERFACES** - Use abstract interfaces to hide backend differences from calling code
 - **ENCAPSULATED SCALING** - Each backend handles its own coordinate/value scaling internally
-
-**Examples of FORBIDDEN patterns:**
-```fortran
-! BAD: Scattered dispatch logic in business code
-select type (backend => self%backend)
-type is (png_context)
-    call backend%set_line_width(0.1_wp)  ! FORBIDDEN - dispatch in caller
-type is (pdf_context)
-    call backend%set_line_width(2.0_wp)  ! FORBIDDEN - backend knowledge in caller
-end select
-```
-
-**REQUIRED patterns:**
-```fortran
-! GOOD: Backend handles its own scaling internally
-call self%backend%set_line_width(2.0_wp)  ! Same call for all backends
-
-! In PNG backend implementation:
-subroutine png_set_line_width(this, width)
-    this%current_line_width = width * 0.05_wp  ! PNG-specific scaling
-end subroutine
-
-! In PDF backend implementation:
-subroutine pdf_set_line_width(this, width)
-    this%current_line_width = width  ! PDF uses width directly
-end subroutine
-```
-
-**This ensures:**
-- Business logic remains backend-agnostic
-- Backend-specific knowledge stays encapsulated
-- Easy to add new backends without modifying existing code
-- Cleaner, more maintainable architecture
 
 ### Misc - STRICTLY ENFORCED
 
@@ -412,10 +264,11 @@ This commit represents the last known working state before major refactoring whe
 
 **Use this commit as reference when fixing regressions introduced during refactoring.**
 
-### Recently Fixed Regressions
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 
-- **Y-axis label positioning in PNG** - Fixed: Labels were appearing on right side instead of left side
-  - **Issue**: Y-axis labels positioned incorrectly after refactoring
-  - **Root Cause**: Hardcoded positioning instead of relative to plot_area%left
-  - **Fix**: Changed `label_x = real(25, wp)` to `label_x = real(ctx%plot_area%left - 40, wp)`
-  - **Status**: ✅ RESOLVED
+      
+      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.
