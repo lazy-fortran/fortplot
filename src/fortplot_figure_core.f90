@@ -14,6 +14,7 @@ module fortplot_figure_core
     use fortplot_utils
     use fortplot_axes
     use fortplot_colormap
+    use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_legend
     use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_raster, only: draw_rotated_ylabel_raster
@@ -146,12 +147,14 @@ contains
         end if
     end subroutine initialize
 
-    subroutine add_plot(self, x, y, label, linestyle, color, marker)
-        !! Add line plot data to figure
+    subroutine add_plot(self, x, y, label, linestyle, color)
+        !! Add line plot data to figure with matplotlib/pyplot-fortran format string support
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle, marker
+        character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
+        
+        character(len=20) :: parsed_marker, parsed_linestyle
         
         if (self%plot_count >= self%max_plots) then
             write(*, '(A)') 'Warning: Maximum number of plots reached'
@@ -160,7 +163,14 @@ contains
         
         self%plot_count = self%plot_count + 1
         
-        call add_line_plot_data(self, x, y, label, linestyle, color, marker)
+        if (present(linestyle) .and. contains_format_chars(linestyle)) then
+            ! Parse format string and use those values
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            call add_line_plot_data(self, x, y, label, parsed_linestyle, color, parsed_marker)
+        else
+            ! Use traditional linestyle with no marker
+            call add_line_plot_data(self, x, y, label, linestyle, color, '')
+        end if
         call update_data_ranges(self)
     end subroutine add_plot
 
