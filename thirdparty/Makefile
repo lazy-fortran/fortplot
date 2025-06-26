@@ -3,6 +3,7 @@ all: fetch-stb
 ref: fetch-matplotlib fetch-pyplot-fortran
 
 fetch-stb:
+	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_image.h -o stb_image.h
 	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_image_write.h -o stb_image_write.h
 	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_truetype.h -o stb_truetype.h
 
