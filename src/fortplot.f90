@@ -15,6 +15,7 @@ module fortplot
     !! Author: fortplotlib contributors
 
     use fortplot_figure, only: figure_t
+    use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use, intrinsic :: iso_fortran_env, only: wp => real64
 
     implicit none
@@ -46,23 +47,25 @@ module fortplot
         module procedure show_data, show_figure
     end interface show
     
+    ! Note: plot and add_plot now handle both separate args and format strings in single routines
+    
     ! Global figure for simple API
     type(figure_t), save :: fig
 
 contains
 
-    subroutine plot(x, y, label, linestyle, marker)
-        !! Add a line plot to the global figure (pyplot-style)
+    subroutine plot(x, y, label, linestyle)
+        !! Add a line plot to the global figure (pyplot-fortran compatible)
         !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
         !!   label: Optional label for the plot
-        !!   linestyle: Optional line style ('-', '--', '-.', ':', 'None')
-        !!   marker: Optional marker style ('o', '.', 'x', '+', '*', 'None')
+        !!   linestyle: Line style and markers ('b-o', 'r--', 'g:', 'ko', etc.)
+        !!              Supports both pyplot-fortran and matplotlib format strings
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label, linestyle, marker
+        character(len=*), intent(in), optional :: label, linestyle
         
-        call fig%add_plot(x, y, label=label, linestyle=linestyle, marker=marker)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
     subroutine contour(x, y, z, levels, label)
@@ -174,11 +177,12 @@ contains
         call fig%savefig(filename)
     end subroutine savefig
 
-    subroutine add_plot(x, y, label, linestyle, marker)
-        !! Add a line plot to the global figure
+    subroutine add_plot(x, y, label, linestyle)
+        !! Add a line plot to the global figure (pyplot-fortran compatible)
         real(wp), dimension(:), intent(in) :: x, y
-        character(len=*), intent(in), optional :: label, linestyle, marker
-        call fig%add_plot(x, y, label=label, linestyle=linestyle, marker=marker)
+        character(len=*), intent(in), optional :: label, linestyle
+        
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine add_plot
 
     subroutine add_contour(x, y, z, levels, label)

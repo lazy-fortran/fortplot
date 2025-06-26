@@ -35,8 +35,8 @@ contains
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
         
-        ! Scatter plot with markers
-        call fig%add_plot(x, y, marker='o', linestyle='None', label='Data Points')
+        ! Scatter plot with markers (pyplot-fortran style)
+        call fig%add_plot(x, y, linestyle='o', label='Data Points')
         
         ! Add trend line for context
         call fig%add_plot(x, sin(x), linestyle='-', label='Sin(x) Reference')
@@ -70,11 +70,11 @@ contains
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
         
-        ! Draw each marker type with data
-        call fig%add_plot(x1, y1, marker='o', linestyle='None', label='Circle')
-        call fig%add_plot(x2, y2, marker='s', linestyle='None', label='Square')
-        call fig%add_plot(x3, y3, marker='D', linestyle='None', label='Diamond')
-        call fig%add_plot(x4, y4, marker='x', linestyle='None', label='Cross')
+        ! Draw each marker type with data (pyplot-fortran style)
+        call fig%add_plot(x1, y1, linestyle='o', label='Circle')
+        call fig%add_plot(x2, y2, linestyle='s', label='Square')
+        call fig%add_plot(x3, y3, linestyle='D', label='Diamond')
+        call fig%add_plot(x4, y4, linestyle='x', label='Cross')
         
         call fig%legend()
         call fig%savefig('example/marker_demo/all_marker_types.png')
@@ -103,10 +103,10 @@ contains
         call fig%set_xlabel("X Position")
         call fig%set_ylabel("Y Position")
         
-        ! Different marker types with automatic color cycling
-        call fig%add_plot(x1, y1, marker='o', linestyle='None', label='Blue circles')
-        call fig%add_plot(x2, y2, marker='s', linestyle='None', label='Green squares')
-        call fig%add_plot(x3, y3, marker='D', linestyle='None', label='Orange diamonds')
+        ! Different marker types with automatic color cycling (pyplot-fortran style)
+        call fig%add_plot(x1, y1, linestyle='o', label='Blue circles')
+        call fig%add_plot(x2, y2, linestyle='s', label='Green squares')
+        call fig%add_plot(x3, y3, linestyle='D', label='Orange diamonds')
         
         call fig%legend()
         call fig%savefig('example/marker_demo/marker_colors.png')

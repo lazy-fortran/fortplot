@@ -33,7 +33,7 @@ program line_styles
     call plot(x, y3, label='Dotted (:)', linestyle=LINESTYLE_DOTTED)
     call plot(x, y4, label='Dash-dot (-.)', linestyle=LINESTYLE_DASHDOT)
     call plot(x, y5, label='None (invisible)', linestyle=LINESTYLE_NONE)
-    call plot(x, y6, label='Markers only', linestyle=LINESTYLE_NONE, marker=MARKER_CIRCLE)
+    call plot(x, y6, label='Markers only', linestyle='o')
     call title('Complete Line Style Reference')
     call xlabel('X values')
     call ylabel('Y values')
