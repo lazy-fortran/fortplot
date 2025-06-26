@@ -1,11 +1,13 @@
-all: fetch-stb
+all: fetch-stb-truetype
 
-ref: fetch-matplotlib fetch-pyplot-fortran
+ref: fetch-matplotlib fetch-pyplot-fortran fetch-stb-image
 
-fetch-stb:
+fetch-stb-truetype:
+	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_truetype.h -o stb_truetype.h
+
+fetch-stb-image:
 	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_image.h -o stb_image.h
 	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_image_write.h -o stb_image_write.h
-	curl -L https://github.com/nothings/stb/raw/refs/heads/master/stb_truetype.h -o stb_truetype.h
 
 fetch-matplotlib:
 	curl -L https://github.com/matplotlib/matplotlib/archive/refs/tags/v3.10.3.tar.gz | tar xz
