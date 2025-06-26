@@ -7,30 +7,30 @@ zlib and freetype with development headers.
 
 ## Usage
 
-```
+```fortran
 use fortplot
 ```
 
 ### Stateful API
 ```fortran
-    call figure()
-    call plot(x, y)
-    call title("Function Plot")
-    call xlabel("x")
-    call ylabel("y")
-    call savefig("plot.png")
+call figure()
+call plot(x, y)
+call title("Function Plot")
+call xlabel("x")
+call ylabel("y")
+call savefig("plot.png")
 ```
 
 ### Object-Oriented API
 ```fortran
-    type(figure_t) :: fig
+type(figure_t) :: fig
 
-    call fig%initialize()
-    call fig%set_title("Function Plot")
-    call fig%set_xlabel("x")
-    call fig%set_ylabel("y")
-    call fig%add_plot(x, yf)
-    call fig%savefig("plot_oo.png")
+call fig%initialize()
+call fig%set_title("Function Plot")
+call fig%set_xlabel("x")
+call fig%set_ylabel("y")
+call fig%add_plot(x, yf)
+call fig%savefig("plot_oo.png")
 ```
 
 For more examples, see the [examples directory](examples) and run
