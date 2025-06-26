@@ -234,11 +234,18 @@ contains
             text_x = line_x2 + box%text_spacing
             text_y = line_y
             
-            ! Set color and draw legend line
+            ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
-            call backend%line(line_x1, line_y, line_x2, line_y)
+            if (allocated(legend%entries(i)%linestyle)) then
+                if (legend%entries(i)%linestyle /= 'None') then
+                    call backend%line(line_x1, line_y, line_x2, line_y)
+                end if
+            else
+                ! Default to drawing line if linestyle not specified
+                call backend%line(line_x1, line_y, line_x2, line_y)
+            end if
 
             ! Draw marker in the middle of the line
             if (allocated(legend%entries(i)%marker)) then
