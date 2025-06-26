@@ -1,9 +1,6 @@
 # ![fortplotlib logo](media/logo.jpg)
 
-Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change.
-
-## Requirements
-zlib.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies.
 
 ## Usage
 
@@ -89,3 +86,9 @@ target_link_libraries(your_target fortplotlib::fortplotlib)
 - [ ] Secondary axes
 - [ ] Math text
 - [ ] Animations
+
+
+## Background
+
+The initial version relied on `zlib` for png compression and `freetype` for font 
+rendering. This was  thenreplaced by [stb](https://github.com/nothings/stb) libraries
