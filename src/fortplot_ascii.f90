@@ -426,11 +426,35 @@ contains
         px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
         py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
 
-        if (trim(style) == 'o') then
-            marker_char = 'o'
-        else
-            marker_char = '*'
-        end if
+        ! Map marker styles to distinct ASCII characters for visual differentiation
+        select case (trim(style))
+        case ('o')
+            marker_char = 'o'  ! Circle
+        case ('s')
+            marker_char = '#'  ! Square
+        case ('D', 'd')
+            marker_char = '%'  ! Diamond (ASCII representation)
+        case ('x')
+            marker_char = 'x'  ! Cross
+        case ('+')
+            marker_char = '+'  ! Plus
+        case ('*')
+            marker_char = '*'  ! Star
+        case ('^')
+            marker_char = '^'  ! Triangle up
+        case ('v')
+            marker_char = 'v'  ! Triangle down
+        case ('<')
+            marker_char = '<'  ! Triangle left
+        case ('>')
+            marker_char = '>'  ! Triangle right
+        case ('p')
+            marker_char = 'P'  ! Pentagon
+        case ('h', 'H')
+            marker_char = 'H'  ! Hexagon
+        case default
+            marker_char = '*'  ! Default fallback
+        end select
 
         if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
             this%canvas(py, px) = marker_char
