@@ -68,10 +68,10 @@ program test_text_width_measurements
     ! Test 3: Verify characters are not using fallback values
     if (width_i == 9 .or. width_l == 9) then
         print *, "FAIL: Characters 'i' or 'l' using fallback width of 9 pixels"
-        print *, "  This suggests FreeType is not working properly"
+        print *, "  This suggests text system is not working properly"
         test_passed = .false.
     else
-        print *, "PASS: Characters using FreeType measurements, not fallback"
+        print *, "PASS: Characters using text system measurements, not fallback"
     end if
     
     ! Test 4: Width should be reasonable for typical font

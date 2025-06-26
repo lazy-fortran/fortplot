@@ -4,7 +4,7 @@ module fortplot_legend_layout
     !! Single Responsibility: Legend box sizing and positioning calculations
     !! DRY: Centralized legend layout logic for consistent behavior
     !! KISS: Simple, clear calculation functions
-    !! Uses FreeType text measurements for accurate sizing
+    !! Uses text system measurements for accurate sizing
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
@@ -55,7 +55,7 @@ contains
     
     subroutine calculate_optimal_legend_dimensions(labels, data_width, data_height, &
                                                   max_text_width, total_text_width, box)
-        !! Calculate optimal legend dimensions using actual FreeType measurements
+        !! Calculate optimal legend dimensions using actual text system measurements
         !! KISS: Based on measured text content, not estimates
         character(len=*), intent(in) :: labels(:)
         real(wp), intent(in) :: data_width, data_height
@@ -63,13 +63,13 @@ contains
         type(legend_box_t), intent(inout) :: box
         integer :: i, text_width_pixels, text_height_pixels, max_text_height_pixels
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
-        logical :: freetype_available
+        logical :: text_system_available
         real(wp) :: entry_text_width
         character(len=:), allocatable :: trimmed_label
         integer, parameter :: fudge_pixels = 2
 
-        ! Initialize FreeType for measurements
-        freetype_available = init_text_system()
+        ! Initialize text system for measurements
+        text_system_available = init_text_system()
 
         ! Calculate data-to-pixel conversion ratio (approximate)
         data_to_pixel_ratio_x = 640.0_wp / data_width  
@@ -81,14 +81,14 @@ contains
 
         do i = 1, size(labels)
             trimmed_label = trim(labels(i))
-            if (freetype_available) then
-                ! Use actual FreeType measurements, add fudge factor for overhang
+            if (text_system_available) then
+                ! Use actual text system measurements, add fudge factor for overhang
                 text_width_pixels = calculate_text_width(trimmed_label) + fudge_pixels
                 text_height_pixels = calculate_text_height(trimmed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
-                ! Fallback estimation if FreeType not available
+                ! Fallback estimation if text system not available
                 entry_text_width = real(len_trim(trimmed_label), wp) * data_width * 0.012_wp
             end if
             total_text_width = total_text_width + entry_text_width
@@ -111,17 +111,17 @@ contains
     end subroutine calculate_optimal_legend_dimensions
     
     function get_actual_text_dimensions(label, data_to_pixel_x, data_to_pixel_y) result(dimensions)
-        !! Get actual text dimensions using FreeType measurements  
+        !! Get actual text dimensions using text system measurements  
         !! Returns [width, height] in data coordinates
         character(len=*), intent(in) :: label
         real(wp), intent(in) :: data_to_pixel_x, data_to_pixel_y
         real(wp) :: dimensions(2)  ! [width, height]
         integer :: width_pixels, height_pixels
-        logical :: freetype_available
+        logical :: text_system_available
         
-        freetype_available = init_text_system()
+        text_system_available = init_text_system()
         
-        if (freetype_available) then
+        if (text_system_available) then
             width_pixels = calculate_text_width(label)
             height_pixels = calculate_text_height(label)
             dimensions(1) = real(width_pixels, wp) / data_to_pixel_x

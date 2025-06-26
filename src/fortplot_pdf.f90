@@ -553,7 +553,7 @@ contains
         character(len=200) :: text_cmd
         real(wp) :: text_width, centered_x
         
-        ! Calculate text width for centering (fallback to character estimation if FreeType fails)
+        ! Calculate text width for centering (fallback to character estimation if text system fails)
         text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
         if (text_width <= 0.0_wp) then
             ! Fallback: estimate 8 pixels per character for 14pt font
