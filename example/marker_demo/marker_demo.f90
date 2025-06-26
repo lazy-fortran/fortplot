@@ -1,89 +1,22 @@
 program marker_demo
-    !! Demonstrates antialiased markers with smooth edges
-    !!
-    !! This example showcases the improved marker rendering quality
-    !! with antialiasing, comparing different marker sizes and types.
+    !! Demonstrates different marker types and styles
     
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
-    call demo_antialiased_circles()
-    call demo_marker_comparison()
     call demo_scatter_plot()
     call demo_all_marker_types()
     call demo_marker_colors()
-    call demo_transparent_markers()
     
     print *, "=== Marker Examples ==="
-    print *, "Created: antialiased_circles.png/pdf/txt"
-    print *, "Created: marker_comparison.png/pdf/txt" 
     print *, "Created: scatter_plot.png/pdf/txt"
     print *, "Created: all_marker_types.png/pdf/txt"
     print *, "Created: marker_colors.png/pdf/txt"
-    print *, "Created: transparent_markers.png/pdf/txt"
     print *, "All marker examples completed!"
 
 contains
 
-    subroutine demo_antialiased_circles()
-        !! Demonstrates smooth, antialiased circle markers at different sizes
-        type(figure_t) :: fig
-        real(wp) :: x(5), y(5)
-        real(wp) :: sizes(5)
-        integer :: i
-        
-        ! Create data points for different sized markers
-        x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
-        y = [2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp]
-        sizes = [3.0_wp, 5.0_wp, 7.0_wp, 9.0_wp, 12.0_wp]  ! Different marker sizes
-        
-        call fig%initialize(600, 400)
-        call fig%set_title("Antialiased Circle Markers")
-        call fig%set_xlabel("Position")
-        call fig%set_ylabel("Value")
-        
-        ! Draw markers at different sizes to show antialiasing quality
-        do i = 1, 5
-            call fig%add_plot(x(i:i), y(i:i), marker='o', linestyle='None', label='Size')
-        end do
-        
-        ! Add some data to show markers in context
-        call fig%add_plot([0.5_wp, 5.5_wp], [1.5_wp, 1.5_wp], linestyle='-', label='Reference line')
-        
-        call fig%legend()
-        call fig%savefig('example/marker_demo/antialiased_circles.png')
-        call fig%savefig('example/marker_demo/antialiased_circles.pdf')
-        call fig%savefig('example/marker_demo/antialiased_circles.txt')
-    end subroutine demo_antialiased_circles
-
-    subroutine demo_marker_comparison()
-        !! Shows the quality difference between aliased and antialiased markers
-        type(figure_t) :: fig
-        real(wp) :: x1(3), y1(3), x2(3), y2(3)
-        
-        ! Data for comparison
-        x1 = [1.0_wp, 2.0_wp, 3.0_wp]
-        y1 = [3.0_wp, 3.0_wp, 3.0_wp]
-        x2 = [1.0_wp, 2.0_wp, 3.0_wp] 
-        y2 = [1.0_wp, 1.0_wp, 1.0_wp]
-        
-        call fig%initialize(500, 400)
-        call fig%set_title("Marker Quality Comparison")
-        call fig%set_xlabel("X Position")
-        call fig%set_ylabel("Y Position")
-        
-        ! Antialiased markers (our implementation)
-        call fig%add_plot(x1, y1, marker='o', linestyle='None', label='Antialiased')
-        
-        ! Regular plot points for comparison  
-        call fig%add_plot(x2, y2, marker='o', linestyle='None', label='Standard')
-        
-        call fig%legend()
-        call fig%savefig('example/marker_demo/marker_comparison.png')
-        call fig%savefig('example/marker_demo/marker_comparison.pdf')
-        call fig%savefig('example/marker_demo/marker_comparison.txt')
-    end subroutine demo_marker_comparison
 
     subroutine demo_scatter_plot()
         !! Creates a scatter plot to demonstrate markers in practical use
@@ -115,28 +48,33 @@ contains
     end subroutine demo_scatter_plot
 
     subroutine demo_all_marker_types()
-        !! Demonstrates all available marker types (circle, square, diamond, x)
+        !! Demonstrates all available marker types with realistic data
         type(figure_t) :: fig
-        real(wp) :: x(4), y(4)
-        character(len=1) :: markers(4)
-        character(len=7) :: labels(4)
+        real(wp) :: x1(10), y1(10), x2(10), y2(10), x3(10), y3(10), x4(10), y4(10)
         integer :: i
         
-        ! Position data for different marker types
-        x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
-        y = [2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp]
-        markers = ['o', 's', 'D', 'x']
-        labels = ['Circle ', 'Square ', 'Diamond', 'Cross  ']
+        ! Generate realistic data for each marker type
+        do i = 1, 10
+            x1(i) = real(i, wp) * 0.5_wp
+            y1(i) = sin(x1(i)) + 3.0_wp
+            x2(i) = real(i, wp) * 0.5_wp
+            y2(i) = cos(x2(i)) + 2.0_wp
+            x3(i) = real(i, wp) * 0.5_wp
+            y3(i) = sin(x3(i) * 2.0_wp) + 1.0_wp
+            x4(i) = real(i, wp) * 0.5_wp
+            y4(i) = cos(x4(i) * 1.5_wp)
+        end do
         
         call fig%initialize(600, 400)
-        call fig%set_title("All Marker Types - Antialiased")
-        call fig%set_xlabel("Marker Type")
-        call fig%set_ylabel("Value")
+        call fig%set_title("All Marker Types")
+        call fig%set_xlabel("X Values")
+        call fig%set_ylabel("Y Values")
         
-        ! Draw each marker type
-        do i = 1, 4
-            call fig%add_plot(x(i:i), y(i:i), marker=markers(i), linestyle='None', label=trim(labels(i)))
-        end do
+        ! Draw each marker type with data
+        call fig%add_plot(x1, y1, marker='o', linestyle='None', label='Circle')
+        call fig%add_plot(x2, y2, marker='s', linestyle='None', label='Square')
+        call fig%add_plot(x3, y3, marker='D', linestyle='None', label='Diamond')
+        call fig%add_plot(x4, y4, marker='x', linestyle='None', label='Cross')
         
         call fig%legend()
         call fig%savefig('example/marker_demo/all_marker_types.png')
@@ -145,56 +83,35 @@ contains
     end subroutine demo_all_marker_types
 
     subroutine demo_marker_colors()
-        !! Demonstrates separate edge and face colors for markers
+        !! Demonstrates different colored markers with realistic data
         type(figure_t) :: fig
-        real(wp) :: x(3), y(3)
+        real(wp) :: x1(8), y1(8), x2(8), y2(8), x3(8), y3(8)
+        integer :: i
         
-        ! Data points for color demonstration
-        x = [1.0_wp, 2.0_wp, 3.0_wp]
-        y = [2.0_wp, 2.0_wp, 2.0_wp]
+        ! Generate realistic data for color demonstration
+        do i = 1, 8
+            x1(i) = real(i, wp) * 0.6_wp
+            y1(i) = exp(-x1(i) * 0.3_wp) * cos(x1(i)) + 2.5_wp
+            x2(i) = real(i, wp) * 0.6_wp
+            y2(i) = exp(-x2(i) * 0.2_wp) * sin(x2(i)) + 1.5_wp
+            x3(i) = real(i, wp) * 0.6_wp
+            y3(i) = exp(-x3(i) * 0.4_wp) * sin(x3(i) * 1.5_wp) + 0.5_wp
+        end do
         
         call fig%initialize(500, 400)
-        call fig%set_title("Marker Edge and Face Colors")
+        call fig%set_title("Marker Colors and Styles")
         call fig%set_xlabel("X Position")
         call fig%set_ylabel("Y Position")
         
-        ! Note: This will use the current color API until separate edge/face API is available
-        ! For now, demonstrate with different colored markers using RGB values
-        call fig%add_plot(x(1:1), y(1:1), marker='o', linestyle='None', label='Blue marker')
-        call fig%add_plot(x(2:2), y(2:2), marker='s', linestyle='None', label='Green marker')
-        call fig%add_plot(x(3:3), y(3:3), marker='D', linestyle='None', label='Red marker')
+        ! Different marker types with automatic color cycling
+        call fig%add_plot(x1, y1, marker='o', linestyle='None', label='Blue circles')
+        call fig%add_plot(x2, y2, marker='s', linestyle='None', label='Green squares')
+        call fig%add_plot(x3, y3, marker='D', linestyle='None', label='Orange diamonds')
         
         call fig%legend()
         call fig%savefig('example/marker_demo/marker_colors.png')
         call fig%savefig('example/marker_demo/marker_colors.pdf')
         call fig%savefig('example/marker_demo/marker_colors.txt')
     end subroutine demo_marker_colors
-
-    subroutine demo_transparent_markers()
-        !! Demonstrates transparent marker fills and overlapping effects
-        type(figure_t) :: fig
-        real(wp) :: x(6), y(6)
-        integer :: i
-        
-        ! Create overlapping markers to show transparency
-        x = [1.0_wp, 1.2_wp, 2.0_wp, 2.2_wp, 3.0_wp, 3.2_wp]
-        y = [2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp, 2.0_wp]
-        
-        call fig%initialize(600, 400)
-        call fig%set_title("Transparent Marker Fills")
-        call fig%set_xlabel("X Position")
-        call fig%set_ylabel("Y Position")
-        
-        ! Draw overlapping markers with different colors
-        ! Note: Transparency will be implemented through the new alpha API
-        do i = 1, 6, 2
-            call fig%add_plot(x(i:i+1), y(i:i+1), marker='o', linestyle='None', label='Transparent markers')
-        end do
-        
-        call fig%legend()
-        call fig%savefig('example/marker_demo/transparent_markers.png')
-        call fig%savefig('example/marker_demo/transparent_markers.pdf')
-        call fig%savefig('example/marker_demo/transparent_markers.txt')
-    end subroutine demo_transparent_markers
 
 end program marker_demo

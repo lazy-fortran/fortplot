@@ -498,12 +498,12 @@ contains
             call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
                                                  0_1, 0_1, 0_1)
         else if (trim(style) == 's') then
-            call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+            call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 6.0_wp, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
                                            this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
                                            this%raster%marker_face_b, this%raster%marker_face_alpha)
         else if (trim(style) == 'D') then
-            call draw_diamond_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+            call draw_diamond_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 6.0_wp, &
                                             this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
                                             this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
                                             this%raster%marker_face_b, this%raster%marker_face_alpha)
