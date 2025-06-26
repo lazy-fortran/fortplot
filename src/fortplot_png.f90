@@ -2,7 +2,8 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context, only: setup_canvas
     use fortplot_raster, only: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_zlib, only: zlib_compress, crc32_calculate
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
 
     private
@@ -50,8 +51,7 @@ contains
             [int(-119,1), int(80,1), int(78,1), int(71,1), int(13,1), int(10,1), int(26,1), int(10,1)]
         integer, parameter :: bit_depth = 8, color_type = 2
         integer :: png_unit = 10
-        type(c_ptr) :: compressed_ptr
-        integer(1), pointer :: compressed_data(:)
+        integer(int8), allocatable :: compressed_data(:)
         integer :: compressed_size, data_size
 
         open(unit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
@@ -60,24 +60,21 @@ contains
         call write_ihdr_chunk(png_unit, width, height, bit_depth, color_type)
 
         data_size = size(image_data)
-        call compress_data_stb(image_data, data_size, compressed_ptr, compressed_size)
+        compressed_data = zlib_compress(image_data, data_size, compressed_size)
         
-        if (.not. c_associated(compressed_ptr)) then
+        if (.not. allocated(compressed_data) .or. compressed_size <= 0) then
             print *, "Compression failed"
             close(png_unit)
             stop
         end if
-        
-        ! Convert C pointer to Fortran pointer for writing
-        call c_f_pointer(compressed_ptr, compressed_data, [compressed_size])
 
         call write_idat_chunk(png_unit, compressed_data, compressed_size)
         call write_iend_chunk(png_unit)
 
         close(png_unit)
         
-        ! Free STB allocated memory
-        call free_stb_data(compressed_ptr)
+        ! Free allocated memory
+        deallocate(compressed_data)
 
         print *, "PNG file '", trim(filename), "' created successfully!"
     end subroutine write_png_file
@@ -165,57 +162,13 @@ contains
         be_value = transfer(bytes, be_value)
     end function to_big_endian
 
-    subroutine compress_data_stb(source, source_len, compressed_ptr, compressed_len)
-        integer(1), target, intent(in) :: source(*)
-        integer, intent(in) :: source_len
-        type(c_ptr), intent(out) :: compressed_ptr
-        integer, intent(out) :: compressed_len
-        integer(c_int), target :: compressed_len_c
-
-        interface
-            function stb_compress_data(data, data_len, compressed_len, quality) bind(C, name="stb_compress_data")
-                import :: c_ptr, c_int
-                type(c_ptr), value :: data
-                integer(c_int), value :: data_len
-                type(c_ptr), value :: compressed_len
-                integer(c_int), value :: quality
-                type(c_ptr) :: stb_compress_data
-            end function stb_compress_data
-        end interface
-
-        ! Call STB compression with quality level 8 (default)
-        compressed_ptr = stb_compress_data(c_loc(source), int(source_len, c_int), c_loc(compressed_len_c), 8_c_int)
-        compressed_len = int(compressed_len_c)
-    end subroutine compress_data_stb
-
-    subroutine free_stb_data(data_ptr)
-        type(c_ptr), intent(in) :: data_ptr
-        
-        interface
-            subroutine stb_free_data(data) bind(C, name="stb_free_data")
-                import :: c_ptr
-                type(c_ptr), value :: data
-            end subroutine stb_free_data
-        end interface
-        
-        call stb_free_data(data_ptr)
-    end subroutine free_stb_data
 
     function calculate_crc32(data, len) result(crc)
-        integer(1), target, intent(in) :: data(*)
+        integer(1), intent(in) :: data(*)
         integer, intent(in) :: len
-        integer(c_int32_t) :: crc
+        integer(int32) :: crc
 
-        interface
-            function stb_crc32(data, data_len) bind(C, name="stb_crc32")
-                import :: c_ptr, c_int, c_int32_t
-                type(c_ptr), value :: data
-                integer(c_int), value :: data_len
-                integer(c_int32_t) :: stb_crc32
-            end function stb_crc32
-        end interface
-
-        crc = stb_crc32(c_loc(data), int(len, c_int))
+        crc = crc32_calculate(data, len)
     end function calculate_crc32
 
 
