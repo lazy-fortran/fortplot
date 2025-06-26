@@ -1,7 +1,7 @@
-program test_freetype
-    !! Comprehensive test suite for FreeType text rendering integration
+program test_text_rendering
+    !! Comprehensive test suite for text rendering system integration
     !!
-    !! This program validates the FreeType text rendering system by testing
+    !! This program validates the text rendering system by testing
     !! initialization, character rendering, positioning, and integration
     !! with the plotting system. Generates test output files.
     
@@ -14,13 +14,13 @@ program test_freetype
     logical :: all_tests_passed
     integer :: test_count, passed_count
 
-    print *, "=== FreeType Text Rendering Tests ==="
+    print *, "=== Text Rendering System Tests ==="
 
     all_tests_passed = .true.
     test_count = 5
     passed_count = 0
 
-    if (test_freetype_initialization()) then
+    if (test_text_system_initialization()) then
         passed_count = passed_count + 1
     else
         all_tests_passed = .false.
@@ -55,35 +55,35 @@ program test_freetype
     print *, "Tests passed:", passed_count, "/", test_count
     print *, ""
     if (all_tests_passed) then
-        print *, "✅ All FreeType tests PASSED"
+        print *, "✅ All text rendering tests PASSED"
         stop 0
     else
-        print *, "❌ Some FreeType tests FAILED"
+        print *, "❌ Some text rendering tests FAILED"
         stop 1
     end if
 
 contains
 
-    function test_freetype_initialization() result(passed)
+    function test_text_system_initialization() result(passed)
         logical :: passed
         logical :: init_success
 
         print *, ""
-        print *, "Test 1: FreeType Initialization"
-        print *, "--------------------------------"
+        print *, "Test 1: Text System Initialization"
+        print *, "-----------------------------------"
 
         init_success = init_text_system()
 
         if (init_success) then
-            print *, "✅ FreeType library initialized successfully"
+            print *, "✅ Text system initialized successfully"
 
             call cleanup_text_system()
             passed = .true.
         else
-            print *, "❌ FreeType library initialization failed"
+            print *, "❌ Text system initialization failed"
             passed = .false.
         end if
-    end function test_freetype_initialization
+    end function test_text_system_initialization
 
     function test_character_bitmap_rendering() result(passed)
         logical :: passed
@@ -147,11 +147,11 @@ contains
         call fig%set_ylabel("y")
         
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
-        call fig%savefig("test_freetype_output.png")
-        inquire(file="test_freetype_output.png", exist=file_exists, iostat=iostat)
+        call fig%savefig("test_text_rendering_output.png")
+        inquire(file="test_text_rendering_output.png", exist=file_exists, iostat=iostat)
 
         if (file_exists .and. iostat == 0) then
-            print *, "✅ PNG file created successfully: test_freetype_output.png"
+            print *, "✅ PNG file created successfully: test_text_rendering_output.png"
             passed = .true.
         else
             print *, "❌ PNG file creation failed"
@@ -159,4 +159,4 @@ contains
         end if
     end function test_png_output
 
-end program test_freetype
+end program test_text_rendering
