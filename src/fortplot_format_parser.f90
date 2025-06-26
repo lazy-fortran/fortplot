@@ -48,6 +48,11 @@ contains
         
         marker = trim(temp_marker)
         linestyle = trim(temp_linestyle)
+        
+        ! If we found a marker but no line style, set linestyle to 'None' for scatter plots
+        if (found_marker .and. len_trim(linestyle) == 0) then
+            linestyle = 'None'
+        end if
     end subroutine
 
     pure function is_marker_char(char) result(is_marker)
