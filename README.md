@@ -91,4 +91,5 @@ target_link_libraries(your_target fortplotlib::fortplotlib)
 ## Background
 
 The initial version relied on `zlib` for png compression and `freetype` for font 
-rendering. This was  thenreplaced by [stb](https://github.com/nothings/stb) libraries
+rendering. This was then replaced by [stb](https://github.com/nothings/stb) libraries.
+The last remaining library included is `stb_truetype`.
