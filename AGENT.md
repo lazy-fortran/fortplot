@@ -3,7 +3,11 @@
 This file provides **MANDATORY** guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 **⚠️ CRITICAL: YOU MUST ADHERE TO ALL PRINCIPLES BELOW ⚠️**
-These are not suggestions - they are strict requirements that MUST be followed in every code change.
+These are not suggestions - they are strict requirements that MUST be followed in every code change. In particular:
+
+1. Test-Driven Development
+2. SOLID, KISS and DRY
+3. Single responsibility principle
 
 **⚠️ COMMUNICATION REQUIREMENTS ⚠️**
 - Keep responses minimal and direct
@@ -270,5 +274,5 @@ NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
 NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
 
-      
+
       IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.

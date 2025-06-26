@@ -38,11 +38,7 @@ module fortplot
 
     ! Marker style constants (pyplot-style)
     character(len=*), parameter, public :: MARKER_CIRCLE = 'o'
-    character(len=*), parameter, public :: MARKER_DOT = '.'
     character(len=*), parameter, public :: MARKER_CROSS = 'x'
-    character(len=*), parameter, public :: MARKER_PLUS = '+'
-    character(len=*), parameter, public :: MARKER_STAR = '*'
-    character(len=*), parameter, public :: MARKER_NONE = 'None'
     
     
     ! Interface for overloaded show routine

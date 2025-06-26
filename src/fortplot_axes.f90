@@ -12,8 +12,6 @@ module fortplot_axes
     
     private
     public :: compute_scale_ticks, format_tick_label
-    public :: draw_axis_ticks, generate_log_minor_ticks
-    public :: format_number_professionally
     
     integer, parameter :: MAX_TICKS = 20
     
@@ -149,97 +147,11 @@ contains
         else if (trim(scale_type) == 'log' .and. is_power_of_ten(value)) then
             label = format_power_of_ten(value)
         else
-            label = format_number_professionally(value)
+            write(label, '(G0)') value
         end if
     end function format_tick_label
 
-    function format_number_professionally(value) result(formatted)
-        !! Format a number with appropriate precision and style
-        !! 
-        !! @param value: Number to format
-        !! @return formatted: Professionally formatted string
-        
-        real(wp), intent(in) :: value
-        character(len=20) :: formatted
-        real(wp) :: abs_value
-        
-        abs_value = abs(value)
-        
-        if (abs_value == 0.0_wp) then
-            formatted = '0'
-        else if (abs_value >= 1.0e4_wp .or. abs_value < 1.0e-3_wp) then
-            ! Use scientific notation for very large or very small numbers
-            write(formatted, '(ES12.2)') value
-            call clean_scientific_notation(formatted)
-        else if (abs_value >= 100.0_wp) then
-            ! Integer format for large whole numbers
-            write(formatted, '(F0.0)') value
-        else if (abs_value >= 1.0_wp) then
-            ! 1-2 decimal places for numbers >= 1
-            write(formatted, '(F0.2)') value
-            call remove_trailing_zeros(formatted)
-        else
-            ! More decimal places for small numbers
-            write(formatted, '(F0.4)') value
-            call remove_trailing_zeros(formatted)
-        end if
-    end function format_number_professionally
 
-    subroutine draw_axis_ticks(backend, tick_positions, num_ticks, is_x_axis, &
-                              data_min, data_max, scale_type, plot_area)
-        !! Draw axis ticks and labels
-        !! 
-        !! @param backend: Plotting backend
-        !! @param tick_positions: Array of tick positions in data coordinates
-        !! @param num_ticks: Number of ticks
-        !! @param is_x_axis: True for x-axis, false for y-axis
-        !! @param data_min: Minimum data value
-        !! @param data_max: Maximum data value
-        !! @param scale_type: Scale type
-        !! @param plot_area: Plot area bounds [x, y, width, height]
-        
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: tick_positions(:)
-        integer, intent(in) :: num_ticks
-        logical, intent(in) :: is_x_axis
-        real(wp), intent(in) :: data_min, data_max
-        character(len=*), intent(in) :: scale_type
-        integer, intent(in) :: plot_area(4)
-        
-        integer :: i
-        real(wp) :: tick_screen_pos
-        character(len=20) :: label
-        
-        do i = 1, num_ticks
-            if (is_x_axis) then
-                tick_screen_pos = transform_x_coordinate(tick_positions(i), data_min, data_max, plot_area(3))
-                tick_screen_pos = tick_screen_pos + plot_area(1)
-            else
-                tick_screen_pos = transform_y_coordinate(tick_positions(i), data_min, data_max, plot_area(4), .true.)
-                tick_screen_pos = tick_screen_pos + plot_area(2)
-            end if
-            
-            label = format_tick_label(tick_positions(i), scale_type)
-            call draw_single_tick(backend, tick_screen_pos, label, is_x_axis, plot_area)
-        end do
-    end subroutine draw_axis_ticks
-
-    subroutine generate_log_minor_ticks(major_tick, minor_ticks, num_minor)
-        !! Generate minor tick positions for log scale
-        real(wp), intent(in) :: major_tick
-        real(wp), intent(out) :: minor_ticks(8)
-        integer, intent(out) :: num_minor
-        
-        integer :: i
-        real(wp) :: decade_start
-        
-        decade_start = major_tick
-        num_minor = 8
-        
-        do i = 1, 8
-            minor_ticks(i) = decade_start * (i + 1)
-        end do
-    end subroutine generate_log_minor_ticks
 
     ! Helper subroutines (implementation details)
     

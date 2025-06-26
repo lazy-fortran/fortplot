@@ -14,8 +14,7 @@ module fortplot_utils
     
     private
     public :: get_backend_from_filename, initialize_backend
-    public :: to_lowercase, sort_array
-    public :: expand_range, estimate_text_width
+    public :: to_lowercase
     
 contains
 
@@ -95,60 +94,5 @@ contains
         end do
     end function to_lowercase
 
-    subroutine sort_array(arr)
-        !! Simple bubble sort for small arrays
-        !! 
-        !! @param arr: Array to sort in place
-        
-        real(wp), intent(inout) :: arr(:)
-        integer :: i, j, n
-        real(wp) :: temp
-        
-        n = size(arr)
-        do i = 1, n-1
-            do j = 1, n-i
-                if (arr(j) > arr(j+1)) then
-                    temp = arr(j)
-                    arr(j) = arr(j+1)
-                    arr(j+1) = temp
-                end if
-            end do
-        end do
-    end subroutine sort_array
-
-    subroutine expand_range(range_min, range_max, factor)
-        !! Expand a data range by a given factor
-        !! 
-        !! @param range_min: Minimum value (modified in place)
-        !! @param range_max: Maximum value (modified in place)
-        !! @param factor: Expansion factor (e.g., 0.1 for 10% expansion)
-        
-        real(wp), intent(inout) :: range_min, range_max
-        real(wp), intent(in) :: factor
-        real(wp) :: range_size, expansion
-        
-        range_size = range_max - range_min
-        if (range_size > 0.0_wp) then
-            expansion = range_size * factor
-            range_min = range_min - expansion
-            range_max = range_max + expansion
-        end if
-    end subroutine expand_range
-
-    function estimate_text_width(text, font_size) result(width)
-        !! Estimate text width in pixels
-        !! Simple approximation based on character count and font size
-        !! 
-        !! @param text: Text string
-        !! @param font_size: Font size in points
-        !! @return width: Estimated width in pixels
-        
-        character(len=*), intent(in) :: text
-        real(wp), intent(in) :: font_size
-        real(wp) :: width
-        
-        ! Simple approximation: average character width ≈ 0.6 * font_size
-        width = len_trim(text) * font_size * 0.6_wp
-    end function estimate_text_width
 
 end module fortplot_utils
