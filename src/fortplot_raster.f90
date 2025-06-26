@@ -7,6 +7,7 @@ module fortplot_raster
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
+    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -487,31 +488,41 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
 
-        if (trim(style) == 'o') then
-            ! Draw filled circle with thin black outline
-            ! First draw the filled circle at full size
-            call draw_circle_antialiased(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+        call draw_raster_marker_by_style(this, px, py, style)
+    end subroutine raster_draw_marker
+
+    subroutine draw_raster_marker_by_style(this, px, py, style)
+        !! Draw marker using shared style dispatch logic (DRY compliance)
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: px, py
+        character(len=*), intent(in) :: style
+        real(wp) :: marker_size
+        
+        marker_size = get_marker_size(style)
+        
+        select case (trim(style))
+        case (MARKER_CIRCLE)
+            call draw_circle_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                          color_to_byte(this%raster%current_r), &
                                          color_to_byte(this%raster%current_g), &
                                          color_to_byte(this%raster%current_b))
-            ! Then draw black outline at same size (will blend over the edge)
-            call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+            call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                                  0_1, 0_1, 0_1)
-        else if (trim(style) == 's') then
-            call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 6.0_wp, &
+        case (MARKER_SQUARE)
+            call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
                                            this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
                                            this%raster%marker_face_b, this%raster%marker_face_alpha)
-        else if (trim(style) == 'D') then
-            call draw_diamond_with_edge_face(this%raster%image_data, this%width, this%height, px, py, 6.0_wp, &
+        case (MARKER_DIAMOND)
+            call draw_diamond_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                             this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
                                             this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
                                             this%raster%marker_face_b, this%raster%marker_face_alpha)
-        else if (trim(style) == 'x') then
-            call draw_x_marker(this%raster%image_data, this%width, this%height, px, py, 5.0_wp, &
+        case (MARKER_CROSS)
+            call draw_x_marker(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b)
-        end if
-    end subroutine raster_draw_marker
+        end select
+    end subroutine draw_raster_marker_by_style
 
     subroutine raster_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(raster_context), intent(inout) :: this

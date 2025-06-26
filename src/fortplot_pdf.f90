@@ -7,6 +7,7 @@ module fortplot_pdf
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
     use fortplot_text, only: calculate_text_width
+    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -644,16 +645,29 @@ contains
 
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
 
-        if (trim(style) == 'o') then
-            call draw_pdf_circle_with_outline(this, pdf_x, pdf_y, 5.0_wp)
-        else if (trim(style) == 's') then
-            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, 6.0_wp)
-        else if (trim(style) == 'D') then
-            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, 6.0_wp)
-        else if (trim(style) == 'x') then
-            call draw_pdf_x_marker(this, pdf_x, pdf_y, 5.0_wp)
-        end if
+        call draw_pdf_marker_by_style(this, pdf_x, pdf_y, style)
     end subroutine draw_pdf_marker
+
+    subroutine draw_pdf_marker_by_style(this, pdf_x, pdf_y, style)
+        !! Draw PDF marker using shared style dispatch logic (DRY compliance)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: pdf_x, pdf_y
+        character(len=*), intent(in) :: style
+        real(wp) :: marker_size
+        
+        marker_size = get_marker_size(style)
+        
+        select case (trim(style))
+        case (MARKER_CIRCLE)
+            call draw_pdf_circle_with_outline(this, pdf_x, pdf_y, marker_size)
+        case (MARKER_SQUARE)
+            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, marker_size)
+        case (MARKER_DIAMOND)
+            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, marker_size)
+        case (MARKER_CROSS)
+            call draw_pdf_x_marker(this, pdf_x, pdf_y, marker_size)
+        end select
+    end subroutine draw_pdf_marker_by_style
 
     subroutine pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(pdf_context), intent(inout) :: this
