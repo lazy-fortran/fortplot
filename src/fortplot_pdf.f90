@@ -714,9 +714,8 @@ contains
         call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
                                   this%stream_writer%current_state%stroke_g, &
                                   this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("f")
         call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
         call this%stream_writer%add_to_stream("Q")
     end subroutine draw_pdf_circle_with_outline
 
@@ -738,9 +737,8 @@ contains
         call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
                                   this%stream_writer%current_state%stroke_g, &
                                   this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("f")
         call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
         call this%stream_writer%add_to_stream("Q")
     end subroutine draw_pdf_square_with_outline
 
@@ -768,9 +766,8 @@ contains
         call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
                                   this%stream_writer%current_state%stroke_g, &
                                   this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("f")
         call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("S")
+        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
         call this%stream_writer%add_to_stream("Q")
     end subroutine draw_pdf_diamond_with_outline
 
