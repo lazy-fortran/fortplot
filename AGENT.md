@@ -16,6 +16,10 @@ These are not suggestions - they are strict requirements that MUST be followed i
 - Answer questions with facts only
 - Skip explanations unless specifically requested
 
+**⚠️ WORK ETHICS ⚠️**
+- Always prioritize correctness and clarity
+- Never be lazy or take shortcuts
+
 ## Project Overview
 
 **fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
