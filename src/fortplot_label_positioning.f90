@@ -228,7 +228,7 @@ contains
             text_width = fallback_width
         end if
         
-        ! Center horizontally on tick mark
+        ! Center horizontally on tick mark (fix: was too far left)
         label_x = tick_x - real(text_width, wp) / 2.0_wp
         
         ! Calculate proper vertical positioning for PDF coordinates
@@ -241,10 +241,11 @@ contains
             ! Use matplotlib standard: 3.5pt pad ≈ 5px spacing from tick end to text top
             label_padding = 5.0_wp
             
-            ! In PDF: Y=0 at bottom, text baseline is positioned above text bottom
-            ! Text extends DOWN (smaller Y) from baseline by descent
-            ! Position text baseline: tick_end - padding - descent (text bottom at tick_end - padding)
-            label_y = tick_end_y - label_padding - font_descent
+            ! In PDF: Y=0 at bottom, text baseline above text bottom
+            ! Text extends DOWN (smaller Y) from baseline by descent  
+            ! Text extends UP (larger Y) from baseline by ascent
+            ! For text top at tick_end - padding: baseline = tick_end - padding - ascent
+            label_y = tick_end_y - label_padding - font_ascent
         else
             ! Fallback: use simple spacing
             label_y = tick_end_y - real(X_TICK_SPACING, wp)
@@ -279,14 +280,14 @@ contains
             ! In PDF coordinates: Y=0 at bottom, Y increases upward
             ! Text extends DOWN (smaller Y) from baseline by descent
             ! Text extends UP (larger Y) from baseline by ascent
-            ! Text center is at: baseline + descent + (ascent - descent)/2 = baseline + descent/2 + ascent/2
-            ! For center at tick_y: tick_y = baseline + ascent/2 + descent/2
-            ! So: baseline = tick_y - ascent/2 - descent/2
-            baseline_offset = font_ascent/2.0_wp + font_descent/2.0_wp
-            label_y = tick_y - baseline_offset
+            ! Text center is at: baseline - descent + (ascent + descent)/2 = baseline - descent/2 + ascent/2
+            ! For center at tick_y: tick_y = baseline - descent/2 + ascent/2
+            ! So: baseline = tick_y + descent/2 - ascent/2
+            baseline_offset = font_descent/2.0_wp - font_ascent/2.0_wp
+            label_y = tick_y + baseline_offset
         else
             ! Fallback to approximation if font system fails
-            label_y = tick_y + real(TEXT_HEIGHT, wp) * 0.25_wp
+            label_y = tick_y - real(TEXT_HEIGHT, wp) * 0.25_wp
         end if
     end subroutine calculate_y_tick_label_position_pdf
 
