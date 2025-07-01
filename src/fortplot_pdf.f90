@@ -5,7 +5,8 @@ module fortplot_pdf
     use fortplot_ticks, only: generate_scale_aware_tick_labels
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
-                                         calculate_x_axis_label_position, calculate_y_axis_label_position
+                                         calculate_x_axis_label_position, calculate_y_axis_label_position, &
+                                         calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
     use fortplot_text, only: calculate_text_width
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -430,12 +431,9 @@ contains
         
         ! Draw X-axis tick labels with proper spacing and center alignment
         do i = 1, num_x
-            ! Use tick label positioning (with PNG coordinates) then convert to PDF
-            call calculate_x_tick_label_position(x_positions(i), &
-                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(x_labels(i)), label_x, label_y)
-            ! Convert to PDF coordinates (Y is flipped)
-            label_y = bottom - (label_y - real(ctx%plot_area%bottom + ctx%plot_area%height, wp))
+            ! Use PDF-specific tick label positioning (native PDF coordinates)
+            call calculate_x_tick_label_position_pdf(x_positions(i), bottom, &
+                                                   trim(x_labels(i)), label_x, label_y)
             
             call ctx%stream_writer%add_to_stream("BT")
             write(text_cmd, '("/F1 12 Tf")')
@@ -449,12 +447,13 @@ contains
         
         ! Draw Y-axis tick labels with right alignment and proper spacing
         do i = 1, num_y
-            ! Use tick label positioning
-            call calculate_y_tick_label_position(y_positions(i), real(ctx%plot_area%left, wp), &
-                                               trim(y_labels(i)), label_x, label_y)
-            ! Convert Y position to PDF coordinates
+            ! Convert Y position to PDF coordinates for positioning calculation
             label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
+            
+            ! Use PDF-specific tick label positioning (native PDF coordinates)
+            call calculate_y_tick_label_position_pdf(label_y, real(ctx%plot_area%left, wp), &
+                                                   trim(y_labels(i)), label_x, label_y)
             
             call ctx%stream_writer%add_to_stream("BT")
             write(text_cmd, '("/F1 12 Tf")')
