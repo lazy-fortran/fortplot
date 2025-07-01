@@ -21,10 +21,8 @@ module fortplot_text
 contains
 
     function init_text_system() result(success)
-        !! Initialize STB TrueType font system
+        !! Initialize STB TrueType font system with robust font discovery
         logical :: success
-        character(len=256) :: font_paths(3)
-        integer :: i
         
         success = .false.
         
@@ -33,25 +31,176 @@ contains
             return
         end if
         
-        ! Try multiple common font paths
-        font_paths(1) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
-        font_paths(2) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-        font_paths(3) = "/System/Library/Fonts/Helvetica.ttc"
-        
-        do i = 1, 3
-            if (stb_init_font(global_font, trim(font_paths(i)))) then
-                font_scale = stb_scale_for_pixel_height(global_font, real(DEFAULT_FONT_SIZE, wp))
-                font_initialized = .true.
-                success = .true.
-                exit
-            end if
-        end do
+        success = discover_and_init_font()
         
         if (.not. success) then
             print *, "Error: Could not initialize STB TrueType - no fonts found"
         end if
         
     end function init_text_system
+
+    function discover_and_init_font() result(success)
+        !! Discover and initialize font from system locations
+        logical :: success
+        character(len=256) :: font_path
+        
+        success = .false.
+        
+        ! Priority order: Helvetica -> Liberation Sans -> Arial -> DejaVu Sans
+        if (find_font_by_name("Helvetica", font_path)) then
+            success = try_init_font(font_path)
+            if (success) return
+        end if
+        
+        if (find_font_by_name("Liberation Sans", font_path)) then
+            success = try_init_font(font_path)
+            if (success) return
+        end if
+        
+        if (find_font_by_name("Arial", font_path)) then
+            success = try_init_font(font_path)
+            if (success) return
+        end if
+        
+        if (find_font_by_name("DejaVu Sans", font_path)) then
+            success = try_init_font(font_path)
+            if (success) return
+        end if
+        
+    end function discover_and_init_font
+
+    function find_font_by_name(font_name, font_path) result(found)
+        !! Find font by name in typical system locations
+        character(len=*), intent(in) :: font_name
+        character(len=256), intent(out) :: font_path
+        logical :: found
+        
+        found = .false.
+        
+        select case (trim(font_name))
+        case ("Helvetica")
+            call check_helvetica_paths(font_path, found)
+        case ("Liberation Sans")
+            call check_liberation_paths(font_path, found)
+        case ("Arial")
+            call check_arial_paths(font_path, found)
+        case ("DejaVu Sans")
+            call check_dejavu_paths(font_path, found)
+        end select
+        
+    end function find_font_by_name
+
+    subroutine check_helvetica_paths(font_path, found)
+        character(len=256), intent(out) :: font_path
+        logical, intent(out) :: found
+        character(len=256) :: candidates(4)
+        integer :: i
+        
+        found = .false.
+        
+        candidates(1) = "/System/Library/Fonts/Helvetica.ttc"
+        candidates(2) = "/System/Library/Fonts/HelveticaNeue.ttc"
+        candidates(3) = "/Library/Fonts/Helvetica.ttf"
+        candidates(4) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        
+        do i = 1, 4
+            if (file_exists(candidates(i))) then
+                font_path = candidates(i)
+                found = .true.
+                return
+            end if
+        end do
+    end subroutine check_helvetica_paths
+
+    subroutine check_liberation_paths(font_path, found)
+        character(len=256), intent(out) :: font_path
+        logical, intent(out) :: found
+        character(len=256) :: candidates(4)
+        integer :: i
+        
+        found = .false.
+        
+        candidates(1) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        candidates(2) = "/usr/share/fonts/liberation-fonts/LiberationSans-Regular.ttf"
+        candidates(3) = "/usr/share/fonts/TTF/LiberationSans-Regular.ttf"
+        candidates(4) = "/usr/local/share/fonts/LiberationSans-Regular.ttf"
+        
+        do i = 1, 4
+            if (file_exists(candidates(i))) then
+                font_path = candidates(i)
+                found = .true.
+                return
+            end if
+        end do
+    end subroutine check_liberation_paths
+
+    subroutine check_arial_paths(font_path, found)
+        character(len=256), intent(out) :: font_path
+        logical, intent(out) :: found
+        character(len=256) :: candidates(5)
+        integer :: i
+        
+        found = .false.
+        
+        candidates(1) = "/System/Library/Fonts/Arial.ttf"
+        candidates(2) = "/Library/Fonts/Arial.ttf"
+        candidates(3) = "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
+        candidates(4) = "/usr/share/fonts/TTF/arial.ttf"
+        candidates(5) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        
+        do i = 1, 5
+            if (file_exists(candidates(i))) then
+                font_path = candidates(i)
+                found = .true.
+                return
+            end if
+        end do
+    end subroutine check_arial_paths
+
+    subroutine check_dejavu_paths(font_path, found)
+        character(len=256), intent(out) :: font_path
+        logical, intent(out) :: found
+        character(len=256) :: candidates(4)
+        integer :: i
+        
+        found = .false.
+        
+        candidates(1) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        candidates(2) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+        candidates(3) = "/usr/share/fonts/dejavu-fonts/DejaVuSans.ttf"
+        candidates(4) = "/usr/local/share/fonts/DejaVuSans.ttf"
+        
+        do i = 1, 4
+            if (file_exists(candidates(i))) then
+                font_path = candidates(i)
+                found = .true.
+                return
+            end if
+        end do
+    end subroutine check_dejavu_paths
+
+    function file_exists(file_path) result(exists)
+        !! Check if file exists using inquire
+        character(len=*), intent(in) :: file_path
+        logical :: exists
+        
+        inquire(file=trim(file_path), exist=exists)
+    end function file_exists
+
+    function try_init_font(font_path) result(success)
+        !! Try to initialize font from given path
+        character(len=*), intent(in) :: font_path
+        logical :: success
+        
+        success = .false.
+        
+        if (stb_init_font(global_font, trim(font_path))) then
+            font_scale = stb_scale_for_pixel_height(global_font, real(DEFAULT_FONT_SIZE, wp))
+            font_initialized = .true.
+            success = .true.
+        end if
+        
+    end function try_init_font
 
     subroutine cleanup_text_system()
         !! Clean up STB TrueType font system
