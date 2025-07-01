@@ -11,11 +11,6 @@ set(CMAKE_Fortran_FLAGS "-Wall -Wextra -fimplicit-none")
 set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fcheck=all")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
 
-# Find required dependencies
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(FREETYPE2 REQUIRED freetype2)
-pkg_check_modules(ZLIB REQUIRED zlib)
-
 # Automatically collect all source files from src directory
 file(GLOB_RECURSE FORTPLOTLIB_SOURCES "src/*.f90" "src/*.c")
 
@@ -28,13 +23,9 @@ set_target_properties(fortplotlib PROPERTIES
 )
 
 # Make modules available to consumers
-target_include_directories(fortplotlib 
+target_include_directories(fortplotlib
     PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include
-    PRIVATE ${FREETYPE2_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS}
 )
-
-# Link dependencies
-target_link_libraries(fortplotlib PRIVATE ${FREETYPE2_LIBRARIES} ${ZLIB_LIBRARIES})
 
 # Create alias for FetchContent compatibility
 add_library(fortplotlib::fortplotlib ALIAS fortplotlib)
