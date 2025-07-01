@@ -6,7 +6,7 @@ module fortplot_text
     
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
-    public :: render_rotated_text_to_image
+    public :: render_rotated_text_to_image, get_font_metrics
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -513,5 +513,31 @@ contains
             pen_y = pen_y + int(real(advance_width) * font_scale * sin_a)
         end do
     end subroutine render_rotated_text_to_image
+
+    subroutine get_font_metrics(ascent_pixels, descent_pixels, line_gap_pixels, success)
+        !! Get font metrics in pixels for current font
+        real(wp), intent(out) :: ascent_pixels, descent_pixels, line_gap_pixels
+        logical, intent(out) :: success
+        integer :: ascent, descent, line_gap
+        
+        success = .false.
+        ascent_pixels = 0.0_wp
+        descent_pixels = 0.0_wp  
+        line_gap_pixels = 0.0_wp
+        
+        if (.not. font_initialized) then
+            if (.not. init_text_system()) then
+                return
+            end if
+        end if
+        
+        if (font_initialized) then
+            call stb_get_font_vmetrics(global_font, ascent, descent, line_gap)
+            ascent_pixels = real(ascent, wp) * font_scale
+            descent_pixels = abs(real(descent, wp)) * font_scale  ! descent is usually negative
+            line_gap_pixels = real(line_gap, wp) * font_scale
+            success = .true.
+        end if
+    end subroutine get_font_metrics
 
 end module fortplot_text
