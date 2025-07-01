@@ -12,6 +12,8 @@ module fortplot_label_positioning
     ! New separate functions for tick vs axis labels
     public :: calculate_x_tick_label_position, calculate_y_tick_label_position
     public :: calculate_x_axis_label_position, calculate_y_axis_label_position
+    ! PDF-specific positioning (PDF Y=0 at bottom, increases upward)
+    public :: calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
     public :: LABEL_SPACING_X, LABEL_SPACING_Y
     
     ! Matplotlib-exact spacing constants
@@ -208,5 +210,84 @@ contains
         ! Vertically center
         label_y = center_y
     end subroutine calculate_y_axis_label_position
+
+    subroutine calculate_x_tick_label_position_pdf(tick_x, plot_bottom, label_text, label_x, label_y)
+        !! Calculate X-axis tick label position for PDF (Y=0 at bottom, increases upward)
+        use fortplot_text, only: get_font_metrics
+        real(wp), intent(in) :: tick_x, plot_bottom
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width
+        real(wp) :: font_ascent, font_descent, line_gap, tick_end_y, label_padding
+        logical :: success
+        
+        ! Calculate text width for centering
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! Center horizontally on tick mark
+        label_x = tick_x - real(text_width, wp) / 2.0_wp
+        
+        ! Calculate proper vertical positioning for PDF coordinates
+        tick_end_y = plot_bottom - 5.0_wp  ! Tick marks extend 5px below axis (down = smaller Y in PDF)
+        
+        ! Get actual font metrics
+        call get_font_metrics(font_ascent, font_descent, line_gap, success)
+        
+        if (success) then
+            ! Use matplotlib standard: 3.5pt pad ≈ 5px spacing from tick end to text top
+            label_padding = 5.0_wp
+            
+            ! In PDF: Y=0 at bottom, text baseline is positioned above text bottom
+            ! Text extends DOWN (smaller Y) from baseline by descent
+            ! Position text baseline: tick_end - padding - descent (text bottom at tick_end - padding)
+            label_y = tick_end_y - label_padding - font_descent
+        else
+            ! Fallback: use simple spacing
+            label_y = tick_end_y - real(X_TICK_SPACING, wp)
+        end if
+    end subroutine calculate_x_tick_label_position_pdf
+
+    subroutine calculate_y_tick_label_position_pdf(tick_y, plot_left, label_text, label_x, label_y)
+        !! Calculate Y-axis tick label position for PDF (Y=0 at bottom, increases upward)
+        use fortplot_text, only: get_font_metrics
+        real(wp), intent(in) :: tick_y, plot_left
+        character(len=*), intent(in) :: label_text
+        real(wp), intent(out) :: label_x, label_y
+        integer :: text_width, fallback_width
+        real(wp) :: font_ascent, font_descent, line_gap, baseline_offset
+        logical :: success
+        
+        ! Calculate text width for right alignment
+        text_width = calculate_text_width(label_text)
+        if (text_width <= 0) then
+            fallback_width = len_trim(label_text) * 8
+            text_width = fallback_width
+        end if
+        
+        ! Right-align: right edge 10 pixels left of plot
+        label_x = plot_left - real(Y_TICK_SPACING, wp) - real(text_width, wp)
+        
+        ! Get actual font metrics
+        call get_font_metrics(font_ascent, font_descent, line_gap, success)
+        
+        if (success) then
+            ! Position baseline so text center aligns with tick_y
+            ! In PDF coordinates: Y=0 at bottom, Y increases upward
+            ! Text extends DOWN (smaller Y) from baseline by descent
+            ! Text extends UP (larger Y) from baseline by ascent
+            ! Text center is at: baseline + descent + (ascent - descent)/2 = baseline + descent/2 + ascent/2
+            ! For center at tick_y: tick_y = baseline + ascent/2 + descent/2
+            ! So: baseline = tick_y - ascent/2 - descent/2
+            baseline_offset = font_ascent/2.0_wp + font_descent/2.0_wp
+            label_y = tick_y - baseline_offset
+        else
+            ! Fallback to approximation if font system fails
+            label_y = tick_y + real(TEXT_HEIGHT, wp) * 0.25_wp
+        end if
+    end subroutine calculate_y_tick_label_position_pdf
 
 end module fortplot_label_positioning
