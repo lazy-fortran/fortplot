@@ -35,11 +35,16 @@ test:
 # Generate Python reference plots for visual comparison
 ref:
 	@echo "Generating Python matplotlib reference plots..."
-	@python3 example/basic_plots/basic_plots_ref.py
-	@python3 example/line_styles/line_styles_ref.py
-	@python3 example/scale_examples/scale_examples_ref.py
-	@python3 example/contour_demo/contour_demo_ref.py
-	@echo "Reference plots generated! Compare *_ref.png files with fortplotlib output."
+	@python3 example/matplotlib/basic_plots/basic_plots.py
+	@python3 example/matplotlib/line_styles/line_styles.py
+	@python3 example/matplotlib/scale_examples/scale_examples.py
+	@python3 example/matplotlib/contour_demo/contour_demo.py
+	@python3 example/matplotlib/colored_contours/colored_contours.py
+	@python3 example/matplotlib/format_string_demo/format_string_demo.py
+	@python3 example/matplotlib/legend_demo/legend_demo.py
+	@python3 example/matplotlib/marker_demo/marker_demo.py
+	@python3 example/matplotlib/streamplot_demo/streamplot_demo.py
+	@echo "Reference plots generated! Compare matplotlib output with fortplotlib output."
 
 # Clean build artifacts
 clean:
@@ -70,7 +75,7 @@ help:
 	@echo "  build       - Compile the project"
 	@echo "  example     - Build and run all examples"
 	@echo "  debug       - Build and run apps for debugging"
-	@echo "  ref         - Generate Python matplotlib reference plots"
+	@echo "  ref         - Generate Python matplotlib reference plots (1:1 equivalents)"
 	@echo "  test        - Run all tests"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
