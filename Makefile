@@ -11,7 +11,7 @@ FPM_FLAGS = --c-flag "$(ALL_CFLAGS)" --link-flag "$(ALL_LIBS)"
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help check-deps ref
+.PHONY: all build example debug test clean help check-deps matplotlib
 
 # Default target
 all: build
@@ -32,8 +32,8 @@ debug:
 test:
 	fpm test $(FPM_FLAGS) $(ARGS)
 
-# Generate Python reference plots for visual comparison
-ref:
+# Generate Python matplotlib plots for comparison with Fortran examples
+matplotlib:
 	@echo "Generating Python matplotlib reference plots..."
 	@python3 example/matplotlib/basic_plots/basic_plots.py
 	@python3 example/matplotlib/line_styles/line_styles.py
@@ -44,7 +44,7 @@ ref:
 	@python3 example/matplotlib/legend_demo/legend_demo.py
 	@python3 example/matplotlib/marker_demo/marker_demo.py
 	@python3 example/matplotlib/streamplot_demo/streamplot_demo.py
-	@echo "Reference plots generated! Compare matplotlib output with fortplotlib output."
+	@echo "Matplotlib plots generated! Compare matplotlib output with fortplotlib output."
 
 # Clean build artifacts
 clean:
@@ -75,7 +75,7 @@ help:
 	@echo "  build       - Compile the project"
 	@echo "  example     - Build and run all examples"
 	@echo "  debug       - Build and run apps for debugging"
-	@echo "  ref         - Generate Python matplotlib reference plots (1:1 equivalents)"
+	@echo "  matplotlib  - Generate Python matplotlib plots (1:1 equivalents)"
 	@echo "  test        - Run all tests"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"

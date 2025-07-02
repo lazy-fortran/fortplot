@@ -36,9 +36,9 @@ contains
         ! Add legend with default position (upper right)
         call fig%legend()
         
-        call fig%savefig('example/legend_demo/basic_legend.png')
-        call fig%savefig('example/legend_demo/basic_legend.pdf')
-        call fig%savefig('example/legend_demo/basic_legend.txt')
+        call fig%savefig('example/fortran/legend_demo/basic_legend.png')
+        call fig%savefig('example/fortran/legend_demo/basic_legend.pdf')
+        call fig%savefig('example/fortran/legend_demo/basic_legend.txt')
         
         print *, "Created: basic_legend.png/pdf/txt"
     end subroutine basic_legend_example
@@ -62,7 +62,7 @@ contains
         call fig1%add_plot(x, y1, label="√x")
         call fig1%add_plot(x, y2, label="ln(x)")
         call fig1%legend(location="upper left")
-        call fig1%savefig('example/legend_demo/legend_upper_left.png')
+        call fig1%savefig('example/fortran/legend_demo/legend_upper_left.png')
         
         ! Upper right position (default)
         call fig2%initialize(640, 480)
@@ -70,7 +70,7 @@ contains
         call fig2%add_plot(x, y1, label="√x")
         call fig2%add_plot(x, y2, label="ln(x)")
         call fig2%legend(location="upper right")
-        call fig2%savefig('example/legend_demo/legend_upper_right.png')
+        call fig2%savefig('example/fortran/legend_demo/legend_upper_right.png')
         
         ! Lower left position
         call fig3%initialize(640, 480)
@@ -78,7 +78,7 @@ contains
         call fig3%add_plot(x, y1, label="√x")
         call fig3%add_plot(x, y2, label="ln(x)")
         call fig3%legend(location="lower left")
-        call fig3%savefig('example/legend_demo/legend_lower_left.png')
+        call fig3%savefig('example/fortran/legend_demo/legend_lower_left.png')
         
         ! Lower right position
         call fig4%initialize(640, 480)
@@ -86,7 +86,7 @@ contains
         call fig4%add_plot(x, y1, label="√x")
         call fig4%add_plot(x, y2, label="ln(x)")
         call fig4%legend(location="lower right")
-        call fig4%savefig('example/legend_demo/legend_lower_right.png')
+        call fig4%savefig('example/fortran/legend_demo/legend_lower_right.png')
         
         print *, "Created: legend_upper_left/right.png, legend_lower_left/right.png"
     end subroutine positioned_legend_example
@@ -120,9 +120,9 @@ contains
         ! Add legend
         call fig%legend()
         
-        call fig%savefig('example/legend_demo/multi_function_legend.png')
-        call fig%savefig('example/legend_demo/multi_function_legend.pdf')
-        call fig%savefig('example/legend_demo/multi_function_legend.txt')
+        call fig%savefig('example/fortran/legend_demo/multi_function_legend.png')
+        call fig%savefig('example/fortran/legend_demo/multi_function_legend.pdf')
+        call fig%savefig('example/fortran/legend_demo/multi_function_legend.txt')
         
         print *, "Created: multi_function_legend.png/pdf/txt"
     end subroutine multi_function_legend_example
