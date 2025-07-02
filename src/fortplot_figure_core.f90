@@ -320,8 +320,10 @@ contains
                     ! need to convert to data coordinates like matplotlib does
                     do j = 1, n_points
                         ! Convert grid coords to data coords: grid2data transformation
-                        traj_x(j) = real(trajectories(i, j, 1), wp) * (x_grid(size(x_grid)) - x_grid(1)) / real(size(x_grid) - 1, wp) + x_grid(1)
-                        traj_y(j) = real(trajectories(i, j, 2), wp) * (y_grid(size(y_grid)) - y_grid(1)) / real(size(y_grid) - 1, wp) + y_grid(1)
+                        traj_x(j) = real(trajectories(i, j, 1), wp) * (x_grid(size(x_grid)) - x_grid(1)) / &
+                                   real(size(x_grid) - 1, wp) + x_grid(1)
+                        traj_y(j) = real(trajectories(i, j, 2), wp) * (y_grid(size(y_grid)) - y_grid(1)) / &
+                                   real(size(y_grid) - 1, wp) + y_grid(1)
                     end do
                     
                     ! Add as regular plot

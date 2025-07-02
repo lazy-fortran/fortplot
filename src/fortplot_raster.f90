@@ -568,7 +568,8 @@ contains
         ! Transform data coordinates to pixel coordinates (same as raster_draw_line)
         ! This ensures the quad respects plot area margins
         do i = 1, 4
-            px_quad(i) = (x_quad(i) - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+            px_quad(i) = (x_quad(i) - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + &
+                        real(this%plot_area%left, wp)
             py_quad(i) = real(this%plot_area%bottom + this%plot_area%height, wp) - &
                         (y_quad(i) - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
         end do
