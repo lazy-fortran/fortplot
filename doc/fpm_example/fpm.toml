@@ -1,0 +1,11 @@
+name = "fortplotlib-example"
+version = "0.1.0"
+license = "MIT"
+
+[[dependencies]]
+fortplotlib = { git = "https://github.com/krystophny/fortplotlib" }
+
+[[executable]]
+name = "example"
+source-dir = "src"
+main = "main.f90"
