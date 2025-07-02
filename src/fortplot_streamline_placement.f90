@@ -245,22 +245,22 @@ contains
         ! Allocate for maximum possible seeds
         allocate(seed_points(2, nx * ny))
         
-        ! Initialize spiral parameters
-        xfirst = 1
-        yfirst = 2
-        xlast = nx
-        ylast = ny
-        x = 1
-        y = 1
+        ! Initialize spiral parameters (0-based like matplotlib)
+        xfirst = 0
+        yfirst = 1
+        xlast = nx - 1
+        ylast = ny - 1
+        x = 0
+        y = 0
         direction = 'right'
         
         n_seeds = 0
         
-        ! Generate spiral sequence
+        ! Generate spiral sequence (store as 1-based for Fortran arrays)
         do i = 1, nx * ny
             n_seeds = n_seeds + 1
-            seed_points(1, n_seeds) = x
-            seed_points(2, n_seeds) = y
+            seed_points(1, n_seeds) = x + 1  ! Convert to 1-based for Fortran
+            seed_points(2, n_seeds) = y + 1  ! Convert to 1-based for Fortran
             
             ! Move in current direction
             select case (direction)
