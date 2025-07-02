@@ -1,14 +1,14 @@
 import numpy as np
-import _fortplotlib
+import fortplotlib.fortplot as plt
 
 x = np.linspace(0,1,100)
 y = np.cos(x)
 
-_fortplotlib.fortplot.figure(640, 480)
-_fortplotlib.fortplot.plot(x, y, 'simple')
-_fortplotlib.fortplot.title('simple')
-_fortplotlib.fortplot.xlabel('x')
-_fortplotlib.fortplot.ylabel('y')
-_fortplotlib.fortplot.savefig('simple.pdf')
-_fortplotlib.fortplot.savefig('simple.png')
-_fortplotlib.fortplot.savefig('simple.txt')
+plt.figure(640, 480)
+plt.plot(x, y, 'simple')
+plt.title('simple')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.savefig('simple.pdf')
+plt.savefig('simple.png')
+plt.savefig('simple.txt')
