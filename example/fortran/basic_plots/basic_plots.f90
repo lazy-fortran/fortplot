@@ -24,9 +24,9 @@ contains
         call title('Simple Sine Wave')
         call xlabel('x')
         call ylabel('sin(x)')
-        call savefig('example/basic_plots/simple_plot.png')
-        call savefig('example/basic_plots/simple_plot.pdf')
-        call savefig('example/basic_plots/simple_plot.txt')
+        call savefig('example/fortran/basic_plots/simple_plot.png')
+        call savefig('example/fortran/basic_plots/simple_plot.pdf')
+        call savefig('example/fortran/basic_plots/simple_plot.txt')
         
         print *, "Created: simple_plot.png/pdf/txt"
         
@@ -49,9 +49,9 @@ contains
         call fig%add_plot(x, sx, label="sin(x)")
         call fig%add_plot(x, cx, label="cos(x)")
         call fig%legend()  ! Add legend for labeled plots
-        call fig%savefig('example/basic_plots/multi_line.png')
-        call fig%savefig('example/basic_plots/multi_line.pdf')
-        call fig%savefig('example/basic_plots/multi_line.txt')
+        call fig%savefig('example/fortran/basic_plots/multi_line.png')
+        call fig%savefig('example/fortran/basic_plots/multi_line.pdf')
+        call fig%savefig('example/fortran/basic_plots/multi_line.txt')
         
         print *, "Created: multi_line.png/pdf/txt"
         

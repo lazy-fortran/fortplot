@@ -21,7 +21,7 @@ def simple_plots():
     plt.title('Simple Sine Wave')
     plt.xlabel('x')
     plt.ylabel('sin(x)')
-    plt.savefig('example/basic_plots/simple_plot_ref.png')
+    plt.savefig('example/matplotlib/basic_plots/simple_plot_ref.png')
     plt.close()
     
     print("Created: simple_plot_ref.png")
@@ -41,8 +41,8 @@ def multi_line_plot():
     plt.plot(x, sx, label="sin(x)")
     plt.plot(x, cx, label="cos(x)")
     plt.legend()  # Add legend for labeled plots - same as Fortran
-    plt.savefig('example/basic_plots/multi_line_ref.png')
-    plt.savefig('example/basic_plots/multi_line_ref.pdf')
+    plt.savefig('example/matplotlib/basic_plots/multi_line_ref.png')
+    plt.savefig('example/matplotlib/basic_plots/multi_line_ref.pdf')
     plt.close()
     
     print("Created: multi_line_ref.png/pdf")

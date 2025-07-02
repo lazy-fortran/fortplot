@@ -42,9 +42,9 @@ contains
         call fig%add_plot(x, sin(x), linestyle='-', label='Sin(x) Reference')
         
         call fig%legend()
-        call fig%savefig('example/marker_demo/scatter_plot.png')
-        call fig%savefig('example/marker_demo/scatter_plot.pdf')
-        call fig%savefig('example/marker_demo/scatter_plot.txt')
+        call fig%savefig('example/fortran/marker_demo/scatter_plot.png')
+        call fig%savefig('example/fortran/marker_demo/scatter_plot.pdf')
+        call fig%savefig('example/fortran/marker_demo/scatter_plot.txt')
     end subroutine demo_scatter_plot
 
     subroutine demo_all_marker_types()
@@ -77,9 +77,9 @@ contains
         call fig%add_plot(x4, y4, linestyle='x', label='Cross')
         
         call fig%legend()
-        call fig%savefig('example/marker_demo/all_marker_types.png')
-        call fig%savefig('example/marker_demo/all_marker_types.pdf')
-        call fig%savefig('example/marker_demo/all_marker_types.txt')
+        call fig%savefig('example/fortran/marker_demo/all_marker_types.png')
+        call fig%savefig('example/fortran/marker_demo/all_marker_types.pdf')
+        call fig%savefig('example/fortran/marker_demo/all_marker_types.txt')
     end subroutine demo_all_marker_types
 
     subroutine demo_marker_colors()
@@ -109,9 +109,9 @@ contains
         call fig%add_plot(x3, y3, linestyle='D', label='Orange diamonds')
         
         call fig%legend()
-        call fig%savefig('example/marker_demo/marker_colors.png')
-        call fig%savefig('example/marker_demo/marker_colors.pdf')
-        call fig%savefig('example/marker_demo/marker_colors.txt')
+        call fig%savefig('example/fortran/marker_demo/marker_colors.png')
+        call fig%savefig('example/fortran/marker_demo/marker_colors.pdf')
+        call fig%savefig('example/fortran/marker_demo/marker_colors.txt')
     end subroutine demo_marker_colors
 
 end program marker_demo

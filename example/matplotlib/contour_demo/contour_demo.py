@@ -32,8 +32,8 @@ def gaussian_contours():
     plt.colorbar(contour, label="exp(-(x²+y²))")
     plt.grid(True, alpha=0.3)
     
-    plt.savefig('example/contour_demo/contour_gaussian_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/contour_demo/contour_gaussian_ref.pdf', bbox_inches='tight')
+    plt.savefig('example/matplotlib/contour_demo/contour_gaussian_ref.png', dpi=150, bbox_inches='tight')
+    plt.savefig('example/matplotlib/contour_demo/contour_gaussian_ref.pdf', bbox_inches='tight')
     plt.close()
     
     print("Created: contour_gaussian_ref.png/pdf")
@@ -64,8 +64,8 @@ def mixed_contour_line_plot():
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    plt.savefig('example/contour_demo/mixed_plot_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/contour_demo/mixed_plot_ref.pdf', bbox_inches='tight')
+    plt.savefig('example/matplotlib/contour_demo/mixed_plot_ref.png', dpi=150, bbox_inches='tight')
+    plt.savefig('example/matplotlib/contour_demo/mixed_plot_ref.pdf', bbox_inches='tight')
     plt.close()
     
     print("Created: mixed_plot_ref.png/pdf")

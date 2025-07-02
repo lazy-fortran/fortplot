@@ -24,9 +24,9 @@ contains
         call title('Log Scale Example')
         call xlabel('x')
         call ylabel('exp(0.2x)')
-        call savefig('example/scale_examples/log_scale.png')
-        call savefig('example/scale_examples/log_scale.pdf')
-        call savefig('example/scale_examples/log_scale.txt')
+        call savefig('example/fortran/scale_examples/log_scale.png')
+        call savefig('example/fortran/scale_examples/log_scale.pdf')
+        call savefig('example/fortran/scale_examples/log_scale.txt')
         
         print *, "Created: log_scale.png/pdf/txt"
         
@@ -46,9 +46,9 @@ contains
         call title('Symlog Scale Example')
         call xlabel('x') 
         call ylabel('x³ - 50x')
-        call savefig('example/scale_examples/symlog_scale.png')
-        call savefig('example/scale_examples/symlog_scale.pdf')
-        call savefig('example/scale_examples/symlog_scale.txt')
+        call savefig('example/fortran/scale_examples/symlog_scale.png')
+        call savefig('example/fortran/scale_examples/symlog_scale.pdf')
+        call savefig('example/fortran/scale_examples/symlog_scale.txt')
         
         print *, "Created: symlog_scale.png/pdf/txt"
         

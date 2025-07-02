@@ -20,7 +20,7 @@ def default_gaussian_example():
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_title("2D Gaussian - Default Colorblind-Safe Colormap")
-    contourf = ax.contourf(X, Y, Z, cmap='crest')  # Uses default 'crest' colormap
+    contourf = ax.contourf(X, Y, Z, cmap='viridis')  # Uses colorblind-safe viridis colormap
     plt.colorbar(contourf)
     
     plt.savefig('example/matplotlib/colored_contours/gaussian_default.png', dpi=100)

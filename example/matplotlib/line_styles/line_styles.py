@@ -32,8 +32,8 @@ def main():
     plt.legend()
     plt.grid(True, alpha=0.3)
     
-    plt.savefig('example/line_styles/line_styles_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/line_styles/line_styles_ref.pdf', bbox_inches='tight')
+    plt.savefig('example/matplotlib/line_styles/line_styles_ref.png', dpi=150, bbox_inches='tight')
+    plt.savefig('example/matplotlib/line_styles/line_styles_ref.pdf', bbox_inches='tight')
     plt.close()
     
     print("Line style examples completed!")

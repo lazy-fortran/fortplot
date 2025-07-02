@@ -22,8 +22,8 @@ def log_scale_demo():
     plt.xlabel('x')
     plt.ylabel('exp(0.2x)')
     plt.grid(True, alpha=0.3)
-    plt.savefig('example/scale_examples/log_scale_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/scale_examples/log_scale_ref.pdf', bbox_inches='tight')
+    plt.savefig('example/matplotlib/scale_examples/log_scale_ref.png', dpi=150, bbox_inches='tight')
+    plt.savefig('example/matplotlib/scale_examples/log_scale_ref.pdf', bbox_inches='tight')
     plt.close()
     
     print("Created: log_scale_ref.png/pdf")
@@ -41,8 +41,8 @@ def symlog_scale_demo():
     plt.xlabel('x')
     plt.ylabel('x³ - 50x')
     plt.grid(True, alpha=0.3)
-    plt.savefig('example/scale_examples/symlog_scale_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/scale_examples/symlog_scale_ref.pdf', bbox_inches='tight')
+    plt.savefig('example/matplotlib/scale_examples/symlog_scale_ref.png', dpi=150, bbox_inches='tight')
+    plt.savefig('example/matplotlib/scale_examples/symlog_scale_ref.pdf', bbox_inches='tight')
     plt.close()
     
     print("Created: symlog_scale_ref.png/pdf")
