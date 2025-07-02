@@ -1,10 +1,12 @@
 module fortplot_streamline
     use fortplot_streamline_integrator, only: integration_params_t, dopri5_integrate
+    use fortplot_streamline_placement, only: stream_mask_t, coordinate_mapper_t, generate_spiral_seeds
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
     
-    public :: calculate_seed_points, integrate_streamline, integrate_streamline_dopri5, rk4_step, &
+    public :: calculate_seed_points, calculate_seed_points_matplotlib, integrate_streamline, &
+              integrate_streamline_dopri5, integrate_streamline_bidirectional, rk4_step, &
               calculate_arrow_positions, check_termination, bilinear_interpolate, integration_params_t
     
 contains
@@ -162,6 +164,141 @@ contains
         end function v_func_wrapper
         
     end subroutine integrate_streamline_dopri5
+
+    subroutine calculate_seed_points_matplotlib(x, y, density, seed_x, seed_y, n_seeds, mask)
+        !! Calculate seed points using matplotlib-compatible spiral algorithm
+        !! with collision detection for proper streamline spacing
+        real, dimension(:), intent(in) :: x, y
+        real(wp), intent(in) :: density
+        real, allocatable, intent(out) :: seed_x(:), seed_y(:)
+        integer, intent(out) :: n_seeds
+        type(stream_mask_t), intent(inout) :: mask
+        
+        integer, allocatable :: spiral_seeds(:,:)
+        integer :: n_spiral_seeds, i, xm, ym
+        real(wp) :: xg, yg, xd, yd
+        type(coordinate_mapper_t) :: mapper
+        
+        ! Initialize mask with matplotlib sizing
+        call mask%initialize(density)
+        
+        ! Initialize coordinate mapper
+        call mapper%initialize([real(x(1), wp), real(x(size(x)), wp)], &
+                              [real(y(1), wp), real(y(size(y)), wp)], &
+                              [size(x), size(y)], &
+                              [mask%nx, mask%ny])
+        
+        ! Generate spiral seed points in mask coordinates
+        call generate_spiral_seeds([mask%nx, mask%ny], spiral_seeds, n_spiral_seeds)
+        
+        ! Allocate output arrays (will be trimmed later)
+        allocate(seed_x(n_spiral_seeds))
+        allocate(seed_y(n_spiral_seeds))
+        
+        n_seeds = 0
+        
+        ! Convert spiral seeds to data coordinates and check availability
+        ! Use more seeds to make streamlines more visible
+        do i = 1, min(n_spiral_seeds, nint(200 * density))
+            xm = spiral_seeds(1, i)
+            ym = spiral_seeds(2, i)
+            
+            ! Check if mask position is free
+            if (mask%is_free(xm, ym)) then
+                ! Convert mask → grid → data coordinates
+                call mapper%mask2grid(xm, ym, xg, yg)
+                call mapper%grid2data(xg, yg, xd, yd)
+                
+                ! Check if within data bounds
+                if (xd >= x(1) .and. xd <= x(size(x)) .and. &
+                    yd >= y(1) .and. yd <= y(size(y))) then
+                    
+                    n_seeds = n_seeds + 1
+                    seed_x(n_seeds) = real(xd)
+                    seed_y(n_seeds) = real(yd)
+                    
+                    ! Don't reserve position yet - will be done during integration
+                end if
+            end if
+        end do
+        
+        ! Trim arrays to actual size
+        if (n_seeds > 0) then
+            seed_x = seed_x(1:n_seeds)
+            seed_y = seed_y(1:n_seeds)
+        end if
+        
+        deallocate(spiral_seeds)
+    end subroutine calculate_seed_points_matplotlib
+
+    subroutine integrate_streamline_bidirectional(x0, y0, u_func, v_func, params, max_time, &
+                                                 path_x, path_y, n_points)
+        !! Bidirectional streamline integration like matplotlib
+        !! Integrates both forward and backward from seed point for complete streamlines
+        real, intent(in) :: x0, y0
+        interface
+            real function u_func(x, y)
+                real, intent(in) :: x, y
+            end function u_func
+            real function v_func(x, y)
+                real, intent(in) :: x, y
+            end function v_func
+        end interface
+        type(integration_params_t), intent(in), optional :: params
+        real, intent(in), optional :: max_time
+        real, allocatable, intent(out) :: path_x(:), path_y(:)
+        integer, intent(out) :: n_points
+        
+        real, allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
+        integer :: n_forward, n_backward, i
+        real :: half_time
+        
+        ! Use half the time for each direction
+        if (present(max_time)) then
+            half_time = max_time * 0.5
+        else
+            half_time = 5.0  ! Default half time
+        end if
+        
+        ! Integrate forward direction
+        call integrate_streamline_dopri5(x0, y0, u_func, v_func, params, half_time, &
+                                        forward_x, forward_y, n_forward)
+        
+        ! Integrate backward direction (negate velocity field)
+        call integrate_streamline_dopri5(x0, y0, u_func_neg, v_func_neg, params, half_time, &
+                                        backward_x, backward_y, n_backward)
+        
+        ! Combine backward (reversed) + forward trajectories
+        n_points = n_backward + n_forward - 1  ! -1 to avoid duplicate start point
+        allocate(path_x(n_points), path_y(n_points))
+        
+        ! Add backward trajectory (reversed order, excluding start point)
+        do i = 1, n_backward - 1
+            path_x(n_backward - i) = backward_x(i + 1)
+            path_y(n_backward - i) = backward_y(i + 1)
+        end do
+        
+        ! Add forward trajectory (starting from seed point)
+        do i = 1, n_forward
+            path_x(n_backward - 1 + i) = forward_x(i)
+            path_y(n_backward - 1 + i) = forward_y(i)
+        end do
+        
+        deallocate(forward_x, forward_y, backward_x, backward_y)
+        
+    contains
+        
+        real function u_func_neg(x, y) result(u_neg)
+            real, intent(in) :: x, y
+            u_neg = -u_func(x, y)  ! Negate for backward integration
+        end function u_func_neg
+        
+        real function v_func_neg(x, y) result(v_neg)
+            real, intent(in) :: x, y
+            v_neg = -v_func(x, y)  ! Negate for backward integration
+        end function v_func_neg
+        
+    end subroutine integrate_streamline_bidirectional
     
     subroutine rk4_step(x, y, u_func, v_func, dt, x_new, y_new)
         real, intent(in) :: x, y, dt
