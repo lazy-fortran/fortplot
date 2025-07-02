@@ -25,6 +25,7 @@ module fortplot_streamline_placement
         procedure :: is_free => mask_is_free
         procedure :: start_trajectory => mask_start_trajectory
         procedure :: update_trajectory => mask_update_trajectory
+        procedure :: try_update_trajectory => mask_try_update_trajectory
         procedure :: undo_trajectory => mask_undo_trajectory
     end type stream_mask_t
     
@@ -114,6 +115,36 @@ contains
         self%current_x = x
         self%current_y = y
     end subroutine mask_update_trajectory
+
+    logical function mask_try_update_trajectory(self, x, y) result(success)
+        !! Try to update trajectory, return false if collision occurs
+        class(stream_mask_t), intent(inout) :: self
+        integer, intent(in) :: x, y
+        
+        ! Skip if same position
+        if (self%current_x == x .and. self%current_y == y) then
+            success = .true.
+            return
+        end if
+        
+        ! Check if position is available
+        if (.not. self%is_free(x, y)) then
+            success = .false.
+            return
+        end if
+        
+        ! Mark position as occupied
+        self%mask(y, x) = 1
+        
+        ! Record in trajectory for potential undo
+        self%traj_length = self%traj_length + 1
+        self%trajectory(1, self%traj_length) = x
+        self%trajectory(2, self%traj_length) = y
+        
+        self%current_x = x
+        self%current_y = y
+        success = .true.
+    end function mask_try_update_trajectory
 
     subroutine mask_undo_trajectory(self)
         !! Remove current trajectory from mask (for short/bad streamlines)

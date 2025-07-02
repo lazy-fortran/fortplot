@@ -139,7 +139,7 @@ contains
 
     subroutine integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, direction, maxlength, &
                                   traj_x, traj_y, n_points)
-        !! Integrate in one direction with collision detection
+        !! Integrate in one direction with RK12 adaptive step size like matplotlib
         real(wp), intent(in) :: xg0, yg0, direction, maxlength
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         type(coordinate_mapper_t), intent(in) :: dmap
@@ -147,12 +147,14 @@ contains
         real, intent(out) :: traj_x(500), traj_y(500)
         integer, intent(out) :: n_points
         
-        real(wp) :: xg, yg, ds, total_length, maxds
-        real(wp) :: ug, vg, speed
+        real(wp) :: xg, yg, ds, total_length, maxds, maxerror
+        real(wp) :: ug, vg, speed_ax
+        real(wp) :: k1x, k1y, k2x, k2y, dx1, dy1, dx2, dy2, error
         integer :: step_count
         
-        ! Step size limit like matplotlib (line 548)
-        maxds = min(1.0_wp/mask%nx, 1.0_wp/mask%ny, 0.1_wp)
+        ! Parameters matching matplotlib exactly
+        maxds = min(1.0_wp/real(mask%nx,wp), 1.0_wp/real(mask%ny,wp), 0.1_wp)
+        maxerror = 0.003_wp  ! Visual quality threshold from matplotlib
         
         xg = xg0
         yg = yg0
@@ -163,66 +165,116 @@ contains
         traj_x(1) = real(xg)
         traj_y(1) = real(yg)
         
-        do step_count = 1, 1000  ! Max steps
-            ! Get velocity at current position
+        do step_count = 1, 2000  ! Max steps like matplotlib
+            ! Get velocity at current position with proper scaling
             call interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
-            speed = sqrt(ug*ug + vg*vg)
             
-            if (speed < 1e-10) exit  ! Stagnation point
+            ! Convert to axes coordinates for speed calculation (like matplotlib line 451-453)
+            speed_ax = sqrt((ug/(size(x)-1))**2 + (vg/(size(y)-1))**2)
+            if (speed_ax < 1e-10) exit  ! Stagnation point
             
-            ! Normalize and apply direction
-            ug = direction * ug / speed * ds
-            vg = direction * vg / speed * ds
+            ! Apply direction and normalize by speed for dt_ds calculation (matplotlib line 461-464)
+            k1x = direction * ug / speed_ax
+            k1y = direction * vg / speed_ax
             
-            ! Take step
-            xg = xg + ug
-            yg = yg + vg
+            ! RK12 second stage (matplotlib RK12 implementation)
+            call interpolate_velocity(xg + ds*k1x, yg + ds*k1y, x, y, u, v, ug, vg)
+            speed_ax = sqrt((ug/(size(x)-1))**2 + (vg/(size(y)-1))**2)
+            if (speed_ax < 1e-10) exit
             
-            ! Check bounds
-            if (xg < 0 .or. xg >= size(x)-1 .or. yg < 0 .or. yg >= size(y)-1) exit
+            k2x = direction * ug / speed_ax  
+            k2y = direction * vg / speed_ax
             
-            ! Update trajectory in mask (like matplotlib line 594)
-            call update_trajectory_in_mask(dmap, mask, xg, yg)
+            ! Calculate two solutions (matplotlib lines 580-583)
+            dx1 = ds * k1x  ! Euler step
+            dy1 = ds * k1y  
+            dx2 = ds * 0.5_wp * (k1x + k2x)  ! RK2 step
+            dy2 = ds * 0.5_wp * (k1y + k2y)
             
-            ! Store point
-            n_points = n_points + 1
-            traj_x(n_points) = real(xg)
-            traj_y(n_points) = real(yg)
+            ! Error estimate normalized to axes coordinates (matplotlib lines 586-587)
+            error = sqrt(((dx2-dx1)/(size(x)-1))**2 + ((dy2-dy1)/(size(y)-1))**2)
             
-            total_length = total_length + ds
-            if (total_length >= maxlength) exit
+            ! Accept step if error is acceptable (like matplotlib line 590)
+            if (error < maxerror) then
+                xg = xg + dx2
+                yg = yg + dy2
+                
+                ! Check bounds
+                if (xg < 0 .or. xg >= size(x)-1 .or. yg < 0 .or. yg >= size(y)-1) exit
+                
+                ! Update trajectory in mask (like matplotlib line 594)
+                if (.not. update_trajectory_in_mask_safe(dmap, mask, xg, yg)) exit
+                
+                ! Store point
+                n_points = n_points + 1
+                if (n_points > 500) exit
+                traj_x(n_points) = real(xg)
+                traj_y(n_points) = real(yg)
+                
+                total_length = total_length + ds
+                if (total_length >= maxlength) exit
+            end if
+            
+            ! Adjust step size based on error (matplotlib lines 602-605)
+            if (error == 0.0_wp) then
+                ds = maxds
+            else
+                ds = min(maxds, 0.85_wp * ds * sqrt(maxerror / error))
+            end if
+            
         end do
         
     end subroutine integrate_direction
 
     subroutine interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
-        !! Bilinear interpolation of velocity field
+        !! Bilinear interpolation exactly like matplotlib's interpgrid function
         real(wp), intent(in) :: xg, yg
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(out) :: ug, vg
         
-        integer :: i1, i2, j1, j2
-        real(wp) :: fx, fy, xd, yd
+        integer :: i, j, i_next, j_next
+        real(wp) :: xt, yt, a00_u, a01_u, a10_u, a11_u, a0_u, a1_u
+        real(wp) :: a00_v, a01_v, a10_v, a11_v, a0_v, a1_v
         
-        ! Convert grid to data coordinates
-        xd = x(1) + xg * (x(size(x)) - x(1)) / (size(x) - 1)
-        yd = y(1) + yg * (y(size(y)) - y(1)) / (size(y) - 1)
+        ! Convert grid coordinates to integer indices (like matplotlib lines 646-656)
+        i = max(1, min(size(x)-1, int(xg) + 1))
+        j = max(1, min(size(y)-1, int(yg) + 1))
         
-        ! Find surrounding grid points
-        i1 = max(1, min(size(x)-1, int(xg) + 1))
-        i2 = min(size(x), i1 + 1)
-        j1 = max(1, min(size(y)-1, int(yg) + 1)) 
-        j2 = min(size(y), j1 + 1)
+        ! Get next indices with bounds checking (matplotlib lines 648-656)
+        if (i == size(x)) then
+            i_next = i
+        else
+            i_next = i + 1
+        end if
         
-        ! Interpolation weights
-        fx = xg - (i1 - 1)
-        fy = yg - (j1 - 1)
+        if (j == size(y)) then
+            j_next = j
+        else
+            j_next = j + 1
+        end if
         
-        ! Bilinear interpolation
-        ug = u(i1,j1) * (1-fx) * (1-fy) + u(i2,j1) * fx * (1-fy) + &
-             u(i1,j2) * (1-fx) * fy + u(i2,j2) * fx * fy
-        vg = v(i1,j1) * (1-fx) * (1-fy) + v(i2,j1) * fx * (1-fy) + &
-             v(i1,j2) * (1-fx) * fy + v(i2,j2) * fx * fy
+        ! Interpolation weights (matplotlib lines 662-663)
+        xt = xg - real(i - 1, wp)
+        yt = yg - real(j - 1, wp)
+        
+        ! Bilinear interpolation exactly like matplotlib (lines 658-667)
+        ! u velocity
+        a00_u = u(i, j)
+        a01_u = u(i_next, j)
+        a10_u = u(i, j_next)
+        a11_u = u(i_next, j_next)
+        a0_u = a00_u * (1.0_wp - xt) + a01_u * xt
+        a1_u = a10_u * (1.0_wp - xt) + a11_u * xt
+        ug = a0_u * (1.0_wp - yt) + a1_u * yt
+        
+        ! v velocity  
+        a00_v = v(i, j)
+        a01_v = v(i_next, j)
+        a10_v = v(i, j_next)
+        a11_v = v(i_next, j_next)
+        a0_v = a00_v * (1.0_wp - xt) + a01_v * xt
+        a1_v = a10_v * (1.0_wp - xt) + a11_v * xt
+        vg = a0_v * (1.0_wp - yt) + a1_v * yt
         
     end subroutine interpolate_velocity
 
@@ -262,6 +314,17 @@ contains
         call dmap%grid2mask(xg, yg, xm, ym)
         call mask%update_trajectory(xm, ym)
     end subroutine update_trajectory_in_mask
+
+    logical function update_trajectory_in_mask_safe(dmap, mask, xg, yg) result(success)
+        !! Safe version that returns false if trajectory collides (for integration termination)
+        type(coordinate_mapper_t), intent(in) :: dmap
+        type(stream_mask_t), intent(inout) :: mask
+        real(wp), intent(in) :: xg, yg
+        
+        integer :: xm, ym
+        call dmap%grid2mask(xg, yg, xm, ym)
+        success = mask%try_update_trajectory(xm, ym)
+    end function update_trajectory_in_mask_safe
 
     ! add_trajectory_to_figure removed to avoid circular dependency
 
