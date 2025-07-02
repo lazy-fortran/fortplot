@@ -1,7 +1,7 @@
 import os
 import platform
 import numpy as np
-import fortplotlib._fortplotlib as _fortplotlib
+import fortplotlib.fortplot_wrapper as _fortplotlib
 
 DEFAULT_DPI = 100
 
@@ -34,6 +34,136 @@ def ylabel(ylabel):
 
 def savefig(filename):
     _fortplotlib.fortplot.savefig(filename)
+
+def contour(X, Y, Z, levels=None):
+    """Draw contour lines.
+
+    Parameters
+    ----------
+    X, Y : array-like
+        The coordinates of the values in Z.
+    Z : array-like
+        The height values over which the contour is drawn.
+    levels : array-like, optional
+        Determines the number and positions of the contour lines.
+    """
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(Y, np.ndarray):
+        Y = np.array(Y)
+    if not isinstance(Z, np.ndarray):
+        Z = np.array(Z)
+
+    # Extract 1D coordinate arrays from 2D meshgrid (if needed)
+    if X.ndim == 2:
+        x = X[0, :]  # First row
+    else:
+        x = X
+    if Y.ndim == 2:
+        y = Y[:, 0]  # First column
+    else:
+        y = Y
+
+    # Transpose Z for Fortran column-major order
+    z = Z.T.copy()
+
+    if levels is None:
+        _fortplotlib.fortplot.contour(x, y, z)
+    else:
+        if not isinstance(levels, np.ndarray):
+            levels = np.array(levels)
+        _fortplotlib.fortplot.contour(x, y, z, levels)
+
+def contourf(X, Y, Z, levels=None, **kwargs):
+    """Draw filled contours.
+
+    Parameters
+    ----------
+    X, Y : array-like
+        The coordinates of the values in Z.
+    Z : array-like
+        The height values over which the contour is drawn.
+    levels : array-like, optional
+        Determines the number and positions of the contour lines.
+    """
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(Y, np.ndarray):
+        Y = np.array(Y)
+    if not isinstance(Z, np.ndarray):
+        Z = np.array(Z)
+
+    # Extract 1D coordinate arrays from 2D meshgrid (if needed)
+    if X.ndim == 2:
+        x = X[0, :]  # First row
+    else:
+        x = X
+    if Y.ndim == 2:
+        y = Y[:, 0]  # First column
+    else:
+        y = Y
+
+    # Transpose Z for Fortran column-major order
+    z = Z.T.copy()
+
+    if levels is None:
+        _fortplotlib.fortplot.contour_filled(x, y, z)
+    else:
+        if not isinstance(levels, np.ndarray):
+            levels = np.array(levels)
+        _fortplotlib.fortplot.contour_filled(x, y, z, levels)
+
+def streamplot(x, y, u, v, density=1, **kwargs):
+    """Draw streamlines of a vector flow.
+
+    Parameters
+    ----------
+    x, y : array-like
+        Evenly spaced strictly increasing arrays.
+    u, v : array-like
+        x and y-velocities. Number of rows should match length of y, and
+        the number of columns should match x.
+    density : float, optional
+        Controls the closeness of streamlines. Default is 1.
+    """
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
+    if not isinstance(u, np.ndarray):
+        u = np.array(u)
+    if not isinstance(v, np.ndarray):
+        v = np.array(v)
+
+    # Transpose u, v for Fortran column-major order
+    u = u.T.copy()
+    v = v.T.copy()
+
+    _fortplotlib.fortplot.streamplot(x, y, u, v, density)
+
+def legend(**kwargs):
+    """Add a legend to the current axes."""
+    _fortplotlib.fortplot.legend()
+
+def xscale(scale):
+    """Set the x-axis scale.
+
+    Parameters
+    ----------
+    scale : {'linear', 'log', 'symlog'}
+        The axis scale type to apply.
+    """
+    _fortplotlib.fortplot.set_xscale(scale)
+
+def yscale(scale):
+    """Set the y-axis scale.
+
+    Parameters
+    ----------
+    scale : {'linear', 'log', 'symlog'}
+        The axis scale type to apply.
+    """
+    _fortplotlib.fortplot.set_yscale(scale)
 
 def show():
     _fortplotlib.fortplot.savefig("/tmp/show.pdf")

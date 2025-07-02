@@ -106,7 +106,7 @@ contains
 
     subroutine streamplot(x, y, u, v, density)
         !! Add a streamplot (vector field visualization) to the global figure
-        !! 
+        !!
         !! Creates streamlines that follow the direction of a 2D vector field,
         !! providing intuitive visualization of flow patterns, magnetic fields,
         !! or any other vector data.
@@ -121,7 +121,7 @@ contains
         !!   ! Circular flow field
         !!   call streamplot(x, y, -y_grid, x_grid, density=1.5_real64)
         real(8), dimension(:), intent(in) :: x, y
-        real(8), dimension(:,:), intent(in) :: u, v  
+        real(8), dimension(:,:), intent(in) :: u, v
         real(8), intent(in), optional :: density
 
         call fig%streamplot(x, y, u, v, density=density)
