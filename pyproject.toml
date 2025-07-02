@@ -1,0 +1,17 @@
+[build-system]
+requires = ["scikit-build-core", "cmake", "numpy"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "fortplotlib"
+version = "0.0.0"
+dependencies = ["numpy"]
+
+[tool.scikit-build]
+build-dir = "build_cmake"
+cmake.verbose = true
+cmake.args = ["-DENABLE_PYTHON=ON"]
+wheel.py-api = "py3"
+sdist.include = ["python/**"]
+wheel.packages = ["python/fortplotlib"]
+wheel.install-dir = "fortplotlib"
