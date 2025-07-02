@@ -2,7 +2,7 @@ program example
     use fortplot
     implicit none
     
-    real :: x(100), y(100)
+    real(8) :: x(100), y(100)
     integer :: i
     
     ! Generate data
