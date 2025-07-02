@@ -30,10 +30,10 @@ call fig%add_plot(x, yf)
 call fig%savefig("plot_oo.png")
 ```
 
-For more examples, see the [examples directory](examples) and run
+For more examples, see the [example directory](example) and run
 
 ```bash
-make examples
+fpm run --example
 ```
 
 to build and run them.
@@ -57,6 +57,7 @@ include(FetchContent)
 FetchContent_Declare(
     fortplotlib
     GIT_REPOSITORY https://github.com/krystophny/fortplotlib
+    GIT_TAG        main
 )
 FetchContent_MakeAvailable(fortplotlib)
 
@@ -92,4 +93,4 @@ target_link_libraries(your_target fortplotlib::fortplotlib)
 
 The initial version relied on `zlib` for png compression and `freetype` for font 
 rendering. This was then replaced by [stb](https://github.com/nothings/stb) libraries.
-The last remaining library included is `stb_truetype`.
+The only remaining library included is `stb_truetype`.
