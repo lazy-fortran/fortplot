@@ -74,11 +74,14 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 ## Features
 
 ### Plot types
-- [x] Line
-- [x] Contour
-- [x] Streamplot
-- [ ] Image
-- [ ] Surface
+- [x] Line plots (`plot`)
+- [x] Contour plots (`contour`, `contourf`)
+- [x] Pseudocolor mesh (`pcolormesh`) 
+- [x] Streamplots (`streamplot`)
+- [ ] Scatter plots (`scatter`)
+- [ ] Bar charts (`bar`)
+- [ ] Histograms (`hist`)
+- [ ] Images (`imshow`)
 
 ### Backends
 - [x] PNG
@@ -86,15 +89,15 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] ASCII
 - [ ] Interactive
 
-### Misc
-- [x] Custom line styles
-- [x] Markers
+### Features
+- [x] Line styles and markers
+- [x] Colormaps and colorbars
 - [x] Legends
-- [x] Logarithmic scales
-- [ ] Grid
-- [ ] Secondary axes
-- [ ] Math text
-- [ ] Animations
+- [x] Log and symlog scales
+- [x] Format strings (`'r-o'`, `'b--'`)
+- [ ] Subplots
+- [ ] Annotations
+- [ ] LaTeX math text
 
 
 ## Why though?
