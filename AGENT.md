@@ -20,6 +20,13 @@ These are not suggestions - they are strict requirements that MUST be followed i
 - Always prioritize correctness and clarity
 - Never be lazy or take shortcuts
 
+**⚠️ DEVELOPMENT WORKFLOW ⚠️**
+1. First collect the problem and solution strategy in a github issue
+2. Tackle one issue at a time
+3. Write tests first, then implement code to pass tests
+4. Once tests pass, clean up code while keeping tests green
+5. Commit, push, close the issue
+
 ## Project Overview
 
 **fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
