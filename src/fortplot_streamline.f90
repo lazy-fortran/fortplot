@@ -2,7 +2,8 @@ module fortplot_streamline
     implicit none
     private
     
-    public :: calculate_seed_points, integrate_streamline, rk4_step, calculate_arrow_positions, check_termination
+    public :: calculate_seed_points, integrate_streamline, rk4_step, &
+              calculate_arrow_positions, check_termination, bilinear_interpolate
     
 contains
     
@@ -167,5 +168,56 @@ contains
         terminate = (x < x_bounds(1) .or. x > x_bounds(2) .or. &
                     y < y_bounds(1) .or. y > y_bounds(2))
     end subroutine check_termination
+    
+    subroutine bilinear_interpolate(x_grid, y_grid, values, x, y, result)
+        real, dimension(:), intent(in) :: x_grid, y_grid
+        real, dimension(:,:), intent(in) :: values
+        real, intent(in) :: x, y
+        real, intent(out) :: result
+        
+        integer :: i, j, i1, i2, j1, j2
+        real :: fx, fy
+        
+        ! Find grid indices
+        i1 = 1
+        i2 = size(x_grid)
+        do i = 1, size(x_grid)-1
+            if (x >= x_grid(i) .and. x <= x_grid(i+1)) then
+                i1 = i
+                i2 = i + 1
+                exit
+            end if
+        end do
+        
+        j1 = 1
+        j2 = size(y_grid)
+        do j = 1, size(y_grid)-1
+            if (y >= y_grid(j) .and. y <= y_grid(j+1)) then
+                j1 = j
+                j2 = j + 1
+                exit
+            end if
+        end do
+        
+        ! Handle boundary cases
+        if (i1 == i2) then
+            if (i1 == 1) i2 = 2
+            if (i1 == size(x_grid)) i1 = size(x_grid) - 1
+        end if
+        if (j1 == j2) then
+            if (j1 == 1) j2 = 2
+            if (j1 == size(y_grid)) j1 = size(y_grid) - 1
+        end if
+        
+        ! Interpolation factors
+        fx = (x - x_grid(i1)) / (x_grid(i2) - x_grid(i1))
+        fy = (y - y_grid(j1)) / (y_grid(j2) - y_grid(j1))
+        
+        ! Bilinear interpolation
+        result = values(i1,j1) * (1-fx) * (1-fy) + &
+                 values(i2,j1) * fx * (1-fy) + &
+                 values(i1,j2) * (1-fx) * fy + &
+                 values(i2,j2) * fx * fy
+    end subroutine bilinear_interpolate
     
 end module fortplot_streamline
