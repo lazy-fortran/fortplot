@@ -102,3 +102,11 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 Mostly for the lulz and to help make Fortran great again. In addition,
 there is a need for high-quality high-performance plotting directly from Fortran
 with the side-effect of a higher-performance limited-feature version of `matplotlib.pyplot`.
+
+Timing comparison
+```bash
+time make example_matplotlib
+
+time make example_python
+
+```

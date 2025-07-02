@@ -1,91 +1,84 @@
 #!/usr/bin/env python3
 """Demonstration of legend functionality following SOLID principles
-Shows legend positioning, labeling, and rendering across all backends"""
+Shows legend positioning, labeling, and rendering across all backends - Dual mode: fortplotlib or matplotlib"""
 
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+if "--matplotlib" in sys.argv:
+    import matplotlib.pyplot as plt
+    backend = "matplotlib"
+else:
+    import fortplotlib.fortplot as plt
+    backend = "fortplotlib"
 
 def basic_legend_example():
     """Basic legend usage with labeled plots"""
-    print("=== Basic Legend Example ===")
+    print(f"=== Basic Legend Example ({backend}) ===")
     
     # Generate data
     x = np.arange(50) * 0.2
     y1 = np.sin(x)
     y2 = np.cos(x)
     
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.set_title("Basic Legend Demo")
-    ax.set_xlabel("x")
-    ax.set_ylabel("y")
+    plt.figure(figsize=(8, 6))
+    plt.title("Basic Legend Demo")
+    plt.xlabel("x")
+    plt.ylabel("y")
     
     # Add labeled plots
-    ax.plot(x, y1, label="sin(x)")
-    ax.plot(x, y2, label="cos(x)")
+    plt.plot(x, y1, linestyle="-", label="sin(x)")
+    plt.plot(x, y2, linestyle="--", label="cos(x)")
     
     # Add legend with default position (upper right)
-    ax.legend()
+    plt.legend()
     
-    plt.savefig('example/matplotlib/legend_demo/basic_legend.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/basic_legend.pdf')
-    plt.close()
+    plt.savefig('basic_legend.png')
+    plt.savefig('basic_legend.pdf')
     
-    print("Created: basic_legend.png/pdf")
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('basic_legend.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: basic_legend.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 def positioned_legend_example():
     """Demonstrate different legend positions"""
-    print("=== Legend Positioning Examples ===")
+    print(f"=== Legend Positioning Examples ({backend}) ===")
     
     # Generate test data
     x = np.arange(1, 21, dtype=float)
     y1 = np.sqrt(x)
     y2 = np.log(x)
     
-    # Upper left position
-    fig1, ax1 = plt.subplots(figsize=(8, 6))
-    ax1.set_title("Legend: Upper Left")
-    ax1.plot(x, y1, label="√x")
-    ax1.plot(x, y2, label="ln(x)")
-    ax1.legend(loc="upper left")
-    plt.savefig('example/matplotlib/legend_demo/legend_upper_left.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/legend_upper_left.pdf')
-    plt.close()
+    # Single legend position demo (upper right - default)
+    plt.figure(figsize=(8, 6))
+    plt.title("Legend Positioning Demo")
+    plt.xlabel("x")
+    plt.ylabel("y")
+    plt.plot(x, y1, linestyle="-", label="sqrt(x)")
+    plt.plot(x, y2, linestyle="--", label="log(x)")
+    plt.legend()
     
-    # Upper right position (default)
-    fig2, ax2 = plt.subplots(figsize=(8, 6))
-    ax2.set_title("Legend: Upper Right")
-    ax2.plot(x, y1, label="√x")
-    ax2.plot(x, y2, label="ln(x)")
-    ax2.legend(loc="upper right")
-    plt.savefig('example/matplotlib/legend_demo/legend_upper_right.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/legend_upper_right.pdf')
-    plt.close()
+    plt.savefig('legend_positioning.png')
+    plt.savefig('legend_positioning.pdf')
     
-    # Lower left position
-    fig3, ax3 = plt.subplots(figsize=(8, 6))
-    ax3.set_title("Legend: Lower Left")
-    ax3.plot(x, y1, label="√x")
-    ax3.plot(x, y2, label="ln(x)")
-    ax3.legend(loc="lower left")
-    plt.savefig('example/matplotlib/legend_demo/legend_lower_left.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/legend_lower_left.pdf')
-    plt.close()
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('legend_positioning.txt')
     
-    # Lower right position
-    fig4, ax4 = plt.subplots(figsize=(8, 6))
-    ax4.set_title("Legend: Lower Right")
-    ax4.plot(x, y1, label="√x")
-    ax4.plot(x, y2, label="ln(x)")
-    ax4.legend(loc="lower right")
-    plt.savefig('example/matplotlib/legend_demo/legend_lower_right.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/legend_lower_right.pdf')
-    plt.close()
+    if backend == "matplotlib":
+        plt.close()
     
-    print("Created: legend_upper_left/right.png/pdf, legend_lower_left/right.png/pdf")
+    print("Created: legend_positioning.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 def multi_function_legend_example():
     """Complex legend with multiple mathematical functions"""
-    print("=== Multi-Function Legend Example ===")
+    print(f"=== Multi-Function Legend Example ({backend}) ===")
     
     # Generate mathematical functions
     x = np.arange(100) * 0.1
@@ -95,25 +88,31 @@ def multi_function_legend_example():
     y3 = np.where(x == 0, 1.0, np.sin(x) / x)
     y4 = x**2 * np.exp(-x)
     
-    fig, ax = plt.subplots(figsize=(10, 7.5))
-    ax.set_title("Mathematical Functions with Legend")
-    ax.set_xlabel("x")
-    ax.set_ylabel("f(x)")
+    plt.figure(figsize=(10, 7.5))
+    plt.title("Mathematical Functions with Legend")
+    plt.xlabel("x")
+    plt.ylabel("f(x)")
     
     # Add multiple labeled functions
-    ax.plot(x, y1, label="e^(-x/2)cos(x)")
-    ax.plot(x, y2, label="xe^(-x/3)")
-    ax.plot(x, y3, label="sin(x)/x")
-    ax.plot(x, y4, label="x²e^(-x)")
+    plt.plot(x, y1, linestyle="-", label="e^(-x/2)cos(x)")
+    plt.plot(x, y2, linestyle="--", label="xe^(-x/3)")
+    plt.plot(x, y3, linestyle=":", label="sin(x)/x")
+    plt.plot(x, y4, linestyle="-.", label="x^2*exp(-x)")
     
     # Add legend
-    ax.legend()
+    plt.legend()
     
-    plt.savefig('example/matplotlib/legend_demo/multi_function_legend.png', dpi=100)
-    plt.savefig('example/matplotlib/legend_demo/multi_function_legend.pdf')
-    plt.close()
+    plt.savefig('multi_function_legend.png')
+    plt.savefig('multi_function_legend.pdf')
     
-    print("Created: multi_function_legend.png/pdf")
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('multi_function_legend.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: multi_function_legend.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
     basic_legend_example()

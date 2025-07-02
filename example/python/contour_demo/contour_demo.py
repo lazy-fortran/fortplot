@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 """
-Contour plotting examples - Python reference using matplotlib
+Contour plotting examples - Dual mode: fortplotlib or matplotlib
 Equivalent to contour_demo.f90 for visual comparison
 """
 
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+if "--matplotlib" in sys.argv:
+    import matplotlib.pyplot as plt
+    backend = "matplotlib"
+else:
+    import fortplotlib.fortplot as plt
+    backend = "fortplotlib"
 
 def gaussian_contours():
     """Gaussian contour demonstration - equivalent to Fortran version"""
-    print("=== Contour Examples (Python Reference) ===")
+    print(f"=== Contour Examples ({backend}) ===")
     
     # Generate contour grid (same as Fortran)
     x_grid = np.linspace(-3.0, 3.0, 30)
@@ -25,18 +33,19 @@ def gaussian_contours():
     plt.title("2D Gaussian Function")
     
     # Create contour plot
-    contour = plt.contour(X, Y, Z, levels=10)
-    plt.clabel(contour, inline=True, fontsize=8)
+    plt.contour(X, Y, Z)
     
-    # Add colorbar
-    plt.colorbar(contour, label="exp(-(x²+y²))")
-    plt.grid(True, alpha=0.3)
+    plt.savefig('contour_gaussian.png')
+    plt.savefig('contour_gaussian.pdf')
     
-    plt.savefig('example/matplotlib/contour_demo/contour_gaussian_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/matplotlib/contour_demo/contour_gaussian_ref.pdf', bbox_inches='tight')
-    plt.close()
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('contour_gaussian.txt')
     
-    print("Created: contour_gaussian_ref.png/pdf")
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: contour_gaussian.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 def mixed_contour_line_plot():
     """Mixed contour and line plot - equivalent to Fortran version"""
@@ -47,7 +56,7 @@ def mixed_contour_line_plot():
     
     # Saddle function with custom levels
     Z = X**2 - Y**2
-    custom_levels = [-4.0, -2.0, 0.0, 2.0, 4.0]
+    custom_levels = np.array([-4.0, -2.0, 0.0, 2.0, 4.0])
     
     plt.figure(figsize=(6.4, 4.8))
     plt.xlabel("x")
@@ -55,20 +64,24 @@ def mixed_contour_line_plot():
     plt.title("Mixed Plot: Contour + Line")
     
     # Add contour with custom levels
-    contour = plt.contour(X, Y, Z, levels=custom_levels, colors='blue', alpha=0.7)
-    plt.clabel(contour, inline=True, fontsize=8)
+    plt.contour(X, Y, Z, custom_levels)
     
     # Add line plot (cross-section at y=0)
-    plt.plot(x_grid, np.exp(-x_grid**2), 'r-', linewidth=2, label="Cross-section at y=0")
+    plt.plot(x_grid, np.exp(-x_grid**2), label="Cross-section at y=0")
     
     plt.legend()
-    plt.grid(True, alpha=0.3)
     
-    plt.savefig('example/matplotlib/contour_demo/mixed_plot_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/matplotlib/contour_demo/mixed_plot_ref.pdf', bbox_inches='tight')
-    plt.close()
+    plt.savefig('mixed_plot.png')
+    plt.savefig('mixed_plot.pdf')
     
-    print("Created: mixed_plot_ref.png/pdf")
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('mixed_plot.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: mixed_plot.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
     gaussian_contours()

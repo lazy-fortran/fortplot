@@ -2,32 +2,47 @@
 """Streamplot demo - demonstrates streamline plotting"""
 
 import numpy as np
-import matplotlib.pyplot as plt
+import sys
+
+if "--matplotlib" in sys.argv:
+    import matplotlib.pyplot as plt
+    backend = "matplotlib"
+else:
+    import fortplotlib.fortplot as plt
+    backend = "fortplotlib"
 
 def main():
     nx, ny = 20, 20
-    
+
     # Create grid
     x = np.linspace(-2.0, 2.0, nx)
     y = np.linspace(-2.0, 2.0, ny)
     X, Y = np.meshgrid(x, y)
-    
+
     # Create circular flow field
     U = -Y
     V = X
-    
+
     # Create figure and add streamplot
-    fig, ax = plt.subplots(figsize=(10, 7.5))
-    ax.streamplot(X, Y, U, V, density=1.0)
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_title('Streamline Plot Demo - Circular Flow')
-    
-    # Save figure
-    plt.savefig('example/matplotlib/streamplot_demo/streamplot_demo.png', dpi=100)
-    plt.savefig('example/matplotlib/streamplot_demo/streamplot_demo.pdf')
-    plt.close()
-    
+    plt.figure(figsize=(10, 7.5))
+    plt.streamplot(X, Y, U, V, density=1.0)
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Streamline Plot Demo - Circular Flow')
+    plt.savefig('streamplot_demo.png')
+    plt.savefig('streamplot_demo.pdf')
+
+    # Export TXT for fortplotlib mode
+    if backend == "fortplotlib":
+        with open('streamplot_demo.txt', 'w') as f:
+            f.write("Streamline Plot Demo - Circular Flow\n")
+            f.write("=====================================\n\n")
+            f.write("Grid size: {}x{}\n".format(nx, ny))
+            f.write("X range: -2.0 to 2.0\n")
+            f.write("Y range: -2.0 to 2.0\n")
+            f.write("Flow field: Circular (U=-Y, V=X)\n")
+            f.write("Density: 1.0\n")
+
     print('Streamplot demo completed!')
 
 if __name__ == "__main__":

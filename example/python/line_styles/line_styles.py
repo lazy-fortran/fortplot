@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """
-Line styles demonstration - Python reference using matplotlib
+Line styles demonstration - Dual mode: fortplotlib or matplotlib
 Equivalent to line_styles.f90 for visual comparison
 """
 
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+if "--matplotlib" in sys.argv:
+    import matplotlib.pyplot as plt
+    backend = "matplotlib"
+else:
+    import fortplotlib.fortplot as plt
+    backend = "fortplotlib"
 
 def main():
-    print("=== Line Style Examples (Python Reference) ===")
+    print(f"=== Line Style Examples ({backend}) ===")
     
     # Generate test data with clear separation for visibility (same as Fortran)
     x = np.arange(50) * 0.2
@@ -20,26 +28,28 @@ def main():
     
     # Comprehensive line style demonstration
     plt.figure(figsize=(8, 6))
-    plt.plot(x, y1, label='Solid (-)', linestyle='-', linewidth=2)
-    plt.plot(x, y2, label='Dashed (--)', linestyle='--', linewidth=2)
-    plt.plot(x, y3, label='Dotted (:)', linestyle=':', linewidth=2)
-    plt.plot(x, y4, label='Dash-dot (-.)', linestyle='-.', linewidth=2)
-    plt.plot(x, y5, label='None (markers only)', linestyle='None', marker='o', markersize=3)
+    plt.plot(x, y1, label='Solid (-)', linestyle='-')
+    plt.plot(x, y2, label='Dashed (--)', linestyle='--')
+    plt.plot(x, y3, label='Dotted (:)', linestyle=':')
+    plt.plot(x, y4, label='Dash-dot (-.)', linestyle='-.')
     
     plt.title('Complete Line Style Reference')
     plt.xlabel('X values')
     plt.ylabel('Y values')
     plt.legend()
-    plt.grid(True, alpha=0.3)
     
-    plt.savefig('example/matplotlib/line_styles/line_styles_ref.png', dpi=150, bbox_inches='tight')
-    plt.savefig('example/matplotlib/line_styles/line_styles_ref.pdf', bbox_inches='tight')
-    plt.close()
+    plt.savefig('line_styles.png')
+    plt.savefig('line_styles.pdf')
+    
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('line_styles.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
     
     print("Line style examples completed!")
-    print("Files created: line_styles_ref.png, line_styles_ref.pdf")
-    print("Note: 'None' linestyle shows markers only")
-    print()
+    print("Files created: line_styles.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
     main()

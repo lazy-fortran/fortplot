@@ -15,7 +15,7 @@ def plot(x, y, linestyle="-", label=""):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
         y = np.array(y)
-    _fortplotlib.fortplot.plot(x, y, linestyle, label)
+    _fortplotlib.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
     if label is None:
@@ -113,31 +113,41 @@ def contourf(X, Y, Z, levels=None, **kwargs):
             levels = np.array(levels)
         _fortplotlib.fortplot.contour_filled(x, y, z, levels)
 
-def streamplot(x, y, u, v, density=1, **kwargs):
+def streamplot(X, Y, U, V, density=1.0, **kwargs):
     """Draw streamlines of a vector flow.
 
     Parameters
     ----------
-    x, y : array-like
-        Evenly spaced strictly increasing arrays.
-    u, v : array-like
-        x and y-velocities. Number of rows should match length of y, and
-        the number of columns should match x.
+    X, Y : array-like
+        The coordinates of the values in U, V.
+    U, V : array-like
+        x and y-velocities. Number of rows should match length of Y, and
+        the number of columns should match X.
     density : float, optional
         Controls the closeness of streamlines. Default is 1.
     """
-    if not isinstance(x, np.ndarray):
-        x = np.array(x)
-    if not isinstance(y, np.ndarray):
-        y = np.array(y)
-    if not isinstance(u, np.ndarray):
-        u = np.array(u)
-    if not isinstance(v, np.ndarray):
-        v = np.array(v)
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(Y, np.ndarray):
+        Y = np.array(Y)
+    if not isinstance(U, np.ndarray):
+        U = np.array(U)
+    if not isinstance(V, np.ndarray):
+        V = np.array(V)
 
-    # Transpose u, v for Fortran column-major order
-    u = u.T.copy()
-    v = v.T.copy()
+    # Extract 1D coordinate arrays from 2D meshgrid (if needed)
+    if X.ndim == 2:
+        x = X[0, :]  # First row
+    else:
+        x = X
+    if Y.ndim == 2:
+        y = Y[:, 0]  # First column
+    else:
+        y = Y
+
+    # Transpose U, V for Fortran column-major order
+    u = U.T.copy()
+    v = V.T.copy()
 
     _fortplotlib.fortplot.streamplot(x, y, u, v, density)
 
