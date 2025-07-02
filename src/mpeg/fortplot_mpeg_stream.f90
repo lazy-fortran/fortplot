@@ -29,7 +29,7 @@ module fortplot_mpeg_stream
     public :: stream_get_variable, stream_put_variable
     public :: stream_tell_read, stream_tell_write
     public :: stream_seek_read, stream_seek_write
-    public :: stream_eof, stream_align_read, stream_flush_write
+    public :: stream_eof, stream_align_read, stream_flush_write, stream_flush_write_zeros
     
 contains
 
@@ -233,7 +233,34 @@ contains
             ! Calculate how many bits to pad
             bits_to_pad = 8 - write_stream_state%bits_in_buffer
             
-            ! Pad remaining bits with zeros and write
+            ! Pad remaining bits with ones (to match C mwclose behavior)
+            do while (write_stream_state%bits_in_buffer < 8)
+                write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1) + 1
+                write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
+                write_stream_state%position = write_stream_state%position + 1
+            end do
+            
+            byte_val = int(write_stream_state%bit_buffer, c_int8_t)
+            write(write_stream_state%unit_number) byte_val
+            write_stream_state%bit_buffer = 0
+            write_stream_state%bits_in_buffer = 0
+        end if
+    end subroutine stream_flush_write
+
+    subroutine stream_flush_write_zeros()
+        use iso_c_binding, only: c_int8_t
+        implicit none
+        
+        integer(c_int8_t) :: byte_val
+        integer :: bits_to_pad
+        
+        if (.not. write_stream_state%is_open) return
+        
+        if (write_stream_state%bits_in_buffer > 0) then
+            ! Calculate how many bits to pad
+            bits_to_pad = 8 - write_stream_state%bits_in_buffer
+            
+            ! Pad remaining bits with zeros (to match C zeroflush behavior)
             do while (write_stream_state%bits_in_buffer < 8)
                 write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1)
                 write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
@@ -245,6 +272,6 @@ contains
             write_stream_state%bit_buffer = 0
             write_stream_state%bits_in_buffer = 0
         end if
-    end subroutine stream_flush_write
+    end subroutine stream_flush_write_zeros
 
 end module fortplot_mpeg_stream
