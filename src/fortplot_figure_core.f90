@@ -14,6 +14,7 @@ module fortplot_figure_core
     use fortplot_utils
     use fortplot_axes
     use fortplot_colormap
+    use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_legend
     use fortplot_png, only: png_context, draw_axes_and_labels
@@ -24,10 +25,11 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
+    integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -42,6 +44,8 @@ module fortplot_figure_core
         logical :: use_color_levels = .false.
         character(len=20) :: colormap = 'crest'
         logical :: show_colorbar = .true.
+        ! Pcolormesh data
+        type(pcolormesh_t) :: pcolormesh_data
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -111,6 +115,7 @@ module fortplot_figure_core
         procedure :: add_plot
         procedure :: add_contour
         procedure :: add_contour_filled
+        procedure :: add_pcolormesh
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -216,6 +221,27 @@ contains
         call add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
         call update_data_ranges(self)
     end subroutine add_contour_filled
+
+    subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        !! Add pcolormesh plot to figure with matplotlib-compatible interface
+        !!
+        !! Arguments:
+        !!   x, y: Coordinate arrays (1D for regular grid)
+        !!   c: Color data array (2D)
+        !!   colormap: Optional colormap name
+        !!   vmin, vmax: Optional color scale limits
+        !!   edgecolors: Optional edge color specification
+        !!   linewidths: Optional edge line width
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        character(len=*), intent(in), optional :: edgecolors
+        real(wp), intent(in), optional :: linewidths
+        
+        call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        call update_data_ranges_pcolormesh(self)
+    end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
@@ -564,6 +590,83 @@ contains
         end if
     end subroutine add_colored_contour_plot_data
 
+    subroutine add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        !! Add pcolormesh data to plot array
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        character(len=*), intent(in), optional :: edgecolors
+        real(wp), intent(in), optional :: linewidths
+        
+        integer :: plot_idx
+        
+        if (self%plot_count >= self%max_plots) then
+            error stop "Maximum number of plots exceeded"
+        end if
+        
+        plot_idx = self%plot_count + 1
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
+        
+        ! Initialize pcolormesh with regular grid
+        call self%plots(plot_idx)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap)
+        
+        ! Set vmin/vmax if provided
+        if (present(vmin)) then
+            self%plots(plot_idx)%pcolormesh_data%vmin = vmin
+            self%plots(plot_idx)%pcolormesh_data%vmin_set = .true.
+        end if
+        if (present(vmax)) then
+            self%plots(plot_idx)%pcolormesh_data%vmax = vmax
+            self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
+        end if
+        
+        ! Set edge properties
+        if (present(edgecolors)) then
+            if (trim(edgecolors) /= 'none' .and. trim(edgecolors) /= '') then
+                self%plots(plot_idx)%pcolormesh_data%show_edges = .true.
+                ! TODO: Parse color string
+            end if
+        end if
+        if (present(linewidths)) then
+            self%plots(plot_idx)%pcolormesh_data%edge_width = linewidths
+        end if
+        
+        ! Update data range if needed
+        call self%plots(plot_idx)%pcolormesh_data%get_data_range()
+    end subroutine add_pcolormesh_plot_data
+
+    subroutine update_data_ranges_pcolormesh(self)
+        !! Update figure data ranges after adding pcolormesh plot
+        class(figure_t), intent(inout) :: self
+        
+        integer :: plot_idx
+        real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
+        
+        plot_idx = self%plot_count + 1
+        
+        ! Get data ranges from pcolormesh vertices
+        x_min_plot = minval(self%plots(plot_idx)%pcolormesh_data%x_vertices)
+        x_max_plot = maxval(self%plots(plot_idx)%pcolormesh_data%x_vertices)
+        y_min_plot = minval(self%plots(plot_idx)%pcolormesh_data%y_vertices)
+        y_max_plot = maxval(self%plots(plot_idx)%pcolormesh_data%y_vertices)
+        
+        ! Update figure ranges
+        if (self%plot_count == 0) then
+            self%x_min = x_min_plot
+            self%x_max = x_max_plot
+            self%y_min = y_min_plot
+            self%y_max = y_max_plot
+        else
+            self%x_min = min(self%x_min, x_min_plot)
+            self%x_max = max(self%x_max, x_max_plot)
+            self%y_min = min(self%y_min, y_min_plot)
+            self%y_max = max(self%y_max, y_max_plot)
+        end if
+        
+        self%plot_count = plot_idx
+    end subroutine update_data_ranges_pcolormesh
+
     subroutine update_data_ranges(self)
         !! Update figure data ranges after adding plots
         class(figure_t), intent(inout) :: self
@@ -707,6 +810,37 @@ contains
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y_grid), &
                                                                          self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
+                if (first_plot) then
+                    ! Store ORIGINAL pcolormesh grid ranges  
+                    x_min_orig = minval(self%plots(i)%pcolormesh_data%x_vertices)
+                    x_max_orig = maxval(self%plots(i)%pcolormesh_data%x_vertices)
+                    y_min_orig = minval(self%plots(i)%pcolormesh_data%y_vertices)
+                    y_max_orig = maxval(self%plots(i)%pcolormesh_data%y_vertices)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                else
+                    ! Update original ranges
+                    x_min_orig = min(x_min_orig, minval(self%plots(i)%pcolormesh_data%x_vertices))
+                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%pcolormesh_data%x_vertices))
+                    y_min_orig = min(y_min_orig, minval(self%plots(i)%pcolormesh_data%y_vertices))
+                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%pcolormesh_data%y_vertices))
+                    
+                    ! Update transformed ranges for rendering
+                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%pcolormesh_data%x_vertices), &
+                                                                         self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%x_vertices), &
+                                                                         self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%pcolormesh_data%y_vertices), &
+                                                                         self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%y_vertices), &
+                                                                         self%yscale, self%symlog_threshold))
+                end if
             end if
         end do
         
@@ -790,6 +924,8 @@ contains
                 call render_line_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 call render_contour_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
+                call render_pcolormesh_plot(self, i)
             end if
         end do
         
@@ -917,6 +1053,50 @@ contains
             call render_default_contour_levels(self, plot_idx, z_min, z_max)
         end if
     end subroutine render_contour_plot
+
+    subroutine render_pcolormesh_plot(self, plot_idx)
+        !! Render pcolormesh plot as colored quadrilaterals
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        integer :: i, j
+        real(wp) :: x_quad(4), y_quad(4)
+        real(wp) :: x_screen(4), y_screen(4)
+        real(wp) :: color(3), c_value, c_min, c_max
+        
+        ! Get colormap range from pcolormesh data
+        c_min = self%plots(plot_idx)%pcolormesh_data%vmin
+        c_max = self%plots(plot_idx)%pcolormesh_data%vmax
+        
+        ! Render each quadrilateral
+        do i = 1, self%plots(plot_idx)%pcolormesh_data%ny
+            do j = 1, self%plots(plot_idx)%pcolormesh_data%nx
+                ! Get quad vertices in world coordinates
+                call self%plots(plot_idx)%pcolormesh_data%get_quad_vertices(i, j, x_quad, y_quad)
+                
+                ! Transform to screen coordinates
+                call transform_quad_to_screen(self, x_quad, y_quad, x_screen, y_screen)
+                
+                ! Get color for this quad
+                c_value = self%plots(plot_idx)%pcolormesh_data%c_values(i, j)
+                call colormap_value_to_color(c_value, c_min, c_max, &
+                                            self%plots(plot_idx)%pcolormesh_data%colormap_name, color)
+                
+                ! Draw filled quadrilateral
+                call self%backend%color(color(1), color(2), color(3))
+                call draw_filled_quad(self%backend, x_screen, y_screen)
+                
+                ! Draw edges if requested
+                if (self%plots(plot_idx)%pcolormesh_data%show_edges) then
+                    call self%backend%color(self%plots(plot_idx)%pcolormesh_data%edge_color(1), &
+                                          self%plots(plot_idx)%pcolormesh_data%edge_color(2), &
+                                          self%plots(plot_idx)%pcolormesh_data%edge_color(3))
+                    call draw_quad_edges(self%backend, x_screen, y_screen, &
+                                        self%plots(plot_idx)%pcolormesh_data%edge_width)
+                end if
+            end do
+        end do
+    end subroutine render_pcolormesh_plot
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
@@ -1364,5 +1544,55 @@ contains
             deallocate(self%streamlines)
         end if
     end subroutine clear_streamlines
+
+    subroutine transform_quad_to_screen(self, x_quad, y_quad, x_screen, y_screen)
+        !! Transform quadrilateral vertices from world to screen coordinates
+        class(figure_t), intent(in) :: self
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        real(wp), intent(out) :: x_screen(4), y_screen(4)
+        
+        integer :: i
+        
+        ! Apply scale transformations only (backend handles screen mapping)
+        do i = 1, 4
+            x_screen(i) = apply_scale_transform(x_quad(i), self%xscale, self%symlog_threshold)
+            y_screen(i) = apply_scale_transform(y_quad(i), self%yscale, self%symlog_threshold)
+        end do
+    end subroutine transform_quad_to_screen
+
+    subroutine draw_filled_quad(backend, x_screen, y_screen)
+        !! Draw filled quadrilateral
+        use fortplot_raster, only: raster_context
+        use fortplot_png, only: png_context
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
+        
+        ! Use backend-specific filled quad rendering
+        select type (backend)
+        type is (raster_context)
+            call backend%fill_quad(x_screen, y_screen)
+        type is (png_context)
+            call backend%fill_quad(x_screen, y_screen)
+        class default
+            ! Fallback: draw wireframe for unsupported backends
+            call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+            call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+            call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+            call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+        end select
+    end subroutine draw_filled_quad
+
+    subroutine draw_quad_edges(backend, x_screen, y_screen, line_width)
+        !! Draw quadrilateral edges
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
+        real(wp), intent(in) :: line_width
+        
+        ! Draw quad outline
+        call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+        call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+        call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+        call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+    end subroutine draw_quad_edges
 
 end module fortplot_figure_core

@@ -18,6 +18,7 @@ module fortplot_raster
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
     public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
     public :: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
+    public :: draw_filled_quad_raster
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
 
@@ -49,6 +50,7 @@ module fortplot_raster
         procedure :: draw_marker => raster_draw_marker
         procedure :: set_marker_colors => raster_set_marker_colors
         procedure :: set_marker_colors_with_alpha => raster_set_marker_colors_with_alpha
+        procedure :: fill_quad => raster_fill_quad
     end type raster_context
 
 contains
@@ -554,6 +556,27 @@ contains
         this%raster%marker_face_b = face_b
         this%raster%marker_face_alpha = face_alpha
     end subroutine raster_set_marker_colors_with_alpha
+
+    subroutine raster_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral with current color
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        real(wp) :: px_quad(4), py_quad(4)
+        integer :: i
+        
+        ! Transform data coordinates to pixel coordinates (same as raster_draw_line)
+        ! This ensures the quad respects plot area margins
+        do i = 1, 4
+            px_quad(i) = (x_quad(i) - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+            py_quad(i) = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+                        (y_quad(i) - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
+        end do
+        
+        call draw_filled_quad_raster(this%raster%image_data, this%width, this%height, &
+                                    px_quad, py_quad, &
+                                    this%raster%current_r, this%raster%current_g, this%raster%current_b)
+    end subroutine raster_fill_quad
 
     subroutine draw_circle_with_edge_face(image_data, img_w, img_h, cx, cy, radius, &
                                           edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
@@ -1076,5 +1099,102 @@ contains
         deallocate(text_bitmap, rotated_bitmap)
     end subroutine draw_rotated_ylabel_raster
 
+    subroutine draw_filled_quad_raster(image_data, img_w, img_h, x_quad, y_quad, r, g, b)
+        !! Draw filled quadrilateral using dense line sampling (simple and robust)
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        real(wp), intent(in) :: r, g, b
+        
+        integer(1) :: r_byte, g_byte, b_byte
+        integer :: i, num_lines
+        real(wp) :: t, x1, y1, x2, y2
+        
+        ! Convert colors to bytes
+        r_byte = int(r * 255.0_wp, 1)
+        g_byte = int(g * 255.0_wp, 1)
+        b_byte = int(b * 255.0_wp, 1)
+        
+        ! Simple approach: draw many horizontal lines across the quad
+        ! This is robust and handles any quad shape
+        num_lines = max(10, int(maxval(y_quad) - minval(y_quad)) + 1)
+        
+        do i = 0, num_lines
+            t = real(i, wp) / real(num_lines, wp)
+            
+            ! Interpolate between left edge (vertices 1->4) and right edge (vertices 2->3)
+            x1 = x_quad(1) + t * (x_quad(4) - x_quad(1))  ! Left edge
+            y1 = y_quad(1) + t * (y_quad(4) - y_quad(1))
+            
+            x2 = x_quad(2) + t * (x_quad(3) - x_quad(2))  ! Right edge  
+            y2 = y_quad(2) + t * (y_quad(3) - y_quad(2))
+            
+            ! Draw line between these points
+            call draw_line_distance_aa(image_data, img_w, img_h, x1, y1, x2, y2, &
+                                      r_byte, g_byte, b_byte, 1.0_wp)
+        end do
+    end subroutine draw_filled_quad_raster
+    
+    subroutine fill_triangle(image_data, img_w, img_h, x1, y1, x2, y2, x3, y3, r, g, b)
+        !! Fill triangle using barycentric coordinates
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h
+        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3
+        integer(1), intent(in) :: r, g, b
+        
+        integer :: x, y, x_min, x_max, y_min, y_max
+        real(wp) :: denom, a, b_coord, c
+        integer :: pixel_index
+        
+        ! Find bounding box
+        x_min = max(1, int(min(min(x1, x2), x3)))
+        x_max = min(img_w, int(max(max(x1, x2), x3)) + 1)
+        y_min = max(1, int(min(min(y1, y2), y3)))
+        y_max = min(img_h, int(max(max(y1, y2), y3)) + 1)
+        
+        ! Precompute denominator for barycentric coordinates
+        denom = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
+        
+        if (abs(denom) < 1e-10_wp) return  ! Degenerate triangle
+        
+        ! Check each pixel in bounding box
+        do y = y_min, y_max
+            do x = x_min, x_max
+                ! Compute barycentric coordinates
+                a = ((y2 - y3) * (real(x, wp) - x3) + (x3 - x2) * (real(y, wp) - y3)) / denom
+                b_coord = ((y3 - y1) * (real(x, wp) - x3) + (x1 - x3) * (real(y, wp) - y3)) / denom
+                c = 1.0_wp - a - b_coord
+                
+                ! Check if point is inside triangle
+                if (a >= 0.0_wp .and. b_coord >= 0.0_wp .and. c >= 0.0_wp) then
+                    pixel_index = 3 * ((y - 1) * img_w + (x - 1)) + 1
+                    image_data(pixel_index) = r      ! Red
+                    image_data(pixel_index + 1) = g  ! Green
+                    image_data(pixel_index + 2) = b  ! Blue
+                end if
+            end do
+        end do
+    end subroutine fill_triangle
+
+    subroutine fill_horizontal_line(image_data, img_w, img_h, x1, x2, y, r, g, b)
+        !! Fill horizontal line segment
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: img_w, img_h, x1, x2, y
+        integer(1), intent(in) :: r, g, b
+        
+        integer :: x, x_start, x_end, pixel_index
+        
+        x_start = max(1, min(x1, x2))
+        x_end = min(img_w, max(x1, x2))
+        
+        if (y >= 1 .and. y <= img_h) then
+            do x = x_start, x_end
+                pixel_index = 3 * ((y - 1) * img_w + (x - 1)) + 1
+                image_data(pixel_index) = r      ! Red
+                image_data(pixel_index + 1) = g  ! Green  
+                image_data(pixel_index + 2) = b  ! Blue
+            end do
+        end if
+    end subroutine fill_horizontal_line
 
 end module fortplot_raster

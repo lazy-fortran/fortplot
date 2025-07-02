@@ -24,10 +24,10 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, streamplot, show
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, show
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
-    public :: add_plot, add_contour, add_contour_filled
+    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
     public :: set_xscale, set_yscale
 
     ! Line style constants (pyplot-style)
@@ -103,6 +103,34 @@ contains
         call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
                                    show_colorbar=show_colorbar, label=label)
     end subroutine contour_filled
+
+    subroutine pcolormesh(x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        !! Add a pcolormesh (pseudocolor mesh) plot to the global figure
+        !!
+        !! Creates a pseudocolor plot with a non-regular rectangular grid.
+        !! Compatible with matplotlib pcolormesh function.
+        !!
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays (1D for regular grid)
+        !!   c: Color data array (2D)
+        !!   colormap: Optional colormap name ('viridis', 'plasma', 'coolwarm', etc.)
+        !!   vmin, vmax: Optional color scale limits
+        !!   edgecolors: Optional edge color ('none', 'black', etc.)
+        !!   linewidths: Optional edge line width
+        !!
+        !! Example:
+        !!   ! Simple heatmap
+        !!   call pcolormesh(x, y, temperature_data, colormap='viridis')
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: c
+        character(len=*), intent(in), optional :: colormap
+        real(8), intent(in), optional :: vmin, vmax
+        character(len=*), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
+
+        call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
+                               edgecolors=edgecolors, linewidths=linewidths)
+    end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density)
         !! Add a streamplot (vector field visualization) to the global figure
@@ -227,6 +255,18 @@ contains
         call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
                                    show_colorbar=show_colorbar, label=label)
     end subroutine add_contour_filled
+
+    subroutine add_pcolormesh(x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        !! Add a pcolormesh plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: c
+        character(len=*), intent(in), optional :: colormap
+        real(8), intent(in), optional :: vmin, vmax
+        character(len=*), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
+        call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
+                               edgecolors=edgecolors, linewidths=linewidths)
+    end subroutine add_pcolormesh
 
     subroutine set_xscale(scale, threshold)
         !! Set x-axis scale for the global figure

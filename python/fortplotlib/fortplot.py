@@ -151,6 +151,93 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
 
     _fortplotlib.fortplot.streamplot(x, y, u, v, density)
 
+def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', linewidths=None, **kwargs):
+    """Create a pseudocolor plot with a non-regular rectangular grid.
+    
+    Parameters
+    ----------
+    X, Y : array-like
+        The coordinates of the quadrilateral corners. Can be:
+        - 1D arrays of length N+1 and M+1 for regular grid
+        - 2D arrays of shape (M+1, N+1) for irregular grid
+    C : array-like
+        The color values. Shape (M, N).
+    cmap : str or Colormap, optional
+        The colormap to use. Supported: 'viridis', 'plasma', 'inferno', 
+        'coolwarm', 'jet', 'crest' (default).
+    vmin, vmax : float, optional
+        Data range for colormap normalization.
+    edgecolors : color or 'none', optional
+        Color of the edges. Default 'none'.
+    linewidths : float, optional
+        Width of the edges.
+    **kwargs
+        Additional keyword arguments (for matplotlib compatibility).
+        
+    Returns
+    -------
+    QuadMesh
+        The matplotlib QuadMesh collection (placeholder for compatibility).
+        
+    Examples
+    --------
+    Basic usage with regular grid:
+    
+    >>> x = np.linspace(0, 1, 11)
+    >>> y = np.linspace(0, 1, 8) 
+    >>> C = np.random.random((7, 10))
+    >>> pcolormesh(x, y, C, cmap='viridis')
+    
+    With custom color limits:
+    
+    >>> pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
+    """
+    if not isinstance(X, np.ndarray):
+        X = np.array(X)
+    if not isinstance(Y, np.ndarray):
+        Y = np.array(Y)
+    if not isinstance(C, np.ndarray):
+        C = np.array(C)
+    
+    # Handle 1D coordinate arrays (regular grid case)
+    if X.ndim == 1 and Y.ndim == 1:
+        x = X
+        y = Y
+    elif X.ndim == 2 and Y.ndim == 2:
+        # For irregular grids, extract representative coordinates for now
+        # TODO: Implement full irregular grid support  
+        x = X[0, :]  # First row
+        y = Y[:, 0]  # First column
+    else:
+        raise ValueError("X and Y must have the same dimensionality (both 1D or both 2D)")
+    
+    # Transpose C for Fortran column-major order
+    c = C.T.copy()
+    
+    # Set default colormap if not specified
+    if cmap is None:
+        cmap = 'viridis'
+    
+    # Call Fortran function with optional arguments
+    if vmin is not None and vmax is not None:
+        if edgecolors != 'none' and linewidths is not None:
+            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors, linewidths)
+        elif edgecolors != 'none':
+            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors)
+        else:
+            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax)
+    elif vmin is not None:
+        _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin)
+    elif cmap != 'viridis':
+        _fortplotlib.fortplot.pcolormesh(x, y, c, cmap)
+    else:
+        _fortplotlib.fortplot.pcolormesh(x, y, c)
+    
+    # Return placeholder object for matplotlib compatibility
+    class QuadMeshPlaceholder:
+        pass
+    return QuadMeshPlaceholder()
+
 def legend(**kwargs):
     """Add a legend to the current axes."""
     _fortplotlib.fortplot.legend()
