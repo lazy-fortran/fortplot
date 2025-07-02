@@ -1,5 +1,6 @@
 import os
-import platform
+import tempfile
+import webbrowser
 import numpy as np
 import fortplotlib.fortplot_wrapper as _fortplotlib
 
@@ -263,11 +264,20 @@ def yscale(scale):
     _fortplotlib.fortplot.set_yscale(scale)
 
 def show():
-    _fortplotlib.fortplot.savefig("/tmp/show.pdf")
-
-    if platform.system() == "Linux":
-        os.system("xdg-open /tmp/show.pdf")
-    elif platform.system() == "Darwin":
-        os.system("open /tmp/show.pdf")
-    else:
-        os.startfile("/tmp/show.pdf")
+    """Display the current figure in the default system viewer."""
+    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
+        tmp_filename = tmp_file.name
+    
+    try:
+        _fortplotlib.fortplot.savefig(tmp_filename)
+        webbrowser.open(f'file://{tmp_filename}')
+        
+        # Block like matplotlib.pyplot.show()
+        input("Press Enter to continue...")
+        
+    finally:
+        # Clean up temporary file
+        try:
+            os.unlink(tmp_filename)
+        except OSError:
+            pass  # File might already be deleted
