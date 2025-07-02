@@ -22,9 +22,10 @@ def simple_plots():
     plt.xlabel('x')
     plt.ylabel('sin(x)')
     plt.savefig('example/matplotlib/basic_plots/simple_plot_ref.png')
+    plt.savefig('example/matplotlib/basic_plots/simple_plot_ref.pdf')
     plt.close()
     
-    print("Created: simple_plot_ref.png")
+    print("Created: simple_plot_ref.png/pdf")
 
 def multi_line_plot():
     """Multi-line plot using matplotlib - equivalent to Fortran OO interface"""

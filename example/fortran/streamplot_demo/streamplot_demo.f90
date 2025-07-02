@@ -36,6 +36,8 @@ program streamplot_demo
     
     ! Save figure
     call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.png')
+    call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.pdf')
+    call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.txt')
     
     print *, 'Streamplot demo completed!'
     

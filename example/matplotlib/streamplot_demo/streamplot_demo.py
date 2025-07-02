@@ -25,6 +25,7 @@ def main():
     
     # Save figure
     plt.savefig('example/matplotlib/streamplot_demo/streamplot_demo.png', dpi=100)
+    plt.savefig('example/matplotlib/streamplot_demo/streamplot_demo.pdf')
     plt.close()
     
     print('Streamplot demo completed!')
