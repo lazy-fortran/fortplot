@@ -14,6 +14,9 @@ module fortplot_mpeg_stream
         logical :: is_open
         character(len=:), allocatable :: filename
         logical :: eof_reached
+        integer :: unit_number
+        integer :: bit_buffer
+        integer :: bits_in_buffer
     end type stream_state_t
     
     ! Global stream states (matching C implementation pattern)
@@ -32,16 +35,29 @@ contains
 
     subroutine stream_open_read(filename)
         character(len=*), intent(in) :: filename
+        integer :: ios
         
         read_stream_state%filename = filename
         read_stream_state%mode = STREAM_READ
         read_stream_state%position = 0_c_long
-        read_stream_state%is_open = .true.
         read_stream_state%eof_reached = .false.
+        read_stream_state%bit_buffer = 0
+        read_stream_state%bits_in_buffer = 0
+        
+        ! Open file for binary read
+        open(newunit=read_stream_state%unit_number, file=filename, &
+             access='stream', form='unformatted', status='old', &
+             action='read', iostat=ios)
+        
+        read_stream_state%is_open = (ios == 0)
+        if (.not. read_stream_state%is_open) then
+            print *, "Warning: Failed to open file for reading: ", filename
+        end if
     end subroutine stream_open_read
 
     subroutine stream_close_read()
         if (read_stream_state%is_open) then
+            close(read_stream_state%unit_number)
             read_stream_state%is_open = .false.
             if (allocated(read_stream_state%filename)) then
                 deallocate(read_stream_state%filename)
@@ -51,16 +67,31 @@ contains
 
     subroutine stream_open_write(filename)
         character(len=*), intent(in) :: filename
+        integer :: ios
         
         write_stream_state%filename = filename
         write_stream_state%mode = STREAM_WRITE
         write_stream_state%position = 0_c_long
-        write_stream_state%is_open = .true.
         write_stream_state%eof_reached = .false.
+        write_stream_state%bit_buffer = 0
+        write_stream_state%bits_in_buffer = 0
+        
+        ! Open file for binary write
+        open(newunit=write_stream_state%unit_number, file=filename, &
+             access='stream', form='unformatted', status='replace', &
+             action='write', iostat=ios)
+        
+        write_stream_state%is_open = (ios == 0)
+        if (.not. write_stream_state%is_open) then
+            print *, "Warning: Failed to open file for writing: ", filename
+        end if
     end subroutine stream_open_write
 
     subroutine stream_close_write()
         if (write_stream_state%is_open) then
+            ! Flush any remaining bits
+            call stream_flush_write()
+            close(write_stream_state%unit_number)
             write_stream_state%is_open = .false.
             if (allocated(write_stream_state%filename)) then
                 deallocate(write_stream_state%filename)
@@ -70,40 +101,76 @@ contains
 
     function stream_get_bit() result(bit_value)
         integer :: bit_value
+        integer(c_int8_t) :: byte_val
+        integer :: ios
         
         if (.not. read_stream_state%is_open) then
             bit_value = 0
             return
         end if
         
-        ! Placeholder implementation - would read actual bit from file
-        bit_value = 0
+        ! If no bits in buffer, read next byte
+        if (read_stream_state%bits_in_buffer == 0) then
+            read(read_stream_state%unit_number, iostat=ios) byte_val
+            if (ios /= 0) then
+                read_stream_state%eof_reached = .true.
+                bit_value = 0
+                return
+            end if
+            read_stream_state%bit_buffer = int(byte_val)
+            read_stream_state%bits_in_buffer = 8
+        end if
+        
+        ! Extract highest bit
+        bit_value = ishft(read_stream_state%bit_buffer, -7) 
+        bit_value = iand(bit_value, 1)
+        
+        ! Shift buffer and decrement count
+        read_stream_state%bit_buffer = ishft(read_stream_state%bit_buffer, 1)
+        read_stream_state%bit_buffer = iand(read_stream_state%bit_buffer, 255)
+        read_stream_state%bits_in_buffer = read_stream_state%bits_in_buffer - 1
         read_stream_state%position = read_stream_state%position + 1
     end function stream_get_bit
 
     subroutine stream_put_bit(bit_value)
         integer, intent(in) :: bit_value
+        integer(c_int8_t) :: byte_val
         
         if (.not. write_stream_state%is_open) return
         
-        ! Placeholder implementation - would write actual bit to file
+        ! Add bit to buffer
+        write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1)
+        write_stream_state%bit_buffer = ior(write_stream_state%bit_buffer, iand(bit_value, 1))
+        write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
+        
+        ! If buffer is full, write byte
+        if (write_stream_state%bits_in_buffer == 8) then
+            byte_val = int(write_stream_state%bit_buffer, c_int8_t)
+            write(write_stream_state%unit_number) byte_val
+            write_stream_state%bit_buffer = 0
+            write_stream_state%bits_in_buffer = 0
+        end if
+        
         write_stream_state%position = write_stream_state%position + 1
     end subroutine stream_put_bit
 
     function stream_get_variable(num_bits) result(value)
         integer, intent(in) :: num_bits
         integer :: value
-        integer :: i
+        integer :: i, bit_val
         
         if (.not. read_stream_state%is_open) then
             value = 0
             return
         end if
         
-        ! Placeholder implementation - would read variable length value
+        ! Read bits from most significant to least significant
         value = 0
-        do i = 1, num_bits
-            value = value + stream_get_bit()
+        do i = num_bits-1, 0, -1
+            bit_val = stream_get_bit()
+            if (bit_val /= 0) then
+                value = ior(value, ishft(1, i))
+            end if
         end do
     end function stream_get_variable
 
@@ -113,9 +180,10 @@ contains
         
         if (.not. write_stream_state%is_open) return
         
-        ! Placeholder implementation - would write variable length value
-        do i = 1, num_bits
-            bit_value = ibits(value, i-1, 1)
+        ! Write bits from most significant to least significant  
+        do i = num_bits-1, 0, -1
+            bit_value = ishft(value, -i)
+            bit_value = iand(bit_value, 1)
             call stream_put_bit(bit_value)
         end do
     end subroutine stream_put_variable
@@ -156,10 +224,26 @@ contains
 
     subroutine stream_flush_write()
         ! Flush any buffered bits with zeros
-        integer(c_long) :: remainder
-        remainder = mod(write_stream_state%position, 8_c_long)
-        if (remainder /= 0) then
-            write_stream_state%position = write_stream_state%position + (8_c_long - remainder)
+        integer(c_int8_t) :: byte_val
+        integer :: bits_to_pad
+        
+        if (.not. write_stream_state%is_open) return
+        
+        if (write_stream_state%bits_in_buffer > 0) then
+            ! Calculate how many bits to pad
+            bits_to_pad = 8 - write_stream_state%bits_in_buffer
+            
+            ! Pad remaining bits with zeros and write
+            do while (write_stream_state%bits_in_buffer < 8)
+                write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1)
+                write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
+                write_stream_state%position = write_stream_state%position + 1
+            end do
+            
+            byte_val = int(write_stream_state%bit_buffer, c_int8_t)
+            write(write_stream_state%unit_number) byte_val
+            write_stream_state%bit_buffer = 0
+            write_stream_state%bits_in_buffer = 0
         end if
     end subroutine stream_flush_write
 
