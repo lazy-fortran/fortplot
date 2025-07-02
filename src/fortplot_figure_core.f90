@@ -97,7 +97,7 @@ module fortplot_figure_core
         ! Legend support following SOLID principles
         type(legend_t) :: legend_data
         logical :: show_legend = .false.
-        integer :: max_plots = 20
+        integer :: max_plots = 500
         
         ! Line drawing properties
         real(wp) :: current_line_width = 1.0_wp
@@ -218,8 +218,8 @@ contains
     end subroutine add_contour_filled
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
-        !! Add streamline plot to figure with configurable DOPRI5 parameters
-        use fortplot_streamline
+        !! Add streamline plot to figure using matplotlib-compatible algorithm
+        use fortplot_streamplot_matplotlib
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
@@ -230,12 +230,9 @@ contains
         real(wp), intent(in), optional :: max_time    !! Maximum integration time
         
         real(wp) :: plot_density
-        real :: integration_time
-        real, allocatable :: seed_x(:), seed_y(:)
-        real, allocatable :: path_x(:), path_y(:)
-        integer :: n_seeds, i, n_points
-        real :: x_bounds(2), y_bounds(2)
-        type(integration_params_t) :: integration_params
+        real, allocatable :: trajectories(:,:,:)
+        integer :: n_trajectories
+        integer, allocatable :: trajectory_lengths(:)
         
         if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
             self%has_error = .true.
@@ -250,25 +247,6 @@ contains
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
         
-        ! Configure DOPRI5 integration parameters
-        if (present(rtol)) then
-            integration_params%rtol = rtol
-        else
-            integration_params%rtol = 1.0e-6_wp  ! Default relative tolerance
-        end if
-        
-        if (present(atol)) then
-            integration_params%atol = atol
-        else
-            integration_params%atol = 1.0e-9_wp  ! Default absolute tolerance  
-        end if
-        
-        if (present(max_time)) then
-            integration_time = real(max_time)
-        else
-            integration_time = 10.0  ! Default maximum integration time
-        end if
-        
         ! Update data ranges
         if (.not. self%xlim_set) then
             self%x_min = minval(x)
@@ -279,57 +257,44 @@ contains
             self%y_max = maxval(y)
         end if
         
-        ! Generate seed points
-        x_bounds = [real(self%x_min), real(self%x_max)]
-        y_bounds = [real(self%y_min), real(self%y_max)]
-        call calculate_seed_points(real(x), real(y), real(plot_density), seed_x, seed_y, n_seeds)
+        ! Use matplotlib-compatible streamplot implementation
+        call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, n_trajectories, trajectory_lengths)
         
-        ! For now, just allocate streamlines array with seed points
-        if (allocated(self%streamlines)) deallocate(self%streamlines)
-        allocate(self%streamlines(n_seeds))
-        
-        ! Generate streamlines from seed points using DOPRI5
-        do i = 1, min(n_seeds, self%max_plots - self%plot_count)
-            call integrate_streamline_dopri5(seed_x(i), seed_y(i), &
-                                           velocity_u_wrapper, velocity_v_wrapper, &
-                                           params=integration_params, &
-                                           max_time=integration_time, &
-                                           path_x=path_x, path_y=path_y, &
-                                           n_points=n_points)
-            
-            if (n_points > 5) then  ! Only add streamlines with sufficient points
-                self%plot_count = self%plot_count + 1
-                
-                allocate(self%plots(self%plot_count)%x(n_points))
-                allocate(self%plots(self%plot_count)%y(n_points))
-                self%plots(self%plot_count)%x = real(path_x(1:n_points), wp)
-                self%plots(self%plot_count)%y = real(path_y(1:n_points), wp)
-                self%plots(self%plot_count)%plot_type = PLOT_TYPE_LINE
-                
-                if (present(color)) then
-                    self%plots(self%plot_count)%color = color
-                else
-                    self%plots(self%plot_count)%color = [0.0_wp, 0.0_wp, 0.0_wp]
-                end if
-            end if
-            
-            if (allocated(path_x)) deallocate(path_x)
-            if (allocated(path_y)) deallocate(path_y)
-        end do
-        
-        deallocate(seed_x, seed_y)
+        ! Add trajectories to figure
+        call add_trajectories_to_figure(self, trajectories, n_trajectories, trajectory_lengths, color)
         
     contains
         
-        real function velocity_u_wrapper(x_pt, y_pt) result(u_vel)
-            real, intent(in) :: x_pt, y_pt
-            call bilinear_interpolate(real(x), real(y), real(u), x_pt, y_pt, u_vel)
-        end function velocity_u_wrapper
-        
-        real function velocity_v_wrapper(x_pt, y_pt) result(v_vel)
-            real, intent(in) :: x_pt, y_pt
-            call bilinear_interpolate(real(x), real(y), real(v), x_pt, y_pt, v_vel)
-        end function velocity_v_wrapper
+        subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, trajectory_color)
+            !! Add streamline trajectories to figure as line plots
+            class(figure_t), intent(inout) :: fig
+            real, intent(in) :: trajectories(:,:,:)
+            integer, intent(in) :: n_trajectories
+            integer, intent(in) :: lengths(:)
+            real(wp), intent(in), optional :: trajectory_color(3)
+            
+            integer :: i, n_points
+            real(wp), allocatable :: traj_x(:), traj_y(:)
+            real(wp) :: line_color(3)
+            
+            ! Set default color (blue)
+            line_color = [0.0_wp, 0.447_wp, 0.698_wp]
+            if (present(trajectory_color)) line_color = trajectory_color
+            
+            do i = 1, n_trajectories
+                n_points = lengths(i)
+                
+                if (n_points > 1) then
+                    allocate(traj_x(n_points), traj_y(n_points))
+                    traj_x = real(trajectories(i, 1:n_points, 1), wp)
+                    traj_y = real(trajectories(i, 1:n_points, 2), wp)
+                    
+                    call fig%add_plot(traj_x, traj_y, color=line_color, linestyle='-')
+                    
+                    deallocate(traj_x, traj_y)
+                end if
+            end do
+        end subroutine add_trajectories_to_figure
         
     end subroutine streamplot
 
