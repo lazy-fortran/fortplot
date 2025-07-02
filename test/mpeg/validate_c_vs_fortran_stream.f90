@@ -112,9 +112,9 @@ contains
             subroutine mrclose() bind(c, name='mrclose')
             end subroutine
             
-            subroutine mputv(value, bits) bind(c, name='mputv')
+            subroutine mputv(bits, value) bind(c, name='mputv')
                 import :: c_int
-                integer(c_int), value :: value, bits
+                integer(c_int), value :: bits, value
             end subroutine
             
             function mgetv(bits) bind(c, name='mgetv') result(value)
@@ -135,7 +135,7 @@ contains
         ! Write with C implementation
         call mwopen(c_file)
         do i = 1, num_values
-            call mputv(int(test_values(i), c_int), int(test_bits(i), c_int))
+            call mputv(int(test_bits(i), c_int), int(test_values(i), c_int))
         end do
         call mwclose()
         
@@ -195,9 +195,9 @@ contains
             subroutine mrclose() bind(c, name='mrclose')
             end subroutine
             
-            subroutine mputv(value, bits) bind(c, name='mputv')
+            subroutine mputv(bits, value) bind(c, name='mputv')
                 import :: c_int
-                integer(c_int), value :: value, bits
+                integer(c_int), value :: bits, value
             end subroutine
             
             function mgetv(bits) bind(c, name='mgetv') result(value)
@@ -214,7 +214,7 @@ contains
         
         ! Write with C, read with Fortran
         call mwopen(cross_file)
-        call mputv(int(test_value, c_int), int(test_bits, c_int))
+        call mputv(int(test_bits, c_int), int(test_value, c_int))
         call mwclose()
         
         call stream_open_read("test_cross.dat")
