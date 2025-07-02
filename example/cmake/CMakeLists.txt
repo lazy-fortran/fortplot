@@ -11,6 +11,7 @@ include(FetchContent)
 FetchContent_Declare(
     fortplotlib
     GIT_REPOSITORY https://github.com/krystophny/fortplotlib
+    GIT_TAG        main
 )
 FetchContent_MakeAvailable(fortplotlib)
 
