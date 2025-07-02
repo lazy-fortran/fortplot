@@ -1,9 +1,11 @@
 module fortplot_streamline
+    use fortplot_streamline_integrator, only: integration_params_t, dopri5_integrate
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
     
-    public :: calculate_seed_points, integrate_streamline, rk4_step, &
-              calculate_arrow_positions, check_termination, bilinear_interpolate
+    public :: calculate_seed_points, integrate_streamline, integrate_streamline_dopri5, rk4_step, &
+              calculate_arrow_positions, check_termination, bilinear_interpolate, integration_params_t
     
 contains
     
@@ -78,6 +80,88 @@ contains
         
         n_points = i - 1
     end subroutine integrate_streamline
+
+    subroutine integrate_streamline_dopri5(x0, y0, u_func, v_func, params, max_time, &
+                                          path_x, path_y, n_points)
+        !! High-accuracy streamline integration using DOPRI5 method
+        !! Provides adaptive step size control and superior accuracy
+        real, intent(in) :: x0, y0
+        interface
+            real function u_func(x, y)
+                real, intent(in) :: x, y
+            end function u_func
+            real function v_func(x, y)
+                real, intent(in) :: x, y
+            end function v_func
+        end interface
+        type(integration_params_t), intent(in), optional :: params
+        real, intent(in), optional :: max_time
+        real, allocatable, intent(out) :: path_x(:), path_y(:)
+        integer, intent(out) :: n_points
+        
+        ! Local variables
+        type(integration_params_t) :: local_params
+        real(wp) :: t_final
+        real(wp), allocatable :: times(:), path_x_wp(:), path_y_wp(:)
+        integer :: n_accepted, n_rejected
+        logical :: success
+        
+        ! Set default parameters
+        if (present(params)) then
+            local_params = params
+        else
+            ! Default parameters optimized for streamline integration
+            local_params%rtol = 1.0e-6_wp
+            local_params%atol = 1.0e-9_wp
+            local_params%h_initial = 0.01_wp
+            local_params%h_min = 1.0e-8_wp
+            local_params%h_max = 0.5_wp
+            local_params%max_steps = 2000
+            local_params%safety_factor = 0.9_wp
+        end if
+        
+        ! Set integration time limit
+        if (present(max_time)) then
+            t_final = real(max_time, wp)
+        else
+            t_final = 10.0_wp  ! Default time limit
+        end if
+        
+        ! Call DOPRI5 integrator with wrapper functions
+        call dopri5_integrate(real(x0, wp), real(y0, wp), 0.0_wp, t_final, &
+                             u_func_wrapper, v_func_wrapper, &
+                             local_params, path_x_wp, path_y_wp, times, &
+                             n_points, n_accepted, n_rejected, success)
+        
+        if (.not. success) then
+            ! Fall back to single point if integration fails
+            n_points = 1
+            allocate(path_x(1), path_y(1))
+            path_x(1) = x0
+            path_y(1) = y0
+            return
+        end if
+        
+        ! Convert back to single precision
+        allocate(path_x(n_points), path_y(n_points))
+        path_x = real(path_x_wp)
+        path_y = real(path_y_wp)
+        
+        deallocate(path_x_wp, path_y_wp, times)
+        
+    contains
+        
+        real(wp) function u_func_wrapper(x, y) result(u_vel)
+            real(wp), intent(in) :: x, y
+            u_vel = real(u_func(real(x), real(y)), wp)
+        end function u_func_wrapper
+        
+        real(wp) function v_func_wrapper(x, y) result(v_vel)
+            real(wp), intent(in) :: x, y
+            v_vel = real(v_func(real(x), real(y)), wp)
+        end function v_func_wrapper
+        
+    end subroutine integrate_streamline_dopri5
     
     subroutine rk4_step(x, y, u_func, v_func, dt, x_new, y_new)
         real, intent(in) :: x, y, dt
