@@ -48,6 +48,7 @@ def positioned_legend_example():
     ax1.plot(x, y2, label="ln(x)")
     ax1.legend(loc="upper left")
     plt.savefig('example/matplotlib/legend_demo/legend_upper_left.png', dpi=100)
+    plt.savefig('example/matplotlib/legend_demo/legend_upper_left.pdf')
     plt.close()
     
     # Upper right position (default)
@@ -57,6 +58,7 @@ def positioned_legend_example():
     ax2.plot(x, y2, label="ln(x)")
     ax2.legend(loc="upper right")
     plt.savefig('example/matplotlib/legend_demo/legend_upper_right.png', dpi=100)
+    plt.savefig('example/matplotlib/legend_demo/legend_upper_right.pdf')
     plt.close()
     
     # Lower left position
@@ -66,6 +68,7 @@ def positioned_legend_example():
     ax3.plot(x, y2, label="ln(x)")
     ax3.legend(loc="lower left")
     plt.savefig('example/matplotlib/legend_demo/legend_lower_left.png', dpi=100)
+    plt.savefig('example/matplotlib/legend_demo/legend_lower_left.pdf')
     plt.close()
     
     # Lower right position
@@ -75,9 +78,10 @@ def positioned_legend_example():
     ax4.plot(x, y2, label="ln(x)")
     ax4.legend(loc="lower right")
     plt.savefig('example/matplotlib/legend_demo/legend_lower_right.png', dpi=100)
+    plt.savefig('example/matplotlib/legend_demo/legend_lower_right.pdf')
     plt.close()
     
-    print("Created: legend_upper_left/right.png, legend_lower_left/right.png")
+    print("Created: legend_upper_left/right.png/pdf, legend_lower_left/right.png/pdf")
 
 def multi_function_legend_example():
     """Complex legend with multiple mathematical functions"""

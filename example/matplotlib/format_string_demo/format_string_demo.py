@@ -27,9 +27,10 @@ def main():
     
     ax.legend()
     plt.savefig('example/matplotlib/format_string_demo/format_string_demo.png', dpi=100)
+    plt.savefig('example/matplotlib/format_string_demo/format_string_demo.pdf')
     plt.close()
     
-    print('Format string demo saved to format_string_demo.png')
+    print('Format string demo saved to format_string_demo.png/pdf')
 
 if __name__ == "__main__":
     main()

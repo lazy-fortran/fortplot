@@ -30,8 +30,10 @@ program format_string_demo
     call fig%add_plot(x, y4, label='cos(x/2) - x markers with line', linestyle='x-')
     
     call fig%legend()
-    call fig%savefig('format_string_demo.png')
+    call fig%savefig('example/fortran/format_string_demo/format_string_demo.png')
+    call fig%savefig('example/fortran/format_string_demo/format_string_demo.pdf')
+    call fig%savefig('example/fortran/format_string_demo/format_string_demo.txt')
     
-    write(*, '(A)') 'Format string demo saved to format_string_demo.png'
+    write(*, '(A)') 'Format string demo saved to format_string_demo.png/pdf/txt'
     
 end program
