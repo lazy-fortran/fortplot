@@ -292,30 +292,78 @@ contains
 
     function is_gui_available() result(gui_available)
         !! Check if GUI environment is available for opening plots
-        !! Returns true if DISPLAY is set on Linux/Unix or on Windows/macOS
+        !! Supports X11, Wayland, macOS, and Windows
         logical :: gui_available
-        character(len=256) :: display_var
-        integer :: status
+        character(len=256) :: display_var, wayland_var, session_type
+        character(len=512) :: test_command
+        integer :: status, exit_stat
         
         gui_available = .false.
         
 #ifdef __linux__
-        ! Check for DISPLAY environment variable on Linux
+        ! First check if xdg-open is available (required for GUI)
+        test_command = 'which xdg-open >/dev/null 2>&1'
+        call execute_command_line(test_command, exitstat=exit_stat)
+        if (exit_stat /= 0) then
+            return  ! No xdg-open, definitely no GUI
+        end if
+        
+        ! Check for Wayland (modern Linux GUI)
+        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
+        if (status == 0 .and. len_trim(wayland_var) > 0) then
+            gui_available = .true.
+            return
+        end if
+        
+        ! Check session type
+        call get_environment_variable('XDG_SESSION_TYPE', session_type, status=status)
+        if (status == 0) then
+            if (index(session_type, 'wayland') > 0 .or. index(session_type, 'x11') > 0) then
+                gui_available = .true.
+                return
+            elseif (index(session_type, 'tty') > 0) then
+                ! Explicitly no GUI for tty sessions
+                return
+            end if
+        end if
+        
+        ! Check for X11 (traditional Linux GUI)  
         call get_environment_variable('DISPLAY', display_var, status=status)
         if (status == 0 .and. len_trim(display_var) > 0) then
-            gui_available = .true.
+            ! Test if X11 display is actually accessible
+            test_command = 'xset q >/dev/null 2>&1'
+            call execute_command_line(test_command, exitstat=exit_stat)
+            gui_available = (exit_stat == 0)
         end if
 #elif defined(__APPLE__)
-        ! macOS typically has GUI available
-        gui_available = .true.
+        ! On macOS, check if 'open' command exists (should always be there)
+        test_command = 'which open >/dev/null 2>&1'
+        call execute_command_line(test_command, exitstat=exit_stat)
+        gui_available = (exit_stat == 0)
 #elif defined(_WIN32) || defined(_WIN64)
         ! Windows typically has GUI available  
         gui_available = .true.
 #else
-        ! For other Unix-like systems, check DISPLAY
+        ! For other Unix-like systems, check both Wayland and X11
+        test_command = 'which xdg-open >/dev/null 2>&1'
+        call execute_command_line(test_command, exitstat=exit_stat)
+        if (exit_stat /= 0) then
+            return  ! No xdg-open
+        end if
+        
+        ! Check Wayland first
+        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
+        if (status == 0 .and. len_trim(wayland_var) > 0) then
+            gui_available = .true.
+            return
+        end if
+        
+        ! Then check X11
         call get_environment_variable('DISPLAY', display_var, status=status)
         if (status == 0 .and. len_trim(display_var) > 0) then
-            gui_available = .true.
+            test_command = 'xset q >/dev/null 2>&1'
+            call execute_command_line(test_command, exitstat=exit_stat)
+            gui_available = (exit_stat == 0)
         end if
 #endif
     end function is_gui_available
