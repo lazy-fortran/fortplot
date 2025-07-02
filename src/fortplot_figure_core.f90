@@ -227,6 +227,10 @@ contains
         real(wp), intent(in), optional :: linewidth
         
         real(wp) :: plot_density
+        real, allocatable :: seed_x(:), seed_y(:)
+        real, allocatable :: path_x(:), path_y(:)
+        integer :: n_seeds, i, n_points
+        real :: x_bounds(2), y_bounds(2)
         
         if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
             self%has_error = .true.
@@ -241,12 +245,6 @@ contains
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
         
-        ! For now, just set a flag indicating streamlines are present
-        ! Full implementation will be added later
-        if (.not. allocated(self%streamlines)) then
-            allocate(self%streamlines(0))
-        end if
-        
         ! Update data ranges
         if (.not. self%xlim_set) then
             self%x_min = minval(x)
@@ -256,6 +254,56 @@ contains
             self%y_min = minval(y)
             self%y_max = maxval(y)
         end if
+        
+        ! Generate seed points
+        x_bounds = [real(self%x_min), real(self%x_max)]
+        y_bounds = [real(self%y_min), real(self%y_max)]
+        call calculate_seed_points(real(x), real(y), real(plot_density), seed_x, seed_y, n_seeds)
+        
+        ! For now, just allocate streamlines array with seed points
+        if (allocated(self%streamlines)) deallocate(self%streamlines)
+        allocate(self%streamlines(n_seeds))
+        
+        ! Generate streamlines from seed points
+        do i = 1, min(n_seeds, self%max_plots - self%plot_count)
+            call integrate_streamline(seed_x(i), seed_y(i), &
+                                    velocity_u_wrapper, velocity_v_wrapper, &
+                                    0.1, 500, path_x, path_y, n_points)
+            
+            if (n_points > 5) then  ! Only add streamlines with sufficient points
+                self%plot_count = self%plot_count + 1
+                
+                allocate(self%plots(self%plot_count)%x(n_points))
+                allocate(self%plots(self%plot_count)%y(n_points))
+                self%plots(self%plot_count)%x = real(path_x(1:n_points), wp)
+                self%plots(self%plot_count)%y = real(path_y(1:n_points), wp)
+                self%plots(self%plot_count)%plot_type = PLOT_TYPE_LINE
+                
+                if (present(color)) then
+                    self%plots(self%plot_count)%color = color
+                else
+                    self%plots(self%plot_count)%color = [0.0_wp, 0.0_wp, 0.0_wp]
+                end if
+            end if
+            
+            if (allocated(path_x)) deallocate(path_x)
+            if (allocated(path_y)) deallocate(path_y)
+        end do
+        
+        deallocate(seed_x, seed_y)
+        
+    contains
+        
+        real function velocity_u_wrapper(x_pt, y_pt) result(u_vel)
+            real, intent(in) :: x_pt, y_pt
+            call bilinear_interpolate(real(x), real(y), real(u), x_pt, y_pt, u_vel)
+        end function velocity_u_wrapper
+        
+        real function velocity_v_wrapper(x_pt, y_pt) result(v_vel)
+            real, intent(in) :: x_pt, y_pt
+            call bilinear_interpolate(real(x), real(y), real(v), x_pt, y_pt, v_vel)
+        end function velocity_v_wrapper
+        
     end subroutine streamplot
 
     subroutine savefig(self, filename)
