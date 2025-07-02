@@ -17,6 +17,7 @@ module fortplot_mpeg_stream
         integer :: unit_number
         integer :: bit_buffer
         integer :: bits_in_buffer
+        integer :: bit_position  ! Position within current byte (0-7)
     end type stream_state_t
     
     ! Global stream states (matching C implementation pattern)
@@ -43,6 +44,7 @@ contains
         read_stream_state%eof_reached = .false.
         read_stream_state%bit_buffer = 0
         read_stream_state%bits_in_buffer = 0
+        read_stream_state%bit_position = 0
         
         ! Open file for binary read
         open(newunit=read_stream_state%unit_number, file=filename, &
@@ -75,6 +77,7 @@ contains
         write_stream_state%eof_reached = .false.
         write_stream_state%bit_buffer = 0
         write_stream_state%bits_in_buffer = 0
+        write_stream_state%bit_position = 7
         
         ! Open file for binary write
         open(newunit=write_stream_state%unit_number, file=filename, &
@@ -109,8 +112,8 @@ contains
             return
         end if
         
-        ! If no bits in buffer, read next byte
-        if (read_stream_state%bits_in_buffer == 0) then
+        ! If no bits in buffer or we need a new byte, read next byte
+        if (read_stream_state%bits_in_buffer == 0 .or. read_stream_state%bit_position >= 8) then
             read(read_stream_state%unit_number, iostat=ios) byte_val
             if (ios /= 0) then
                 read_stream_state%eof_reached = .true.
@@ -119,36 +122,48 @@ contains
             end if
             read_stream_state%bit_buffer = int(byte_val)
             read_stream_state%bits_in_buffer = 8
+            read_stream_state%bit_position = 0
         end if
         
-        ! Extract highest bit
-        bit_value = ishft(read_stream_state%bit_buffer, -7) 
-        bit_value = iand(bit_value, 1)
-        
-        ! Shift buffer and decrement count
-        read_stream_state%bit_buffer = ishft(read_stream_state%bit_buffer, 1)
-        read_stream_state%bit_buffer = iand(read_stream_state%bit_buffer, 255)
-        read_stream_state%bits_in_buffer = read_stream_state%bits_in_buffer - 1
+        ! Extract bit from buffer (MSB first, like C implementation)
+        bit_value = iand(ishft(read_stream_state%bit_buffer, -(7 - read_stream_state%bit_position)), 1)
+        read_stream_state%bit_position = read_stream_state%bit_position + 1
         read_stream_state%position = read_stream_state%position + 1
+        
+        ! Update bits_in_buffer to track remaining bits
+        read_stream_state%bits_in_buffer = 8 - read_stream_state%bit_position
     end function stream_get_bit
 
     subroutine stream_put_bit(bit_value)
         integer, intent(in) :: bit_value
         integer(c_int8_t) :: byte_val
+        integer, parameter :: bit_set_mask(0:7) = [1, 2, 4, 8, 16, 32, 64, 128]
+        integer(c_long) :: target_byte_pos
         
         if (.not. write_stream_state%is_open) return
         
-        ! Add bit to buffer
-        write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1)
-        write_stream_state%bit_buffer = ior(write_stream_state%bit_buffer, iand(bit_value, 1))
-        write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
+        ! Match C implementation exactly:
+        ! For mput1: current_write_byte|=bit_set_mask[write_position--];
+        ! For mput0: write_position--;  
+        if (iand(bit_value, 1) == 1) then
+            write_stream_state%bit_buffer = ior(write_stream_state%bit_buffer, &
+                                             bit_set_mask(write_stream_state%bit_position))
+        end if
         
-        ! If buffer is full, write byte
-        if (write_stream_state%bits_in_buffer == 8) then
+        ! Decrement bit position (like C: write_position--)
+        write_stream_state%bit_position = write_stream_state%bit_position - 1
+        
+        ! If position goes negative, write byte and reset (like C)
+        if (write_stream_state%bit_position < 0) then
             byte_val = int(write_stream_state%bit_buffer, c_int8_t)
-            write(write_stream_state%unit_number) byte_val
+            
+            ! Calculate the correct file position for this byte
+            ! The byte should be written at the position where it started (position - 7)
+            target_byte_pos = ishft(write_stream_state%position - 7, -3) + 1
+            write(write_stream_state%unit_number, pos=target_byte_pos) byte_val
+            
+            write_stream_state%bit_position = 7
             write_stream_state%bit_buffer = 0
-            write_stream_state%bits_in_buffer = 0
         end if
         
         write_stream_state%position = write_stream_state%position + 1
@@ -199,12 +214,78 @@ contains
     end function stream_tell_write
 
     subroutine stream_seek_read(position)
+        use iso_c_binding, only: c_int8_t
         integer(c_long), intent(in) :: position
+        
+        integer(c_long) :: target_byte_pos
+        integer :: target_bit_pos
+        integer(c_int8_t) :: byte_val
+        integer :: iostat
+        
+        if (.not. read_stream_state%is_open) return
+        
+        ! Calculate target byte and bit positions
+        target_byte_pos = position / 8_c_long
+        target_bit_pos = int(mod(position, 8_c_long))
+        
+        ! Seek to target byte position and read byte
+        read(read_stream_state%unit_number, pos=target_byte_pos + 1, iostat=iostat) byte_val
+        if (iostat == 0) then
+            read_stream_state%bit_buffer = int(byte_val)
+            read_stream_state%bits_in_buffer = 8
+            read_stream_state%bit_position = target_bit_pos
+        else
+            ! Handle end of file or read error
+            read_stream_state%eof_reached = .true.
+            read_stream_state%bit_buffer = 0
+            read_stream_state%bits_in_buffer = 0
+        read_stream_state%bit_position = 0
+            read_stream_state%bit_position = 0
+        end if
+        
         read_stream_state%position = position
     end subroutine stream_seek_read
 
     subroutine stream_seek_write(position)
+        use iso_c_binding, only: c_int8_t
         integer(c_long), intent(in) :: position
+        
+        integer(c_long) :: target_byte_pos, file_length_bytes
+        integer :: target_bit_pos, mask
+        integer(c_int8_t) :: byte_val
+        integer :: iostat
+        
+        if (.not. write_stream_state%is_open) return
+        
+        ! Step 1: if (write_position != 7) {putc(current_write_byte,swout);}
+        if (write_stream_state%bit_position /= 7) then
+            byte_val = int(write_stream_state%bit_buffer, c_int8_t)
+            write(write_stream_state%unit_number) byte_val
+        end if
+        
+        ! Step 2 & 3: fseek(swout,0,2L); Length = ftell(swout);
+        inquire(unit=write_stream_state%unit_number, size=file_length_bytes, iostat=iostat)
+        if (iostat /= 0) file_length_bytes = 0
+        
+        ! Step 4: fseek(swout,(distance+7)>>3,0L);
+        target_byte_pos = ishft(position + 7, -3)
+        
+        ! Step 5 & 6: Check if seeking beyond file length in bits
+        if (ishft(file_length_bytes, 3) <= position) then
+            ! Beyond file end - start clean
+            write_stream_state%bit_buffer = 0
+            write_stream_state%bit_position = 7 - int(iand(position, 7_c_long))
+        else
+            ! Within existing file - read existing byte at target position
+            read(write_stream_state%unit_number, pos=target_byte_pos + 1, iostat=iostat) byte_val
+            if (iostat == 0) then
+                write_stream_state%bit_buffer = int(byte_val)
+            else
+                write_stream_state%bit_buffer = 0
+            end if
+            write_stream_state%bit_position = 7 - int(iand(position, 7_c_long))
+        end if
+        
         write_stream_state%position = position
     end subroutine stream_seek_write
 
@@ -229,22 +310,10 @@ contains
         
         if (.not. write_stream_state%is_open) return
         
-        if (write_stream_state%bits_in_buffer > 0) then
-            ! Calculate how many bits to pad
-            bits_to_pad = 8 - write_stream_state%bits_in_buffer
-            
-            ! Pad remaining bits with ones (to match C mwclose behavior)
-            do while (write_stream_state%bits_in_buffer < 8)
-                write_stream_state%bit_buffer = ishft(write_stream_state%bit_buffer, 1) + 1
-                write_stream_state%bits_in_buffer = write_stream_state%bits_in_buffer + 1
-                write_stream_state%position = write_stream_state%position + 1
-            end do
-            
-            byte_val = int(write_stream_state%bit_buffer, c_int8_t)
-            write(write_stream_state%unit_number) byte_val
-            write_stream_state%bit_buffer = 0
-            write_stream_state%bits_in_buffer = 0
-        end if
+        ! Match C mwclose behavior: while(write_position!=7) {mput1();}
+        do while (write_stream_state%bit_position /= 7)
+            call stream_put_bit(1)
+        end do
     end subroutine stream_flush_write
 
     subroutine stream_flush_write_zeros()
@@ -271,6 +340,7 @@ contains
             write(write_stream_state%unit_number) byte_val
             write_stream_state%bit_buffer = 0
             write_stream_state%bits_in_buffer = 0
+        write_stream_state%bit_position = 7
         end if
     end subroutine stream_flush_write_zeros
 
