@@ -15,3 +15,5 @@ example/*/*.txt
 terminal
 *.pyc
 *.egg-info
+*.dat
+*.o
