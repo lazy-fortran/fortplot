@@ -106,7 +106,8 @@ with the side-effect of a higher-performance limited-feature version of `matplot
 Timing comparison
 ```bash
 time make example_matplotlib
+5.13s user 0.52s system 91% cpu 6.159 total
 
 time make example_python
-
+1.35s user 0.17s system 97% cpu 1.562 total
 ```
