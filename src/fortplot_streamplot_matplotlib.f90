@@ -96,9 +96,9 @@ contains
         
         real :: forward_x(500), forward_y(500), backward_x(500), backward_y(500)
         integer :: n_forward, n_backward, i
-        real(wp) :: maxlength
+        real(wp) :: maxlength, backward_length, forward_length, total_length
         
-        maxlength = 4.0_wp  ! Like matplotlib default
+        maxlength = 4.0_wp  ! Matplotlib default
         success = .false.
         
         ! Start trajectory in mask (like matplotlib line 485)
@@ -107,17 +107,32 @@ contains
         
         ! Integrate backward (matplotlib lines 488-492)
         call integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, &
-                                -1.0_wp, maxlength/2.0_wp, backward_x, backward_y, n_backward)
+                                -1.0_wp, maxlength/2.0_wp, .true., backward_x, backward_y, n_backward, backward_length)
         
         ! Reset start point (matplotlib line 495)
         call reset_trajectory_start(dmap, mask, xg0, yg0)
         
         ! Integrate forward (matplotlib lines 496-499)
         call integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, &
-                                1.0_wp, maxlength/2.0_wp, forward_x, forward_y, n_forward)
+                                1.0_wp, maxlength/2.0_wp, .true., forward_x, forward_y, n_forward, forward_length)
+        
+        ! Total length is sum of both directions
+        total_length = backward_length + forward_length
         
         ! Combine trajectories (backward reversed + forward)
         n_points = n_backward + n_forward - 1
+        
+        ! Use the actual accumulated path length from integration (like matplotlib)
+        
+        ! Reject short trajectories like matplotlib (minlength = 0.1 in axes coordinates)
+        if (total_length < 0.1_wp) then
+            success = .false.
+            call mask%undo_trajectory()
+            n_points = 0
+            allocate(traj_x(1), traj_y(1))  ! Dummy allocation
+            return
+        end if
+        
         allocate(traj_x(n_points), traj_y(n_points))
         
         ! Add backward trajectory (reversed)
@@ -132,20 +147,21 @@ contains
             traj_y(n_backward - 1 + i) = forward_y(i)
         end do
         
-        success = (n_points > 10)  ! Minimum length check
-        if (.not. success) call mask%undo_trajectory()
+        success = .true.
         
     end subroutine integrate_matplotlib_style
 
     subroutine integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, direction, maxlength, &
-                                  traj_x, traj_y, n_points)
-        !! Integrate in one direction with RK12 adaptive step size like matplotlib
+                                  broken_streamlines, traj_x, traj_y, n_points, path_length)
+        !! Integrate in one direction with RK12 adaptive step size exactly like matplotlib
         real(wp), intent(in) :: xg0, yg0, direction, maxlength
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
+        logical, intent(in) :: broken_streamlines
         real, intent(out) :: traj_x(500), traj_y(500)
         integer, intent(out) :: n_points
+        real(wp), intent(out) :: path_length
         
         real(wp) :: xg, yg, ds, total_length, maxds, maxerror
         real(wp) :: ug, vg, speed_ax
@@ -166,14 +182,15 @@ contains
         traj_y(1) = real(yg)
         
         do step_count = 1, 2000  ! Max steps like matplotlib
-            ! Get velocity at current position with proper scaling
+            ! Get velocity at current position and rescale to grid coordinates like matplotlib
             call interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
             
-            ! Convert to axes coordinates for speed calculation (like matplotlib line 451-453)
+            ! Convert to axes coordinates for speed calculation exactly like matplotlib (lines 451-453)
             speed_ax = sqrt((ug/(size(x)-1))**2 + (vg/(size(y)-1))**2)
             if (speed_ax < 1e-10) exit  ! Stagnation point
             
-            ! Apply direction and normalize by speed for dt_ds calculation (matplotlib line 461-464)
+            ! Calculate dt_ds like matplotlib (lines 458-461): dt_ds = 1/ds_dt where ds_dt is speed
+            ! Apply direction for integration direction (matplotlib forward_time/backward_time)
             k1x = direction * ug / speed_ax
             k1y = direction * vg / speed_ax
             
@@ -202,8 +219,10 @@ contains
                 ! Check bounds
                 if (xg < 0 .or. xg >= size(x)-1 .or. yg < 0 .or. yg >= size(y)-1) exit
                 
-                ! Update trajectory in mask (like matplotlib line 594)
-                if (.not. update_trajectory_in_mask_safe(dmap, mask, xg, yg)) exit
+                ! Update trajectory in mask exactly like matplotlib (line 594)
+                if (.not. update_trajectory_in_mask_with_broken_streams(dmap, mask, xg, yg, broken_streamlines)) then
+                    exit  ! Collision or mask full - stop integration like matplotlib
+                end if
                 
                 ! Store point
                 n_points = n_points + 1
@@ -211,6 +230,7 @@ contains
                 traj_x(n_points) = real(xg)
                 traj_y(n_points) = real(yg)
                 
+                ! Accumulate path length in axes coordinates like matplotlib (line 599)
                 total_length = total_length + ds
                 if (total_length >= maxlength) exit
             end if
@@ -223,6 +243,9 @@ contains
             end if
             
         end do
+        
+        ! Return the accumulated path length
+        path_length = total_length
         
     end subroutine integrate_direction
 
@@ -315,16 +338,53 @@ contains
         call mask%update_trajectory(xm, ym)
     end subroutine update_trajectory_in_mask
 
-    logical function update_trajectory_in_mask_safe(dmap, mask, xg, yg) result(success)
-        !! Safe version that returns false if trajectory collides (for integration termination)
+    logical function update_trajectory_in_mask_with_broken_streams(dmap, mask, xg, yg, broken_streamlines) result(success)
+        !! Update trajectory in mask with broken_streamlines parameter exactly like matplotlib
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         real(wp), intent(in) :: xg, yg
+        logical, intent(in) :: broken_streamlines
         
         integer :: xm, ym
         call dmap%grid2mask(xg, yg, xm, ym)
-        success = mask%try_update_trajectory(xm, ym)
-    end function update_trajectory_in_mask_safe
+        
+        if (broken_streamlines) then
+            ! Standard matplotlib behavior: stop on collision
+            success = mask%try_update_trajectory(xm, ym)
+        else
+            ! Non-broken streamlines: continue through collisions (pass through occupied areas)
+            call mask%update_trajectory(xm, ym)
+            success = .true.
+        end if
+    end function update_trajectory_in_mask_with_broken_streams
+
+
+    subroutine calculate_trajectory_length(backward_x, backward_y, n_backward, forward_x, forward_y, n_forward, total_length)
+        !! Calculate total trajectory length in axes coordinates like matplotlib
+        real, intent(in) :: backward_x(:), backward_y(:), forward_x(:), forward_y(:)
+        integer, intent(in) :: n_backward, n_forward
+        real(wp), intent(out) :: total_length
+        
+        integer :: i
+        
+        total_length = 0.0_wp
+        
+        ! Add backward trajectory length
+        do i = 2, n_backward
+            total_length = total_length + sqrt((backward_x(i) - backward_x(i-1))**2 + &
+                                              (backward_y(i) - backward_y(i-1))**2)
+        end do
+        
+        ! Add forward trajectory length  
+        do i = 2, n_forward
+            total_length = total_length + sqrt((forward_x(i) - forward_x(i-1))**2 + &
+                                              (forward_y(i) - forward_y(i-1))**2)
+        end do
+        
+        ! Convert to axes coordinates (divide by grid size)
+        total_length = total_length / 20.0_wp  ! Grid is 20x20, so normalize
+        
+    end subroutine calculate_trajectory_length
 
     ! add_trajectory_to_figure removed to avoid circular dependency
 
