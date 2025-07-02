@@ -17,9 +17,10 @@ file(GLOB_RECURSE FORTPLOTLIB_SOURCES "src/*.f90" "src/*.c")
 # Create static library
 add_library(fortplotlib STATIC ${FORTPLOTLIB_SOURCES})
 
-# Set module directory
+# Set module directory and enable position-independent code for shared library usage
 set_target_properties(fortplotlib PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
+    POSITION_INDEPENDENT_CODE ON
 )
 
 # Make modules available to consumers
