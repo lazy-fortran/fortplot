@@ -26,6 +26,8 @@ module fortplot_mpeg_memory
     public :: mem_t, iobuf_t
     public :: mem_create, mem_destroy, mem_resize
     public :: mem_get_bounds, mem_set_bounds
+    public :: mem_copy, mem_clear, mem_set
+    public :: mem_load, mem_load_partial, mem_save, mem_save_partial
     public :: iobuf_create, iobuf_destroy, iobuf_initialize
     public :: iobuf_set_position, iobuf_get_position
     public :: char_bound, lower_bound, upper_bound
@@ -193,5 +195,147 @@ contains
         
         bounded_index = min(index, upper_limit)
     end function upper_bound
+
+    subroutine mem_copy(source, dest)
+        type(mem_t), intent(in) :: source
+        type(mem_t), intent(inout) :: dest
+        
+        ! Ensure destination has correct size
+        if (dest%width /= source%width .or. dest%height /= source%height) then
+            call mem_destroy(dest)
+            dest = mem_create(source%width, source%height)
+        end if
+        
+        ! Copy data
+        if (allocated(source%data) .and. allocated(dest%data)) then
+            dest%data = source%data
+        end if
+    end subroutine mem_copy
+
+    subroutine mem_clear(mem)
+        type(mem_t), intent(inout) :: mem
+        
+        if (allocated(mem%data)) then
+            mem%data = 0_c_int8_t
+        end if
+    end subroutine mem_clear
+
+    subroutine mem_set(mem, value)
+        type(mem_t), intent(inout) :: mem
+        integer(c_int8_t), intent(in) :: value
+        
+        if (allocated(mem%data)) then
+            mem%data = value
+        end if
+    end subroutine mem_set
+
+    function mem_load(filename, width, height) result(mem)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: width, height
+        type(mem_t) :: mem
+        integer :: unit_num, iostat
+        
+        mem = mem_create(width, height)
+        
+        open(newunit=unit_num, file=filename, access='stream', form='unformatted', &
+             status='old', iostat=iostat)
+        if (iostat /= 0) then
+            print *, "Warning: Could not open file for reading: ", filename
+            return
+        end if
+        
+        if (allocated(mem%data)) then
+            read(unit_num, iostat=iostat) mem%data
+            if (iostat /= 0) then
+                print *, "Warning: Could not read data from file: ", filename
+            end if
+        end if
+        
+        close(unit_num)
+    end function mem_load
+
+    function mem_load_partial(filename, start_x, start_y, width, height, total_width) result(mem)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: start_x, start_y, width, height, total_width
+        type(mem_t) :: mem
+        integer :: unit_num, iostat, i, row_offset, file_pos
+        
+        mem = mem_create(width, height)
+        
+        open(newunit=unit_num, file=filename, access='stream', form='unformatted', &
+             status='old', iostat=iostat)
+        if (iostat /= 0) then
+            print *, "Warning: Could not open file for reading: ", filename
+            return
+        end if
+        
+        if (allocated(mem%data)) then
+            ! Read row by row to handle partial loading
+            do i = 1, height
+                row_offset = ((start_y + i - 1) * total_width + start_x) + 1
+                file_pos = row_offset
+                read(unit_num, pos=file_pos, iostat=iostat) &
+                    mem%data((i-1)*width+1:i*width)
+                if (iostat /= 0) then
+                    print *, "Warning: Could not read partial data at row", i
+                    exit
+                end if
+            end do
+        end if
+        
+        close(unit_num)
+    end function mem_load_partial
+
+    subroutine mem_save(mem, filename)
+        type(mem_t), intent(in) :: mem
+        character(len=*), intent(in) :: filename
+        integer :: unit_num, iostat
+        
+        open(newunit=unit_num, file=filename, access='stream', form='unformatted', &
+             status='replace', iostat=iostat)
+        if (iostat /= 0) then
+            print *, "Warning: Could not open file for writing: ", filename
+            return
+        end if
+        
+        if (allocated(mem%data)) then
+            write(unit_num, iostat=iostat) mem%data
+            if (iostat /= 0) then
+                print *, "Warning: Could not write data to file: ", filename
+            end if
+        end if
+        
+        close(unit_num)
+    end subroutine mem_save
+
+    subroutine mem_save_partial(mem, filename, start_x, start_y, total_width)
+        type(mem_t), intent(in) :: mem
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: start_x, start_y, total_width
+        integer :: unit_num, iostat, i, row_offset, file_pos
+        
+        open(newunit=unit_num, file=filename, access='stream', form='unformatted', &
+             status='old', position='append', iostat=iostat)
+        if (iostat /= 0) then
+            print *, "Warning: Could not open file for partial writing: ", filename
+            return
+        end if
+        
+        if (allocated(mem%data)) then
+            ! Write row by row to handle partial saving
+            do i = 1, mem%height
+                row_offset = ((start_y + i - 1) * total_width + start_x) + 1
+                file_pos = row_offset
+                write(unit_num, pos=file_pos, iostat=iostat) &
+                    mem%data((i-1)*mem%width+1:i*mem%width)
+                if (iostat /= 0) then
+                    print *, "Warning: Could not write partial data at row", i
+                    exit
+                end if
+            end do
+        end if
+        
+        close(unit_num)
+    end subroutine mem_save_partial
 
 end module fortplot_mpeg_memory
