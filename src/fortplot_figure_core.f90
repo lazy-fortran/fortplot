@@ -101,12 +101,17 @@ module fortplot_figure_core
         
         ! Line drawing properties
         real(wp) :: current_line_width = 1.0_wp
+        
+        ! Streamline data (temporary placeholder)
+        type(plot_data_t), allocatable :: streamlines(:)
+        logical :: has_error = .false.
 
     contains
         procedure :: initialize
         procedure :: add_plot
         procedure :: add_contour
         procedure :: add_contour_filled
+        procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
         procedure :: set_ylabel
@@ -118,6 +123,7 @@ module fortplot_figure_core
         procedure :: set_line_width
         procedure :: legend => figure_legend
         procedure :: show
+        procedure :: clear_streamlines
         final :: destroy
     end type figure_t
 
@@ -210,6 +216,47 @@ contains
         call add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
         call update_data_ranges(self)
     end subroutine add_contour_filled
+
+    subroutine streamplot(self, x, y, u, v, density, color, linewidth)
+        !! Add streamline plot to figure
+        use fortplot_streamline
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in), optional :: density
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: linewidth
+        
+        real(wp) :: plot_density
+        
+        if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
+            self%has_error = .true.
+            return
+        end if
+        
+        if (size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
+            self%has_error = .true.
+            return
+        end if
+        
+        plot_density = 1.0_wp
+        if (present(density)) plot_density = density
+        
+        ! For now, just set a flag indicating streamlines are present
+        ! Full implementation will be added later
+        if (.not. allocated(self%streamlines)) then
+            allocate(self%streamlines(0))
+        end if
+        
+        ! Update data ranges
+        if (.not. self%xlim_set) then
+            self%x_min = minval(x)
+            self%x_max = maxval(x)
+        end if
+        if (.not. self%ylim_set) then
+            self%y_min = minval(y)
+            self%y_max = maxval(y)
+        end if
+    end subroutine streamplot
 
     subroutine savefig(self, filename)
         !! Save figure to file with backend auto-detection
@@ -1222,5 +1269,14 @@ contains
         
         self%show_legend = .true.
     end subroutine figure_legend
+    
+    subroutine clear_streamlines(self)
+        !! Clear streamline data
+        class(figure_t), intent(inout) :: self
+        
+        if (allocated(self%streamlines)) then
+            deallocate(self%streamlines)
+        end if
+    end subroutine clear_streamlines
 
 end module fortplot_figure_core
