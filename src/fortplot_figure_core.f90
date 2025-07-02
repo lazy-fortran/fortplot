@@ -126,6 +126,7 @@ module fortplot_figure_core
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
+        procedure :: set_ydata
         procedure :: legend => figure_legend
         procedure :: show
         procedure :: clear_streamlines
@@ -1596,5 +1597,34 @@ contains
         call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
         call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
     end subroutine draw_quad_edges
+
+    subroutine set_ydata(self, plot_index, y_new)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index
+        real(wp), intent(in) :: y_new(:)
+        
+        if (plot_index < 1 .or. plot_index > self%plot_count) then
+            print *, "Warning: Invalid plot index", plot_index, "for set_ydata"
+            return
+        end if
+        
+        if (self%plots(plot_index)%plot_type /= PLOT_TYPE_LINE) then
+            print *, "Warning: set_ydata only supported for line plots"
+            return
+        end if
+        
+        if (.not. allocated(self%plots(plot_index)%y)) then
+            print *, "Warning: Plot", plot_index, "has no y data to update"
+            return
+        end if
+        
+        if (size(y_new) /= size(self%plots(plot_index)%y)) then
+            print *, "Warning: New y data size", size(y_new), &
+                     "does not match existing size", size(self%plots(plot_index)%y)
+            return
+        end if
+        
+        self%plots(plot_index)%y = y_new
+    end subroutine set_ydata
 
 end module fortplot_figure_core
