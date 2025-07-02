@@ -56,20 +56,20 @@ function(add_f2py_wrapper F2PY_MODULE_NAME LIBRARY_TO_WRAP FILES_TO_WRAP)
         ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS} ${F2PY_INCLUDE_DIR})
     target_link_libraries(${F2PY_MODULE_NAME} PUBLIC ${LIBRARY_TO_WRAP})
 
-    set(GENERATED_MODULE_FILE "${F2PY_MODULE_NAME}.${Python_SOABI}")
+    set(GENERATED_MODULE_FILE "${F2PY_MODULE_NAME}")
+
+    get_python_extension_suffix(PYTHON_EXTENSION_SUFFIX)
 
     set_target_properties(
         ${F2PY_MODULE_NAME}
         PROPERTIES
         PREFIX ""
         OUTPUT_NAME "${GENERATED_MODULE_FILE}"
-        SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        SUFFIX "${PYTHON_EXTENSION_SUFFIX}"
         INSTALL_RPATH "$ORIGIN/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
         LINKER_LANGUAGE C
     )
-
-    install(TARGETS ${F2PY_MODULE_NAME} DESTINATION .)
 endfunction()
 
 # ----------------------------------------------------------------------------
@@ -309,14 +309,16 @@ function(add_extension_module_target PYTHON_MODULE LIBRARY_TO_WRAP
         ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS} ${F2PY_INCLUDE_DIR})
     target_link_libraries(${F2PY_MODULE_NAME} PUBLIC ${LIBRARY_TO_WRAP})
 
-    set(GENERATED_MODULE_FILE "${F2PY_MODULE_NAME}.${Python_SOABI}")
+    set(GENERATED_MODULE_FILE "${F2PY_MODULE_NAME}")
+
+    get_python_extension_suffix(PYTHON_EXTENSION_SUFFIX)
 
     set_target_properties(
         ${F2PY_MODULE_NAME}
         PROPERTIES
         PREFIX ""
         OUTPUT_NAME "${GENERATED_MODULE_FILE}"
-        SUFFIX "${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        SUFFIX "${PYTHON_EXTENSION_SUFFIX}"
         INSTALL_RPATH "$ORIGIN/lib"
         BUILD_WITH_INSTALL_RPATH TRUE
         LINKER_LANGUAGE C
@@ -324,4 +326,39 @@ function(add_extension_module_target PYTHON_MODULE LIBRARY_TO_WRAP
 
     install(TARGETS ${F2PY_MODULE_NAME} DESTINATION .)
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PYTHON_MODULE}.py DESTINATION .)
+endfunction()
+
+function(get_python_extension_suffix output_var)
+    # Check if we already cached the result
+    if(DEFINED CACHE{PYTHON_EXT_SUFFIX})
+        set(${output_var} ${PYTHON_EXT_SUFFIX} PARENT_SCOPE)
+        return()
+    endif()
+
+    # Ensure Python executable is available
+    if(NOT Python_EXECUTABLE)
+        message(FATAL_ERROR "Python executable not found. Make sure to call find_package(Python) first.")
+    endif()
+
+    # Get the extension suffix from Python
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} -c
+        "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX') or sysconfig.get_config_var('SO') or '.so')"
+        OUTPUT_VARIABLE ext_suffix
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_VARIABLE error_output
+        RESULT_VARIABLE result_code
+    )
+
+    # Check if the command succeeded
+    if(NOT result_code EQUAL 0)
+        message(WARNING "Failed to get Python extension suffix: ${error_output}")
+        set(ext_suffix ".so")  # Fallback to .so
+    endif()
+
+    # Cache the result for future calls
+    set(PYTHON_EXT_SUFFIX ${ext_suffix} CACHE STRING "Python extension module suffix")
+
+    # Return the result
+    set(${output_var} ${ext_suffix} PARENT_SCOPE)
 endfunction()

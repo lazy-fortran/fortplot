@@ -38,4 +38,5 @@ if (ENABLE_PYTHON)
         fortplotlib
         src/fortplot.f90
     )
+    install(TARGETS _fortplotlib DESTINATION .)
 endif()
