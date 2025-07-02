@@ -1,6 +1,6 @@
 # ![fortplotlib logo](media/logo.jpg)
 
-Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface that can be used as a drop-in replacement for `matplotlib.pyplot` for the supported features.
 
 ## Usage
 
@@ -40,7 +40,7 @@ to build and run them.
 
 ## Setup
 
-### With fpm (Fortran Package Manager)
+### For fpm (Fortran Package Manager) projects
 
 Add to your `fpm.toml`:
 ```toml
@@ -48,7 +48,7 @@ Add to your `fpm.toml`:
 fortplotlib = { git = "https://github.com/krystophny/fortplotlib" }
 ```
 
-### With CMake
+### For CMake projects
 
 Add to your `CMakeLists.txt`:
 ```cmake
@@ -64,11 +64,19 @@ FetchContent_MakeAvailable(fortplotlib)
 target_link_libraries(your_target fortplotlib::fortplotlib)
 ```
 
+### For Python projects
+Install the Python package with pip:
+
+```bash
+pip install git+https://github.com/krystophny/fortplotlib.git
+```
+
 ## Features
 
 ### Plot types
 - [x] Line
 - [x] Contour
+- [x] Streamplot
 - [ ] Image
 - [ ] Surface
 
@@ -89,8 +97,8 @@ target_link_libraries(your_target fortplotlib::fortplotlib)
 - [ ] Animations
 
 
-## Background
+## Why though?
 
-The initial version relied on `zlib` for png compression and `freetype` for font 
-rendering. This was then replaced by [stb](https://github.com/nothings/stb) libraries.
-The only remaining library included is `stb_truetype`.
+Mostly for the lulz and to help make Fortran great again. In addition,
+there is a need for high-quality high-performance plotting directly from Fortran
+with the side-effect of a higher-performance limited-feature version of `matplotlib.pyplot`.
