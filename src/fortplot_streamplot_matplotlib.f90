@@ -51,6 +51,8 @@ contains
         ! Generate spiral starting points (EXACTLY like matplotlib)
         call generate_spiral_seeds([mask%nx, mask%ny], spiral_seeds, n_spiral_seeds)
         
+        
+        
         ! Allocate trajectories array
         allocate(trajectories(n_spiral_seeds, 1000, 2))  ! Max 1000 points per trajectory
         allocate(trajectory_lengths(n_spiral_seeds))
@@ -73,7 +75,7 @@ contains
                                                trajectory_x, trajectory_y, n_points, success)
                 
                 ! Add trajectory if successful (matplotlib line 156-157)  
-                if (success .and. n_points > 20 .and. n_trajectories < 50) then  ! Limit to 50 trajectories
+                if (success .and. n_points > 5) then  ! Lower point requirement
                     n_trajectories = n_trajectories + 1
                     
                     ! Store trajectory
@@ -105,6 +107,8 @@ contains
         real(wp) :: maxlength, backward_length, forward_length, total_length
         
         maxlength = 4.0_wp  ! Matplotlib default
+        ! For circular flows, streamlines need to be able to return to start
+        ! but broken_streamlines=True prevents this
         success = .false.
         
         ! Start trajectory in mask (like matplotlib line 485)
@@ -124,6 +128,7 @@ contains
         
         ! Total length is sum of both directions
         total_length = backward_length + forward_length
+        
         
         ! Combine trajectories (backward reversed + forward)
         n_points = n_backward + n_forward - 1
@@ -226,6 +231,9 @@ contains
                     exit  ! Collision or mask full - stop integration like matplotlib
                 end if
                 
+                ! Check if we would exceed maxlength with this step (matplotlib line 597)
+                if (total_length + ds > maxlength) exit
+                
                 ! Store point
                 n_points = n_points + 1
                 if (n_points > 500) exit
@@ -234,7 +242,6 @@ contains
                 
                 ! Accumulate path length in axes coordinates like matplotlib (line 599)
                 total_length = total_length + ds
-                if (total_length >= maxlength) exit
             end if
             
             ! Adjust step size based on error (matplotlib lines 602-605)

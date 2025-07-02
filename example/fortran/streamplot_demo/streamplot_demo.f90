@@ -29,6 +29,8 @@ program streamplot_demo
     
     ! Create figure and add streamplot
     call fig%initialize(800, 600)
+    ! Try with broken_streamlines=False to allow circles to complete
+    ! (This parameter doesn't exist yet in our API, so let's just use default for now)
     call fig%streamplot(x, y, u, v, density=1.0_real64)
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
