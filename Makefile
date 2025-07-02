@@ -11,7 +11,7 @@ FPM_FLAGS = --c-flag "$(ALL_CFLAGS)" --link-flag "$(ALL_LIBS)"
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help check-deps matplotlib
+.PHONY: all build example debug test clean help check-deps matplotlib example_python example_matplotlib
 
 # Default target
 all: build
@@ -32,19 +32,30 @@ debug:
 test:
 	fpm test $(FPM_FLAGS) $(ARGS)
 
-# Generate Python matplotlib plots for comparison with Fortran examples
-matplotlib:
-	@echo "Generating Python matplotlib reference plots..."
-	@python3 example/matplotlib/basic_plots/basic_plots.py
-	@python3 example/matplotlib/line_styles/line_styles.py
-	@python3 example/matplotlib/scale_examples/scale_examples.py
-	@python3 example/matplotlib/contour_demo/contour_demo.py
-	@python3 example/matplotlib/colored_contours/colored_contours.py
-	@python3 example/matplotlib/format_string_demo/format_string_demo.py
-	@python3 example/matplotlib/legend_demo/legend_demo.py
-	@python3 example/matplotlib/marker_demo/marker_demo.py
-	@python3 example/matplotlib/streamplot_demo/streamplot_demo.py
-	@echo "Matplotlib plots generated! Compare matplotlib output with fortplotlib output."
+# Run Python examples with fortplotlib (default mode)
+example_python:
+	@echo "Running Python examples with fortplotlib..."
+	@for dir in example/python/*/; do \
+		if [ -f "$$dir"*.py ]; then \
+			echo "Running $$dir"; \
+			cd "$$dir" && python3 *.py && cd - > /dev/null; \
+		fi; \
+	done
+	@echo "Python examples completed!"
+
+# Run Python examples with matplotlib (comparison mode)
+example_matplotlib:
+	@echo "Running Python examples with matplotlib for comparison..."
+	@for dir in example/python/*/; do \
+		if [ -f "$$dir"*.py ]; then \
+			echo "Running $$dir with matplotlib"; \
+			cd "$$dir" && python3 *.py --matplotlib && cd - > /dev/null; \
+		fi; \
+	done
+	@echo "Matplotlib comparison plots generated!"
+
+# Legacy matplotlib target (deprecated, use example_matplotlib)
+matplotlib: example_matplotlib
 
 # Clean build artifacts
 clean:
@@ -72,11 +83,12 @@ check-deps:
 # Help target
 help:
 	@echo "Available targets:"
-	@echo "  build       - Compile the project"
-	@echo "  example     - Build and run all examples"
-	@echo "  debug       - Build and run apps for debugging"
-	@echo "  matplotlib  - Generate Python matplotlib plots (1:1 equivalents)"
-	@echo "  test        - Run all tests"
+	@echo "  build            - Compile the project"
+	@echo "  example          - Build and run all Fortran examples"
+	@echo "  example_python   - Run Python examples with fortplotlib"
+	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
+	@echo "  debug            - Build and run apps for debugging"
+	@echo "  test             - Run all tests"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
 	@echo "  run-release - Run optimized build"

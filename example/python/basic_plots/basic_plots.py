@@ -1,34 +1,48 @@
 #!/usr/bin/env python3
 """
-Basic plotting examples - Python reference using matplotlib
+Basic plotting examples - Dual mode: fortplotlib or matplotlib
 Equivalent to basic_plots.f90 for visual comparison
 """
 
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
+
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+if "--matplotlib" in sys.argv:
+    import matplotlib.pyplot as plt
+    backend = "matplotlib"
+else:
+    import fortplotlib.fortplot as plt
+    backend = "fortplotlib"
 
 def simple_plots():
-    """Simple plot using matplotlib - equivalent to Fortran functional API"""
-    print("=== Basic Plots (Python Reference) ===")
+    """Simple plot - equivalent to Fortran functional API"""
+    print(f"=== Basic Plots ({backend}) ===")
     
     # Generate simple sine data - show 2 complete periods (0 to 4π) - exactly like Fortran
     x = np.arange(50) * 4.0 * np.pi / 49.0
     y = np.sin(x)
     
     # Simple plot
-    plt.figure(figsize=(6.4, 4.8))  # Default matplotlib size
+    plt.figure(figsize=(6.4, 4.8))
     plt.plot(x, y, label='sin(x)')
     plt.title('Simple Sine Wave')
     plt.xlabel('x')
     plt.ylabel('sin(x)')
-    plt.savefig('example/matplotlib/basic_plots/simple_plot_ref.png')
-    plt.savefig('example/matplotlib/basic_plots/simple_plot_ref.pdf')
-    plt.close()
+    plt.savefig('simple_plot.png')
+    plt.savefig('simple_plot.pdf')
     
-    print("Created: simple_plot_ref.png/pdf")
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('simple_plot.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: simple_plot.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 def multi_line_plot():
-    """Multi-line plot using matplotlib - equivalent to Fortran OO interface"""
+    """Multi-line plot - equivalent to Fortran OO interface"""
     # Generate data exactly like Fortran: x from 0 to 99, divided by 5
     x = np.arange(100) / 5.0
     sx = np.sin(x)
@@ -41,12 +55,18 @@ def multi_line_plot():
     plt.title("Sine and Cosine Functions")
     plt.plot(x, sx, label="sin(x)")
     plt.plot(x, cx, label="cos(x)")
-    plt.legend()  # Add legend for labeled plots - same as Fortran
-    plt.savefig('example/matplotlib/basic_plots/multi_line_ref.png')
-    plt.savefig('example/matplotlib/basic_plots/multi_line_ref.pdf')
-    plt.close()
+    plt.legend()
+    plt.savefig('multi_line.png')
+    plt.savefig('multi_line.pdf')
     
-    print("Created: multi_line_ref.png/pdf")
+    # Save TXT for fortplotlib only
+    if backend == "fortplotlib":
+        plt.savefig('multi_line.txt')
+    
+    if backend == "matplotlib":
+        plt.close()
+    
+    print("Created: multi_line.png/pdf" + ("" if backend == "matplotlib" else "/txt"))
 
 if __name__ == "__main__":
     simple_plots()
