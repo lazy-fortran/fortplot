@@ -82,7 +82,7 @@ make build ARGS="--verbose"
 **Library Sources**: Place library sources in `src/` directory
 **Debugging**: Place debugging sources in `app/` directory and execute with `make debug`
 **Unit Tests**: Place unit tests in `test/` directory
-**Examples**: Place examples in `example/` directory
+**Examples**: Place examples in `example/` directory under `example/<language>/<case>` subdirectories. Use correct relative path from top level inside exaples.
 
 ## Third party References and Inspiration
 
