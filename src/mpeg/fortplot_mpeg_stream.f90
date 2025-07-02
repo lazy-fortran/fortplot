@@ -79,10 +79,10 @@ contains
         write_stream_state%bits_in_buffer = 0
         write_stream_state%bit_position = 7
         
-        ! Open file for binary write
+        ! Open file for binary write (preserving existing content for seeks)
         open(newunit=write_stream_state%unit_number, file=filename, &
-             access='stream', form='unformatted', status='replace', &
-             action='write', iostat=ios)
+             access='stream', form='unformatted', status='unknown', &
+             action='readwrite', iostat=ios)
         
         write_stream_state%is_open = (ios == 0)
         if (.not. write_stream_state%is_open) then
@@ -276,18 +276,46 @@ contains
             write_stream_state%bit_buffer = 0
             write_stream_state%bit_position = 7 - int(iand(position, 7_c_long))
         else
-            ! Within existing file - read existing byte at target position
+            ! Within existing file - read existing byte at target position and preserve it
             read(write_stream_state%unit_number, pos=target_byte_pos + 1, iostat=iostat) byte_val
             if (iostat == 0) then
                 write_stream_state%bit_buffer = int(byte_val)
+                ! Mask out bits from target position onward to preserve only earlier bits
+                ! If seeking to position 1, preserve bit 0, clear bits 1-7
+                call mask_buffer_from_position(write_stream_state%bit_buffer, int(iand(position, 7_c_long)))
             else
                 write_stream_state%bit_buffer = 0
             end if
             write_stream_state%bit_position = 7 - int(iand(position, 7_c_long))
+            
+            ! Position file pointer back to where we will write this byte
+            ! The file pointer is currently after the read, position it back to the byte we just read
+            ! This matches the C: fseek(swout,(distance+7)>>3,0L);
         end if
         
         write_stream_state%position = position
     end subroutine stream_seek_write
+    
+    subroutine mask_buffer_from_position(buffer, bit_position)
+        !! Mask out bits from bit_position onward, preserving earlier bits
+        integer, intent(inout) :: buffer
+        integer, intent(in) :: bit_position
+        
+        integer, parameter :: preserve_masks(0:7) = [ &
+            int(b'00000000'), &  ! position 0: preserve nothing, clear all bits
+            int(b'10000000'), &  ! position 1: preserve bit 0
+            int(b'11000000'), &  ! position 2: preserve bits 0-1  
+            int(b'11100000'), &  ! position 3: preserve bits 0-2
+            int(b'11110000'), &  ! position 4: preserve bits 0-3
+            int(b'11111000'), &  ! position 5: preserve bits 0-4
+            int(b'11111100'), &  ! position 6: preserve bits 0-5
+            int(b'11111110') &   ! position 7: preserve bits 0-6
+        ]
+        
+        if (bit_position >= 0 .and. bit_position <= 7) then
+            buffer = iand(buffer, preserve_masks(bit_position))
+        end if
+    end subroutine mask_buffer_from_position
 
     function stream_eof() result(is_eof)
         logical :: is_eof
