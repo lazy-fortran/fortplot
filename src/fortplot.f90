@@ -24,7 +24,7 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, show
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, show, show_viewer
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
@@ -178,9 +178,17 @@ contains
     end subroutine show_data
 
     subroutine show_figure()
-        !! Display the global figure in terminal using ASCII graphics
+        !! Display the global figure intelligently
+        !! If GUI is available, opens in system viewer (like matplotlib.pyplot.show())
+        !! Otherwise, falls back to ASCII terminal display
         !! Like pyplot's show() - displays current figure
-        call fig%show()
+        
+        if (is_gui_available()) then
+            call show_viewer_implementation()
+        else
+            ! Fallback to ASCII display
+            call fig%show()
+        end if
     end subroutine show_figure
 
     subroutine figure(width, height)
@@ -281,5 +289,116 @@ contains
         real(8), intent(in), optional :: threshold
         call fig%set_yscale(scale, threshold)
     end subroutine set_yscale
+
+    function is_gui_available() result(gui_available)
+        !! Check if GUI environment is available for opening plots
+        !! Returns true if DISPLAY is set on Linux/Unix or on Windows/macOS
+        logical :: gui_available
+        character(len=256) :: display_var
+        integer :: status
+        
+        gui_available = .false.
+        
+#ifdef __linux__
+        ! Check for DISPLAY environment variable on Linux
+        call get_environment_variable('DISPLAY', display_var, status=status)
+        if (status == 0 .and. len_trim(display_var) > 0) then
+            gui_available = .true.
+        end if
+#elif defined(__APPLE__)
+        ! macOS typically has GUI available
+        gui_available = .true.
+#elif defined(_WIN32) || defined(_WIN64)
+        ! Windows typically has GUI available  
+        gui_available = .true.
+#else
+        ! For other Unix-like systems, check DISPLAY
+        call get_environment_variable('DISPLAY', display_var, status=status)
+        if (status == 0 .and. len_trim(display_var) > 0) then
+            gui_available = .true.
+        end if
+#endif
+    end function is_gui_available
+
+    subroutine show_viewer_implementation()
+        !! Internal implementation for showing plot in system viewer
+        !! Used by both show_viewer() and show_figure() when GUI is available
+        use iso_fortran_env, only: int64
+        
+        character(len=256) :: temp_filename
+        character(len=512) :: command
+        character(len=32) :: timestamp
+        integer :: stat
+        integer(int64) :: time_val
+        
+        ! Generate unique temporary filename with timestamp
+        call system_clock(time_val)
+        write(timestamp, '(I0)') time_val
+        
+#ifdef __linux__
+        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
+#elif defined(__APPLE__)
+        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
+#elif defined(_WIN32) || defined(_WIN64)
+        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
+#else
+        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
+#endif
+        
+        ! Save figure to temporary file
+        call fig%savefig(temp_filename)
+        
+        ! Open with system default viewer
+#ifdef __linux__
+        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
+#elif defined(__APPLE__)
+        command = 'open "' // trim(temp_filename) // '"'
+#elif defined(_WIN32) || defined(_WIN64)
+        command = 'start "" "' // trim(temp_filename) // '"'
+#else
+        ! Fallback - try xdg-open (most Unix-like systems)
+        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
+#endif
+        
+        ! Execute system command to open file
+        call execute_command_line(command, wait=.false., exitstat=stat)
+        
+        if (stat /= 0) then
+            print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
+            print *, 'Please open the file manually with your preferred PDF viewer.'
+        else
+            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+            print *, 'Press Enter to continue and clean up temporary file...'
+            read(*,*)
+            
+            ! Clean up temporary file
+#ifdef __linux__ 
+            command = 'rm -f "' // trim(temp_filename) // '"'
+#elif defined(__APPLE__)
+            command = 'rm -f "' // trim(temp_filename) // '"'
+#elif defined(_WIN32) || defined(_WIN64)
+            command = 'del "' // trim(temp_filename) // '"'
+#else
+            command = 'rm -f "' // trim(temp_filename) // '"'
+#endif
+            call execute_command_line(command)
+        end if
+    end subroutine show_viewer_implementation
+
+    subroutine show_viewer()
+        !! Display the current figure in the system's default viewer
+        !! Similar to matplotlib.pyplot.show() - saves to temporary file and opens with system viewer
+        !!
+        !! Supports:
+        !!   - Linux: uses xdg-open
+        !!   - macOS: uses open  
+        !!   - Windows: uses start
+        !!
+        !! Usage:
+        !!   call plot(x, y)
+        !!   call show_viewer()  ! Opens plot in default PDF viewer
+        
+        call show_viewer_implementation()
+    end subroutine show_viewer
 
 end module fortplot
