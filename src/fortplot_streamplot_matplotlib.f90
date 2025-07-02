@@ -31,6 +31,9 @@ contains
         integer :: n_points
         logical :: success
         
+        ! Pre-scaled velocity fields like matplotlib (lines 447-453)
+        real(wp), allocatable :: u_grid(:,:), v_grid(:,:), speed_field(:,:)
+        
         ! Set density (default 1.0 like matplotlib)
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
@@ -41,6 +44,9 @@ contains
         ! Initialize coordinate mapper
         call dmap%initialize([x(1), x(size(x))], [y(1), y(size(y))], &
                             [size(x), size(y)], [mask%nx, mask%ny])
+        
+        ! Pre-scale velocity field to grid coordinates like matplotlib (line 448)
+        call rescale_velocity_to_grid_coordinates(x, y, u, v, u_grid, v_grid, speed_field)
         
         ! Generate spiral starting points (EXACTLY like matplotlib)
         call generate_spiral_seeds([mask%nx, mask%ny], spiral_seeds, n_spiral_seeds)
@@ -62,8 +68,8 @@ contains
                 ! Convert mask to grid coordinates (matplotlib line 154)  
                 call dmap%mask2grid(xm, ym, xg, yg)
                 
-                ! Integrate trajectory (matplotlib line 155)
-                call integrate_matplotlib_style(xg, yg, x, y, u, v, dmap, mask, &
+                ! Integrate trajectory (matplotlib line 155) with pre-scaled velocity
+                call integrate_matplotlib_style(xg, yg, u_grid, v_grid, speed_field, dmap, mask, &
                                                trajectory_x, trajectory_y, n_points, success)
                 
                 ! Add trajectory if successful (matplotlib line 156-157)  
@@ -83,11 +89,11 @@ contains
         deallocate(spiral_seeds)
     end subroutine streamplot_matplotlib
 
-    subroutine integrate_matplotlib_style(xg0, yg0, x, y, u, v, dmap, mask, &
+    subroutine integrate_matplotlib_style(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                          traj_x, traj_y, n_points, success)
-        !! Integration following matplotlib's exact approach
+        !! Integration following matplotlib's exact approach with pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in) :: u_grid(:,:), v_grid(:,:), speed_field(:,:)
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         real, allocatable, intent(out) :: traj_x(:), traj_y(:)
@@ -106,14 +112,14 @@ contains
         if (.not. success) return
         
         ! Integrate backward (matplotlib lines 488-492)
-        call integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, &
+        call integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                 -1.0_wp, maxlength/2.0_wp, .true., backward_x, backward_y, n_backward, backward_length)
         
         ! Reset start point (matplotlib line 495)
         call reset_trajectory_start(dmap, mask, xg0, yg0)
         
         ! Integrate forward (matplotlib lines 496-499)
-        call integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, &
+        call integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                 1.0_wp, maxlength/2.0_wp, .true., forward_x, forward_y, n_forward, forward_length)
         
         ! Total length is sum of both directions
@@ -151,11 +157,11 @@ contains
         
     end subroutine integrate_matplotlib_style
 
-    subroutine integrate_direction(xg0, yg0, x, y, u, v, dmap, mask, direction, maxlength, &
+    subroutine integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, direction, maxlength, &
                                   broken_streamlines, traj_x, traj_y, n_points, path_length)
-        !! Integrate in one direction with RK12 adaptive step size exactly like matplotlib
+        !! Integrate in one direction with RK12 adaptive step size exactly like matplotlib using pre-scaled velocity
         real(wp), intent(in) :: xg0, yg0, direction, maxlength
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in) :: u_grid(:,:), v_grid(:,:), speed_field(:,:)
         type(coordinate_mapper_t), intent(in) :: dmap
         type(stream_mask_t), intent(inout) :: mask
         logical, intent(in) :: broken_streamlines
@@ -182,11 +188,8 @@ contains
         traj_y(1) = real(yg)
         
         do step_count = 1, 2000  ! Max steps like matplotlib
-            ! Get velocity at current position and rescale to grid coordinates like matplotlib
-            call interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
-            
-            ! Convert to axes coordinates for speed calculation exactly like matplotlib (lines 451-453)
-            speed_ax = sqrt((ug/(size(x)-1))**2 + (vg/(size(y)-1))**2)
+            ! Get pre-scaled velocity at current position (matplotlib lines 462-463)
+            call interpolate_velocity_prescaled(xg, yg, u_grid, v_grid, speed_field, ug, vg, speed_ax)
             if (speed_ax < 1e-10) exit  ! Stagnation point
             
             ! Calculate dt_ds like matplotlib (lines 458-461): dt_ds = 1/ds_dt where ds_dt is speed
@@ -195,8 +198,7 @@ contains
             k1y = direction * vg / speed_ax
             
             ! RK12 second stage (matplotlib RK12 implementation)
-            call interpolate_velocity(xg + ds*k1x, yg + ds*k1y, x, y, u, v, ug, vg)
-            speed_ax = sqrt((ug/(size(x)-1))**2 + (vg/(size(y)-1))**2)
+            call interpolate_velocity_prescaled(xg + ds*k1x, yg + ds*k1y, u_grid, v_grid, speed_field, ug, vg, speed_ax)
             if (speed_ax < 1e-10) exit
             
             k2x = direction * ug / speed_ax  
@@ -209,7 +211,7 @@ contains
             dy2 = ds * 0.5_wp * (k1y + k2y)
             
             ! Error estimate normalized to axes coordinates (matplotlib lines 586-587)
-            error = sqrt(((dx2-dx1)/(size(x)-1))**2 + ((dy2-dy1)/(size(y)-1))**2)
+            error = sqrt(((dx2-dx1)/(size(u_grid,1)-1))**2 + ((dy2-dy1)/(size(u_grid,2)-1))**2)
             
             ! Accept step if error is acceptable (like matplotlib line 590)
             if (error < maxerror) then
@@ -217,7 +219,7 @@ contains
                 yg = yg + dy2
                 
                 ! Check bounds
-                if (xg < 0 .or. xg >= size(x)-1 .or. yg < 0 .or. yg >= size(y)-1) exit
+                if (xg < 0 .or. xg >= size(u_grid,1)-1 .or. yg < 0 .or. yg >= size(u_grid,2)-1) exit
                 
                 ! Update trajectory in mask exactly like matplotlib (line 594)
                 if (.not. update_trajectory_in_mask_with_broken_streams(dmap, mask, xg, yg, broken_streamlines)) then
@@ -248,6 +250,100 @@ contains
         path_length = total_length
         
     end subroutine integrate_direction
+
+    subroutine rescale_velocity_to_grid_coordinates(x, y, u, v, u_grid, v_grid, speed_field)
+        !! Pre-scale velocity field to grid coordinates exactly like matplotlib (lines 447-453)
+        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), allocatable, intent(out) :: u_grid(:,:), v_grid(:,:), speed_field(:,:)
+        
+        integer :: nx, ny, i, j
+        real(wp) :: u_ax, v_ax
+        
+        nx = size(x)
+        ny = size(y)
+        
+        allocate(u_grid(nx, ny), v_grid(nx, ny), speed_field(nx, ny))
+        
+        ! Rescale velocity onto grid-coordinates like matplotlib dmap.data2grid(u, v)
+        ! This converts from data coordinates to grid coordinates
+        do j = 1, ny
+            do i = 1, nx
+                u_grid(i, j) = u(i, j) * real(nx - 1, wp) / (x(nx) - x(1))
+                v_grid(i, j) = v(i, j) * real(ny - 1, wp) / (y(ny) - y(1))
+            end do
+        end do
+        
+        ! Calculate speed field in axes coordinates (matplotlib lines 451-453)
+        do j = 1, ny
+            do i = 1, nx
+                u_ax = u_grid(i, j) / real(nx - 1, wp)
+                v_ax = v_grid(i, j) / real(ny - 1, wp) 
+                speed_field(i, j) = sqrt(u_ax**2 + v_ax**2)
+            end do
+        end do
+        
+    end subroutine rescale_velocity_to_grid_coordinates
+
+    subroutine interpolate_velocity_prescaled(xg, yg, u_grid, v_grid, speed_field, ug, vg, speed_ax)
+        !! Bilinear interpolation of pre-scaled velocity like matplotlib
+        real(wp), intent(in) :: xg, yg
+        real(wp), intent(in) :: u_grid(:,:), v_grid(:,:), speed_field(:,:)
+        real(wp), intent(out) :: ug, vg, speed_ax
+        
+        integer :: i, j, i_next, j_next
+        real(wp) :: xt, yt, a00_u, a01_u, a10_u, a11_u, a0_u, a1_u
+        real(wp) :: a00_v, a01_v, a10_v, a11_v, a0_v, a1_v
+        real(wp) :: a00_s, a01_s, a10_s, a11_s, a0_s, a1_s
+        
+        ! Convert grid coordinates to integer indices
+        i = max(1, min(size(u_grid,1)-1, int(xg) + 1))
+        j = max(1, min(size(u_grid,2)-1, int(yg) + 1))
+        
+        ! Get next indices with bounds checking
+        if (i == size(u_grid,1)) then
+            i_next = i
+        else
+            i_next = i + 1
+        end if
+        
+        if (j == size(u_grid,2)) then
+            j_next = j
+        else
+            j_next = j + 1
+        end if
+        
+        ! Interpolation weights
+        xt = xg - real(i - 1, wp)
+        yt = yg - real(j - 1, wp)
+        
+        ! Bilinear interpolation for u velocity
+        a00_u = u_grid(i, j)
+        a01_u = u_grid(i_next, j)
+        a10_u = u_grid(i, j_next)
+        a11_u = u_grid(i_next, j_next)
+        a0_u = a00_u * (1.0_wp - xt) + a01_u * xt
+        a1_u = a10_u * (1.0_wp - xt) + a11_u * xt
+        ug = a0_u * (1.0_wp - yt) + a1_u * yt
+        
+        ! Bilinear interpolation for v velocity  
+        a00_v = v_grid(i, j)
+        a01_v = v_grid(i_next, j)
+        a10_v = v_grid(i, j_next)
+        a11_v = v_grid(i_next, j_next)
+        a0_v = a00_v * (1.0_wp - xt) + a01_v * xt
+        a1_v = a10_v * (1.0_wp - xt) + a11_v * xt
+        vg = a0_v * (1.0_wp - yt) + a1_v * yt
+        
+        ! Bilinear interpolation for speed field
+        a00_s = speed_field(i, j)
+        a01_s = speed_field(i_next, j)
+        a10_s = speed_field(i, j_next)
+        a11_s = speed_field(i_next, j_next)
+        a0_s = a00_s * (1.0_wp - xt) + a01_s * xt
+        a1_s = a10_s * (1.0_wp - xt) + a11_s * xt
+        speed_ax = a0_s * (1.0_wp - yt) + a1_s * yt
+        
+    end subroutine interpolate_velocity_prescaled
 
     subroutine interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
         !! Bilinear interpolation exactly like matplotlib's interpgrid function

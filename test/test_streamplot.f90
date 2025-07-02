@@ -28,7 +28,7 @@ contains
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v)
         
-        if (.not. allocated(fig%streamlines)) error stop "Streamlines not allocated"
+        if (fig%plot_count == 0) error stop "No plots generated from streamplot"
         ! For now, just check that streamlines were allocated
     end subroutine
     
@@ -48,11 +48,12 @@ contains
         
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=0.5_real64)
-        n_streamlines1 = size(fig%streamlines)
+        n_streamlines1 = fig%plot_count
         
-        call fig%clear_streamlines()
+        ! Reset figure for second test
+        call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=2.0_real64)
-        n_streamlines2 = size(fig%streamlines)
+        n_streamlines2 = fig%plot_count
         
         ! For now, just skip this test since implementation is incomplete
     end subroutine
