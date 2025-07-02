@@ -29,3 +29,13 @@ target_include_directories(fortplotlib
 
 # Create alias for FetchContent compatibility
 add_library(fortplotlib::fortplotlib ALIAS fortplotlib)
+
+# Check if Python interface should be built
+if (ENABLE_PYTHON)
+    include(cmake/PythonHelpers.cmake)
+    add_f2py_wrapper(
+        _fortplotlib
+        fortplotlib
+        src/fortplot.f90
+    )
+endif()

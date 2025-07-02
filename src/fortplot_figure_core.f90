@@ -260,20 +260,22 @@ contains
         ! Use matplotlib-compatible streamplot implementation
         call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, n_trajectories, trajectory_lengths)
         
+        
         ! Add trajectories to figure
-        call add_trajectories_to_figure(self, trajectories, n_trajectories, trajectory_lengths, color)
+        call add_trajectories_to_figure(self, trajectories, n_trajectories, trajectory_lengths, color, x, y)
         
     contains
         
-        subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, trajectory_color)
-            !! Add streamline trajectories to figure as line plots
+        subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, trajectory_color, x_grid, y_grid)
+            !! Add streamline trajectories to figure as regular plots
             class(figure_t), intent(inout) :: fig
             real, intent(in) :: trajectories(:,:,:)
             integer, intent(in) :: n_trajectories
             integer, intent(in) :: lengths(:)
             real(wp), intent(in), optional :: trajectory_color(3)
+            real(wp), intent(in) :: x_grid(:), y_grid(:)
             
-            integer :: i, n_points
+            integer :: i, j, n_points
             real(wp), allocatable :: traj_x(:), traj_y(:)
             real(wp) :: line_color(3)
             
@@ -286,9 +288,17 @@ contains
                 
                 if (n_points > 1) then
                     allocate(traj_x(n_points), traj_y(n_points))
-                    traj_x = real(trajectories(i, 1:n_points, 1), wp)
-                    traj_y = real(trajectories(i, 1:n_points, 2), wp)
                     
+                    ! Convert from grid coordinates to data coordinates
+                    ! trajectories are in grid coordinates (0 to nx-1, 0 to ny-1)
+                    ! need to convert to data coordinates like matplotlib does
+                    do j = 1, n_points
+                        ! Convert grid coords to data coords: grid2data transformation
+                        traj_x(j) = real(trajectories(i, j, 1), wp) * (x_grid(size(x_grid)) - x_grid(1)) / real(size(x_grid) - 1, wp) + x_grid(1)
+                        traj_y(j) = real(trajectories(i, j, 2), wp) * (y_grid(size(y_grid)) - y_grid(1)) / real(size(y_grid) - 1, wp) + y_grid(1)
+                    end do
+                    
+                    ! Add as regular plot
                     call fig%add_plot(traj_x, traj_y, color=line_color, linestyle='-')
                     
                     deallocate(traj_x, traj_y)
@@ -771,6 +781,7 @@ contains
         class(figure_t), intent(inout) :: self
         integer :: i
         
+        ! Render regular plots
         do i = 1, self%plot_count
             ! Set color for this plot
             call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
@@ -781,7 +792,42 @@ contains
                 call render_contour_plot(self, i)
             end if
         end do
+        
     end subroutine render_all_plots
+
+    subroutine render_streamlines(self)
+        !! Render all streamlines in the streamlines array
+        class(figure_t), intent(inout) :: self
+        integer :: i
+        
+        do i = 1, size(self%streamlines)
+            ! Set color for this streamline
+            call self%backend%color(self%streamlines(i)%color(1), self%streamlines(i)%color(2), self%streamlines(i)%color(3))
+            
+            ! Render as line plot
+            call render_streamline(self, i)
+        end do
+    end subroutine render_streamlines
+
+    subroutine render_streamline(self, streamline_idx)
+        !! Render a single streamline
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: streamline_idx
+        integer :: i
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        
+        
+        do i = 1, size(self%streamlines(streamline_idx)%x) - 1
+            ! Apply scale transformations
+            x1_screen = apply_scale_transform(self%streamlines(streamline_idx)%x(i), self%xscale, self%symlog_threshold)
+            y1_screen = apply_scale_transform(self%streamlines(streamline_idx)%y(i), self%yscale, self%symlog_threshold)
+            x2_screen = apply_scale_transform(self%streamlines(streamline_idx)%x(i+1), self%xscale, self%symlog_threshold)
+            y2_screen = apply_scale_transform(self%streamlines(streamline_idx)%y(i+1), self%yscale, self%symlog_threshold)
+            
+            ! Draw line segment
+            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
+        end do
+    end subroutine render_streamline
 
     subroutine render_line_plot(self, plot_idx)
         !! Render a single line plot with linestyle support
