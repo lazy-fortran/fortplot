@@ -24,7 +24,7 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, show
+    public :: plot, contour, contour_filled, streamplot, show
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled
@@ -103,6 +103,29 @@ contains
         call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
                                    show_colorbar=show_colorbar, label=label)
     end subroutine contour_filled
+
+    subroutine streamplot(x, y, u, v, density)
+        !! Add a streamplot (vector field visualization) to the global figure
+        !! 
+        !! Creates streamlines that follow the direction of a 2D vector field,
+        !! providing intuitive visualization of flow patterns, magnetic fields,
+        !! or any other vector data.
+        !!
+        !! Arguments:
+        !!   x, y: 1D coordinate arrays defining the grid
+        !!   u, v: 2D velocity/vector field components (u=x-component, v=y-component)
+        !!   density: Optional streamline density parameter (default=1.0)
+        !!            Higher values = more streamlines, lower values = fewer streamlines
+        !!
+        !! Example:
+        !!   ! Circular flow field
+        !!   call streamplot(x, y, -y_grid, x_grid, density=1.5_real64)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: u, v  
+        real(8), intent(in), optional :: density
+
+        call fig%streamplot(x, y, u, v, density=density)
+    end subroutine streamplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text)
         !! Display a line plot in the terminal using ASCII graphics
