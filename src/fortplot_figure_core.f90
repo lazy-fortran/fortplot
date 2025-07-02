@@ -217,20 +217,25 @@ contains
         call update_data_ranges(self)
     end subroutine add_contour_filled
 
-    subroutine streamplot(self, x, y, u, v, density, color, linewidth)
-        !! Add streamline plot to figure
+    subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
+        !! Add streamline plot to figure with configurable DOPRI5 parameters
         use fortplot_streamline
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
+        real(wp), intent(in), optional :: rtol        !! Relative tolerance for DOPRI5
+        real(wp), intent(in), optional :: atol        !! Absolute tolerance for DOPRI5
+        real(wp), intent(in), optional :: max_time    !! Maximum integration time
         
         real(wp) :: plot_density
+        real :: integration_time
         real, allocatable :: seed_x(:), seed_y(:)
         real, allocatable :: path_x(:), path_y(:)
         integer :: n_seeds, i, n_points
         real :: x_bounds(2), y_bounds(2)
+        type(integration_params_t) :: integration_params
         
         if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
             self%has_error = .true.
@@ -244,6 +249,25 @@ contains
         
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
+        
+        ! Configure DOPRI5 integration parameters
+        if (present(rtol)) then
+            integration_params%rtol = rtol
+        else
+            integration_params%rtol = 1.0e-6_wp  ! Default relative tolerance
+        end if
+        
+        if (present(atol)) then
+            integration_params%atol = atol
+        else
+            integration_params%atol = 1.0e-9_wp  ! Default absolute tolerance  
+        end if
+        
+        if (present(max_time)) then
+            integration_time = real(max_time)
+        else
+            integration_time = 10.0  ! Default maximum integration time
+        end if
         
         ! Update data ranges
         if (.not. self%xlim_set) then
@@ -264,11 +288,14 @@ contains
         if (allocated(self%streamlines)) deallocate(self%streamlines)
         allocate(self%streamlines(n_seeds))
         
-        ! Generate streamlines from seed points
+        ! Generate streamlines from seed points using DOPRI5
         do i = 1, min(n_seeds, self%max_plots - self%plot_count)
-            call integrate_streamline(seed_x(i), seed_y(i), &
-                                    velocity_u_wrapper, velocity_v_wrapper, &
-                                    0.1, 500, path_x, path_y, n_points)
+            call integrate_streamline_dopri5(seed_x(i), seed_y(i), &
+                                           velocity_u_wrapper, velocity_v_wrapper, &
+                                           params=integration_params, &
+                                           max_time=integration_time, &
+                                           path_x=path_x, path_y=path_y, &
+                                           n_points=n_points)
             
             if (n_points > 5) then  ! Only add streamlines with sufficient points
                 self%plot_count = self%plot_count + 1
