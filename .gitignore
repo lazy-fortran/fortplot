@@ -13,3 +13,4 @@ example/*/*.pdf
 example/*/*.txt
 .aider*
 terminal
+*.pyc

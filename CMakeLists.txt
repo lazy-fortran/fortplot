@@ -33,10 +33,16 @@ add_library(fortplotlib::fortplotlib ALIAS fortplotlib)
 # Check if Python interface should be built
 if (ENABLE_PYTHON)
     include(cmake/PythonHelpers.cmake)
-    add_f2py_wrapper(
-        _fortplotlib
+    add_f90wrap_wrapper(
+        fortplot_wrapper
         fortplotlib
         src/fortplot.f90
     )
-    install(TARGETS _fortplotlib DESTINATION .)
+    # After f90wrap generates files, fix the imports
+    add_custom_command(TARGET _fortplot_wrapper POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E echo "Fixing f90wrap imports..."
+        COMMAND sed -i.bak 's/import _fortplot_wrapper/from . import _fortplot_wrapper/g'
+            ${CMAKE_CURRENT_BINARY_DIR}/fortplot_wrapper.py
+        COMMENT "Fixing f90wrap relative imports"
+    )
 endif()

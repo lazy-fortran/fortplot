@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core", "cmake", "numpy"]
+requires = ["scikit-build-core", "cmake", "numpy", "f90wrap>=0.2.16"]
 build-backend = "scikit_build_core.build"
 
 [project]

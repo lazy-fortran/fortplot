@@ -137,7 +137,7 @@ function(add_f90wrap_wrapper PYTHON_MODULE LIBRARY_TO_WRAP FILES_TO_WRAP)
 
     add_fortranobject_target(${F2PY_INCLUDE_DIR})
     add_extension_module_target(${PYTHON_MODULE} ${LIBRARY_TO_WRAP}
-        ${F2PY_INCLUDE_DIR} "${F2PY_WRAPPERS}")
+        ${F2PY_INCLUDE_DIR} "${F2PY_WRAPPERS}" "${F90WRAP_WRAPPERS}")
 endfunction()
 
 
@@ -296,11 +296,18 @@ endfunction()
 #   Python_NumPy_INCLUDE_DIRS
 #
 function(add_extension_module_target PYTHON_MODULE LIBRARY_TO_WRAP
-    F2PY_INCLUDE_DIR F2PY_WRAPPERS
+    F2PY_INCLUDE_DIR F2PY_WRAPPERS F90WRAP_WRAPPERS
 )
     set(F2PY_MODULE_NAME "_${PYTHON_MODULE}")
 
+    message(STATUS "Creating extension module: ${F2PY_MODULE_NAME}")
+    message(STATUS "Library to wrap: ${LIBRARY_TO_WRAP}")
+    message(STATUS "F2PY include dir: ${F2PY_INCLUDE_DIR}")
+    message(STATUS "F2PY wrappers: ${F2PY_WRAPPERS}")
+    message(STATUS "F90WRAP wrappers: ${F90WRAP_WRAPPERS}")
+
     Python_add_library(${F2PY_MODULE_NAME} WITH_SOABI
+        ${F90WRAP_WRAPPERS}
         ${F2PY_WRAPPERS}
         ${F2PY_INCLUDE_DIR}/fortranobject.c
     )
