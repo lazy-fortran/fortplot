@@ -188,9 +188,13 @@ contains
 
     subroutine write_mpeg1_picture_header(frame_number, picture_type)
         ! Write picture header for individual frames
+        ! Matches C library WritePictureHeader() function
         integer, intent(in) :: frame_number, picture_type
         
         integer :: temporal_reference, vbv_delay
+        
+        ! C: ByteAlign() - CRITICAL for proper start code alignment
+        call stream_flush_write()
         
         ! Picture start code: 00 00 01 00
         call write_mpeg_start_code(MPEG_PICTURE_HEADER_CODE)
@@ -444,10 +448,10 @@ contains
                     y_blocks(block_num, mod(y, BLOCK_SIZE) + 1, mod(x, BLOCK_SIZE) + 1) = pixel_value
                 end if
                 
-                ! For simplicity, use same data for Cb/Cr (grayscale)
+                ! For proper grayscale: Y=brightness, Cb/Cr=neutral (128)
                 if (x < BLOCK_SIZE .and. y < BLOCK_SIZE) then
-                    cb_block(y + 1, x + 1) = pixel_value / 2  ! Reduced chrominance
-                    cr_block(y + 1, x + 1) = pixel_value / 2
+                    cb_block(y + 1, x + 1) = 128  ! Neutral blue/yellow (no color tint)
+                    cr_block(y + 1, x + 1) = 128  ! Neutral red/green (no color tint)
                 end if
             end do
         end do
