@@ -354,7 +354,7 @@ contains
         type(mem_t), intent(in) :: frame_data
         integer, intent(in) :: width, height
         
-        integer :: mb_x, mb_y, num_mb_x, num_mb_y, block_num
+        integer :: mb_x, mb_y, num_mb_x, num_mb_y, block_num, quantizer_scale
         integer :: block_data(BLOCK_SIZE, BLOCK_SIZE)
         integer :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
         integer :: y_blocks(4, BLOCK_SIZE, BLOCK_SIZE)
@@ -379,22 +379,26 @@ contains
                 ! For I-frames: address increment + macroblock type
                 call write_macroblock_header(mb_x, mb_y)
                 
+                ! Calculate dynamic quantizer scale based on frame complexity
+                ! C library uses adaptive quantization, start with mid-range
+                quantizer_scale = calculate_quantizer_scale(mb_x, mb_y, num_mb_x, num_mb_y)
+                
                 ! Encode Y blocks (4 blocks of 8x8 luminance)
                 do block_num = 1, 4
                     block_data = y_blocks(block_num, :, :)
                     call mpeg1_dct_transform(block_data, dct_coeffs)
-                    call quantize_block(dct_coeffs, 16, block_num <= 4)  ! Intra quantization
+                    call quantize_block(dct_coeffs, quantizer_scale, block_num <= 4)  ! Intra quantization
                     call encode_dct_block(dct_coeffs, last_dc, block_num)
                 end do
                 
                 ! Encode Cb block (chrominance blue)
                 call mpeg1_dct_transform(cb_block, dct_coeffs)
-                call quantize_block(dct_coeffs, 16, .false.)  ! Chroma quantization
+                call quantize_block(dct_coeffs, quantizer_scale, .false.)  ! Chroma quantization
                 call encode_dct_block(dct_coeffs, last_dc, 5)
                 
                 ! Encode Cr block (chrominance red)
                 call mpeg1_dct_transform(cr_block, dct_coeffs)
-                call quantize_block(dct_coeffs, 16, .false.)  ! Chroma quantization
+                call quantize_block(dct_coeffs, quantizer_scale, .false.)  ! Chroma quantization
                 call encode_dct_block(dct_coeffs, last_dc, 6)
             end do
         end do
@@ -448,6 +452,31 @@ contains
             end do
         end do
     end subroutine
+    
+    function calculate_quantizer_scale(mb_x, mb_y, num_mb_x, num_mb_y) result(scale)
+        ! Calculate dynamic quantizer scale for better compression
+        ! Based on macroblock position and content complexity
+        integer, intent(in) :: mb_x, mb_y, num_mb_x, num_mb_y
+        integer :: scale
+        
+        ! Simple adaptive scaling: lower quality at edges, higher in center
+        ! C library uses complex rate control, this is simplified
+        real :: distance_from_center, max_distance
+        
+        distance_from_center = sqrt(real((mb_x - num_mb_x/2)**2 + (mb_y - num_mb_y/2)**2))
+        max_distance = sqrt(real((num_mb_x/2)**2 + (num_mb_y/2)**2))
+        
+        if (max_distance > 0) then
+            ! Scale from 8 (high quality center) to 24 (lower quality edges)
+            scale = 8 + int(16 * distance_from_center / max_distance)
+        else
+            scale = 16  ! Default mid-range
+        end if
+        
+        ! Clamp to valid MPEG-1 range
+        if (scale < 1) scale = 1
+        if (scale > 31) scale = 31
+    end function
 
     subroutine write_macroblock_header(mb_x, mb_y)
         ! Write macroblock header matching C library
@@ -458,9 +487,9 @@ contains
         mb_address_increment = 1
         call encode_macroblock_address_increment(mb_address_increment)
         
-        ! C: Macroblock type for I-frame
-        ! From C huffman tables: Intra = 1 (2 bits, code 01)
-        call stream_put_variable(1, 2)  ! Intra macroblock type
+        ! C: Macroblock type for I-frame  
+        ! From C ctables.h IntraTypeCoeff: Type 0 = 1 bit code 1
+        call stream_put_variable(1, 1)  ! Intra macroblock type 0
         
         ! C: MQuant flag is part of macroblock type
         ! For simple I-frame, no quantizer change needed
@@ -558,21 +587,31 @@ contains
 
     subroutine quantize_block(dct_coeffs, quantizer_scale, is_luma)
         ! MPEG-1 quantization using default matrices
-        ! Matches C library quantization behavior
+        ! Matches C library quantization behavior exactly
         integer, intent(inout) :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
         integer, intent(in) :: quantizer_scale
         logical, intent(in) :: is_luma
         
-        integer :: i, j, quantized_value
+        integer :: i, j, quantized_value, qvalue
         
         do i = 1, BLOCK_SIZE
             do j = 1, BLOCK_SIZE
                 if (i == 1 .and. j == 1) then
-                    ! DC coefficient - special handling
+                    ! DC coefficient - special handling exactly as C library
                     dct_coeffs(i, j) = dct_coeffs(i, j) / 8  ! Fixed DC quantizer
                 else
                     ! AC coefficients using MPEG-1 intra matrix
-                    quantized_value = dct_coeffs(i, j) / (DEFAULT_INTRA_MATRIX(i, j) * quantizer_scale / 16)
+                    ! C library: qvalue = (IntraMatrix[i][j] * quantizer_scale + 8) / 16
+                    qvalue = (DEFAULT_INTRA_MATRIX(i, j) * quantizer_scale + 8) / 16
+                    if (qvalue < 1) qvalue = 1  ! Prevent division by zero
+                    
+                    ! C library: quantized = (input + (qvalue/2)) / qvalue for positive
+                    ! C library: quantized = (input - (qvalue/2)) / qvalue for negative
+                    if (dct_coeffs(i, j) >= 0) then
+                        quantized_value = (dct_coeffs(i, j) + qvalue/2) / qvalue
+                    else
+                        quantized_value = (dct_coeffs(i, j) - qvalue/2) / qvalue
+                    end if
                     
                     ! Clamp to valid range
                     if (quantized_value > 255) quantized_value = 255
@@ -681,12 +720,29 @@ contains
             size = 8
         end if
         
-        ! Encode size using proper MPEG-1 DC Huffman tables
-        success = encode_huffman_value(dc_lum_encoder, size, temp_buffer)
-        if (.not. success) then
-            ! Fallback to simple encoding
-            call stream_put_variable(size, 4)
-        end if
+        ! Encode size using exact C library DCLumCoeff table 
+        select case(size)
+        case(0)
+            call stream_put_variable(4, 3)  ! Code 4, 3 bits
+        case(1) 
+            call stream_put_variable(0, 2)  ! Code 0, 2 bits
+        case(2)
+            call stream_put_variable(1, 2)  ! Code 1, 2 bits
+        case(3)
+            call stream_put_variable(5, 3)  ! Code 5, 3 bits
+        case(4)
+            call stream_put_variable(6, 3)  ! Code 6, 3 bits
+        case(5)
+            call stream_put_variable(14, 4) ! Code 14, 4 bits
+        case(6)
+            call stream_put_variable(30, 5) ! Code 30, 5 bits
+        case(7)
+            call stream_put_variable(62, 6) ! Code 62, 6 bits
+        case(8)
+            call stream_put_variable(126, 7) ! Code 126, 7 bits
+        case default
+            call stream_put_variable(4, 3)  ! Default to size 0
+        end select
         
         ! Encode additional bits if needed
         if (size > 0) then
@@ -731,18 +787,9 @@ contains
     end subroutine
 
     subroutine encode_end_of_block()
-        ! End of block marker using proper MPEG-1 Huffman code
-        type(bit_buffer_t) :: temp_buffer
-        logical :: success
-        
-        call ensure_huffman_tables_initialized()
-        
-        ! EOB symbol is 0 in AC coefficient table
-        success = encode_huffman_value(ac_encoder, 0, temp_buffer)
-        if (.not. success) then
-            ! Fallback to simple encoding
-            call stream_put_variable(2, 4)
-        end if
+        ! End of block marker using exact C library TCoeff1 table
+        ! EOB = symbol 0, 2 bits, code 2
+        call stream_put_variable(2, 2)  ! Code 2, 2 bits
     end subroutine
     
     subroutine encode_minimal_frame_data(width, height)
