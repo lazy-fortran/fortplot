@@ -272,8 +272,9 @@ contains
         if (allocated(mem%data)) then
             ! Read row by row to handle partial loading
             do i = 1, height
-                row_offset = ((start_y + i - 1) * total_width + start_x) + 1
-                file_pos = row_offset
+                ! Calculate file position (0-based for file, account for 1-based arrays)
+                row_offset = (start_y + i - 2) * total_width + (start_x - 1)
+                file_pos = row_offset + 1  ! Fortran stream I/O uses 1-based positions
                 read(unit_num, pos=file_pos, iostat=iostat) &
                     mem%data((i-1)*width+1:i*width)
                 if (iostat /= 0) then
@@ -324,8 +325,9 @@ contains
         if (allocated(mem%data)) then
             ! Write row by row to handle partial saving
             do i = 1, mem%height
-                row_offset = ((start_y + i - 1) * total_width + start_x) + 1
-                file_pos = row_offset
+                ! Calculate file position (0-based for file, account for 1-based arrays)
+                row_offset = (start_y + i - 2) * total_width + (start_x - 1)
+                file_pos = row_offset + 1  ! Fortran stream I/O uses 1-based positions
                 write(unit_num, pos=file_pos, iostat=iostat) &
                     mem%data((i-1)*mem%width+1:i*mem%width)
                 if (iostat /= 0) then
