@@ -73,15 +73,49 @@ module fortplot_mpeg1_format
 
 contains
 
-    subroutine write_mpeg1_sequence_header(width, height, frame_rate, bit_rate)
-        ! Write MPEG-1 sequence header for standard compliance
+    subroutine validate_sequence_parameters(width, height, frame_rate, bit_rate)
+        ! Validate sequence header parameters match C library constraints
         integer, intent(in) :: width, height, frame_rate, bit_rate
         
-        integer :: aspect_ratio, rate_code
+        ! Width and height must be multiples of 16 (macroblock size)
+        if (mod(width, 16) /= 0) then
+            print *, "Warning: Width", width, "not multiple of 16, may cause issues"
+        end if
+        if (mod(height, 16) /= 0) then
+            print *, "Warning: Height", height, "not multiple of 16, may cause issues"
+        end if
+        
+        ! Validate dimensions fit in 12 bits
+        if (width < 1 .or. width > 4095) then
+            error stop "Width must be between 1 and 4095"
+        end if
+        if (height < 1 .or. height > 4095) then
+            error stop "Height must be between 1 and 4095"
+        end if
+        
+        ! Validate bit rate (18 bits in units of 400 bps)
+        if (bit_rate < 0 .or. bit_rate > (262143 * 400)) then
+            error stop "Bit rate out of valid range"
+        end if
+    end subroutine
+
+    subroutine write_mpeg1_sequence_header(width, height, frame_rate, bit_rate)
+        ! Write MPEG-1 sequence header for standard compliance
+        ! Matches C library WriteVSHeader() function
+        integer, intent(in) :: width, height, frame_rate, bit_rate
+        
+        integer :: aspect_ratio, rate_code, brate_units
         integer :: horizontal_size, vertical_size
+        
+        ! Validate parameters first
+        call validate_sequence_parameters(width, height, frame_rate, bit_rate)
         
         print *, "Writing MPEG-1 sequence header..."
         
+        ! C: ByteAlign() - align to byte boundary
+        call stream_flush_write()
+        
+        ! C: mputv(MBSC_LENGTH,MBSC) + mputv(VSSC_LENGTH,VSSC)
         ! MPEG-1 sequence start code: 00 00 01 B3
         call write_mpeg_start_code(MPEG_SEQUENCE_HEADER_CODE)
         
@@ -102,7 +136,10 @@ contains
         call stream_put_variable(rate_code, 4)
         
         ! Bit rate value (18 bits) - in units of 400 bits/sec
-        call stream_put_variable(bit_rate / 400, 18)
+        ! C: Brate = (Rate+399)/400 - Round upward
+        brate_units = (bit_rate + 399) / 400
+        if (brate_units == 0) brate_units = 262143  ! 0x3FFFF for variable bit rate
+        call stream_put_variable(brate_units, 18)
         
         ! Marker bit
         call stream_put_bit(1)
@@ -125,7 +162,16 @@ contains
 
     subroutine write_mpeg1_gop_header(time_code)
         ! Write Group of Pictures header
+        ! Matches C library WriteGOPHeader() function
         integer, intent(in) :: time_code
+        
+        ! Validate time code
+        if (time_code < 0 .or. time_code >= 2**25) then
+            error stop "GOP time code must fit in 25 bits"
+        end if
+        
+        ! C: ByteAlign()
+        call stream_flush_write()
         
         ! GOP start code: 00 00 01 B8
         call write_mpeg_start_code(MPEG_GOP_HEADER_CODE)
@@ -133,10 +179,10 @@ contains
         ! Time code (25 bits)
         call stream_put_variable(time_code, 25)
         
-        ! Closed GOP flag (1 bit)
+        ! Closed GOP flag (1 bit) - C uses ClosedGOP variable
         call stream_put_bit(1)
         
-        ! Broken link flag (1 bit)
+        ! Broken link flag (1 bit) - C uses BrokenLink variable
         call stream_put_bit(0)
     end subroutine
 
@@ -167,15 +213,28 @@ contains
 
     subroutine write_mpeg1_slice_header(slice_number)
         ! Write slice header - mandatory between picture header and macroblocks
+        ! Matches C library WriteMBSHeader() function
         integer, intent(in) :: slice_number
         
-        ! Slice start code: 00 00 01 01 to 00 00 01 AF
-        call write_mpeg_start_code(MPEG_SLICE_START_CODE)
+        ! Validate slice number (1-175)
+        if (slice_number < 1 .or. slice_number > 175) then
+            error stop "Slice number must be between 1 and 175"
+        end if
         
-        ! Quantizer scale code (5 bits)
+        ! C: ByteAlign()
+        call stream_flush_write()
+        
+        ! C: mputv(MBSC_LENGTH,MBSC) + mputv(1,SVP)
+        ! Write slice start code with slice vertical position
+        call stream_put_variable(0, 8)    ! 0x00
+        call stream_put_variable(0, 8)    ! 0x00
+        call stream_put_variable(1, 8)    ! 0x01
+        call stream_put_variable(slice_number, 8)  ! Slice vertical position
+        
+        ! C: mputv(5,SQuant) - Quantizer scale code (5 bits)
         call stream_put_variable(16, 5)  ! Mid-range quantizer
         
-        ! Extra slice information (optional) - none for simplicity
+        ! C: mputb(0) - Extra slice information (optional)
         call stream_put_bit(0)  ! No extra information
     end subroutine
 
@@ -290,6 +349,7 @@ contains
 
     subroutine encode_mpeg1_frame(frame_data, width, height)
         ! Encode frame data using MPEG-1 macroblock structure
+        ! Matches C library MpegEncodeSlice() and MpegEncodeMDU() flow
         use fortplot_mpeg_memory, only: mem_t
         type(mem_t), intent(in) :: frame_data
         integer, intent(in) :: width, height
@@ -299,10 +359,14 @@ contains
         integer :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
         integer :: y_blocks(4, BLOCK_SIZE, BLOCK_SIZE)
         integer :: cb_block(BLOCK_SIZE, BLOCK_SIZE), cr_block(BLOCK_SIZE, BLOCK_SIZE)
+        integer :: last_dc(3)  ! DC predictors for Y, Cb, Cr
         
         ! Calculate number of macroblocks
         num_mb_x = (width + MACROBLOCK_SIZE - 1) / MACROBLOCK_SIZE
         num_mb_y = (height + MACROBLOCK_SIZE - 1) / MACROBLOCK_SIZE
+        
+        ! C: for(x=0;x<3;x++) LastDC[x]=128 - Reset DC predictors
+        last_dc = 128
         
         ! Process each macroblock
         do mb_y = 0, num_mb_y - 1
@@ -311,26 +375,27 @@ contains
                 call extract_macroblock_data(frame_data, width, height, mb_x, mb_y, &
                                             y_blocks, cb_block, cr_block)
                 
-                ! Write macroblock header (simplified - no motion vectors for I-frames)
-                call write_macroblock_header()
+                ! C: MpegWriteMType() - Write macroblock header
+                ! For I-frames: address increment + macroblock type
+                call write_macroblock_header(mb_x, mb_y)
                 
                 ! Encode Y blocks (4 blocks of 8x8 luminance)
                 do block_num = 1, 4
                     block_data = y_blocks(block_num, :, :)
                     call mpeg1_dct_transform(block_data, dct_coeffs)
-                    call quantize_block(dct_coeffs, 16)  ! Standard quantizer scale
-                    call encode_dct_block(dct_coeffs)
+                    call quantize_block(dct_coeffs, 16, block_num <= 4)  ! Intra quantization
+                    call encode_dct_block(dct_coeffs, last_dc, block_num)
                 end do
                 
                 ! Encode Cb block (chrominance blue)
                 call mpeg1_dct_transform(cb_block, dct_coeffs)
-                call quantize_block(dct_coeffs, 16)
-                call encode_dct_block(dct_coeffs)
+                call quantize_block(dct_coeffs, 16, .false.)  ! Chroma quantization
+                call encode_dct_block(dct_coeffs, last_dc, 5)
                 
                 ! Encode Cr block (chrominance red)
                 call mpeg1_dct_transform(cr_block, dct_coeffs)
-                call quantize_block(dct_coeffs, 16)
-                call encode_dct_block(dct_coeffs)
+                call quantize_block(dct_coeffs, 16, .false.)  ! Chroma quantization
+                call encode_dct_block(dct_coeffs, last_dc, 6)
             end do
         end do
     end subroutine
@@ -384,14 +449,48 @@ contains
         end do
     end subroutine
 
-    subroutine write_macroblock_header()
-        ! Write simplified macroblock header for I-frame
-        ! Macroblock type: Intra (5 bits) = 00001
-        call stream_put_variable(1, 5)
+    subroutine write_macroblock_header(mb_x, mb_y)
+        ! Write macroblock header matching C library
+        integer, intent(in) :: mb_x, mb_y
+        integer :: mb_address_increment
         
-        ! No motion vectors or coded block pattern for intra macroblocks
-        ! Quantizer scale code (5 bits) - use default
-        call stream_put_variable(16, 5)  ! Mid-range quantizer
+        ! C: Macroblock address increment (always 1 for sequential)
+        mb_address_increment = 1
+        call encode_macroblock_address_increment(mb_address_increment)
+        
+        ! C: Macroblock type for I-frame
+        ! From C huffman tables: Intra = 1 (2 bits, code 01)
+        call stream_put_variable(1, 2)  ! Intra macroblock type
+        
+        ! C: MQuant flag is part of macroblock type
+        ! For simple I-frame, no quantizer change needed
+    end subroutine
+    
+    subroutine encode_macroblock_address_increment(increment)
+        ! Encode macroblock address increment using VLC
+        integer, intent(in) :: increment
+        
+        ! C MBA Huffman table from marker.c:
+        ! MBA=1: 1 bit, code 1
+        ! MBA=2: 3 bits, code 011
+        ! etc.
+        
+        select case(increment)
+        case(1)
+            call stream_put_variable(1, 1)  ! Code: 1
+        case(2)
+            call stream_put_variable(3, 3)  ! Code: 011
+        case(3)
+            call stream_put_variable(2, 3)  ! Code: 010
+        case(4)
+            call stream_put_variable(3, 4)  ! Code: 0011
+        case(5)
+            call stream_put_variable(2, 4)  ! Code: 0010
+        case default
+            ! Escape sequence for larger increments
+            call stream_put_variable(0, 11) ! Escape code
+            call stream_put_variable(increment, 6)
+        end select
     end subroutine
 
     subroutine mpeg1_dct_transform(input_block, output_coeffs)
@@ -457,10 +556,12 @@ contains
         end do
     end subroutine
 
-    subroutine quantize_block(dct_coeffs, quantizer_scale)
+    subroutine quantize_block(dct_coeffs, quantizer_scale, is_luma)
         ! MPEG-1 quantization using default matrices
+        ! Matches C library quantization behavior
         integer, intent(inout) :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
         integer, intent(in) :: quantizer_scale
+        logical, intent(in) :: is_luma
         
         integer :: i, j, quantized_value
         
@@ -483,12 +584,16 @@ contains
         end do
     end subroutine
 
-    subroutine encode_dct_block(dct_coeffs)
-        ! Encode DCT coefficients using MPEG-1 zigzag scan and basic VLC
+    subroutine encode_dct_block(dct_coeffs, last_dc, block_type)
+        ! Encode DCT coefficients using MPEG-1 zigzag scan and VLC
+        ! Matches C library block encoding
         integer, intent(in) :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
+        integer, intent(inout) :: last_dc(3)
+        integer, intent(in) :: block_type  ! 1-4: Y, 5: Cb, 6: Cr
         
         integer :: zigzag_coeffs(64)
         integer :: i, j, idx, run_length, level, coeff_idx
+        integer :: dc_diff, dc_index
         
         ! Convert 2D DCT coefficients to 1D using zigzag scan
         do idx = 1, 64
@@ -497,8 +602,20 @@ contains
             zigzag_coeffs(idx) = dct_coeffs(i, j)
         end do
         
-        ! Encode DC coefficient (first coefficient)
-        call encode_dc_coefficient(zigzag_coeffs(1))
+        ! Encode DC coefficient with differential coding
+        ! C: DC prediction based on block type
+        if (block_type <= 4) then
+            dc_index = 1  ! Y blocks use predictor 1
+        else if (block_type == 5) then
+            dc_index = 2  ! Cb block uses predictor 2
+        else
+            dc_index = 3  ! Cr block uses predictor 3
+        end if
+        
+        dc_diff = zigzag_coeffs(1) - last_dc(dc_index)
+        last_dc(dc_index) = zigzag_coeffs(1)  ! Update predictor
+        
+        call encode_dc_coefficient(dc_diff)
         
         ! Encode AC coefficients using run-length encoding
         run_length = 0
