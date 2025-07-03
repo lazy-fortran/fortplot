@@ -17,3 +17,5 @@ terminal
 *.egg-info
 *.dat
 *.o
+*.mpg
+*.mpeg
