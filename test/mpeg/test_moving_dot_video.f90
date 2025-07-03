@@ -20,10 +20,10 @@ contains
         integer, parameter :: video_duration = 2  ! seconds
         integer, parameter :: total_frames = frames_per_second * video_duration
         
-        ! Dot parameters
+        ! Dot parameters (MPEG YUV values)
         integer, parameter :: dot_size = 2
-        integer, parameter :: dot_brightness = 255
-        integer, parameter :: background_brightness = 0
+        integer, parameter :: dot_brightness = 255    ! White
+        integer, parameter :: background_brightness = 128  ! True black in YUV
         
         ! File parameters
         character(len=*), parameter :: video_file = "moving_dot_video.mpg"
@@ -118,7 +118,14 @@ contains
         integer :: i
         
         do i = 1, width * height
-            frame_mem%data(i) = int(brightness, c_int8_t)
+            ! Convert brightness to proper signed byte
+            if (brightness == 255) then
+                frame_mem%data(i) = int(-1, c_int8_t)     ! 255 as signed byte
+            else if (brightness == 128) then
+                frame_mem%data(i) = int(-128, c_int8_t)   ! 128 as signed byte
+            else
+                frame_mem%data(i) = int(brightness, c_int8_t)
+            end if
         end do
     end subroutine
 
@@ -136,9 +143,11 @@ contains
                 ! Check bounds
                 if (x >= 1 .and. x <= width .and. y >= 1 .and. y <= height) then
                     pixel_idx = (y - 1) * width + x
-                    ! Convert 255 to signed byte (-1) to represent white
+                    ! Convert brightness to proper signed byte representation
                     if (brightness == 255) then
                         frame_mem%data(pixel_idx) = int(-1, c_int8_t)  ! 255 as signed byte
+                    else if (brightness == 128) then
+                        frame_mem%data(pixel_idx) = int(-128, c_int8_t) ! 128 as signed byte
                     else
                         frame_mem%data(pixel_idx) = int(brightness, c_int8_t)
                     end if

@@ -75,9 +75,9 @@ contains
         progress = real(frame_num - 1) / real(total_frames - 1)
         t = progress * 6.28318530718 * 2  ! 2 full rotations
         
-        ! Fill with pure black background (value 0)
+        ! Fill with proper black background (YUV neutral = 128)
         do pixel_idx = 1, width * height
-            frame_mem%data(pixel_idx) = int(0, c_int8_t)  ! Pure black
+            frame_mem%data(pixel_idx) = int(-128, c_int8_t)  ! 128 as signed byte = YUV black
         end do
         
         ! Calculate object positions - slow, obvious movement
