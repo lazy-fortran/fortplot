@@ -591,33 +591,44 @@ contains
 
     subroutine quantize_block(dct_coeffs, quantizer_scale, is_luma)
         ! MPEG-1 quantization using default matrices
-        ! Matches C library quantization behavior exactly
+        ! EXACT C library MPEGIntraQuantize() algorithm (transform.c:368-396)
         integer, intent(inout) :: dct_coeffs(BLOCK_SIZE, BLOCK_SIZE)
         integer, intent(in) :: quantizer_scale
         logical, intent(in) :: is_luma
         
-        integer :: i, j, quantized_value, qvalue
+        integer :: i, j, quantized_value, qvalue, qp
+        
+        qp = quantizer_scale * 2  ! C library: qp = qfact << 1
         
         do i = 1, BLOCK_SIZE
             do j = 1, BLOCK_SIZE
                 if (i == 1 .and. j == 1) then
-                    ! DC coefficient - special handling exactly as C library
-                    dct_coeffs(i, j) = dct_coeffs(i, j) / 8  ! Fixed DC quantizer
-                else
-                    ! AC coefficients using MPEG-1 intra matrix
-                    ! C library: qvalue = (IntraMatrix[i][j] * quantizer_scale + 8) / 16
-                    qvalue = (DEFAULT_INTRA_MATRIX(i, j) * quantizer_scale + 8) / 16
-                    if (qvalue < 1) qvalue = 1  ! Prevent division by zero
-                    
-                    ! C library: quantized = (input + (qvalue/2)) / qvalue for positive
-                    ! C library: quantized = (input - (qvalue/2)) / qvalue for negative
-                    if (dct_coeffs(i, j) >= 0) then
-                        quantized_value = (dct_coeffs(i, j) + qvalue/2) / qvalue
+                    ! DC coefficient - EXACT C library algorithm
+                    ! C: if (*mptr>0) *mptr=(*mptr + 4)/8; else *mptr=(*mptr - 4)/8;
+                    if (dct_coeffs(i, j) > 0) then
+                        dct_coeffs(i, j) = (dct_coeffs(i, j) + 4) / 8
                     else
-                        quantized_value = (dct_coeffs(i, j) - qvalue/2) / qvalue
+                        dct_coeffs(i, j) = (dct_coeffs(i, j) - 4) / 8
+                    end if
+                else
+                    ! AC coefficients - EXACT C library 2-step algorithm
+                    qvalue = DEFAULT_INTRA_MATRIX(i, j)
+                    
+                    if (dct_coeffs(i, j) > 0) then
+                        ! C: *mptr = FastDivide(((*mptr << 4) + (*qptr >> 1)), *qptr);
+                        quantized_value = ((dct_coeffs(i, j) * 16) + (qvalue / 2)) / qvalue
+                        ! C: *mptr = FastDivide((*mptr + qfact), qp);
+                        quantized_value = (quantized_value + quantizer_scale) / qp
+                    else if (dct_coeffs(i, j) < 0) then
+                        ! C: *mptr = FastDivide(((*mptr << 4) - (*qptr >> 1)), *qptr);
+                        quantized_value = ((dct_coeffs(i, j) * 16) - (qvalue / 2)) / qvalue
+                        ! C: *mptr = FastDivide((*mptr - qfact), qp);
+                        quantized_value = (quantized_value - quantizer_scale) / qp
+                    else
+                        quantized_value = 0
                     end if
                     
-                    ! Clamp to valid range
+                    ! Clamp to valid range (C: BoundQuantizeMatrix)
                     if (quantized_value > 255) quantized_value = 255
                     if (quantized_value < -255) quantized_value = -255
                     

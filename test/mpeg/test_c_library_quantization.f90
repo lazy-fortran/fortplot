@@ -98,31 +98,40 @@ contains
     end subroutine
     
     subroutine quantize_dct_coefficients(coeffs, size, quantizer_scale)
-        ! Our current quantization implementation
+        ! Our updated quantization implementation - EXACT C library algorithm
         integer, intent(in) :: size, quantizer_scale
         integer, intent(inout) :: coeffs(size)
-        integer :: i, j, qvalue
+        integer :: i, qvalue, qp, quantized_value
         
-        ! DC coefficient (first coefficient) - fixed quantizer of 8
+        qp = quantizer_scale * 2  ! C library: qp = qfact << 1
+        
+        ! DC coefficient (first coefficient) - EXACT C library
         if (coeffs(1) > 0) then
             coeffs(1) = (coeffs(1) + 4) / 8
         else
             coeffs(1) = (coeffs(1) - 4) / 8
         end if
         
-        ! AC coefficients (remaining coefficients) - use quantization matrix
+        ! AC coefficients (remaining coefficients) - EXACT C library 2-step
         do i = 2, size
-            if (coeffs(i) == 0) cycle
-            
             ! Map linear index to 2D matrix position
-            j = i - 1  ! 0-based index for C compatibility
+            qvalue = DEFAULT_INTRA_MATRIX(mod(i-2,8)+1, ((i-2)/8)+1)
             
-            ! Get quantization value from matrix
-            qvalue = (DEFAULT_INTRA_MATRIX(mod(j-1,8)+1, ((j-1)/8)+1) * quantizer_scale + 8) / 16
-            if (qvalue < 1) qvalue = 1
+            if (coeffs(i) > 0) then
+                ! C: *mptr = FastDivide(((*mptr << 4) + (*qptr >> 1)), *qptr);
+                quantized_value = ((coeffs(i) * 16) + (qvalue / 2)) / qvalue
+                ! C: *mptr = FastDivide((*mptr + qfact), qp);
+                quantized_value = (quantized_value + quantizer_scale) / qp
+            else if (coeffs(i) < 0) then
+                ! C: *mptr = FastDivide(((*mptr << 4) - (*qptr >> 1)), *qptr);
+                quantized_value = ((coeffs(i) * 16) - (qvalue / 2)) / qvalue
+                ! C: *mptr = FastDivide((*mptr - qfact), qp);
+                quantized_value = (quantized_value - quantizer_scale) / qp
+            else
+                quantized_value = 0
+            end if
             
-            ! Apply quantization
-            coeffs(i) = coeffs(i) / qvalue
+            coeffs(i) = quantized_value
         end do
     end subroutine
 
