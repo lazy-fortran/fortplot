@@ -1,6 +1,7 @@
 program test_moving_dot_video
     use fortplot_mpeg_stream
     use fortplot_mpeg_memory
+    use fortplot_mpeg1_format
     use iso_c_binding
     implicit none
     
@@ -28,7 +29,7 @@ contains
         character(len=*), parameter :: video_file = "moving_dot_video.mpg"
         
         type(mem_t) :: frame_buffer
-        integer :: frame_num, dot_x, dot_y, x, y, pixel_idx
+        integer :: frame_num, dot_x, dot_y, x, y, pixel_idx, bit_rate
         integer(c_long) :: total_bits_written, frame_start_pos, frame_end_pos
         real :: progress_x, progress_y
         
@@ -44,8 +45,10 @@ contains
         ! Open video file for writing
         call stream_open_write(video_file)
         
-        ! Write video header
-        call write_video_header(canvas_width, canvas_height, total_frames, frames_per_second)
+        ! Write MPEG-1 compliant headers
+        bit_rate = canvas_width * canvas_height * frames_per_second * 8
+        call write_mpeg1_sequence_header(canvas_width, canvas_height, frames_per_second, bit_rate)
+        call write_mpeg1_gop_header(0)  ! GOP starting at time 0
         
         total_bits_written = 0
         
@@ -74,7 +77,10 @@ contains
             ! Draw dot
             call draw_dot(frame_buffer, canvas_width, canvas_height, dot_x, dot_y, dot_size, dot_brightness)
             
-            ! Encode frame
+            ! Write MPEG-1 picture header for this frame
+            call write_mpeg1_picture_header(frame_num - 1, I_FRAME)
+            
+            ! Encode frame data (keeping our existing compression)
             call encode_frame(frame_buffer, canvas_width, canvas_height, frame_num)
             
             frame_end_pos = stream_tell_write()
@@ -86,8 +92,8 @@ contains
             end if
         end do
         
-        ! Write video footer/end marker
-        call write_video_footer()
+        ! Write MPEG-1 sequence end
+        call write_mpeg1_sequence_end()
         
         call stream_close_write()
         call mem_destroy(frame_buffer)
@@ -101,29 +107,7 @@ contains
         print *, "  Compression ratio:", real(canvas_width * canvas_height * 8 * total_frames) / real(total_bits_written)
     end subroutine
 
-    subroutine write_video_header(width, height, num_frames, fps)
-        integer, intent(in) :: width, height, num_frames, fps
-        
-        ! Simple video header format
-        call stream_put_variable(width, 16)       ! Video width
-        call stream_put_variable(height, 16)      ! Video height
-        call stream_put_variable(num_frames, 16)  ! Total frames
-        call stream_put_variable(fps, 8)          ! Frame rate
-        call stream_put_variable(255, 8)          ! Max pixel value
-        call stream_put_variable(0, 8)            ! Min pixel value
-        
-        ! Add sync marker
-        call stream_put_variable(170, 8)  ! 0xAA
-        call stream_put_variable(85, 8)   ! 0x55
-    end subroutine
-
-    subroutine write_video_footer()
-        ! End of video marker
-        call stream_put_variable(255, 8)  ! EOF marker
-        call stream_put_variable(255, 8)
-        call stream_put_variable(255, 8)
-        call stream_put_variable(255, 8)
-    end subroutine
+    ! Old header/footer functions removed - now using MPEG-1 standard headers
 
     subroutine clear_frame(frame_mem, width, height, brightness)
         type(mem_t), intent(inout) :: frame_mem
