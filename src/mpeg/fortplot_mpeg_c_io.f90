@@ -63,10 +63,31 @@ module fortplot_mpeg_c_io
             type(c_ptr), value :: stream
             integer(c_int) :: status
         end function c_fputc
+        
+        ! size_t fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
+        function c_fwrite(ptr, size, nmemb, stream) bind(c, name="fwrite") result(count)
+            import :: c_ptr, c_size_t
+            type(c_ptr), value :: ptr
+            integer(c_size_t), value :: size
+            integer(c_size_t), value :: nmemb
+            type(c_ptr), value :: stream
+            integer(c_size_t) :: count
+        end function c_fwrite
+        
+        ! size_t fread(void *ptr, size_t size, size_t nmemb, FILE *stream)
+        function c_fread(ptr, size, nmemb, stream) bind(c, name="fread") result(count)
+            import :: c_ptr, c_size_t
+            type(c_ptr), value :: ptr
+            integer(c_size_t), value :: size
+            integer(c_size_t), value :: nmemb
+            type(c_ptr), value :: stream
+            integer(c_size_t) :: count
+        end function c_fread
     end interface
     
     public :: c_file, SEEK_SET, SEEK_CUR, SEEK_END, EOF
     public :: c_fopen, c_fclose, c_fseek, c_ftell, c_fgetc, c_fputc
+    public :: c_fwrite, c_fread
     public :: c_string_from_fortran, c_string_terminate
     
 contains
