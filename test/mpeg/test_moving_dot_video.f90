@@ -80,8 +80,11 @@ contains
             ! Write MPEG-1 picture header for this frame
             call write_mpeg1_picture_header(frame_num - 1, I_FRAME)
             
-            ! Encode frame data (keeping our existing compression)
-            call encode_frame(frame_buffer, canvas_width, canvas_height, frame_num)
+            ! Write mandatory slice header
+            call write_mpeg1_slice_header(1)
+            
+            ! Encode frame using proper MPEG-1 macroblock structure
+            call encode_mpeg1_frame(frame_buffer, canvas_width, canvas_height)
             
             frame_end_pos = stream_tell_write()
             total_bits_written = total_bits_written + (frame_end_pos - frame_start_pos)
@@ -139,33 +142,6 @@ contains
         end do
     end subroutine
 
-    subroutine encode_frame(frame_mem, width, height, frame_number)
-        type(mem_t), intent(in) :: frame_mem
-        integer, intent(in) :: width, height, frame_number
-        integer :: x, y, pixel_idx, pixel_value, prev_pixel, delta
-        
-        ! Frame header
-        call stream_put_variable(frame_number, 16)  ! Frame number
-        
-        ! Simple delta compression within frame
-        prev_pixel = int(frame_mem%data(1))
-        call stream_put_variable(prev_pixel, 8)  ! First pixel (absolute)
-        
-        do pixel_idx = 2, width * height
-            pixel_value = int(frame_mem%data(pixel_idx))
-            delta = pixel_value - prev_pixel
-            
-            ! Encode delta with bias to make it positive
-            delta = delta + 128
-            if (delta < 0) delta = 0
-            if (delta > 255) delta = 255
-            
-            call stream_put_variable(delta, 8)
-            prev_pixel = pixel_value
-        end do
-        
-        ! Frame end marker
-        call stream_put_variable(170, 8)  ! 0xAA frame end
-    end subroutine
+    ! Old delta compression encode_frame function removed - now using MPEG-1 macroblock structure
 
 end program test_moving_dot_video

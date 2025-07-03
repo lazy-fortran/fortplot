@@ -19,3 +19,5 @@ terminal
 *.o
 *.mpg
 *.mpeg
+*.avi
+*.mp4
