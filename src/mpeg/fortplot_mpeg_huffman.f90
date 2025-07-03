@@ -123,7 +123,9 @@ contains
         type(huffman_encoder_t), intent(out) :: encoder
         type(huffman_decoder_t), intent(out) :: decoder
         
-        integer, parameter :: MBA_TABLE(0:23) = [ &
+        ! Complete MBA table from C reference ctables.h MBACoeff[]
+        ! 35 entries × 3 values each = 105 total elements
+        integer, parameter :: MBA_TABLE(0:104) = [ &
             1, 1, 1, &     ! MBA increment 1
             2, 3, 3, &     ! MBA increment 2
             3, 3, 2, &     ! MBA increment 3
@@ -131,7 +133,34 @@ contains
             5, 4, 2, &     ! MBA increment 5
             6, 5, 3, &     ! MBA increment 6
             7, 5, 2, &     ! MBA increment 7
-            8, 7, 7 &      ! MBA increment 8
+            8, 7, 7, &     ! MBA increment 8
+            9, 7, 6, &     ! MBA increment 9
+            10, 8, 11, &   ! MBA increment 10
+            11, 8, 10, &   ! MBA increment 11
+            12, 8, 9, &    ! MBA increment 12
+            13, 8, 8, &    ! MBA increment 13
+            14, 8, 7, &    ! MBA increment 14
+            15, 8, 6, &    ! MBA increment 15
+            16, 10, 23, &  ! MBA increment 16
+            17, 10, 22, &  ! MBA increment 17
+            18, 10, 21, &  ! MBA increment 18
+            19, 10, 20, &  ! MBA increment 19
+            20, 10, 19, &  ! MBA increment 20
+            21, 10, 18, &  ! MBA increment 21
+            22, 11, 35, &  ! MBA increment 22
+            23, 11, 34, &  ! MBA increment 23
+            24, 11, 33, &  ! MBA increment 24
+            25, 11, 32, &  ! MBA increment 25
+            26, 11, 31, &  ! MBA increment 26
+            27, 11, 30, &  ! MBA increment 27
+            28, 11, 29, &  ! MBA increment 28
+            29, 11, 28, &  ! MBA increment 29
+            30, 11, 27, &  ! MBA increment 30
+            31, 11, 26, &  ! MBA increment 31
+            32, 11, 25, &  ! MBA increment 32
+            33, 11, 24, &  ! MBA increment 33
+            34, 11, 15, &  ! Stuffing
+            35, 11, 8 &    ! Escape
         ]
         
         call build_huffman_tables(MBA_TABLE, size(MBA_TABLE)/3, encoder, decoder)
