@@ -136,7 +136,12 @@ contains
                 ! Check bounds
                 if (x >= 1 .and. x <= width .and. y >= 1 .and. y <= height) then
                     pixel_idx = (y - 1) * width + x
-                    frame_mem%data(pixel_idx) = int(brightness, c_int8_t)
+                    ! Convert 255 to signed byte (-1) to represent white
+                    if (brightness == 255) then
+                        frame_mem%data(pixel_idx) = int(-1, c_int8_t)  ! 255 as signed byte
+                    else
+                        frame_mem%data(pixel_idx) = int(brightness, c_int8_t)
+                    end if
                 end if
             end do
         end do

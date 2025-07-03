@@ -110,7 +110,7 @@ contains
                 
                 if (x >= 1 .and. x <= width .and. y >= 1 .and. y <= height) then
                     pixel_idx = (y - 1) * width + x
-                    frame_mem%data(pixel_idx) = int(127, c_int8_t)  ! Bright white (max positive value)
+                    frame_mem%data(pixel_idx) = int(-1, c_int8_t)   ! 255 as signed byte = -1
                 end if
             end do
         end do
@@ -130,7 +130,7 @@ contains
                     distance_sq = dx*dx + dy*dy
                     if (distance_sq <= radius*radius) then
                         pixel_idx = (y - 1) * width + x
-                        frame_mem%data(pixel_idx) = int(127, c_int8_t)  ! Bright white
+                        frame_mem%data(pixel_idx) = int(-1, c_int8_t)   ! 255 as signed byte = -1
                     end if
                 end if
             end do
