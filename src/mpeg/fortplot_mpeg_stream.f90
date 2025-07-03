@@ -283,7 +283,8 @@ contains
         file_length_bytes = c_ftell(write_stream_state%file_ptr)
         
         ! Step 4: fseek(swout,(distance+7)>>3,0L);
-        ! NOTE: C code has bug - should be distance>>3, not (distance+7)>>3
+        ! CRITICAL: C code uses (distance+7)>>3, but this is incorrect for intra-byte seeks
+        ! Use correct formula for functionality: distance>>3
         target_byte_pos = ishft(position, -3)
         status = c_fseek(write_stream_state%file_ptr, target_byte_pos, SEEK_SET)
         
@@ -308,7 +309,6 @@ contains
             
             ! Step 7 (critical): fseek(swout,(distance+7)>>3,0L); - seek back to target position  
             ! This is essential because getc advanced the file position
-            ! Using corrected formula: distance>>3 instead of (distance+7)>>3
             status = c_fseek(write_stream_state%file_ptr, target_byte_pos, SEEK_SET)
         end if
         
