@@ -12,31 +12,23 @@ program validate_stream_bits
 contains
 
     subroutine test_bit_operations()
-        interface
-            function mgetb() bind(c, name='mgetb') result(bit)
-                import :: c_int
-                integer(c_int) :: bit
-            end function
-            
-            subroutine mputb(bit) bind(c, name='mputb')
-                import :: c_int
-                integer(c_int), value :: bit
-            end subroutine
-        end interface
+        use fortplot_mpeg_stream
         
-        integer(c_int) :: test_bit, read_bit
-        character(len=20, kind=c_char) :: test_file = "test_bits.dat" // c_null_char
+        integer :: test_bit, read_bit
+        character(len=*), parameter :: test_file = "test_bits.dat"
         
-        ! Test single bit write/read
-        call setup_test_file(test_file)
+        ! Test single bit write/read using Fortran implementation
+        test_bit = 1
         
-        test_bit = 1_c_int
-        call mputb(test_bit)
-        call cleanup_write()
+        ! Write using Fortran stream functions
+        call stream_open_write(test_file)
+        call stream_put_bit(test_bit)
+        call stream_close_write()
         
-        call setup_read_file(test_file)
-        read_bit = mgetb()
-        call cleanup_read()
+        ! Read using Fortran stream functions
+        call stream_open_read(test_file)
+        read_bit = stream_get_bit()
+        call stream_close_read()
         
         if (read_bit /= test_bit) then
             error stop "Bit read/write mismatch"
@@ -46,33 +38,24 @@ contains
     end subroutine
 
     subroutine test_variable_length_operations()
-        interface
-            subroutine mputv(value, bits) bind(c, name='mputv')
-                import :: c_int
-                integer(c_int), value :: value, bits
-            end subroutine
-            
-            function mgetv(bits) bind(c, name='mgetv') result(value)
-                import :: c_int
-                integer(c_int), value :: bits
-                integer(c_int) :: value
-            end function
-        end interface
+        use fortplot_mpeg_stream
         
-        integer(c_int) :: test_value, read_value, num_bits
-        character(len=20, kind=c_char) :: test_file = "test_varlen.dat" // c_null_char
+        integer :: test_value, read_value, num_bits
+        character(len=*), parameter :: test_file = "test_varlen.dat"
         
-        ! Test variable length operations
-        call setup_test_file(test_file)
+        ! Test variable length operations using Fortran implementation
+        test_value = 42
+        num_bits = 8
         
-        test_value = 42_c_int
-        num_bits = 8_c_int
-        call mputv(test_value, num_bits)
-        call cleanup_write()
+        ! Write using Fortran stream functions
+        call stream_open_write(test_file)
+        call stream_put_variable(test_value, num_bits)
+        call stream_close_write()
         
-        call setup_read_file(test_file)
-        read_value = mgetv(num_bits)
-        call cleanup_read()
+        ! Read using Fortran stream functions
+        call stream_open_read(test_file)
+        read_value = stream_get_variable(num_bits)
+        call stream_close_read()
         
         if (read_value /= test_value) then
             error stop "Variable length read/write mismatch"
@@ -82,57 +65,35 @@ contains
     end subroutine
 
     subroutine test_alignment_operations()
-        interface
-            subroutine readalign() bind(c, name='readalign')
-            end subroutine
-            
-            subroutine zeroflush() bind(c, name='zeroflush')
-            end subroutine
-        end interface
+        use fortplot_mpeg_stream
         
-        ! Test alignment functions
-        call readalign()
-        call zeroflush()
+        character(len=*), parameter :: test_file = "test_align.dat"
+        integer(c_long) :: pos_before, pos_after
+        integer :: read_bit
+        
+        ! Test alignment functions using Fortran implementation
+        ! Write some bits to create misalignment
+        call stream_open_write(test_file)
+        call stream_put_bit(1)
+        call stream_put_bit(0)
+        call stream_put_bit(1)
+        call stream_flush_write_zeros()  ! Fortran equivalent of zeroflush
+        call stream_close_write()
+        
+        ! Test read alignment
+        call stream_open_read(test_file)
+        read_bit = stream_get_bit()  ! Read one bit to create misalignment
+        pos_before = stream_tell_read()
+        call stream_align_read()  ! Fortran equivalent of readalign
+        pos_after = stream_tell_read()
+        call stream_close_read()
+        
+        ! Verify alignment worked (position should advance to byte boundary)
+        if (pos_after <= pos_before) then
+            error stop "Alignment operation failed"
+        end if
         
         print *, "PASS: alignment operations"
-    end subroutine
-
-    subroutine setup_test_file(filename)
-        character(len=*, kind=c_char), intent(in) :: filename
-        interface
-            subroutine mwopen(filename) bind(c, name='mwopen')
-                import :: c_char
-                character(kind=c_char), intent(in) :: filename(*)
-            end subroutine
-        end interface
-        call mwopen(filename)
-    end subroutine
-
-    subroutine cleanup_write()
-        interface
-            subroutine mwclose() bind(c, name='mwclose')
-            end subroutine
-        end interface
-        call mwclose()
-    end subroutine
-
-    subroutine setup_read_file(filename)
-        character(len=*, kind=c_char), intent(in) :: filename
-        interface
-            subroutine mropen(filename) bind(c, name='mropen')
-                import :: c_char
-                character(kind=c_char), intent(in) :: filename(*)
-            end subroutine
-        end interface
-        call mropen(filename)
-    end subroutine
-
-    subroutine cleanup_read()
-        interface
-            subroutine mrclose() bind(c, name='mrclose')
-            end subroutine
-        end interface
-        call mrclose()
     end subroutine
 
 end program validate_stream_bits
