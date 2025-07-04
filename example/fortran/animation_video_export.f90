@@ -70,20 +70,16 @@ contains
         type(raster_image_t) :: raster
         
         real(wp) :: phase
-        integer :: i, width, height
+        integer :: i
         
-        ! Get frame dimensions
-        width = WIDTH
-        height = HEIGHT
-        
-        ! Create raster image for this frame
-        raster = create_raster_image(width, height)
+        ! Create raster image for this frame - dimensions will be set by animation
+        raster = create_raster_image(320, 240)
         
         ! Calculate phase for this frame
         phase = real(frame-1, wp) * 2.0_wp * 3.14159_wp / real(NFRAMES, wp)
         
         ! Create simple pattern that represents a sine wave
-        call create_sine_pattern(raster, width, height, phase)
+        call create_sine_pattern(raster, 320, 240, phase)
     end function create_sine_frame
 
     function create_dot_frame(frame) result(raster)
@@ -92,14 +88,9 @@ contains
         type(raster_image_t) :: raster
         
         real(wp) :: dot_x, dot_y, t
-        integer :: width, height
-        
-        ! Get frame dimensions
-        width = WIDTH
-        height = HEIGHT
         
         ! Create raster image for this frame
-        raster = create_raster_image(width, height)
+        raster = create_raster_image(320, 240)
         
         ! Calculate dot position
         t = real(frame-1, wp) / 19.0_wp  ! Normalize to 0-1
@@ -107,7 +98,7 @@ contains
         dot_y = 0.5_wp + 0.3_wp * cos(6.0_wp * 3.14159_wp * t)  ! 0.2 to 0.8
         
         ! Create dot pattern
-        call create_dot_pattern(raster, width, height, dot_x, dot_y)
+        call create_dot_pattern(raster, 320, 240, dot_x, dot_y)
     end function create_dot_frame
 
     subroutine create_sine_pattern(raster, width, height, phase)

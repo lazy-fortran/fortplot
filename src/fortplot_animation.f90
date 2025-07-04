@@ -238,10 +238,13 @@ contains
         if (frame_number == 1) then
             self%video_width = frame_raster%width
             self%video_height = frame_raster%height
+            print *, "DEBUG: Set dimensions from frame 1:", self%video_width, "x", self%video_height
             
             ! Now allocate storage based on actual dimensions
             expected_size = self%video_height * (1 + self%video_width * 3)
-            allocate(self%video_frame_data(expected_size, self%frames))
+            if (.not. allocated(self%video_frame_data)) then
+                allocate(self%video_frame_data(expected_size, self%frames))
+            end if
         end if
         
         ! Copy bitmap data to storage
@@ -285,9 +288,13 @@ contains
         call stream_open_write(filename)
         
         print *, "Debug: About to write headers with dimensions:", self%video_width, "x", self%video_height
+        print *, "Debug: Frame data allocated?", allocated(self%video_frame_data)
+        if (allocated(self%video_frame_data)) then
+            print *, "Debug: Frame data size:", size(self%video_frame_data, 1), "x", size(self%video_frame_data, 2)
+        end if
         
         ! Write MPEG headers
-        call write_mpeg1_sequence_header(self%video_width, self%video_height, frame_rate_code, 1150000)
+        call write_mpeg1_sequence_header(self%video_width, self%video_height, fps, 1150000)
         call write_mpeg1_gop_header(0)  ! Time code 0
         
         ! Create YUV frame buffer
@@ -408,24 +415,11 @@ contains
 
     subroutine encode_mpeg1_frame_yuv(yuv_frame)
         !! Encode YUV frame using existing MPEG-1 functionality
-        use fortplot_mpeg_memory, only: mem_t, mem_create, mem_destroy
+        use fortplot_mpeg_yuv_encoder, only: encode_yuv420_frame_simple
         type(yuv420_frame_t), intent(in) :: yuv_frame
-        type(mem_t) :: frame_data
-        integer :: i, total_pixels
         
-        ! Convert YUV frame to memory format expected by encoder
-        total_pixels = yuv_frame%width * yuv_frame%height
-        frame_data = mem_create(yuv_frame%width, yuv_frame%height)
-        
-        ! Copy Y plane data (use only luminance for now)
-        do i = 1, total_pixels
-            frame_data%data(i) = yuv_frame%y_plane%data(i)
-        end do
-        
-        ! Encode frame
-        call encode_mpeg1_frame(frame_data, yuv_frame%width, yuv_frame%height)
-        
-        call mem_destroy(frame_data)
+        ! Use the new YUV encoder that actually uses frame data
+        call encode_yuv420_frame_simple(yuv_frame)
     end subroutine encode_mpeg1_frame_yuv
 
     subroutine convert_mpeg_to_avi(mpeg_file, avi_file)
