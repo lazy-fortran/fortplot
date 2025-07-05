@@ -29,9 +29,8 @@ test-coverage:
 # Analyze coverage data
 coverage:
 	@echo "Generating coverage report..."
-	@lcov --capture --directory build --output-file coverage.info
-	@lcov --remove coverage.info '/usr/*' '*/test/*' --output-file coverage_filtered.info --ignore-errors unused
-	@genhtml coverage_filtered.info --output-directory coverage_html
+	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*' --exclude '/usr/*'
+	@genhtml coverage.info --output-directory coverage_html
 	@echo "Coverage report generated in coverage_html/index.html"
 
 # Run Python examples with fortplotlib (default mode)
@@ -68,7 +67,7 @@ clean:
 
 # Clean coverage data
 clean-coverage:
-	rm -f *.gcda *.gcno *.gcov coverage.info coverage_filtered.info
+	rm -f *.gcda *.gcno *.gcov coverage.info
 	rm -rf coverage_html
 	find build -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 

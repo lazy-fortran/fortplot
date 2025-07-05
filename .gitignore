@@ -26,7 +26,6 @@ terminal
 # Coverage files and reports
 coverage_html/
 coverage.info
-coverage_filtered.info
 *.gcda
 *.gcno
 *.gcov
