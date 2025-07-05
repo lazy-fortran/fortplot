@@ -1,6 +1,7 @@
 module fortplot_animation
     use iso_fortran_env, only: real64
     use fortplot_figure_core, only: figure_t
+    use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     implicit none
     private
 
@@ -110,73 +111,27 @@ contains
         integer, intent(out), optional :: status
         
         character(len=:), allocatable :: extension
-        character(len=:), allocatable :: temp_dir
-        character(len=256) :: cmd
-        integer :: actual_fps
-        integer :: i, stat
-        logical :: is_video_format
+        integer :: actual_fps, stat
         
-        ! Extract file extension
         extension = get_file_extension(filename)
         
-        ! Check if video format
-        is_video_format = (extension == "mp4" .or. &
-                          extension == "avi" .or. &
-                          extension == "mkv")
-        
-        ! Set default fps if not provided
-        if (present(fps)) then
-            actual_fps = fps
-        else
-            actual_fps = 10  ! Default 10 fps
-        end if
-        
-        if (is_video_format) then
-            ! Check if ffmpeg is available
-            call execute_command_line("which ffmpeg > /dev/null 2>&1", exitstat=stat)
-            if (stat /= 0) then
-                if (present(status)) status = -1
-                print *, "Error: ffmpeg not found. Please install ffmpeg to save animations."
-                return
-            end if
-            
-            ! Create temporary directory for frames
-            temp_dir = "/tmp/fortplot_anim_" // get_timestamp()
-            call execute_command_line("mkdir -p " // temp_dir, exitstat=stat)
-            if (stat /= 0) then
-                if (present(status)) status = -2
-                print *, "Error: Could not create temporary directory"
-                return
-            end if
-            
-            ! Save frames as PNG sequence
-            do i = 1, self%frames
-                call self%animate_func(i)
-                if (associated(self%fig)) then
-                    write(cmd, '(A,A,I4.4,A)') trim(temp_dir), "/frame_", i, ".png"
-                    call self%fig%savefig(trim(cmd))
-                end if
-            end do
-            
-            ! Use ffmpeg to create video
-            write(cmd, '(A,A,A,A,A,A,A,A)') &
-                "ffmpeg -r ", trim(adjustl(int_to_str(actual_fps))), &
-                " -i ", trim(temp_dir), "/frame_%04d.png", &
-                " -c:v libx264 -pix_fmt yuv420p ", &
-                trim(filename), " > /dev/null 2>&1"
-            
-            call execute_command_line(trim(cmd), exitstat=stat)
-            
-            ! Clean up temporary files
-            call execute_command_line("rm -rf " // temp_dir)
-            
-            if (present(status)) status = stat
-            
-        else
-            ! Not a supported video format
+        if (.not. is_video_format(extension)) then
             if (present(status)) status = -3
             print *, "Error: Unsupported file format. Use .mp4, .avi, or .mkv"
+            return
         end if
+        
+        if (.not. check_ffmpeg_available()) then
+            if (present(status)) status = -1
+            print *, "Error: ffmpeg not found. Please install ffmpeg to save animations."
+            return
+        end if
+        
+        actual_fps = get_fps_or_default(fps)
+        
+        call save_animation_with_ffmpeg_pipe(self, filename, actual_fps, stat)
+        
+        if (present(status)) status = stat
         
     end subroutine save
 
@@ -235,5 +190,129 @@ contains
         write(temp, '(I0)') num
         str = trim(temp)
     end function int_to_str
+
+    function is_video_format(extension) result(is_video)
+        character(len=*), intent(in) :: extension
+        logical :: is_video
+        
+        is_video = (extension == "mp4" .or. &
+                   extension == "avi" .or. &
+                   extension == "mkv")
+    end function is_video_format
+
+    function check_ffmpeg_available() result(available)
+        use fortplot_pipe, only: check_ffmpeg_available_pipe => check_ffmpeg_available
+        logical :: available
+        
+        available = check_ffmpeg_available_pipe()
+    end function check_ffmpeg_available
+
+    function get_fps_or_default(fps) result(actual_fps)
+        integer, intent(in), optional :: fps
+        integer :: actual_fps
+        
+        if (present(fps)) then
+            actual_fps = fps
+        else
+            actual_fps = 10
+        end if
+    end function get_fps_or_default
+
+    subroutine save_animation_with_ffmpeg_pipe(anim, filename, fps, status)
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer, intent(out) :: status
+        
+        integer :: frame_idx, stat
+        integer(1), allocatable :: png_data(:)
+        
+        stat = open_ffmpeg_pipe(filename, fps)
+        if (stat /= 0) then
+            status = -4
+            print *, "Error: Could not open pipe to ffmpeg"
+            return
+        end if
+        
+        do frame_idx = 1, anim%frames
+            call generate_png_frame_data(anim, frame_idx, png_data, stat)
+            if (stat /= 0) then
+                status = -5
+                print *, "Error: Failed to generate frame", frame_idx
+                stat = close_ffmpeg_pipe()
+                return
+            end if
+            
+            stat = write_png_to_pipe(png_data)
+            if (stat /= 0) then
+                status = -6
+                print *, "Error: Failed to write frame to pipe", frame_idx
+                stat = close_ffmpeg_pipe()
+                return
+            end if
+            
+            if (allocated(png_data)) deallocate(png_data)
+        end do
+        
+        stat = close_ffmpeg_pipe()
+        status = 0
+    end subroutine save_animation_with_ffmpeg_pipe
+
+    subroutine generate_png_frame_data(anim, frame_idx, png_data, status)
+        class(animation_t), intent(inout) :: anim
+        integer, intent(in) :: frame_idx
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        character(len=256) :: temp_filename
+        integer :: unit_num, file_size, io_stat
+        
+        if (.not. associated(anim%fig)) then
+            status = -1
+            return
+        end if
+        
+        call anim%animate_func(frame_idx)
+        
+        write(temp_filename, '(A,I0,A)') "/tmp/fortplot_frame_", get_current_timestamp(), ".png"
+        
+        call anim%fig%savefig(temp_filename)
+        
+        open(newunit=unit_num, file=temp_filename, action='read', &
+             form='unformatted', access='stream', iostat=io_stat)
+        
+        if (io_stat /= 0) then
+            status = -1
+            return
+        end if
+        
+        inquire(unit=unit_num, size=file_size)
+        allocate(png_data(file_size))
+        
+        read(unit_num, iostat=io_stat) png_data
+        close(unit_num)
+        
+        call execute_command_line("rm -f " // trim(temp_filename))
+        
+        if (io_stat /= 0) then
+            status = -1
+            if (allocated(png_data)) deallocate(png_data)
+        else
+            status = 0
+        end if
+    end subroutine generate_png_frame_data
+
+
+
+
+
+
+    function get_current_timestamp() result(ts)
+        integer :: ts
+        integer :: values(8)
+        
+        call date_and_time(values=values)
+        ts = values(5) * 10000 + values(6) * 100 + values(7)
+    end function get_current_timestamp
 
 end module fortplot_animation
