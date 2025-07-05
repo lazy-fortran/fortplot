@@ -18,6 +18,7 @@ module fortplot_raster
     public :: distance_point_to_line_segment, ipart, fpart, rfpart
     public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
     public :: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
+    public :: initialize_raster_backend
     public :: draw_filled_quad_raster
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
@@ -1197,5 +1198,26 @@ contains
             end do
         end if
     end subroutine fill_horizontal_line
+
+    subroutine initialize_raster_backend(backend, width, height)
+        !! Helper function to initialize any raster-based backend
+        !! Eliminates code duplication between PNG, JPEG, and future backends
+        
+        class(raster_context), intent(inout) :: backend
+        integer, intent(in) :: width, height
+        
+        type(raster_context) :: raster_base
+        
+        ! Create base raster canvas
+        raster_base = create_raster_canvas(width, height)
+        
+        ! Setup canvas context
+        call setup_canvas(backend, width, height)
+        
+        ! Copy raster data to backend
+        backend%raster = raster_base%raster
+        backend%margins = raster_base%margins
+        backend%plot_area = raster_base%plot_area
+    end subroutine initialize_raster_backend
 
 end module fortplot_raster

@@ -1,7 +1,7 @@
 module fortplot_png
     use iso_c_binding
     use fortplot_context, only: setup_canvas
-    use fortplot_raster, only: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
+    use fortplot_raster, only: raster_context, initialize_raster_backend, draw_axes_and_labels, draw_rotated_ylabel_raster
     use fortplot_zlib, only: zlib_compress, crc32_calculate
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
@@ -20,16 +20,9 @@ contains
     function create_png_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
         type(png_context) :: ctx
-        type(raster_context) :: raster_base
 
-        ! Create raster canvas and copy components to PNG context
-        raster_base = create_raster_canvas(width, height)
-        
-        ! Initialize PNG context with same data as raster context
-        call setup_canvas(ctx, width, height)
-        ctx%raster = raster_base%raster
-        ctx%margins = raster_base%margins
-        ctx%plot_area = raster_base%plot_area
+        ! Use common raster backend initialization
+        call initialize_raster_backend(ctx, width, height)
     end function create_png_canvas
 
     ! All drawing methods are inherited from raster_context

@@ -11,13 +11,13 @@ contains
     subroutine simple_plots()
         real(wp), dimension(50) :: x, y
         integer :: i
-        
+
         print *, "=== Basic Plots ==="
-        
+
         ! Generate simple sine data - show 2 complete periods (0 to 4π)
         x = [(real(i-1, wp) * 4.0_wp * 3.141592653589793_wp / 49.0_wp, i=1, 50)]
         y = sin(x)
-        
+
         ! Simple plot using functional API
         call figure()
         call plot(x, y, label='sin(x)')
@@ -25,11 +25,12 @@ contains
         call xlabel('x')
         call ylabel('sin(x)')
         call savefig('example/fortran/basic_plots/simple_plot.png')
+        call savefig('example/fortran/basic_plots/simple_plot.jpg')
         call savefig('example/fortran/basic_plots/simple_plot.pdf')
         call savefig('example/fortran/basic_plots/simple_plot.txt')
-        
+
         print *, "Created: simple_plot.png/pdf/txt"
-        
+
     end subroutine simple_plots
 
     subroutine multi_line_plot()
@@ -40,7 +41,7 @@ contains
         x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
         sx = sin(x)
         cx = cos(x)
-        
+
         ! Multi-line plot using OO interface
         call fig%initialize(640, 480)
         call fig%set_xlabel("x")
@@ -50,11 +51,12 @@ contains
         call fig%add_plot(x, cx, label="cos(x)")
         call fig%legend()  ! Add legend for labeled plots
         call fig%savefig('example/fortran/basic_plots/multi_line.png')
+        call fig%savefig('example/fortran/basic_plots/multi_line.jpg')
         call fig%savefig('example/fortran/basic_plots/multi_line.pdf')
         call fig%savefig('example/fortran/basic_plots/multi_line.txt')
-        
+
         print *, "Created: multi_line.png/pdf/txt"
-        
+
     end subroutine multi_line_plot
 
 end program basic_plots
