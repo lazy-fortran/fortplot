@@ -239,3 +239,43 @@ Based on `make coverage-report` output, here's the current test coverage for eac
 - **Well tested (>90%)**: `fortplot_context`, `fortplot_format_parser`, `fortplot_jpeg_fixed`, `fortplot_ticks`, `fortplot_vector`, `fortplot_zlib`
 - **Good coverage (70-90%)**: `fortplot_ascii`, `fortplot_jpeg`, `fortplot_label_positioning`, `fortplot_streamline_placement`
 - **Needs improvement (<50%)**: `fortplot` (main API), `fortplot_colormap`, `fortplot_pcolormesh`, `fortplot_text`
+
+## Shallow Tests Analysis
+
+Tests identified as "shallow" - lacking meaningful assertions or comprehensive testing:
+
+### Critical - No Assertions
+These tests have NO assertions and only verify compilation:
+- **`test_public_api.f90`** - Creates objects but never validates behavior
+- **`test_animation_save.f90`** - Creates/deletes files without checking content
+- **`test_figure_set_ydata.f90`** - Updates data but doesn't verify the update worked
+
+### Placeholder Assertions Only
+These tests use meaningless assertions like `assert_true(.true.)`:
+- **`test_refactored_modules.f90`** - All assertions are placeholders
+- **`test_module_separation.f90`** - Mostly print statements, minimal real testing
+- **`test_simple_validation.f90`** - Despite name, validation is superficial
+
+### Minimal Testing
+These tests check basic operations but miss important functionality:
+- **`test_pcolormesh.f90`** - Just prints "PASSED" without actual validation
+- **`test_coordinate_fix_final.f90`** - Only tests one specific scenario
+- **`test_axis_range_verification.f90`** - Limited to basic range checks
+- **`test_minimal_vertical_text.f90`** - Tests rendering but not correctness
+- **`test_mixed_marker_line.f90`** - Creates plots without validating output
+- **`test_scatter_marker_only.f90`** - Doesn't verify marker rendering
+- **`test_matplotlib_comparison.f90`** - Compares but doesn't assert equivalence
+- **`test_streamplot.f90`** - Basic functionality only
+
+### Visual Tests Without Validation
+These create output files but don't programmatically verify correctness:
+- **`test_legend_*.f90`** - Generate PNGs but rely on manual inspection
+- **`test_*_positioning.f90`** - Create visual output without pixel validation
+- **`test_debug_*.f90`** - Debug visualization without assertions
+
+### Recommendations for Improvement
+1. Add real assertions that verify expected behavior
+2. Test error conditions and edge cases
+3. Validate output data, not just that functions execute
+4. For visual tests, add pixel comparison or metric validation
+5. Follow TDD: write failing tests first, then implementation
