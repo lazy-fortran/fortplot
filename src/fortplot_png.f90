@@ -7,7 +7,7 @@ module fortplot_png
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels, write_png_file
+    public :: png_context, create_png_canvas, draw_axes_and_labels, write_png_file, get_png_data
 
     ! PNG plotting context - extends raster context and adds PNG file I/O
     type, extends(raster_context) :: png_context
@@ -41,43 +41,154 @@ contains
         call write_png_file(filename, this%width, this%height, this%raster%image_data)
     end subroutine png_finalize
 
-    ! PNG file writing functionality
-    subroutine write_png_file(filename, width, height, image_data)
-        character(len=*), intent(in) :: filename
+    ! Generate PNG data from image data
+    subroutine generate_png_data(width, height, image_data, png_buffer)
         integer, intent(in) :: width, height
         integer(1), intent(in) :: image_data(:)
+        integer(1), allocatable, intent(out) :: png_buffer(:)
 
         integer(1) :: png_signature(8) = &
             [int(-119,1), int(80,1), int(78,1), int(71,1), int(13,1), int(10,1), int(26,1), int(10,1)]
         integer, parameter :: bit_depth = 8, color_type = 2
-        integer :: png_unit = 10
         integer(int8), allocatable :: compressed_data(:)
         integer :: compressed_size, data_size
-
-        open(unit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
-
-        write(png_unit) png_signature
-        call write_ihdr_chunk(png_unit, width, height, bit_depth, color_type)
 
         data_size = size(image_data)
         compressed_data = zlib_compress(image_data, data_size, compressed_size)
         
         if (.not. allocated(compressed_data) .or. compressed_size <= 0) then
             print *, "Compression failed"
-            close(png_unit)
-            stop
+            return
         end if
 
-        call write_idat_chunk(png_unit, compressed_data, compressed_size)
-        call write_iend_chunk(png_unit)
+        call build_png_buffer(width, height, compressed_data, compressed_size, png_buffer)
+        
+        deallocate(compressed_data)
+    end subroutine generate_png_data
 
+    ! Build complete PNG buffer from compressed data  
+    subroutine build_png_buffer(width, height, compressed_data, compressed_size, png_buffer)
+        integer, intent(in) :: width, height, compressed_size
+        integer(int8), intent(in) :: compressed_data(:)
+        integer(1), allocatable, intent(out) :: png_buffer(:)
+
+        integer(1) :: png_signature(8) = &
+            [int(-119,1), int(80,1), int(78,1), int(71,1), int(13,1), int(10,1), int(26,1), int(10,1)]
+        integer, parameter :: bit_depth = 8, color_type = 2
+        integer :: total_size, pos
+        integer(1) :: ihdr_data(13)
+        integer :: w_be, h_be
+        
+        ! Calculate total PNG size: signature + IHDR + IDAT + IEND
+        total_size = 8 + (4+4+13+4) + (4+4+compressed_size+4) + (4+4+0+4)
+        allocate(png_buffer(total_size))
+        
+        pos = 1
+        
+        ! Write PNG signature
+        png_buffer(pos:pos+7) = png_signature
+        pos = pos + 8
+        
+        ! Build IHDR data
+        w_be = to_big_endian(width)
+        h_be = to_big_endian(height)
+        ihdr_data(1:4) = transfer(w_be, ihdr_data(1:4))
+        ihdr_data(5:8) = transfer(h_be, ihdr_data(5:8))
+        ihdr_data(9) = int(bit_depth, 1)
+        ihdr_data(10) = int(color_type, 1)
+        ihdr_data(11:13) = 0_1
+        
+        ! Write IHDR chunk to buffer
+        call write_chunk_to_buffer(png_buffer, pos, "IHDR", ihdr_data, 13)
+        
+        ! Write IDAT chunk to buffer
+        call write_chunk_to_buffer(png_buffer, pos, "IDAT", compressed_data, compressed_size)
+        
+        ! Write IEND chunk to buffer
+        call write_chunk_to_buffer(png_buffer, pos, "IEND", [integer(1)::], 0)
+    end subroutine build_png_buffer
+
+    ! Write PNG data to file
+    subroutine write_png_file(filename, width, height, image_data)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: width, height
+        integer(1), intent(in) :: image_data(:)
+        
+        integer(1), allocatable :: png_buffer(:)
+        integer :: png_unit
+        
+        call generate_png_data(width, height, image_data, png_buffer)
+        
+        open(unit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
+        write(png_unit) png_buffer
         close(png_unit)
         
-        ! Free allocated memory
-        deallocate(compressed_data)
-
+        deallocate(png_buffer)
         print *, "PNG file '", trim(filename), "' created successfully!"
     end subroutine write_png_file
+
+    ! Public wrapper for getting PNG data
+    subroutine get_png_data(width, height, image_data, png_buffer)
+        integer, intent(in) :: width, height
+        integer(1), intent(in) :: image_data(:)
+        integer(1), allocatable, intent(out) :: png_buffer(:)
+        
+        call generate_png_data(width, height, image_data, png_buffer)
+    end subroutine get_png_data
+
+    ! Write PNG chunk to buffer
+    subroutine write_chunk_to_buffer(buffer, pos, chunk_type, data, data_len)
+        integer(1), intent(inout) :: buffer(:)
+        integer, intent(inout) :: pos
+        character(len=4), intent(in) :: chunk_type
+        integer(1), intent(in) :: data(:)
+        integer, intent(in) :: data_len
+        
+        integer :: length_be, crc_val, crc_be
+        integer(1) :: type_bytes(4)
+        
+        ! Convert chunk type to bytes
+        type_bytes = transfer(chunk_type, type_bytes)
+        
+        ! Write length (big endian)
+        length_be = to_big_endian(data_len)
+        buffer(pos:pos+3) = transfer(length_be, buffer(pos:pos+3))
+        pos = pos + 4
+        
+        ! Write chunk type
+        buffer(pos:pos+3) = type_bytes
+        pos = pos + 4
+        
+        ! Write data
+        if (data_len > 0) then
+            buffer(pos:pos+data_len-1) = data(1:data_len)
+            pos = pos + data_len
+        end if
+        
+        ! Calculate and write CRC
+        crc_val = calculate_chunk_crc(type_bytes, data, data_len)
+        crc_be = to_big_endian(crc_val)
+        buffer(pos:pos+3) = transfer(crc_be, buffer(pos:pos+3))
+        pos = pos + 4
+    end subroutine write_chunk_to_buffer
+
+    ! Calculate CRC for PNG chunk
+    function calculate_chunk_crc(type_bytes, data, data_len) result(crc)
+        integer(1), intent(in) :: type_bytes(4), data(:)
+        integer, intent(in) :: data_len
+        integer :: crc
+        
+        integer(1), allocatable :: combined(:)
+        
+        allocate(combined(4 + data_len))
+        combined(1:4) = type_bytes
+        if (data_len > 0) then
+            combined(5:4+data_len) = data(1:data_len)
+        end if
+        
+        crc = int(crc32_calculate(combined, size(combined)))
+        deallocate(combined)
+    end function calculate_chunk_crc
 
     ! PNG chunk writing functions (simplified versions)
     subroutine write_ihdr_chunk(unit, w, h, bd, ct)
