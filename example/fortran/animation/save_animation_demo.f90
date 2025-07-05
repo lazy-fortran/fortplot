@@ -33,19 +33,7 @@ program save_animation_demo
     print *, "Saving animation as MP4..."
     call anim%save("example/fortran/animation/wave_animation.mp4", fps=24)
     
-    ! Save as AVI video
-    print *, "Saving animation as AVI..."
-    call anim%save("example/fortran/animation/wave_animation.avi", fps=15)
-    
-    ! Save as MKV video
-    print *, "Saving animation as MKV..."
-    call anim%save("example/fortran/animation/wave_animation.mkv", fps=30)
-    
-    ! Save as frame sequence
-    print *, "Saving frame sequence..."
-    call anim%save_frame_sequence("example/fortran/animation/demo_frame_")
-    
-    print *, "Animation saving completed!"
+    print *, "Animation saved successfully!"
     
 contains
 
