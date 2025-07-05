@@ -1,7 +1,7 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test test-coverage coverage coverage-summary clean clean-coverage help matplotlib example_python example_matplotlib
+.PHONY: all build example debug test test-coverage coverage coverage-summary coverage-report clean clean-coverage help matplotlib example_python example_matplotlib
 
 # Default target
 all: build
@@ -38,6 +38,12 @@ coverage-summary:
 	@echo "Generating coverage summary..."
 	@lcov --capture --directory build --output-file coverage.info
 	@lcov --summary coverage.info
+
+# Generate detailed text coverage report
+coverage-report:
+	@echo "Generating detailed coverage report..."
+	@lcov --capture --directory build --output-file coverage.info
+	@lcov --list coverage.info
 
 # Run Python examples with fortplotlib (default mode)
 example_python:
@@ -97,6 +103,7 @@ help:
 	@echo "  test-coverage    - Run tests with coverage instrumentation"
 	@echo "  coverage         - Generate HTML coverage report"
 	@echo "  coverage-summary - Display text coverage summary"
+	@echo "  coverage-report  - Display detailed text coverage report"
 	@echo "  clean            - Clean build artifacts"
 	@echo "  clean-coverage   - Clean coverage data files"
 	@echo "  release          - Build with optimizations"
