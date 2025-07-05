@@ -703,7 +703,8 @@ contains
         
         ! Flush remaining bits exactly like STB
         if (writer%bit_count > 0) then
-            call stb_write_bits(writer, int(Z'7F'), 7)  ! STB fill bits
+            ! STB pads with 1s: (1 << (8 - bitCnt)) - 1
+            call stb_write_bits(writer, ishft(1, 8 - writer%bit_count) - 1, 8 - writer%bit_count)
         end if
         
         ! Copy output to result

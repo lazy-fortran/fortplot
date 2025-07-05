@@ -4,12 +4,18 @@ coverage:
       default:
         target: auto
         threshold: 1%
+        paths:
+          - "src/"
     patch:
       default:
         target: auto
         threshold: 1%
+        paths:
+          - "src/"
 
 ignore:
   - "test/**/*"
   - "*/test/*"
   - "**/test_*.f90"
+  - "app/**/*"
+  - "example/**/*"
