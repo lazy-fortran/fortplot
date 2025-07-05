@@ -279,3 +279,75 @@ These create output files but don't programmatically verify correctness:
 3. Validate output data, not just that functions execute
 4. For visual tests, add pixel comparison or metric validation
 5. Follow TDD: write failing tests first, then implementation
+
+## Duplicate and Redundant Tests Analysis
+
+Tests identified as potentially duplicate or redundant that could be consolidated:
+
+### High Priority Consolidation (Major Redundancy)
+
+#### JPEG Validation Tests (16 files - Significant Overlap)
+These appear to be iterative validation attempts with major duplication:
+- **`test_jpeg_complete_validation.f90`** (8949 lines)
+- **`test_jpeg_final_validation.f90`** (6938 lines)  
+- **`test_jpeg_fixed_validation.f90`** (11671 lines)
+- **`test_jpeg_fixed_complete.f90`** (5836 lines)
+- `test_jpeg_stb_validation.f90`
+- `test_jpeg_stb_byte_comparison.f90`
+- `test_jpeg_encoding_validation.f90`
+
+**Issue**: All test JPEG encoding against STB reference with similar patterns
+**Recommendation**: Consolidate into 2-3 comprehensive tests
+
+#### Bitmap Rotation Tests
+- `test_bitmap_rotation.f90` - Basic rotation testing
+- **`test_bitmap_rotation_both.f90`** - More comprehensive (keep this one)
+
+**Recommendation**: Remove basic version, keep comprehensive test
+
+### Medium Priority Consolidation (Overlapping Functionality)
+
+#### Legend Tests (3 tests with overlapping scope)
+- `test_legend.f90` - Basic legend API
+- `test_legend_box_improvements.f90` - Box sizing improvements
+- `test_legend_systematic_sizing.f90` - Systematic sizing approach
+
+**Recommendation**: Consolidate into single comprehensive legend test suite
+
+#### Positioning Tests (4 tests with significant overlap)
+- `test_label_positioning.f90` - General label positioning
+- `test_centered_label_positioning.f90` - Centering-specific
+- `test_separate_label_positioning.f90` - Separates tick vs axis labels
+- `test_tick_label_positioning.f90` - Tick label positioning
+
+**Recommendation**: Organize into fewer, more comprehensive positioning tests
+
+#### Tick Tests (4 tests with moderate redundancy)
+- `test_tick_labels.f90` - Basic tick label formatting
+- `test_tick_label_spacing.f90` - Spacing-specific
+- `test_tick_label_positioning.f90` - Positioning-specific
+- **`test_ticks_refactored.f90`** - Comprehensive refactored version
+
+**Recommendation**: Use refactored version as primary, remove redundant basic tests
+
+#### Scale Transform Tests
+- `test_scaling.f90` - Boundary checking focus
+- `test_scale_transforms.f90` - Transform function testing
+
+**Recommendation**: Merge into single comprehensive scale test
+
+### Low Priority (Keep Separate)
+
+#### Log Scale Tests (Different approaches, keep separate)
+- `test_logarithmic_working.f90` - Tests known working functions
+- `test_log_scale_ticks.f90` - Enhanced tick generation
+- `test_log_symlog_ticks.f90` - Symlog-specific approach
+
+**Analysis**: Different validation approaches serve different purposes
+
+### Consolidation Benefits
+1. **Reduced maintenance burden** - Fewer test files to maintain
+2. **Clearer test organization** - Less confusion about which test covers what
+3. **Faster test execution** - Eliminate redundant test runs
+4. **Better coverage visibility** - Clearer mapping of functionality to tests
+5. **Easier debugging** - Single comprehensive test per feature area
