@@ -824,10 +824,11 @@ contains
                 ! Extract RGB values from packed data
                 call extract_rgb_pixel(rgb_data, width, x, y, r, g, b)
                 
-                ! Convert to YCbCr using JPEG standard coefficients
-                ycbcr_data(x, y, 1) = 0.299*r + 0.587*g + 0.114*b           ! Y
-                ycbcr_data(x, y, 2) = -0.169*r - 0.331*g + 0.5*b + 128.0    ! Cb
-                ycbcr_data(x, y, 3) = 0.5*r - 0.419*g - 0.081*b + 128.0     ! Cr
+                ! Convert to YCbCr using STB coefficients (exact match)
+                ! STB subtracts 128 from Y but not from U/V
+                ycbcr_data(x, y, 1) = 0.299*r + 0.587*g + 0.114*b - 128.0    ! Y (STB style)
+                ycbcr_data(x, y, 2) = -0.16874*r - 0.33126*g + 0.5*b         ! Cb (STB style)
+                ycbcr_data(x, y, 3) = 0.5*r - 0.41869*g - 0.08131*b          ! Cr (STB style)
             end do
         end do
     end subroutine rgb_to_ycbcr
@@ -861,7 +862,9 @@ contains
             do x = 1, 8
                 src_x = min(start_x + x - 1, width)
                 src_y = min(start_y + y - 1, height)
-                block(x, y) = component_data(src_x, src_y) - 128.0  ! Center around 0
+                ! STB already subtracts 128 from Y in RGB->YCbCr conversion
+                ! U and V are already centered around 0
+                block(x, y) = component_data(src_x, src_y)
             end do
         end do
     end subroutine extract_8x8_block
@@ -1030,7 +1033,7 @@ contains
         
         ! Encode DC coefficient exactly like STB
         diff = DU(1) - DC  ! STB: diff = DU[0] - DC
-        ! print *, "DC encoding: DU(1)=", DU(1), "DC=", DC, "diff=", diff
+        ! print *, "DC encoding: DU(1)=", DU(1), "DC=", DC, "diff=", diff, "is_luma=", is_luma
         if (diff == 0) then
             ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, HTDC[0])
             if (is_luma) then
@@ -1462,7 +1465,8 @@ contains
             do x = 1, 8
                 src_x = min(start_x + (x - 1) * 2, width)
                 src_y = min(start_y + (y - 1) * 2, height)
-                block(x, y) = component_data(src_x, src_y) - 128.0
+                ! U and V are already centered around 0 (no 128 offset)
+                block(x, y) = component_data(src_x, src_y)
             end do
         end do
     end subroutine extract_subsampled_8x8_block
