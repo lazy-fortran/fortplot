@@ -50,8 +50,9 @@ matplotlib: example_matplotlib
 # Clean build artifacts
 clean:
 	echo y | fpm clean
-	rm -f *.png *.pdf
-	find example/ -name "*.png" -o -name "*.pdf" -o -name "*.txt" -not -name "CMakeLists.txt" | xargs rm -f
+	find . -name "*.png" -o -name "*.pdf" -o -name "*.txt" \
+	       -o -name "*.txt" -o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \
+		   -not -name "CMakeLists.txt" | xargs rm -f
 
 # Build with release optimizations
 release:
