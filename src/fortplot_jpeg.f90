@@ -1,5 +1,4 @@
 module fortplot_jpeg
-    use iso_c_binding
     use fortplot_raster, only: raster_context, initialize_raster_backend, draw_axes_and_labels, draw_rotated_ylabel_raster
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
@@ -263,22 +262,25 @@ contains
         integer(1), intent(out) :: qtable(64)
         integer, intent(in) :: quality
         
-        integer :: i, base_table(64), scale_factor
+        integer :: i, quality_scale, yti
         
-        ! Standard JPEG quantization table
-        base_table = [16, 11, 10, 16, 24, 40, 51, 61, &
-                      12, 12, 14, 19, 26, 58, 60, 55, &
-                      14, 13, 16, 24, 40, 57, 69, 56, &
-                      14, 17, 22, 29, 51, 87, 80, 62, &
-                      18, 22, 37, 56, 68, 109, 103, 77, &
-                      24, 35, 55, 64, 81, 104, 113, 92, &
-                      49, 64, 78, 87, 103, 121, 120, 101, &
-                      72, 92, 95, 98, 112, 100, 103, 99]
+        ! Use exact STB quantization table and scaling (must match encoding)
+        integer, parameter :: YQT(64) = [16,11,10,16,24,40,51,61,12,12,14,19,26,58,60,55,14,13,16,24,40,57,69,56, &
+                                        14,17,22,29,51,87,80,62,18,22,37,56,68,109,103,77,24,35,55,64,81,104,113,92, &
+                                        49,64,78,87,103,121,120,101,72,92,95,98,112,100,103,99]
         
-        ! Scale by quality factor
-        scale_factor = max(1, min(100, quality))
+        ! STB quality scaling (must match get_stb_quantization_tables)
+        quality_scale = max(1, min(100, quality))
+        if (quality_scale < 50) then
+            quality_scale = 5000 / quality_scale
+        else
+            quality_scale = 200 - quality_scale * 2
+        end if
+        
+        ! Scale exactly like STB
         do i = 1, 64
-            qtable(i) = int(max(1, (base_table(i) * 100) / scale_factor), 1)
+            yti = (YQT(i) * quality_scale + 50) / 100
+            qtable(i) = int(max(1, min(255, yti)), 1)
         end do
     end subroutine write_standard_qtable
 
