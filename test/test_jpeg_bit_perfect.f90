@@ -17,7 +17,7 @@ contains
         pixels = gray_value
         
         ! Generate with our implementation
-        call write_jpeg_file("test_our.jpg", 8, 8, reshape(pixels, [192]), 80)
+        call write_jpeg_file("test_our.jpg", 8, 8, reshape(pixels, [192]), 90)
         
         ! Read both files
         call read_binary_file("test_our.jpg", our_data)
