@@ -1,7 +1,8 @@
 module fortplot_animation
-    use iso_fortran_env, only: real64
-    use fortplot_figure_core, only: figure_t
+    use iso_fortran_env, only: real64, wp => real64
+    use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
+    use fortplot_png, only: png_context, create_png_canvas, get_png_data
     implicit none
     private
 
@@ -264,48 +265,174 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        character(len=256) :: temp_filename
-        integer :: unit_num, file_size, io_stat
-        
         if (.not. associated(anim%fig)) then
             status = -1
             return
         end if
         
-        call anim%animate_func(frame_idx)
-        
-        write(temp_filename, '(A,I0,A)') "/tmp/fortplot_frame_", get_current_timestamp(), ".png"
-        
-        call anim%fig%savefig(temp_filename)
-        
-        open(newunit=unit_num, file=temp_filename, action='read', &
-             form='unformatted', access='stream', iostat=io_stat)
-        
-        if (io_stat /= 0) then
-            status = -1
-            return
-        end if
-        
-        inquire(unit=unit_num, size=file_size)
-        allocate(png_data(file_size))
-        
-        read(unit_num, iostat=io_stat) png_data
-        close(unit_num)
-        
-        call execute_command_line("rm -f " // trim(temp_filename))
-        
-        if (io_stat /= 0) then
-            status = -1
-            if (allocated(png_data)) deallocate(png_data)
-        else
-            status = 0
-        end if
+        call update_frame_data(anim, frame_idx)
+        call render_frame_to_png(anim%fig, png_data, status)
     end subroutine generate_png_frame_data
 
+    subroutine update_frame_data(anim, frame_idx)
+        class(animation_t), intent(inout) :: anim
+        integer, intent(in) :: frame_idx
+        
+        call anim%animate_func(frame_idx)
+    end subroutine update_frame_data
 
+    subroutine render_frame_to_png(fig, png_data, status)
+        type(figure_t), intent(inout) :: fig
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        type(png_context) :: png_ctx
+        
+        call setup_png_backend(fig, png_ctx)
+        call render_to_backend(fig)
+        call extract_png_data(fig, png_data, status)
+    end subroutine render_frame_to_png
 
+    subroutine setup_png_backend(fig, png_ctx)
+        type(figure_t), intent(inout) :: fig
+        type(png_context), intent(out) :: png_ctx
+        
+        png_ctx = create_png_canvas(fig%width, fig%height)
+        
+        if (allocated(fig%backend)) deallocate(fig%backend)
+        allocate(png_context :: fig%backend)
+        fig%backend = png_ctx
+        fig%rendered = .false.
+    end subroutine setup_png_backend
 
+    subroutine render_to_backend(fig)
+        type(figure_t), intent(inout) :: fig
+        
+        call render_figure_components(fig)
+    end subroutine render_to_backend
 
+    subroutine extract_png_data(fig, png_data, status)
+        type(figure_t), intent(inout) :: fig
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        select type (backend => fig%backend)
+        type is (png_context)
+            call get_png_data(fig%width, fig%height, backend%raster%image_data, png_data)
+            status = 0
+        class default
+            status = -1
+        end select
+    end subroutine extract_png_data
+
+    subroutine render_figure_components(fig)
+        type(figure_t), intent(inout) :: fig
+        
+        if (.not. allocated(fig%backend)) return
+        
+        call render_background(fig)
+        call render_all_plots(fig)
+        call mark_as_rendered(fig)
+    end subroutine render_figure_components
+
+    subroutine render_background(fig)
+        type(figure_t), intent(inout) :: fig
+        
+        call fig%backend%color(1.0_wp, 1.0_wp, 1.0_wp)
+    end subroutine render_background
+
+    subroutine render_all_plots(fig)
+        type(figure_t), intent(inout) :: fig
+        integer :: i
+        
+        do i = 1, fig%plot_count
+            call render_single_plot(fig, fig%plots(i))
+        end do
+    end subroutine render_all_plots
+
+    subroutine render_single_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        
+        select case (plot_data%plot_type)
+        case (1) ! PLOT_TYPE_LINE
+            call render_line_plot(fig, plot_data)
+        case (2) ! PLOT_TYPE_CONTOUR  
+            call render_contour_plot(fig, plot_data)
+        case (3) ! PLOT_TYPE_PCOLORMESH
+            call render_pcolormesh_plot(fig, plot_data)
+        end select
+    end subroutine render_single_plot
+
+    subroutine mark_as_rendered(fig)
+        type(figure_t), intent(inout) :: fig
+        
+        fig%rendered = .true.
+    end subroutine mark_as_rendered
+
+    subroutine render_line_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        
+        if (.not. is_valid_line_data(plot_data)) return
+        
+        call set_plot_color(fig, plot_data)
+        call draw_line_segments(fig, plot_data)
+    end subroutine render_line_plot
+
+    function is_valid_line_data(plot_data) result(valid)
+        type(plot_data_t), intent(in) :: plot_data
+        logical :: valid
+        
+        valid = allocated(plot_data%x) .and. allocated(plot_data%y) .and. size(plot_data%x) >= 2
+    end function is_valid_line_data
+
+    subroutine set_plot_color(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        
+        call fig%backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+    end subroutine set_plot_color
+
+    subroutine draw_line_segments(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        integer :: i
+        real(wp) :: x_screen, y_screen, x_prev, y_prev
+        
+        call data_to_screen_coords(fig, plot_data%x(1), plot_data%y(1), x_prev, y_prev)
+        
+        do i = 2, size(plot_data%x)
+            call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(i), x_screen, y_screen)
+            call fig%backend%line(x_prev, y_prev, x_screen, y_screen)
+            x_prev = x_screen
+            y_prev = y_screen
+        end do
+    end subroutine draw_line_segments
+
+    subroutine render_contour_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        ! Placeholder for contour rendering
+    end subroutine render_contour_plot
+
+    subroutine render_pcolormesh_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        ! Placeholder for pcolormesh rendering
+    end subroutine render_pcolormesh_plot
+
+    subroutine data_to_screen_coords(fig, x_data, y_data, x_screen, y_screen)
+        type(figure_t), intent(in) :: fig
+        real(wp), intent(in) :: x_data, y_data
+        real(wp), intent(out) :: x_screen, y_screen
+        
+        ! Simple linear mapping from data to screen coordinates
+        ! This is a simplified version - the actual implementation would handle
+        ! logarithmic scales, margins, etc.
+        x_screen = real(fig%width, wp) * (x_data - fig%x_min) / (fig%x_max - fig%x_min)
+        y_screen = real(fig%height, wp) * (1.0_wp - (y_data - fig%y_min) / (fig%y_max - fig%y_min))
+    end subroutine data_to_screen_coords
 
     function get_current_timestamp() result(ts)
         integer :: ts
