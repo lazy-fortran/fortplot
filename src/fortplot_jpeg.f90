@@ -268,6 +268,16 @@ contains
         integer, intent(in) :: quality
         
         integer :: i, quality_scale, yti
+        ! Zigzag order indices
+        integer, parameter :: zigzag(64) = [ &
+             1,  2,  9, 17, 10,  3,  4, 11, &
+            18, 25, 33, 26, 19, 12,  5,  6, &
+            13, 20, 27, 34, 41, 49, 42, 35, &
+            28, 21, 14,  7,  8, 15, 22, 29, &
+            36, 43, 50, 57, 58, 51, 44, 37, &
+            30, 23, 16, 24, 31, 38, 45, 52, &
+            59, 60, 53, 46, 39, 32, 40, 47, &
+            54, 61, 62, 55, 48, 56, 63, 64]
         
         ! STB Y quantization table in natural order (row-major)
         integer, parameter :: YQT(64) = [ &
@@ -289,17 +299,6 @@ contains
         end if
         
         ! Scale and write in zigzag order like STB
-        ! Zigzag order indices
-        integer, parameter :: zigzag(64) = [ &
-             1,  2,  9, 17, 10,  3,  4, 11, &
-            18, 25, 33, 26, 19, 12,  5,  6, &
-            13, 20, 27, 34, 41, 49, 42, 35, &
-            28, 21, 14,  7,  8, 15, 22, 29, &
-            36, 43, 50, 57, 58, 51, 44, 37, &
-            30, 23, 16, 24, 31, 38, 45, 52, &
-            59, 60, 53, 46, 39, 32, 40, 47, &
-            54, 61, 62, 55, 48, 56, 63, 64]
-            
         do i = 1, 64
             yti = (YQT(zigzag(i)) * quality_scale + 50) / 100
             qtable(i) = int(max(1, min(255, yti)), 1)
@@ -311,21 +310,6 @@ contains
         integer, intent(in) :: quality
         
         integer :: i, quality_scale, uvti
-        
-        ! STB UV quantization table
-        integer, parameter :: UVQT(64) = [17,18,24,47,99,99,99,99,18,21,26,66,99,99,99,99,24,26,56,99,99,99,99,99, &
-                                          47,66,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99, &
-                                          99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99]
-        
-        ! STB quality scaling (must match Y table)
-        quality_scale = max(1, min(100, quality))
-        if (quality_scale < 50) then
-            quality_scale = 5000 / quality_scale
-        else
-            quality_scale = 200 - quality_scale * 2
-        end if
-        
-        ! Scale and write in zigzag order like STB
         ! Zigzag order indices
         integer, parameter :: zigzag(64) = [ &
              1,  2,  9, 17, 10,  3,  4, 11, &
@@ -336,7 +320,27 @@ contains
             30, 23, 16, 24, 31, 38, 45, 52, &
             59, 60, 53, 46, 39, 32, 40, 47, &
             54, 61, 62, 55, 48, 56, 63, 64]
-            
+        
+        ! STB UV quantization table in natural order
+        integer, parameter :: UVQT(64) = [ &
+            17, 18, 24, 47, 99, 99, 99, 99, &
+            18, 21, 26, 66, 99, 99, 99, 99, &
+            24, 26, 56, 99, 99, 99, 99, 99, &
+            47, 66, 99, 99, 99, 99, 99, 99, &
+            99, 99, 99, 99, 99, 99, 99, 99, &
+            99, 99, 99, 99, 99, 99, 99, 99, &
+            99, 99, 99, 99, 99, 99, 99, 99, &
+            99, 99, 99, 99, 99, 99, 99, 99]
+        
+        ! STB quality scaling (must match Y table)
+        quality_scale = max(1, min(100, quality))
+        if (quality_scale < 50) then
+            quality_scale = 5000 / quality_scale
+        else
+            quality_scale = 200 - quality_scale * 2
+        end if
+        
+        ! Scale and write in zigzag order like STB
         do i = 1, 64
             uvti = (UVQT(zigzag(i)) * quality_scale + 50) / 100
             qtable(i) = int(max(1, min(255, uvti)), 1)
