@@ -17,6 +17,7 @@ module fortplot
     use iso_fortran_env, only: wp => real64
     use fortplot_figure, only: figure_t
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
+    use fortplot_animation, only: animation_t, FuncAnimation
 
     implicit none
 
@@ -29,6 +30,9 @@ module fortplot
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
     public :: set_xscale, set_yscale
+    
+    ! Animation interface
+    public :: animation_t, FuncAnimation
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
