@@ -20,7 +20,7 @@ jobs:
         
     - name: Install fpm
       run: |
-        wget https://github.com/fortran-lang/fpm/releases/download/v0.10.0/fpm-0.10.0-linux-x86_64 -O fpm
+        wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64 -O fpm
         chmod +x fpm
         sudo mv fpm /usr/local/bin/
         

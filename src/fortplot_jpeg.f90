@@ -1204,17 +1204,26 @@ contains
         
         real :: temp_cdu(8, 8)
         integer :: i, j, k
+        ! STB zigzag order table
+        integer, parameter :: zigzag(64) = [ &
+            1,  2,  9, 17, 10,  3,  4, 11, &
+           18, 25, 33, 26, 19, 12,  5,  6, &
+           13, 20, 27, 34, 41, 49, 42, 35, &
+           28, 21, 14,  7,  8, 15, 22, 29, &
+           36, 43, 50, 57, 58, 51, 44, 37, &
+           30, 23, 16, 24, 31, 38, 45, 52, &
+           59, 60, 53, 46, 39, 32, 40, 47, &
+           54, 61, 62, 55, 48, 56, 63, 64]
         
         ! Copy input and apply DCT
         temp_cdu = CDU
         call apply_stb_dct_8x8(temp_cdu)
         
-        ! Quantize and zigzag exactly like STB
-        do i = 1, 8
-            do j = 1, 8
-                k = (i - 1) * 8 + j
-                DU(k) = nint(temp_cdu(j, i) * fdtbl(k))
-            end do
+        ! Quantize and apply zigzag order
+        do k = 1, 64
+            i = (zigzag(k) - 1) / 8 + 1
+            j = mod(zigzag(k) - 1, 8) + 1
+            DU(k) = nint(temp_cdu(j, i) * fdtbl(zigzag(k)))
         end do
     end subroutine apply_dct_and_quantize_stb_style
     
