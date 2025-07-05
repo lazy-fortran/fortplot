@@ -24,7 +24,6 @@ terminal
 *.flv
 
 # Coverage files and reports
-coverage_html/
 coverage.info
 *.gcda
 *.gcno

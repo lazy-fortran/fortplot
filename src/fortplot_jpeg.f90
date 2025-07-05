@@ -1030,6 +1030,7 @@ contains
         
         ! Encode DC coefficient exactly like STB
         diff = DU(1) - DC  ! STB: diff = DU[0] - DC
+        ! print *, "DC encoding: DU(1)=", DU(1), "DC=", DC, "diff=", diff
         if (diff == 0) then
             ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, HTDC[0])
             if (is_luma) then
@@ -1285,7 +1286,8 @@ contains
         do k = 1, 64
             i = (zigzag(k) - 1) / 8 + 1
             j = mod(zigzag(k) - 1, 8) + 1
-            DU(k) = nint(temp_cdu(j, i) * fdtbl(zigzag(k)))
+            ! fdtbl is in natural order, so we need row-major index
+            DU(k) = nint(temp_cdu(j, i) * fdtbl((i-1)*8 + j))
         end do
     end subroutine apply_dct_and_quantize_stb_style
     

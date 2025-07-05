@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.info - src/fortplot_streamline_integrator.f90</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">src</a> - fortplot_streamline_integrator.f90<span style="font-size: 80%;"> (source / <a href="fortplot_streamline_integrator.f90.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">83</td>
+            <td class="headerCovTableEntry">104</td>
+            <td class="headerCovTableEntryMed">79.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2025-07-05 22:33:28</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryLo">66.7 %</td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : module fortplot_streamline_integrator</a>
+<a name="2"><span class="lineNum">       2 </span>            :     !! DOPRI5 (Dormand-Prince 5(4)) integrator for streamline computation</a>
+<a name="3"><span class="lineNum">       3 </span>            :     !! Provides adaptive step size control and high-order accuracy</a>
+<a name="4"><span class="lineNum">       4 </span>            :     !! </a>
+<a name="5"><span class="lineNum">       5 </span>            :     !! Following SOLID principles:</a>
+<a name="6"><span class="lineNum">       6 </span>            :     !! - Single responsibility: Only handles numerical integration</a>
+<a name="7"><span class="lineNum">       7 </span>            :     !! - Open/closed: Extensible to other integration methods</a>
+<a name="8"><span class="lineNum">       8 </span>            :     !! - Interface segregation: Clean, focused interface</a>
+<a name="9"><span class="lineNum">       9 </span>            :     !! - Dependency inversion: Depends on abstract velocity field interface</a>
+<a name="10"><span class="lineNum">      10 </span>            :     use, intrinsic :: iso_fortran_env, only: wp =&gt; real64</a>
+<a name="11"><span class="lineNum">      11 </span>            :     implicit none</a>
+<a name="12"><span class="lineNum">      12 </span>            :     private</a>
+<a name="13"><span class="lineNum">      13 </span>            :     </a>
+<a name="14"><span class="lineNum">      14 </span>            :     public :: integration_params_t, dopri5_integrate</a>
+<a name="15"><span class="lineNum">      15 </span>            :     </a>
+<a name="16"><span class="lineNum">      16 </span>            :     !! Integration parameters for DOPRI5 method</a>
+<a name="17"><span class="lineNum">      17 </span>            :     type :: integration_params_t</a>
+<a name="18"><span class="lineNum">      18 </span>            :         real(wp) :: rtol = 1.0e-6_wp           !! Relative tolerance</a>
+<a name="19"><span class="lineNum">      19 </span>            :         real(wp) :: atol = 1.0e-9_wp           !! Absolute tolerance</a>
+<a name="20"><span class="lineNum">      20 </span>            :         real(wp) :: h_initial = 0.01_wp        !! Initial step size</a>
+<a name="21"><span class="lineNum">      21 </span>            :         real(wp) :: h_min = 1.0e-12_wp         !! Minimum step size</a>
+<a name="22"><span class="lineNum">      22 </span>            :         real(wp) :: h_max = 1.0_wp             !! Maximum step size</a>
+<a name="23"><span class="lineNum">      23 </span>            :         integer :: max_steps = 10000           !! Maximum integration steps</a>
+<a name="24"><span class="lineNum">      24 </span>            :         real(wp) :: safety_factor = 0.9_wp     !! Step size safety factor</a>
+<a name="25"><span class="lineNum">      25 </span>            :         real(wp) :: max_factor = 5.0_wp        !! Maximum step increase factor</a>
+<a name="26"><span class="lineNum">      26 </span>            :         real(wp) :: min_factor = 0.2_wp        !! Minimum step decrease factor</a>
+<a name="27"><span class="lineNum">      27 </span>            :     end type integration_params_t</a>
+<a name="28"><span class="lineNum">      28 </span>            :     </a>
+<a name="29"><span class="lineNum">      29 </span>            :     !! DOPRI5 Butcher tableau coefficients</a>
+<a name="30"><span class="lineNum">      30 </span>            :     real(wp), parameter :: A21 = 1.0_wp/5.0_wp</a>
+<a name="31"><span class="lineNum">      31 </span>            :     real(wp), parameter :: A31 = 3.0_wp/40.0_wp, A32 = 9.0_wp/40.0_wp</a>
+<a name="32"><span class="lineNum">      32 </span>            :     real(wp), parameter :: A41 = 44.0_wp/45.0_wp, A42 = -56.0_wp/15.0_wp, A43 = 32.0_wp/9.0_wp</a>
+<a name="33"><span class="lineNum">      33 </span>            :     real(wp), parameter :: A51 = 19372.0_wp/6561.0_wp, A52 = -25360.0_wp/2187.0_wp</a>
+<a name="34"><span class="lineNum">      34 </span>            :     real(wp), parameter :: A53 = 64448.0_wp/6561.0_wp, A54 = -212.0_wp/729.0_wp</a>
+<a name="35"><span class="lineNum">      35 </span>            :     real(wp), parameter :: A61 = 9017.0_wp/3168.0_wp, A62 = -355.0_wp/33.0_wp</a>
+<a name="36"><span class="lineNum">      36 </span>            :     real(wp), parameter :: A63 = 46732.0_wp/5247.0_wp, A64 = 49.0_wp/176.0_wp, A65 = -5103.0_wp/18656.0_wp</a>
+<a name="37"><span class="lineNum">      37 </span>            :     real(wp), parameter :: A71 = 35.0_wp/384.0_wp, A72 = 0.0_wp</a>
+<a name="38"><span class="lineNum">      38 </span>            :     real(wp), parameter :: A73 = 500.0_wp/1113.0_wp, A74 = 125.0_wp/192.0_wp</a>
+<a name="39"><span class="lineNum">      39 </span>            :     real(wp), parameter :: A75 = -2187.0_wp/6784.0_wp, A76 = 11.0_wp/84.0_wp</a>
+<a name="40"><span class="lineNum">      40 </span>            :     </a>
+<a name="41"><span class="lineNum">      41 </span>            :     !! 5th order solution weights (b_i)</a>
+<a name="42"><span class="lineNum">      42 </span>            :     real(wp), parameter :: B1 = 35.0_wp/384.0_wp, B2 = 0.0_wp</a>
+<a name="43"><span class="lineNum">      43 </span>            :     real(wp), parameter :: B3 = 500.0_wp/1113.0_wp, B4 = 125.0_wp/192.0_wp</a>
+<a name="44"><span class="lineNum">      44 </span>            :     real(wp), parameter :: B5 = -2187.0_wp/6784.0_wp, B6 = 11.0_wp/84.0_wp, B7 = 0.0_wp</a>
+<a name="45"><span class="lineNum">      45 </span>            :     </a>
+<a name="46"><span class="lineNum">      46 </span>            :     !! 4th order embedded solution weights (b*_i)</a>
+<a name="47"><span class="lineNum">      47 </span>            :     real(wp), parameter :: BS1 = 5179.0_wp/57600.0_wp, BS2 = 0.0_wp</a>
+<a name="48"><span class="lineNum">      48 </span>            :     real(wp), parameter :: BS3 = 7571.0_wp/16695.0_wp, BS4 = 393.0_wp/640.0_wp</a>
+<a name="49"><span class="lineNum">      49 </span>            :     real(wp), parameter :: BS5 = -92097.0_wp/339200.0_wp, BS6 = 187.0_wp/2100.0_wp, BS7 = 1.0_wp/40.0_wp</a>
+<a name="50"><span class="lineNum">      50 </span>            :     </a>
+<a name="51"><span class="lineNum">      51 </span>            :     !! c_i time coefficients</a>
+<a name="52"><span class="lineNum">      52 </span>            :     real(wp), parameter :: C2 = 1.0_wp/5.0_wp, C3 = 3.0_wp/10.0_wp, C4 = 4.0_wp/5.0_wp</a>
+<a name="53"><span class="lineNum">      53 </span>            :     real(wp), parameter :: C5 = 8.0_wp/9.0_wp, C6 = 1.0_wp, C7 = 1.0_wp</a>
+<a name="54"><span class="lineNum">      54 </span>            :     </a>
+<a name="55"><span class="lineNum">      55 </span>            : contains</a>
+<a name="56"><span class="lineNum">      56 </span>            : </a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineCov">         10 :     subroutine dopri5_integrate(x0, y0, t0, t_final, u_func, v_func, params, &amp;</span></a>
+<a name="58"><span class="lineNum">      58 </span>            :                                path_x, path_y, times, n_points, n_accepted, n_rejected, success)</a>
+<a name="59"><span class="lineNum">      59 </span>            :         !! Integrate streamline using DOPRI5 method with adaptive step size</a>
+<a name="60"><span class="lineNum">      60 </span>            :         real(wp), intent(in) :: x0, y0, t0, t_final</a>
+<a name="61"><span class="lineNum">      61 </span>            :         interface</a>
+<a name="62"><span class="lineNum">      62 </span>            :             real(wp) function u_func(x, y)</a>
+<a name="63"><span class="lineNum">      63 </span>            :                 import wp</a>
+<a name="64"><span class="lineNum">      64 </span>            :                 real(wp), intent(in) :: x, y</a>
+<a name="65"><span class="lineNum">      65 </span>            :             end function u_func</a>
+<a name="66"><span class="lineNum">      66 </span>            :             real(wp) function v_func(x, y)</a>
+<a name="67"><span class="lineNum">      67 </span>            :                 import wp</a>
+<a name="68"><span class="lineNum">      68 </span>            :                 real(wp), intent(in) :: x, y</a>
+<a name="69"><span class="lineNum">      69 </span>            :             end function v_func</a>
+<a name="70"><span class="lineNum">      70 </span>            :         end interface</a>
+<a name="71"><span class="lineNum">      71 </span>            :         type(integration_params_t), intent(in) :: params</a>
+<a name="72"><span class="lineNum">      72 </span>            :         real(wp), allocatable, intent(out) :: path_x(:), path_y(:), times(:)</a>
+<a name="73"><span class="lineNum">      73 </span>            :         integer, intent(out) :: n_points, n_accepted, n_rejected</a>
+<a name="74"><span class="lineNum">      74 </span>            :         logical, intent(out) :: success</a>
+<a name="75"><span class="lineNum">      75 </span>            :         </a>
+<a name="76"><span class="lineNum">      76 </span>            :         ! Local variables</a>
+<a name="77"><span class="lineNum">      77 </span>            :         real(wp) :: x, y, t, h, x_new, y_new, error_est</a>
+<a name="78"><span class="lineNum">      78 </span>            :         real(wp) :: k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y, k5x, k5y, k6x, k6y, k7x, k7y</a>
+<a name="79"><span class="lineNum">      79 </span>            :         real(wp) :: x5, y5, x4, y4  ! 5th and 4th order solutions</a>
+<a name="80"><span class="lineNum">      80 </span>            :         real(wp) :: tolerance, h_new</a>
+<a name="81"><span class="lineNum">      81 </span>            :         integer :: step_count, array_size</a>
+<a name="82"><span class="lineNum">      82 </span>            :         logical :: step_accepted</a>
+<a name="83"><span class="lineNum">      83 </span>            :         </a>
+<a name="84"><span class="lineNum">      84 </span>            :         ! Initialize integration</a>
+<a name="85"><span class="lineNum">      85 </span><span class="lineCov">         10 :         array_size = params%max_steps</span></a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">         10 :         allocate(path_x(array_size), path_y(array_size), times(array_size))</span></a>
+<a name="87"><span class="lineNum">      87 </span>            :         </a>
+<a name="88"><span class="lineNum">      88 </span><span class="lineCov">         10 :         x = x0</span></a>
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">         10 :         y = y0</span></a>
+<a name="90"><span class="lineNum">      90 </span><span class="lineCov">         10 :         t = t0</span></a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">         10 :         h = params%h_initial</span></a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineCov">         10 :         n_points = 1</span></a>
+<a name="93"><span class="lineNum">      93 </span><span class="lineCov">         10 :         n_accepted = 0</span></a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineCov">         10 :         n_rejected = 0</span></a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineCov">         10 :         success = .true.</span></a>
+<a name="96"><span class="lineNum">      96 </span>            :         </a>
+<a name="97"><span class="lineNum">      97 </span>            :         ! Store initial point</a>
+<a name="98"><span class="lineNum">      98 </span><span class="lineCov">         10 :         path_x(1) = x</span></a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineCov">         10 :         path_y(1) = y</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineCov">         10 :         times(1) = t</span></a>
+<a name="101"><span class="lineNum">     101 </span>            :         </a>
+<a name="102"><span class="lineNum">     102 </span>            :         ! Main integration loop</a>
+<a name="103"><span class="lineNum">     103 </span><span class="lineCov">        416 :         do step_count = 1, params%max_steps</span></a>
+<a name="104"><span class="lineNum">     104 </span>            :             ! Check if we've reached the final time</a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineCov">        416 :             if (t &gt;= t_final) exit</span></a>
+<a name="106"><span class="lineNum">     106 </span>            :             </a>
+<a name="107"><span class="lineNum">     107 </span>            :             ! Adjust step size to not overshoot</a>
+<a name="108"><span class="lineNum">     108 </span><span class="lineCov">        406 :             if (t + h &gt; t_final) h = t_final - t</span></a>
+<a name="109"><span class="lineNum">     109 </span>            :             </a>
+<a name="110"><span class="lineNum">     110 </span>            :             ! DOPRI5 step with error estimation</a>
+<a name="111"><span class="lineNum">     111 </span>            :             call dopri5_step(x, y, h, u_func, v_func, x5, y5, x4, y4, &amp;</a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineCov">        406 :                            k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y, k5x, k5y, k6x, k6y, k7x, k7y)</span></a>
+<a name="113"><span class="lineNum">     113 </span>            :             </a>
+<a name="114"><span class="lineNum">     114 </span>            :             ! Calculate error estimate</a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineCov">        406 :             error_est = calculate_error_estimate(x5, y5, x4, y4, params)</span></a>
+<a name="116"><span class="lineNum">     116 </span>            :             </a>
+<a name="117"><span class="lineNum">     117 </span>            :             ! Determine if step is accepted</a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineCov">        406 :             step_accepted = (error_est &lt;= 1.0_wp)</span></a>
+<a name="119"><span class="lineNum">     119 </span>            :             </a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">        406 :             if (step_accepted) then</span></a>
+<a name="121"><span class="lineNum">     121 </span>            :                 ! Accept step</a>
+<a name="122"><span class="lineNum">     122 </span><span class="lineCov">        346 :                 n_accepted = n_accepted + 1</span></a>
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">        346 :                 x = x5</span></a>
+<a name="124"><span class="lineNum">     124 </span><span class="lineCov">        346 :                 y = y5</span></a>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">        346 :                 t = t + h</span></a>
+<a name="126"><span class="lineNum">     126 </span><span class="lineCov">        346 :                 n_points = n_points + 1</span></a>
+<a name="127"><span class="lineNum">     127 </span>            :                 </a>
+<a name="128"><span class="lineNum">     128 </span>            :                 ! Store point (resize arrays if needed)</a>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">        346 :                 if (n_points &gt; array_size) then</span></a>
+<a name="130"><span class="lineNum">     130 </span><span class="lineNoCov">          0 :                     call resize_arrays(path_x, path_y, times, array_size)</span></a>
+<a name="131"><span class="lineNum">     131 </span>            :                 end if</a>
+<a name="132"><span class="lineNum">     132 </span>            :                 </a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">        346 :                 path_x(n_points) = x</span></a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineCov">        346 :                 path_y(n_points) = y</span></a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineCov">        346 :                 times(n_points) = t</span></a>
+<a name="136"><span class="lineNum">     136 </span>            :                 </a>
+<a name="137"><span class="lineNum">     137 </span>            :                 ! Use FSAL property: k1 for next step = k7 from current step</a>
+<a name="138"><span class="lineNum">     138 </span><span class="lineCov">        346 :                 k1x = k7x</span></a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineCov">        346 :                 k1y = k7y</span></a>
+<a name="140"><span class="lineNum">     140 </span>            :             else</a>
+<a name="141"><span class="lineNum">     141 </span>            :                 ! Reject step</a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineCov">         60 :                 n_rejected = n_rejected + 1</span></a>
+<a name="143"><span class="lineNum">     143 </span>            :             end if</a>
+<a name="144"><span class="lineNum">     144 </span>            :             </a>
+<a name="145"><span class="lineNum">     145 </span>            :             ! Calculate new step size</a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineCov">        406 :             if (error_est &gt; 0.0_wp) then</span></a>
+<a name="147"><span class="lineNum">     147 </span><span class="lineCov">        400 :                 h_new = h * params%safety_factor * (1.0_wp / error_est)**(1.0_wp/5.0_wp)</span></a>
+<a name="148"><span class="lineNum">     148 </span>            :             else</a>
+<a name="149"><span class="lineNum">     149 </span><span class="lineCov">          6 :                 h_new = h * params%max_factor</span></a>
+<a name="150"><span class="lineNum">     150 </span>            :             end if</a>
+<a name="151"><span class="lineNum">     151 </span>            :             </a>
+<a name="152"><span class="lineNum">     152 </span>            :             ! Apply step size bounds</a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">        406 :             h_new = max(params%h_min, min(params%h_max, h_new))</span></a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineCov">        406 :             h_new = max(h_new, h * params%min_factor)</span></a>
+<a name="155"><span class="lineNum">     155 </span><span class="lineCov">        406 :             h_new = min(h_new, h * params%max_factor)</span></a>
+<a name="156"><span class="lineNum">     156 </span>            :             </a>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">        406 :             h = h_new</span></a>
+<a name="158"><span class="lineNum">     158 </span>            :             </a>
+<a name="159"><span class="lineNum">     159 </span>            :             ! Check for step size underflow</a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">        812 :             if (h &lt; params%h_min) then</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 :                 success = .false.</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineNoCov">          0 :                 return</span></a>
+<a name="163"><span class="lineNum">     163 </span>            :             end if</a>
+<a name="164"><span class="lineNum">     164 </span>            :         end do</a>
+<a name="165"><span class="lineNum">     165 </span>            :         </a>
+<a name="166"><span class="lineNum">     166 </span>            :         ! Check if integration completed successfully</a>
+<a name="167"><span class="lineNum">     167 </span><span class="lineCov">         10 :         if (step_count &gt;= params%max_steps .and. t &lt; t_final) then</span></a>
+<a name="168"><span class="lineNum">     168 </span><span class="lineNoCov">          0 :             success = .false.</span></a>
+<a name="169"><span class="lineNum">     169 </span>            :         end if</a>
+<a name="170"><span class="lineNum">     170 </span>            :         </a>
+<a name="171"><span class="lineNum">     171 </span>            :         ! Trim arrays to actual size</a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">         10 :         call trim_arrays(path_x, path_y, times, n_points)</span></a>
+<a name="173"><span class="lineNum">     173 </span>            :         </a>
+<a name="174"><span class="lineNum">     174 </span>            :     end subroutine dopri5_integrate</a>
+<a name="175"><span class="lineNum">     175 </span>            : </a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineCov">        406 :     subroutine dopri5_step(x, y, h, u_func, v_func, x5, y5, x4, y4, &amp;</span></a>
+<a name="177"><span class="lineNum">     177 </span>            :                           k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y, k5x, k5y, k6x, k6y, k7x, k7y)</a>
+<a name="178"><span class="lineNum">     178 </span>            :         !! Single DOPRI5 step with 5th and 4th order solutions</a>
+<a name="179"><span class="lineNum">     179 </span>            :         real(wp), intent(in) :: x, y, h</a>
+<a name="180"><span class="lineNum">     180 </span>            :         interface</a>
+<a name="181"><span class="lineNum">     181 </span>            :             real(wp) function u_func(x, y)</a>
+<a name="182"><span class="lineNum">     182 </span>            :                 import wp</a>
+<a name="183"><span class="lineNum">     183 </span>            :                 real(wp), intent(in) :: x, y</a>
+<a name="184"><span class="lineNum">     184 </span>            :             end function u_func</a>
+<a name="185"><span class="lineNum">     185 </span>            :             real(wp) function v_func(x, y)</a>
+<a name="186"><span class="lineNum">     186 </span>            :                 import wp</a>
+<a name="187"><span class="lineNum">     187 </span>            :                 real(wp), intent(in) :: x, y</a>
+<a name="188"><span class="lineNum">     188 </span>            :             end function v_func</a>
+<a name="189"><span class="lineNum">     189 </span>            :         end interface</a>
+<a name="190"><span class="lineNum">     190 </span>            :         real(wp), intent(out) :: x5, y5, x4, y4  ! 5th and 4th order solutions</a>
+<a name="191"><span class="lineNum">     191 </span>            :         real(wp), intent(out) :: k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y, k5x, k5y, k6x, k6y, k7x, k7y</a>
+<a name="192"><span class="lineNum">     192 </span>            :         </a>
+<a name="193"><span class="lineNum">     193 </span>            :         ! Stage 1</a>
+<a name="194"><span class="lineNum">     194 </span><span class="lineCov">        406 :         k1x = u_func(x, y)</span></a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineCov">        406 :         k1y = v_func(x, y)</span></a>
+<a name="196"><span class="lineNum">     196 </span>            :         </a>
+<a name="197"><span class="lineNum">     197 </span>            :         ! Stage 2</a>
+<a name="198"><span class="lineNum">     198 </span><span class="lineCov">        406 :         k2x = u_func(x + h*A21*k1x, y + h*A21*k1y)</span></a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineCov">        406 :         k2y = v_func(x + h*A21*k1x, y + h*A21*k1y)</span></a>
+<a name="200"><span class="lineNum">     200 </span>            :         </a>
+<a name="201"><span class="lineNum">     201 </span>            :         ! Stage 3</a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">        406 :         k3x = u_func(x + h*(A31*k1x + A32*k2x), y + h*(A31*k1y + A32*k2y))</span></a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineCov">        406 :         k3y = v_func(x + h*(A31*k1x + A32*k2x), y + h*(A31*k1y + A32*k2y))</span></a>
+<a name="204"><span class="lineNum">     204 </span>            :         </a>
+<a name="205"><span class="lineNum">     205 </span>            :         ! Stage 4</a>
+<a name="206"><span class="lineNum">     206 </span>            :         k4x = u_func(x + h*(A41*k1x + A42*k2x + A43*k3x), &amp;</a>
+<a name="207"><span class="lineNum">     207 </span><span class="lineCov">        406 :                      y + h*(A41*k1y + A42*k2y + A43*k3y))</span></a>
+<a name="208"><span class="lineNum">     208 </span>            :         k4y = v_func(x + h*(A41*k1x + A42*k2x + A43*k3x), &amp;</a>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">        406 :                      y + h*(A41*k1y + A42*k2y + A43*k3y))</span></a>
+<a name="210"><span class="lineNum">     210 </span>            :         </a>
+<a name="211"><span class="lineNum">     211 </span>            :         ! Stage 5</a>
+<a name="212"><span class="lineNum">     212 </span>            :         k5x = u_func(x + h*(A51*k1x + A52*k2x + A53*k3x + A54*k4x), &amp;</a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">        406 :                      y + h*(A51*k1y + A52*k2y + A53*k3y + A54*k4y))</span></a>
+<a name="214"><span class="lineNum">     214 </span>            :         k5y = v_func(x + h*(A51*k1x + A52*k2x + A53*k3x + A54*k4x), &amp;</a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">        406 :                      y + h*(A51*k1y + A52*k2y + A53*k3y + A54*k4y))</span></a>
+<a name="216"><span class="lineNum">     216 </span>            :         </a>
+<a name="217"><span class="lineNum">     217 </span>            :         ! Stage 6</a>
+<a name="218"><span class="lineNum">     218 </span>            :         k6x = u_func(x + h*(A61*k1x + A62*k2x + A63*k3x + A64*k4x + A65*k5x), &amp;</a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineCov">        406 :                      y + h*(A61*k1y + A62*k2y + A63*k3y + A64*k4y + A65*k5y))</span></a>
+<a name="220"><span class="lineNum">     220 </span>            :         k6y = v_func(x + h*(A61*k1x + A62*k2x + A63*k3x + A64*k4x + A65*k5x), &amp;</a>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">        406 :                      y + h*(A61*k1y + A62*k2y + A63*k3y + A64*k4y + A65*k5y))</span></a>
+<a name="222"><span class="lineNum">     222 </span>            :         </a>
+<a name="223"><span class="lineNum">     223 </span>            :         ! 5th order solution</a>
+<a name="224"><span class="lineNum">     224 </span><span class="lineCov">        406 :         x5 = x + h*(B1*k1x + B2*k2x + B3*k3x + B4*k4x + B5*k5x + B6*k6x)</span></a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">        406 :         y5 = y + h*(B1*k1y + B2*k2y + B3*k3y + B4*k4y + B5*k5y + B6*k6y)</span></a>
+<a name="226"><span class="lineNum">     226 </span>            :         </a>
+<a name="227"><span class="lineNum">     227 </span>            :         ! Stage 7 (FSAL - First Same As Last)</a>
+<a name="228"><span class="lineNum">     228 </span><span class="lineCov">        406 :         k7x = u_func(x5, y5)</span></a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineCov">        406 :         k7y = v_func(x5, y5)</span></a>
+<a name="230"><span class="lineNum">     230 </span>            :         </a>
+<a name="231"><span class="lineNum">     231 </span>            :         ! 4th order embedded solution  </a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineCov">        406 :         x4 = x + h*(BS1*k1x + BS2*k2x + BS3*k3x + BS4*k4x + BS5*k5x + BS6*k6x + BS7*k7x)</span></a>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">        406 :         y4 = y + h*(BS1*k1y + BS2*k2y + BS3*k3y + BS4*k4y + BS5*k5y + BS6*k6y + BS7*k7y)</span></a>
+<a name="234"><span class="lineNum">     234 </span>            :         </a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineCov">        406 :     end subroutine dopri5_step</span></a>
+<a name="236"><span class="lineNum">     236 </span>            : </a>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">        406 :     real(wp) function calculate_error_estimate(x5, y5, x4, y4, params) result(error_est)</span></a>
+<a name="238"><span class="lineNum">     238 </span>            :         !! Calculate scaled error estimate for step size control</a>
+<a name="239"><span class="lineNum">     239 </span>            :         real(wp), intent(in) :: x5, y5, x4, y4</a>
+<a name="240"><span class="lineNum">     240 </span>            :         type(integration_params_t), intent(in) :: params</a>
+<a name="241"><span class="lineNum">     241 </span>            :         </a>
+<a name="242"><span class="lineNum">     242 </span>            :         real(wp) :: scale_x, scale_y, error_x, error_y</a>
+<a name="243"><span class="lineNum">     243 </span>            :         </a>
+<a name="244"><span class="lineNum">     244 </span>            :         ! Calculate scaling factors</a>
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">        406 :         scale_x = params%atol + params%rtol * max(abs(x5), abs(x4))</span></a>
+<a name="246"><span class="lineNum">     246 </span><span class="lineCov">        406 :         scale_y = params%atol + params%rtol * max(abs(y5), abs(y4))</span></a>
+<a name="247"><span class="lineNum">     247 </span>            :         </a>
+<a name="248"><span class="lineNum">     248 </span>            :         ! Calculate scaled errors</a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">        406 :         error_x = abs(x5 - x4) / scale_x</span></a>
+<a name="250"><span class="lineNum">     250 </span><span class="lineCov">        406 :         error_y = abs(y5 - y4) / scale_y</span></a>
+<a name="251"><span class="lineNum">     251 </span>            :         </a>
+<a name="252"><span class="lineNum">     252 </span>            :         ! RMS error estimate</a>
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">        406 :         error_est = sqrt(0.5_wp * (error_x**2 + error_y**2))</span></a>
+<a name="254"><span class="lineNum">     254 </span>            :         </a>
+<a name="255"><span class="lineNum">     255 </span><span class="lineCov">        406 :     end function calculate_error_estimate</span></a>
+<a name="256"><span class="lineNum">     256 </span>            : </a>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :     subroutine resize_arrays(path_x, path_y, times, array_size)</span></a>
+<a name="258"><span class="lineNum">     258 </span>            :         !! Resize arrays when more space is needed</a>
+<a name="259"><span class="lineNum">     259 </span>            :         real(wp), allocatable, intent(inout) :: path_x(:), path_y(:), times(:)</a>
+<a name="260"><span class="lineNum">     260 </span>            :         integer, intent(inout) :: array_size</a>
+<a name="261"><span class="lineNum">     261 </span>            :         </a>
+<a name="262"><span class="lineNum">     262 </span><span class="lineNoCov">          0 :         real(wp), allocatable :: temp_x(:), temp_y(:), temp_t(:)</span></a>
+<a name="263"><span class="lineNum">     263 </span>            :         integer :: old_size, new_size</a>
+<a name="264"><span class="lineNum">     264 </span>            :         </a>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :         old_size = array_size</span></a>
+<a name="266"><span class="lineNum">     266 </span><span class="lineNoCov">          0 :         new_size = int(old_size * 1.5)  ! Increase by 50%</span></a>
+<a name="267"><span class="lineNum">     267 </span>            :         </a>
+<a name="268"><span class="lineNum">     268 </span>            :         ! Allocate temporary arrays</a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :         allocate(temp_x(new_size), temp_y(new_size), temp_t(new_size))</span></a>
+<a name="270"><span class="lineNum">     270 </span>            :         </a>
+<a name="271"><span class="lineNum">     271 </span>            :         ! Copy existing data</a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineNoCov">          0 :         temp_x(1:old_size) = path_x(1:old_size)</span></a>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :         temp_y(1:old_size) = path_y(1:old_size)</span></a>
+<a name="274"><span class="lineNum">     274 </span><span class="lineNoCov">          0 :         temp_t(1:old_size) = times(1:old_size)</span></a>
+<a name="275"><span class="lineNum">     275 </span>            :         </a>
+<a name="276"><span class="lineNum">     276 </span>            :         ! Reallocate original arrays</a>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :         deallocate(path_x, path_y, times)</span></a>
+<a name="278"><span class="lineNum">     278 </span><span class="lineNoCov">          0 :         allocate(path_x(new_size), path_y(new_size), times(new_size))</span></a>
+<a name="279"><span class="lineNum">     279 </span>            :         </a>
+<a name="280"><span class="lineNum">     280 </span>            :         ! Copy back</a>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :         path_x = temp_x</span></a>
+<a name="282"><span class="lineNum">     282 </span><span class="lineNoCov">          0 :         path_y = temp_y</span></a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineNoCov">          0 :         times = temp_t</span></a>
+<a name="284"><span class="lineNum">     284 </span>            :         </a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :         array_size = new_size</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineNoCov">          0 :         deallocate(temp_x, temp_y, temp_t)</span></a>
+<a name="287"><span class="lineNum">     287 </span>            :         </a>
+<a name="288"><span class="lineNum">     288 </span><span class="lineNoCov">          0 :     end subroutine resize_arrays</span></a>
+<a name="289"><span class="lineNum">     289 </span>            : </a>
+<a name="290"><span class="lineNum">     290 </span><span class="lineCov">         10 :     subroutine trim_arrays(path_x, path_y, times, n_points)</span></a>
+<a name="291"><span class="lineNum">     291 </span>            :         !! Trim arrays to actual used size</a>
+<a name="292"><span class="lineNum">     292 </span>            :         real(wp), allocatable, intent(inout) :: path_x(:), path_y(:), times(:)</a>
+<a name="293"><span class="lineNum">     293 </span>            :         integer, intent(in) :: n_points</a>
+<a name="294"><span class="lineNum">     294 </span>            :         </a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineCov">         10 :         real(wp), allocatable :: temp_x(:), temp_y(:), temp_t(:)</span></a>
+<a name="296"><span class="lineNum">     296 </span>            :         </a>
+<a name="297"><span class="lineNum">     297 </span>            :         ! Allocate temporary arrays of correct size</a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineCov">         10 :         allocate(temp_x(n_points), temp_y(n_points), temp_t(n_points))</span></a>
+<a name="299"><span class="lineNum">     299 </span>            :         </a>
+<a name="300"><span class="lineNum">     300 </span>            :         ! Copy data</a>
+<a name="301"><span class="lineNum">     301 </span><span class="lineCov">        376 :         temp_x = path_x(1:n_points)</span></a>
+<a name="302"><span class="lineNum">     302 </span><span class="lineCov">        376 :         temp_y = path_y(1:n_points)</span></a>
+<a name="303"><span class="lineNum">     303 </span><span class="lineCov">        376 :         temp_t = times(1:n_points)</span></a>
+<a name="304"><span class="lineNum">     304 </span>            :         </a>
+<a name="305"><span class="lineNum">     305 </span>            :         ! Reallocate with correct size</a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineCov">         10 :         deallocate(path_x, path_y, times)</span></a>
+<a name="307"><span class="lineNum">     307 </span><span class="lineCov">         10 :         allocate(path_x(n_points), path_y(n_points), times(n_points))</span></a>
+<a name="308"><span class="lineNum">     308 </span>            :         </a>
+<a name="309"><span class="lineNum">     309 </span>            :         ! Copy back</a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineCov">        376 :         path_x = temp_x</span></a>
+<a name="311"><span class="lineNum">     311 </span><span class="lineCov">        376 :         path_y = temp_y</span></a>
+<a name="312"><span class="lineNum">     312 </span><span class="lineCov">        376 :         times = temp_t</span></a>
+<a name="313"><span class="lineNum">     313 </span>            :         </a>
+<a name="314"><span class="lineNum">     314 </span><span class="lineCov">         10 :         deallocate(temp_x, temp_y, temp_t)</span></a>
+<a name="315"><span class="lineNum">     315 </span>            :         </a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineCov">         10 :     end subroutine trim_arrays</span></a>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<a name="318"><span class="lineNum">     318 </span><span class="lineNoCov">          0 : end module fortplot_streamline_integrator</span></a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

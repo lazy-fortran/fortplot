@@ -28,10 +28,9 @@ test-coverage:
 
 # Analyze coverage data
 coverage:
-	@echo "Generating coverage report..."
+	@echo "Generating coverage data..."
 	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*'
-	@genhtml coverage.info --output-directory coverage_html
-	@echo "Coverage report generated in coverage_html/index.html"
+	@echo "Coverage data saved to coverage.info"
 
 # Generate text coverage summary
 coverage-summary:
@@ -80,7 +79,6 @@ clean:
 # Clean coverage data
 clean-coverage:
 	rm -f *.gcda *.gcno *.gcov coverage.info
-	rm -rf coverage_html
 	find build -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 
 # Build with release optimizations
@@ -101,7 +99,7 @@ help:
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
 	@echo "  test-coverage    - Run tests with coverage instrumentation"
-	@echo "  coverage         - Generate HTML coverage report"
+	@echo "  coverage         - Generate coverage data for upload"
 	@echo "  coverage-summary - Display text coverage summary"
 	@echo "  coverage-report  - Display detailed text coverage report"
 	@echo "  clean            - Clean build artifacts"
