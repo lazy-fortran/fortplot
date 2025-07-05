@@ -32,6 +32,14 @@ jobs:
       run: |
         make coverage
         
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage_filtered.info
+        fail_ci_if_error: false
+        verbose: true
+        
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:

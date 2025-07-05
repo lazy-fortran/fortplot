@@ -439,8 +439,7 @@ contains
             int(-46,1),int(-45,1),int(-44,1),int(-43,1),int(-42,1),int(-41,1),int(-40,1),int(-39,1),int(-38,1), &
             int(-31,1),int(-30,1),int(-29,1),int(-28,1),int(-27,1),int(-26,1),int(-25,1),int(-24,1),int(-23,1), &
             int(-22,1),int(-21,1),int(-20,1),int(-19,1),int(-18,1),int(-17,1),int(-15,1),int(-14,1),int(-13,1), &
-            int(-12,1),int(-11,1),int(-10,1),int(-9,1),int(-8,1),int(-7,1),int(-6,1),int(-5,1),int(-4,1),int(-3,1), &
-            int(-2,1),int(-1,1)]
+            int(-12,1),int(-11,1)]
             
         integer(1), parameter :: UVAC_BITS(16) = [ &
             int(0,1),int(2,1),int(1,1),int(2,1),int(4,1),int(4,1),int(3,1),int(4,1), &
@@ -463,8 +462,7 @@ contains
             int(-55,1),int(-54,1),int(-46,1),int(-45,1),int(-44,1),int(-43,1),int(-42,1),int(-41,1),int(-40,1), &
             int(-39,1),int(-38,1),int(-30,1),int(-29,1),int(-28,1),int(-27,1),int(-26,1),int(-25,1),int(-24,1), &
             int(-23,1),int(-22,1),int(-21,1),int(-20,1),int(-19,1),int(-18,1),int(-17,1),int(-14,1),int(-13,1), &
-            int(-12,1),int(-11,1),int(-10,1),int(-9,1),int(-8,1),int(-7,1),int(-6,1),int(-5,1),int(-4,1), &
-            int(-3,1),int(-2,1),int(-1,1)]
+            int(-12,1),int(-11,1)]
         
         if (table_id == 0) then
             ! Y AC table

@@ -9,7 +9,7 @@ contains
     
     subroutine test_matches_stb_output_exactly()
         integer(1), allocatable :: our_data(:), stb_data(:)
-        integer(1) :: pixels(3, 4, 4)  ! RGB 4x4 test image
+        integer(1) :: pixels(3, 8, 8)  ! RGB 8x8 test image to match STB
         integer :: i, j, k
         integer(1), parameter :: gray_value = 127_int8
         
@@ -17,7 +17,7 @@ contains
         pixels = gray_value
         
         ! Generate with our implementation
-        call write_jpeg_file("test_our.jpg", 4, 4, reshape(pixels, [48]), 90)
+        call write_jpeg_file("test_our.jpg", 8, 8, reshape(pixels, [192]), 80)
         
         ! Read both files
         call read_binary_file("test_our.jpg", our_data)
