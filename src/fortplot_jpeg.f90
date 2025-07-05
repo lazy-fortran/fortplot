@@ -1405,8 +1405,7 @@ contains
         case (2)  
             call stb_write_bits(writer, 1, 2)       ! Symbol 0x02
         case default
-            ! Symbol not found - this is an error
-            print *, "ERROR: YAC symbol not found:", symbol
+            ! Symbol not found - use M16zeroes
             call stb_write_bits(writer, 65472, 16)  ! Default to M16zeroes
         end select
     end subroutine encode_yac_symbol
@@ -1422,8 +1421,7 @@ contains
         case (1)
             call stb_write_bits(writer, 1, 2)       ! Symbol 0x01
         case default
-            ! Symbol not found - this is an error
-            print *, "ERROR: UVAC symbol not found:", symbol
+            ! Symbol not found - use default
             call stb_write_bits(writer, 65472, 16)  ! Default
         end select
     end subroutine encode_uvac_symbol

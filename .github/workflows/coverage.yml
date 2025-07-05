@@ -36,7 +36,7 @@ jobs:
       uses: codecov/codecov-action@v5
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-        file: ./coverage_filtered.info
+        file: ./coverage.info
         fail_ci_if_error: false
         verbose: true
         
