@@ -345,10 +345,18 @@ contains
         integer, intent(in) :: table_id  ! 0=luminance, 1=chrominance
         
         ! Standard DC Huffman bit counts and values
-        integer(1), parameter :: lum_dc_bits(16) = [0,1,5,1,1,1,1,1,1,0,0,0,0,0,0,0]
-        integer(1), parameter :: lum_dc_vals(12) = [0,1,2,3,4,5,6,7,8,9,10,11]
-        integer(1), parameter :: chr_dc_bits(16) = [0,3,1,1,1,1,1,1,1,1,1,0,0,0,0,0]
-        integer(1), parameter :: chr_dc_vals(12) = [0,1,2,3,4,5,6,7,8,9,10,11]
+        integer(1), parameter :: lum_dc_bits(16) = [ &
+            int(0,1),int(1,1),int(5,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1), &
+            int(1,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1)]
+        integer(1), parameter :: lum_dc_vals(12) = [ &
+            int(0,1),int(1,1),int(2,1),int(3,1),int(4,1),int(5,1), &
+            int(6,1),int(7,1),int(8,1),int(9,1),int(10,1),int(11,1)]
+        integer(1), parameter :: chr_dc_bits(16) = [ &
+            int(0,1),int(3,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1), &
+            int(1,1),int(1,1),int(1,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1)]
+        integer(1), parameter :: chr_dc_vals(12) = [ &
+            int(0,1),int(1,1),int(2,1),int(3,1),int(4,1),int(5,1), &
+            int(6,1),int(7,1),int(8,1),int(9,1),int(10,1),int(11,1)]
         
         integer :: start_pos, total_vals
         
@@ -380,33 +388,91 @@ contains
         integer, intent(inout) :: pos
         integer, intent(in) :: table_id  ! 0=luminance, 1=chrominance
         
-        ! Standard AC Huffman bit counts (simplified)
-        integer(1), parameter :: lum_ac_bits(16) = [0,2,1,3,3,2,4,3,5,5,4,4,0,0,1,125]
-        integer(1), parameter :: chr_ac_bits(16) = [0,2,1,2,4,4,3,4,7,5,4,4,0,1,2,119]
+        ! Standard AC Huffman bit counts
+        integer(1), parameter :: lum_ac_bits(16) = [ &
+            int(0,1),int(2,1),int(1,1),int(3,1),int(3,1),int(2,1),int(4,1),int(3,1), &
+            int(5,1),int(5,1),int(4,1),int(4,1),int(0,1),int(0,1),int(1,1),int(125,1)]
+        integer(1), parameter :: chr_ac_bits(16) = [ &
+            int(0,1),int(2,1),int(1,1),int(2,1),int(4,1),int(4,1),int(3,1),int(4,1), &
+            int(7,1),int(5,1),int(4,1),int(4,1),int(0,1),int(1,1),int(2,1),int(119,1)]
         
-        ! First few AC values for each table (truncated for space)
-        integer(1), parameter :: lum_ac_vals(18) = [ &
-            1,2,3,0,4,17,5,18,33,49,65,6,19,81,97,7,34,113 ]
-        integer(1), parameter :: chr_ac_vals(13) = [ &
-            0,1,2,3,17,4,5,33,49,6,18,65,81 ]
+        ! Complete AC values for luminance (162 values)
+        integer(1), parameter :: lum_ac_vals(162) = [ &
+            int(Z'01',1), int(Z'02',1), int(Z'03',1), int(Z'00',1), int(Z'04',1), int(Z'11',1), &
+            int(Z'05',1), int(Z'12',1), int(Z'21',1), int(Z'31',1), int(Z'41',1), int(Z'06',1), &
+            int(Z'13',1), int(Z'51',1), int(Z'61',1), int(Z'07',1), int(Z'22',1), int(Z'71',1), &
+            int(Z'14',1), int(Z'32',1), int(Z'81',1), int(Z'91',1), int(Z'A1',1), int(Z'08',1), &
+            int(Z'23',1), int(Z'42',1), int(Z'B1',1), int(Z'C1',1), int(Z'15',1), int(Z'52',1), &
+            int(Z'D1',1), int(Z'F0',1), int(Z'24',1), int(Z'33',1), int(Z'62',1), int(Z'72',1), &
+            int(Z'82',1), int(Z'09',1), int(Z'0A',1), int(Z'16',1), int(Z'17',1), int(Z'18',1), &
+            int(Z'19',1), int(Z'1A',1), int(Z'25',1), int(Z'26',1), int(Z'27',1), int(Z'28',1), &
+            int(Z'29',1), int(Z'2A',1), int(Z'34',1), int(Z'35',1), int(Z'36',1), int(Z'37',1), &
+            int(Z'38',1), int(Z'39',1), int(Z'3A',1), int(Z'43',1), int(Z'44',1), int(Z'45',1), &
+            int(Z'46',1), int(Z'47',1), int(Z'48',1), int(Z'49',1), int(Z'4A',1), int(Z'53',1), &
+            int(Z'54',1), int(Z'55',1), int(Z'56',1), int(Z'57',1), int(Z'58',1), int(Z'59',1), &
+            int(Z'5A',1), int(Z'63',1), int(Z'64',1), int(Z'65',1), int(Z'66',1), int(Z'67',1), &
+            int(Z'68',1), int(Z'69',1), int(Z'6A',1), int(Z'73',1), int(Z'74',1), int(Z'75',1), &
+            int(Z'76',1), int(Z'77',1), int(Z'78',1), int(Z'79',1), int(Z'7A',1), int(Z'83',1), &
+            int(Z'84',1), int(Z'85',1), int(Z'86',1), int(Z'87',1), int(Z'88',1), int(Z'89',1), &
+            int(Z'8A',1), int(Z'92',1), int(Z'93',1), int(Z'94',1), int(Z'95',1), int(Z'96',1), &
+            int(Z'97',1), int(Z'98',1), int(Z'99',1), int(Z'9A',1), int(Z'A2',1), int(Z'A3',1), &
+            int(Z'A4',1), int(Z'A5',1), int(Z'A6',1), int(Z'A7',1), int(Z'A8',1), int(Z'A9',1), &
+            int(Z'AA',1), int(Z'B2',1), int(Z'B3',1), int(Z'B4',1), int(Z'B5',1), int(Z'B6',1), &
+            int(Z'B7',1), int(Z'B8',1), int(Z'B9',1), int(Z'BA',1), int(Z'C2',1), int(Z'C3',1), &
+            int(Z'C4',1), int(Z'C5',1), int(Z'C6',1), int(Z'C7',1), int(Z'C8',1), int(Z'C9',1), &
+            int(Z'CA',1), int(Z'D2',1), int(Z'D3',1), int(Z'D4',1), int(Z'D5',1), int(Z'D6',1), &
+            int(Z'D7',1), int(Z'D8',1), int(Z'D9',1), int(Z'DA',1), int(Z'E1',1), int(Z'E2',1), &
+            int(Z'E3',1), int(Z'E4',1), int(Z'E5',1), int(Z'E6',1), int(Z'E7',1), int(Z'E8',1), &
+            int(Z'E9',1), int(Z'EA',1), int(Z'F1',1), int(Z'F2',1), int(Z'F3',1), int(Z'F4',1), &
+            int(Z'F5',1), int(Z'F6',1), int(Z'F7',1), int(Z'F8',1), int(Z'F9',1), int(Z'FA',1) ]
+        
+        ! Complete AC values for chrominance (162 values)
+        integer(1), parameter :: chr_ac_vals(162) = [ &
+            int(Z'00',1), int(Z'01',1), int(Z'02',1), int(Z'03',1), int(Z'11',1), int(Z'04',1), &
+            int(Z'05',1), int(Z'21',1), int(Z'31',1), int(Z'06',1), int(Z'12',1), int(Z'41',1), &
+            int(Z'51',1), int(Z'07',1), int(Z'61',1), int(Z'71',1), int(Z'13',1), int(Z'22',1), &
+            int(Z'32',1), int(Z'81',1), int(Z'08',1), int(Z'14',1), int(Z'42',1), int(Z'91',1), &
+            int(Z'A1',1), int(Z'B1',1), int(Z'C1',1), int(Z'09',1), int(Z'23',1), int(Z'33',1), &
+            int(Z'52',1), int(Z'F0',1), int(Z'15',1), int(Z'62',1), int(Z'72',1), int(Z'D1',1), &
+            int(Z'0A',1), int(Z'16',1), int(Z'24',1), int(Z'34',1), int(Z'E1',1), int(Z'25',1), &
+            int(Z'F1',1), int(Z'17',1), int(Z'18',1), int(Z'19',1), int(Z'1A',1), int(Z'26',1), &
+            int(Z'27',1), int(Z'28',1), int(Z'29',1), int(Z'2A',1), int(Z'35',1), int(Z'36',1), &
+            int(Z'37',1), int(Z'38',1), int(Z'39',1), int(Z'3A',1), int(Z'43',1), int(Z'44',1), &
+            int(Z'45',1), int(Z'46',1), int(Z'47',1), int(Z'48',1), int(Z'49',1), int(Z'4A',1), &
+            int(Z'53',1), int(Z'54',1), int(Z'55',1), int(Z'56',1), int(Z'57',1), int(Z'58',1), &
+            int(Z'59',1), int(Z'5A',1), int(Z'63',1), int(Z'64',1), int(Z'65',1), int(Z'66',1), &
+            int(Z'67',1), int(Z'68',1), int(Z'69',1), int(Z'6A',1), int(Z'73',1), int(Z'74',1), &
+            int(Z'75',1), int(Z'76',1), int(Z'77',1), int(Z'78',1), int(Z'79',1), int(Z'7A',1), &
+            int(Z'82',1), int(Z'83',1), int(Z'84',1), int(Z'85',1), int(Z'86',1), int(Z'87',1), &
+            int(Z'88',1), int(Z'89',1), int(Z'8A',1), int(Z'92',1), int(Z'93',1), int(Z'94',1), &
+            int(Z'95',1), int(Z'96',1), int(Z'97',1), int(Z'98',1), int(Z'99',1), int(Z'9A',1), &
+            int(Z'A2',1), int(Z'A3',1), int(Z'A4',1), int(Z'A5',1), int(Z'A6',1), int(Z'A7',1), &
+            int(Z'A8',1), int(Z'A9',1), int(Z'AA',1), int(Z'B2',1), int(Z'B3',1), int(Z'B4',1), &
+            int(Z'B5',1), int(Z'B6',1), int(Z'B7',1), int(Z'B8',1), int(Z'B9',1), int(Z'BA',1), &
+            int(Z'C2',1), int(Z'C3',1), int(Z'C4',1), int(Z'C5',1), int(Z'C6',1), int(Z'C7',1), &
+            int(Z'C8',1), int(Z'C9',1), int(Z'CA',1), int(Z'D2',1), int(Z'D3',1), int(Z'D4',1), &
+            int(Z'D5',1), int(Z'D6',1), int(Z'D7',1), int(Z'D8',1), int(Z'D9',1), int(Z'DA',1), &
+            int(Z'E2',1), int(Z'E3',1), int(Z'E4',1), int(Z'E5',1), int(Z'E6',1), int(Z'E7',1), &
+            int(Z'E8',1), int(Z'E9',1), int(Z'EA',1), int(Z'F2',1), int(Z'F3',1), int(Z'F4',1), &
+            int(Z'F5',1), int(Z'F6',1), int(Z'F7',1), int(Z'F8',1), int(Z'F9',1), int(Z'FA',1) ]
         
         buffer(pos) = int(Z'FF', 1)     ! DHT marker
         buffer(pos+1) = int(Z'C4', 1)
         
         if (table_id == 0) then
             buffer(pos+2) = int(0, 1)       ! Length high
-            buffer(pos+3) = int(35, 1)      ! Length low (16 + 18 + 1)
+            buffer(pos+3) = int(-77, 1)     ! Length low (16 + 162 + 1) = 179 = 0xB3
             buffer(pos+4) = int(16, 1)      ! Table class (1=AC) + ID (0)
             buffer(pos+5:pos+20) = lum_ac_bits
-            buffer(pos+21:pos+38) = lum_ac_vals
-            pos = pos + 39
+            buffer(pos+21:pos+182) = lum_ac_vals
+            pos = pos + 183
         else
             buffer(pos+2) = int(0, 1)       ! Length high
-            buffer(pos+3) = int(30, 1)      ! Length low (16 + 13 + 1)
+            buffer(pos+3) = int(-77, 1)     ! Length low (16 + 162 + 1) = 179 = 0xB3
             buffer(pos+4) = int(17, 1)      ! Table class (1=AC) + ID (1)
             buffer(pos+5:pos+20) = chr_ac_bits
-            buffer(pos+21:pos+33) = chr_ac_vals
-            pos = pos + 34
+            buffer(pos+21:pos+182) = chr_ac_vals
+            pos = pos + 183
         end if
     end subroutine write_ac_huffman_table
 
@@ -600,8 +666,8 @@ contains
         
         integer :: base_idx
         
-        ! Calculate base index for RGB pixel (accounting for PNG row structure)
-        base_idx = (y - 1) * (1 + width * 3) + 1 + (x - 1) * 3 + 1
+        ! Calculate base index for flat RGB data (no PNG filter bytes)
+        base_idx = ((y - 1) * width + (x - 1)) * 3 + 1
         
         r = real(iand(int(rgb_data(base_idx)), 255))
         g = real(iand(int(rgb_data(base_idx + 1)), 255))  
