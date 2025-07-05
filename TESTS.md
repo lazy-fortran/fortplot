@@ -196,3 +196,46 @@ Tests that create output files typically write to:
 - Animation tests create and delete video files during testing
 - JPEG tests extensively validate against STB reference implementation
 - Coverage reports exclude test files themselves from metrics
+
+## Module Coverage Summary
+
+Based on `make coverage-report` output, here's the current test coverage for each module:
+
+| Module | Line Coverage | Function Coverage | Primary Test Files |
+|--------|--------------|-------------------|-------------------|
+| `fortplot.f90` | 14.9% | 27.3% | `test_public_api.f90` |
+| `fortplot_animation.f90` | 63.6% | 63.9% | `test_animation_save.f90` |
+| `fortplot_ascii.f90` | 80.3% | 81.0% | `test_ascii.f90` |
+| `fortplot_colormap.f90` | 0.0% | 0.0% | *(needs tests)* |
+| `fortplot_context.f90` | 100% | 100% | Multiple tests |
+| `fortplot_figure_core.f90` | 48.0% | 57.4% | `test_figure_basics.f90`, `test_figure_labels.f90`, `test_scatter_*.f90` |
+| `fortplot_format_parser.f90` | 100% | 100% | `test_format_parser.f90` |
+| `fortplot_jpeg.f90` | 76.9% | 70.7% | `test_jpeg_*.f90` (extensive test suite) |
+| `fortplot_jpeg_fixed.f90` | 93.1% | 86.4% | `test_jpeg_fixed_*.f90` |
+| `fortplot_label_positioning.f90` | 81.2% | 100% | `test_*label_positioning.f90` |
+| `fortplot_layout.f90` | 88.9% | 33.3% | Layout-related tests |
+| `fortplot_legend.f90` | 77.1% | 57.1% | `test_legend*.f90` |
+| `fortplot_legend_layout.f90` | 74.2% | 66.7% | `test_legend_*.f90` |
+| `fortplot_margins.f90` | 56.5% | 50.0% | `test_matplotlib_margins.f90` |
+| `fortplot_markers.f90` | 62.5% | 100% | `test_antialiased_markers.f90` |
+| `fortplot_pcolormesh.f90` | 34.7% | 25.0% | `test_pcolormesh.f90` |
+| `fortplot_pdf.f90` | 65.4% | 67.9% | Tests using PDF output |
+| `fortplot_pipe.f90` | 100% | 100% | Animation tests |
+| `fortplot_png.f90` | 64.7% | 66.7% | `test_bitmap_*.f90` |
+| `fortplot_raster.f90` | 64.5% | 62.7% | Backend tests |
+| `fortplot_scales.f90` | 60.0% | 62.5% | `test_*scale*.f90`, `test_log*.f90` |
+| `fortplot_stb_truetype.f90` | 71.4% | 81.8% | `test_stb_truetype.f90` |
+| `fortplot_streamline.f90` | 67.1% | 53.8% | `test_streamline_*.f90` |
+| `fortplot_streamline_integrator.f90` | 79.8% | 66.7% | `test_dopri5_integration.f90` |
+| `fortplot_streamline_placement.f90` | 94.3% | 73.3% | `test_streamline_placement.f90` |
+| `fortplot_streamplot_matplotlib.f90` | 78.3% | 72.7% | `test_matplotlib_*.f90` |
+| `fortplot_text.f90` | 46.0% | 60.0% | `test_text_*.f90` |
+| `fortplot_ticks.f90` | 93.3% | 95.5% | `test_tick*.f90` |
+| `fortplot_utils.f90` | 85.2% | 100% | Various tests |
+| `fortplot_vector.f90` | 96.7% | 71.4% | Streamline tests |
+| `fortplot_zlib.f90` | 96.8% | 100% | PNG tests |
+
+### Coverage Highlights
+- **Well tested (>90%)**: `fortplot_context`, `fortplot_format_parser`, `fortplot_jpeg_fixed`, `fortplot_ticks`, `fortplot_vector`, `fortplot_zlib`
+- **Good coverage (70-90%)**: `fortplot_ascii`, `fortplot_jpeg`, `fortplot_label_positioning`, `fortplot_streamline_placement`
+- **Needs improvement (<50%)**: `fortplot` (main API), `fortplot_colormap`, `fortplot_pcolormesh`, `fortplot_text`
