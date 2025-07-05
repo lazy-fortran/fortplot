@@ -1,0 +1,40 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gfortran lcov
+        
+    - name: Install fpm
+      run: |
+        wget https://github.com/fortran-lang/fpm/releases/download/v0.10.0/fpm-0.10.0-linux-x86_64 -O fpm
+        chmod +x fpm
+        sudo mv fpm /usr/local/bin/
+        
+    - name: Run tests with coverage
+      run: |
+        make test-coverage || true  # Continue even if some tests fail
+        
+    - name: Generate coverage report
+      run: |
+        make coverage
+        
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage_html/
+        retention-days: 30

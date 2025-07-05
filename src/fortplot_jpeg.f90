@@ -231,11 +231,11 @@ contains
         buffer(pos+8) = int(0, 1)       ! null terminator
         buffer(pos+9) = int(1, 1)       ! Major version
         buffer(pos+10) = int(1, 1)      ! Minor version
-        buffer(pos+11) = int(1, 1)      ! Density units (1 = pixels per inch)
+        buffer(pos+11) = int(0, 1)      ! Density units (0 = no units, aspect ratio only)
         buffer(pos+12) = int(0, 1)      ! X density high
-        buffer(pos+13) = int(72, 1)     ! X density low (72 dpi)
+        buffer(pos+13) = int(1, 1)      ! X density low (1)
         buffer(pos+14) = int(0, 1)      ! Y density high
-        buffer(pos+15) = int(72, 1)     ! Y density low (72 dpi)
+        buffer(pos+15) = int(1, 1)      ! Y density low (1)
         buffer(pos+16) = int(0, 1)      ! Thumbnail width
         buffer(pos+17) = int(0, 1)      ! Thumbnail height
         pos = pos + 18
@@ -246,19 +246,24 @@ contains
         integer, intent(inout) :: pos
         integer, intent(in) :: quality
         
-        ! DQT (Define Quantization Table) - simplified
+        ! DQT (Define Quantization Tables) - STB writes both Y and UV tables
         buffer(pos) = int(Z'FF', 1)     ! DQT marker
         buffer(pos+1) = int(Z'DB', 1)
         buffer(pos+2) = int(0, 1)       ! Length high byte
-        buffer(pos+3) = int(67, 1)      ! Length low byte (67 bytes)
-        buffer(pos+4) = int(0, 1)       ! Table ID and precision
+        buffer(pos+3) = int(-124, 1)    ! Length low byte (132 bytes = 0x84)
         
-        ! Standard quantization table (simplified)
-        call write_standard_qtable(buffer(pos+5:), quality)
-        pos = pos + 69
+        ! Y quantization table
+        buffer(pos+4) = int(0, 1)       ! Table ID 0 and precision 0 (8-bit)
+        call write_y_qtable(buffer(pos+5:), quality)
+        
+        ! UV quantization table
+        buffer(pos+69) = int(1, 1)      ! Table ID 1 and precision 0 (8-bit)
+        call write_uv_qtable(buffer(pos+70:), quality)
+        
+        pos = pos + 134
     end subroutine write_jpeg_dqt
 
-    subroutine write_standard_qtable(qtable, quality)
+    subroutine write_y_qtable(qtable, quality)
         integer(1), intent(out) :: qtable(64)
         integer, intent(in) :: quality
         
@@ -282,7 +287,33 @@ contains
             yti = (YQT(i) * quality_scale + 50) / 100
             qtable(i) = int(max(1, min(255, yti)), 1)
         end do
-    end subroutine write_standard_qtable
+    end subroutine write_y_qtable
+    
+    subroutine write_uv_qtable(qtable, quality)
+        integer(1), intent(out) :: qtable(64)
+        integer, intent(in) :: quality
+        
+        integer :: i, quality_scale, uvti
+        
+        ! STB UV quantization table
+        integer, parameter :: UVQT(64) = [17,18,24,47,99,99,99,99,18,21,26,66,99,99,99,99,24,26,56,99,99,99,99,99, &
+                                          47,66,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99, &
+                                          99,99,99,99,99,99,99,99,99,99,99,99,99,99,99,99]
+        
+        ! STB quality scaling (must match Y table)
+        quality_scale = max(1, min(100, quality))
+        if (quality_scale < 50) then
+            quality_scale = 5000 / quality_scale
+        else
+            quality_scale = 200 - quality_scale * 2
+        end if
+        
+        ! Scale exactly like STB
+        do i = 1, 64
+            uvti = (UVQT(i) * quality_scale + 50) / 100
+            qtable(i) = int(max(1, min(255, uvti)), 1)
+        end do
+    end subroutine write_uv_qtable
 
     subroutine write_jpeg_sof0(buffer, pos, width, height)
         integer(1), intent(inout) :: buffer(:)
@@ -304,18 +335,18 @@ contains
         
         ! Component 1 (Y)
         buffer(pos+10) = int(1, 1)      ! Component ID
-        buffer(pos+11) = int(17, 1)     ! Sampling factors (1x1)
+        buffer(pos+11) = int(34, 1)     ! Sampling factors (2x2) = 0x22
         buffer(pos+12) = int(0, 1)      ! Quantization table ID
         
         ! Component 2 (Cb)
         buffer(pos+13) = int(2, 1)      ! Component ID
         buffer(pos+14) = int(17, 1)     ! Sampling factors (1x1)
-        buffer(pos+15) = int(0, 1)      ! Quantization table ID
+        buffer(pos+15) = int(1, 1)      ! Quantization table ID (UV table)
         
         ! Component 3 (Cr)
         buffer(pos+16) = int(3, 1)      ! Component ID
         buffer(pos+17) = int(17, 1)     ! Sampling factors (1x1)
-        buffer(pos+18) = int(0, 1)      ! Quantization table ID
+        buffer(pos+18) = int(1, 1)      ! Quantization table ID (UV table)
         
         pos = pos + 19
     end subroutine write_jpeg_sof0
@@ -332,12 +363,123 @@ contains
         integer(1), intent(inout) :: buffer(:)
         integer, intent(inout) :: pos
         
-        ! DHT (Define Huffman Table) - write all standard tables
-        call write_dc_huffman_table(buffer, pos, 0)  ! Luminance DC
-        call write_ac_huffman_table(buffer, pos, 0)  ! Luminance AC
-        call write_dc_huffman_table(buffer, pos, 1)  ! Chrominance DC
-        call write_ac_huffman_table(buffer, pos, 1)  ! Chrominance AC
+        ! DHT (Define Huffman Table) - write all 4 tables in one segment like STB
+        integer :: start_pos, length
+        
+        ! Standard Huffman tables from STB
+        integer(1), parameter :: YDC_BITS(16) = [ &
+            int(0,1),int(1,1),int(5,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1), &
+            int(1,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1)]
+        integer(1), parameter :: YDC_VALS(12) = [ &
+            int(0,1),int(1,1),int(2,1),int(3,1),int(4,1),int(5,1), &
+            int(6,1),int(7,1),int(8,1),int(9,1),int(10,1),int(11,1)]
+            
+        integer(1), parameter :: UVDC_BITS(16) = [ &
+            int(0,1),int(3,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1),int(1,1), &
+            int(1,1),int(1,1),int(1,1),int(0,1),int(0,1),int(0,1),int(0,1),int(0,1)]
+        integer(1), parameter :: UVDC_VALS(12) = [ &
+            int(0,1),int(1,1),int(2,1),int(3,1),int(4,1),int(5,1), &
+            int(6,1),int(7,1),int(8,1),int(9,1),int(10,1),int(11,1)]
+        
+        ! Write DHT marker
+        buffer(pos) = int(Z'FF', 1)
+        buffer(pos+1) = int(Z'C4', 1)  ! DHT marker
+        start_pos = pos + 2
+        pos = pos + 4  ! Skip length for now
+        
+        ! Y DC table (type=0, id=0)
+        buffer(pos) = int(0, 1)  ! Type=DC(0), ID=0
+        buffer(pos+1:pos+16) = YDC_BITS
+        buffer(pos+17:pos+28) = YDC_VALS
+        pos = pos + 29
+        
+        ! Y AC table (type=1, id=0) - use actual STB AC table data
+        call write_stb_ac_table(buffer, pos, 0)  ! Y AC
+        
+        ! UV DC table (type=0, id=1)
+        buffer(pos) = int(1, 1)  ! Type=DC(0), ID=1
+        buffer(pos+1:pos+16) = UVDC_BITS
+        buffer(pos+17:pos+28) = UVDC_VALS
+        pos = pos + 29
+        
+        ! UV AC table (type=1, id=1)
+        call write_stb_ac_table(buffer, pos, 1)  ! UV AC
+        
+        ! Write length
+        length = pos - start_pos - 2
+        buffer(start_pos) = int(ishft(length, -8), 1)
+        buffer(start_pos+1) = int(iand(length, 255), 1)
+        
     end subroutine write_jpeg_dht
+    
+    subroutine write_stb_ac_table(buffer, pos, table_id)
+        integer(1), intent(inout) :: buffer(:)
+        integer, intent(inout) :: pos
+        integer, intent(in) :: table_id  ! 0=Y, 1=UV
+        
+        ! STB AC Huffman tables - exact values from stb_image_write.h
+        integer(1), parameter :: YAC_BITS(16) = [ &
+            int(0,1),int(2,1),int(1,1),int(3,1),int(3,1),int(2,1),int(4,1),int(3,1), &
+            int(5,1),int(5,1),int(4,1),int(4,1),int(0,1),int(0,1),int(1,1),int(125,1)]
+        integer(1), parameter :: YAC_VALS(162) = [ &
+            int(1,1),int(2,1),int(3,1),int(0,1),int(4,1),int(17,1),int(5,1),int(18,1),int(33,1),int(49,1),int(65,1), &
+            int(6,1),int(19,1),int(81,1),int(97,1),int(7,1),int(34,1),int(113,1),int(20,1),int(50,1),int(-127,1), &
+            int(-111,1),int(-95,1),int(8,1),int(35,1),int(66,1),int(-79,1),int(-63,1),int(21,1),int(82,1),int(-47,1), &
+            int(-16,1),int(36,1),int(51,1),int(98,1),int(114,1),int(-126,1),int(9,1),int(10,1),int(22,1),int(23,1), &
+            int(24,1),int(25,1),int(26,1),int(37,1),int(38,1),int(39,1),int(40,1),int(41,1),int(42,1),int(52,1), &
+            int(53,1),int(54,1),int(55,1),int(56,1),int(57,1),int(58,1),int(67,1),int(68,1),int(69,1),int(70,1), &
+            int(71,1),int(72,1),int(73,1),int(74,1),int(83,1),int(84,1),int(85,1),int(86,1),int(87,1),int(88,1), &
+            int(89,1),int(90,1),int(99,1),int(100,1),int(101,1),int(102,1),int(103,1),int(104,1),int(105,1),int(106,1), &
+            int(115,1),int(116,1),int(117,1),int(118,1),int(119,1),int(120,1),int(121,1),int(122,1),int(-125,1), &
+            int(-124,1),int(-123,1),int(-122,1),int(-121,1),int(-120,1),int(-119,1),int(-118,1),int(-110,1), &
+            int(-109,1),int(-108,1),int(-107,1),int(-106,1),int(-105,1),int(-104,1),int(-103,1),int(-102,1), &
+            int(-94,1),int(-93,1),int(-92,1),int(-91,1),int(-90,1),int(-89,1),int(-88,1),int(-87,1),int(-86,1), &
+            int(-78,1),int(-77,1),int(-76,1),int(-75,1),int(-74,1),int(-73,1),int(-72,1),int(-71,1),int(-70,1), &
+            int(-62,1),int(-61,1),int(-60,1),int(-59,1),int(-58,1),int(-57,1),int(-56,1),int(-55,1),int(-54,1), &
+            int(-46,1),int(-45,1),int(-44,1),int(-43,1),int(-42,1),int(-41,1),int(-40,1),int(-39,1),int(-38,1), &
+            int(-31,1),int(-30,1),int(-29,1),int(-28,1),int(-27,1),int(-26,1),int(-25,1),int(-24,1),int(-23,1), &
+            int(-22,1),int(-21,1),int(-20,1),int(-19,1),int(-18,1),int(-17,1),int(-15,1),int(-14,1),int(-13,1), &
+            int(-12,1),int(-11,1),int(-10,1),int(-9,1),int(-8,1),int(-7,1),int(-6,1),int(-5,1),int(-4,1),int(-3,1), &
+            int(-2,1),int(-1,1)]
+            
+        integer(1), parameter :: UVAC_BITS(16) = [ &
+            int(0,1),int(2,1),int(1,1),int(2,1),int(4,1),int(4,1),int(3,1),int(4,1), &
+            int(7,1),int(5,1),int(4,1),int(4,1),int(0,1),int(1,1),int(2,1),int(119,1)]
+        integer(1), parameter :: UVAC_VALS(162) = [ &
+            int(0,1),int(1,1),int(2,1),int(3,1),int(17,1),int(4,1),int(5,1),int(33,1),int(49,1),int(6,1),int(18,1), &
+            int(65,1),int(81,1),int(7,1),int(97,1),int(113,1),int(19,1),int(34,1),int(50,1),int(-127,1),int(8,1), &
+            int(20,1),int(66,1),int(-111,1),int(-95,1),int(-79,1),int(-63,1),int(9,1),int(35,1),int(51,1),int(82,1), &
+            int(-16,1),int(21,1),int(98,1),int(114,1),int(-47,1),int(10,1),int(22,1),int(36,1),int(52,1),int(-31,1), &
+            int(37,1),int(-15,1),int(23,1),int(24,1),int(25,1),int(26,1),int(38,1),int(39,1),int(40,1),int(41,1), &
+            int(42,1),int(53,1),int(54,1),int(55,1),int(56,1),int(57,1),int(58,1),int(67,1),int(68,1),int(69,1), &
+            int(70,1),int(71,1),int(72,1),int(73,1),int(74,1),int(83,1),int(84,1),int(85,1),int(86,1),int(87,1), &
+            int(88,1),int(89,1),int(90,1),int(99,1),int(100,1),int(101,1),int(102,1),int(103,1),int(104,1),int(105,1), &
+            int(106,1),int(115,1),int(116,1),int(117,1),int(118,1),int(119,1),int(120,1),int(121,1),int(122,1), &
+            int(-126,1),int(-125,1),int(-124,1),int(-123,1),int(-122,1),int(-121,1),int(-120,1),int(-119,1), &
+            int(-118,1),int(-110,1),int(-109,1),int(-108,1),int(-107,1),int(-106,1),int(-105,1),int(-104,1), &
+            int(-103,1),int(-102,1),int(-94,1),int(-93,1),int(-92,1),int(-91,1),int(-90,1),int(-89,1),int(-88,1), &
+            int(-87,1),int(-86,1),int(-78,1),int(-77,1),int(-76,1),int(-75,1),int(-74,1),int(-73,1),int(-72,1), &
+            int(-71,1),int(-70,1),int(-62,1),int(-61,1),int(-60,1),int(-59,1),int(-58,1),int(-57,1),int(-56,1), &
+            int(-55,1),int(-54,1),int(-46,1),int(-45,1),int(-44,1),int(-43,1),int(-42,1),int(-41,1),int(-40,1), &
+            int(-39,1),int(-38,1),int(-30,1),int(-29,1),int(-28,1),int(-27,1),int(-26,1),int(-25,1),int(-24,1), &
+            int(-23,1),int(-22,1),int(-21,1),int(-20,1),int(-19,1),int(-18,1),int(-17,1),int(-14,1),int(-13,1), &
+            int(-12,1),int(-11,1),int(-10,1),int(-9,1),int(-8,1),int(-7,1),int(-6,1),int(-5,1),int(-4,1), &
+            int(-3,1),int(-2,1),int(-1,1)]
+        
+        if (table_id == 0) then
+            ! Y AC table
+            buffer(pos) = int(16, 1)  ! Type=AC(1), ID=0 = 0x10
+            buffer(pos+1:pos+16) = YAC_BITS
+            buffer(pos+17:pos+178) = YAC_VALS
+            pos = pos + 179
+        else
+            ! UV AC table
+            buffer(pos) = int(17, 1)  ! Type=AC(1), ID=1 = 0x11
+            buffer(pos+1:pos+16) = UVAC_BITS
+            buffer(pos+17:pos+178) = UVAC_VALS
+            pos = pos + 179
+        end if
+    end subroutine write_stb_ac_table
 
     subroutine write_dc_huffman_table(buffer, pos, table_id)
         integer(1), intent(inout) :: buffer(:)
@@ -488,12 +630,12 @@ contains
         buffer(pos+4) = int(3, 1)       ! Number of components
         
         ! Component scan parameters
-        buffer(pos+5) = int(1, 1)       ! Component ID
-        buffer(pos+6) = int(0, 1)       ! Huffman table selectors
-        buffer(pos+7) = int(2, 1)       ! Component ID
-        buffer(pos+8) = int(0, 1)       ! Huffman table selectors
-        buffer(pos+9) = int(3, 1)       ! Component ID
-        buffer(pos+10) = int(0, 1)      ! Huffman table selectors
+        buffer(pos+5) = int(1, 1)       ! Component ID (Y)
+        buffer(pos+6) = int(0, 1)       ! DC=0, AC=0 (Y tables)
+        buffer(pos+7) = int(2, 1)       ! Component ID (Cb)
+        buffer(pos+8) = int(17, 1)      ! DC=1, AC=1 (UV tables) = 0x11
+        buffer(pos+9) = int(3, 1)       ! Component ID (Cr)
+        buffer(pos+10) = int(17, 1)     ! DC=1, AC=1 (UV tables) = 0x11
         
         buffer(pos+11) = int(0, 1)      ! Start of spectral selection
         buffer(pos+12) = int(63, 1)     ! End of spectral selection

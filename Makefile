@@ -1,7 +1,7 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib
+.PHONY: all build example debug test test-coverage coverage clean clean-coverage help matplotlib example_python example_matplotlib
 
 # Default target
 all: build
@@ -21,6 +21,18 @@ debug:
 # Run tests
 test:
 	fpm test $(ARGS)
+
+# Run tests with coverage
+test-coverage:
+	fpm test --flag "--coverage -fprofile-arcs -ftest-coverage" $(ARGS)
+
+# Analyze coverage data
+coverage:
+	@echo "Generating coverage report..."
+	@lcov --capture --directory build --output-file coverage.info
+	@lcov --remove coverage.info '/usr/*' '*/test/*' --output-file coverage_filtered.info
+	@genhtml coverage_filtered.info --output-directory coverage_html
+	@echo "Coverage report generated in coverage_html/index.html"
 
 # Run Python examples with fortplotlib (default mode)
 example_python:
@@ -54,6 +66,12 @@ clean:
 	       -o -name "*.txt" -o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \
 		   -not -name "CMakeLists.txt" | xargs rm -f
 
+# Clean coverage data
+clean-coverage:
+	rm -f *.gcda *.gcno *.gcov coverage.info coverage_filtered.info
+	rm -rf coverage_html
+	find build -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
+
 # Build with release optimizations
 release:
 	fpm build --profile release $(ARGS)
@@ -71,10 +89,13 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
-	@echo "  clean       - Clean build artifacts"
-	@echo "  release     - Build with optimizations"
-	@echo "  run-release - Run optimized build"
-	@echo "  help        - Show this help message"
+	@echo "  test-coverage    - Run tests with coverage instrumentation"
+	@echo "  coverage         - Generate HTML coverage report"
+	@echo "  clean            - Clean build artifacts"
+	@echo "  clean-coverage   - Clean coverage data files"
+	@echo "  release          - Build with optimizations"
+	@echo "  run-release      - Run optimized build"
+	@echo "  help             - Show this help message"
 	@echo ""
 	@echo "Pass additional fpm arguments using ARGS variable:"
 	@echo "  make example ARGS=\"basic_plots\""
