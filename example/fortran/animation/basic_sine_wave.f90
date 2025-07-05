@@ -26,7 +26,13 @@ program animated_sine
     call fig%set_xlim(0.0_wp, 2.0_wp * 3.14159_wp)
     call fig%set_ylim(-1.5_wp, 1.5_wp)
 
-    anim = FuncAnimation(animate_sine, frames=NFRAMES, interval=50)
+    anim = FuncAnimation(animate_sine, frames=NFRAMES, interval=50, fig=fig)
+    
+    ! Save animation as MP4
+    print *, "Saving animation as MP4..."
+    call anim%save("example/fortran/animation/sine_wave.mp4", fps=15)
+    
+    ! Also run the animation to generate individual frames
     call anim%run()
 
     print *, "Animation completed. Check frame_*.png files."
