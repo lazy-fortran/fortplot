@@ -3,10 +3,11 @@ program debug_16x16_gray
     use iso_fortran_env, only: int8
     implicit none
     
-    integer(1) :: gray_data(16*16*3)
+    integer(1), allocatable :: gray_data(:)
     integer :: i
     
     ! Create 16x16 solid gray (127,127,127) image
+    allocate(gray_data(16*16*3))
     do i = 1, 16*16*3, 3
         gray_data(i) = int(127, 1)      ! R
         gray_data(i+1) = int(127, 1)    ! G

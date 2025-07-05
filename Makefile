@@ -29,20 +29,20 @@ test-coverage:
 # Analyze coverage data
 coverage:
 	@echo "Generating coverage report..."
-	@lcov --capture --directory build --output-file coverage.info
+	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*'
 	@genhtml coverage.info --output-directory coverage_html
 	@echo "Coverage report generated in coverage_html/index.html"
 
 # Generate text coverage summary
 coverage-summary:
 	@echo "Generating coverage summary..."
-	@lcov --capture --directory build --output-file coverage.info
+	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*'
 	@lcov --summary coverage.info
 
 # Generate detailed text coverage report
 coverage-report:
 	@echo "Generating detailed coverage report..."
-	@lcov --capture --directory build --output-file coverage.info
+	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*'
 	@lcov --list coverage.info
 
 # Run Python examples with fortplotlib (default mode)
