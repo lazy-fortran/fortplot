@@ -288,9 +288,20 @@ contains
             quality_scale = 200 - quality_scale * 2
         end if
         
-        ! Scale exactly like STB
+        ! Scale and write in zigzag order like STB
+        ! Zigzag order indices
+        integer, parameter :: zigzag(64) = [ &
+             1,  2,  9, 17, 10,  3,  4, 11, &
+            18, 25, 33, 26, 19, 12,  5,  6, &
+            13, 20, 27, 34, 41, 49, 42, 35, &
+            28, 21, 14,  7,  8, 15, 22, 29, &
+            36, 43, 50, 57, 58, 51, 44, 37, &
+            30, 23, 16, 24, 31, 38, 45, 52, &
+            59, 60, 53, 46, 39, 32, 40, 47, &
+            54, 61, 62, 55, 48, 56, 63, 64]
+            
         do i = 1, 64
-            yti = (YQT(i) * quality_scale + 50) / 100
+            yti = (YQT(zigzag(i)) * quality_scale + 50) / 100
             qtable(i) = int(max(1, min(255, yti)), 1)
         end do
     end subroutine write_y_qtable
@@ -314,9 +325,20 @@ contains
             quality_scale = 200 - quality_scale * 2
         end if
         
-        ! Scale exactly like STB
+        ! Scale and write in zigzag order like STB
+        ! Zigzag order indices
+        integer, parameter :: zigzag(64) = [ &
+             1,  2,  9, 17, 10,  3,  4, 11, &
+            18, 25, 33, 26, 19, 12,  5,  6, &
+            13, 20, 27, 34, 41, 49, 42, 35, &
+            28, 21, 14,  7,  8, 15, 22, 29, &
+            36, 43, 50, 57, 58, 51, 44, 37, &
+            30, 23, 16, 24, 31, 38, 45, 52, &
+            59, 60, 53, 46, 39, 32, 40, 47, &
+            54, 61, 62, 55, 48, 56, 63, 64]
+            
         do i = 1, 64
-            uvti = (UVQT(i) * quality_scale + 50) / 100
+            uvti = (UVQT(zigzag(i)) * quality_scale + 50) / 100
             qtable(i) = int(max(1, min(255, uvti)), 1)
         end do
     end subroutine write_uv_qtable
@@ -411,8 +433,8 @@ contains
         ! UV AC table (type=1, id=1)
         call write_stb_ac_table(buffer, pos, 1)  ! UV AC
         
-        ! Write length
-        length = pos - start_pos - 2
+        ! Write length (including the 2-byte length field itself)
+        length = pos - start_pos
         buffer(start_pos) = int(ishft(length, -8), 1)
         buffer(start_pos+1) = int(iand(length, 255), 1)
         

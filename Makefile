@@ -29,7 +29,7 @@ test-coverage:
 # Analyze coverage data
 coverage:
 	@echo "Generating coverage report..."
-	@lcov --capture --directory build --output-file coverage.info --exclude '*/test/*'
+	@lcov --capture --directory build --output-file coverage.info --exclude '*/fortplotlib/test_*.f90'
 	@genhtml coverage.info --output-directory coverage_html
 	@echo "Coverage report generated in coverage_html/index.html"
 
