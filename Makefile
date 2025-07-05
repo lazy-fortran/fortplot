@@ -30,7 +30,8 @@ test-coverage:
 coverage:
 	@echo "Generating coverage report..."
 	@lcov --capture --directory build --output-file coverage.info
-	@genhtml coverage.info --output-directory coverage_html
+	@lcov --remove coverage.info '*/test/*' --output-file coverage_filtered.info
+	@genhtml coverage_filtered.info --output-directory coverage_html
 	@echo "Coverage report generated in coverage_html/index.html"
 
 # Run Python examples with fortplotlib (default mode)
@@ -67,7 +68,7 @@ clean:
 
 # Clean coverage data
 clean-coverage:
-	rm -f *.gcda *.gcno *.gcov coverage.info
+	rm -f *.gcda *.gcno *.gcov coverage.info coverage_filtered.info
 	rm -rf coverage_html
 	find build -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | xargs rm -f
 

@@ -974,21 +974,38 @@ contains
         ! Get quantization tables exactly like STB
         call get_stb_quantization_tables(fdtbl_Y, fdtbl_UV, quality)
         
-        ! Process each 8x8 block exactly like STB
-        do y = 1, height, 8
-            do x = 1, width, 8
-                ! Process Y component (4 blocks for 2x2 subsampling)
+        ! Process each MCU (16x16 for 2x2 subsampling) exactly like STB
+        do y = 1, height, 16
+            do x = 1, width, 16
+                ! Process Y component
+                ! For 2x2 subsampling, we need to process 4 Y blocks per MCU
+                ! Even for 8x8 image, we need all 4 blocks
+                ! print *, "Processing Y at", x, y
+                
+                ! Top-left Y block
                 call extract_8x8_block(ycbcr_data(:,:,1), width, height, x, y, block_8x8)
                 call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
                 
+                ! Top-right Y block
+                call extract_8x8_block(ycbcr_data(:,:,1), width, height, x+8, y, block_8x8)
+                call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
+                
+                ! Bottom-left Y block
+                call extract_8x8_block(ycbcr_data(:,:,1), width, height, x, y+8, block_8x8)
+                call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
+                
+                ! Bottom-right Y block
+                call extract_8x8_block(ycbcr_data(:,:,1), width, height, x+8, y+8, block_8x8)
+                call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
+                
                 ! Process U and V components (1 block each, subsampled)
-                if (mod(x-1, 16) == 0 .and. mod(y-1, 16) == 0) then
-                    call extract_subsampled_8x8_block(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
-                    call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCU, .false.)
-                    
-                    call extract_subsampled_8x8_block(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
-                    call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
-                end if
+                ! For each MCU, we always process U and V blocks
+                ! print *, "Processing U/V at", x, y
+                call extract_subsampled_8x8_block(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
+                call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCU, .false.)
+                
+                call extract_subsampled_8x8_block(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
+                call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
             end do
         end do
     end subroutine encode_blocks_stb_style
@@ -1388,6 +1405,8 @@ contains
         case (2)  
             call stb_write_bits(writer, 1, 2)       ! Symbol 0x02
         case default
+            ! Symbol not found - this is an error
+            print *, "ERROR: YAC symbol not found:", symbol
             call stb_write_bits(writer, 65472, 16)  ! Default to M16zeroes
         end select
     end subroutine encode_yac_symbol
@@ -1403,6 +1422,8 @@ contains
         case (1)
             call stb_write_bits(writer, 1, 2)       ! Symbol 0x01
         case default
+            ! Symbol not found - this is an error
+            print *, "ERROR: UVAC symbol not found:", symbol
             call stb_write_bits(writer, 65472, 16)  ! Default
         end select
     end subroutine encode_uvac_symbol
