@@ -30,7 +30,7 @@ test-coverage:
 coverage:
 	@echo "Generating coverage report..."
 	@lcov --capture --directory build --output-file coverage.info
-	@lcov --remove coverage.info '*/test_*' --output-file coverage_filtered.info
+	@lcov --remove coverage.info '*/test/*' --output-file coverage_filtered.info
 	@genhtml coverage_filtered.info --output-directory coverage_html
 	@echo "Coverage report generated in coverage_html/index.html"
 
