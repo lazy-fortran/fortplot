@@ -188,7 +188,7 @@ contains
     subroutine find_nice_tick_locations(data_min, data_max, target_num_ticks, &
                                        nice_min, nice_max, nice_step, &
                                        tick_locations, actual_num_ticks)
-        !! Find nice tick locations following matplotlib's MaxNLocator algorithm
+        !! Find nice tick locations following matplotlib's MaxNLocator algorithm exactly
         real(wp), intent(in) :: data_min, data_max
         integer, intent(in) :: target_num_ticks
         real(wp), intent(out) :: nice_min, nice_max, nice_step
@@ -196,8 +196,8 @@ contains
         integer, intent(out) :: actual_num_ticks
         
         real(wp) :: range, rough_step, magnitude, normalized_step
-        real(wp) :: nice_normalized_step, current_tick
-        integer :: i
+        real(wp) :: nice_normalized_step, best_vmin
+        integer :: low_edge, high_edge, i
         
         range = data_max - data_min
         if (range <= 0.0_wp) then
@@ -226,19 +226,29 @@ contains
         
         nice_step = nice_normalized_step * magnitude
         
-        ! Find nice boundaries (implement ceil manually)
-        nice_min = floor(data_min / nice_step) * nice_step
-        nice_max = floor(data_max / nice_step + 1.0_wp) * nice_step
+        ! Follow matplotlib's exact algorithm:
+        ! best_vmin = (data_min // step) * step
+        best_vmin = floor(data_min / nice_step) * nice_step
         
-        ! Generate tick locations
+        ! Calculate edge indices like matplotlib's _Edge_integer
+        ! low = largest n where n*step <= (data_min - best_vmin)
+        low_edge = floor((data_min - best_vmin) / nice_step)
+        
+        ! high = smallest n where n*step >= (data_max - best_vmin)  
+        high_edge = ceiling((data_max - best_vmin) / nice_step)
+        
+        ! Generate ticks: np.arange(low, high + 1) * step + best_vmin
+        ! The +1 ensures endpoint inclusion like matplotlib
         actual_num_ticks = 0
-        current_tick = nice_min
-        do i = 1, size(tick_locations)
-            if (current_tick > nice_max + 1.0e-10_wp) exit
+        do i = low_edge, high_edge
+            if (actual_num_ticks >= size(tick_locations)) exit
             actual_num_ticks = actual_num_ticks + 1
-            tick_locations(i) = current_tick
-            current_tick = current_tick + nice_step
+            tick_locations(actual_num_ticks) = real(i, wp) * nice_step + best_vmin
         end do
+        
+        ! Set nice boundaries for axis limits
+        nice_min = tick_locations(1)
+        nice_max = tick_locations(actual_num_ticks)
     end subroutine find_nice_tick_locations
 
     function determine_decimal_places_from_step(step) result(decimal_places)
