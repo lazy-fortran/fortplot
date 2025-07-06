@@ -49,9 +49,10 @@ contains
         marker = trim(temp_marker)
         linestyle = trim(temp_linestyle)
         
-        ! If we found a marker but no line style, set linestyle to 'None' for scatter plots
+        ! If we found a marker but no line style, keep linestyle empty for scatter plots
+        ! The test expects an empty string, not 'None'
         if (found_marker .and. len_trim(linestyle) == 0) then
-            linestyle = 'None'
+            linestyle = ''
         end if
     end subroutine
 
