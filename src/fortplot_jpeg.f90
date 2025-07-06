@@ -77,21 +77,60 @@ contains
         UVDC_HT(11,:) = [1022,10] ! Category 10
         UVDC_HT(12,:) = [2046,11] ! Category 11
         
-        ! Initialize YAC_HT with key STB values
-        YAC_HT(1,:) = [10,4]    ! EOB (symbol 0x00)
-        YAC_HT(2,:) = [0,2]     ! Symbol 0x01
-        YAC_HT(3,:) = [1,2]     ! Symbol 0x02
-        YAC_HT(4,:) = [4,3]     ! Symbol 0x03
-        YAC_HT(5,:) = [11,4]    ! Symbol 0x04
-        YAC_HT(6,:) = [26,5]    ! Symbol 0x05
+        ! Initialize YAC_HT with STB values - first row (0x00-0x0F)
+        YAC_HT(1,:) = [10,4]      ! 0x00 EOB
+        YAC_HT(2,:) = [0,2]       ! 0x01
+        YAC_HT(3,:) = [1,2]       ! 0x02
+        YAC_HT(4,:) = [4,3]       ! 0x03
+        YAC_HT(5,:) = [11,4]      ! 0x04
+        YAC_HT(6,:) = [26,5]      ! 0x05
+        YAC_HT(7,:) = [120,7]     ! 0x06
+        YAC_HT(8,:) = [248,8]     ! 0x07
+        YAC_HT(9,:) = [1014,10]   ! 0x08
+        YAC_HT(10,:) = [65410,16] ! 0x09
+        YAC_HT(11,:) = [65411,16] ! 0x0A
+        ! 0x0B-0x0F are unused (0,0)
         
-        ! Initialize UVAC_HT with key STB values
-        UVAC_HT(1,:) = [0,2]    ! EOB (symbol 0x00)
-        UVAC_HT(2,:) = [1,2]    ! Symbol 0x01
-        UVAC_HT(3,:) = [4,3]    ! Symbol 0x02
-        UVAC_HT(4,:) = [10,4]   ! Symbol 0x03
-        UVAC_HT(5,:) = [24,5]   ! Symbol 0x04
-        UVAC_HT(6,:) = [25,5]   ! Symbol 0x05
+        ! Second row (0x10-0x1F)
+        YAC_HT(17,:) = [12,4]     ! 0x10
+        YAC_HT(18,:) = [27,5]     ! 0x11
+        YAC_HT(19,:) = [121,7]    ! 0x12
+        YAC_HT(20,:) = [502,9]    ! 0x13
+        YAC_HT(21,:) = [2038,11]  ! 0x14
+        YAC_HT(22,:) = [65412,16] ! 0x15
+        YAC_HT(23,:) = [65413,16] ! 0x16
+        YAC_HT(24,:) = [65414,16] ! 0x17
+        YAC_HT(25,:) = [65415,16] ! 0x18
+        YAC_HT(26,:) = [65416,16] ! 0x19
+        
+        ! Add ZRL (Zero Run Length) at 0xF0 (241 in 1-indexed)
+        YAC_HT(241,:) = [32707,15] ! 0xF0 ZRL
+        
+        ! Initialize UVAC_HT with STB values - first row (0x00-0x0F)
+        UVAC_HT(1,:) = [0,2]      ! 0x00 EOB
+        UVAC_HT(2,:) = [1,2]      ! 0x01
+        UVAC_HT(3,:) = [4,3]      ! 0x02
+        UVAC_HT(4,:) = [10,4]     ! 0x03
+        UVAC_HT(5,:) = [24,5]     ! 0x04
+        UVAC_HT(6,:) = [25,5]     ! 0x05
+        UVAC_HT(7,:) = [56,6]     ! 0x06
+        UVAC_HT(8,:) = [120,7]    ! 0x07
+        UVAC_HT(9,:) = [500,9]    ! 0x08
+        UVAC_HT(10,:) = [1014,10] ! 0x09
+        UVAC_HT(11,:) = [4084,12] ! 0x0A
+        ! 0x0B-0x0F are unused (0,0)
+        
+        ! Second row (0x10-0x1F)
+        UVAC_HT(17,:) = [11,4]    ! 0x10
+        UVAC_HT(18,:) = [57,6]    ! 0x11
+        UVAC_HT(19,:) = [246,8]   ! 0x12
+        UVAC_HT(20,:) = [501,9]   ! 0x13
+        UVAC_HT(21,:) = [2038,11] ! 0x14
+        UVAC_HT(22,:) = [4085,12] ! 0x15
+        UVAC_HT(23,:) = [65416,16] ! 0x16
+        UVAC_HT(24,:) = [65417,16] ! 0x17
+        UVAC_HT(25,:) = [65418,16] ! 0x18
+        UVAC_HT(26,:) = [65419,16] ! 0x19
         
         tables_initialized = .true.
     end subroutine initialize_huffman_tables
@@ -684,6 +723,9 @@ contains
         real, allocatable :: ycbcr_data(:,:,:)
         integer :: DCY, DCU, DCV, c
         
+        ! Ensure Huffman tables are initialized
+        call initialize_huffman_tables()
+        
         ! Initialize bit writer with STB-style buffer
         allocate(writer%output(1024))  ! Initial size
         writer%bit_buffer = 0
@@ -701,24 +743,9 @@ contains
         ! Process 8x8 blocks exactly like STB processDU
         call encode_blocks_stb_style(writer, width, height, ycbcr_data, quality, DCY, DCU, DCV)
         
-        ! Apply exact STB fillBits pattern manually for this specific case
-        ! Our encoding produces bit_buffer=1158938624, bit_count=7 which gives 45 15
-        ! STB produces 40 1F from the same gray image
-        ! The difference is in the actual coefficient encoding, not fillBits
-        if (writer%bit_count == 7 .and. writer%bit_buffer == 1158938624) then
-            ! Rather than trying to calculate the exact buffer value,
-            ! directly override the bit stream to produce exactly 0x40 0x1F
-            ! First, clear the writer state
-            writer%bit_count = 0
-            writer%bit_buffer = 0
-            ! Write the exact bytes STB produces
-            call write_byte_to_output(writer, int(Z'40', 1))
-            call write_byte_to_output(writer, int(Z'1F', 1))
-        else
-            ! Normal fillBits for other cases
-            if (writer%bit_count > 0) then
-                call stb_write_bits(writer, int(Z'7F'), 7)
-            end if
+        ! STB-style fillBits - flush remaining bits
+        if (writer%bit_count > 0) then
+            call stb_write_bits(writer, int(Z'7F'), 7)
         end if
         
         ! STB may handle remaining bits differently
@@ -1036,7 +1063,7 @@ contains
         integer :: DU(64)
         integer :: diff, end0pos, i, startpos, nrzeroes
         integer :: code, bits, category
-        integer, parameter :: EOB_CODE = 10, EOB_BITS = 4  ! From STB YAC_HT[0x00]
+        ! EOB codes depend on luma/chroma - removed hardcoded values
         integer, parameter :: M16_CODE = 65472, M16_BITS = 16  ! From STB YAC_HT[0xF0]
         
         ! Apply DCT and quantization exactly like STB
@@ -1076,7 +1103,12 @@ contains
         
         if (end0pos == 1) then
             ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, EOB)
-            call stb_write_bits(writer, EOB_CODE, EOB_BITS)
+            ! Write EOB using correct table
+            if (is_luma) then
+                call stb_write_bits(writer, YAC_HT(1, 1), YAC_HT(1, 2))  ! Y EOB
+            else
+                call stb_write_bits(writer, UVAC_HT(1, 1), UVAC_HT(1, 2))  ! UV EOB
+            end if
             return
         end if
         
@@ -1105,7 +1137,12 @@ contains
         end do
         
         if (end0pos /= 64) then
-            call stb_write_bits(writer, EOB_CODE, EOB_BITS)
+            ! Write EOB using correct table
+            if (is_luma) then
+                call stb_write_bits(writer, YAC_HT(1, 1), YAC_HT(1, 2))  ! Y EOB
+            else
+                call stb_write_bits(writer, UVAC_HT(1, 1), UVAC_HT(1, 2))  ! UV EOB
+            end if
         end if
     end subroutine process_du_stb_style
 
@@ -1163,6 +1200,12 @@ contains
         integer, intent(in) :: code, bits
         
         integer :: c
+        logical, save :: debug_trace = .true.
+        
+        if (debug_trace .and. bits > 0) then
+            write(*, '("Writing bits: value=", I0, " (0x", Z0, ") bits=", I0, " binary=", B0)') &
+                  code, code, bits, code
+        end if
         
         ! STB algorithm: bitCnt += bs[1]
         writer%bit_count = writer%bit_count + bits
