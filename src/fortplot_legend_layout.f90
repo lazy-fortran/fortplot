@@ -109,8 +109,10 @@ contains
         ! Calculate total box dimensions with proper padding
         ! Width: padding + line + spacing + text + padding (both sides)
         box%width = 2.0_wp * box%padding + box%line_length + box%text_spacing + max_text_width
-        ! Height: padding + (n entries * entry_height) + padding
-        box%height = 2.0_wp * box%padding + real(size(labels), wp) * box%entry_height
+        ! Height: padding + ((n-1) entries * entry_height) + last entry text height + padding
+        ! The last entry doesn't need full entry_height spacing below it
+        box%height = 2.0_wp * box%padding + real(size(labels) - 1, wp) * box%entry_height + &
+                     real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
 
     end subroutine calculate_optimal_legend_dimensions
     
