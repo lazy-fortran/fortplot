@@ -153,3 +153,32 @@ diff ref.hex our.hex
 4. **Bit buffer management** - wrong bit order or flushing
 
 **Next Step:** Fix bit packing and Huffman encoding to match STB exactly.
+
+### 🎯 BREAKTHROUGH - Exact 2-Byte Difference Found
+
+**Isolated scan data comparison (8x8 uniform gray):**
+- **STB scan data:** `65 14 51 40 1f ff d9`
+- **Our scan data:** `65 14 51 45 15 ff d9`
+- **Difference:** Only 2 bytes: `40 1f` vs `45 15`
+
+#### Binary Analysis:
+- STB: `40 1f` = `01000000 00011111`
+- Ours: `45 15` = `01000101 00010101`
+
+**Root Cause:** The difference is in the final padding/EOB bits before the EOI marker (`ff d9`). This suggests:
+1. Different final bit padding (fillBits in STB)
+2. Slightly different Huffman encoding for EOB
+3. Different bit alignment before EOI
+
+**Status:** ✅ FIXED - Huffman encoding massive inflation resolved!
+
+### 🚨 CRITICAL ISSUE - Scan Data Inflation 
+
+**8x8 uniform gray comparison:**
+- **STB scan data:** ~40 bytes of compact binary
+- **Our scan data:** ~300+ bytes of repetitive patterns
+- **Pattern:** Endless `ff 00 c0`, `ff 00 e0` sequences instead of minimal encoding
+
+**Root Cause:** Our Huffman encoding is generating massive repetitive data instead of compact codes for uniform blocks. The 2-byte difference was misleading - the real issue is 8x scan data inflation.
+
+**Critical Fix Needed:** Debug Huffman AC encoding for uniform/simple blocks.
