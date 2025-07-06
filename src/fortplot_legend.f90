@@ -202,13 +202,10 @@ contains
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position)
         
-        ! Adjust box position to use provided legend_x, legend_y as reference
-        box%x = legend_x - box%padding
-        box%y = legend_y + box%padding
-        
-        ! Calculate box corners using improved dimensions
-        box_x1 = box%x
-        box_y1 = box%y
+        ! Use legend_x, legend_y as the top-left corner of the box (inside padding)
+        ! The box itself extends beyond this by the padding amount
+        box_x1 = legend_x - box%padding
+        box_y1 = legend_y + box%padding
         box_x2 = box_x1 + box%width
         box_y2 = box_y1 - box%height
         
@@ -228,8 +225,9 @@ contains
             
             ! Improved text positioning with better spacing and vertical centering
             text_x = line_x2 + box%text_spacing
-            ! Shift text down by half a line height for better centering
-            text_y = line_y - box%entry_height * 0.5_wp
+            ! Center text vertically with the line (text baseline adjustment)
+            ! Text is drawn from baseline, so we need minimal adjustment
+            text_y = line_y - box%entry_height * 0.2_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
@@ -244,11 +242,11 @@ contains
                 call backend%line(line_x1, line_y, line_x2, line_y)
             end if
 
-            ! Draw marker in the middle of the line, shifted down by 0.25 line height
+            ! Draw marker in the middle of the line (on the line)
             if (allocated(legend%entries(i)%marker)) then
                 if (legend%entries(i)%marker /= 'None') then
                     call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
-                                            line_y - box%entry_height * 0.25_wp, &
+                                            line_y, &
                                             legend%entries(i)%marker)
                 end if
             end if
