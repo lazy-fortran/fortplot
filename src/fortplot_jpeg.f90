@@ -190,7 +190,8 @@ contains
         call write_jpeg_soi(jpeg_buffer, pos)
         call write_jpeg_app0(jpeg_buffer, pos)
         call write_jpeg_dqt(jpeg_buffer, pos, quality)
-        call write_jpeg_sof0(jpeg_buffer, pos, width, height)
+        ! Match STB: use subsampling when quality <= 90
+        call write_jpeg_sof0(jpeg_buffer, pos, width, height, (quality <= 90))
         call write_jpeg_dht(jpeg_buffer, pos)
         call write_jpeg_sos(jpeg_buffer, pos)
         
@@ -386,10 +387,11 @@ contains
         end do
     end subroutine write_uv_qtable
 
-    subroutine write_jpeg_sof0(buffer, pos, width, height)
+    subroutine write_jpeg_sof0(buffer, pos, width, height, subsample)
         integer(1), intent(inout) :: buffer(:)
         integer, intent(inout) :: pos
         integer, intent(in) :: width, height
+        logical, intent(in) :: subsample
         
         ! SOF0 (Start of Frame) marker
         buffer(pos) = int(Z'FF', 1)     ! SOF0 marker
@@ -406,7 +408,7 @@ contains
         
         ! Component 1 (Y)
         buffer(pos+10) = int(1, 1)      ! Component ID
-        buffer(pos+11) = int(34, 1)     ! Sampling factors (2x2) = 0x22
+        buffer(pos+11) = merge(int(34, 1), int(17, 1), subsample)  ! 0x22 for 2x2, 0x11 for 1x1
         buffer(pos+12) = int(0, 1)      ! Quantization table ID
         
         ! Component 2 (Cb)
@@ -1015,16 +1017,21 @@ contains
         
         integer :: x, y, component
         real :: block_8x8(8, 8)
-        real :: y_16x16(256)  ! 16x16 block like STB
+        real :: y_16x16(256)  ! 16x16 block for subsampling
         integer :: DU(64)
         real :: fdtbl_Y(64), fdtbl_UV(64)
+        logical :: subsample
         
         ! Get quantization tables exactly like STB
         call get_stb_quantization_tables(fdtbl_Y, fdtbl_UV, quality)
         
-        ! Process each MCU (16x16 for 2x2 subsampling) exactly like STB
-        do y = 1, height, 16
-            do x = 1, width, 16
+        ! Match STB logic: use subsampling when quality <= 90
+        subsample = (quality <= 90)
+        
+        if (subsample) then
+            ! Process each MCU (16x16 for 2x2 subsampling)
+            do y = 1, height, 16
+                do x = 1, width, 16
                 ! Process Y component
                 ! For 2x2 subsampling, we need to process 4 Y blocks per MCU
                 ! Even for 8x8 image, we need all 4 blocks
@@ -1049,6 +1056,24 @@ contains
                 call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
             end do
         end do
+        else
+            ! No subsampling - process 8x8 blocks like STB default
+            do y = 1, height, 8
+                do x = 1, width, 8
+                    ! Process Y block
+                    call extract_8x8_block(ycbcr_data(:,:,1), width, height, x, y, block_8x8)
+                    call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
+                    
+                    ! Process U block
+                    call extract_8x8_block(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
+                    call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCU, .false.)
+                    
+                    ! Process V block
+                    call extract_8x8_block(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
+                    call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
+                end do
+            end do
+        end if
     end subroutine encode_blocks_stb_style
     
     ! Exact STB processDU function implementation
@@ -1200,7 +1225,7 @@ contains
         integer, intent(in) :: code, bits
         
         integer :: c
-        logical, save :: debug_trace = .true.
+        logical, save :: debug_trace = .false.
         
         if (debug_trace .and. bits > 0) then
             write(*, '("Writing bits: value=", I0, " (0x", Z0, ") bits=", I0, " binary=", B0)') &
