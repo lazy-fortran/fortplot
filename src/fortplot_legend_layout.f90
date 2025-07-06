@@ -19,7 +19,8 @@ module fortplot_legend_layout
         real(wp) :: x, y              ! Top-left corner position
         real(wp) :: width, height     ! Box dimensions  
         real(wp) :: padding           ! Internal padding
-        real(wp) :: entry_height      ! Height per legend entry
+        real(wp) :: entry_height      ! Height of each legend entry (text height)
+        real(wp) :: entry_spacing     ! Vertical spacing between entries
         real(wp) :: line_length       ! Length of legend line samples
         real(wp) :: text_spacing      ! Space between line and text
     end type legend_box_t
@@ -64,7 +65,7 @@ contains
         integer :: i, text_width_pixels, text_height_pixels, max_text_height_pixels
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
         logical :: text_system_available
-        real(wp) :: entry_text_width
+        real(wp) :: entry_text_width, label_spacing
         character(len=:), allocatable :: trimmed_label
         integer, parameter :: fudge_pixels = 2
 
@@ -102,17 +103,23 @@ contains
         box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line 
         box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
 
-        ! Calculate entry height based on actual text height with proper spacing
+        ! Calculate entry height and spacing to match matplotlib
+        ! Entry height is just the text/handle height
+        box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
+        
         ! Matplotlib uses labelspacing (default 0.5) as fraction of fontsize between entries
-        box%entry_height = real(max_text_height_pixels, wp) * 1.3_wp / data_to_pixel_ratio_y  ! 1.3x text height for spacing
+        ! For 16px font, this is 0.5 * 16 = 8 pixels
+        box%entry_spacing = 0.5_wp * real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
+        label_spacing = box%entry_spacing
 
         ! Calculate total box dimensions with proper padding
         ! Width: padding + line + spacing + text + padding (both sides)
         box%width = 2.0_wp * box%padding + box%line_length + box%text_spacing + max_text_width
-        ! Height: padding + ((n-1) entries * entry_height) + last entry text height + padding
-        ! The last entry doesn't need full entry_height spacing below it
-        box%height = 2.0_wp * box%padding + real(size(labels) - 1, wp) * box%entry_height + &
-                     real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
+        ! Height: padding + all_entries_height + (n-1)*spacing + padding
+        ! Following matplotlib: sum(heights) + sep*(n-1) + 2*pad
+        box%height = 2.0_wp * box%padding + &
+                     real(size(labels), wp) * box%entry_height + &
+                     real(size(labels) - 1, wp) * label_spacing
 
     end subroutine calculate_optimal_legend_dimensions
     
