@@ -1029,7 +1029,7 @@ contains
         ! Get quantization tables exactly like STB
         call get_stb_quantization_tables(fdtbl_Y, fdtbl_UV, quality)
         
-        ! Match STB logic: use subsampling when quality <= 90
+        ! Match STB logic exactly: use subsampling when quality <= 90
         subsample = (quality <= 90)
         
         block_count = 0
@@ -1154,14 +1154,18 @@ contains
             end do
             nrzeroes = i - startpos
             
+            ! Check if we've gone past end0pos (all remaining were zeros)
+            if (i > end0pos) then
+                exit  ! All remaining coefficients were zero, exit loop
+            end if
+            
             ! STB: if ( nrzeroes >= 16 ) { ... for (nrmarker=1; nrmarker <= lng; ++nrmarker) stbiw__jpg_writeBits(s, bitBuf, bitCnt, M16zeroes); }
             do while (nrzeroes >= 16)
                 call encode_ac_symbol_stb_style(writer, 240, is_luma)  ! 0xF0 = 240 (ZRL)
                 nrzeroes = nrzeroes - 16
             end do
             
-            ! STB directly accesses DU[i] without checking i <= end0pos again
-            ! This only works because the outer loop ensures i <= end0pos at the start
+            ! Now we know i <= end0pos and DU(i) != 0
             category = get_ac_category(DU(i))
             ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, HTAC[(nrzeroes<<4)+bits[1]]);
             call encode_ac_symbol_stb_style(writer, ishft(nrzeroes, 4) + category, is_luma)

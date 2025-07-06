@@ -36,7 +36,7 @@ program debug_jpeg_stb_compare
     
     ! Write with our implementation
     print *, "Writing with our JPEG implementation..."
-    call write_jpeg_file("test_pattern_ours.jpg", 16, 16, reshape(pixels, [3*16*16]), 80)
+    call write_jpeg_file("test_pattern_ours.jpg", 16, 16, reshape(pixels, [3*16*16]), 95)
     
     ! For STB comparison, we'll use pre-existing STB files
     print *, "Using pre-existing STB reference files for comparison..."
