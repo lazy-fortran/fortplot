@@ -1059,8 +1059,8 @@ contains
                 call extract_and_subsample_stb_style(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
                 call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
                 block_count = block_count + 1
+                end do
             end do
-        end do
         else
             ! No subsampling - process 8x8 blocks like STB default
             do y = 1, height, 8
@@ -1097,8 +1097,6 @@ contains
         integer :: DU(64)
         integer :: diff, end0pos, i, startpos, nrzeroes
         integer :: code, bits, category
-        ! EOB codes depend on luma/chroma - removed hardcoded values
-        integer, parameter :: M16_CODE = 65472, M16_BITS = 16  ! From STB YAC_HT[0xF0]
         
         ! Apply DCT and quantization exactly like STB
         call apply_dct_and_quantize_stb_style(CDU, DU, fdtbl)
@@ -1126,18 +1124,19 @@ contains
             end if
         end if
         
-        ! Update DC for next block
-        DC = DU(1)
+        ! Update DC for next block - STB returns quantized DC value
+        DC = DU(1)  ! DU(1) is the quantized DC coefficient after DCT and quantization
         
         ! Encode AC coefficients exactly like STB
-        end0pos = 64
+        ! STB: end0pos = 63; for(; (end0pos>0)&&(DU[end0pos]==0); --end0pos) {}
+        end0pos = 64  ! 1-based equivalent of STB's 63
         do while (end0pos > 1 .and. DU(end0pos) == 0)
             end0pos = end0pos - 1
         end do
         
+        ! STB: if(end0pos == 0) { stbiw__jpg_writeBits(s, bitBuf, bitCnt, EOB); return DU[0]; }
         if (end0pos == 1) then
-            ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, EOB)
-            ! Write EOB using correct table
+            ! Only DC coefficient, write EOB
             if (is_luma) then
                 call stb_write_bits(writer, YAC_HT(1, 1), YAC_HT(1, 2))  ! Y EOB
             else
@@ -1146,32 +1145,34 @@ contains
             return
         end if
         
-        ! Encode AC coefficients with run-length encoding
-        i = 2
+        ! STB: for(i = 1; i <= end0pos; ++i)
+        i = 2  ! Start at AC coefficient 1 (1-based array, so index 2)
         do while (i <= end0pos)
             startpos = i
+            ! STB: for (; DU[i]==0 && i<=end0pos; ++i) {}
             do while (DU(i) == 0 .and. i <= end0pos)
                 i = i + 1
             end do
             nrzeroes = i - startpos
             
-            ! Handle runs of 16 or more zeros
+            ! STB: if ( nrzeroes >= 16 ) { ... for (nrmarker=1; nrmarker <= lng; ++nrmarker) stbiw__jpg_writeBits(s, bitBuf, bitCnt, M16zeroes); }
             do while (nrzeroes >= 16)
-                call stb_write_bits(writer, M16_CODE, M16_BITS)  ! STB M16zeroes
+                call encode_ac_symbol_stb_style(writer, 240, is_luma)  ! 0xF0 = 240 (ZRL)
                 nrzeroes = nrzeroes - 16
             end do
             
-            if (i <= end0pos) then
-                category = get_ac_category(DU(i))
-                ! Symbol is (nrzeroes << 4) + category
-                call encode_ac_symbol_stb_style(writer, ishft(nrzeroes, 4) + category, is_luma)
-                call write_ac_value_bits_stb_style(writer, DU(i), category)
-                i = i + 1
-            end if
+            ! STB directly accesses DU[i] without checking i <= end0pos again
+            ! This only works because the outer loop ensures i <= end0pos at the start
+            category = get_ac_category(DU(i))
+            ! STB: stbiw__jpg_writeBits(s, bitBuf, bitCnt, HTAC[(nrzeroes<<4)+bits[1]]);
+            call encode_ac_symbol_stb_style(writer, ishft(nrzeroes, 4) + category, is_luma)
+            call write_ac_value_bits_stb_style(writer, DU(i), category)
+            i = i + 1
         end do
         
+        ! STB: if(end0pos != 63) { stbiw__jpg_writeBits(s, bitBuf, bitCnt, EOB); }
+        ! Our 1-based equivalent: if(end0pos != 64)
         if (end0pos /= 64) then
-            ! Write EOB using correct table
             if (is_luma) then
                 call stb_write_bits(writer, YAC_HT(1, 1), YAC_HT(1, 2))  ! Y EOB
             else
@@ -1262,7 +1263,7 @@ contains
             end if
             
             ! STB algorithm: bitBuf <<= 8; bitCnt -= 8
-            writer%bit_buffer = ishft(writer%bit_buffer, 8)
+            writer%bit_buffer = iand(ishft(writer%bit_buffer, 8), z'FFFFFFFF')
             writer%bit_count = writer%bit_count - 8
         end do
     end subroutine stb_write_bits
@@ -1326,6 +1327,17 @@ contains
         integer :: YTable(64), UVTable(64)
         integer :: i, row, col, k, yti, uvti, quality_scale
         
+        ! STB zigzag order (0-based converted to 1-based)
+        integer, parameter :: stb_zigzag(64) = [ &
+            1,  2,  9, 17, 10,  3,  4, 11, &
+           18, 25, 33, 26, 19, 12,  5,  6, &
+           13, 20, 27, 34, 41, 49, 42, 35, &
+           28, 21, 14,  7,  8, 15, 22, 29, &
+           36, 43, 50, 57, 58, 51, 44, 37, &
+           30, 23, 16, 24, 31, 38, 45, 52, &
+           59, 60, 53, 46, 39, 32, 40, 47, &
+           54, 61, 62, 55, 48, 56, 63, 64]
+        
         ! STB quality scaling
         quality_scale = max(1, min(100, quality))
         if (quality_scale < 50) then
@@ -1342,12 +1354,13 @@ contains
             UVTable(i) = max(1, min(255, uvti))
         end do
         
-        ! Apply STB zigzag and AAF scaling
+        ! Apply STB zigzag and AAF scaling - must match STB exactly
         do row = 1, 8
             do col = 1, 8
                 k = (row - 1) * 8 + col
-                fdtbl_Y(k) = 1.0 / (YTable(k) * aasf(row) * aasf(col))
-                fdtbl_UV(k) = 1.0 / (UVTable(k) * aasf(row) * aasf(col))
+                ! STB: fdtbl_Y[k] = 1 / (YTable[stbiw__jpg_ZigZag[k]] * aasf[row] * aasf[col])
+                fdtbl_Y(k) = 1.0 / (YTable(stb_zigzag(k)) * aasf(row) * aasf(col))
+                fdtbl_UV(k) = 1.0 / (UVTable(stb_zigzag(k)) * aasf(row) * aasf(col))
             end do
         end do
     end subroutine get_stb_quantization_tables
@@ -1505,8 +1518,9 @@ contains
         integer, intent(in) :: symbol
         
         ! Use the exported YAC_HT table that's already correct
-        if (symbol >= 1 .and. symbol <= 256) then
-            call stb_write_bits(writer, YAC_HT(symbol, 1), YAC_HT(symbol, 2))
+        ! Symbol is 0-255, but Fortran arrays are 1-indexed
+        if (symbol >= 0 .and. symbol <= 255) then
+            call stb_write_bits(writer, YAC_HT(symbol + 1, 1), YAC_HT(symbol + 1, 2))
         else
             ! Invalid symbol - default to EOB
             call stb_write_bits(writer, YAC_HT(1, 1), YAC_HT(1, 2))  ! EOB
@@ -1518,8 +1532,9 @@ contains
         integer, intent(in) :: symbol
         
         ! Use the exported UVAC_HT table that's already correct
-        if (symbol >= 1 .and. symbol <= 256) then
-            call stb_write_bits(writer, UVAC_HT(symbol, 1), UVAC_HT(symbol, 2))
+        ! Symbol is 0-255, but Fortran arrays are 1-indexed
+        if (symbol >= 0 .and. symbol <= 255) then
+            call stb_write_bits(writer, UVAC_HT(symbol + 1, 1), UVAC_HT(symbol + 1, 2))
         else
             ! Invalid symbol - default to EOB
             call stb_write_bits(writer, UVAC_HT(1, 1), UVAC_HT(1, 2))  ! EOB
@@ -1532,13 +1547,19 @@ contains
         
         integer :: value_bits
         
+        ! STB approach: for negative values, subtract 1, then mask
         if (dc_val >= 0) then
             value_bits = dc_val
         else
-            value_bits = dc_val + (2**category - 1)
+            value_bits = dc_val - 1  ! STB: val = val < 0 ? val-1 : val;
         end if
         
-        call stb_write_bits(writer, value_bits, category)
+        ! Mask to the appropriate number of bits (STB: bits[0] = val & ((1<<bits[1])-1))
+        if (category > 0) then
+            call stb_write_bits(writer, iand(value_bits, ishft(1, category) - 1), category)
+        else
+            call stb_write_bits(writer, 0, 0)  ! Category 0 means no bits
+        end if
     end subroutine write_dc_value_bits_stb_style
     
     subroutine write_ac_value_bits_stb_style(writer, ac_val, category)
@@ -1723,7 +1744,11 @@ contains
         if (dc_val >= 0) then
             value_bits = dc_val
         else
-            value_bits = dc_val + (2**category - 1)
+            ! For negative values, JPEG uses one's complement representation
+            ! STB: val = val < 0 ? val-1 : val;
+            ! Then: bits[0] = val & ((1<<bits[1])-1);
+            ! This is equivalent to adding (2^category - 1) to negative value
+            value_bits = dc_val + ishft(1, category) - 1
         end if
         
         ! Store value bits (simplified)
