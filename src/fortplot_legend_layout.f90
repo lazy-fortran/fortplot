@@ -95,18 +95,22 @@ contains
             max_text_width = max(max_text_width, entry_text_width)
         end do
 
-        ! Set legend box components based on actual measurements (matplotlib-style tight spacing)
-        box%padding = 4.0_wp / data_to_pixel_ratio_x      ! 4 pixels padding (further reduced)
-        box%line_length = 16.0_wp / data_to_pixel_ratio_x  ! 16 pixels for legend line 
-        box%text_spacing = 4.0_wp / data_to_pixel_ratio_x  ! 4 pixels between line and text
+        ! Set legend box components based on actual measurements (matplotlib-style spacing)
+        ! Matplotlib uses borderpad as internal padding in font-size units
+        ! Default matplotlib borderpad is 0.4 fontsize units (~6.4 pixels for 16px font)
+        box%padding = 8.0_wp / data_to_pixel_ratio_x      ! 8 pixels padding (matplotlib-style)
+        box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line 
+        box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
 
-        ! Calculate entry height based on actual text height with matplotlib-style minimal spacing
-        box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y  ! Just text height, no extra spacing
+        ! Calculate entry height based on actual text height with proper spacing
+        ! Matplotlib uses labelspacing (default 0.5) as fraction of fontsize between entries
+        box%entry_height = real(max_text_height_pixels, wp) * 1.3_wp / data_to_pixel_ratio_y  ! 1.3x text height for spacing
 
-        ! Calculate total box dimensions - very tight fit like matplotlib
-        ! Add extra right padding for visual comfort
-        box%width = box%line_length + box%text_spacing + max_text_width + 4.0_wp * box%padding
-        box%height = real(size(labels), wp) * box%entry_height + 1.0_wp * box%padding  ! Minimal padding for height
+        ! Calculate total box dimensions with proper padding
+        ! Width: padding + line + spacing + text + padding (both sides)
+        box%width = 2.0_wp * box%padding + box%line_length + box%text_spacing + max_text_width
+        ! Height: padding + (n entries * entry_height) + padding
+        box%height = 2.0_wp * box%padding + real(size(labels), wp) * box%entry_height
 
     end subroutine calculate_optimal_legend_dimensions
     
