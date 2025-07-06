@@ -952,12 +952,16 @@ contains
         real, intent(in) :: dct_block(8, 8)
         integer, intent(out) :: coeffs(64)
         
-        ! Simplified zigzag pattern (first few elements)
+        ! STB zigzag order table (converted from 0-based to 1-based)
         integer, parameter :: zigzag_table(64) = [ &
-            1, 2, 9, 17, 10, 3, 4, 11, 18, 25, 33, 26, 19, 12, 5, 6, &
-            13, 20, 27, 34, 41, 49, 42, 35, 28, 21, 14, 7, 8, 15, 22, 29, &
-            36, 43, 50, 57, 58, 51, 44, 37, 30, 23, 16, 24, 31, 38, 45, 52, &
-            59, 60, 53, 46, 39, 32, 40, 47, 54, 61, 62, 55, 48, 56, 63, 64]
+            1,  2,  6,  7, 15, 16, 28, 29, &
+            3,  5,  8, 14, 17, 27, 30, 43, &
+            4,  9, 13, 18, 26, 31, 42, 44, &
+           10, 12, 19, 25, 32, 41, 45, 54, &
+           11, 20, 24, 33, 40, 46, 53, 55, &
+           21, 23, 34, 39, 47, 52, 56, 61, &
+           22, 35, 38, 48, 51, 57, 60, 62, &
+           36, 37, 49, 50, 58, 59, 63, 64]
         
         integer :: i, row, col
         
@@ -1355,27 +1359,29 @@ contains
         
         real :: temp_cdu(8, 8)
         integer :: i, j, k
-        ! STB zigzag order table
+        ! STB zigzag order table (converted from 0-based to 1-based)
         integer, parameter :: zigzag(64) = [ &
-            1,  2,  9, 17, 10,  3,  4, 11, &
-           18, 25, 33, 26, 19, 12,  5,  6, &
-           13, 20, 27, 34, 41, 49, 42, 35, &
-           28, 21, 14,  7,  8, 15, 22, 29, &
-           36, 43, 50, 57, 58, 51, 44, 37, &
-           30, 23, 16, 24, 31, 38, 45, 52, &
-           59, 60, 53, 46, 39, 32, 40, 47, &
-           54, 61, 62, 55, 48, 56, 63, 64]
+            1,  2,  6,  7, 15, 16, 28, 29, &
+            3,  5,  8, 14, 17, 27, 30, 43, &
+            4,  9, 13, 18, 26, 31, 42, 44, &
+           10, 12, 19, 25, 32, 41, 45, 54, &
+           11, 20, 24, 33, 40, 46, 53, 55, &
+           21, 23, 34, 39, 47, 52, 56, 61, &
+           22, 35, 38, 48, 51, 57, 60, 62, &
+           36, 37, 49, 50, 58, 59, 63, 64]
         
         ! Copy input and apply DCT
         temp_cdu = CDU
         call apply_stb_dct_8x8(temp_cdu)
         
-        ! Quantize and apply zigzag order
-        do k = 1, 64
-            i = (zigzag(k) - 1) / 8 + 1
-            j = mod(zigzag(k) - 1, 8) + 1
-            ! fdtbl is in natural order, so we need row-major index
-            DU(k) = nint(temp_cdu(j, i) * fdtbl((i-1)*8 + j))
+        ! Quantize in natural order, then apply zigzag (like STB)
+        ! Note: STB processes in row-major order (y*8+x), we need column-major for Fortran arrays
+        do i = 1, 8
+            do j = 1, 8
+                k = (i-1)*8 + j  ! Natural order index (1-64)
+                ! Quantize and store in zigzag position
+                DU(zigzag(k)) = nint(temp_cdu(j, i) * fdtbl(k))
+            end do
         end do
     end subroutine apply_dct_and_quantize_stb_style
     
@@ -1627,42 +1633,38 @@ contains
         
         ! Process 4 8x8 blocks exactly like STB: Y+0, Y+8, Y+128, Y+136
         ! Top-left (Y+0)
-        pos = 1
         do i = 1, 8
             do j = 1, 8
-                block_8x8(j, i) = Y_16x16(pos + (j-1))
+                pos = (i-1)*16 + j
+                block_8x8(j, i) = Y_16x16(pos)
             end do
-            pos = pos + 16
         end do
         call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
         
         ! Top-right (Y+8)
-        pos = 9
         do i = 1, 8
             do j = 1, 8
-                block_8x8(j, i) = Y_16x16(pos + (j-1))
+                pos = (i-1)*16 + j + 8
+                block_8x8(j, i) = Y_16x16(pos)
             end do
-            pos = pos + 16
         end do
         call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
         
         ! Bottom-left (Y+128)
-        pos = 129
         do i = 1, 8
             do j = 1, 8
-                block_8x8(j, i) = Y_16x16(pos + (j-1))
+                pos = (i+7)*16 + j
+                block_8x8(j, i) = Y_16x16(pos)
             end do
-            pos = pos + 16
         end do
         call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
         
         ! Bottom-right (Y+136)
-        pos = 137
         do i = 1, 8
             do j = 1, 8
-                block_8x8(j, i) = Y_16x16(pos + (j-1))
+                pos = (i+7)*16 + j + 8
+                block_8x8(j, i) = Y_16x16(pos)
             end do
-            pos = pos + 16
         end do
         call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
     end subroutine process_y_blocks_stb_exact
