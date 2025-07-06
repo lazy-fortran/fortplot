@@ -1190,34 +1190,21 @@ contains
         integer, intent(in) :: dc_val
         integer :: category
         
-        integer :: abs_val
+        integer :: tmp1
         
-        abs_val = abs(dc_val)
+        ! STB algorithm: int tmp1 = val < 0 ? -val : val;
+        tmp1 = abs(dc_val)
         
-        if (abs_val == 0) then
+        if (tmp1 == 0) then
             category = 0
-        else if (abs_val == 1) then
-            category = 1
-        else if (abs_val <= 3) then
-            category = 2
-        else if (abs_val <= 7) then
-            category = 3
-        else if (abs_val <= 15) then
-            category = 4
-        else if (abs_val <= 31) then
-            category = 5
-        else if (abs_val <= 63) then
-            category = 6
-        else if (abs_val <= 127) then
-            category = 7
-        else if (abs_val <= 255) then
-            category = 8
-        else if (abs_val <= 511) then
-            category = 9
-        else if (abs_val <= 1023) then
-            category = 10
         else
-            category = 11
+            ! STB algorithm: bits[1] = 1; while(tmp1 >>= 1) { ++bits[1]; }
+            category = 1
+            tmp1 = ishft(tmp1, -1)  ! Right shift by 1
+            do while (tmp1 > 0)
+                category = category + 1
+                tmp1 = ishft(tmp1, -1)  ! Right shift by 1
+            end do
         end if
     end function get_dc_category
     
