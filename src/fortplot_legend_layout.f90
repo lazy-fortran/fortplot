@@ -115,11 +115,13 @@ contains
         ! Calculate total box dimensions with proper padding
         ! Width: padding + line + spacing + text + padding (both sides)
         box%width = 2.0_wp * box%padding + box%line_length + box%text_spacing + max_text_width
-        ! Height: padding + all_entries_height + (n-1)*spacing + padding
-        ! Following matplotlib: sum(heights) + sep*(n-1) + 2*pad
+        ! Height: padding + entries + spacing between entries + padding
+        ! First entry starts at legend_y, last entry's text baseline is 0.3*entry_height below its line
+        ! So we need: top_padding + (n-1)*entry_height + (n-1)*spacing + text_descent + bottom_padding
+        ! Where text_descent = 0.3*entry_height (baseline below line)
         box%height = 2.0_wp * box%padding + &
-                     real(size(labels), wp) * box%entry_height + &
-                     real(size(labels) - 1, wp) * label_spacing
+                     real(size(labels) - 1, wp) * (box%entry_height + label_spacing) + &
+                     0.3_wp * box%entry_height  ! Account for text descent of last entry
 
     end subroutine calculate_optimal_legend_dimensions
     
