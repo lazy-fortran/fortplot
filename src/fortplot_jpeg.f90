@@ -1572,11 +1572,11 @@ contains
         
         ! Extract 16x16 block like STB does
         pos = 1
-        do y = start_y, start_y + 15
-            do x = start_x, start_x + 15
+        do y = 0, 15
+            do x = 0, 15
                 ! Clamp coordinates like STB
-                src_x = min(x, width)
-                src_y = min(y, height)
+                src_y = min(start_y + y, height)
+                src_x = min(start_x + x, width)
                 y_block(pos) = y_data(src_x, src_y)
                 pos = pos + 1
             end do
@@ -1597,7 +1597,7 @@ contains
         ! Extract 8x8 block from 16x16 data with given offset and stride
         do y = 1, 8
             do x = 1, 8
-                src_pos = offset + (y-1)*stride + (x-1) + 1
+                src_pos = offset + (y-1)*stride + x
                 cdu_8x8(x, y) = y_data(src_pos)
             end do
         end do
