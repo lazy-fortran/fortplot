@@ -798,7 +798,7 @@ contains
         do y = 1, min(height, 10)  ! Sample first 10 rows for efficiency
             do x = 1, min(width, 10)   ! Sample first 10 columns
                 call extract_rgb_pixel(rgb_data, width, x, y, r, g, b)
-                total_y = total_y + (0.299*r + 0.587*g + 0.114*b)
+                total_y = total_y + (0.29900*r + 0.58700*g + 0.11400*b)
                 pixel_count = pixel_count + 1
             end do
         end do
@@ -871,9 +871,9 @@ contains
                 
                 ! Convert to YCbCr using STB coefficients (exact match)
                 ! STB subtracts 128 from Y but not from U/V
-                ycbcr_data(x, y, 1) = 0.299*r + 0.587*g + 0.114*b - 128.0    ! Y (STB style)
-                ycbcr_data(x, y, 2) = -0.16874*r - 0.33126*g + 0.5*b         ! Cb (STB style)
-                ycbcr_data(x, y, 3) = 0.5*r - 0.41869*g - 0.08131*b          ! Cr (STB style)
+                ycbcr_data(x, y, 1) = 0.29900*r + 0.58700*g + 0.11400*b - 128.0    ! Y (STB exact)
+                ycbcr_data(x, y, 2) = -0.16874*r - 0.33126*g + 0.50000*b           ! Cb (STB exact)
+                ycbcr_data(x, y, 3) = 0.50000*r - 0.41869*g - 0.08131*b            ! Cr (STB exact)
             end do
         end do
     end subroutine rgb_to_ycbcr
@@ -1398,6 +1398,79 @@ contains
     subroutine apply_stb_dct_8x8(block)
         real, intent(inout) :: block(8, 8)
         
+        ! STB uses separable 1D DCT: rows first, then columns
+        integer :: i
+        
+        ! DCT rows
+        do i = 1, 8
+            call stb_dct_1d(block(1:8, i))
+        end do
+        
+        ! DCT columns  
+        do i = 1, 8
+            call stb_dct_1d(block(i, 1:8))
+        end do
+    end subroutine apply_stb_dct_8x8
+    
+    subroutine stb_dct_1d(d)
+        real, intent(inout) :: d(8)
+        
+        ! STB's exact 1D DCT implementation
+        real :: tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7
+        real :: tmp10, tmp11, tmp12, tmp13
+        real :: z1, z2, z3, z4, z5, z11, z13
+        
+        ! STB constants (exact values from stb_image_write.h)
+        real, parameter :: c4 = 0.707106781
+        real, parameter :: c6 = 0.382683433  
+        real, parameter :: c2_minus_c6 = 0.541196100
+        real, parameter :: c2_plus_c6 = 1.306562965
+        
+        tmp0 = d(1) + d(8)
+        tmp7 = d(1) - d(8)
+        tmp1 = d(2) + d(7)
+        tmp6 = d(2) - d(7)
+        tmp2 = d(3) + d(6)
+        tmp5 = d(3) - d(6)
+        tmp3 = d(4) + d(5)
+        tmp4 = d(4) - d(5)
+        
+        ! Even part
+        tmp10 = tmp0 + tmp3    ! phase 2
+        tmp13 = tmp0 - tmp3
+        tmp11 = tmp1 + tmp2
+        tmp12 = tmp1 - tmp2
+        
+        d(1) = tmp10 + tmp11   ! phase 3
+        d(5) = tmp10 - tmp11
+        
+        z1 = (tmp12 + tmp13) * c4  ! c4
+        d(3) = tmp13 + z1      ! phase 5
+        d(7) = tmp13 - z1
+        
+        ! Odd part
+        tmp10 = tmp4 + tmp5    ! phase 2
+        tmp11 = tmp5 + tmp6
+        tmp12 = tmp6 + tmp7
+        
+        ! The rotator is modified from fig 4-8 to avoid extra negations
+        z5 = (tmp10 - tmp12) * c6               ! c6
+        z2 = tmp10 * c2_minus_c6 + z5          ! c2-c6
+        z4 = tmp12 * c2_plus_c6 + z5           ! c2+c6
+        z3 = tmp11 * c4                        ! c4
+        
+        z11 = tmp7 + z3        ! phase 5
+        z13 = tmp7 - z3
+        
+        d(6) = z13 + z2        ! phase 6
+        d(4) = z13 - z2
+        d(2) = z11 + z4
+        d(8) = z11 - z4
+    end subroutine stb_dct_1d
+    
+    ! Legacy DCT implementation - replaced by STB algorithm
+    subroutine apply_stb_dct_8x8_legacy(block)
+        real, intent(inout) :: block(8, 8)
         integer :: i
         
         ! Apply STB DCT to each row
@@ -1411,7 +1484,7 @@ contains
             call stb_dct_exact(block(i,1), block(i,2), block(i,3), block(i,4), &
                               block(i,5), block(i,6), block(i,7), block(i,8))
         end do
-    end subroutine apply_stb_dct_8x8
+    end subroutine apply_stb_dct_8x8_legacy
     
     ! Exact STB DCT implementation from stb_image_write.h
     subroutine stb_dct_exact(d0p, d1p, d2p, d3p, d4p, d5p, d6p, d7p)
