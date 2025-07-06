@@ -745,10 +745,9 @@ contains
         ! Process 8x8 blocks exactly like STB processDU
         call encode_blocks_stb_style(writer, width, height, ycbcr_data, quality, DCY, DCU, DCV)
         
-        ! STB-style fillBits - flush remaining bits
-        if (writer%bit_count > 0) then
-            call stb_write_bits(writer, int(Z'7F'), 7)
-        end if
+        ! STB-style fillBits - exactly like STB does it
+        ! STB: stbiw__jpg_writeBits(s, &bitBuf, &bitCnt, fillBits); where fillBits = {0x7F, 7}
+        call stb_write_bits(writer, int(Z'7F'), 7)
         
         ! STB may handle remaining bits differently
         ! Remove final flush to match STB behavior
