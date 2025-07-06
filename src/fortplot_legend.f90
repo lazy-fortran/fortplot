@@ -202,8 +202,8 @@ contains
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position)
         
-        ! Use legend_x, legend_y as the top-left corner of the box (inside padding)
-        ! The box itself extends beyond this by the padding amount
+        ! legend_x, legend_y is the position inside the box after padding
+        ! Calculate box boundaries
         box_x1 = legend_x - box%padding
         box_y1 = legend_y + box%padding
         box_x2 = box_x1 + box%width
@@ -218,7 +218,7 @@ contains
         call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
         
         do i = 1, legend%num_entries
-            ! Calculate line position using entry height + spacing (except for first entry)
+            ! Calculate line position using entry height + spacing
             line_x1 = legend_x
             line_x2 = line_x1 + box%line_length
             ! Position entries with proper spacing between them
@@ -226,8 +226,7 @@ contains
             
             ! Text positioning with proper vertical alignment
             text_x = line_x2 + box%text_spacing
-            ! Text baseline should align with the center of the line/marker
-            ! Adjust by about 1/3 of text height to center with line
+            ! Text baseline should be slightly below the line for visual centering
             text_y = line_y - box%entry_height * 0.3_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
