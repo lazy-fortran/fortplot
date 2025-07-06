@@ -218,16 +218,17 @@ contains
         call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
         
         do i = 1, legend%num_entries
-            ! Calculate line position using improved spacing
+            ! Calculate line position using entry height + spacing (except for first entry)
             line_x1 = legend_x
             line_x2 = line_x1 + box%line_length
-            line_y = legend_y - real(i-1, wp) * box%entry_height  ! Use calculated entry height
+            ! Position entries with proper spacing between them
+            line_y = legend_y - real(i-1, wp) * (box%entry_height + box%entry_spacing)
             
-            ! Improved text positioning with better spacing and vertical centering
+            ! Text positioning with proper vertical alignment
             text_x = line_x2 + box%text_spacing
-            ! Center text vertically with the line (text baseline adjustment)
-            ! Text is drawn from baseline, so we need minimal adjustment
-            text_y = line_y - box%entry_height * 0.2_wp
+            ! Text baseline should align with the center of the line/marker
+            ! Adjust by about 1/3 of text height to center with line
+            text_y = line_y - box%entry_height * 0.3_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
