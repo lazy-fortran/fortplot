@@ -1652,42 +1652,18 @@ contains
             end do
         end do
         
-        ! Process 4 8x8 blocks exactly like STB: Y+0, Y+8, Y+128, Y+136
-        ! Top-left (Y+0)
-        do i = 1, 8
-            do j = 1, 8
-                pos = (i-1)*16 + j
-                block_8x8(j, i) = Y_16x16(pos)
-            end do
-        end do
-        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        ! Process 4 8x8 blocks exactly like STB with stride 16: Y+0, Y+8, Y+128, Y+136
+        ! STB: DCY = stbiw__jpg_processDU(s, &bitBuf, &bitCnt, Y+0,   16, fdtbl_Y, DCY, YDC_HT, YAC_HT);
+        call process_du_stb_style_16(writer, Y_16x16, 1, 16, fdtbl, DCY, .true.)   ! Y+0
         
-        ! Top-right (Y+8)
-        do i = 1, 8
-            do j = 1, 8
-                pos = (i-1)*16 + j + 8
-                block_8x8(j, i) = Y_16x16(pos)
-            end do
-        end do
-        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        ! STB: DCY = stbiw__jpg_processDU(s, &bitBuf, &bitCnt, Y+8,   16, fdtbl_Y, DCY, YDC_HT, YAC_HT);
+        call process_du_stb_style_16(writer, Y_16x16, 9, 16, fdtbl, DCY, .true.)   ! Y+8
         
-        ! Bottom-left (Y+128)
-        do i = 1, 8
-            do j = 1, 8
-                pos = (i+7)*16 + j
-                block_8x8(j, i) = Y_16x16(pos)
-            end do
-        end do
-        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        ! STB: DCY = stbiw__jpg_processDU(s, &bitBuf, &bitCnt, Y+128, 16, fdtbl_Y, DCY, YDC_HT, YAC_HT);
+        call process_du_stb_style_16(writer, Y_16x16, 129, 16, fdtbl, DCY, .true.) ! Y+128
         
-        ! Bottom-right (Y+136)
-        do i = 1, 8
-            do j = 1, 8
-                pos = (i+7)*16 + j + 8
-                block_8x8(j, i) = Y_16x16(pos)
-            end do
-        end do
-        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        ! STB: DCY = stbiw__jpg_processDU(s, &bitBuf, &bitCnt, Y+136, 16, fdtbl_Y, DCY, YDC_HT, YAC_HT);
+        call process_du_stb_style_16(writer, Y_16x16, 137, 16, fdtbl, DCY, .true.) ! Y+136
     end subroutine process_y_blocks_stb_exact
     
     subroutine extract_16x16_y_block(y_data, width, height, start_x, start_y, y_block)
