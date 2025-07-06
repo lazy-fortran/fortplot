@@ -1307,6 +1307,7 @@ contains
             99, 99, 99, 99, 99, 99, 99, 99, &
             99, 99, 99, 99, 99, 99, 99, 99, &
             99, 99, 99, 99, 99, 99, 99, 99]
+        ! STB uses single precision - match exactly
         real, parameter :: aasf(8) = [1.0*2.828427125, 1.387039845*2.828427125, 1.306562965*2.828427125, 1.175875602*2.828427125, &
                                      1.0*2.828427125, 0.785694958*2.828427125, 0.541196100*2.828427125, 0.275899379*2.828427125]
         
@@ -1356,7 +1357,7 @@ contains
         integer, intent(out) :: DU(64)
         real, intent(in) :: fdtbl(64)
         
-        real :: temp_cdu(8, 8)
+        real :: temp_cdu(8, 8), v
         integer :: i, j, k
         ! STB zigzag order table (converted from 0-based to 1-based)
         integer, parameter :: zigzag(64) = [ &
@@ -1379,7 +1380,13 @@ contains
             do j = 1, 8
                 k = (i-1)*8 + j  ! Natural order index (1-64)
                 ! Quantize and store in zigzag position
-                DU(zigzag(k)) = nint(temp_cdu(j, i) * fdtbl(k))
+                ! STB rounding: (int)(v < 0 ? v - 0.5f : v + 0.5f)
+                v = temp_cdu(j, i) * fdtbl(k)
+                if (v < 0.0) then
+                    DU(zigzag(k)) = int(v - 0.5)
+                else
+                    DU(zigzag(k)) = int(v + 0.5)
+                end if
             end do
         end do
     end subroutine apply_dct_and_quantize_stb_style
