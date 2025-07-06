@@ -1021,6 +1021,7 @@ contains
         integer :: DU(64)
         real :: fdtbl_Y(64), fdtbl_UV(64)
         logical :: subsample
+        integer :: block_count, mcu_count
         
         ! Get quantization tables exactly like STB
         call get_stb_quantization_tables(fdtbl_Y, fdtbl_UV, quality)
@@ -1028,32 +1029,32 @@ contains
         ! Match STB logic: use subsampling when quality <= 90
         subsample = (quality <= 90)
         
+        block_count = 0
+        mcu_count = 0
+        
         if (subsample) then
             ! Process each MCU (16x16 for 2x2 subsampling)
             do y = 1, height, 16
                 do x = 1, width, 16
+                mcu_count = mcu_count + 1
                 ! Process Y component
                 ! For 2x2 subsampling, we need to process 4 Y blocks per MCU
                 ! Even for 8x8 image, we need all 4 blocks
-                ! print *, "Processing Y at", x, y
                 
-                ! Extract 16x16 Y block like STB, then process 4 8x8 sub-blocks
-                call extract_16x16_y_block(ycbcr_data(:,:,1), width, height, x, y, y_16x16)
-                
-                ! Process 4 Y blocks with stride 16 like STB
-                call process_du_stb_style_16(writer, y_16x16, 0, 16, fdtbl_Y, DCY, .true.)    ! Y+0
-                call process_du_stb_style_16(writer, y_16x16, 8, 16, fdtbl_Y, DCY, .true.)    ! Y+8  
-                call process_du_stb_style_16(writer, y_16x16, 128, 16, fdtbl_Y, DCY, .true.)  ! Y+128
-                call process_du_stb_style_16(writer, y_16x16, 136, 16, fdtbl_Y, DCY, .true.)  ! Y+136
+                ! Process Y component exactly like STB: extract 16x16 then process 4 8x8 blocks
+                call process_y_blocks_stb_exact(writer, ycbcr_data(:,:,1), width, height, x, y, fdtbl_Y, DCY)
+                block_count = block_count + 4
                 
                 ! Process U and V components (1 block each, subsampled)
                 ! For each MCU, we always process U and V blocks
                 ! print *, "Processing U/V at", x, y
-                call extract_subsampled_8x8_block(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
+                call extract_and_subsample_stb_style(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
                 call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCU, .false.)
+                block_count = block_count + 1
                 
-                call extract_subsampled_8x8_block(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
+                call extract_and_subsample_stb_style(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
                 call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
+                block_count = block_count + 1
             end do
         end do
         else
@@ -1063,14 +1064,17 @@ contains
                     ! Process Y block
                     call extract_8x8_block(ycbcr_data(:,:,1), width, height, x, y, block_8x8)
                     call process_du_stb_style(writer, block_8x8, 8, fdtbl_Y, DCY, .true.)
+                    block_count = block_count + 1
                     
                     ! Process U block
                     call extract_8x8_block(ycbcr_data(:,:,2), width, height, x, y, block_8x8)
                     call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCU, .false.)
+                    block_count = block_count + 1
                     
                     ! Process V block
                     call extract_8x8_block(ycbcr_data(:,:,3), width, height, x, y, block_8x8)
                     call process_du_stb_style(writer, block_8x8, 8, fdtbl_UV, DCV, .false.)
+                    block_count = block_count + 1
                 end do
             end do
         end if
@@ -1084,6 +1088,7 @@ contains
         real, intent(in) :: fdtbl(64)
         integer, intent(inout) :: DC
         logical, intent(in) :: is_luma
+        
         
         integer :: DU(64)
         integer :: diff, end0pos, i, startpos, nrzeroes
@@ -1169,6 +1174,7 @@ contains
                 call stb_write_bits(writer, UVAC_HT(1, 1), UVAC_HT(1, 2))  ! UV EOB
             end if
         end if
+        
     end subroutine process_du_stb_style
 
     ! Legacy functions - replaced by STB-style implementation
@@ -1563,6 +1569,104 @@ contains
         end do
     end subroutine extract_subsampled_8x8_block
     
+    subroutine extract_and_subsample_stb_style(component_data, width, height, start_x, start_y, subsampled_block)
+        real, intent(in) :: component_data(:,:)
+        integer, intent(in) :: width, height, start_x, start_y
+        real, intent(out) :: subsampled_block(8, 8)
+        
+        real :: full_16x16(256)  ! STB uses linear array
+        integer :: x, y, pos, src_x, src_y
+        integer :: yy, xx, j
+        
+        ! First extract 16x16 block exactly like STB
+        pos = 1
+        do y = 0, 15
+            do x = 0, 15
+                src_y = min(start_y + y, height)
+                src_x = min(start_x + x, width)
+                full_16x16(pos) = component_data(src_x, src_y)
+                pos = pos + 1
+            end do
+        end do
+        
+        ! Then subsample exactly like STB: subU[pos] = (U[j+0] + U[j+1] + U[j+16] + U[j+17]) * 0.25f
+        pos = 1
+        do yy = 0, 7
+            do xx = 0, 7
+                j = yy*32 + xx*2 + 1  ! +1 for Fortran 1-based indexing
+                subsampled_block(xx+1, yy+1) = (full_16x16(j) + full_16x16(j+1) + full_16x16(j+16) + full_16x16(j+17)) * 0.25
+                pos = pos + 1
+            end do
+        end do
+    end subroutine extract_and_subsample_stb_style
+    
+    subroutine process_y_blocks_stb_exact(writer, y_data, width, height, start_x, start_y, fdtbl, DCY)
+        type(bit_writer_t), intent(inout) :: writer
+        real, intent(in) :: y_data(:,:)
+        integer, intent(in) :: width, height, start_x, start_y
+        real, intent(in) :: fdtbl(64)
+        integer, intent(inout) :: DCY
+        
+        real :: Y_16x16(256)
+        real :: block_8x8(8, 8)
+        integer :: row, col, pos, src_x, src_y
+        integer :: i, j
+        
+        ! Extract 16x16 Y block exactly like STB
+        pos = 1
+        do row = 0, 15
+            src_y = start_y + row
+            if (src_y > height) src_y = height  ! Clamp like STB
+            do col = 0, 15
+                src_x = start_x + col
+                if (src_x > width) src_x = width  ! Clamp like STB
+                Y_16x16(pos) = y_data(src_x, src_y)
+                pos = pos + 1
+            end do
+        end do
+        
+        ! Process 4 8x8 blocks exactly like STB: Y+0, Y+8, Y+128, Y+136
+        ! Top-left (Y+0)
+        pos = 1
+        do i = 1, 8
+            do j = 1, 8
+                block_8x8(j, i) = Y_16x16(pos + (j-1))
+            end do
+            pos = pos + 16
+        end do
+        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        
+        ! Top-right (Y+8)
+        pos = 9
+        do i = 1, 8
+            do j = 1, 8
+                block_8x8(j, i) = Y_16x16(pos + (j-1))
+            end do
+            pos = pos + 16
+        end do
+        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        
+        ! Bottom-left (Y+128)
+        pos = 129
+        do i = 1, 8
+            do j = 1, 8
+                block_8x8(j, i) = Y_16x16(pos + (j-1))
+            end do
+            pos = pos + 16
+        end do
+        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+        
+        ! Bottom-right (Y+136)
+        pos = 137
+        do i = 1, 8
+            do j = 1, 8
+                block_8x8(j, i) = Y_16x16(pos + (j-1))
+            end do
+            pos = pos + 16
+        end do
+        call process_du_stb_style(writer, block_8x8, 8, fdtbl, DCY, .true.)
+    end subroutine process_y_blocks_stb_exact
+    
     subroutine extract_16x16_y_block(y_data, width, height, start_x, start_y, y_block)
         real, intent(in) :: y_data(:,:)
         integer, intent(in) :: width, height, start_x, start_y
@@ -1597,7 +1701,7 @@ contains
         ! Extract 8x8 block from 16x16 data with given offset and stride
         do y = 1, 8
             do x = 1, 8
-                src_pos = offset + (y-1)*stride + x
+                src_pos = offset + (y-1)*stride + (x-1)
                 cdu_8x8(x, y) = y_data(src_pos)
             end do
         end do
