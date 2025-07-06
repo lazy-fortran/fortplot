@@ -16,7 +16,7 @@ module fortplot_ticks
     private
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
-    public :: generate_scale_aware_tick_labels, format_tick_value_smart
+    public :: generate_scale_aware_tick_labels, format_tick_value_smart, format_log_tick_value
     
 contains
 
@@ -315,9 +315,10 @@ contains
             
             tick_value = 10.0_wp ** power
             
-            if (tick_value >= data_min .and. tick_value <= data_max) then
+            ! Use tolerance for endpoint inclusion like matplotlib
+            if (tick_value >= data_min * 0.999_wp .and. tick_value <= data_max * 1.001_wp) then
                 actual_num_ticks = actual_num_ticks + 1
-                labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
+                labels(actual_num_ticks) = format_log_tick_value(tick_value)
             end if
         end do
         
@@ -346,9 +347,9 @@ contains
             
             ! Add major tick (10^power)
             tick_value = decade_start
-            if (tick_value >= data_min .and. tick_value <= data_max) then
+            if (tick_value >= data_min * 0.999_wp .and. tick_value <= data_max * 1.001_wp) then
                 actual_num_ticks = actual_num_ticks + 1
-                labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
+                labels(actual_num_ticks) = format_log_tick_value(tick_value)
             end if
             
             ! Add subticks within this decade
@@ -357,10 +358,10 @@ contains
                 
                 tick_value = decade_start * subtick_multipliers(subtick_idx)
                 
-                if (tick_value >= data_min .and. tick_value <= data_max .and. &
+                if (tick_value >= data_min * 0.999_wp .and. tick_value <= data_max * 1.001_wp .and. &
                     tick_value < 10.0_wp ** (power + 1)) then
                     actual_num_ticks = actual_num_ticks + 1
-                    labels(actual_num_ticks) = format_tick_value(tick_value, data_max - data_min)
+                    labels(actual_num_ticks) = format_log_tick_value(tick_value)
                 end if
             end do
             
@@ -391,9 +392,15 @@ contains
         call calculate_symlog_ticks(data_min, data_max, linear_threshold, &
                                    tick_locations, actual_num_ticks)
         
-        ! Format the tick locations using consistent formatting
+        ! Format the tick locations using scale-aware formatting
         do i = 1, min(actual_num_ticks, size(labels))
-            labels(i) = format_tick_value(tick_locations(i), data_max - data_min)
+            if (abs(tick_locations(i)) > linear_threshold) then
+                ! Use log formatting for values outside linear region
+                labels(i) = format_log_tick_value(tick_locations(i))
+            else
+                ! Use regular formatting for linear region
+                labels(i) = format_tick_value(tick_locations(i), data_max - data_min)
+            end if
         end do
         
         ! Clear unused labels
@@ -452,7 +459,7 @@ contains
         power = 1
         do while (power <= 10 .and. num_candidates < size(candidates))
             tick_val = 10.0_wp ** power
-            if (tick_val > linear_threshold .and. tick_val <= data_max) then
+            if (tick_val > linear_threshold .and. tick_val <= data_max * 1.001_wp) then
                 num_candidates = num_candidates + 1
                 candidates(num_candidates) = tick_val
             end if
@@ -472,7 +479,7 @@ contains
         power = 1
         do while (power <= 10 .and. num_candidates < size(candidates))
             tick_val = -(10.0_wp ** power)
-            if (tick_val < -linear_threshold .and. tick_val >= data_min) then
+            if (tick_val < -linear_threshold .and. tick_val >= data_min * 1.001_wp) then
                 num_candidates = num_candidates + 1
                 candidates(num_candidates) = tick_val
             end if
@@ -631,5 +638,44 @@ contains
         
         call ensure_leading_zero(formatted)
     end function format_tick_value_smart
+
+    function format_log_tick_value(value) result(formatted)
+        !! Format logarithmic tick values using scientific notation like matplotlib
+        real(wp), intent(in) :: value
+        character(len=20) :: formatted
+        real(wp) :: log_val
+        integer :: exponent
+        logical :: is_power_of_ten
+        
+        if (abs(value) < 1.0e-10_wp) then
+            formatted = '0'
+            return
+        end if
+        
+        ! Check if this is a power of 10
+        log_val = log10(abs(value))
+        exponent = nint(log_val)
+        is_power_of_ten = abs(log_val - real(exponent, wp)) < 1.0e-10_wp
+        
+        if (is_power_of_ten) then
+            ! Format as 10^n for exact powers of 10
+            if (value < 0.0_wp) then
+                write(formatted, '(A, I0)') '-10^', exponent
+            else if (exponent == 0) then
+                formatted = '1'
+            else if (exponent == 1) then
+                formatted = '10'
+            else
+                write(formatted, '(A, I0)') '10^', exponent
+            end if
+        else
+            ! For non-powers of 10, use regular formatting
+            if (abs(value) >= 1000.0_wp .or. abs(value) < 0.01_wp) then
+                write(formatted, '(ES8.1)') value
+            else
+                formatted = format_tick_value(value, abs(value))
+            end if
+        end if
+    end function format_log_tick_value
 
 end module fortplot_ticks
