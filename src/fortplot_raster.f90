@@ -3,7 +3,7 @@ module fortplot_raster
     use fortplot_context
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
-    use fortplot_ticks, only: generate_scale_aware_tick_labels
+    use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
@@ -895,39 +895,109 @@ contains
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
                                    title, xlabel, ylabel)
         !! Draw plot axes and frame with scale-aware tick generation
+        !! FIXED: Now generates tick values first, then positions to ensure proper alignment
         class(raster_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        integer :: i
-        real(wp) :: x_positions(10), y_positions(10)
-        integer :: num_x, num_y
-        character(len=20) :: x_labels(10), y_labels(10)
+        
+        real(wp) :: x_tick_values(20), y_tick_values(20)
+        real(wp) :: x_positions(20), y_positions(20)
+        character(len=20) :: x_labels(20), y_labels(20)
+        real(wp) :: nice_x_min, nice_x_max, nice_x_step
+        real(wp) :: nice_y_min, nice_y_max, nice_y_step
+        integer :: num_x_ticks, num_y_ticks, i
+        real(wp) :: data_x_min, data_x_max, data_y_min, data_y_max
 
         ! Set color to black for axes
         call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
 
-        ! Draw plot frame using common functionality
+        ! Use provided data ranges or backend ranges
+        if (present(x_min_orig) .and. present(x_max_orig)) then
+            data_x_min = x_min_orig
+            data_x_max = x_max_orig
+        else
+            data_x_min = ctx%x_min
+            data_x_max = ctx%x_max
+        end if
+        
+        if (present(y_min_orig) .and. present(y_max_orig)) then
+            data_y_min = y_min_orig
+            data_y_max = y_max_orig
+        else
+            data_y_min = ctx%y_min
+            data_y_max = ctx%y_max
+        end if
+
+        ! Draw plot frame first
         call draw_raster_frame(ctx)
 
-        ! Draw tick marks and labels with scale-aware generation
-        call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
-
-        ! Use original coordinates for tick generation if provided, otherwise use backend coordinates
-        if (present(x_min_orig) .and. present(x_max_orig)) then
-            call generate_scale_aware_tick_labels(x_min_orig, x_max_orig, num_x, x_labels, xscale, symlog_threshold)
+        ! Generate nice tick VALUES (not positions!) based on scale type
+        if (present(xscale) .and. trim(xscale) /= 'linear') then
+            ! For non-linear scales, use the old approach for now
+            call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x_ticks, num_y_ticks)
         else
-            call generate_scale_aware_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels, xscale, symlog_threshold)
+            ! For linear scale, use nice tick locations and adjust boundaries to match
+            call find_nice_tick_locations(data_x_min, data_x_max, 5, &
+                                        nice_x_min, nice_x_max, nice_x_step, &
+                                        x_tick_values, num_x_ticks)
+            
+            call find_nice_tick_locations(data_y_min, data_y_max, 5, &
+                                        nice_y_min, nice_y_max, nice_y_step, &
+                                        y_tick_values, num_y_ticks)
+            
+            ! Update the context boundaries to match the nice tick boundaries
+            ! This ensures ticks align perfectly with plot edges
+            if (num_x_ticks > 0) then
+                ctx%x_min = x_tick_values(1)
+                ctx%x_max = x_tick_values(num_x_ticks)
+            end if
+            
+            if (num_y_ticks > 0) then
+                ctx%y_min = y_tick_values(1)
+                ctx%y_max = y_tick_values(num_y_ticks)
+            end if
+            
+            ! Convert tick values to pixel positions using the updated boundaries
+            do i = 1, num_x_ticks
+                x_positions(i) = real(ctx%plot_area%left, wp) + &
+                                (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * &
+                                real(ctx%plot_area%width, wp)
+            end do
+            
+            ! For Y axis, account for flipped coordinates in raster
+            do i = 1, num_y_ticks
+                y_positions(i) = real(ctx%plot_area%bottom + ctx%plot_area%height, wp) - &
+                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * &
+                                real(ctx%plot_area%height, wp)
+            end do
         end if
 
-        if (present(y_min_orig) .and. present(y_max_orig)) then
-            call generate_scale_aware_tick_labels(y_min_orig, y_max_orig, num_y, y_labels, yscale, symlog_threshold)
+        ! Generate tick labels based on actual tick values, not data range
+        if (present(xscale) .and. trim(xscale) /= 'linear') then
+            ! For non-linear scales, use the original approach
+            call generate_scale_aware_tick_labels(data_x_min, data_x_max, num_x_ticks, x_labels, xscale, symlog_threshold)
         else
-            call generate_scale_aware_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels, yscale, symlog_threshold)
+            ! For linear scale, format the actual tick values
+            do i = 1, num_x_ticks
+                x_labels(i) = format_tick_value_smart(x_tick_values(i), 8)
+            end do
         end if
-        call draw_raster_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        call draw_raster_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        
+        if (present(yscale) .and. trim(yscale) /= 'linear') then
+            ! For non-linear scales, use the original approach
+            call generate_scale_aware_tick_labels(data_y_min, data_y_max, num_y_ticks, y_labels, yscale, symlog_threshold)
+        else
+            ! For linear scale, format the actual tick values
+            do i = 1, num_y_ticks
+                y_labels(i) = format_tick_value_smart(y_tick_values(i), 8)
+            end do
+        end if
+        
+        ! Draw tick marks and labels
+        call draw_raster_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
+        call draw_raster_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x_ticks, num_y_ticks)
 
         ! Draw title and X-axis label first (they don't conflict with tick labels)
         call draw_raster_title_and_xlabel(ctx, title, xlabel)
@@ -999,19 +1069,36 @@ contains
     end subroutine draw_raster_tick_marks
 
     subroutine draw_raster_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels for raster backend like matplotlib
+        !! Draw tick labels for raster backend with boundary checking
         class(raster_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
-        integer :: i
+        integer :: i, text_width
         real(wp) :: label_x, label_y
+        real(wp) :: min_x, max_x
 
-        ! Draw X-axis tick labels with proper spacing and center alignment
+        ! Calculate drawable bounds with small margin
+        min_x = 5.0_wp  ! Left margin
+        max_x = real(ctx%width - 5, wp)  ! Right margin
+
+        ! Draw X-axis tick labels with boundary checking
         do i = 1, num_x
             call calculate_x_tick_label_position(x_positions(i), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
                                                trim(x_labels(i)), label_x, label_y)
+            
+            ! Check and adjust label position to stay within bounds
+            text_width = calculate_text_width(trim(x_labels(i)))
+            if (text_width <= 0) text_width = len_trim(x_labels(i)) * 8
+            
+            ! Adjust position if label extends beyond boundaries
+            if (label_x < min_x) then
+                label_x = min_x
+            else if (label_x + real(text_width, wp) > max_x) then
+                label_x = max_x - real(text_width, wp)
+            end if
+            
             call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
                                      int(label_x), int(label_y), trim(x_labels(i)), &
                                      0_1, 0_1, 0_1)  ! Black text
@@ -1197,5 +1284,6 @@ contains
             end do
         end if
     end subroutine fill_horizontal_line
+
 
 end module fortplot_raster

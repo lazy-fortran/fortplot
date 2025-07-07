@@ -17,6 +17,7 @@ module fortplot_ticks
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
     public :: generate_scale_aware_tick_labels, format_tick_value_smart, format_log_tick_value
+    public :: find_nice_tick_locations
     
 contains
 
