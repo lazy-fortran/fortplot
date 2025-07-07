@@ -29,7 +29,8 @@ module fortplot
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
-    public :: set_xscale, set_yscale
+    public :: set_xscale, set_yscale, xlim, ylim
+    public :: set_line_width, set_ydata
     
     ! Animation interface
     public :: animation_t, FuncAnimation
@@ -44,6 +45,10 @@ module fortplot
     ! Marker style constants (pyplot-style)
     character(len=*), parameter, public :: MARKER_CIRCLE = 'o'
     character(len=*), parameter, public :: MARKER_CROSS = 'x'
+    character(len=*), parameter, public :: MARKER_SQUARE = 's'
+    character(len=*), parameter, public :: MARKER_DIAMOND = 'D'
+    character(len=*), parameter, public :: MARKER_PLUS = '+'
+    character(len=*), parameter, public :: MARKER_STAR = '*'
 
 
     ! Interface for overloaded show routine
@@ -293,6 +298,32 @@ contains
         real(8), intent(in), optional :: threshold
         call fig%set_yscale(scale, threshold)
     end subroutine set_yscale
+
+    subroutine xlim(xmin, xmax)
+        !! Set x-axis limits for the global figure
+        real(8), intent(in) :: xmin, xmax
+        call fig%set_xlim(xmin, xmax)
+    end subroutine xlim
+
+    subroutine ylim(ymin, ymax)
+        !! Set y-axis limits for the global figure
+        real(8), intent(in) :: ymin, ymax
+        call fig%set_ylim(ymin, ymax)
+    end subroutine ylim
+
+    subroutine set_line_width(width)
+        !! Set line width for subsequent plots in the global figure
+        real(8), intent(in) :: width
+        call fig%set_line_width(width)
+    end subroutine set_line_width
+
+    subroutine set_ydata(plot_index, y_new)
+        !! Update y-data for an existing plot in the global figure
+        !! Useful for animations and interactive updates
+        integer, intent(in) :: plot_index
+        real(8), dimension(:), intent(in) :: y_new
+        call fig%set_ydata(plot_index, y_new)
+    end subroutine set_ydata
 
     function is_gui_available() result(gui_available)
         !! Check if GUI environment is available for opening plots

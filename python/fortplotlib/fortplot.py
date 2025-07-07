@@ -263,6 +263,26 @@ def yscale(scale):
     """
     _fortplotlib.fortplot.set_yscale(scale)
 
+def xlim(xmin, xmax):
+    """Set the x-axis limits.
+    
+    Parameters
+    ----------
+    xmin, xmax : float
+        The left and right xlim values.
+    """
+    _fortplotlib.fortplot.xlim(xmin, xmax)
+
+def ylim(ymin, ymax):
+    """Set the y-axis limits.
+    
+    Parameters
+    ----------
+    ymin, ymax : float
+        The bottom and top ylim values.
+    """
+    _fortplotlib.fortplot.ylim(ymin, ymax)
+
 def show():
     """Display the current figure in the default system viewer."""
     with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
