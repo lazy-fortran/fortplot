@@ -184,7 +184,8 @@ contains
         real(wp) :: line_x1, line_x2, line_y, text_x, text_y, text_offset
         real(wp) :: data_width, data_height
         real(wp) :: box_x1, box_y1, box_x2, box_y2
-        real(wp) :: ascent_ratio
+        real(wp) :: ascent_ratio, line_center_y
+        real(wp) :: actual_text_height, data_to_pixel_y
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
@@ -221,6 +222,11 @@ contains
         ! Get font ascent ratio for proper text centering
         ascent_ratio = get_font_ascent_ratio()
         
+        ! Calculate data to pixel ratio for accurate text positioning
+        data_to_pixel_y = 369.6_wp / data_height
+        ! Get actual text height in pixels (typically ~14-16 pixels)
+        actual_text_height = real(calculate_text_height("Ay"), wp) / data_to_pixel_y
+        
         do i = 1, legend%num_entries
             ! Calculate line position using entry height + spacing
             ! Content starts at padding distance from box edges
@@ -239,24 +245,26 @@ contains
             ! To visually center: baseline should be at line_y + descent_portion
             text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
             
+            line_center_y = text_y
+            
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
                               legend%entries(i)%color(2), &
                               legend%entries(i)%color(3))
             if (allocated(legend%entries(i)%linestyle)) then
                 if (legend%entries(i)%linestyle /= 'None') then
-                    call backend%line(line_x1, line_y, line_x2, line_y)
+                    call backend%line(line_x1, line_center_y, line_x2, line_center_y)
                 end if
             else
                 ! Default to drawing line if linestyle not specified
-                call backend%line(line_x1, line_y, line_x2, line_y)
+                call backend%line(line_x1, line_center_y, line_x2, line_center_y)
             end if
 
             ! Draw marker in the middle of the line (on the line)
             if (allocated(legend%entries(i)%marker)) then
                 if (legend%entries(i)%marker /= 'None') then
                     call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
-                                            line_y, &
+                                            line_center_y, &
                                             legend%entries(i)%marker)
                 end if
             end if
