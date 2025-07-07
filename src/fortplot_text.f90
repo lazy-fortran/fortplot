@@ -7,6 +7,7 @@ module fortplot_text
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, get_font_metrics
+    public :: get_font_ascent_ratio
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -539,5 +540,29 @@ contains
             success = .true.
         end if
     end subroutine get_font_metrics
+
+    function get_font_ascent_ratio() result(ratio)
+        !! Get the ratio of font ascent to total height
+        !! This is used to properly center text vertically
+        real(wp) :: ratio
+        integer :: ascent, descent, line_gap
+        
+        ratio = 0.7_wp  ! Default fallback value
+        
+        if (.not. font_initialized) then
+            if (.not. init_text_system()) then
+                return
+            end if
+        end if
+        
+        if (font_initialized) then
+            call stb_get_font_vmetrics(global_font, ascent, descent, line_gap)
+            ! Calculate ratio of ascent to total height
+            ! descent is typically negative, so we use abs()
+            if (ascent > 0) then
+                ratio = real(ascent, wp) / real(ascent - descent, wp)
+            end if
+        end if
+    end function get_font_ascent_ratio
 
 end module fortplot_text
