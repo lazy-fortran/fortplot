@@ -230,15 +230,16 @@ contains
         ! best_vmin = (data_min // step) * step
         best_vmin = floor(data_min / nice_step) * nice_step
         
-        ! Calculate edge indices like matplotlib's _Edge_integer
+        ! Calculate edge indices like matplotlib's _Edge_integer with proper tolerance
         ! low = largest n where n*step <= (data_min - best_vmin)
-        low_edge = floor((data_min - best_vmin) / nice_step)
+        low_edge = floor((data_min - best_vmin) / nice_step + 1.0e-10_wp)
         
         ! high = smallest n where n*step >= (data_max - best_vmin)  
-        high_edge = ceiling((data_max - best_vmin) / nice_step)
+        ! Add small epsilon to ensure floating point precision doesn't miss endpoints
+        high_edge = floor((data_max - best_vmin) / nice_step + 1.0_wp - 1.0e-10_wp)
         
         ! Generate ticks: np.arange(low, high + 1) * step + best_vmin
-        ! The +1 ensures endpoint inclusion like matplotlib
+        ! Equivalent to matplotlib's high + 1 endpoint inclusion
         actual_num_ticks = 0
         do i = low_edge, high_edge
             if (actual_num_ticks >= size(tick_locations)) exit
