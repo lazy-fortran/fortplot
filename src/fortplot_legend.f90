@@ -202,10 +202,10 @@ contains
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position)
         
-        ! legend_x, legend_y is the position inside the box after padding
+        ! legend_x, legend_y is the top-left corner of the legend box
         ! Calculate box boundaries
-        box_x1 = legend_x - box%padding
-        box_y1 = legend_y + box%padding
+        box_x1 = legend_x
+        box_y1 = legend_y
         box_x2 = box_x1 + box%width
         box_y2 = box_y1 - box%height
         
@@ -219,15 +219,18 @@ contains
         
         do i = 1, legend%num_entries
             ! Calculate line position using entry height + spacing
-            line_x1 = legend_x
+            ! Content starts at padding distance from box edges
+            line_x1 = legend_x + box%padding
             line_x2 = line_x1 + box%line_length
-            ! Position entries with proper spacing between them
-            line_y = legend_y - real(i-1, wp) * (box%entry_height + box%entry_spacing)
+            ! First entry starts at top - padding, then spacing between entries
+            line_y = legend_y - box%padding - real(i-1, wp) * (box%entry_height + box%entry_spacing)
             
             ! Text positioning with proper vertical alignment
             text_x = line_x2 + box%text_spacing
-            ! Text baseline should be slightly below the line for visual centering
-            text_y = line_y - box%entry_height * 0.3_wp
+            ! Text should be vertically centered on the line
+            ! For PNG backend, text is rendered with top-left origin
+            ! So we need to adjust y position to center the text on the line
+            text_y = line_y - box%entry_height * 0.5_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
