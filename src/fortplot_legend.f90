@@ -177,13 +177,14 @@ contains
         !! Render standard legend for PNG/PDF backends with improved sizing
         !! Uses shared legend_layout module for DRY compliance
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
-        use fortplot_text, only: calculate_text_height
+        use fortplot_text, only: calculate_text_height, get_font_ascent_ratio
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
         real(wp) :: line_x1, line_x2, line_y, text_x, text_y, text_offset
         real(wp) :: data_width, data_height
         real(wp) :: box_x1, box_y1, box_x2, box_y2
+        real(wp) :: ascent_ratio
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
@@ -217,20 +218,26 @@ contains
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black border
         call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
         
+        ! Get font ascent ratio for proper text centering
+        ascent_ratio = get_font_ascent_ratio()
+        
         do i = 1, legend%num_entries
             ! Calculate line position using entry height + spacing
             ! Content starts at padding distance from box edges
             line_x1 = legend_x + box%padding
             line_x2 = line_x1 + box%line_length
-            ! First entry starts at top - padding, then spacing between entries
-            line_y = legend_y - box%padding - real(i-1, wp) * (box%entry_height + box%entry_spacing)
+            ! First entry starts at top - padding - enough space for text ascent
+            ! Account for text extending upward from baseline by ascent_ratio * entry_height
+            line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
+                     real(i-1, wp) * (box%entry_height + box%entry_spacing)
             
             ! Text positioning with proper vertical alignment
             text_x = line_x2 + box%text_spacing
             ! Text should be vertically centered on the line
-            ! For PNG backend, text is rendered with top-left origin
-            ! So we need to adjust y position to center the text on the line
-            text_y = line_y - box%entry_height * 0.5_wp
+            ! In PNG backend, text_y is the BASELINE of the text
+            ! Text extends mostly upward from baseline (ascent ~70% of height)
+            ! To visually center: baseline should be at line_y + descent_portion
+            text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
