@@ -25,12 +25,11 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_3D_LINE
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
-    integer, parameter :: PLOT_TYPE_3D_LINE = 4
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -38,8 +37,6 @@ module fortplot_figure_core
         integer :: plot_type = PLOT_TYPE_LINE
         ! Line plot data
         real(wp), allocatable :: x(:), y(:)
-        ! 3D plot data
-        real(wp), allocatable :: z(:)
         ! Contour plot data
         real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), allocatable :: contour_levels(:)
@@ -62,7 +59,6 @@ module fortplot_figure_core
         class(plot_context), allocatable :: backend
         integer :: plot_count = 0
         logical :: rendered = .false.
-        logical :: is_3d = .false.
         
         ! Figure dimensions
         integer :: width = 640
@@ -88,7 +84,6 @@ module fortplot_figure_core
         character(len=:), allocatable :: title
         character(len=:), allocatable :: xlabel
         character(len=:), allocatable :: ylabel
-        character(len=:), allocatable :: zlabel
 
         ! Color palette: seaborn colorblind palette
         real(wp), dimension(3,6) :: colors = reshape([ &
@@ -122,11 +117,9 @@ module fortplot_figure_core
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
         procedure :: streamplot
-        procedure :: add_3d_plot
         procedure :: savefig
         procedure :: set_xlabel
         procedure :: set_ylabel
-        procedure :: set_zlabel
         procedure :: set_title
         procedure :: set_xscale
         procedure :: set_yscale
@@ -192,36 +185,6 @@ contains
         end if
         call update_data_ranges(self)
     end subroutine add_plot
-
-    subroutine add_3d_plot(self, x, y, z, label, linestyle, color)
-        !! Add 3D line plot data to figure
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
-        character(len=*), intent(in), optional :: label, linestyle
-        real(wp), intent(in), optional :: color(3)
-        
-        character(len=20) :: parsed_marker, parsed_linestyle
-        
-        if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
-            return
-        end if
-        
-        ! Mark figure as 3D
-        self%is_3d = .true.
-        
-        self%plot_count = self%plot_count + 1
-        
-        if (present(linestyle) .and. contains_format_chars(linestyle)) then
-            ! Parse format string and use those values
-            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
-            call add_3d_line_plot_data(self, x, y, z, label, parsed_linestyle, color, parsed_marker)
-        else
-            ! Use traditional linestyle with no marker
-            call add_3d_line_plot_data(self, x, y, z, label, linestyle, color, '')
-        end if
-        call update_data_ranges(self)
-    end subroutine add_3d_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to figure
@@ -422,12 +385,6 @@ contains
         self%ylabel = label
     end subroutine set_ylabel
 
-    subroutine set_zlabel(self, label)
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: label
-        self%zlabel = label
-    end subroutine set_zlabel
-
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
@@ -534,56 +491,6 @@ contains
             self%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
     end subroutine add_line_plot_data
-
-    subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, color, marker)
-        !! Add 3D line plot data to internal storage
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
-        character(len=*), intent(in), optional :: label, linestyle, marker
-        real(wp), intent(in), optional :: color(3)
-        
-        integer :: plot_idx, color_idx
-        
-        plot_idx = self%plot_count
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_3D_LINE
-        
-        ! Store data
-        if (allocated(self%plots(plot_idx)%x)) deallocate(self%plots(plot_idx)%x)
-        if (allocated(self%plots(plot_idx)%y)) deallocate(self%plots(plot_idx)%y)
-        if (allocated(self%plots(plot_idx)%z)) deallocate(self%plots(plot_idx)%z)
-        allocate(self%plots(plot_idx)%x(size(x)))
-        allocate(self%plots(plot_idx)%y(size(y)))
-        allocate(self%plots(plot_idx)%z(size(z)))
-        self%plots(plot_idx)%x = x
-        self%plots(plot_idx)%y = y
-        self%plots(plot_idx)%z = z
-        
-        ! Set properties
-        if (present(label)) then
-            self%plots(plot_idx)%label = label
-        else
-            self%plots(plot_idx)%label = ''
-        end if
-        
-        if (present(linestyle)) then
-            self%plots(plot_idx)%linestyle = linestyle
-        else
-            self%plots(plot_idx)%linestyle = 'solid'
-        end if
-
-        if (present(marker)) then
-            self%plots(plot_idx)%marker = marker
-        else
-            self%plots(plot_idx)%marker = 'None'
-        end if
-        
-        if (present(color)) then
-            self%plots(plot_idx)%color = color
-        else
-            color_idx = mod(plot_idx - 1, 6) + 1
-            self%plots(plot_idx)%color = self%colors(:, color_idx)
-        end if
-    end subroutine add_3d_line_plot_data
 
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to internal storage
