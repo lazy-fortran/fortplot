@@ -2,9 +2,8 @@ module fortplot_pdf
     use fortplot_context
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
-    use fortplot_ticks, only: generate_scale_aware_tick_labels
+    use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
-                                         calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position, &
                                          calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
     use fortplot_text, only: calculate_text_width
@@ -333,38 +332,102 @@ contains
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
                                       title, xlabel, ylabel)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
+        !! Now matches PNG backend behavior with nice tick boundaries
         type(pdf_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp) :: x_positions(10), y_positions(10)
-        integer :: num_x, num_y
-        character(len=20) :: x_labels(10), y_labels(10)
+        
+        real(wp) :: x_tick_values(20), y_tick_values(20)
+        real(wp) :: x_positions(20), y_positions(20)
+        character(len=20) :: x_labels(20), y_labels(20)
+        real(wp) :: nice_x_min, nice_x_max, nice_x_step
+        real(wp) :: nice_y_min, nice_y_max, nice_y_step
+        integer :: num_x_ticks, num_y_ticks, i
+        real(wp) :: data_x_min, data_x_max, data_y_min, data_y_max
         
         ! Set color to black for axes
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
         
-        ! Draw plot frame using common functionality via procedure pointer
-        call draw_pdf_frame(ctx)
-        
-        ! Draw tick marks and labels with scale-aware generation
-        call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x, num_y)
-        
-        ! Use original coordinates for tick generation if provided, otherwise use backend coordinates
+        ! Use provided data ranges or backend ranges
         if (present(x_min_orig) .and. present(x_max_orig)) then
-            call generate_scale_aware_tick_labels(x_min_orig, x_max_orig, num_x, x_labels, xscale, symlog_threshold)
+            data_x_min = x_min_orig
+            data_x_max = x_max_orig
         else
-            call generate_scale_aware_tick_labels(ctx%x_min, ctx%x_max, num_x, x_labels, xscale, symlog_threshold)
+            data_x_min = ctx%x_min
+            data_x_max = ctx%x_max
         end if
         
         if (present(y_min_orig) .and. present(y_max_orig)) then
-            call generate_scale_aware_tick_labels(y_min_orig, y_max_orig, num_y, y_labels, yscale, symlog_threshold)
+            data_y_min = y_min_orig
+            data_y_max = y_max_orig
         else
-            call generate_scale_aware_tick_labels(ctx%y_min, ctx%y_max, num_y, y_labels, yscale, symlog_threshold)
+            data_y_min = ctx%y_min
+            data_y_max = ctx%y_max
         end if
-        call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        
+        ! Draw plot frame
+        call draw_pdf_frame(ctx)
+        
+        ! Generate nice tick values based on scale type (matching PNG backend)
+        if (present(xscale) .and. trim(xscale) /= 'linear') then
+            ! For non-linear scales, use the old approach for now
+            call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x_ticks, num_y_ticks)
+        else
+            ! For linear scale, use nice tick locations and adjust boundaries to match
+            call find_nice_tick_locations(data_x_min, data_x_max, 5, &
+                                        nice_x_min, nice_x_max, nice_x_step, &
+                                        x_tick_values, num_x_ticks)
+            
+            call find_nice_tick_locations(data_y_min, data_y_max, 5, &
+                                        nice_y_min, nice_y_max, nice_y_step, &
+                                        y_tick_values, num_y_ticks)
+            
+            ! Update the context boundaries to match the nice tick boundaries
+            if (num_x_ticks > 0) then
+                ctx%x_min = x_tick_values(1)
+                ctx%x_max = x_tick_values(num_x_ticks)
+            end if
+            
+            if (num_y_ticks > 0) then
+                ctx%y_min = y_tick_values(1)
+                ctx%y_max = y_tick_values(num_y_ticks)
+            end if
+            
+            ! Convert tick values to PDF coordinates
+            do i = 1, num_x_ticks
+                x_positions(i) = ctx%plot_area%left + &
+                                (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * ctx%plot_area%width
+            end do
+            
+            ! For Y axis in PDF (origin at bottom, no flipping needed)
+            do i = 1, num_y_ticks
+                y_positions(i) = ctx%plot_area%bottom + &
+                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
+            end do
+        end if
+        
+        ! Generate tick labels based on actual tick values
+        if (present(xscale) .and. trim(xscale) /= 'linear') then
+            call generate_scale_aware_tick_labels(data_x_min, data_x_max, num_x_ticks, x_labels, xscale, symlog_threshold)
+        else
+            do i = 1, num_x_ticks
+                x_labels(i) = format_tick_value_smart(x_tick_values(i), 8)
+            end do
+        end if
+        
+        if (present(yscale) .and. trim(yscale) /= 'linear') then
+            call generate_scale_aware_tick_labels(data_y_min, data_y_max, num_y_ticks, y_labels, yscale, symlog_threshold)
+        else
+            do i = 1, num_y_ticks
+                y_labels(i) = format_tick_value_smart(y_tick_values(i), 8)
+            end do
+        end if
+        
+        ! Draw tick marks and labels
+        call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
+        call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x_ticks, num_y_ticks)
         
         ! Draw title and axis labels
         call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
