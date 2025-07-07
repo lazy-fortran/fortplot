@@ -65,7 +65,7 @@ contains
         integer :: i, text_width_pixels, text_height_pixels, max_text_height_pixels
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
         logical :: text_system_available
-        real(wp) :: entry_text_width, label_spacing
+        real(wp) :: entry_text_width, label_spacing, padding_x
         character(len=:), allocatable :: trimmed_label
         integer, parameter :: fudge_pixels = 2
 
@@ -73,11 +73,11 @@ contains
         text_system_available = init_text_system()
 
         ! Calculate data-to-pixel conversion ratio
-        ! Legend should be sized relative to plot area, not data range
-        ! Use plot area size (typically ~496x369 pixels for 640x480 figure)
-        ! to get consistent legend sizing regardless of data range
-        data_to_pixel_ratio_x = 496.0_wp / data_width  ! Plot area width / data width
-        data_to_pixel_ratio_y = 369.0_wp / data_height  ! Plot area height / data height
+        ! Matplotlib sizes legend in pixels, then converts to data coordinates
+        ! For a 640x480 figure, plot area is typically ~496x369 pixels
+        ! We need to convert pixel measurements to data coordinates
+        data_to_pixel_ratio_x = 496.0_wp / data_width  ! pixels per data unit
+        data_to_pixel_ratio_y = 369.6_wp / data_height  ! pixels per data unit
 
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
@@ -101,26 +101,32 @@ contains
 
         ! Set legend box components based on actual measurements (matplotlib-style spacing)
         ! Matplotlib uses borderpad as internal padding in font-size units
-        ! Default matplotlib borderpad is 0.4 fontsize units (~6.4 pixels for 16px font)
-        box%padding = 8.0_wp / data_to_pixel_ratio_x      ! 8 pixels padding (matplotlib-style)
+        ! Default matplotlib borderpad is 0.4 fontsize units
+        ! For actual text height of 15 pixels, borderpad = 0.4 * 10 = 4 pixels
         box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line 
         box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
-
-        ! Calculate entry height and spacing to match matplotlib
-        ! Entry height is just the text/handle height
+        
+        ! Calculate entry height from actual text measurements
+        ! Text height is typically 14-15 pixels for 10pt font
         box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
         
-        ! Matplotlib uses labelspacing (default 0.5) as fraction of fontsize between entries
-        ! For 16px font, this is 0.5 * 16 = 8 pixels
-        box%entry_spacing = 0.5_wp * real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
+        ! Matplotlib uses labelspacing (default 0.5) as fraction of fontsize
+        ! But fontsize is 10pt, not text height! So 0.5 * 10 = 5 pixels
+        box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y
         label_spacing = box%entry_spacing
-
-        ! Calculate total box dimensions with proper padding
-        ! Width: padding + line + spacing + text + padding (both sides)
-        box%width = 2.0_wp * box%padding + box%line_length + box%text_spacing + max_text_width
-        ! Height: padding + entries + spacing between entries + padding
-        ! The correct formula: height = 2*padding + n*entry_height + (n-1)*spacing
-        ! entry_height already includes full text bbox (ascent + descent) from calculate_text_height
+        
+        ! Padding should use actual fontsize, not text height
+        ! borderpad = 0.4 * fontsize = 0.4 * 10 = 4 pixels
+        box%padding = 4.0_wp / data_to_pixel_ratio_y
+        
+        ! Calculate total box dimensions
+        ! Width: padding + line + spacing + text + padding (horizontal uses x ratio)
+        padding_x = 4.0_wp / data_to_pixel_ratio_x
+        box%width = 2.0_wp * padding_x + box%line_length + box%text_spacing + max_text_width
+        
+        ! Height: For 2 entries with 14px text height each:
+        ! height = 2*4 (padding) + 2*14 (text) + 1*5 (spacing) = 41 pixels
+        ! But matplotlib shows 46 pixels, so there's extra space
         box%height = 2.0_wp * box%padding + &
                      real(size(labels), wp) * box%entry_height + &
                      real(size(labels) - 1, wp) * label_spacing
