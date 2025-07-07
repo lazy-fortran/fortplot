@@ -73,10 +73,11 @@ contains
         text_system_available = init_text_system()
 
         ! Calculate data-to-pixel conversion ratio
-        ! For legend sizing, we want consistent pixel-based dimensions
-        ! regardless of data range. Use standard figure size as reference.
-        data_to_pixel_ratio_x = 640.0_wp / 20.0_wp  ! Standard x range
-        data_to_pixel_ratio_y = 480.0_wp / 20.0_wp  ! Use same ratio for consistency
+        ! Legend should be sized relative to plot area, not data range
+        ! Use plot area size (typically ~496x369 pixels for 640x480 figure)
+        ! to get consistent legend sizing regardless of data range
+        data_to_pixel_ratio_x = 496.0_wp / data_width  ! Plot area width / data width
+        data_to_pixel_ratio_y = 369.0_wp / data_height  ! Plot area height / data height
 
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
