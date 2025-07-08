@@ -24,9 +24,9 @@ contains
         call title('Simple Sine Wave')
         call xlabel('x')
         call ylabel('sin(x)')
-        call savefig('example/fortran/basic_plots/simple_plot.png')
-        call savefig('example/fortran/basic_plots/simple_plot.pdf')
-        call savefig('example/fortran/basic_plots/simple_plot.txt')
+        call savefig('output/example/fortran/basic_plots/simple_plot.png')
+        call savefig('output/example/fortran/basic_plots/simple_plot.pdf')
+        call savefig('output/example/fortran/basic_plots/simple_plot.txt')
         
         print *, "Created: simple_plot.png/pdf/txt"
         
