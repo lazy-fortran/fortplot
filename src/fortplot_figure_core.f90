@@ -116,6 +116,7 @@ module fortplot_figure_core
         procedure :: initialize
         procedure :: add_plot
         procedure :: add_3d_plot
+        procedure :: add_surface
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -225,6 +226,33 @@ contains
         
         call update_data_ranges(self)
     end subroutine add_3d_plot
+    
+    subroutine add_surface(self, x, y, z, label)
+        !! Add surface plot - 3D grid data
+        !! x, y: 1D arrays defining grid
+        !! z: 2D array of values on grid
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:,:)
+        character(len=*), intent(in), optional :: label
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        ! Validate grid dimensions
+        if (size(z, 1) /= size(x) .or. size(z, 2) /= size(y)) then
+            write(*, '(A,I0,A,I0,A,I0,A,I0)') 'Error: Surface z dimensions (', &
+                size(z, 1), ',', size(z, 2), ') must match x size (', &
+                size(x), ') and y size (', size(y), ')'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_surface_plot_data(self, x, y, z, label)
+        call update_data_ranges(self)
+    end subroutine add_surface
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to figure
@@ -614,6 +642,46 @@ contains
         
         ! Note: markersize and linewidth handled by backend
     end subroutine add_3d_line_plot_data
+    
+    subroutine add_surface_plot_data(self, x, y, z, label)
+        !! Add surface plot data to internal storage
+        !! Following SRP - only handles data storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:,:)
+        character(len=*), intent(in), optional :: label
+        
+        integer :: plot_idx, color_idx
+        
+        plot_idx = self%plot_count
+        
+        ! For now, reuse contour plot type (surface is similar to contour)
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        ! Store grid data
+        if (allocated(self%plots(plot_idx)%x_grid)) deallocate(self%plots(plot_idx)%x_grid)
+        if (allocated(self%plots(plot_idx)%y_grid)) deallocate(self%plots(plot_idx)%y_grid)
+        if (allocated(self%plots(plot_idx)%z_grid)) deallocate(self%plots(plot_idx)%z_grid)
+        
+        allocate(self%plots(plot_idx)%x_grid(size(x)))
+        allocate(self%plots(plot_idx)%y_grid(size(y)))
+        allocate(self%plots(plot_idx)%z_grid(size(z,1), size(z,2)))
+        
+        self%plots(plot_idx)%x_grid = x
+        self%plots(plot_idx)%y_grid = y
+        self%plots(plot_idx)%z_grid = z
+        
+        ! Set label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        ! Use default color from palette
+        color_idx = mod(plot_idx - 1, 6) + 1
+        self%plots(plot_idx)%color = self%colors(:, color_idx)
+        
+    end subroutine add_surface_plot_data
 
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to internal storage
@@ -1772,7 +1840,7 @@ contains
         !! Following KISS principle - simple check for z allocation
         class(plot_data_t), intent(in) :: self
         
-        is_3d_plot = allocated(self%z)
+        is_3d_plot = allocated(self%z) .or. allocated(self%z_grid)
         
     end function is_3d
 
