@@ -10,21 +10,24 @@ API design follows pyplot-fortran conventions for compatibility.
 - **DRY REQUIRED**: Extract ALL common functionality - no duplication allowed
 - **KISS ESSENTIAL**: Keep solutions simple - no clever tricks, clear over clever
 
-## Phase 1: GLTF Text Format Support (Debug-friendly)
-- [ ] **TEST FIRST**: Write tests for GLTF JSON structure generation
-- [ ] Create `fortplot_gltf_base` module for shared GLTF constants/types (DRY)
-- [ ] Create `fortplot_gltf_writer` module for GLTF text output (SRP)
+## Phase 1: GLTF Text Format Support (Debug-friendly) ✅
+- [x] **TEST FIRST**: Write tests for GLTF JSON structure generation
+- [x] Create `fortplot_gltf_base` module for shared GLTF constants/types (DRY)
+- [x] Create `fortplot_gltf_writer` module for GLTF text output (SRP)
   - Separate routines for: header, scenes, nodes, meshes, accessors, bufferViews
   - Each routine ≤ 30 lines with single responsibility
-- [ ] Implement GLTF 2.0 minimal valid file structure
-- [ ] **TEST**: Validate output against GLTF validator
+- [x] Implement GLTF 2.0 minimal valid file structure
+- [x] **TEST**: Validate output against GLTF validator
 
 ## Phase 2: Basic 3D Plotting APIs with TDD
 - [ ] **TEST FIRST**: Write failing tests for 3D plot data storage
-- [ ] Extend `plot_data_t` to support 3D data (follow existing patterns)
+- [ ] Extend `plot_data_t` to support optional z coordinates (follow existing patterns)
+  - 2D plots: z not allocated
+  - 3D plots: z allocated automatically when provided
 - [ ] **TEST FIRST**: Write tests for `add_3d_plot` API behavior
 - [ ] Implement `add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)` 
-  - Match pyplot-fortran signature exactly
+  - Natural extension of add_plot - just add z coordinate
+  - Figure automatically handles 3D when z is present
   - Delegate to specialized storage routine (SRP)
 - [ ] **TEST FIRST**: Write tests for `add_surface` grid validation
 - [ ] Implement `add_surface(x, y, z, label)` for surface plots
@@ -63,15 +66,16 @@ API design follows pyplot-fortran conventions for compatibility.
 use fortplot
 type(figure_t) :: fig
 
-! Initialize with 3D support
-call fig%initialize(mplot3d=.true.)
+! Regular initialization - no special flags needed
+call fig%initialize(width, height)
 
-! Add 3D line plot
+! Add 3D line plot - figure automatically detects 3D
 call fig%add_3d_plot(x, y, z, label="3D curve")
 
 ! Add surface plot
 call fig%add_surface(x_grid, y_grid, z_values)
 
-! Save as GLB file
-call fig%savefig('output.glb')
+! Save as GLTF/GLB file - format detected from extension
+call fig%savefig('output.gltf')  ! Text format for debugging
+call fig%savefig('output.glb')   ! Binary format for production
 ```
