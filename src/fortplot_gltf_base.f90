@@ -7,11 +7,14 @@ module fortplot_gltf_base
     implicit none
     
     private
-    public :: gltf_asset_t
+    public :: gltf_asset_t, gltf_mesh_t, gltf_primitive_t
     public :: GLTF_VERSION
+    public :: GLTF_MODE_TRIANGLES, GLTF_MODE_LINE_STRIP
     
     ! GLTF 2.0 constants
     character(len=*), parameter :: GLTF_VERSION = "2.0"
+    integer, parameter :: GLTF_MODE_TRIANGLES = 4
+    integer, parameter :: GLTF_MODE_LINE_STRIP = 3
     
     type :: gltf_asset_t
         !! GLTF asset information
@@ -19,5 +22,23 @@ module fortplot_gltf_base
         character(len=:), allocatable :: generator
         character(len=:), allocatable :: copyright
     end type gltf_asset_t
+    
+    type :: gltf_primitive_t
+        !! GLTF mesh primitive
+        integer :: mode = GLTF_MODE_TRIANGLES
+        integer :: position_accessor = -1
+        integer :: normal_accessor = -1
+        integer :: indices_accessor = -1
+        integer :: vertex_count = 0
+        integer :: index_count = 0
+    end type gltf_primitive_t
+    
+    type :: gltf_mesh_t
+        !! GLTF mesh containing primitives
+        type(gltf_primitive_t), allocatable :: primitives(:)
+        integer :: primitive_count = 0
+        real(wp), dimension(3) :: min_bounds = 0.0_wp
+        real(wp), dimension(3) :: max_bounds = 0.0_wp
+    end type gltf_mesh_t
     
 end module fortplot_gltf_base
