@@ -145,31 +145,31 @@ contains
         call scale_2d_to_plot_area(corners_2d, ctx, x_min, x_max, y_min, y_max)
         
         ! Draw the three main axes like matplotlib
-        ! For default view (azim=-60, elev=30), matplotlib draws the "back" edges:
-        ! X-axis: edge from corner 3 to corner 2 (back of bottom face)
-        ! Y-axis: edge from corner 4 to corner 3 (left of bottom face)  
-        ! Z-axis: edge from corner 3 to corner 7 (back left vertical)
-        ! All three axes meet at corner 3 (x_max, y_max, z_min)
+        ! Based on actual matplotlib output observation:
+        ! X-axis: runs along back bottom edge from corner 4 to corner 3
+        ! Y-axis: runs along left bottom edge from corner 1 to corner 4
+        ! Z-axis: runs up the back-left vertical from corner 4 to corner 8
+        ! All three axes meet at corner 4 (x_min, y_max, z_min)
         
-        ! X-axis (corner 3 to corner 2)
-        x1 = corners_2d(1, 3)
-        y1 = corners_2d(2, 3)
-        x2 = corners_2d(1, 2)
-        y2 = corners_2d(2, 2)
-        call ctx%line(x1, y1, x2, y2)
-        
-        ! Y-axis (corner 4 to corner 3)
+        ! X-axis (corner 4 to corner 3)
         x1 = corners_2d(1, 4)
         y1 = corners_2d(2, 4)
         x2 = corners_2d(1, 3)
         y2 = corners_2d(2, 3)
         call ctx%line(x1, y1, x2, y2)
         
-        ! Z-axis (corner 3 to corner 7)
-        x1 = corners_2d(1, 3)
-        y1 = corners_2d(2, 3)
-        x2 = corners_2d(1, 7)
-        y2 = corners_2d(2, 7)
+        ! Y-axis (corner 1 to corner 4)
+        x1 = corners_2d(1, 1)
+        y1 = corners_2d(2, 1)
+        x2 = corners_2d(1, 4)
+        y2 = corners_2d(2, 4)
+        call ctx%line(x1, y1, x2, y2)
+        
+        ! Z-axis (corner 4 to corner 8)
+        x1 = corners_2d(1, 4)
+        y1 = corners_2d(2, 4)
+        x2 = corners_2d(1, 8)
+        y2 = corners_2d(2, 8)
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
@@ -216,7 +216,7 @@ contains
         integer :: i, n_ticks
         real(wp) :: value, step
         
-        tick_length = 5.0_wp  ! Tick length in pixels
+        tick_length = 2.0_wp  ! Tick length in pixels
         n_ticks = 5  ! Number of ticks per axis
         
         ! X-axis ticks and labels (edge 1: corner 1 to corner 2)
