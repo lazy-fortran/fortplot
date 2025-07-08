@@ -36,7 +36,7 @@ module fortplot_figure_core
         !! Separated from figure to follow Single Responsibility Principle
         integer :: plot_type = PLOT_TYPE_LINE
         ! Line plot data
-        real(wp), allocatable :: x(:), y(:)
+        real(wp), allocatable :: x(:), y(:), z(:)  ! z optional for 3D plots
         ! Contour plot data
         real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), allocatable :: contour_levels(:)
@@ -51,6 +51,8 @@ module fortplot_figure_core
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
+    contains
+        procedure :: is_3d
     end type plot_data_t
 
     type :: figure_t
@@ -1657,5 +1659,14 @@ contains
         
         self%plots(plot_index)%y = y_new
     end subroutine set_ydata
+    
+    logical function is_3d(self) result(is_3d_plot)
+        !! Check if plot data contains 3D coordinates
+        !! Following KISS principle - simple check for z allocation
+        class(plot_data_t), intent(in) :: self
+        
+        is_3d_plot = allocated(self%z)
+        
+    end function is_3d
 
 end module fortplot_figure_core
