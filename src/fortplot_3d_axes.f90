@@ -157,32 +157,29 @@ contains
                                            z_min, z_max)
         end select
         
-        ! Draw axes matplotlib style - not from origin but the "back" edges
-        ! Looking at matplotlib output:
-        ! - X-axis: bottom edge that's most visible (varies with view)
-        ! - Y-axis: bottom edge perpendicular to X
-        ! - Z-axis: vertical edge at the back
+        ! Draw axes matplotlib/MATLAB style - forming a corner shape
+        ! Not all axes meet at the same point for proper 3D visualization
         
-        ! For default view (azim=-60, elev=30), matplotlib draws:
-        ! X-axis: corner 4 to corner 3 (back bottom edge)
-        x1 = corners_2d(1, 4)
-        y1 = corners_2d(2, 4)
-        x2 = corners_2d(1, 3)
-        y2 = corners_2d(2, 3)
-        call ctx%line(x1, y1, x2, y2)
-        
-        ! Y-axis: corner 1 to corner 4 (left bottom edge)
+        ! X-axis: corner 1 to corner 2 (bottom front edge)
         x1 = corners_2d(1, 1)
         y1 = corners_2d(2, 1)
-        x2 = corners_2d(1, 4)
-        y2 = corners_2d(2, 4)
+        x2 = corners_2d(1, 2)
+        y2 = corners_2d(2, 2)
         call ctx%line(x1, y1, x2, y2)
         
-        ! Z-axis: corner 4 to corner 8 (back left vertical)
-        x1 = corners_2d(1, 4)
-        y1 = corners_2d(2, 4)
-        x2 = corners_2d(1, 8)
-        y2 = corners_2d(2, 8)
+        ! Z-axis: corner 1 to corner 5 (front left vertical)
+        x1 = corners_2d(1, 1)
+        y1 = corners_2d(2, 1)
+        x2 = corners_2d(1, 5)
+        y2 = corners_2d(2, 5)
+        call ctx%line(x1, y1, x2, y2)
+        
+        ! Y-axis: corner 2 to corner 3 (front right edge, parallel to Y)
+        ! This creates the offset Y-axis that forms the 3D corner
+        x1 = corners_2d(1, 2)
+        y1 = corners_2d(2, 2)
+        x2 = corners_2d(1, 3)
+        y2 = corners_2d(2, 3)
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
@@ -261,13 +258,13 @@ contains
         tick_length = 4.0_wp  ! Tick length in pixels
         n_ticks = 5  ! Number of ticks per axis
         
-        ! X-axis ticks and labels (edge from corner 4 to corner 3)
+        ! X-axis ticks and labels (edge from corner 1 to corner 2)
         step = (x_max - x_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = x_min + real(i-1, wp) * step
             ! Interpolate position along edge
-            x_pos = corners_2d(1,4) + (corners_2d(1,3) - corners_2d(1,4)) * real(i-1, wp) / real(n_ticks-1, wp)
-            y_pos = corners_2d(2,4) + (corners_2d(2,3) - corners_2d(2,4)) * real(i-1, wp) / real(n_ticks-1, wp)
+            x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
             ! Draw tick mark pointing down
             call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_length)
@@ -292,12 +289,12 @@ contains
             call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
         end do
         
-        ! Z-axis ticks and labels (edge from corner 4 to corner 8)
+        ! Z-axis ticks and labels (edge from corner 1 to corner 5)
         step = (z_max - z_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = z_min + real(i-1, wp) * step
-            x_pos = corners_2d(1,4) + (corners_2d(1,8) - corners_2d(1,4)) * real(i-1, wp) / real(n_ticks-1, wp)
-            y_pos = corners_2d(2,4) + (corners_2d(2,8) - corners_2d(2,4)) * real(i-1, wp) / real(n_ticks-1, wp)
+            x_pos = corners_2d(1,1) + (corners_2d(1,5) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,1) + (corners_2d(2,5) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
             ! Draw tick mark pointing left
             call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
