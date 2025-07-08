@@ -8,6 +8,7 @@ API design follows pyplot-fortran conventions for compatibility.
 - **TDD MANDATORY**: Write comprehensive tests FIRST - no implementation without failing tests
 - **SRP ENFORCED**: Each module/routine has ONE clear responsibility (max 30 lines)
 - **DRY REQUIRED**: Extract ALL common functionality - no duplication allowed
+- **KISS ESSENTIAL**: Keep solutions simple - no clever tricks, clear over clever
 
 ## Phase 1: GLTF Text Format Support (Debug-friendly)
 - [ ] **TEST FIRST**: Write tests for GLTF JSON structure generation
