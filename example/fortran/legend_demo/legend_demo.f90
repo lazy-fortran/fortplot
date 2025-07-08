@@ -62,9 +62,9 @@ contains
         call fig1%add_plot(x, y1, label="√x")
         call fig1%add_plot(x, y2, label="ln(x)")
         call fig1%legend(location="upper left")
-        call fig1%savefig('example/fortran/legend_demo/legend_upper_left.png')
-        call fig1%savefig('example/fortran/legend_demo/legend_upper_left.pdf')
-        call fig1%savefig('example/fortran/legend_demo/legend_upper_left.txt')
+        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.png')
+        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.pdf')
+        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.txt')
         
         ! Upper right position (default)
         call fig2%initialize(640, 480)
@@ -72,9 +72,9 @@ contains
         call fig2%add_plot(x, y1, label="√x")
         call fig2%add_plot(x, y2, label="ln(x)")
         call fig2%legend(location="upper right")
-        call fig2%savefig('example/fortran/legend_demo/legend_upper_right.png')
-        call fig2%savefig('example/fortran/legend_demo/legend_upper_right.pdf')
-        call fig2%savefig('example/fortran/legend_demo/legend_upper_right.txt')
+        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.png')
+        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.pdf')
+        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.txt')
         
         ! Lower left position
         call fig3%initialize(640, 480)
@@ -82,9 +82,9 @@ contains
         call fig3%add_plot(x, y1, label="√x")
         call fig3%add_plot(x, y2, label="ln(x)")
         call fig3%legend(location="lower left")
-        call fig3%savefig('example/fortran/legend_demo/legend_lower_left.png')
-        call fig3%savefig('example/fortran/legend_demo/legend_lower_left.pdf')
-        call fig3%savefig('example/fortran/legend_demo/legend_lower_left.txt')
+        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.png')
+        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.pdf')
+        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.txt')
         
         ! Lower right position
         call fig4%initialize(640, 480)
@@ -92,9 +92,9 @@ contains
         call fig4%add_plot(x, y1, label="√x")
         call fig4%add_plot(x, y2, label="ln(x)")
         call fig4%legend(location="lower right")
-        call fig4%savefig('example/fortran/legend_demo/legend_lower_right.png')
-        call fig4%savefig('example/fortran/legend_demo/legend_lower_right.pdf')
-        call fig4%savefig('example/fortran/legend_demo/legend_lower_right.txt')
+        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.png')
+        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.pdf')
+        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.txt')
         
         print *, "Created: legend_upper_left/right.png/pdf/txt, legend_lower_left/right.png/pdf/txt"
     end subroutine positioned_legend_example

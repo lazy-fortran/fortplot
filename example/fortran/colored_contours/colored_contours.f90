@@ -106,9 +106,9 @@ contains
         call fig1%set_ylabel("y")
         call fig1%set_title("Ripple Function - Inferno Colormap")
         call fig1%add_contour_filled(x_grid, y_grid, z_grid, colormap="inferno")
-        call fig1%savefig('example/fortran/colored_contours/ripple_inferno.png')
-        call fig1%savefig('example/fortran/colored_contours/ripple_inferno.pdf')
-        call fig1%savefig('example/fortran/colored_contours/ripple_inferno.txt')
+        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.png')
+        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.pdf')
+        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.txt')
 
         ! Coolwarm colormap
         call fig2%initialize(640, 480)
@@ -116,9 +116,9 @@ contains
         call fig2%set_ylabel("y")
         call fig2%set_title("Ripple Function - Coolwarm Colormap")
         call fig2%add_contour_filled(x_grid, y_grid, z_grid, colormap="coolwarm")
-        call fig2%savefig('example/fortran/colored_contours/ripple_coolwarm.png')
-        call fig2%savefig('example/fortran/colored_contours/ripple_coolwarm.pdf')
-        call fig2%savefig('example/fortran/colored_contours/ripple_coolwarm.txt')
+        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.png')
+        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.pdf')
+        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.txt')
 
         ! Jet colormap
         call fig3%initialize(640, 480)
@@ -126,9 +126,9 @@ contains
         call fig3%set_ylabel("y")
         call fig3%set_title("Ripple Function - Jet Colormap")
         call fig3%add_contour_filled(x_grid, y_grid, z_grid, colormap="jet")
-        call fig3%savefig('example/fortran/colored_contours/ripple_jet.png')
-        call fig3%savefig('example/fortran/colored_contours/ripple_jet.pdf')
-        call fig3%savefig('example/fortran/colored_contours/ripple_jet.txt')
+        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.png')
+        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.pdf')
+        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.txt')
         
         print *, "Created: ripple_inferno.png/pdf/txt, ripple_coolwarm.png/pdf/txt, ripple_jet.png/pdf/txt"
         print *, "Colormap comparison complete!"
