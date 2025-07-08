@@ -14,7 +14,7 @@ program debug_vertex_encoding
     
     call fig%initialize(640, 480)
     call fig%add_3d_plot(x, y, z, label="Test line")
-    call fig%savefig("debug_vertex.gltf")
+    call fig%savefig("debug_vertex.glb")
     
     print *, "GLTF file created!"
     
