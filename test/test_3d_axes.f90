@@ -1,5 +1,6 @@
 program test_3d_axes
     use fortplot_projection
+    use fortplot_3d_axes
     use fortplot_testing
     use iso_fortran_env, only: wp => real64
     implicit none

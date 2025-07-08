@@ -81,6 +81,7 @@ module fortplot_figure_core
         
         ! Axis limits - separate original and transformed ranges
         real(wp) :: x_min, x_max, y_min, y_max  ! Original data ranges for tick generation
+        real(wp) :: z_min, z_max  ! Z-axis limits for 3D plots
         real(wp) :: x_min_transformed, x_max_transformed, y_min_transformed, y_max_transformed  ! Transformed for rendering
         logical :: xlim_set = .false., ylim_set = .false.
         
@@ -948,11 +949,12 @@ contains
         integer :: i
         real(wp) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         real(wp) :: x_min_trans, x_max_trans, y_min_trans, y_max_trans
-        logical :: first_plot
+        logical :: first_plot, first_3d_plot
         
         if (self%plot_count == 0) return
         
         first_plot = .true.
+        first_3d_plot = .true.
         
         do i = 1, self%plot_count
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
@@ -960,6 +962,18 @@ contains
                     ! Handle 3D plots by projecting to 2D first
                     call calculate_3d_plot_ranges(self, i, x_min_orig, x_max_orig, &
                                                  y_min_orig, y_max_orig, first_plot)
+                    
+                    ! Calculate Z-axis ranges for 3D plots
+                    if (allocated(self%plots(i)%z)) then
+                        if (first_3d_plot) then
+                            self%z_min = minval(self%plots(i)%z)
+                            self%z_max = maxval(self%plots(i)%z)
+                            first_3d_plot = .false.
+                        else
+                            self%z_min = min(self%z_min, minval(self%plots(i)%z))
+                            self%z_max = max(self%z_max, maxval(self%plots(i)%z))
+                        end if
+                    end if
                     
                     ! Calculate transformed ranges for rendering
                     if (first_plot) then
@@ -1124,11 +1138,13 @@ contains
         type is (png_context)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel)
+                                    self%title, self%xlabel, self%ylabel, &
+                                    self%z_min, self%z_max, self%has_3d_plots())
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel)
+                                        self%title, self%xlabel, self%ylabel, &
+                                        self%z_min, self%z_max, self%has_3d_plots())
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
