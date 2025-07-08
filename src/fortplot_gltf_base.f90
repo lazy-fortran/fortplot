@@ -8,13 +8,17 @@ module fortplot_gltf_base
     
     private
     public :: gltf_asset_t, gltf_mesh_t, gltf_primitive_t
+    public :: gltf_accessor_t, gltf_buffer_view_t
     public :: GLTF_VERSION
     public :: GLTF_MODE_TRIANGLES, GLTF_MODE_LINE_STRIP
+    public :: GLTF_COMPONENT_TYPE_FLOAT, GLTF_COMPONENT_TYPE_UNSIGNED_SHORT
     
     ! GLTF 2.0 constants
     character(len=*), parameter :: GLTF_VERSION = "2.0"
     integer, parameter :: GLTF_MODE_TRIANGLES = 4
     integer, parameter :: GLTF_MODE_LINE_STRIP = 3
+    integer, parameter :: GLTF_COMPONENT_TYPE_FLOAT = 5126
+    integer, parameter :: GLTF_COMPONENT_TYPE_UNSIGNED_SHORT = 5123
     
     type :: gltf_asset_t
         !! GLTF asset information
@@ -40,5 +44,23 @@ module fortplot_gltf_base
         real(wp), dimension(3) :: min_bounds = 0.0_wp
         real(wp), dimension(3) :: max_bounds = 0.0_wp
     end type gltf_mesh_t
+    
+    type :: gltf_accessor_t
+        !! GLTF accessor for buffer data
+        integer :: buffer_view = -1
+        integer :: byte_offset = 0
+        integer :: component_type = GLTF_COMPONENT_TYPE_FLOAT
+        integer :: count = 0
+        character(len=16) :: type = "SCALAR"
+        real(wp), allocatable :: min(:), max(:)
+    end type gltf_accessor_t
+    
+    type :: gltf_buffer_view_t
+        !! GLTF buffer view
+        integer :: buffer = 0
+        integer :: byte_offset = 0
+        integer :: byte_length = 0
+        integer :: byte_stride = 0
+    end type gltf_buffer_view_t
     
 end module fortplot_gltf_base
