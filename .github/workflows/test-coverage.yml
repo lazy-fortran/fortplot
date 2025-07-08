@@ -5,32 +5,33 @@ on: [push, pull_request]
 jobs:
   test-coverage:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Setup Fortran Package Manager
-      uses: fortran-lang/setup-fpm@v5
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-    
+      run: |
+        wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
+        chmod +x fpm-0.12.0-linux-x86_64-gcc-12
+        sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+
     - name: Install GFortran and gcov
       run: |
         sudo apt-get update
         sudo apt-get install -y gfortran gcovr
-    
+
     - name: Build with coverage flags
       run: |
         make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
-    
+
     - name: Run tests with coverage
       run: |
         make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
-    
+
     - name: Generate coverage report
       run: |
         gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --xml -o coverage.xml
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
       with:
