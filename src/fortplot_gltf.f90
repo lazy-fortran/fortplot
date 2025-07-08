@@ -8,6 +8,7 @@ module fortplot_gltf
     use fortplot_gltf_writer
     use fortplot_gltf_geometry
     use fortplot_gltf_buffer
+    use fortplot_glb_writer
     implicit none
     
     private
@@ -48,28 +49,48 @@ contains
     end function create_gltf_canvas
 
     subroutine save_gltf(this, filename)
-        !! Save 3D plot data as GLTF file
+        !! Save 3D plot data as GLTF or GLB file
         !! Following KISS - generates complete GLTF structure
         class(gltf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: unit, iostat
-        character(len=:), allocatable :: json
+        integer :: unit, iostat, ext_pos
+        character(len=:), allocatable :: json, extension
+        logical :: is_glb
         
         this%filename = filename
         
-        ! Generate complete GLTF JSON structure
-        json = generate_complete_gltf(this)
-        
-        ! Write to file
-        open(newunit=unit, file=filename, status='replace', &
-             action='write', iostat=iostat)
-        if (iostat == 0) then
-            write(unit, '(A)') json
-            close(unit)
-            print *, "GLTF file '" // trim(filename) // "' created successfully!"
+        ! Check file extension
+        ext_pos = index(filename, '.', back=.true.)
+        if (ext_pos > 0) then
+            extension = filename(ext_pos+1:)
+            is_glb = (extension == 'glb' .or. extension == 'GLB')
         else
-            print *, "Error: Failed to create GLTF file"
+            is_glb = .false.
+        end if
+        
+        ! Generate complete GLTF JSON structure
+        json = generate_complete_gltf(this, is_glb)
+        
+        if (is_glb) then
+            ! Write GLB binary format
+            if (allocated(this%buffer_data)) then
+                call write_glb_file(filename, json, this%buffer_data)
+                print *, "GLB file '" // trim(filename) // "' created successfully!"
+            else
+                print *, "Error: No binary data for GLB file"
+            end if
+        else
+            ! Write GLTF text format
+            open(newunit=unit, file=filename, status='replace', &
+                 action='write', iostat=iostat)
+            if (iostat == 0) then
+                write(unit, '(A)') json
+                close(unit)
+                print *, "GLTF file '" // trim(filename) // "' created successfully!"
+            else
+                print *, "Error: Failed to create GLTF file"
+            end if
         end if
         
     end subroutine save_gltf
@@ -162,10 +183,11 @@ contains
         
     end subroutine add_3d_surface_data
     
-    function generate_complete_gltf(this) result(json)
+    function generate_complete_gltf(this, is_glb) result(json)
         !! Generate complete GLTF JSON structure
         !! Following KISS - assembles all components
         class(gltf_context), intent(inout) :: this
+        logical, intent(in) :: is_glb
         character(len=:), allocatable :: json
         
         character(len=:), allocatable :: base64_data
@@ -227,9 +249,13 @@ contains
             json = json // ',"nodes":[],"meshes":[],"accessors":[],"bufferViews":[]'
         end if
         
-        ! Create base64 encoded buffer data
+        ! Create base64 encoded buffer data (only for GLTF)
         if (allocated(this%buffer_data)) then
-            call encode_base64(this%buffer_data, base64_data)
+            if (.not. is_glb) then
+                call encode_base64(this%buffer_data, base64_data)
+            else
+                base64_data = ""  ! Not used for GLB
+            end if
             total_bytes = size(this%buffer_data)
         else
             base64_data = ""
@@ -238,8 +264,14 @@ contains
         
         ! Add buffers
         write(num_str, '(I0)') total_bytes
-        json = json // ',"buffers":[{"uri":"data:application/octet-stream;base64,' // &
-               base64_data // '","byteLength":' // trim(num_str) // '}]'
+        if (is_glb) then
+            ! For GLB, buffer is in BIN chunk (no URI)
+            json = json // ',"buffers":[{"byteLength":' // trim(num_str) // '}]'
+        else
+            ! For GLTF, embed as base64 data URI
+            json = json // ',"buffers":[{"uri":"data:application/octet-stream;base64,' // &
+                   base64_data // '","byteLength":' // trim(num_str) // '}]'
+        end if
         
         ! Close JSON
         json = json // "}"
