@@ -54,6 +54,39 @@ API design follows pyplot-fortran conventions for compatibility.
 - [ ] Implement `savefig` for .glb extension
 - [ ] **TEST**: Binary comparison with reference GLB files
 
+## Phase 5: 2D Projection Output (PNG/PDF) for 3D Plots ✅
+- [x] **TEST FIRST**: Write tests for 3D to 2D projection transformation
+- [x] Create `fortplot_projection` module for 3D→2D transformation (SRP)
+  - Default viewing angles: azimuth=-60°, elevation=30° (matplotlib defaults)
+  - Perspective projection with focal_length=1, camera_distance=10
+  - Transform 3D coordinates to 2D screen coordinates
+- [x] **TEST FIRST**: Write tests for rendering 3D plots in PNG
+- [x] Extend PNG backend to handle 3D plot types
+  - Detect 3D plots via `has_3d_plots()` or `is_3d()` 
+  - Apply projection before rendering
+  - Draw projected lines/surfaces
+- [ ] **TEST FIRST**: Write tests for rendering 3D plots in PDF
+- [ ] Extend PDF backend similarly
+- [ ] **TEST**: Visual comparison with matplotlib 3D plot outputs
+
+## Phase 6: 3D Axes and Visual Improvements
+- [ ] **TEST FIRST**: Write tests for 3D axis frame generation
+- [ ] Create `fortplot_3d_axes` module for 3D axis rendering (SRP)
+  - Generate 3D bounding box corners and project to 2D
+  - Draw 3D axis lines (X, Y, Z axes visible in 3D space)
+  - Add tick marks and labels on projected 3D axes
+  - Optional: 3D grid lines for better depth perception
+- [ ] **TEST FIRST**: Write tests for surface plot improvements
+- [ ] Improve surface plot rendering to show actual 3D surface
+  - Convert surface data to triangular mesh
+  - Apply proper shading/depth cues
+  - Handle hidden surface removal
+- [ ] **TEST FIRST**: Write tests for 3D visual enhancements
+- [ ] Add visual depth cues
+  - Line thickness variation based on depth
+  - Alpha/transparency for depth ordering
+  - Optional: simple lighting model for surfaces
+
 ## Implementation Notes
 - **No shallow tests**: Test behavior, edge cases, and error conditions
 - **Modular design**: Each module has clear, single responsibility
@@ -66,7 +99,7 @@ API design follows pyplot-fortran conventions for compatibility.
 use fortplot
 type(figure_t) :: fig
 
-! Regular initialization - no special flags needed
+! Regular initialization - no backend needed
 call fig%initialize(width, height)
 
 ! Add 3D line plot - figure automatically detects 3D
@@ -75,7 +108,9 @@ call fig%add_3d_plot(x, y, z, label="3D curve")
 ! Add surface plot
 call fig%add_surface(x_grid, y_grid, z_values)
 
-! Save as GLTF/GLB file - format detected from extension
-call fig%savefig('output.gltf')  ! Text format for debugging
-call fig%savefig('output.glb')   ! Binary format for production
+! Save to any format - backend created based on extension
+call fig%savefig('output.png')   ! 2D projection to PNG
+call fig%savefig('output.pdf')   ! 2D projection to PDF
+call fig%savefig('output.gltf')  ! 3D model in text format
+call fig%savefig('output.glb')   ! 3D model in binary format
 ```

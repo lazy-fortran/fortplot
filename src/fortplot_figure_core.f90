@@ -22,6 +22,7 @@ module fortplot_figure_core
     use fortplot_raster, only: draw_rotated_ylabel_raster
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
+    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     implicit none
 
     private
@@ -955,35 +956,60 @@ contains
         
         do i = 1, self%plot_count
             if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
-                if (first_plot) then
-                    ! Store ORIGINAL data ranges for tick generation
-                    x_min_orig = minval(self%plots(i)%x)
-                    x_max_orig = maxval(self%plots(i)%x)
-                    y_min_orig = minval(self%plots(i)%y)
-                    y_max_orig = maxval(self%plots(i)%y)
+                if (self%plots(i)%is_3d()) then
+                    ! Handle 3D plots by projecting to 2D first
+                    call calculate_3d_plot_ranges(self, i, x_min_orig, x_max_orig, &
+                                                 y_min_orig, y_max_orig, first_plot)
                     
                     ! Calculate transformed ranges for rendering
-                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
-                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
-                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
-                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
-                    first_plot = .false.
+                    if (first_plot) then
+                        x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                        x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                        y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                        y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                        first_plot = .false.
+                    else
+                        x_min_trans = min(x_min_trans, apply_scale_transform(x_min_orig, &
+                                                                           self%xscale, self%symlog_threshold))
+                        x_max_trans = max(x_max_trans, apply_scale_transform(x_max_orig, &
+                                                                           self%xscale, self%symlog_threshold))
+                        y_min_trans = min(y_min_trans, apply_scale_transform(y_min_orig, &
+                                                                           self%yscale, self%symlog_threshold))
+                        y_max_trans = max(y_max_trans, apply_scale_transform(y_max_orig, &
+                                                                           self%yscale, self%symlog_threshold))
+                    end if
                 else
-                    ! Update original ranges
-                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
-                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
-                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
-                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
-                    
-                    ! Update transformed ranges
-                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
-                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
+                    ! Handle 2D plots as before
+                    if (first_plot) then
+                        ! Store ORIGINAL data ranges for tick generation
+                        x_min_orig = minval(self%plots(i)%x)
+                        x_max_orig = maxval(self%plots(i)%x)
+                        y_min_orig = minval(self%plots(i)%y)
+                        y_max_orig = maxval(self%plots(i)%y)
+                        
+                        ! Calculate transformed ranges for rendering
+                        x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                        x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                        y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                        y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                        first_plot = .false.
+                    else
+                        ! Update original ranges
+                        x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
+                        x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
+                        y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
+                        y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                        
+                        ! Update transformed ranges
+                        x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                                                                             self%xscale, self%symlog_threshold))
+                        x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                                                                             self%xscale, self%symlog_threshold))
+                        y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                                                                             self%yscale, self%symlog_threshold))
+                        y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                                                                             self%yscale, self%symlog_threshold))
+                    end if
                 end if
             else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 if (first_plot) then
@@ -1172,7 +1198,7 @@ contains
     end subroutine render_streamline
 
     subroutine render_line_plot(self, plot_idx)
-        !! Render a single line plot with linestyle support
+        !! Render a single line plot with linestyle support (handles 2D and 3D)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         integer :: i
@@ -1191,12 +1217,20 @@ contains
             ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
             call self%backend%set_line_width(2.0_wp)
             
-            ! Draw line segments using transformed coordinates with linestyle
-            call draw_line_with_style(self, plot_idx, linestyle)
+            ! Check if this is a 3D plot and handle projection
+            if (self%plots(plot_idx)%is_3d()) then
+                call draw_3d_line_with_style(self, plot_idx, linestyle)
+            else
+                call draw_line_with_style(self, plot_idx, linestyle)
+            end if
         end if
 
         ! Always render markers regardless of linestyle (matplotlib behavior)
-        call render_markers(self, plot_idx)
+        if (self%plots(plot_idx)%is_3d()) then
+            call render_3d_markers(self, plot_idx)
+        else
+            call render_markers(self, plot_idx)
+        end if
     end subroutine render_line_plot
 
     subroutine render_markers(self, plot_idx)
@@ -1220,6 +1254,114 @@ contains
         end do
 
     end subroutine render_markers
+
+    subroutine draw_3d_line_with_style(self, plot_idx, linestyle)
+        !! Draw 3D line plot with projection to 2D
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in) :: linestyle
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp) :: azim, elev, dist
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        integer :: i, n
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project 3D data to 2D
+        call project_3d_to_2d(self%plots(plot_idx)%x, &
+                              self%plots(plot_idx)%y, &
+                              self%plots(plot_idx)%z, &
+                              azim, elev, dist, x2d, y2d)
+        
+        ! Draw lines using projected 2D coordinates
+        do i = 1, n-1
+            x1_screen = apply_scale_transform(x2d(i), self%xscale, self%symlog_threshold)
+            y1_screen = apply_scale_transform(y2d(i), self%yscale, self%symlog_threshold)
+            x2_screen = apply_scale_transform(x2d(i+1), self%xscale, self%symlog_threshold)
+            y2_screen = apply_scale_transform(y2d(i+1), self%yscale, self%symlog_threshold)
+            
+            ! Draw line with specified style
+            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
+        end do
+    end subroutine draw_3d_line_with_style
+
+    subroutine render_3d_markers(self, plot_idx)
+        !! Render markers for 3D plot points
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp) :: azim, elev, dist
+        real(wp) :: x_screen, y_screen
+        integer :: i, n
+        character(len=:), allocatable :: marker
+        
+        if (.not. allocated(self%plots(plot_idx)%marker)) return
+        marker = self%plots(plot_idx)%marker
+        if (marker == 'None' .or. marker == '') return
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project 3D data to 2D
+        call project_3d_to_2d(self%plots(plot_idx)%x, &
+                              self%plots(plot_idx)%y, &
+                              self%plots(plot_idx)%z, &
+                              azim, elev, dist, x2d, y2d)
+        
+        ! Draw markers at projected positions
+        do i = 1, n
+            x_screen = apply_scale_transform(x2d(i), self%xscale, self%symlog_threshold)
+            y_screen = apply_scale_transform(y2d(i), self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(x_screen, y_screen, marker)
+        end do
+    end subroutine render_3d_markers
+
+    subroutine calculate_3d_plot_ranges(self, plot_idx, x_min, x_max, y_min, y_max, first_plot)
+        !! Calculate data ranges for 3D plot by projecting to 2D
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(inout) :: x_min, x_max, y_min, y_max
+        logical, intent(inout) :: first_plot
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp) :: azim, elev, dist
+        integer :: n
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project 3D data to 2D
+        call project_3d_to_2d(self%plots(plot_idx)%x, &
+                              self%plots(plot_idx)%y, &
+                              self%plots(plot_idx)%z, &
+                              azim, elev, dist, x2d, y2d)
+        
+        ! Calculate ranges from projected data
+        if (first_plot) then
+            x_min = minval(x2d)
+            x_max = maxval(x2d)
+            y_min = minval(y2d)
+            y_max = maxval(y2d)
+            first_plot = .false.
+        else
+            x_min = min(x_min, minval(x2d))
+            x_max = max(x_max, maxval(x2d))
+            y_min = min(y_min, minval(y2d))
+            y_max = max(y_max, maxval(y2d))
+        end if
+    end subroutine calculate_3d_plot_ranges
 
     subroutine render_contour_plot(self, plot_idx)
         !! Render a single contour plot using proper marching squares algorithm
