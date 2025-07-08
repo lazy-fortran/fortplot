@@ -20,12 +20,12 @@ API design follows pyplot-fortran conventions for compatibility.
 - [x] **TEST**: Validate output against GLTF validator
 
 ## Phase 2: Basic 3D Plotting APIs with TDD
-- [ ] **TEST FIRST**: Write failing tests for 3D plot data storage
-- [ ] Extend `plot_data_t` to support optional z coordinates (follow existing patterns)
+- [x] **TEST FIRST**: Write failing tests for 3D plot data storage
+- [x] Extend `plot_data_t` to support optional z coordinates (follow existing patterns)
   - 2D plots: z not allocated
   - 3D plots: z allocated automatically when provided
-- [ ] **TEST FIRST**: Write tests for `add_3d_plot` API behavior
-- [ ] Implement `add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)` 
+- [x] **TEST FIRST**: Write tests for `add_3d_plot` API behavior
+- [x] Implement `add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)` 
   - Natural extension of add_plot - just add z coordinate
   - Figure automatically handles 3D when z is present
   - Delegate to specialized storage routine (SRP)
