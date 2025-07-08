@@ -337,11 +337,21 @@ contains
         
     end subroutine streamplot
 
-    subroutine savefig(self, filename)
+    subroutine savefig(self, filename, blocking)
         !! Save figure to file with backend auto-detection
+        !! 
+        !! Arguments:
+        !!   filename: Output filename (extension determines format)
+        !!   blocking: Optional - if true, wait for user input after save (default: false)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
+        logical, intent(in), optional :: blocking
         character(len=20) :: backend_type
+        logical :: do_block
+        
+        ! Default to non-blocking
+        do_block = .false.
+        if (present(blocking)) do_block = blocking
         
         backend_type = get_backend_from_filename(filename)
         
@@ -355,11 +365,26 @@ contains
         call self%backend%save(filename)
         
         write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
+        
+        ! If blocking requested, wait for user input
+        if (do_block) then
+            print *, "Press Enter to continue..."
+            read(*,*)
+        end if
     end subroutine savefig
 
-    subroutine show(self)
+    subroutine show(self, blocking)
         !! Display figure in ASCII terminal
+        !! 
+        !! Arguments:
+        !!   blocking: Optional - if true, wait for user input after display (default: false)
         class(figure_t), intent(inout) :: self
+        logical, intent(in), optional :: blocking
+        logical :: do_block
+        
+        ! Default to non-blocking
+        do_block = .false.
+        if (present(blocking)) do_block = blocking
         
         ! Always reinitialize backend for ASCII output
         if (allocated(self%backend)) deallocate(self%backend)
@@ -369,6 +394,12 @@ contains
         self%rendered = .false.
         call render_figure(self)
         call self%backend%save("terminal")
+        
+        ! If blocking requested, wait for user input
+        if (do_block) then
+            print *, "Press Enter to continue..."
+            read(*,*)
+        end if
     end subroutine show
 
     ! Label setters (following Interface Segregation Principle)

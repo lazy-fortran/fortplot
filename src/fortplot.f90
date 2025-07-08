@@ -164,7 +164,7 @@ contains
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
 
-    subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text)
+    subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Display a line plot in the terminal using ASCII graphics
         !! Uses the global figure initialized by figure() subroutine
         !!
@@ -173,8 +173,10 @@ contains
         !!   label: Optional label for the plot
         !!   title_text: Optional plot title
         !!   xlabel_text, ylabel_text: Optional axis labels
+        !!   blocking: Optional - if true, wait for user input after display (default: false)
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, title_text, xlabel_text, ylabel_text
+        logical, intent(in), optional :: blocking
 
         call fig%initialize()
 
@@ -183,20 +185,24 @@ contains
         if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
 
         call fig%add_plot(x, y, label=label)
-        call fig%show()
+        call fig%show(blocking=blocking)
     end subroutine show_data
 
-    subroutine show_figure()
+    subroutine show_figure(blocking)
         !! Display the global figure intelligently
         !! If GUI is available, opens in system viewer (like matplotlib.pyplot.show())
         !! Otherwise, falls back to ASCII terminal display
         !! Like pyplot's show() - displays current figure
+        !! 
+        !! Arguments:
+        !!   blocking: Optional - if true, wait for user input after display (default: false)
+        logical, intent(in), optional :: blocking
         
         if (is_gui_available()) then
-            call show_viewer_implementation()
+            call show_viewer_implementation(blocking=blocking)
         else
             ! Fallback to ASCII display
-            call fig%show()
+            call fig%show(blocking=blocking)
         end if
     end subroutine show_figure
 
@@ -239,10 +245,15 @@ contains
         call fig%legend(location=location)
     end subroutine legend
 
-    subroutine savefig(filename)
+    subroutine savefig(filename, blocking)
         !! Save global figure to file (backend determined by extension)
+        !! 
+        !! Arguments:
+        !!   filename: Output filename (extension determines format)
+        !!   blocking: Optional - if true, wait for user input after save (default: false)
         character(len=*), intent(in) :: filename
-        call fig%savefig(filename)
+        logical, intent(in), optional :: blocking
+        call fig%savefig(filename, blocking=blocking)
     end subroutine savefig
 
     subroutine add_plot(x, y, label, linestyle)
@@ -403,16 +414,25 @@ contains
 #endif
     end function is_gui_available
 
-    subroutine show_viewer_implementation()
+    subroutine show_viewer_implementation(blocking)
         !! Internal implementation for showing plot in system viewer
         !! Used by both show_viewer() and show_figure() when GUI is available
+        !! 
+        !! Arguments:
+        !!   blocking: Optional - if true, wait for user input after display (default: false)
         use iso_fortran_env, only: int64
         
+        logical, intent(in), optional :: blocking
+        logical :: do_block
         character(len=256) :: temp_filename
         character(len=512) :: command
         character(len=32) :: timestamp
         integer :: stat
         integer(int64) :: time_val
+        
+        ! Default to non-blocking
+        do_block = .false.
+        if (present(blocking)) do_block = blocking
         
         ! Generate unique temporary filename with timestamp
         call system_clock(time_val)
@@ -451,26 +471,35 @@ contains
             print *, 'Please open the file manually with your preferred PDF viewer.'
         else
             print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
-            print *, 'Press Enter to continue and clean up temporary file...'
-            read(*,*)
             
-            ! Clean up temporary file
+            if (do_block) then
+                print *, 'Press Enter to continue and clean up temporary file...'
+                read(*,*)
+                
+                ! Clean up temporary file
 #ifdef __linux__ 
-            command = 'rm -f "' // trim(temp_filename) // '"'
+                command = 'rm -f "' // trim(temp_filename) // '"'
 #elif defined(__APPLE__)
-            command = 'rm -f "' // trim(temp_filename) // '"'
+                command = 'rm -f "' // trim(temp_filename) // '"'
 #elif defined(_WIN32) || defined(_WIN64)
-            command = 'del "' // trim(temp_filename) // '"'
+                command = 'del "' // trim(temp_filename) // '"'
 #else
-            command = 'rm -f "' // trim(temp_filename) // '"'
+                command = 'rm -f "' // trim(temp_filename) // '"'
 #endif
-            call execute_command_line(command)
+                call execute_command_line(command)
+            else
+                ! In non-blocking mode, just inform that file stays
+                print *, 'Note: Temporary file will remain at: ', trim(temp_filename)
+            end if
         end if
     end subroutine show_viewer_implementation
 
-    subroutine show_viewer()
+    subroutine show_viewer(blocking)
         !! Display the current figure in the system's default viewer
         !! Similar to matplotlib.pyplot.show() - saves to temporary file and opens with system viewer
+        !!
+        !! Arguments:
+        !!   blocking: Optional - if true, wait for user input after display (default: false)
         !!
         !! Supports:
         !!   - Linux: uses xdg-open
@@ -480,8 +509,9 @@ contains
         !! Usage:
         !!   call plot(x, y)
         !!   call show_viewer()  ! Opens plot in default PDF viewer
+        logical, intent(in), optional :: blocking
         
-        call show_viewer_implementation()
+        call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
 
 end module fortplot
