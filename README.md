@@ -1,6 +1,6 @@
 # ![fortplotlib logo](media/logo.jpg)
 
-[![codecov](https://codecov.io/gh/ert/fortplotlib/branch/main/graph/badge.svg)](https://codecov.io/gh/ert/fortplotlib)
+[![codecov](https://codecov.io/gh/krystophny/fortplotlib/branch/main/graph/badge.svg)](https://codecov.io/gh/krystophny/fortplotlib)
 
 Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplotlib.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
 
