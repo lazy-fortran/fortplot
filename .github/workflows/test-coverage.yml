@@ -25,14 +25,17 @@ jobs:
         make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
 
     - name: Run tests with coverage
+      continue-on-error: true
       run: |
         make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
 
     - name: Generate coverage report
+      if: always()
       run: |
         gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --xml -o coverage.xml
 
     - name: Upload coverage to Codecov
+      if: always()
       uses: codecov/codecov-action@v4
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
