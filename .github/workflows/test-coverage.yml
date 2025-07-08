@@ -1,0 +1,41 @@
+name: Test Coverage
+
+on: [push, pull_request]
+
+jobs:
+  test-coverage:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Fortran Package Manager
+      uses: fortran-lang/setup-fpm@v5
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Install GFortran and gcov
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gfortran gcovr
+    
+    - name: Build with coverage flags
+      run: |
+        make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
+    
+    - name: Run tests with coverage
+      run: |
+        make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
+    
+    - name: Generate coverage report
+      run: |
+        gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --xml -o coverage.xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: true
