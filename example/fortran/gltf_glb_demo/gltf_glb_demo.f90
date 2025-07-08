@@ -28,13 +28,13 @@ program gltf_glb_demo
     print *, "Creating helix GLTF file..."
     call fig%initialize(800, 600)
     call fig%add_3d_plot(x, y, z, label="Helix")
-    call fig%savefig("helix_demo.gltf")
+    call fig%savefig('output/example/fortran/gltf_glb_demo/helix_demo.gltf')
     
     ! Save helix as GLB (binary format)
     print *, "Creating helix GLB file..."
     call fig%initialize(800, 600)
     call fig%add_3d_plot(x, y, z, label="Helix")
-    call fig%savefig("helix_demo.glb")
+    call fig%savefig('output/example/fortran/gltf_glb_demo/helix_demo.glb')
     
     ! Create surface data
     n = 20
@@ -55,13 +55,13 @@ program gltf_glb_demo
     print *, "Creating surface GLTF file..."
     call fig%initialize(800, 600)
     call fig%add_surface(x_grid, y_grid, z_grid)
-    call fig%savefig("surface_demo.gltf")
+    call fig%savefig('output/example/fortran/gltf_glb_demo/surface_demo.gltf')
     
     ! Save surface as GLB
     print *, "Creating surface GLB file..."
     call fig%initialize(800, 600)
     call fig%add_surface(x_grid, y_grid, z_grid)
-    call fig%savefig("surface_demo.glb")
+    call fig%savefig('output/example/fortran/gltf_glb_demo/surface_demo.glb')
     
     print *, "GLTF/GLB demo complete!"
     print *, "Generated files:"

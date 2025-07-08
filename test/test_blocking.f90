@@ -54,11 +54,11 @@ contains
         
         ! Test non-blocking (default)
         print *, "Testing savefig() without blocking parameter (default)"
-        call fig%savefig('test_blocking.png')
+        call fig%savefig('output/test/test_blocking/test_blocking.png')
         
         ! Test with explicit blocking=false for ASCII
         print *, "Testing savefig() with blocking=.false. for ASCII"
-        call fig%savefig('test_blocking.txt', blocking=.false.)
+        call fig%savefig('output/test/test_blocking/test_blocking.txt', blocking=.false.)
         
         print *, "test_savefig_with_blocking: PASSED"
     end subroutine test_savefig_with_blocking
