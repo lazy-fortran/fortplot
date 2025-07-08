@@ -13,6 +13,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
+    use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
@@ -427,10 +428,21 @@ contains
         if (allocated(self%backend)) deallocate(self%backend)
         call initialize_backend(self%backend, backend_type, self%width, self%height)
         
-        ! Reset rendered flag to force re-rendering for new backend
-        self%rendered = .false.
-        call render_figure(self)
-        call self%backend%save(filename)
+        ! Handle GLTF differently - needs 3D data not 2D rendering
+        select case (trim(backend_type))
+        case ('gltf', 'glb')
+            ! Pass 3D plot data directly to GLTF backend
+            select type (backend => self%backend)
+            type is (gltf_context)
+                call prepare_gltf_data(backend, self%plots(1:self%plot_count))
+            end select
+            call self%backend%save(filename)
+        case default
+            ! Reset rendered flag to force re-rendering for new backend
+            self%rendered = .false.
+            call render_figure(self)
+            call self%backend%save(filename)
+        end select
         
         write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
         
@@ -1843,5 +1855,34 @@ contains
         is_3d_plot = allocated(self%z) .or. allocated(self%z_grid)
         
     end function is_3d
+    
+    subroutine prepare_gltf_data(backend, plots)
+        !! Prepare GLTF data from plot data
+        !! Following SRP - handles data conversion
+        type(gltf_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        integer :: i
+        
+        ! Process each plot
+        do i = 1, size(plots)
+            if (plots(i)%is_3d()) then
+                select case (plots(i)%plot_type)
+                case (PLOT_TYPE_LINE)
+                    ! Add 3D line data
+                    if (allocated(plots(i)%z)) then
+                        call backend%add_3d_line_data(plots(i)%x, plots(i)%y, plots(i)%z)
+                    end if
+                case (PLOT_TYPE_CONTOUR)
+                    ! Add surface data (surface uses contour type)
+                    if (allocated(plots(i)%z_grid)) then
+                        call backend%add_3d_surface_data(plots(i)%x_grid, plots(i)%y_grid, &
+                                                       plots(i)%z_grid)
+                    end if
+                end select
+            end if
+        end do
+        
+    end subroutine prepare_gltf_data
 
 end module fortplot_figure_core
