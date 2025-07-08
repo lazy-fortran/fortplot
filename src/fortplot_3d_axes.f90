@@ -130,78 +130,120 @@ contains
     subroutine draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw 3D axes frame to raster backend - matplotlib style
         use fortplot_context, only: plot_context
+        use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
         real(wp) :: azim, elev, dist
         real(wp) :: corners_3d(3,8), corners_2d(2,8)
         real(wp) :: x1, y1, x2, y2
+        real(wp) :: x_data, y_data, x_screen, y_screen
         
+        ! Get viewing angles
         call get_default_view_angles(azim, elev, dist)
+        
+        ! Create 3D corners in data space
         call create_3d_axis_corners(x_min, x_max, y_min, y_max, z_min, z_max, corners_3d)
+        
+        ! Project to 2D (still in data space)
         call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
         
-        ! Scale projected coordinates to plot area
-        call scale_2d_to_plot_area(corners_2d, ctx, x_min, x_max, y_min, y_max)
+        ! Now we need to transform from projected data space to screen space
+        ! This should use the same transformation as regular plot data
+        select type (ctx)
+        type is (raster_context)
+            ! Transform each corner from data to screen coordinates
+            call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
+                                           z_min, z_max)
+        end select
         
-        ! Draw the three main axes like matplotlib
-        ! Matplotlib draws three axes from the origin (corner 1):
-        ! X-axis: corner 1 to corner 2 (front bottom edge)
-        ! Y-axis: corner 1 to corner 4 (left bottom edge)
-        ! Z-axis: corner 1 to corner 5 (front left vertical)
-        ! All three axes meet at corner 1 (origin: x_min, y_min, z_min)
+        ! Draw axes matplotlib style - not from origin but the "back" edges
+        ! Looking at matplotlib output:
+        ! - X-axis: bottom edge that's most visible (varies with view)
+        ! - Y-axis: bottom edge perpendicular to X
+        ! - Z-axis: vertical edge at the back
         
-        ! X-axis (corner 1 to corner 2)
-        x1 = corners_2d(1, 1)
-        y1 = corners_2d(2, 1)
-        x2 = corners_2d(1, 2)
-        y2 = corners_2d(2, 2)
+        ! For default view (azim=-60, elev=30), matplotlib draws:
+        ! X-axis: corner 4 to corner 3 (back bottom edge)
+        x1 = corners_2d(1, 4)
+        y1 = corners_2d(2, 4)
+        x2 = corners_2d(1, 3)
+        y2 = corners_2d(2, 3)
         call ctx%line(x1, y1, x2, y2)
         
-        ! Y-axis (corner 1 to corner 4)
+        ! Y-axis: corner 1 to corner 4 (left bottom edge)
         x1 = corners_2d(1, 1)
         y1 = corners_2d(2, 1)
         x2 = corners_2d(1, 4)
         y2 = corners_2d(2, 4)
         call ctx%line(x1, y1, x2, y2)
         
-        ! Z-axis (corner 1 to corner 5)
-        x1 = corners_2d(1, 1)
-        y1 = corners_2d(2, 1)
-        x2 = corners_2d(1, 5)
-        y2 = corners_2d(2, 5)
+        ! Z-axis: corner 4 to corner 8 (back left vertical)
+        x1 = corners_2d(1, 4)
+        y1 = corners_2d(2, 4)
+        x2 = corners_2d(1, 8)
+        y2 = corners_2d(2, 8)
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
         call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_to_raster
 
-    subroutine scale_2d_to_plot_area(points_2d, ctx, x_min, x_max, y_min, y_max)
-        !! Scale projected 2D coordinates to plot area
-        use fortplot_context, only: plot_context
-        real(wp), intent(inout) :: points_2d(:,:)
-        class(plot_context), intent(in) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+    subroutine transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Transform projected corners from data space to screen space
+        use fortplot_raster, only: raster_context
+        real(wp), intent(inout) :: corners_2d(:,:)
+        type(raster_context), intent(in) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
         real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: scale_x, scale_y
+        real(wp) :: x_range, y_range
+        real(wp) :: x_scale, y_scale
+        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp) :: plot_width, plot_height
         integer :: i
         
-        ! Find bounds of projected coordinates
-        proj_x_min = minval(points_2d(1,:))
-        proj_x_max = maxval(points_2d(1,:))
-        proj_y_min = minval(points_2d(2,:))
-        proj_y_max = maxval(points_2d(2,:))
+        ! Get matplotlib-style margins (these should match what's used for regular plots)
+        margin_left = 80.0_wp
+        margin_right = 40.0_wp  
+        margin_bottom = 60.0_wp
+        margin_top = 60.0_wp
         
-        ! Scale to plot area using context bounds
-        scale_x = (ctx%x_max - ctx%x_min) / (proj_x_max - proj_x_min)
-        scale_y = (ctx%y_max - ctx%y_min) / (proj_y_max - proj_y_min)
+        ! Calculate plot area dimensions
+        plot_width = real(ctx%width, wp) - margin_left - margin_right
+        plot_height = real(ctx%height, wp) - margin_bottom - margin_top
         
-        do i = 1, size(points_2d, 2)
-            points_2d(1,i) = ctx%x_min + (points_2d(1,i) - proj_x_min) * scale_x
-            points_2d(2,i) = ctx%y_min + (points_2d(2,i) - proj_y_min) * scale_y
+        ! Find bounds of projected data
+        proj_x_min = minval(corners_2d(1,:))
+        proj_x_max = maxval(corners_2d(1,:))
+        proj_y_min = minval(corners_2d(2,:))
+        proj_y_max = maxval(corners_2d(2,:))
+        
+        ! Calculate scaling factors
+        x_range = proj_x_max - proj_x_min
+        y_range = proj_y_max - proj_y_min
+        
+        if (x_range > 0.0_wp) then
+            x_scale = plot_width / x_range
+        else
+            x_scale = 1.0_wp
+        end if
+        
+        if (y_range > 0.0_wp) then
+            y_scale = plot_height / y_range
+        else  
+            y_scale = 1.0_wp
+        end if
+        
+        ! Transform each corner to screen coordinates
+        do i = 1, size(corners_2d, 2)
+            ! X: map to screen with margins
+            corners_2d(1,i) = margin_left + (corners_2d(1,i) - proj_x_min) * x_scale
+            
+            ! Y: map to screen with margins and flip (screen Y goes down)
+            corners_2d(2,i) = margin_top + (proj_y_max - corners_2d(2,i)) * y_scale
         end do
-    end subroutine scale_2d_to_plot_area
+    end subroutine transform_corners_to_screen
     
     subroutine draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw tick marks and labels on the visible 3D axes
@@ -219,13 +261,13 @@ contains
         tick_length = 4.0_wp  ! Tick length in pixels
         n_ticks = 5  ! Number of ticks per axis
         
-        ! X-axis ticks and labels (edge from corner 1 to corner 2)
+        ! X-axis ticks and labels (edge from corner 4 to corner 3)
         step = (x_max - x_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = x_min + real(i-1, wp) * step
             ! Interpolate position along edge
-            x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
-            y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            x_pos = corners_2d(1,4) + (corners_2d(1,3) - corners_2d(1,4)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,4) + (corners_2d(2,3) - corners_2d(2,4)) * real(i-1, wp) / real(n_ticks-1, wp)
             
             ! Draw tick mark pointing down
             call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_length)
@@ -250,12 +292,12 @@ contains
             call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
         end do
         
-        ! Z-axis ticks and labels (edge from corner 1 to corner 5)
+        ! Z-axis ticks and labels (edge from corner 4 to corner 8)
         step = (z_max - z_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = z_min + real(i-1, wp) * step
-            x_pos = corners_2d(1,1) + (corners_2d(1,5) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
-            y_pos = corners_2d(2,1) + (corners_2d(2,5) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            x_pos = corners_2d(1,4) + (corners_2d(1,8) - corners_2d(1,4)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,4) + (corners_2d(2,8) - corners_2d(2,4)) * real(i-1, wp) / real(n_ticks-1, wp)
             
             ! Draw tick mark pointing left
             call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
