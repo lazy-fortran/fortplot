@@ -19,7 +19,7 @@ API design follows pyplot-fortran conventions for compatibility.
 - [x] Implement GLTF 2.0 minimal valid file structure
 - [x] **TEST**: Validate output against GLTF validator
 
-## Phase 2: Basic 3D Plotting APIs with TDD
+## Phase 2: Basic 3D Plotting APIs with TDD ✅
 - [x] **TEST FIRST**: Write failing tests for 3D plot data storage
 - [x] Extend `plot_data_t` to support optional z coordinates (follow existing patterns)
   - 2D plots: z not allocated
@@ -29,8 +29,8 @@ API design follows pyplot-fortran conventions for compatibility.
   - Natural extension of add_plot - just add z coordinate
   - Figure automatically handles 3D when z is present
   - Delegate to specialized storage routine (SRP)
-- [ ] **TEST FIRST**: Write tests for `add_surface` grid validation
-- [ ] Implement `add_surface(x, y, z, label)` for surface plots
+- [x] **TEST FIRST**: Write tests for `add_surface` grid validation
+- [x] Implement `add_surface(x, y, z, label)` for surface plots
   - x, y: 1D arrays defining grid
   - z: 2D array of values on grid
   - Separate validation from storage (SRP)
