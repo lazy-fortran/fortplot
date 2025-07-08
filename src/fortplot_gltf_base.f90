@@ -43,6 +43,7 @@ module fortplot_gltf_base
         integer :: primitive_count = 0
         real(wp), dimension(3) :: min_bounds = 0.0_wp
         real(wp), dimension(3) :: max_bounds = 0.0_wp
+        real(wp), allocatable :: vertices(:,:)  ! n_vertices x 3
     end type gltf_mesh_t
     
     type :: gltf_accessor_t

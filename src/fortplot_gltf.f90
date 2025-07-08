@@ -2,7 +2,7 @@ module fortplot_gltf
     !! GLTF backend for 3D plot export
     !! Following SRP - handles only GLTF file generation
     
-    use iso_fortran_env, only: wp => real64
+    use iso_fortran_env, only: wp => real64, real32, int8
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_gltf_base
     use fortplot_gltf_writer
@@ -251,23 +251,84 @@ contains
         !! Following SRP - handles buffer creation
         class(gltf_context), intent(inout) :: this
         
-        integer :: i, offset, n_vertices
-        integer(1), allocatable :: vertex_buffer(:)
+        integer :: i, offset, n_vertices, buffer_size
+        integer(1), allocatable :: temp_buffer(:)
+        real(wp), allocatable :: vertex_data(:,:)
         
-        ! For now, create dummy data
         if (this%mesh_count > 0) then
-            ! Allocate accessors and buffer views
+            ! Calculate total buffer size needed
+            buffer_size = 0
+            do i = 1, this%mesh_count
+                if (allocated(this%meshes(i)%primitives)) then
+                    n_vertices = this%meshes(i)%primitives(1)%vertex_count
+                    buffer_size = buffer_size + n_vertices * 3 * 4  ! 3 floats * 4 bytes
+                end if
+            end do
+            
+            ! Allocate buffer and tracking arrays
+            allocate(this%buffer_data(buffer_size))
             allocate(this%accessors(this%mesh_count))
             allocate(this%buffer_views(this%mesh_count))
             this%accessor_count = this%mesh_count
             this%buffer_view_count = this%mesh_count
             
-            ! Create simple buffer with dummy data
-            allocate(this%buffer_data(36))  ! 3 vertices * 3 floats * 4 bytes
-            this%buffer_data = 0
+            ! Pack vertex data for each mesh
+            offset = 0
+            do i = 1, this%mesh_count
+                call pack_mesh_data(this%meshes(i), this%buffer_data, &
+                                  offset, this%accessors(i), this%buffer_views(i), i)
+            end do
         end if
         
     end subroutine create_gltf_buffers
+    
+    subroutine pack_mesh_data(mesh, buffer, offset, accessor, buffer_view, buffer_view_index)
+        !! Pack mesh vertex data into buffer
+        !! Following SRP - handles single mesh packing
+        type(gltf_mesh_t), intent(in) :: mesh
+        integer(1), intent(inout) :: buffer(:)
+        integer, intent(inout) :: offset
+        type(gltf_accessor_t), intent(out) :: accessor
+        type(gltf_buffer_view_t), intent(out) :: buffer_view
+        integer, intent(in) :: buffer_view_index
+        
+        integer :: n_vertices, i, j, byte_idx
+        real(real32) :: temp_float
+        
+        if (allocated(mesh%primitives) .and. allocated(mesh%vertices)) then
+            n_vertices = mesh%primitives(1)%vertex_count
+            
+            ! Setup buffer view
+            buffer_view%buffer = 0
+            buffer_view%byte_offset = offset
+            buffer_view%byte_length = n_vertices * 3 * 4
+            
+            ! Setup accessor
+            accessor%buffer_view = buffer_view_index - 1  ! 0-based index
+            accessor%byte_offset = 0
+            accessor%component_type = GLTF_COMPONENT_TYPE_FLOAT
+            accessor%count = n_vertices
+            accessor%type = "VEC3"
+            
+            ! Set bounds
+            allocate(accessor%min(3), accessor%max(3))
+            accessor%min = mesh%min_bounds
+            accessor%max = mesh%max_bounds
+            
+            ! Pack vertex data
+            byte_idx = offset + 1
+            do i = 1, n_vertices
+                do j = 1, 3
+                    temp_float = real(mesh%vertices(i, j), real32)
+                    call pack_float_to_bytes(temp_float, buffer(byte_idx:byte_idx+3))
+                    byte_idx = byte_idx + 4
+                end do
+            end do
+            
+            offset = offset + n_vertices * 3 * 4
+        end if
+        
+    end subroutine pack_mesh_data
     
     subroutine encode_base64(data, base64)
         !! Encode binary data as base64
@@ -275,9 +336,63 @@ contains
         integer(1), intent(in) :: data(:)
         character(len=:), allocatable, intent(out) :: base64
         
-        ! For now, return empty string
-        base64 = ""
+        character(len=64) :: base64_chars = &
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        integer :: i, j, n, val
+        integer :: in_len, out_len
+        
+        in_len = size(data)
+        out_len = ((in_len + 2) / 3) * 4
+        allocate(character(len=out_len) :: base64)
+        
+        j = 1
+        do i = 1, in_len, 3
+            ! Get 3 bytes (or less at end)
+            val = 0
+            n = min(3, in_len - i + 1)
+            
+            if (n >= 1) val = ior(val, ishft(iand(int(data(i)), 255), 16))
+            if (n >= 2) val = ior(val, ishft(iand(int(data(i+1)), 255), 8))
+            if (n >= 3) val = ior(val, iand(int(data(i+2)), 255))
+            
+            ! Convert to 4 base64 characters
+            base64(j:j) = base64_chars(iand(ishft(val, -18), 63) + 1:iand(ishft(val, -18), 63) + 1)
+            base64(j+1:j+1) = base64_chars(iand(ishft(val, -12), 63) + 1:iand(ishft(val, -12), 63) + 1)
+            
+            if (n >= 2) then
+                base64(j+2:j+2) = base64_chars(iand(ishft(val, -6), 63) + 1:iand(ishft(val, -6), 63) + 1)
+            else
+                base64(j+2:j+2) = '='
+            end if
+            
+            if (n >= 3) then
+                base64(j+3:j+3) = base64_chars(iand(val, 63) + 1:iand(val, 63) + 1)
+            else
+                base64(j+3:j+3) = '='
+            end if
+            
+            j = j + 4
+        end do
         
     end subroutine encode_base64
+    
+    subroutine pack_float_to_bytes(float_val, bytes)
+        !! Pack float32 to byte array (little-endian)
+        !! Following KISS - direct binary conversion
+        real(real32), intent(in) :: float_val
+        integer(1), intent(out) :: bytes(4)
+        
+        integer :: int_val
+        
+        ! Convert float to integer representation
+        int_val = transfer(float_val, int_val)
+        
+        ! Pack as little-endian
+        bytes(1) = int(iand(int_val, 255), int8)
+        bytes(2) = int(iand(ishft(int_val, -8), 255), int8)
+        bytes(3) = int(iand(ishft(int_val, -16), 255), int8)
+        bytes(4) = int(iand(ishft(int_val, -24), 255), int8)
+        
+    end subroutine pack_float_to_bytes
 
 end module fortplot_gltf
