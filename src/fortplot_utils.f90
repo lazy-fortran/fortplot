@@ -7,9 +7,10 @@ module fortplot_utils
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_png
-    use fortplot_pdf  
-    use fortplot_ascii
+    use fortplot_png, only: create_png_canvas
+    use fortplot_pdf, only: create_pdf_canvas
+    use fortplot_ascii, only: create_ascii_canvas
+    use fortplot_gltf, only: create_gltf_canvas
     implicit none
     
     private
@@ -41,6 +42,10 @@ contains
                 backend_type = 'pdf'
             case ('txt')
                 backend_type = 'ascii'
+            case ('gltf')
+                backend_type = 'gltf'
+            case ('glb')
+                backend_type = 'glb'
             case default
                 backend_type = 'png'  ! Default fallback
             end select
@@ -68,6 +73,8 @@ contains
             backend = create_pdf_canvas(width, height)
         case ('ascii')
             backend = create_ascii_canvas(width, height)
+        case ('gltf', 'glb')
+            backend = create_gltf_canvas(width, height)
         case default
             backend = create_png_canvas(width, height)
         end select
