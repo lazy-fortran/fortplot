@@ -19,17 +19,17 @@ program debug_matplotlib_axes
     call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
     
     print *, ""
-    print *, "With azim=-60°, elev=30°, matplotlib draws:"
+    print *, "Looking at actual matplotlib output:"
     print *, ""
-    print *, "X-axis: NOT from origin, but the back bottom edge"
-    print *, "        This is corner 3 to corner 2 (back of bottom face)"
+    print *, "X-axis: runs along back bottom edge"
+    print *, "        This is corner 4 (0,1,0) to corner 3 (1,1,0)"
     print *, ""
-    print *, "Y-axis: NOT from origin, but the left bottom edge" 
-    print *, "        This is corner 4 to corner 3 (left of bottom face)"
+    print *, "Y-axis: runs along left bottom edge" 
+    print *, "        This is corner 1 (0,0,0) to corner 4 (0,1,0)"
     print *, ""
-    print *, "Z-axis: NOT from origin, but the back left vertical edge"
-    print *, "        This is corner 3 to corner 7 (back left vertical)"
+    print *, "Z-axis: runs up the back-left vertical edge"
+    print *, "        This is corner 4 (0,1,0) to corner 8 (0,1,1)"
     print *, ""
-    print *, "So all three axes meet at corner 3, not corner 1!"
+    print *, "So all three axes meet at corner 4!"
     
 end program debug_matplotlib_axes
