@@ -128,7 +128,7 @@ contains
     end subroutine create_3d_tick_positions
 
     subroutine draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame to raster backend
+        !! Draw 3D axes frame to raster backend - matplotlib style
         use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
@@ -136,12 +136,6 @@ contains
         real(wp) :: azim, elev, dist
         real(wp) :: corners_3d(3,8), corners_2d(2,8)
         real(wp) :: x1, y1, x2, y2
-        integer :: i
-        integer, parameter :: edges(2,12) = reshape([ &
-            1,2, 2,3, 3,4, 4,1, &  ! Bottom face edges
-            5,6, 6,7, 7,8, 8,5, &  ! Top face edges  
-            1,5, 2,6, 3,7, 4,8  &  ! Vertical edges
-            ], [2,12])
         
         call get_default_view_angles(azim, elev, dist)
         call create_3d_axis_corners(x_min, x_max, y_min, y_max, z_min, z_max, corners_3d)
@@ -150,14 +144,36 @@ contains
         ! Scale projected coordinates to plot area
         call scale_2d_to_plot_area(corners_2d, ctx, x_min, x_max, y_min, y_max)
         
-        ! Draw all 12 edges of the 3D bounding box
-        do i = 1, 12
-            x1 = corners_2d(1, edges(1,i))
-            y1 = corners_2d(2, edges(1,i))
-            x2 = corners_2d(1, edges(2,i))
-            y2 = corners_2d(2, edges(2,i))
-            call ctx%line(x1, y1, x2, y2)
-        end do
+        ! Draw the three main axes like matplotlib
+        ! For default view (azim=-60, elev=30), matplotlib draws the "back" edges:
+        ! X-axis: edge from corner 3 to corner 2 (back of bottom face)
+        ! Y-axis: edge from corner 4 to corner 3 (left of bottom face)  
+        ! Z-axis: edge from corner 3 to corner 7 (back left vertical)
+        ! All three axes meet at corner 3 (x_max, y_max, z_min)
+        
+        ! X-axis (corner 3 to corner 2)
+        x1 = corners_2d(1, 3)
+        y1 = corners_2d(2, 3)
+        x2 = corners_2d(1, 2)
+        y2 = corners_2d(2, 2)
+        call ctx%line(x1, y1, x2, y2)
+        
+        ! Y-axis (corner 4 to corner 3)
+        x1 = corners_2d(1, 4)
+        y1 = corners_2d(2, 4)
+        x2 = corners_2d(1, 3)
+        y2 = corners_2d(2, 3)
+        call ctx%line(x1, y1, x2, y2)
+        
+        ! Z-axis (corner 3 to corner 7)
+        x1 = corners_2d(1, 3)
+        y1 = corners_2d(2, 3)
+        x2 = corners_2d(1, 7)
+        y2 = corners_2d(2, 7)
+        call ctx%line(x1, y1, x2, y2)
+        
+        ! Draw ticks and labels on the three axes
+        call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_to_raster
 
     subroutine scale_2d_to_plot_area(points_2d, ctx, x_min, x_max, y_min, y_max)
@@ -186,5 +202,79 @@ contains
             points_2d(2,i) = ctx%y_min + (points_2d(2,i) - proj_y_min) * scale_y
         end do
     end subroutine scale_2d_to_plot_area
+    
+    subroutine draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw tick marks and labels on the visible 3D axes
+        use fortplot_context, only: plot_context
+        use fortplot_text, only: render_text_to_image, calculate_text_width
+        class(plot_context), intent(inout) :: ctx
+        real(wp), intent(in) :: corners_2d(2,8)
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        real(wp) :: tick_length, x_pos, y_pos
+        character(len=32) :: label
+        integer :: i, n_ticks
+        real(wp) :: value, step
+        
+        tick_length = 5.0_wp  ! Tick length in pixels
+        n_ticks = 5  ! Number of ticks per axis
+        
+        ! X-axis ticks and labels (edge 1: corner 1 to corner 2)
+        step = (x_max - x_min) / real(n_ticks - 1, wp)
+        do i = 1, n_ticks
+            value = x_min + real(i-1, wp) * step
+            ! Interpolate position along edge
+            x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            
+            ! Draw tick mark pointing down
+            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_length)
+            
+            ! Draw label
+            write(label, '(F6.1)') value
+            call render_text_to_ctx(ctx, x_pos - 10.0_wp, y_pos + tick_length + 5.0_wp, trim(adjustl(label)))
+        end do
+        
+        ! Y-axis ticks and labels (edge 4: corner 4 to corner 1, but we go 1 to 4)
+        step = (y_max - y_min) / real(n_ticks - 1, wp)
+        do i = 1, n_ticks
+            value = y_min + real(i-1, wp) * step
+            x_pos = corners_2d(1,1) + (corners_2d(1,4) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,1) + (corners_2d(2,4) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            
+            ! Draw tick mark pointing left
+            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            
+            ! Draw label
+            write(label, '(F6.1)') value
+            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+        end do
+        
+        ! Z-axis ticks and labels (edge 9: corner 1 to corner 5)
+        step = (z_max - z_min) / real(n_ticks - 1, wp)
+        do i = 1, n_ticks
+            value = z_min + real(i-1, wp) * step
+            x_pos = corners_2d(1,1) + (corners_2d(1,5) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            y_pos = corners_2d(2,1) + (corners_2d(2,5) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
+            
+            ! Draw tick mark pointing left
+            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            
+            ! Draw label
+            write(label, '(F6.1)') value
+            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+        end do
+    end subroutine draw_3d_axis_ticks_and_labels
+    
+    subroutine render_text_to_ctx(ctx, x, y, text)
+        !! Helper to render text to context (placeholder)
+        use fortplot_context, only: plot_context
+        class(plot_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        
+        ! This is a placeholder - actual implementation would depend on backend
+        ! For now, we'll skip text rendering in 3D axes
+    end subroutine render_text_to_ctx
 
 end module fortplot_3d_axes
