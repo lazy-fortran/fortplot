@@ -115,6 +115,7 @@ module fortplot_figure_core
     contains
         procedure :: initialize
         procedure :: add_plot
+        procedure :: add_3d_plot
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -132,6 +133,7 @@ module fortplot_figure_core
         procedure :: legend => figure_legend
         procedure :: show
         procedure :: clear_streamlines
+        procedure :: has_3d_plots
         final :: destroy
     end type figure_t
 
@@ -187,6 +189,42 @@ contains
         end if
         call update_data_ranges(self)
     end subroutine add_plot
+    
+    subroutine add_3d_plot(self, x, y, z, label, linestyle, markersize, linewidth)
+        !! Add 3D line plot - pyplot-fortran compatible API
+        !! Natural extension of add_plot with z coordinate
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: markersize, linewidth
+        
+        character(len=20) :: parsed_marker, parsed_linestyle
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        ! Validate input sizes
+        if (size(x) /= size(y) .or. size(x) /= size(z)) then
+            write(*, '(A)') 'Error: x, y, z arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        ! Parse format string if needed
+        if (present(linestyle) .and. contains_format_chars(linestyle)) then
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            call add_3d_line_plot_data(self, x, y, z, label, parsed_linestyle, &
+                                      parsed_marker, markersize, linewidth)
+        else
+            call add_3d_line_plot_data(self, x, y, z, label, linestyle, &
+                                      '', markersize, linewidth)
+        end if
+        
+        call update_data_ranges(self)
+    end subroutine add_3d_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to figure
@@ -524,6 +562,58 @@ contains
             self%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
     end subroutine add_line_plot_data
+    
+    subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
+        !! Add 3D line plot data to internal storage
+        !! Following SRP - only handles data storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: markersize, linewidth
+        
+        integer :: plot_idx, color_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        
+        ! Allocate and store coordinates
+        if (allocated(self%plots(plot_idx)%x)) deallocate(self%plots(plot_idx)%x)
+        if (allocated(self%plots(plot_idx)%y)) deallocate(self%plots(plot_idx)%y)
+        if (allocated(self%plots(plot_idx)%z)) deallocate(self%plots(plot_idx)%z)
+        
+        allocate(self%plots(plot_idx)%x(size(x)))
+        allocate(self%plots(plot_idx)%y(size(y)))
+        allocate(self%plots(plot_idx)%z(size(z)))
+        
+        self%plots(plot_idx)%x = x
+        self%plots(plot_idx)%y = y
+        self%plots(plot_idx)%z = z
+        
+        ! Set optional properties
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(linestyle)) then
+            self%plots(plot_idx)%linestyle = linestyle
+        else
+            self%plots(plot_idx)%linestyle = 'solid'
+        end if
+        
+        if (present(marker)) then
+            self%plots(plot_idx)%marker = marker
+        else
+            self%plots(plot_idx)%marker = 'None'
+        end if
+        
+        ! Use default color from palette
+        color_idx = mod(plot_idx - 1, 6) + 1
+        self%plots(plot_idx)%color = self%colors(:, color_idx)
+        
+        ! Note: markersize and linewidth handled by backend
+    end subroutine add_3d_line_plot_data
 
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to internal storage
@@ -1659,6 +1749,23 @@ contains
         
         self%plots(plot_index)%y = y_new
     end subroutine set_ydata
+    
+    logical function has_3d_plots(self) result(has_3d)
+        !! Check if figure contains any 3D plots
+        !! Following KISS - simple loop check
+        class(figure_t), intent(in) :: self
+        integer :: i
+        
+        has_3d = .false.
+        
+        do i = 1, self%plot_count
+            if (self%plots(i)%is_3d()) then
+                has_3d = .true.
+                return
+            end if
+        end do
+        
+    end function has_3d_plots
     
     logical function is_3d(self) result(is_3d_plot)
         !! Check if plot data contains 3D coordinates
