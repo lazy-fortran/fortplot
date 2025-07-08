@@ -145,17 +145,17 @@ contains
         call scale_2d_to_plot_area(corners_2d, ctx, x_min, x_max, y_min, y_max)
         
         ! Draw the three main axes like matplotlib
-        ! Based on actual matplotlib output observation:
-        ! X-axis: runs along back bottom edge from corner 4 to corner 3
-        ! Y-axis: runs along left bottom edge from corner 1 to corner 4
-        ! Z-axis: runs up the back-left vertical from corner 4 to corner 8
-        ! All three axes meet at corner 4 (x_min, y_max, z_min)
+        ! Matplotlib draws three axes from the origin (corner 1):
+        ! X-axis: corner 1 to corner 2 (front bottom edge)
+        ! Y-axis: corner 1 to corner 4 (left bottom edge)
+        ! Z-axis: corner 1 to corner 5 (front left vertical)
+        ! All three axes meet at corner 1 (origin: x_min, y_min, z_min)
         
-        ! X-axis (corner 4 to corner 3)
-        x1 = corners_2d(1, 4)
-        y1 = corners_2d(2, 4)
-        x2 = corners_2d(1, 3)
-        y2 = corners_2d(2, 3)
+        ! X-axis (corner 1 to corner 2)
+        x1 = corners_2d(1, 1)
+        y1 = corners_2d(2, 1)
+        x2 = corners_2d(1, 2)
+        y2 = corners_2d(2, 2)
         call ctx%line(x1, y1, x2, y2)
         
         ! Y-axis (corner 1 to corner 4)
@@ -165,11 +165,11 @@ contains
         y2 = corners_2d(2, 4)
         call ctx%line(x1, y1, x2, y2)
         
-        ! Z-axis (corner 4 to corner 8)
-        x1 = corners_2d(1, 4)
-        y1 = corners_2d(2, 4)
-        x2 = corners_2d(1, 8)
-        y2 = corners_2d(2, 8)
+        ! Z-axis (corner 1 to corner 5)
+        x1 = corners_2d(1, 1)
+        y1 = corners_2d(2, 1)
+        x2 = corners_2d(1, 5)
+        y2 = corners_2d(2, 5)
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
@@ -211,15 +211,15 @@ contains
         real(wp), intent(in) :: corners_2d(2,8)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        real(wp) :: tick_length, x_pos, y_pos
+        real(wp) :: tick_length, x_pos, y_pos, dx, dy
         character(len=32) :: label
         integer :: i, n_ticks
         real(wp) :: value, step
         
-        tick_length = 2.0_wp  ! Tick length in pixels
+        tick_length = 4.0_wp  ! Tick length in pixels
         n_ticks = 5  ! Number of ticks per axis
         
-        ! X-axis ticks and labels (edge 1: corner 1 to corner 2)
+        ! X-axis ticks and labels (edge from corner 1 to corner 2)
         step = (x_max - x_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = x_min + real(i-1, wp) * step
@@ -235,7 +235,7 @@ contains
             call render_text_to_ctx(ctx, x_pos - 10.0_wp, y_pos + tick_length + 5.0_wp, trim(adjustl(label)))
         end do
         
-        ! Y-axis ticks and labels (edge 4: corner 4 to corner 1, but we go 1 to 4)
+        ! Y-axis ticks and labels (edge from corner 1 to corner 4)
         step = (y_max - y_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = y_min + real(i-1, wp) * step
@@ -250,7 +250,7 @@ contains
             call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
         end do
         
-        ! Z-axis ticks and labels (edge 9: corner 1 to corner 5)
+        ! Z-axis ticks and labels (edge from corner 1 to corner 5)
         step = (z_max - z_min) / real(n_ticks - 1, wp)
         do i = 1, n_ticks
             value = z_min + real(i-1, wp) * step
