@@ -120,6 +120,9 @@ module fortplot_figure_core
         procedure :: add_plot
         procedure :: add_3d_plot
         procedure :: add_surface
+        procedure :: add_scatter_2d
+        procedure :: add_scatter_3d
+        generic :: add_scatter => add_scatter_2d, add_scatter_3d
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -229,6 +232,53 @@ contains
         
         call update_data_ranges(self)
     end subroutine add_3d_plot
+    
+    subroutine add_scatter_2d(self, x, y, label, marker, markersize, color)
+        !! Add 2D scatter plot - points only, no lines
+        !! Following KISS principle - delegates to add_plot with no line
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        
+        character(len=10) :: linestyle
+        
+        ! Build linestyle string with marker only (no line)
+        if (present(marker)) then
+            linestyle = trim(marker)
+        else
+            linestyle = 'o'  ! Default to circles
+        end if
+        
+        ! Delegate to add_plot with marker-only style
+        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+    end subroutine add_scatter_2d
+    
+    subroutine add_scatter_3d(self, x, y, z, label, marker, markersize, color)
+        !! Add 3D scatter plot - points only, no lines
+        !! Following KISS principle - delegates to add_3d_plot with no line
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        
+        character(len=10) :: linestyle
+        
+        ! Build linestyle string with marker only (no line)
+        if (present(marker)) then
+            linestyle = trim(marker)
+        else
+            linestyle = 'o'  ! Default to circles
+        end if
+        
+        ! Delegate to add_3d_plot with marker-only style
+        call self%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
+                              markersize=markersize)
+    end subroutine add_scatter_3d
     
     subroutine add_surface(self, x, y, z, label)
         !! Add surface plot - 3D grid data
