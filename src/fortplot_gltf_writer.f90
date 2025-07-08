@@ -86,8 +86,8 @@ contains
         !! Following KISS - simple JSON generation
         type(gltf_accessor_t), intent(in) :: accessors(:)
         character(len=:), allocatable :: json
-        character(len=32) :: num_str
-        integer :: i
+        character(len=32) :: num_str, float_str
+        integer :: i, j
         
         json = "["
         
@@ -95,9 +95,39 @@ contains
             if (i > 1) json = json // ","
             
             json = json // '{"bufferView":' 
-            write(num_str, '(I0)') i-1
+            write(num_str, '(I0)') accessors(i)%buffer_view
             json = json // trim(num_str)
-            json = json // ',"componentType":5126,"count":3,"type":"VEC3"}'
+            
+            json = json // ',"componentType":'
+            write(num_str, '(I0)') accessors(i)%component_type
+            json = json // trim(num_str)
+            
+            json = json // ',"count":'
+            write(num_str, '(I0)') accessors(i)%count
+            json = json // trim(num_str)
+            
+            json = json // ',"type":"' // trim(accessors(i)%type) // '"'
+            
+            ! Add bounds if present
+            if (allocated(accessors(i)%min)) then
+                json = json // ',"min":['
+                do j = 1, size(accessors(i)%min)
+                    if (j > 1) json = json // ","
+                    write(float_str, '(F0.6)') accessors(i)%min(j)
+                    json = json // trim(adjustl(float_str))
+                end do
+                json = json // ']'
+                
+                json = json // ',"max":['
+                do j = 1, size(accessors(i)%max)
+                    if (j > 1) json = json // ","
+                    write(float_str, '(F0.6)') accessors(i)%max(j)
+                    json = json // trim(adjustl(float_str))
+                end do
+                json = json // ']'
+            end if
+            
+            json = json // '}'
         end do
         
         json = json // "]"
@@ -117,8 +147,16 @@ contains
         do i = 1, size(buffer_views)
             if (i > 1) json = json // ","
             
-            json = json // '{"buffer":0,"byteLength":36,"byteOffset":'
-            write(num_str, '(I0)') (i-1)*36
+            json = json // '{"buffer":'
+            write(num_str, '(I0)') buffer_views(i)%buffer
+            json = json // trim(num_str)
+            
+            json = json // ',"byteLength":'
+            write(num_str, '(I0)') buffer_views(i)%byte_length
+            json = json // trim(num_str)
+            
+            json = json // ',"byteOffset":'
+            write(num_str, '(I0)') buffer_views(i)%byte_offset
             json = json // trim(num_str) // '}'
         end do
         

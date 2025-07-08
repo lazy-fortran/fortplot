@@ -33,6 +33,12 @@ contains
         mesh%primitives(1)%vertex_count = n_points
         mesh%primitives(1)%position_accessor = 0  ! Will be set later
         
+        ! Store vertex data
+        allocate(mesh%vertices(n_points, 3))
+        mesh%vertices(:, 1) = x
+        mesh%vertices(:, 2) = y
+        mesh%vertices(:, 3) = z
+        
         ! Calculate bounds
         call calculate_bounds(x, y, z, mesh%min_bounds, mesh%max_bounds)
         
@@ -61,6 +67,9 @@ contains
         mesh%primitives(1)%index_count = n_triangles * 3
         mesh%primitives(1)%position_accessor = 0  ! Will be set later
         mesh%primitives(1)%indices_accessor = 1   ! Will be set later
+        
+        ! Store vertex data
+        call create_surface_vertices(x_grid, y_grid, z_grid, mesh%vertices)
         
         ! Calculate bounds from grid
         call calculate_grid_bounds(x_grid, y_grid, z_grid, &
@@ -97,5 +106,31 @@ contains
         max_bounds(3) = maxval(z_grid)
         
     end subroutine calculate_grid_bounds
+    
+    subroutine create_surface_vertices(x_grid, y_grid, z_grid, vertices)
+        !! Create vertex array from surface grid
+        !! Following KISS - straightforward grid to vertex conversion
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), allocatable, intent(out) :: vertices(:,:)
+        
+        integer :: nx, ny, i, j, idx
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        allocate(vertices(nx * ny, 3))
+        
+        ! Convert grid to vertex list
+        idx = 1
+        do j = 1, ny
+            do i = 1, nx
+                vertices(idx, 1) = x_grid(i)
+                vertices(idx, 2) = y_grid(j)
+                vertices(idx, 3) = z_grid(i, j)
+                idx = idx + 1
+            end do
+        end do
+        
+    end subroutine create_surface_vertices
 
 end module fortplot_gltf_geometry
