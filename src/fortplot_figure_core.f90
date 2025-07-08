@@ -424,6 +424,9 @@ contains
         do_block = .false.
         if (present(blocking)) do_block = blocking
         
+        ! Create output directory if needed
+        call ensure_directory_exists(filename)
+        
         backend_type = get_backend_from_filename(filename)
         
         ! Always reinitialize backend for correct format
@@ -2042,5 +2045,30 @@ contains
         end do
         
     end subroutine prepare_gltf_data
+    
+    subroutine ensure_directory_exists(filename)
+        !! Create directory path for output file if it doesn't exist
+        character(len=*), intent(in) :: filename
+        character(len=:), allocatable :: dir_path
+        character(len=256) :: command
+        integer :: last_slash, status
+        
+        ! Find the last directory separator
+        last_slash = 0
+        do last_slash = len_trim(filename), 1, -1
+            if (filename(last_slash:last_slash) == '/') exit
+        end do
+        
+        ! If there's a directory path, create it
+        if (last_slash > 1) then
+            dir_path = filename(1:last_slash-1)
+            ! Use mkdir -p to create parent directories as needed
+            write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
+            call execute_command_line(command, exitstat=status)
+            if (status /= 0) then
+                print *, "Warning: Could not create directory: ", trim(dir_path)
+            end if
+        end if
+    end subroutine ensure_directory_exists
 
 end module fortplot_figure_core

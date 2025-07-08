@@ -134,24 +134,28 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
         real(wp) :: azim, elev, dist
-        real(wp) :: axis_lines_3d(3,6), axis_lines_2d(2,6)
         real(wp) :: corners_3d(3,8), corners_2d(2,8)
         real(wp) :: x1, y1, x2, y2
         integer :: i
+        integer, parameter :: edges(2,12) = reshape([ &
+            1,2, 2,3, 3,4, 4,1, &  ! Bottom face edges
+            5,6, 6,7, 7,8, 8,5, &  ! Top face edges  
+            1,5, 2,6, 3,7, 4,8  &  ! Vertical edges
+            ], [2,12])
         
         call get_default_view_angles(azim, elev, dist)
-        call create_3d_axis_lines(x_min, x_max, y_min, y_max, z_min, z_max, axis_lines_3d)
-        call project_3d_axis_lines(axis_lines_3d, azim, elev, dist, axis_lines_2d)
+        call create_3d_axis_corners(x_min, x_max, y_min, y_max, z_min, z_max, corners_3d)
+        call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
         
         ! Scale projected coordinates to plot area
-        call scale_2d_to_plot_area(axis_lines_2d, ctx, x_min, x_max, y_min, y_max)
+        call scale_2d_to_plot_area(corners_2d, ctx, x_min, x_max, y_min, y_max)
         
-        ! Draw three axis lines
-        do i = 1, 3
-            x1 = axis_lines_2d(1, 2*i-1)
-            y1 = axis_lines_2d(2, 2*i-1)
-            x2 = axis_lines_2d(1, 2*i)
-            y2 = axis_lines_2d(2, 2*i)
+        ! Draw all 12 edges of the 3D bounding box
+        do i = 1, 12
+            x1 = corners_2d(1, edges(1,i))
+            y1 = corners_2d(2, edges(1,i))
+            x2 = corners_2d(1, edges(2,i))
+            y2 = corners_2d(2, edges(2,i))
             call ctx%line(x1, y1, x2, y2)
         end do
     end subroutine draw_3d_axes_to_raster

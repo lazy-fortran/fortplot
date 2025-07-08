@@ -35,9 +35,9 @@ contains
         call fig%set_ylabel("y")
         call fig%set_title("2D Gaussian - Default Colorblind-Safe Colormap")
         call fig%add_contour_filled(x_grid, y_grid, z_grid)  ! Uses default 'crest' colormap
-        call fig%savefig('example/fortran/colored_contours/gaussian_default.png')
-        call fig%savefig('example/fortran/colored_contours/gaussian_default.pdf')
-        call fig%savefig('example/fortran/colored_contours/gaussian_default.txt')
+        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.png')
+        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.pdf')
+        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.txt')
         
         print *, "Created: gaussian_default.png/pdf/txt"
     end subroutine default_gaussian_example
@@ -72,9 +72,9 @@ contains
         call fig%set_ylabel("y")
         call fig%set_title("Saddle Function - Plasma Colormap")
         call fig%add_contour_filled(x_grid, y_grid, z_grid, levels=custom_levels, colormap="plasma")
-        call fig%savefig('example/fortran/colored_contours/saddle_plasma.png')
-        call fig%savefig('example/fortran/colored_contours/saddle_plasma.pdf')
-        call fig%savefig('example/fortran/colored_contours/saddle_plasma.txt')
+        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.png')
+        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.pdf')
+        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.txt')
         
         print *, "Created: saddle_plasma.png/pdf/txt"
     end subroutine plasma_saddle_example

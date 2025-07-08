@@ -32,12 +32,10 @@ contains
         real(wp), intent(out) :: proj_matrix(4,4)
         
         real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
-        real(wp) :: view_matrix(4,4), proj_transform(4,4)
+        real(wp) :: rotation(3,3)
         
-        ! Initialize matrices
+        ! Initialize matrix
         proj_matrix = 0.0_wp
-        view_matrix = 0.0_wp
-        proj_transform = 0.0_wp
         
         ! Calculate trig functions
         cos_azim = cos(azim)
@@ -45,87 +43,57 @@ contains
         cos_elev = cos(elev)
         sin_elev = sin(elev)
         
-        ! Create view transformation matrix
-        ! Based on matplotlib's camera positioning
-        view_matrix(1,1) = cos_azim
-        view_matrix(1,2) = sin_azim
-        view_matrix(1,3) = 0.0_wp
-        view_matrix(1,4) = 0.0_wp
+        ! Create rotation matrix (simplified approach)
+        ! First rotate around z-axis (azimuth), then around x-axis (elevation)
+        rotation(1,1) = cos_azim
+        rotation(1,2) = sin_azim * sin_elev
+        rotation(1,3) = sin_azim * cos_elev
         
-        view_matrix(2,1) = -sin_azim * cos_elev
-        view_matrix(2,2) = cos_azim * cos_elev
-        view_matrix(2,3) = sin_elev
-        view_matrix(2,4) = 0.0_wp
+        rotation(2,1) = -sin_azim
+        rotation(2,2) = cos_azim * sin_elev
+        rotation(2,3) = cos_azim * cos_elev
         
-        view_matrix(3,1) = sin_azim * sin_elev
-        view_matrix(3,2) = -cos_azim * sin_elev
-        view_matrix(3,3) = cos_elev
-        view_matrix(3,4) = -dist
+        rotation(3,1) = 0.0_wp
+        rotation(3,2) = -cos_elev
+        rotation(3,3) = sin_elev
         
-        view_matrix(4,1) = 0.0_wp
-        view_matrix(4,2) = 0.0_wp
-        view_matrix(4,3) = 0.0_wp
-        view_matrix(4,4) = 1.0_wp
+        ! Build 4x4 projection matrix
+        proj_matrix(1:3,1:3) = rotation
+        proj_matrix(4,4) = 1.0_wp
         
-        ! Create perspective projection matrix
-        proj_transform(1,1) = 1.0_wp
-        proj_transform(1,2) = 0.0_wp
-        proj_transform(1,3) = 0.0_wp
-        proj_transform(1,4) = 0.0_wp
-        
-        proj_transform(2,1) = 0.0_wp
-        proj_transform(2,2) = 1.0_wp
-        proj_transform(2,3) = 0.0_wp
-        proj_transform(2,4) = 0.0_wp
-        
-        proj_transform(3,1) = 0.0_wp
-        proj_transform(3,2) = 0.0_wp
-        proj_transform(3,3) = 1.0_wp
-        proj_transform(3,4) = 0.0_wp
-        
-        proj_transform(4,1) = 0.0_wp
-        proj_transform(4,2) = 0.0_wp
-        proj_transform(4,3) = 1.0_wp  ! Perspective divide by z+dist
-        proj_transform(4,4) = 1.0_wp
-        
-        ! Combine transformations: proj_matrix = proj_transform * view_matrix
-        call matrix_multiply(proj_transform, view_matrix, proj_matrix)
+        ! No perspective for now - orthographic projection
+        ! This simplifies the math and avoids the scaling issues
     end subroutine create_projection_matrix
 
     subroutine project_3d_to_2d(x3d, y3d, z3d, azim, elev, dist, x2d, y2d)
-        !! Project 3D coordinates to 2D using perspective projection
+        !! Project 3D coordinates to 2D using orthographic projection
         real(wp), intent(in) :: x3d(:), y3d(:), z3d(:)
         real(wp), intent(in) :: azim, elev, dist
         real(wp), intent(out) :: x2d(size(x3d)), y2d(size(x3d))
         
-        real(wp) :: proj_matrix(4,4)
-        real(wp) :: homogeneous(4), result(4)
+        real(wp) :: cos_azim, sin_azim, cos_elev, sin_elev
+        real(wp) :: x_rot, y_rot, z_rot
         integer :: i, n
         
         n = size(x3d)
         
-        ! Create projection matrix
-        call create_projection_matrix(azim, elev, dist, proj_matrix)
+        ! Calculate trig functions
+        cos_azim = cos(azim)
+        sin_azim = sin(azim)
+        cos_elev = cos(elev)
+        sin_elev = sin(elev)
         
-        ! Transform each point
+        ! Transform each point using simplified rotation
         do i = 1, n
-            ! Convert to homogeneous coordinates
-            homogeneous(1) = x3d(i)
-            homogeneous(2) = y3d(i)
-            homogeneous(3) = z3d(i)
-            homogeneous(4) = 1.0_wp
+            ! Rotate around z-axis (azimuth)
+            x_rot = x3d(i) * cos_azim - y3d(i) * sin_azim
+            y_rot = x3d(i) * sin_azim + y3d(i) * cos_azim
+            z_rot = z3d(i)
             
-            ! Apply projection matrix
-            call matrix_vector_multiply(proj_matrix, homogeneous, result)
-            
-            ! Perspective divide
-            if (abs(result(4)) > 1e-10_wp) then
-                x2d(i) = result(1) / result(4)
-                y2d(i) = result(2) / result(4)
-            else
-                x2d(i) = result(1)
-                y2d(i) = result(2)
-            end if
+            ! Rotate around x-axis (elevation)
+            ! Project to 2D (drop the rotated z component)
+            x2d(i) = x_rot
+            y2d(i) = y_rot * sin_elev + z_rot * cos_elev
         end do
     end subroutine project_3d_to_2d
 

@@ -26,7 +26,7 @@ program basic_3d_demo
     call fig%set_title("3D Line Plot Example")
     
     ! Note: For now, save as PNG (GLTF export coming in Phase 3)
-    call fig%savefig('3d_helix.png')
+    call fig%savefig('output/example/fortran/basic_3d_demo/3d_helix.png')
     
     ! Example 2: 3D surface plot - paraboloid
     print *, "Creating 3D surface plot..."
@@ -51,7 +51,7 @@ program basic_3d_demo
     call fig%set_title("3D Surface Plot Example")
     
     ! Note: For now, save as PNG (GLTF export coming in Phase 3)
-    call fig%savefig('3d_surface.png')
+    call fig%savefig('output/example/fortran/basic_3d_demo/3d_surface.png')
     
     ! Example 3: Mixed 2D and 3D plots
     print *, "Creating mixed 2D/3D plot..."
@@ -81,7 +81,7 @@ program basic_3d_demo
     end if
     
     call fig%set_title("Mixed 2D and 3D Plots")
-    call fig%savefig('mixed_plots.png')
+    call fig%savefig('output/example/fortran/basic_3d_demo/mixed_plots.png')
     
     print *, "3D demo complete!"
     print *, "Note: GLTF export will be added in Phase 3"

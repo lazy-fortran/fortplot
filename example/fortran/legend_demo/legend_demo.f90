@@ -36,9 +36,9 @@ contains
         ! Add legend with default position (upper right)
         call fig%legend()
         
-        call fig%savefig('example/fortran/legend_demo/basic_legend.png')
-        call fig%savefig('example/fortran/legend_demo/basic_legend.pdf')
-        call fig%savefig('example/fortran/legend_demo/basic_legend.txt')
+        call fig%savefig('output/example/fortran/legend_demo/basic_legend.png')
+        call fig%savefig('output/example/fortran/legend_demo/basic_legend.pdf')
+        call fig%savefig('output/example/fortran/legend_demo/basic_legend.txt')
         
         print *, "Created: basic_legend.png/pdf/txt"
     end subroutine basic_legend_example
@@ -128,9 +128,9 @@ contains
         ! Add legend
         call fig%legend()
         
-        call fig%savefig('example/fortran/legend_demo/multi_function_legend.png')
-        call fig%savefig('example/fortran/legend_demo/multi_function_legend.pdf')
-        call fig%savefig('example/fortran/legend_demo/multi_function_legend.txt')
+        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.png')
+        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.pdf')
+        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.txt')
         
         print *, "Created: multi_function_legend.png/pdf/txt"
     end subroutine multi_function_legend_example
