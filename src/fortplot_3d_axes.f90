@@ -12,7 +12,7 @@ module fortplot_3d_axes
     public :: create_3d_axis_corners, project_3d_corners_to_2d
     public :: create_3d_axis_lines, project_3d_axis_lines
     public :: create_3d_tick_positions
-    public :: draw_3d_axes_to_raster
+    public :: draw_3d_axes_to_raster, transform_corners_to_screen
     
 contains
 
@@ -130,7 +130,7 @@ contains
     subroutine draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw 3D axes frame to raster backend - matplotlib style
         use fortplot_context, only: plot_context
-        use fortplot_raster, only: raster_context
+        use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
@@ -142,8 +142,9 @@ contains
         ! Get viewing angles
         call get_default_view_angles(azim, elev, dist)
         
-        ! Create 3D corners in data space
-        call create_3d_axis_corners(x_min, x_max, y_min, y_max, z_min, z_max, corners_3d)
+        ! Create 3D corners in normalized space [0,1]
+        ! This matches the normalization used for data rendering
+        call create_3d_axis_corners(0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, corners_3d)
         
         ! Project to 2D (still in data space)
         call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
@@ -151,7 +152,7 @@ contains
         ! Now we need to transform from projected data space to screen space
         ! This should use the same transformation as regular plot data
         select type (ctx)
-        type is (raster_context)
+        class is (plot_context)
             ! Transform each corner from data to screen coordinates
             call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
                                            z_min, z_max)
@@ -183,14 +184,15 @@ contains
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
-        call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
+        ! TODO: Implement proper tick drawing
+        ! call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_to_raster
 
     subroutine transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Transform projected corners from data space to screen space
-        use fortplot_raster, only: raster_context
+        use fortplot_context, only: plot_context
         real(wp), intent(inout) :: corners_2d(:,:)
-        type(raster_context), intent(in) :: ctx
+        class(plot_context), intent(in) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
         real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
@@ -216,29 +218,29 @@ contains
         proj_y_min = minval(corners_2d(2,:))
         proj_y_max = maxval(corners_2d(2,:))
         
-        ! Calculate scaling factors
+        ! Calculate scaling factors with padding
         x_range = proj_x_max - proj_x_min
         y_range = proj_y_max - proj_y_min
         
         if (x_range > 0.0_wp) then
-            x_scale = plot_width / x_range
+            x_scale = plot_width * 0.8_wp / x_range
         else
             x_scale = 1.0_wp
         end if
         
         if (y_range > 0.0_wp) then
-            y_scale = plot_height / y_range
+            y_scale = plot_height * 0.8_wp / y_range
         else  
             y_scale = 1.0_wp
         end if
         
-        ! Transform each corner to screen coordinates
+        ! Transform each corner to screen coordinates - center in plot area
         do i = 1, size(corners_2d, 2)
-            ! X: map to screen with margins
-            corners_2d(1,i) = margin_left + (corners_2d(1,i) - proj_x_min) * x_scale
+            ! X: map to screen centered in plot area
+            corners_2d(1,i) = margin_left + plot_width * 0.5_wp + (corners_2d(1,i) - (proj_x_min + proj_x_max) * 0.5_wp) * x_scale
             
-            ! Y: map to screen with margins and flip (screen Y goes down)
-            corners_2d(2,i) = margin_top + (proj_y_max - corners_2d(2,i)) * y_scale
+            ! Y: map to screen centered in plot area (flip Y axis)
+            corners_2d(2,i) = margin_top + plot_height * 0.5_wp - (corners_2d(2,i) - (proj_y_min + proj_y_max) * 0.5_wp) * y_scale
         end do
     end subroutine transform_corners_to_screen
     

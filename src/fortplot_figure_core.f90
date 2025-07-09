@@ -707,6 +707,27 @@ contains
         color_idx = mod(plot_idx - 1, 6) + 1
         self%plots(plot_idx)%color = self%colors(:, color_idx)
         
+        ! Update data ranges for 3D plots
+        if (.not. self%xlim_set) then
+            if (plot_idx == 1) then
+                self%x_min = minval(x)
+                self%x_max = maxval(x)
+            else
+                self%x_min = min(self%x_min, minval(x))
+                self%x_max = max(self%x_max, maxval(x))
+            end if
+        end if
+        
+        if (.not. self%ylim_set) then
+            if (plot_idx == 1) then
+                self%y_min = minval(y)
+                self%y_max = maxval(y)
+            else
+                self%y_min = min(self%y_min, minval(y))
+                self%y_max = max(self%y_max, maxval(y))
+            end if
+        end if
+        
         ! Note: markersize and linewidth handled by backend
     end subroutine add_3d_line_plot_data
     
@@ -1326,47 +1347,139 @@ contains
 
     subroutine draw_3d_line_with_style(self, plot_idx, linestyle)
         !! Draw 3D line plot with projection to 2D
+        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
         
         real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
         real(wp) :: azim, elev, dist
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp) :: plot_width, plot_height
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: x_scale, y_scale
+        real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         integer :: i, n
         
         n = size(self%plots(plot_idx)%x)
         allocate(x2d(n), y2d(n))
+        allocate(x_norm(n), y_norm(n), z_norm(n))
+        
+        ! Normalize 3D data to unit cube [0,1]
+        ! This ensures data fits within the 3D box
+        ! Handle case where data range is zero (single point or all points same)
+        do i = 1, n
+            if (self%x_max - self%x_min > 0.0_wp) then
+                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
+            else
+                x_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%y_max - self%y_min > 0.0_wp) then
+                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
+            else
+                y_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%z_max - self%z_min > 0.0_wp) then
+                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
+            else
+                z_norm(i) = 0.5_wp  ! Center if no range
+            end if
+        end do
         
         ! Get default viewing angles
         call get_default_view_angles(azim, elev, dist)
         
-        ! Project 3D data to 2D
-        call project_3d_to_2d(self%plots(plot_idx)%x, &
-                              self%plots(plot_idx)%y, &
-                              self%plots(plot_idx)%z, &
-                              azim, elev, dist, x2d, y2d)
+        ! Project normalized 3D data to 2D
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
         
-        ! Draw lines using projected 2D coordinates
-        do i = 1, n-1
-            x1_screen = apply_scale_transform(x2d(i), self%xscale, self%symlog_threshold)
-            y1_screen = apply_scale_transform(y2d(i), self%yscale, self%symlog_threshold)
-            x2_screen = apply_scale_transform(x2d(i+1), self%xscale, self%symlog_threshold)
-            y2_screen = apply_scale_transform(y2d(i+1), self%yscale, self%symlog_threshold)
+        ! Get matplotlib-style margins
+        margin_left = 80.0_wp
+        margin_right = 40.0_wp
+        margin_bottom = 60.0_wp
+        margin_top = 60.0_wp
+        
+        ! Calculate plot area dimensions
+        select type (ctx => self%backend)
+        type is (raster_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        type is (png_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        class default
+            ! Default fallback
+            plot_width = 640.0_wp
+            plot_height = 480.0_wp
+        end select
+        
+        ! Find bounds of projected data (should be roughly in [-1,1] range)
+        proj_x_min = minval(x2d)
+        proj_x_max = maxval(x2d)
+        proj_y_min = minval(y2d)
+        proj_y_max = maxval(y2d)
+        
+        ! Calculate scaling to fit in plot area with some padding
+        if (proj_x_max > proj_x_min) then
+            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
+        else
+            x_scale = 1.0_wp
+        end if
+        
+        if (proj_y_max > proj_y_min) then
+            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
+        else
+            y_scale = 1.0_wp
+        end if
+        
+        ! Save original coordinate system and set to projected data for 3D plots
+        select type (ctx => self%backend)
+        class is (raster_context)
+            orig_x_min = ctx%x_min
+            orig_x_max = ctx%x_max
+            orig_y_min = ctx%y_min
+            orig_y_max = ctx%y_max
             
-            ! Draw line with specified style
-            call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
+            ctx%x_min = proj_x_min
+            ctx%x_max = proj_x_max
+            ctx%y_min = proj_y_min
+            ctx%y_max = proj_y_max
+        end select
+        
+        ! Draw lines using projected coordinates
+        do i = 1, n-1
+            ! Use projected coordinates directly - backend will transform to screen
+            call self%backend%line(x2d(i), y2d(i), x2d(i+1), y2d(i+1))
         end do
+        
+        ! Restore original coordinate system
+        select type (ctx => self%backend)
+        class is (raster_context)
+            ctx%x_min = orig_x_min
+            ctx%x_max = orig_x_max
+            ctx%y_min = orig_y_min
+            ctx%y_max = orig_y_max
+        end select
     end subroutine draw_3d_line_with_style
 
     subroutine render_3d_markers(self, plot_idx)
         !! Render markers for 3D plot points
+        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         
         real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
         real(wp) :: azim, elev, dist
         real(wp) :: x_screen, y_screen
+        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp) :: plot_width, plot_height
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: x_scale, y_scale
+        real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         integer :: i, n
         character(len=:), allocatable :: marker
         
@@ -1376,22 +1489,100 @@ contains
         
         n = size(self%plots(plot_idx)%x)
         allocate(x2d(n), y2d(n))
+        allocate(x_norm(n), y_norm(n), z_norm(n))
+        
+        ! Normalize 3D data to unit cube [0,1]
+        ! Handle case where data range is zero (single point or all points same)
+        do i = 1, n
+            if (self%x_max - self%x_min > 0.0_wp) then
+                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
+            else
+                x_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%y_max - self%y_min > 0.0_wp) then
+                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
+            else
+                y_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%z_max - self%z_min > 0.0_wp) then
+                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
+            else
+                z_norm(i) = 0.5_wp  ! Center if no range
+            end if
+        end do
         
         ! Get default viewing angles
         call get_default_view_angles(azim, elev, dist)
         
-        ! Project 3D data to 2D
-        call project_3d_to_2d(self%plots(plot_idx)%x, &
-                              self%plots(plot_idx)%y, &
-                              self%plots(plot_idx)%z, &
-                              azim, elev, dist, x2d, y2d)
+        ! Project normalized 3D data to 2D
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
+        
+        ! Get matplotlib-style margins
+        margin_left = 80.0_wp
+        margin_right = 40.0_wp
+        margin_bottom = 60.0_wp
+        margin_top = 60.0_wp
+        
+        ! Calculate plot area dimensions
+        select type (ctx => self%backend)
+        class is (raster_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        class default
+            ! Default fallback
+            plot_width = 640.0_wp
+            plot_height = 480.0_wp
+        end select
+        
+        ! Find bounds of projected data
+        proj_x_min = minval(x2d)
+        proj_x_max = maxval(x2d)
+        proj_y_min = minval(y2d)
+        proj_y_max = maxval(y2d)
+        
+        ! Calculate scaling to fit in plot area with some padding
+        if (proj_x_max > proj_x_min) then
+            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
+        else
+            x_scale = 1.0_wp
+        end if
+        
+        if (proj_y_max > proj_y_min) then
+            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
+        else
+            y_scale = 1.0_wp
+        end if
+        
+        ! Save original coordinate system and set to projected data for 3D plots
+        select type (ctx => self%backend)
+        class is (raster_context)
+            orig_x_min = ctx%x_min
+            orig_x_max = ctx%x_max
+            orig_y_min = ctx%y_min
+            orig_y_max = ctx%y_max
+            
+            ctx%x_min = proj_x_min
+            ctx%x_max = proj_x_max
+            ctx%y_min = proj_y_min
+            ctx%y_max = proj_y_max
+        end select
         
         ! Draw markers at projected positions
         do i = 1, n
-            x_screen = apply_scale_transform(x2d(i), self%xscale, self%symlog_threshold)
-            y_screen = apply_scale_transform(y2d(i), self%yscale, self%symlog_threshold)
-            call self%backend%draw_marker(x_screen, y_screen, marker)
+            ! Use projected coordinates directly - backend will transform to screen
+            call self%backend%draw_marker(x2d(i), y2d(i), marker)
         end do
+        
+        ! Restore original coordinate system
+        select type (ctx => self%backend)
+        class is (raster_context)
+            ctx%x_min = orig_x_min
+            ctx%x_max = orig_x_max
+            ctx%y_min = orig_y_min
+            ctx%y_max = orig_y_max
+        end select
     end subroutine render_3d_markers
 
     subroutine calculate_3d_plot_ranges(self, plot_idx, x_min, x_max, y_min, y_max, first_plot)
