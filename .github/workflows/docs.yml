@@ -11,20 +11,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Fortran Package Manager
-      run: |
-        wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
-        chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-        sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-
-    - name: Install GFortran and FORD
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gfortran
-        pip install ford
-
-    - name: Build project
-      run: make build
+    - name: Install FORD
+      run: pip install ford
 
     - name: Build documentation
       run: make doc
