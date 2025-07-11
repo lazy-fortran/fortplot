@@ -20,7 +20,7 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
-        deploy_key: ${{ secrets.DOCS_DEPLOY_KEY }}
+        personal_token: ${{ secrets.DOCS_PAT }}
         external_repository: krystophny/fortplotlib.github.io
         publish_branch: main
         publish_dir: ./build/doc
