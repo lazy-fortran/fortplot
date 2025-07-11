@@ -1,3 +1,5 @@
+title: Manual
+---
 # Background
 
 ## No external dependencies
