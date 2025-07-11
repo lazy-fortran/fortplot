@@ -1,7 +1,7 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc
 
 # Default target
 all: build
@@ -62,6 +62,10 @@ release:
 run-release:
 	fpm run --profile release $(ARGS)
 
+# Build documentation with FORD
+doc:
+	ford doc.md
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -71,6 +75,7 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
+	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
 	@echo "  run-release - Run optimized build"
