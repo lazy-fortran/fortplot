@@ -736,6 +736,10 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
+        
         ! PDF backend doesn't support separate marker colors yet
         ! This is a stub implementation for interface compliance
     end subroutine pdf_set_marker_colors
@@ -745,6 +749,11 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + edge_alpha + &
+                                face_r + face_g + face_b + face_alpha); end associate
         
         ! PDF backend doesn't support separate marker colors or transparency yet
         ! This is a stub implementation for interface compliance

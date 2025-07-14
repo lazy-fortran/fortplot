@@ -243,6 +243,9 @@ contains
         integer :: height
         integer :: ascent, descent, line_gap
         
+        ! Suppress unused parameter warnings
+        associate(unused_text => text); end associate
+        
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
                 height = DEFAULT_FONT_SIZE  ! Fallback
