@@ -486,7 +486,7 @@ contains
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
         integer :: i
-        real(wp) :: label_x, label_y, bottom, left
+        real(wp) :: label_x, label_y, tick_y, bottom, left
         character(len=200) :: text_cmd
         
         bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
@@ -511,11 +511,11 @@ contains
         ! Draw Y-axis tick labels with right alignment and proper spacing
         do i = 1, num_y
             ! Convert Y position to PDF coordinates for positioning calculation
-            label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
             
             ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_y_tick_label_position_pdf(label_y, real(ctx%plot_area%left, wp), &
+            call calculate_y_tick_label_position_pdf(tick_y, real(ctx%plot_area%left, wp), &
                                                    trim(y_labels(i)), label_x, label_y)
             
             call ctx%stream_writer%add_to_stream("BT")
@@ -736,6 +736,10 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
+        
         ! PDF backend doesn't support separate marker colors yet
         ! This is a stub implementation for interface compliance
     end subroutine pdf_set_marker_colors
@@ -745,6 +749,11 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + edge_alpha + &
+                                face_r + face_g + face_b + face_alpha); end associate
         
         ! PDF backend doesn't support separate marker colors or transparency yet
         ! This is a stub implementation for interface compliance

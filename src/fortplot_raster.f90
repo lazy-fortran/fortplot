@@ -504,12 +504,10 @@ contains
         
         select case (trim(style))
         case (MARKER_CIRCLE)
-            call draw_circle_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
-                                         color_to_byte(this%raster%current_r), &
-                                         color_to_byte(this%raster%current_g), &
-                                         color_to_byte(this%raster%current_b))
-            call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
-                                                 0_1, 0_1, 0_1)
+            call draw_circle_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
+                                           this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
+                                           this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
+                                           this%raster%marker_face_b, this%raster%marker_face_alpha)
         case (MARKER_SQUARE)
             call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
