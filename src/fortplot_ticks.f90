@@ -638,13 +638,28 @@ contains
         is_power_of_ten = abs(log_val - real(exponent, wp)) < 1.0e-10_wp
         
         if (is_power_of_ten) then
-            ! Format as 10^n for exact powers of 10
+            ! Format common powers of 10 as decimal for readability
             if (value < 0.0_wp) then
-                write(formatted, '(A, I0)') '-10^', exponent
+                if (exponent >= -3 .and. exponent <= 3) then
+                    ! Use decimal format for common negative powers
+                    write(formatted, '(F0.0)') value
+                else
+                    write(formatted, '(A, I0)') '-10^', exponent
+                end if
             else if (exponent == 0) then
                 formatted = '1'
             else if (exponent == 1) then
                 formatted = '10'
+            else if (exponent == 2) then
+                formatted = '100'
+            else if (exponent == 3) then
+                formatted = '1000'
+            else if (exponent == -1) then
+                formatted = '0.1'
+            else if (exponent == -2) then
+                formatted = '0.01'
+            else if (exponent == -3) then
+                formatted = '0.001'
             else
                 write(formatted, '(A, I0)') '10^', exponent
             end if
