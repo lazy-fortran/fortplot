@@ -486,7 +486,7 @@ contains
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
         integer :: i
-        real(wp) :: label_x, label_y, bottom, left
+        real(wp) :: label_x, label_y, tick_y, bottom, left
         character(len=200) :: text_cmd
         
         bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
@@ -511,11 +511,11 @@ contains
         ! Draw Y-axis tick labels with right alignment and proper spacing
         do i = 1, num_y
             ! Convert Y position to PDF coordinates for positioning calculation
-            label_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
                      (y_positions(i) - real(ctx%plot_area%bottom, wp))
             
             ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_y_tick_label_position_pdf(label_y, real(ctx%plot_area%left, wp), &
+            call calculate_y_tick_label_position_pdf(tick_y, real(ctx%plot_area%left, wp), &
                                                    trim(y_labels(i)), label_x, label_y)
             
             call ctx%stream_writer%add_to_stream("BT")
