@@ -16,7 +16,7 @@ program test_system_cmake_example
     call execute_command_line("mkdir -p build", exitstat=exit_code)
     if (exit_code /= 0) then
         print *, "Failed to create build directory"
-        stop 1
+        call cleanup_and_exit(cwd, 1)
     end if
     
     ! Change to build directory
@@ -26,19 +26,34 @@ program test_system_cmake_example
     call execute_command_line("cmake ..", exitstat=exit_code)
     if (exit_code /= 0) then
         print *, "Failed to configure cmake example"
-        stop 1
+        call cleanup_and_exit(cwd, 1)
     end if
     
     ! Build with CMake
     call execute_command_line("cmake --build .", exitstat=exit_code)
     if (exit_code /= 0) then
         print *, "Failed to build cmake example"
-        stop 1
+        call cleanup_and_exit(cwd, 1)
     end if
+    
+    ! Clean up build directory
+    call chdir("..")
+    call execute_command_line("rm -rf build", exitstat=exit_code)
     
     ! Change back to original directory
     call chdir(trim(cwd))
     
     print *, "CMake example build test passed"
+    
+contains
+    subroutine cleanup_and_exit(original_dir, code)
+        character(len=*), intent(in) :: original_dir
+        integer, intent(in) :: code
+        
+        ! Try to clean up and return to original directory
+        call chdir(trim(original_dir))
+        call execute_command_line("rm -rf doc/cmake_example/build")
+        stop code
+    end subroutine cleanup_and_exit
     
 end program test_system_cmake_example
