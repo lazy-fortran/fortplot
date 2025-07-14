@@ -20,6 +20,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gfortran gcovr cmake ffmpeg
 
+    - name: Set compiler
+      run: |
+        echo "FC=gfortran" >> $GITHUB_ENV
+        echo "FPM_FC=gfortran" >> $GITHUB_ENV
+
     - name: Build with coverage flags
       run: |
         make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
