@@ -217,7 +217,7 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: i, j, unit
+        integer :: unit
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(this)

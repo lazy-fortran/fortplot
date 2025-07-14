@@ -397,8 +397,6 @@ contains
         real(wp), intent(in) :: data_min, data_max, linear_threshold
         real(wp), intent(out) :: tick_locations(:)
         integer, intent(out) :: actual_num_ticks
-        
-        integer :: i
         real(wp) :: candidates(20)
         integer :: num_candidates
         
