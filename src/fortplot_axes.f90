@@ -177,21 +177,36 @@ contains
         real(wp), intent(in) :: data_min, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for negative symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => data_min + upper_bound, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for negative symlog region (placeholder)
     end subroutine add_negative_symlog_ticks
     
     subroutine add_linear_symlog_ticks(lower_bound, upper_bound, tick_positions, num_ticks)
         real(wp), intent(in) :: lower_bound, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for linear symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => lower_bound + upper_bound, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for linear symlog region (placeholder)
     end subroutine add_linear_symlog_ticks
     
     subroutine add_positive_symlog_ticks(lower_bound, data_max, tick_positions, num_ticks)
         real(wp), intent(in) :: lower_bound, data_max
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for positive symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => lower_bound + data_max, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for positive symlog region (placeholder)
     end subroutine add_positive_symlog_ticks
     
     function is_power_of_ten(value) result(is_power)
