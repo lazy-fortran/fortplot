@@ -25,11 +25,19 @@ set_target_properties(fortplotlib PROPERTIES
 
 # Make modules available to consumers
 target_include_directories(fortplotlib
-    PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/include
+    PUBLIC 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<INSTALL_INTERFACE:include>
 )
 
 # Create alias for FetchContent compatibility
 add_library(fortplotlib::fortplotlib ALIAS fortplotlib)
+
+# Export targets for FetchContent
+export(TARGETS fortplotlib
+    NAMESPACE fortplotlib::
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/fortplotlibTargets.cmake
+)
 
 # Check if Python interface should be built
 if (ENABLE_PYTHON)

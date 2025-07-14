@@ -19,7 +19,7 @@ FetchContent_MakeAvailable(fortplotlib)
 add_executable(fortplotlib_test main.f90)
 
 # Link against fortplotlib
-target_link_libraries(fortplotlib_test fortplotlib)
+target_link_libraries(fortplotlib_test fortplotlib::fortplotlib)
 
 # Set Fortran compiler flags
 set(CMAKE_Fortran_FLAGS "-Wall -Wextra -fimplicit-none")
