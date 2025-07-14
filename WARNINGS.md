@@ -4,11 +4,19 @@ This document tracks all compiler warnings in the fortplotlib codebase as of 202
 
 ## Summary
 
-Total warnings: ~50+
-- Unused dummy arguments: ~35
-- Unused variables: ~10
-- Unused functions: ~5
-- Same actual argument warnings: 1
+**Initial warnings**: ~50+  
+**Fixed warnings**: 9 (as of 2025-07-14)  
+**Remaining warnings**: ~40+
+
+### Fixed
+- ✅ Same actual argument warnings: 1 (fixed)
+- ✅ Unused functions: 4 (fixed) 
+- ✅ Unused variables: 4 (fixed)
+
+### Remaining
+- Unused dummy arguments: ~35 (mostly interface consistency)
+- Unused variables: ~6
+- Unused functions: 2 (large complex functions)
 
 ## Detailed Warning List
 
