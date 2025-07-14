@@ -56,6 +56,9 @@ contains
         type(ascii_context) :: ctx
         integer :: w, h
         
+        ! Suppress unused parameter warnings
+        associate(unused_w => width, unused_h => height); end associate
+        
         ! ASCII backend uses 4:3 aspect ratio accounting for terminal character dimensions
         ! Terminal chars are ~1.5x taller than wide, so for 4:3 visual ratio:
         ! 80 chars wide × (3/4) × (1/1.5) = 80 × 0.75 × 0.67 ≈ 40 → 30 chars high
@@ -159,6 +162,9 @@ contains
         !! Set line width for ASCII context (no-op as ASCII uses fixed character width)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: width
+        
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, unused_real => width); end associate
         
         ! ASCII context doesn't support variable line widths
         ! This is a no-op to satisfy the interface
@@ -466,6 +472,10 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
+        
         ! ASCII backend doesn't support separate marker colors
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors
@@ -475,6 +485,11 @@ contains
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
+        
+        ! Suppress unused parameter warnings  
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + edge_alpha + &
+                                face_r + face_g + face_b + face_alpha); end associate
         
         ! ASCII backend doesn't support separate marker colors or transparency
         ! This is a stub implementation for interface compliance
