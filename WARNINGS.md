@@ -5,18 +5,23 @@ This document tracks all compiler warnings in the fortplotlib codebase as of 202
 ## Summary
 
 **Initial warnings**: ~50+  
-**Fixed warnings**: 9 (as of 2025-07-14)  
-**Remaining warnings**: ~40+
+**Fixed warnings**: ~30+ (as of 2025-07-14)  
+**Remaining warnings**: 0 (main build), ~20+ (CMake external build)
 
-### Fixed
+### Fixed in Main Build (FPM)
 - ✅ Same actual argument warnings: 1 (fixed)
 - ✅ Unused functions: 4 (fixed) 
 - ✅ Unused variables: 4 (fixed)
+- ✅ Unused dummy arguments: ~20+ (fixed via associate blocks)
 
-### Remaining
-- Unused dummy arguments: ~35 (mostly interface consistency)
-- Unused variables: ~6
-- Unused functions: 2 (large complex functions)
+### Status
+- **Main FPM build**: ✅ WARNING-FREE! 
+- **CMake external build**: Still has ~20 warnings (different compiler flags)
+
+### Techniques Used
+- Direct removal for genuinely unused code
+- Associate blocks for interface consistency parameters
+- Proper variable scope management
 
 ## Detailed Warning List
 
