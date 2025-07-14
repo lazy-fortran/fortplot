@@ -214,34 +214,5 @@ contains
         end if
     end function format_power_of_ten
     
-    subroutine clean_scientific_notation(str)
-        character(len=*), intent(inout) :: str
-        ! Clean up scientific notation formatting
-    end subroutine clean_scientific_notation
-    
-    subroutine remove_trailing_zeros(str)
-        character(len=*), intent(inout) :: str
-        integer :: i
-        ! Remove trailing zeros after decimal point
-        do i = len_trim(str), 1, -1
-            if (str(i:i) == '0') then
-                str(i:i) = ' '
-            else if (str(i:i) == '.') then
-                str(i:i) = ' '
-                exit
-            else
-                exit
-            end if
-        end do
-    end subroutine remove_trailing_zeros
-    
-    subroutine draw_single_tick(backend, screen_pos, label, is_x_axis, plot_area)
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: screen_pos
-        character(len=*), intent(in) :: label
-        logical, intent(in) :: is_x_axis
-        integer, intent(in) :: plot_area(4)
-        ! Draw a single tick mark and label
-    end subroutine draw_single_tick
 
 end module fortplot_axes
