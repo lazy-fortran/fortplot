@@ -165,26 +165,6 @@ contains
         end if
     end subroutine ensure_leading_zero
 
-    function format_tick_value_consistent(value, decimal_places) result(formatted)
-        !! Format tick value with consistent number of decimal places
-        real(wp), intent(in) :: value
-        integer, intent(in) :: decimal_places
-        character(len=20) :: formatted
-        
-        if (abs(value) < 1.0e-10_wp) then
-            if (decimal_places == 0) then
-                formatted = '0'
-            else
-                write(formatted, '(F0.' // char(decimal_places + 48) // ')') 0.0_wp
-                call ensure_leading_zero(formatted)
-            end if
-        else if (decimal_places == 0) then
-            write(formatted, '(I0)') nint(value)
-        else
-            write(formatted, '(F0.' // char(decimal_places + 48) // ')') value
-            call ensure_leading_zero(formatted)
-        end if
-    end function format_tick_value_consistent
 
     subroutine find_nice_tick_locations(data_min, data_max, target_num_ticks, &
                                        nice_min, nice_max, nice_step, &
