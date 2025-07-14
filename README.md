@@ -85,6 +85,15 @@ to build and run them.
 
 ## Setup
 
+### Dependencies
+
+**Required:**
+- Modern Fortran compiler (gfortran-11 or newer)
+- FPM (Fortran Package Manager) or CMake
+
+**Optional:**
+- `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
+
 ### For fpm (Fortran Package Manager) projects
 
 Add to your `fpm.toml`:
@@ -144,7 +153,7 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Scales: linear, log, symlog (with configurable threshold)
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
-- [x] Animation support with `FuncAnimation`
+- [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
 - [ ] Subplots
 - [ ] Annotations
 - [ ] LaTeX math text

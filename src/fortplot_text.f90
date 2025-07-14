@@ -7,7 +7,7 @@ module fortplot_text
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, get_font_metrics
-    public :: get_font_ascent_ratio
+    public :: get_font_ascent_ratio, find_font_by_name
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -243,6 +243,9 @@ contains
         integer :: height
         integer :: ascent, descent, line_gap
         
+        ! Suppress unused parameter warnings
+        associate(unused_text => text); end associate
+        
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
                 height = DEFAULT_FONT_SIZE  ! Fallback
@@ -353,30 +356,6 @@ contains
     end subroutine render_stb_glyph
     
 
-    subroutine render_simple_character_block(image_data, width, height, x, y, r, g, b)
-        integer(1), intent(inout) :: image_data(*)
-        integer, intent(in) :: width, height, x, y
-        integer(1), intent(in) :: r, g, b
-        integer :: img_x, img_y, pixel_idx
-        integer(1) :: black_r, black_g, black_b
-        
-        black_r = 0_1
-        black_g = 0_1
-        black_b = 0_1
-        
-        do img_y = y, min(y + 5, height - 1)
-            do img_x = x, min(x + 3, width - 1)
-                if (img_x >= 0 .and. img_y >= 0) then
-                    pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
-                    if (pixel_idx > 0 .and. pixel_idx <= height * (1 + width * 3) - 2) then
-                        image_data(pixel_idx) = black_r
-                        image_data(pixel_idx + 1) = black_g
-                        image_data(pixel_idx + 2) = black_b
-                    end if
-                end if
-            end do
-        end do
-    end subroutine render_simple_character_block
 
     subroutine render_simple_placeholder(image_data, width, height, x, y, r, g, b)
         integer(1), intent(inout) :: image_data(*)
@@ -402,37 +381,6 @@ contains
     end subroutine render_simple_placeholder
 
     
-    subroutine render_character_bitmap(image_data, width, height, x, y, char, r, g, b)
-        integer(1), intent(inout) :: image_data(*)
-        integer, intent(in) :: width, height, x, y
-        character(len=1), intent(in) :: char
-        integer(1), intent(in) :: r, g, b
-        integer :: img_x, img_y, pixel_idx, char_code
-        integer(1) :: black_r, black_g, black_b
-        logical :: pixel_set
-        
-        black_r = 0_1
-        black_g = 0_1
-        black_b = 0_1
-        
-        char_code = iachar(char)
-        
-        do img_y = y, min(y + 7, height - 1)
-            do img_x = x, min(x + 5, width - 1)
-                if (img_x >= 0 .and. img_y >= 0) then
-                    pixel_set = get_character_pixel(char_code, img_x - x, img_y - y)
-                    if (pixel_set) then
-                        pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
-                        if (pixel_idx > 0 .and. pixel_idx <= height * (1 + width * 3) - 2) then
-                            image_data(pixel_idx) = black_r
-                            image_data(pixel_idx + 1) = black_g
-                            image_data(pixel_idx + 2) = black_b
-                        end if
-                    end if
-                end if
-            end do
-        end do
-    end subroutine render_character_bitmap
     
     function get_character_pixel(char_code, x, y) result(pixel_set)
         integer, intent(in) :: char_code, x, y

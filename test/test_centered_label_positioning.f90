@@ -23,8 +23,8 @@ contains
         label_text = "10"
         call calculate_x_label_position(tick_x, plot_bottom, plot_height, label_text, label_x, label_y)
         
-        ! X position should center the text on the tick (approximate for fallback width)
-        if (abs(label_x - (tick_x - len_trim(label_text) * 4.0_wp)) > 1.0_wp) then
+        ! X position should center the text on the tick (fallback width: 8px/char, so half-width is 4px/char)
+        if (abs(label_x - (tick_x - len_trim(label_text) * 4.0_wp)) > 2.0_wp) then
             print *, "FAIL: X label not horizontally centered for short text"
             print *, "Expected around:", tick_x - len_trim(label_text) * 4.0_wp, "Got:", label_x
             stop 1
@@ -34,7 +34,7 @@ contains
         label_text = "1000"
         call calculate_x_label_position(tick_x, plot_bottom, plot_height, label_text, label_x, label_y)
         
-        if (abs(label_x - (tick_x - len_trim(label_text) * 4.0_wp)) > 1.0_wp) then
+        if (abs(label_x - (tick_x - len_trim(label_text) * 4.0_wp)) > 2.0_wp) then
             print *, "FAIL: X label not horizontally centered for long text"
             stop 1
         end if

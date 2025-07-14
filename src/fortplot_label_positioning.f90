@@ -24,7 +24,7 @@ module fortplot_label_positioning
     integer, parameter :: Y_AXIS_SPACING = 70    ! Y-axis label: right edge 10px from left edge
     
     ! Legacy constants for backward compatibility
-    integer, parameter :: LABEL_SPACING_X = 25  ! Pixels below X-axis tick labels
+    integer, parameter :: LABEL_SPACING_X = 20  ! Pixels below X-axis tick labels
     integer, parameter :: LABEL_SPACING_Y = 15  ! Pixels left of Y-axis tick labels  
     integer, parameter :: TEXT_HEIGHT = 12      ! Approximate text height for centering
     integer, parameter :: Y_LABEL_OFFSET = 4    ! Pixels down from center for better alignment
