@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [gfortran-11, gfortran-12, gfortran-13, gfortran-14, gfortran-15]
+        compiler: [gfortran-11, gfortran-12, gfortran-13, gfortran-14]
     
     steps:
     - uses: actions/checkout@v4
@@ -33,8 +33,6 @@ jobs:
           echo "FC=gfortran-13" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "gfortran-14" ]; then
           echo "FC=gfortran-14" >> $GITHUB_ENV
-        else
-          echo "FC=gfortran-15" >> $GITHUB_ENV
         fi
 
     - name: Build project
