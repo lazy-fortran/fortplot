@@ -27,12 +27,16 @@ jobs:
       run: |
         if [ "${{ matrix.compiler }}" = "gfortran-11" ]; then
           echo "FC=gfortran-11" >> $GITHUB_ENV
+          echo "FPM_FC=gfortran-11" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "gfortran-12" ]; then
           echo "FC=gfortran-12" >> $GITHUB_ENV
+          echo "FPM_FC=gfortran-12" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "gfortran-13" ]; then
           echo "FC=gfortran-13" >> $GITHUB_ENV
+          echo "FPM_FC=gfortran-13" >> $GITHUB_ENV
         elif [ "${{ matrix.compiler }}" = "gfortran-14" ]; then
           echo "FC=gfortran-14" >> $GITHUB_ENV
+          echo "FPM_FC=gfortran-14" >> $GITHUB_ENV
         fi
 
     - name: Build project
