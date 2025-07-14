@@ -1,0 +1,72 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gfortran-11, gfortran-12]
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Fortran Package Manager
+      run: |
+        wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
+        chmod +x fpm-0.12.0-linux-x86_64-gcc-12
+        sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ matrix.compiler }} cmake make
+
+    - name: Set compiler
+      run: |
+        if [ "${{ matrix.compiler }}" = "gfortran-11" ]; then
+          echo "FC=gfortran-11" >> $GITHUB_ENV
+        else
+          echo "FC=gfortran-12" >> $GITHUB_ENV
+        fi
+
+    - name: Build project
+      run: |
+        make build
+
+    - name: Run all tests
+      run: |
+        make test
+
+    - name: Test FPM example
+      run: |
+        make test ARGS="--target test_system_fpm_example"
+
+    - name: Test CMake example  
+      run: |
+        make test ARGS="--target test_system_cmake_example"
+
+    - name: Build examples
+      run: |
+        make example ARGS="basic_plots"
+
+  build-cmake:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gfortran cmake
+
+    - name: Test CMake build
+      run: |
+        cd doc/cmake_example
+        mkdir -p build
+        cd build
+        cmake ..
+        make
+        ./fortplotlib_test
