@@ -51,7 +51,7 @@ contains
         integer, intent(out) :: num_ticks
         
         real(wp) :: range, step, nice_step, tick_value
-        integer :: i, max_ticks_desired
+        integer :: max_ticks_desired
         
         max_ticks_desired = 8
         range = data_max - data_min
