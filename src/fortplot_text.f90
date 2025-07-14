@@ -7,7 +7,7 @@ module fortplot_text
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, get_font_metrics
-    public :: get_font_ascent_ratio
+    public :: get_font_ascent_ratio, find_font_by_name
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
