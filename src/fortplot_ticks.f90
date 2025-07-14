@@ -17,7 +17,7 @@ module fortplot_ticks
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
     public :: generate_scale_aware_tick_labels, format_tick_value_smart, format_log_tick_value
-    public :: find_nice_tick_locations
+    public :: find_nice_tick_locations, format_tick_value_consistent
     
 contains
 
@@ -42,9 +42,9 @@ contains
         ! Determine consistent formatting for the nice step size
         decimal_places = determine_decimal_places_from_step(nice_step)
         
-        ! Format the nice tick locations with smart formatting (max 8 chars for clean appearance)
+        ! Format the nice tick locations with consistent decimal places
         do i = 1, min(actual_num_ticks, size(labels))
-            labels(i) = format_tick_value_smart(tick_locations(i), 8)
+            labels(i) = format_tick_value_consistent(tick_locations(i), decimal_places)
         end do
         
         ! Clear unused labels
@@ -672,5 +672,29 @@ contains
             end if
         end if
     end function format_log_tick_value
+
+    function format_tick_value_consistent(value, decimal_places) result(formatted)
+        !! Format tick value with consistent decimal places for uniform appearance
+        real(wp), intent(in) :: value
+        integer, intent(in) :: decimal_places
+        character(len=20) :: formatted
+        character(len=10) :: format_str
+        
+        if (abs(value) < 1.0e-10_wp) then
+            if (decimal_places == 0) then
+                formatted = '0'
+            else
+                write(format_str, '(A, I0, A)') '(F0.', decimal_places, ')'
+                write(formatted, format_str) 0.0_wp
+            end if
+        else if (decimal_places == 0) then
+            write(formatted, '(I0)') nint(value)
+        else
+            write(format_str, '(A, I0, A)') '(F0.', decimal_places, ')'
+            write(formatted, format_str) value
+        end if
+        
+        call ensure_leading_zero(formatted)
+    end function format_tick_value_consistent
 
 end module fortplot_ticks
