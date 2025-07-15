@@ -191,18 +191,19 @@ contains
                 end if
             else
                 ! Regular ASCII character
-                ! Look ahead to see if we should stay in Symbol font
+                ! Check if next non-space character is Greek
                 next_is_greek = .false.
-                j = i + 1
-                do while (j <= len_trim(text))
-                    if (text(j:j) == ' ' .or. text(j:j) == '(' .or. text(j:j) == ')') then
-                        j = j + 1
-                    else
-                        exit
-                    end if
-                end do
-                if (j <= len_trim(text)) then
-                    if (iachar(text(j:j)) > 127) then
+                if (current_char == '(' .or. current_char == ' ') then
+                    j = i + 1
+                    ! Look for the next meaningful character
+                    do while (j <= len_trim(text))
+                        if (text(j:j) == ' ') then
+                            j = j + 1
+                        else
+                            exit
+                        end if
+                    end do
+                    if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
                         char_len = utf8_char_length(text(j:j))
                         if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
                             next_codepoint = utf8_to_codepoint(text, j)
@@ -212,19 +213,40 @@ contains
                     end if
                 end if
                 
-                ! Only switch back to Helvetica if we're not between Greek letters
-                if (in_symbol_font .and. .not. next_is_greek) then
-                    ! Output current Symbol segment
-                    if (segment_pos > 1) then
-                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                        call this%stream_writer%add_to_stream(text_cmd)
+                ! Handle font switching
+                if (in_symbol_font) then
+                    ! Always switch back to Helvetica for parentheses and most ASCII
+                    if (current_char == '(' .or. current_char == ')' .or. &
+                        (.not. next_is_greek .and. current_char /= ' ')) then
+                        ! Output current Symbol segment before switching back
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        ! Switch back to Helvetica
+                        call this%stream_writer%add_to_stream("/F1 12 Tf")
+                        in_symbol_font = .false.
+                        current_segment = ""
+                        segment_pos = 1
                     end if
-                    ! Switch back to Helvetica
-                    call this%stream_writer%add_to_stream("/F1 12 Tf")
-                    in_symbol_font = .false.
-                    current_segment = ""
-                    segment_pos = 1
+                else
+                    ! In Helvetica - check if we need to switch to Symbol
+                    if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
+                        ! Output current segment including this character
+                        current_segment(segment_pos:segment_pos) = current_char
+                        segment_pos = segment_pos + 1
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        current_segment = ""
+                        segment_pos = 1
+                        i = i + 1
+                        cycle  ! Skip the normal character addition
+                    end if
                 end if
+                
+                ! Add character to current segment
                 current_segment(segment_pos:segment_pos) = current_char
                 segment_pos = segment_pos + 1
                 i = i + 1
@@ -321,18 +343,19 @@ contains
                 end if
             else
                 ! Regular ASCII character
-                ! Look ahead to see if we should stay in Symbol font
+                ! Check if next non-space character is Greek
                 next_is_greek = .false.
-                j = i + 1
-                do while (j <= len_trim(text))
-                    if (text(j:j) == ' ' .or. text(j:j) == '(' .or. text(j:j) == ')') then
-                        j = j + 1
-                    else
-                        exit
-                    end if
-                end do
-                if (j <= len_trim(text)) then
-                    if (iachar(text(j:j)) > 127) then
+                if (current_char == '(' .or. current_char == ' ') then
+                    j = i + 1
+                    ! Look for the next meaningful character
+                    do while (j <= len_trim(text))
+                        if (text(j:j) == ' ') then
+                            j = j + 1
+                        else
+                            exit
+                        end if
+                    end do
+                    if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
                         char_len = utf8_char_length(text(j:j))
                         if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
                             next_codepoint = utf8_to_codepoint(text, j)
@@ -342,19 +365,40 @@ contains
                     end if
                 end if
                 
-                ! Only switch back to Helvetica if we're not between Greek letters
-                if (in_symbol_font .and. .not. next_is_greek) then
-                    ! Output current Symbol segment
-                    if (segment_pos > 1) then
-                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                        call this%stream_writer%add_to_stream(text_cmd)
+                ! Handle font switching
+                if (in_symbol_font) then
+                    ! Always switch back to Helvetica for parentheses and most ASCII
+                    if (current_char == '(' .or. current_char == ')' .or. &
+                        (.not. next_is_greek .and. current_char /= ' ')) then
+                        ! Output current Symbol segment before switching back
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        ! Switch back to Helvetica
+                        call this%stream_writer%add_to_stream("/F1 12 Tf")
+                        in_symbol_font = .false.
+                        current_segment = ""
+                        segment_pos = 1
                     end if
-                    ! Switch back to Helvetica
-                    call this%stream_writer%add_to_stream("/F1 12 Tf")
-                    in_symbol_font = .false.
-                    current_segment = ""
-                    segment_pos = 1
+                else
+                    ! In Helvetica - check if we need to switch to Symbol
+                    if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
+                        ! Output current segment including this character
+                        current_segment(segment_pos:segment_pos) = current_char
+                        segment_pos = segment_pos + 1
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        current_segment = ""
+                        segment_pos = 1
+                        i = i + 1
+                        cycle  ! Skip the normal character addition
+                    end if
                 end if
+                
+                ! Add character to current segment
                 current_segment(segment_pos:segment_pos) = current_char
                 segment_pos = segment_pos + 1
                 i = i + 1
