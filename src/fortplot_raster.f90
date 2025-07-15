@@ -451,38 +451,12 @@ contains
     end subroutine raster_set_line_width
 
     subroutine escape_unicode_for_raster(input_text, escaped_text)
-        !! Convert Unicode characters to ASCII equivalents for raster rendering
+        !! Pass through Unicode for raster rendering (STB TrueType supports Unicode)
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: escaped_text
-        integer :: i, pos, codepoint, seq_len
-        logical :: is_valid
-        character(len=10) :: escape_seq
         
-        escaped_text = ""
-        pos = 1
-        i = 1
-        
-        do while (i <= len_trim(input_text))
-            if (iachar(input_text(i:i)) >= 128) then
-                ! Unicode character - convert to ASCII equivalent
-                call check_utf8_sequence(input_text, i, is_valid, seq_len)
-                if (is_valid .and. seq_len > 0) then
-                    codepoint = utf8_to_codepoint(input_text, i)
-                    call unicode_codepoint_to_ascii(codepoint, escape_seq)
-                    escaped_text(pos:pos+len_trim(escape_seq)-1) = trim(escape_seq)
-                    pos = pos + len_trim(escape_seq)
-                    i = i + seq_len
-                else
-                    ! Invalid UTF-8, skip this byte
-                    i = i + 1
-                end if
-            else
-                ! ASCII character - copy as is
-                escaped_text(pos:pos) = input_text(i:i)
-                pos = pos + 1
-                i = i + 1
-            end if
-        end do
+        ! STB TrueType can handle Unicode directly, so just pass through
+        escaped_text = input_text
     end subroutine escape_unicode_for_raster
 
     subroutine unicode_codepoint_to_ascii(codepoint, ascii_equiv)
