@@ -206,7 +206,15 @@ contains
             end if
             
             ! Clamp to canvas bounds
-            text_x = max(1, min(text_x, this%plot_width - processed_len))
+            ! For legend text (already in screen coordinates), don't truncate based on length
+            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
+                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
+                ! For legend text, only clamp starting position, let text extend as needed
+                text_x = max(1, min(text_x, this%plot_width))
+            else
+                ! For other text, prevent overflow
+                text_x = max(1, min(text_x, this%plot_width - processed_len))
+            end if
             text_y = max(1, min(text_y, this%plot_height))
             
             this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
