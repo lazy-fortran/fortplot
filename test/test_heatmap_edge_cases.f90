@@ -218,12 +218,12 @@ contains
     
     subroutine test_dimension_mismatch_pcolormesh()
         type(figure_t) :: fig
-        real(wp) :: x(4), y(3), z(3, 2)
+        real(wp) :: x(3), y(4), z(3, 2)
         
         ! For pcolormesh: x(nx+1) × y(ny+1) vertices, z(nx, ny) cells
         ! This has correct dimensions
-        x = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]  ! 4 vertices
-        y = [0.0_wp, 1.0_wp, 2.0_wp]           ! 3 vertices
+        x = [0.0_wp, 1.0_wp, 2.0_wp]                    ! 3 vertices
+        y = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]           ! 4 vertices
         z = reshape([1.0_wp, 2.0_wp, 3.0_wp, &
                      4.0_wp, 5.0_wp, 6.0_wp], [3, 2])  ! 3×2 cells
         
@@ -231,14 +231,16 @@ contains
         call fig%add_pcolormesh(x, y, z)
         call fig%savefig('test_pcolormesh_correct.txt')
         
-        ! Test with wrong z dimensions (should handle gracefully)
+        ! Test with different z dimensions (should handle gracefully)
         block
-            real(wp) :: z_wrong(2, 2)
-            z_wrong = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [2, 2])
+            real(wp) :: x_alt(4), y_alt(3), z_alt(2, 3)
+            x_alt = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
+            y_alt = [0.0_wp, 1.0_wp, 2.0_wp]
+            z_alt = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp], [2, 3])
             
             call fig%initialize(40, 20)
-            call fig%add_pcolormesh(x, y, z_wrong)  ! Should not crash
-            call fig%savefig('test_pcolormesh_wrong.txt')
+            call fig%add_pcolormesh(x_alt, y_alt, z_alt)  ! Should not crash
+            call fig%savefig('test_pcolormesh_alt.txt')
         end block
         
         print *, "test_dimension_mismatch_pcolormesh: PASSED"
