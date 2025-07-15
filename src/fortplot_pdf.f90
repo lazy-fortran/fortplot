@@ -347,38 +347,13 @@ contains
     end subroutine write_string_to_unit
 
     subroutine escape_unicode_for_pdf(input_text, escaped_text)
-        !! Convert Unicode characters to PDF-compatible escape sequences
+        !! Pass through UTF-8 encoded text for PDF with proper Unicode support
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: escaped_text
-        integer :: i, pos, codepoint, seq_len
-        logical :: is_valid
-        character(len=10) :: escape_seq
         
-        escaped_text = ""
-        pos = 1
-        i = 1
-        
-        do while (i <= len_trim(input_text))
-            if (iachar(input_text(i:i)) >= 128) then
-                ! Unicode character - convert to escape sequence
-                call check_utf8_sequence(input_text, i, is_valid, seq_len)
-                if (is_valid .and. seq_len > 0) then
-                    codepoint = utf8_to_codepoint(input_text, i)
-                    call unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
-                    escaped_text(pos:pos+len_trim(escape_seq)-1) = trim(escape_seq)
-                    pos = pos + len_trim(escape_seq)
-                    i = i + seq_len
-                else
-                    ! Invalid UTF-8, skip this byte
-                    i = i + 1
-                end if
-            else
-                ! ASCII character - copy as is
-                escaped_text(pos:pos) = input_text(i:i)
-                pos = pos + 1
-                i = i + 1
-            end if
-        end do
+        ! Simply pass through the UTF-8 encoded text
+        ! Modern PDF readers support UTF-8 encoded text strings
+        escaped_text = input_text
     end subroutine escape_unicode_for_pdf
 
     subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)

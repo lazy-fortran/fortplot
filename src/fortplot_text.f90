@@ -1,6 +1,7 @@
 module fortplot_text
     use iso_c_binding
     use fortplot_stb_truetype
+    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -243,10 +244,11 @@ contains
     end subroutine cleanup_text_system
 
     function calculate_text_width(text) result(width)
-        !! Calculate the pixel width of text using STB TrueType
+        !! Calculate the pixel width of text using STB TrueType with UTF-8 support
         character(len=*), intent(in) :: text
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
+        integer :: char_len
         
         ! Initialize text system if not already done
         if (.not. font_initialized) then
@@ -258,8 +260,18 @@ contains
         end if
         
         width = 0
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
             call stb_get_codepoint_hmetrics(global_font, char_code, advance_width, left_side_bearing)
             ! Scale to pixel coordinates
             width = width + int(real(advance_width) * font_scale)
@@ -293,7 +305,7 @@ contains
     end function calculate_text_height
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
-        !! Render text to image using STB TrueType
+        !! Render text to image using STB TrueType with UTF-8 support
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -302,6 +314,7 @@ contains
         integer :: advance_width, left_side_bearing
         type(c_ptr) :: bitmap_ptr
         integer :: bmp_width, bmp_height, xoff, yoff
+        integer :: char_len
         
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
@@ -313,8 +326,17 @@ contains
         pen_x = x
         pen_y = y
         
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
             
             ! Get character bitmap
             bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
@@ -448,7 +470,7 @@ contains
     end function get_character_pixel
 
     subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
-        !! Render rotated text to PNG image using STB TrueType (simplified rotation)
+        !! Render rotated text to PNG image using STB TrueType with UTF-8 support
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -460,6 +482,7 @@ contains
         type(c_ptr) :: bitmap_ptr
         integer :: bmp_width, bmp_height, xoff, yoff
         real(wp) :: cos_a, sin_a
+        integer :: char_len
         
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
@@ -474,8 +497,17 @@ contains
         
         ! For now, render text normally (STB doesn't have built-in rotation)
         ! TODO: Implement proper bitmap rotation if needed
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
             
             bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
                                                  bmp_width, bmp_height, xoff, yoff)
