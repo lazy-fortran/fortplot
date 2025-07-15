@@ -15,14 +15,14 @@ contains
 
     subroutine test_pcolormesh_data_validation()
         type(figure_t) :: fig
-        real(wp) :: x(5), y(4), z(4, 3)
+        real(wp) :: x(4), y(5), z(4, 3)
         integer :: i, j
         
         ! Correct dimensions: x(nx+1), y(ny+1), z(nx, ny)
-        do i = 1, 5
+        do i = 1, 4
             x(i) = real(i-1, wp) * 0.25_wp
         end do
-        do i = 1, 4
+        do i = 1, 5
             y(i) = real(i-1, wp) * 0.33_wp
         end do
         
@@ -140,14 +140,14 @@ contains
     
     subroutine test_pcolormesh_backends()
         type(figure_t) :: fig
-        real(wp) :: x(6), y(5), z(5, 4)
+        real(wp) :: x(5), y(6), z(5, 4)
         integer :: i, j
         
         ! Create test data
-        do i = 1, 6
+        do i = 1, 5
             x(i) = real(i-1, wp) * 0.2_wp
         end do
-        do i = 1, 5
+        do i = 1, 6
             y(i) = real(i-1, wp) * 0.25_wp
         end do
         
@@ -224,7 +224,7 @@ contains
             call fig%initialize(60, 30)
             call fig%add_pcolormesh(x, y, z)
             
-            write(*, '(A, I3, A)') "Testing ", n, "x", n, " grid"
+            write(*, '(A, I3, A, I3, A)') "Testing ", n, "x", n, " grid"
             call fig%savefig('test_pcolormesh_' // char(iachar('0') + n/10) // '0x' // &
                             char(iachar('0') + n/10) // '0.txt')
             
