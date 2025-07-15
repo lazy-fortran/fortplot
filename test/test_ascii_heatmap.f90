@@ -21,7 +21,7 @@ program test_ascii_heatmap
     ! Test contour_filled ASCII output
     call fig%initialize(80, 25)
     call fig%add_contour_filled(x, y, z, label="Gaussian")
-    call fig%savefig('test_contour_filled.txt')
+    call fig%savefig('/tmp/test_contour_filled.txt')
     
     ! Test pcolormesh ASCII output - needs edge coordinates
     block
@@ -38,7 +38,7 @@ program test_ascii_heatmap
         
         call fig%initialize(80, 25)
         call fig%add_pcolormesh(x_edges, y_edges, z)
-        call fig%savefig('test_pcolormesh.txt')
+        call fig%savefig('/tmp/test_pcolormesh.txt')
     end block
     
     print *, "ASCII heatmap tests completed"

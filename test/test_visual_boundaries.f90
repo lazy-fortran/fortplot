@@ -39,7 +39,7 @@ contains
         ! Create plot
         call fig%initialize(640, 480)
         call fig%add_plot(x_data, y_data)
-        call fig%savefig('test_linear_visual.txt')
+        call fig%savefig('/tmp/test_linear_visual.txt')
         
         if (validate_ascii_boundaries('test_linear_visual.txt')) then
             print *, "  ✓ PASS: Linear plot stays within ASCII canvas bounds"
@@ -68,7 +68,7 @@ contains
         call fig%initialize(640, 480)
         call fig%set_yscale('log')
         call fig%add_plot(x_data, y_data)
-        call fig%savefig('test_log_visual.txt')
+        call fig%savefig('/tmp/test_log_visual.txt')
         
         if (validate_ascii_boundaries('test_log_visual.txt')) then
             print *, "  ✓ PASS: Log plot stays within ASCII canvas bounds"
@@ -97,7 +97,7 @@ contains
         call fig%initialize(640, 480)
         call fig%set_yscale('symlog', 10.0_wp)
         call fig%add_plot(x_data, y_data)
-        call fig%savefig('test_symlog_visual.txt')
+        call fig%savefig('/tmp/test_symlog_visual.txt')
         
         if (validate_ascii_boundaries('test_symlog_visual.txt')) then
             print *, "  ✓ PASS: Symlog plot stays within ASCII canvas bounds"

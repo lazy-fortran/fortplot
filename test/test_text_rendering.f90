@@ -147,7 +147,7 @@ contains
         call fig%set_ylabel("y")
         
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
-        call fig%savefig("test_text_rendering_output.png")
+        call fig%savefig("/tmp/test_text_rendering_output.png")
         inquire(file="test_text_rendering_output.png", exist=file_exists, iostat=iostat)
 
         if (file_exists .and. iostat == 0) then

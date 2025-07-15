@@ -54,7 +54,7 @@ contains
         
         ! Test non-blocking (default)
         print *, "Testing savefig() without blocking parameter (default)"
-        call fig%savefig('test_blocking.png')
+        call fig%savefig('/tmp/test_blocking.png')
         
         ! Test with explicit blocking=false for ASCII
         print *, "Testing savefig() with blocking=.false. for ASCII"
