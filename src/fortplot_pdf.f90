@@ -1,6 +1,8 @@
 module fortplot_pdf
     use fortplot_context
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
+    use fortplot_latex_parser
+    use fortplot_unicode
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -101,6 +103,11 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: pdf_x, pdf_y
         character(len=200) :: text_cmd
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
         
@@ -109,7 +116,7 @@ contains
         call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') pdf_x, pdf_y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        write(text_cmd, '("(", A, ") Tj")') processed_text(1:processed_len)
         call this%stream_writer%add_to_stream(text_cmd)
         call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text
@@ -120,13 +127,18 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=200) :: text_cmd
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
         call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        write(text_cmd, '("(", A, ") Tj")') processed_text(1:processed_len)
         call this%stream_writer%add_to_stream(text_cmd)
         call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text_direct

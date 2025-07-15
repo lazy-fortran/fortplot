@@ -2,6 +2,8 @@ module fortplot_raster
     use iso_c_binding
     use fortplot_context
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
+    use fortplot_latex_parser
+    use fortplot_unicode
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -454,6 +456,11 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: px, py
         integer(1) :: r, g, b
+        character(len=500) :: processed_text
+        integer :: processed_len
+
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
 
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
@@ -463,7 +470,7 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
         call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                 int(px), int(py), text, r, g, b)
+                                 int(px), int(py), processed_text(1:processed_len), r, g, b)
     end subroutine raster_draw_text
 
     subroutine raster_save_dummy(this, filename)
