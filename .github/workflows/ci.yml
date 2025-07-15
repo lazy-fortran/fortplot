@@ -45,6 +45,7 @@ jobs:
 
     - name: Run all tests
       run: |
+        mkdir -p /tmp/test
         make test
 
     - name: Test FPM example

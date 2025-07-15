@@ -1,6 +1,8 @@
 module fortplot_pdf
     use fortplot_context
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
+    use fortplot_latex_parser
+    use fortplot_unicode
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -12,7 +14,7 @@ module fortplot_pdf
     implicit none
     
     private
-    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels
+    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels, draw_mixed_font_text
     
     type, extends(vector_stream_writer) :: pdf_stream_writer
     contains
@@ -100,35 +102,310 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: pdf_x, pdf_y
-        character(len=200) :: text_cmd
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
         
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') pdf_x, pdf_y
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call this%stream_writer%add_to_stream(text_cmd)
-        call this%stream_writer%add_to_stream("ET")
+        ! Render text with mixed font support
+        call draw_mixed_font_text(this, pdf_x, pdf_y, processed_text(1:processed_len))
     end subroutine draw_pdf_text
-    
-    subroutine draw_pdf_text_direct(this, x, y, text)
-        !! Draw text at direct PDF coordinates (no data coordinate transformation)
+
+    subroutine draw_mixed_font_text(this, x, y, text)
+        !! Draw text with automatic font switching for Greek letters
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        
+        integer :: i, char_len, codepoint, symbol_char
+        character(len=1) :: current_char
         character(len=200) :: text_cmd
+        character(len=500) :: current_segment
+        character(len=1000) :: escaped_segment
+        logical :: in_symbol_font, need_font_switch
+        integer :: segment_pos, escaped_len
         
         call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
         call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call this%stream_writer%add_to_stream(text_cmd)
+        
+        i = 1
+        in_symbol_font = .false.
+        current_segment = ""
+        segment_pos = 1
+        
+        do while (i <= len_trim(text))
+            current_char = text(i:i)
+            need_font_switch = .false.
+            
+            ! Check if this is a Unicode character (high bit set)
+            if (iachar(current_char) > 127) then
+                ! Get the Unicode codepoint
+                char_len = utf8_char_length(text(i:i))
+                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
+                    codepoint = utf8_to_codepoint(text, i)
+                    call unicode_to_symbol_char(codepoint, symbol_char)
+                    
+                    if (symbol_char > 0) then
+                        ! This is a Greek letter
+                        if (.not. in_symbol_font) then
+                            ! Need to switch to Symbol font
+                            need_font_switch = .true.
+                            ! Output current segment before switching
+                            if (segment_pos > 1) then
+                                ! Escape parentheses for Helvetica font
+                                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
+                                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                                current_segment = ""
+                                segment_pos = 1
+                            end if
+                            ! Switch to Symbol
+                            call this%stream_writer%add_to_stream("/F2 12 Tf")
+                            in_symbol_font = .true.
+                        end if
+                        ! Add Greek character
+                        current_segment(segment_pos:segment_pos) = char(symbol_char)
+                        segment_pos = segment_pos + 1
+                        i = i + char_len
+                    else
+                        ! Non-Greek Unicode
+                        if (in_symbol_font) then
+                            ! Need to switch back to Helvetica
+                            need_font_switch = .true.
+                            ! Output current segment before switching
+                            if (segment_pos > 1) then
+                                ! Symbol font doesn't need escaping
+                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                                current_segment = ""
+                                segment_pos = 1
+                            end if
+                            ! Switch to Helvetica
+                            call this%stream_writer%add_to_stream("/F1 12 Tf")
+                            in_symbol_font = .false.
+                        end if
+                        ! Add ASCII representation
+                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
+                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+                        i = i + char_len
+                    end if
+                else
+                    ! Invalid UTF-8, skip
+                    i = i + 1
+                end if
+            else
+                ! Regular ASCII character
+                ! All ASCII characters must be in Helvetica font
+                if (in_symbol_font) then
+                    ! Need to switch to Helvetica for ASCII characters
+                    need_font_switch = .true.
+                    ! Output current segment before switching
+                    if (segment_pos > 1) then
+                        ! Symbol font doesn't need escaping
+                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                        call this%stream_writer%add_to_stream(text_cmd)
+                        current_segment = ""
+                        segment_pos = 1
+                    end if
+                    ! Switch to Helvetica
+                    call this%stream_writer%add_to_stream("/F1 12 Tf")
+                    in_symbol_font = .false.
+                end if
+                
+                ! Add ASCII character
+                current_segment(segment_pos:segment_pos) = current_char
+                segment_pos = segment_pos + 1
+                i = i + 1
+            end if
+        end do
+        
+        ! Output final segment
+        if (segment_pos > 1) then
+            if (in_symbol_font) then
+                ! Symbol font doesn't need escaping
+                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+            else
+                ! Helvetica font needs escaping
+                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
+                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
+            end if
+            call this%stream_writer%add_to_stream(text_cmd)
+        end if
+        
         call this%stream_writer%add_to_stream("ET")
+    end subroutine draw_mixed_font_text
+
+    subroutine draw_rotated_mixed_font_text(this, x, y, text)
+        !! Draw rotated text with automatic font switching for Greek letters
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        
+        integer :: i, j, char_len, codepoint, symbol_char, next_codepoint
+        character(len=1) :: current_char
+        character(len=200) :: text_cmd
+        character(len=500) :: current_segment
+        logical :: in_symbol_font, next_is_greek
+        integer :: segment_pos
+        
+        call this%stream_writer%add_to_stream("BT")
+        
+        ! Start with Helvetica font
+        write(text_cmd, '("/F1 12 Tf")') 
+        call this%stream_writer%add_to_stream(text_cmd)
+        
+        ! Rotation matrix for -90 degrees (counter-clockwise): [cos(-90) -sin(-90) sin(-90) cos(-90) x y] = [0 1 -1 0 x y]
+        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') x, y
+        call this%stream_writer%add_to_stream(text_cmd)
+        
+        i = 1
+        in_symbol_font = .false.
+        current_segment = ""
+        segment_pos = 1
+        
+        do while (i <= len_trim(text))
+            current_char = text(i:i)
+            
+            ! Check if this is a Unicode character (high bit set)
+            if (iachar(current_char) > 127) then
+                ! Get the Unicode codepoint
+                char_len = utf8_char_length(text(i:i))
+                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
+                    codepoint = utf8_to_codepoint(text, i)
+                    call unicode_to_symbol_char(codepoint, symbol_char)
+                    
+                    if (symbol_char > 0) then
+                        ! Greek letter - switch to Symbol font if needed
+                        if (.not. in_symbol_font) then
+                            ! Output current Helvetica segment
+                            if (segment_pos > 1) then
+                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                            end if
+                            ! Switch to Symbol font
+                            call this%stream_writer%add_to_stream("/F2 12 Tf")
+                            in_symbol_font = .true.
+                            current_segment = ""
+                            segment_pos = 1
+                        end if
+                        current_segment(segment_pos:segment_pos) = char(symbol_char)
+                        segment_pos = segment_pos + 1
+                    else
+                        ! Non-Greek Unicode - use ASCII fallback in Helvetica
+                        if (in_symbol_font) then
+                            ! Output current Symbol segment
+                            if (segment_pos > 1) then
+                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                            end if
+                            ! Switch back to Helvetica
+                            call this%stream_writer%add_to_stream("/F1 12 Tf")
+                            in_symbol_font = .false.
+                            current_segment = ""
+                            segment_pos = 1
+                        end if
+                        ! Add ASCII fallback
+                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
+                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+                    end if
+                    
+                    i = i + char_len
+                else
+                    ! Invalid Unicode sequence, skip
+                    i = i + 1
+                end if
+            else
+                ! Regular ASCII character
+                ! Check if next non-space character is Greek
+                next_is_greek = .false.
+                if (current_char == '(' .or. current_char == ' ') then
+                    j = i + 1
+                    ! Look for the next meaningful character
+                    do while (j <= len_trim(text))
+                        if (text(j:j) == ' ') then
+                            j = j + 1
+                        else
+                            exit
+                        end if
+                    end do
+                    if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
+                        char_len = utf8_char_length(text(j:j))
+                        if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
+                            next_codepoint = utf8_to_codepoint(text, j)
+                            call unicode_to_symbol_char(next_codepoint, symbol_char)
+                            if (symbol_char > 0) next_is_greek = .true.
+                        end if
+                    end if
+                end if
+                
+                ! Handle font switching
+                if (in_symbol_font) then
+                    ! Always switch back to Helvetica for parentheses and most ASCII
+                    if (current_char == '(' .or. current_char == ')' .or. &
+                        (.not. next_is_greek .and. current_char /= ' ')) then
+                        ! Output current Symbol segment before switching back
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        ! Switch back to Helvetica
+                        call this%stream_writer%add_to_stream("/F1 12 Tf")
+                        in_symbol_font = .false.
+                        current_segment = ""
+                        segment_pos = 1
+                    end if
+                else
+                    ! In Helvetica - check if we need to switch to Symbol
+                    if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
+                        ! Output current segment including this character
+                        current_segment(segment_pos:segment_pos) = current_char
+                        segment_pos = segment_pos + 1
+                        if (segment_pos > 1) then
+                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                            call this%stream_writer%add_to_stream(text_cmd)
+                        end if
+                        current_segment = ""
+                        segment_pos = 1
+                        i = i + 1
+                        cycle  ! Skip the normal character addition
+                    end if
+                end if
+                
+                ! Add character to current segment
+                current_segment(segment_pos:segment_pos) = current_char
+                segment_pos = segment_pos + 1
+                i = i + 1
+            end if
+        end do
+        
+        ! Output final segment
+        if (segment_pos > 1) then
+            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+            call this%stream_writer%add_to_stream(text_cmd)
+        end if
+        
+        call this%stream_writer%add_to_stream("ET")
+    end subroutine draw_rotated_mixed_font_text
+    
+    subroutine draw_pdf_text_direct(this, x, y, text)
+        !! Draw text at direct PDF coordinates (no data coordinate transformation)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Render text with mixed font support
+        call draw_mixed_font_text(this, x, y, processed_text(1:processed_len))
     end subroutine draw_pdf_text_direct
 
     subroutine draw_pdf_text_bold(this, x, y, text)
@@ -197,7 +474,7 @@ contains
     subroutine write_pdf_structure(unit, ctx)
         integer, intent(in) :: unit
         type(pdf_context), intent(in) :: ctx
-        integer :: obj_positions(5), xref_pos
+        integer :: obj_positions(6), xref_pos
         
         call write_string_to_unit(unit, "%PDF-1.4")
         call write_all_objects(unit, ctx, obj_positions)
@@ -207,24 +484,25 @@ contains
     subroutine write_all_objects(unit, ctx, positions)
         integer, intent(in) :: unit
         type(pdf_context), intent(in) :: ctx
-        integer, intent(out) :: positions(5)
+        integer, intent(out) :: positions(6)
         
         call write_catalog_object(unit, positions(1))
         call write_pages_object(unit, ctx, positions(2))
         call write_page_object(unit, ctx, positions(3))
         call write_content_object(unit, ctx, positions(4))
-        call write_font_object(unit, positions(5))
+        call write_helvetica_font_object(unit, positions(5))
+        call write_symbol_font_object(unit, positions(6))
     end subroutine write_all_objects
 
     subroutine write_xref_and_trailer(unit, positions, xref_pos)
-        integer, intent(in) :: unit, positions(5)
+        integer, intent(in) :: unit, positions(6)
         integer, intent(out) :: xref_pos
         character(len=200) :: xref_entry
         character(len=100) :: trailer_str
         
         xref_pos = get_position(unit)
         call write_string_to_unit(unit, "xref")
-        call write_string_to_unit(unit, "0 6")
+        call write_string_to_unit(unit, "0 7")
         call write_string_to_unit(unit, "0000000000 65535 f")
         
         write(xref_entry, '(I10.10, " 00000 n")') positions(1)
@@ -237,9 +515,11 @@ contains
         call write_string_to_unit(unit, xref_entry)
         write(xref_entry, '(I10.10, " 00000 n")') positions(5)
         call write_string_to_unit(unit, xref_entry)
+        write(xref_entry, '(I10.10, " 00000 n")') positions(6)
+        call write_string_to_unit(unit, xref_entry)
         
         call write_string_to_unit(unit, "trailer")
-        call write_string_to_unit(unit, "<</Size 6/Root 1 0 R>>")
+        call write_string_to_unit(unit, "<</Size 7/Root 1 0 R>>")
         call write_string_to_unit(unit, "startxref")
         write(trailer_str, '(I0)') xref_pos
         call write_string_to_unit(unit, trailer_str)
@@ -276,7 +556,7 @@ contains
         write(size_str, '(I0, 1X, I0)') ctx%width, ctx%height
         call write_string_to_unit(unit, "3 0 obj")
         page_str = "<</Type /Page/Parent 2 0 R/MediaBox [0 0 " // trim(size_str) // "]" // &
-                   "/Contents 4 0 R/Resources <</Font <</F1 5 0 R>>>>>>>>"
+                   "/Contents 4 0 R/Resources <</Font <</F1 5 0 R/F2 6 0 R>>>>>>>>>"
         call write_string_to_unit(unit, page_str)
         call write_string_to_unit(unit, "endobj")
     end subroutine write_page_object
@@ -297,7 +577,7 @@ contains
         call write_string_to_unit(unit, "endobj")
     end subroutine write_content_object
 
-    subroutine write_font_object(unit, pos)
+    subroutine write_helvetica_font_object(unit, pos)
         integer, intent(in) :: unit
         integer, intent(out) :: pos
         
@@ -305,7 +585,17 @@ contains
         call write_string_to_unit(unit, "5 0 obj")
         call write_string_to_unit(unit, "<</Type /Font/Subtype /Type1/BaseFont /Helvetica>>")
         call write_string_to_unit(unit, "endobj")
-    end subroutine write_font_object
+    end subroutine write_helvetica_font_object
+
+    subroutine write_symbol_font_object(unit, pos)
+        integer, intent(in) :: unit
+        integer, intent(out) :: pos
+        
+        pos = get_position(unit)
+        call write_string_to_unit(unit, "6 0 obj")
+        call write_string_to_unit(unit, "<</Type /Font/Subtype /Type1/BaseFont /Symbol>>")
+        call write_string_to_unit(unit, "endobj")
+    end subroutine write_symbol_font_object
 
     integer function get_position(unit)
         integer, intent(in) :: unit
@@ -327,6 +617,207 @@ contains
         write(unit) bytes
         deallocate(bytes)
     end subroutine write_string_to_unit
+
+
+    subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
+        !! Convert Unicode codepoint to PDF escape sequence
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: escape_seq
+        
+        ! For now, convert Greek letters to ASCII equivalents
+        ! TODO: Use proper PDF Unicode escape sequences
+        select case (codepoint)
+        case (945) ! α
+            escape_seq = "alpha"
+        case (946) ! β
+            escape_seq = "beta"
+        case (947) ! γ
+            escape_seq = "gamma"
+        case (948) ! δ
+            escape_seq = "delta"
+        case (949) ! ε
+            escape_seq = "epsilon"
+        case (950) ! ζ
+            escape_seq = "zeta"
+        case (951) ! η
+            escape_seq = "eta"
+        case (952) ! θ
+            escape_seq = "theta"
+        case (953) ! ι
+            escape_seq = "iota"
+        case (954) ! κ
+            escape_seq = "kappa"
+        case (955) ! λ
+            escape_seq = "lambda"
+        case (956) ! μ
+            escape_seq = "mu"
+        case (957) ! ν
+            escape_seq = "nu"
+        case (958) ! ξ
+            escape_seq = "xi"
+        case (959) ! ο
+            escape_seq = "omicron"
+        case (960) ! π
+            escape_seq = "pi"
+        case (961) ! ρ
+            escape_seq = "rho"
+        case (963) ! σ
+            escape_seq = "sigma"
+        case (964) ! τ
+            escape_seq = "tau"
+        case (965) ! υ
+            escape_seq = "upsilon"
+        case (966) ! φ
+            escape_seq = "phi"
+        case (967) ! χ
+            escape_seq = "chi"
+        case (968) ! ψ
+            escape_seq = "psi"
+        case (969) ! ω
+            escape_seq = "omega"
+        case (913) ! Α
+            escape_seq = "Alpha"
+        case (914) ! Β
+            escape_seq = "Beta"
+        case (915) ! Γ
+            escape_seq = "Gamma"
+        case (916) ! Δ
+            escape_seq = "Delta"
+        case (917) ! Ε
+            escape_seq = "Epsilon"
+        case (918) ! Ζ
+            escape_seq = "Zeta"
+        case (919) ! Η
+            escape_seq = "Eta"
+        case (920) ! Θ
+            escape_seq = "Theta"
+        case (921) ! Ι
+            escape_seq = "Iota"
+        case (922) ! Κ
+            escape_seq = "Kappa"
+        case (923) ! Λ
+            escape_seq = "Lambda"
+        case (924) ! Μ
+            escape_seq = "Mu"
+        case (925) ! Ν
+            escape_seq = "Nu"
+        case (926) ! Ξ
+            escape_seq = "Xi"
+        case (927) ! Ο
+            escape_seq = "Omicron"
+        case (928) ! Π
+            escape_seq = "Pi"
+        case (929) ! Ρ
+            escape_seq = "Rho"
+        case (931) ! Σ
+            escape_seq = "Sigma"
+        case (932) ! Τ
+            escape_seq = "Tau"
+        case (933) ! Υ
+            escape_seq = "Upsilon"
+        case (934) ! Φ
+            escape_seq = "Phi"
+        case (935) ! Χ
+            escape_seq = "Chi"
+        case (936) ! Ψ
+            escape_seq = "Psi"
+        case (937) ! Ω
+            escape_seq = "Omega"
+        case (178) ! ²
+            escape_seq = "2"
+        case default
+            ! For other Unicode characters, use a placeholder
+            write(escape_seq, '("U+", Z4.4)') codepoint
+        end select
+    end subroutine unicode_codepoint_to_pdf_escape
+
+    subroutine unicode_to_symbol_char(unicode_codepoint, symbol_char)
+        !! Map Unicode Greek letters to Symbol font character positions
+        integer, intent(in) :: unicode_codepoint
+        integer, intent(out) :: symbol_char
+        
+        ! Map Unicode Greek letters to Symbol font character positions
+        select case (unicode_codepoint)
+        ! Lowercase Greek letters
+        case (945); symbol_char = 97   ! α -> 'a'
+        case (946); symbol_char = 98   ! β -> 'b'
+        case (947); symbol_char = 103  ! γ -> 'g'
+        case (948); symbol_char = 100  ! δ -> 'd'
+        case (949); symbol_char = 101  ! ε -> 'e'
+        case (950); symbol_char = 122  ! ζ -> 'z'
+        case (951); symbol_char = 104  ! η -> 'h'
+        case (952); symbol_char = 113  ! θ -> 'q'
+        case (953); symbol_char = 105  ! ι -> 'i'
+        case (954); symbol_char = 107  ! κ -> 'k'
+        case (955); symbol_char = 108  ! λ -> 'l'
+        case (956); symbol_char = 109  ! μ -> 'm'
+        case (957); symbol_char = 110  ! ν -> 'n'
+        case (958); symbol_char = 120  ! ξ -> 'x'
+        case (959); symbol_char = 111  ! ο -> 'o'
+        case (960); symbol_char = 112  ! π -> 'p'
+        case (961); symbol_char = 114  ! ρ -> 'r'
+        case (963); symbol_char = 115  ! σ -> 's'
+        case (964); symbol_char = 116  ! τ -> 't'
+        case (965); symbol_char = 117  ! υ -> 'u'
+        case (966); symbol_char = 102  ! φ -> 'f'
+        case (967); symbol_char = 99   ! χ -> 'c'
+        case (968); symbol_char = 121  ! ψ -> 'y'
+        case (969); symbol_char = 119  ! ω -> 'w'
+        
+        ! Uppercase Greek letters
+        case (913); symbol_char = 65   ! Α -> 'A'
+        case (914); symbol_char = 66   ! Β -> 'B'
+        case (915); symbol_char = 71   ! Γ -> 'G'
+        case (916); symbol_char = 68   ! Δ -> 'D'
+        case (917); symbol_char = 69   ! Ε -> 'E'
+        case (918); symbol_char = 90   ! Ζ -> 'Z'
+        case (919); symbol_char = 72   ! Η -> 'H'
+        case (920); symbol_char = 81   ! Θ -> 'Q'
+        case (921); symbol_char = 73   ! Ι -> 'I'
+        case (922); symbol_char = 75   ! Κ -> 'K'
+        case (923); symbol_char = 76   ! Λ -> 'L'
+        case (924); symbol_char = 77   ! Μ -> 'M'
+        case (925); symbol_char = 78   ! Ν -> 'N'
+        case (926); symbol_char = 88   ! Ξ -> 'X'
+        case (927); symbol_char = 79   ! Ο -> 'O'
+        case (928); symbol_char = 80   ! Π -> 'P'
+        case (929); symbol_char = 82   ! Ρ -> 'R'
+        case (931); symbol_char = 83   ! Σ -> 'S'
+        case (932); symbol_char = 84   ! Τ -> 'T'
+        case (933); symbol_char = 85   ! Υ -> 'U'
+        case (934); symbol_char = 70   ! Φ -> 'F'
+        case (935); symbol_char = 67   ! Χ -> 'C'
+        case (936); symbol_char = 89   ! Ψ -> 'Y'
+        case (937); symbol_char = 87   ! Ω -> 'W'
+        
+        case default
+            symbol_char = 0  ! Not a Greek letter
+        end select
+    end subroutine unicode_to_symbol_char
+    
+    subroutine escape_pdf_string(input, output, output_len)
+        !! Escape special characters for PDF string literals
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: output_len
+        integer :: i, j
+        
+        j = 1
+        do i = 1, len(input)
+            ! Escape parentheses and backslashes in PDF strings
+            if (input(i:i) == '(' .or. input(i:i) == ')' .or. input(i:i) == '\') then
+                if (j <= len(output)) then
+                    output(j:j) = '\'
+                    j = j + 1
+                end if
+            end if
+            if (j <= len(output)) then
+                output(j:j) = input(i:i)
+                j = j + 1
+            end if
+        end do
+        output_len = j - 1
+    end subroutine escape_pdf_string
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
@@ -546,17 +1037,17 @@ contains
             ! Position title at top of PDF - high Y value for PDF coordinates (Y=0 at bottom)
             ! Just below the top edge, similar to matplotlib spacing
             label_y = real(ctx%height - 25, wp)  ! 25 pixels down from top edge
-            call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))  ! Normal weight (non-bold)
+            call draw_pdf_text_direct(ctx, label_x, label_y, title)  ! Normal weight (non-bold)
         end if
         
         ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
             call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(xlabel), label_x, label_y)
+                                               xlabel, label_x, label_y)
             ! Convert to PDF coordinates
             label_y = real(ctx%plot_area%bottom - 40, wp)  ! 40px below plot (matplotlib exact)
-            call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
+            call draw_pdf_text_direct(ctx, label_x, label_y, xlabel)
         end if
         
         ! Draw Y-axis label rotated 90 degrees matplotlib-style
@@ -570,26 +1061,20 @@ contains
         type(pdf_context), intent(inout) :: ctx
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
-        character(len=200) :: text_cmd
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         ! Position for rotated Y-axis label using proper axis label positioning
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
-                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
+                                           real(ctx%plot_area%left, wp), trim(processed_text(1:processed_len)), label_x, label_y)
         ! Convert to PDF coordinates (Y is flipped)
         label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
         
-        ! Set up 90-degree rotation using PDF text matrix
-        call ctx%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")')
-        call ctx%stream_writer%add_to_stream(text_cmd)
-        
-        ! Rotation matrix for -90 degrees (counter-clockwise): [cos(-90) -sin(-90) sin(-90) cos(-90) x y] = [0 1 -1 0 x y]
-        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
-        call ctx%stream_writer%add_to_stream(text_cmd)
-        
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call ctx%stream_writer%add_to_stream(text_cmd)
-        call ctx%stream_writer%add_to_stream("ET")
+        ! Draw rotated text with mixed font support
+        call draw_rotated_mixed_font_text(ctx, label_x, label_y, processed_text(1:processed_len))
     end subroutine draw_vertical_text_pdf
 
     ! Graphics state management routines - encapsulate PDF's mutable global state
@@ -612,28 +1097,23 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=200) :: text_cmd
+        character(len=500) :: processed_text
+        integer :: processed_len
         real(wp) :: text_width, centered_x
         
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+        
         ! Calculate text width for centering (fallback to character estimation if text system fails)
-        text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
+        text_width = real(calculate_text_width(trim(processed_text(1:processed_len))), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
         if (text_width <= 0.0_wp) then
             ! Fallback: estimate 8 pixels per character for 14pt font
-            text_width = real(len_trim(text) * 8, wp)
+            text_width = real(processed_len * 8, wp)
         end if
         centered_x = x - text_width / 2.0_wp
         
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 14 Tf")') ! Larger font size for titles
-        call this%stream_writer%add_to_stream(text_cmd)
-        call this%stream_writer%add_to_stream("2 Tr")  ! Text rendering mode 2 = fill and stroke (bold effect)
-        call this%stream_writer%add_to_stream("0.5 w")  ! Line width for stroke (isolated - won't affect main state)
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call this%stream_writer%add_to_stream(text_cmd)
-        call this%stream_writer%add_to_stream("0 Tr")  ! Reset to normal text rendering
-        call this%stream_writer%add_to_stream("ET")
+        ! Draw bold text with mixed font support (simplified bold rendering)
+        call draw_mixed_font_text(this, centered_x, y, processed_text(1:processed_len))
     end subroutine draw_bold_text_isolated
 
     ! PDF-specific vector interface implementations
