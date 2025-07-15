@@ -31,6 +31,7 @@ jobs:
 
     - name: Run FPM tests with coverage
       run: |
+        mkdir -p /tmp/test
         make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
 
     - name: Test FPM example build
