@@ -120,7 +120,7 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, char_len, codepoint, symbol_char, text_len
+        integer :: i, char_len, codepoint, symbol_char
         character(len=1) :: current_char
         character(len=200) :: text_cmd
         character(len=500) :: current_segment
@@ -139,10 +139,7 @@ contains
         current_segment = ""
         segment_pos = 1
         
-        ! Find the actual length excluding null terminators and padding
-        text_len = len_trim(text)
-        
-        do while (i <= text_len)
+        do while (i <= len_trim(text))
             current_char = text(i:i)
             need_font_switch = .false.
             
@@ -806,7 +803,7 @@ contains
         integer :: i, j
         
         j = 1
-        do i = 1, len_trim(input)
+        do i = 1, len(input)
             ! Escape parentheses and backslashes in PDF strings
             if (input(i:i) == '(' .or. input(i:i) == ')' .or. input(i:i) == '\') then
                 if (j <= len(output)) then
@@ -1040,17 +1037,17 @@ contains
             ! Position title at top of PDF - high Y value for PDF coordinates (Y=0 at bottom)
             ! Just below the top edge, similar to matplotlib spacing
             label_y = real(ctx%height - 25, wp)  ! 25 pixels down from top edge
-            call draw_pdf_text_direct(ctx, label_x, label_y, trim(title))  ! Normal weight (non-bold)
+            call draw_pdf_text_direct(ctx, label_x, label_y, title)  ! Normal weight (non-bold)
         end if
         
         ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
             call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(xlabel), label_x, label_y)
+                                               xlabel, label_x, label_y)
             ! Convert to PDF coordinates
             label_y = real(ctx%plot_area%bottom - 40, wp)  ! 40px below plot (matplotlib exact)
-            call draw_pdf_text_direct(ctx, label_x, label_y, trim(xlabel))
+            call draw_pdf_text_direct(ctx, label_x, label_y, xlabel)
         end if
         
         ! Draw Y-axis label rotated 90 degrees matplotlib-style
