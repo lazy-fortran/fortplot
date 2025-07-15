@@ -347,13 +347,49 @@ contains
     end subroutine write_string_to_unit
 
     subroutine escape_unicode_for_pdf(input_text, escaped_text)
-        !! Pass through UTF-8 encoded text for PDF with proper Unicode support
+        !! Convert Unicode characters to ASCII equivalents for PDF Helvetica font
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: escaped_text
         
-        ! Simply pass through the UTF-8 encoded text
-        ! Modern PDF readers support UTF-8 encoded text strings
-        escaped_text = input_text
+        integer :: i, j, char_len, codepoint
+        character(len=1) :: current_char
+        character(len=20) :: ascii_replacement
+        
+        i = 1
+        j = 1
+        escaped_text = ""
+        
+        do while (i <= len_trim(input_text))
+            current_char = input_text(i:i)
+            
+            ! Check if this is a Unicode character (high bit set)
+            if (iachar(current_char) > 127) then
+                ! Get the Unicode codepoint
+                char_len = utf8_char_length(input_text(i:i))
+                if (char_len > 0 .and. i + char_len - 1 <= len_trim(input_text)) then
+                    codepoint = utf8_to_codepoint(input_text, i)
+                    call unicode_codepoint_to_pdf_escape(codepoint, ascii_replacement)
+                    
+                    ! Add ASCII replacement to output
+                    if (j + len_trim(ascii_replacement) <= len(escaped_text)) then
+                        escaped_text(j:j+len_trim(ascii_replacement)-1) = trim(ascii_replacement)
+                        j = j + len_trim(ascii_replacement)
+                    end if
+                    
+                    i = i + char_len
+                else
+                    ! Invalid Unicode sequence, skip
+                    i = i + 1
+                end if
+            else
+                ! Regular ASCII character, copy as-is
+                if (j <= len(escaped_text)) then
+                    escaped_text(j:j) = current_char
+                    j = j + 1
+                end if
+                i = i + 1
+            end if
+        end do
     end subroutine escape_unicode_for_pdf
 
     subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
