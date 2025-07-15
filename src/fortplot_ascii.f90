@@ -38,6 +38,7 @@ module fortplot_ascii
         procedure :: draw_marker => ascii_draw_marker
         procedure :: set_marker_colors => ascii_set_marker_colors
         procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
+        procedure :: fill_heatmap => ascii_fill_heatmap
     end type ascii_context
     
     ! ASCII plotting constants
@@ -494,5 +495,56 @@ contains
         ! ASCII backend doesn't support separate marker colors or transparency
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors_with_alpha
+    
+    subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill ASCII canvas with heatmap representation of 2D data
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        integer :: nx, ny, i, j, px, py
+        real(wp) :: x_min, x_max, y_min, y_max
+        real(wp) :: z_normalized
+        integer :: char_idx
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        
+        x_min = minval(x_grid)
+        x_max = maxval(x_grid)
+        y_min = minval(y_grid)
+        y_max = maxval(y_grid)
+        
+        ! Fill the canvas with density characters based on z values
+        do i = 1, nx
+            do j = 1, ny
+                ! Map grid coordinates to canvas coordinates
+                px = int((x_grid(i) - this%x_min) / (this%x_max - this%x_min) * &
+                        real(this%plot_width - 3, wp)) + 2
+                py = (this%plot_height - 1) - int((y_grid(j) - this%y_min) / &
+                        (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
+                
+                ! Check bounds
+                if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
+                    ! Normalize z value to character index
+                    if (abs(z_max - z_min) > 1e-10_wp) then
+                        z_normalized = (z_grid(i, j) - z_min) / (z_max - z_min)
+                    else
+                        z_normalized = 0.5_wp
+                    end if
+                    
+                    ! Map to character index (1 to len(ASCII_CHARS))
+                    char_idx = min(len(ASCII_CHARS), max(1, int(z_normalized * real(len(ASCII_CHARS) - 1, wp)) + 1))
+                    
+                    ! Only overwrite if current position is empty or has lower density
+                    if (this%canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, this%canvas(py, px))) then
+                        this%canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
+                    end if
+                end if
+            end do
+        end do
+    end subroutine ascii_fill_heatmap
 
 end module fortplot_ascii
