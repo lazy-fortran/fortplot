@@ -35,7 +35,7 @@ contains
 
     function test_font_initialization() result(passed)
         !! Test that font can be initialized from file
-        use fortplot_text, only: find_font_by_name
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
         character(len=256) :: font_path
@@ -45,9 +45,9 @@ contains
         print *, "Test 1: Font Initialization"
         print *, "---------------------------"
         
-        ! Use dynamic font discovery
-        if (.not. find_font_by_name("DejaVu Sans", font_path)) then
-            print *, "❌ Could not find DejaVu Sans font"
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Could not find any supported font"
             return
         end if
         
@@ -67,7 +67,7 @@ contains
     
     function test_font_metrics() result(passed)
         !! Test font metrics functions
-        use fortplot_text, only: find_font_by_name
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
         integer :: ascent, descent, line_gap
@@ -81,9 +81,9 @@ contains
         print *, "Test 2: Font Metrics"
         print *, "--------------------"
         
-        ! Use dynamic font discovery
-        if (.not. find_font_by_name("DejaVu Sans", font_path)) then
-            print *, "❌ Cannot find font for metrics test"
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Cannot find any supported font for metrics test"
             return
         end if
         
@@ -129,7 +129,7 @@ contains
     
     function test_character_rendering() result(passed)
         !! Test character bitmap rendering
-        use fortplot_text, only: find_font_by_name
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
         type(c_ptr) :: bitmap_ptr
@@ -145,9 +145,9 @@ contains
         print *, "Test 3: Character Rendering"
         print *, "---------------------------"
         
-        ! Use dynamic font discovery
-        if (.not. find_font_by_name("DejaVu Sans", font_path)) then
-            print *, "❌ Cannot find font for rendering test"
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Cannot find any supported font for rendering test"
             return
         end if
         

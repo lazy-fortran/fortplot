@@ -7,7 +7,7 @@ module fortplot_text
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, get_font_metrics
-    public :: get_font_ascent_ratio, find_font_by_name
+    public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -90,6 +90,36 @@ contains
         end select
         
     end function find_font_by_name
+
+    function find_any_available_font(font_path) result(found)
+        !! Find any available font using same priority order as system initialization
+        character(len=256), intent(out) :: font_path
+        logical :: found
+        
+        found = .false.
+        
+        ! Use same priority order as discover_and_init_font
+        if (find_font_by_name("Helvetica", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("Liberation Sans", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("Arial", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("DejaVu Sans", font_path)) then
+            found = .true.
+            return
+        end if
+        
+    end function find_any_available_font
 
     subroutine check_helvetica_paths(font_path, found)
         character(len=256), intent(out) :: font_path
