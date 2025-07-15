@@ -1,4 +1,4 @@
-program test_pdf_parentheses
+program debug_spaces2
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -9,10 +9,10 @@ program test_pdf_parentheses
     x = [0.0_wp, 1.0_wp]
     y = [0.0_wp, 1.0_wp]
     
-    call fig%initialize(600, 400)
-    call fig%add_plot(x, y, label="sin(omega)")
-    call fig%savefig("test_parentheses.pdf")
+    call fig%initialize(400, 300)
+    call fig%add_plot(x, y, label="before omega after")
+    call fig%savefig("debug_spaces2.pdf")
     
-    print *, "Test completed"
+    print *, "Space test completed"
     
-end program test_pdf_parentheses
+end program debug_spaces2
