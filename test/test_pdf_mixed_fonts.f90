@@ -1,6 +1,6 @@
 program test_pdf_mixed_fonts
     use fortplot_pdf, only: pdf_context, draw_mixed_font_text
-    use fortplot_types, only: wp
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     type(pdf_context) :: ctx

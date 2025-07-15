@@ -14,7 +14,7 @@ module fortplot_pdf
     implicit none
     
     private
-    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels
+    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels, draw_mixed_font_text
     
     type, extends(vector_stream_writer) :: pdf_stream_writer
     contains
@@ -120,12 +120,13 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, j, char_len, codepoint, symbol_char, next_codepoint
+        integer :: i, char_len, codepoint, symbol_char
         character(len=1) :: current_char
         character(len=200) :: text_cmd
         character(len=500) :: current_segment
-        logical :: in_symbol_font, next_is_greek
-        integer :: segment_pos
+        character(len=1000) :: escaped_segment
+        logical :: in_symbol_font, need_font_switch
+        integer :: segment_pos, escaped_len
         
         call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
@@ -140,6 +141,7 @@ contains
         
         do while (i <= len_trim(text))
             current_char = text(i:i)
+            need_font_switch = .false.
             
             ! Check if this is a Unicode character (high bit set)
             if (iachar(current_char) > 127) then
@@ -150,103 +152,73 @@ contains
                     call unicode_to_symbol_char(codepoint, symbol_char)
                     
                     if (symbol_char > 0) then
-                        ! Greek letter - switch to Symbol font if needed
+                        ! This is a Greek letter
                         if (.not. in_symbol_font) then
-                            ! Output current Helvetica segment
+                            ! Need to switch to Symbol font
+                            need_font_switch = .true.
+                            ! Output current segment before switching
                             if (segment_pos > 1) then
-                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                ! Escape parentheses for Helvetica font
+                                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
+                                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
                                 call this%stream_writer%add_to_stream(text_cmd)
+                                current_segment = ""
+                                segment_pos = 1
                             end if
-                            ! Switch to Symbol font
+                            ! Switch to Symbol
                             call this%stream_writer%add_to_stream("/F2 12 Tf")
                             in_symbol_font = .true.
-                            current_segment = ""
-                            segment_pos = 1
                         end if
+                        ! Add Greek character
                         current_segment(segment_pos:segment_pos) = char(symbol_char)
                         segment_pos = segment_pos + 1
+                        i = i + char_len
                     else
-                        ! Non-Greek Unicode - use ASCII fallback in Helvetica
+                        ! Non-Greek Unicode
                         if (in_symbol_font) then
-                            ! Output current Symbol segment
+                            ! Need to switch back to Helvetica
+                            need_font_switch = .true.
+                            ! Output current segment before switching
                             if (segment_pos > 1) then
+                                ! Symbol font doesn't need escaping
                                 write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
                                 call this%stream_writer%add_to_stream(text_cmd)
+                                current_segment = ""
+                                segment_pos = 1
                             end if
-                            ! Switch back to Helvetica
+                            ! Switch to Helvetica
                             call this%stream_writer%add_to_stream("/F1 12 Tf")
                             in_symbol_font = .false.
-                            current_segment = ""
-                            segment_pos = 1
                         end if
-                        ! Add ASCII fallback
+                        ! Add ASCII representation
                         call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
                         segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+                        i = i + char_len
                     end if
-                    
-                    i = i + char_len
                 else
-                    ! Invalid Unicode sequence, skip
+                    ! Invalid UTF-8, skip
                     i = i + 1
                 end if
             else
                 ! Regular ASCII character
-                ! Check if next non-space character is Greek
-                next_is_greek = .false.
-                if (current_char == '(' .or. current_char == ' ') then
-                    j = i + 1
-                    ! Look for the next meaningful character
-                    do while (j <= len_trim(text))
-                        if (text(j:j) == ' ') then
-                            j = j + 1
-                        else
-                            exit
-                        end if
-                    end do
-                    if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
-                        char_len = utf8_char_length(text(j:j))
-                        if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
-                            next_codepoint = utf8_to_codepoint(text, j)
-                            call unicode_to_symbol_char(next_codepoint, symbol_char)
-                            if (symbol_char > 0) next_is_greek = .true.
-                        end if
-                    end if
-                end if
-                
-                ! Handle font switching
+                ! All ASCII characters must be in Helvetica font
                 if (in_symbol_font) then
-                    ! Always switch back to Helvetica for parentheses and most ASCII
-                    if (current_char == '(' .or. current_char == ')' .or. &
-                        (.not. next_is_greek .and. current_char /= ' ')) then
-                        ! Output current Symbol segment before switching back
-                        if (segment_pos > 1) then
-                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                            call this%stream_writer%add_to_stream(text_cmd)
-                        end if
-                        ! Switch back to Helvetica
-                        call this%stream_writer%add_to_stream("/F1 12 Tf")
-                        in_symbol_font = .false.
+                    ! Need to switch to Helvetica for ASCII characters
+                    need_font_switch = .true.
+                    ! Output current segment before switching
+                    if (segment_pos > 1) then
+                        ! Symbol font doesn't need escaping
+                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                        call this%stream_writer%add_to_stream(text_cmd)
                         current_segment = ""
                         segment_pos = 1
                     end if
-                else
-                    ! In Helvetica - check if we need to switch to Symbol
-                    if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
-                        ! Output current segment including this character
-                        current_segment(segment_pos:segment_pos) = current_char
-                        segment_pos = segment_pos + 1
-                        if (segment_pos > 1) then
-                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                            call this%stream_writer%add_to_stream(text_cmd)
-                        end if
-                        current_segment = ""
-                        segment_pos = 1
-                        i = i + 1
-                        cycle  ! Skip the normal character addition
-                    end if
+                    ! Switch to Helvetica
+                    call this%stream_writer%add_to_stream("/F1 12 Tf")
+                    in_symbol_font = .false.
                 end if
                 
-                ! Add character to current segment
+                ! Add ASCII character
                 current_segment(segment_pos:segment_pos) = current_char
                 segment_pos = segment_pos + 1
                 i = i + 1
@@ -255,7 +227,14 @@ contains
         
         ! Output final segment
         if (segment_pos > 1) then
-            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+            if (in_symbol_font) then
+                ! Symbol font doesn't need escaping
+                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+            else
+                ! Helvetica font needs escaping
+                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
+                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
+            end if
             call this%stream_writer%add_to_stream(text_cmd)
         end if
         
@@ -744,6 +723,8 @@ contains
             escape_seq = "Psi"
         case (937) ! Ω
             escape_seq = "Omega"
+        case (178) ! ²
+            escape_seq = "2"
         case default
             ! For other Unicode characters, use a placeholder
             write(escape_seq, '("U+", Z4.4)') codepoint
@@ -813,6 +794,30 @@ contains
             symbol_char = 0  ! Not a Greek letter
         end select
     end subroutine unicode_to_symbol_char
+    
+    subroutine escape_pdf_string(input, output, output_len)
+        !! Escape special characters for PDF string literals
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: output_len
+        integer :: i, j
+        
+        j = 1
+        do i = 1, len_trim(input)
+            ! Escape parentheses and backslashes in PDF strings
+            if (input(i:i) == '(' .or. input(i:i) == ')' .or. input(i:i) == '\') then
+                if (j <= len(output)) then
+                    output(j:j) = '\'
+                    j = j + 1
+                end if
+            end if
+            if (j <= len(output)) then
+                output(j:j) = input(i:i)
+                j = j + 1
+            end if
+        end do
+        output_len = j - 1
+    end subroutine escape_pdf_string
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
