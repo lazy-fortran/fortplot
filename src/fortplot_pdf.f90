@@ -120,11 +120,11 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, char_len, codepoint, symbol_char
+        integer :: i, j, char_len, codepoint, symbol_char, next_codepoint
         character(len=1) :: current_char
         character(len=200) :: text_cmd
         character(len=500) :: current_segment
-        logical :: in_symbol_font
+        logical :: in_symbol_font, next_is_greek
         integer :: segment_pos
         
         call this%stream_writer%add_to_stream("BT")
@@ -191,7 +191,29 @@ contains
                 end if
             else
                 ! Regular ASCII character
-                if (in_symbol_font) then
+                ! Look ahead to see if we should stay in Symbol font
+                next_is_greek = .false.
+                j = i + 1
+                do while (j <= len_trim(text))
+                    if (text(j:j) == ' ' .or. text(j:j) == '(' .or. text(j:j) == ')') then
+                        j = j + 1
+                    else
+                        exit
+                    end if
+                end do
+                if (j <= len_trim(text)) then
+                    if (iachar(text(j:j)) > 127) then
+                        char_len = utf8_char_length(text(j:j))
+                        if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
+                            next_codepoint = utf8_to_codepoint(text, j)
+                            call unicode_to_symbol_char(next_codepoint, symbol_char)
+                            if (symbol_char > 0) next_is_greek = .true.
+                        end if
+                    end if
+                end if
+                
+                ! Only switch back to Helvetica if we're not between Greek letters
+                if (in_symbol_font .and. .not. next_is_greek) then
                     ! Output current Symbol segment
                     if (segment_pos > 1) then
                         write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
@@ -224,10 +246,16 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
+        integer :: i, j, char_len, codepoint, symbol_char, next_codepoint
+        character(len=1) :: current_char
         character(len=200) :: text_cmd
+        character(len=500) :: current_segment
+        logical :: in_symbol_font, next_is_greek
+        integer :: segment_pos
         
-        ! For simplicity, use the same mixed font approach but with rotation matrix
         call this%stream_writer%add_to_stream("BT")
+        
+        ! Start with Helvetica font
         write(text_cmd, '("/F1 12 Tf")') 
         call this%stream_writer%add_to_stream(text_cmd)
         
@@ -235,9 +263,110 @@ contains
         write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') x, y
         call this%stream_writer%add_to_stream(text_cmd)
         
-        ! For now, just render as regular text (TODO: implement full mixed font support for rotation)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
-        call this%stream_writer%add_to_stream(text_cmd)
+        i = 1
+        in_symbol_font = .false.
+        current_segment = ""
+        segment_pos = 1
+        
+        do while (i <= len_trim(text))
+            current_char = text(i:i)
+            
+            ! Check if this is a Unicode character (high bit set)
+            if (iachar(current_char) > 127) then
+                ! Get the Unicode codepoint
+                char_len = utf8_char_length(text(i:i))
+                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
+                    codepoint = utf8_to_codepoint(text, i)
+                    call unicode_to_symbol_char(codepoint, symbol_char)
+                    
+                    if (symbol_char > 0) then
+                        ! Greek letter - switch to Symbol font if needed
+                        if (.not. in_symbol_font) then
+                            ! Output current Helvetica segment
+                            if (segment_pos > 1) then
+                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                            end if
+                            ! Switch to Symbol font
+                            call this%stream_writer%add_to_stream("/F2 12 Tf")
+                            in_symbol_font = .true.
+                            current_segment = ""
+                            segment_pos = 1
+                        end if
+                        current_segment(segment_pos:segment_pos) = char(symbol_char)
+                        segment_pos = segment_pos + 1
+                    else
+                        ! Non-Greek Unicode - use ASCII fallback in Helvetica
+                        if (in_symbol_font) then
+                            ! Output current Symbol segment
+                            if (segment_pos > 1) then
+                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                                call this%stream_writer%add_to_stream(text_cmd)
+                            end if
+                            ! Switch back to Helvetica
+                            call this%stream_writer%add_to_stream("/F1 12 Tf")
+                            in_symbol_font = .false.
+                            current_segment = ""
+                            segment_pos = 1
+                        end if
+                        ! Add ASCII fallback
+                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
+                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+                    end if
+                    
+                    i = i + char_len
+                else
+                    ! Invalid Unicode sequence, skip
+                    i = i + 1
+                end if
+            else
+                ! Regular ASCII character
+                ! Look ahead to see if we should stay in Symbol font
+                next_is_greek = .false.
+                j = i + 1
+                do while (j <= len_trim(text))
+                    if (text(j:j) == ' ' .or. text(j:j) == '(' .or. text(j:j) == ')') then
+                        j = j + 1
+                    else
+                        exit
+                    end if
+                end do
+                if (j <= len_trim(text)) then
+                    if (iachar(text(j:j)) > 127) then
+                        char_len = utf8_char_length(text(j:j))
+                        if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
+                            next_codepoint = utf8_to_codepoint(text, j)
+                            call unicode_to_symbol_char(next_codepoint, symbol_char)
+                            if (symbol_char > 0) next_is_greek = .true.
+                        end if
+                    end if
+                end if
+                
+                ! Only switch back to Helvetica if we're not between Greek letters
+                if (in_symbol_font .and. .not. next_is_greek) then
+                    ! Output current Symbol segment
+                    if (segment_pos > 1) then
+                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                        call this%stream_writer%add_to_stream(text_cmd)
+                    end if
+                    ! Switch back to Helvetica
+                    call this%stream_writer%add_to_stream("/F1 12 Tf")
+                    in_symbol_font = .false.
+                    current_segment = ""
+                    segment_pos = 1
+                end if
+                current_segment(segment_pos:segment_pos) = current_char
+                segment_pos = segment_pos + 1
+                i = i + 1
+            end if
+        end do
+        
+        ! Output final segment
+        if (segment_pos > 1) then
+            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+            call this%stream_writer%add_to_stream(text_cmd)
+        end if
+        
         call this%stream_writer%add_to_stream("ET")
     end subroutine draw_rotated_mixed_font_text
     
