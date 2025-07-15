@@ -1,7 +1,7 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage
 
 # Default target
 all: build
@@ -66,6 +66,16 @@ run-release:
 doc:
 	ford doc.md
 
+# Generate coverage report
+coverage:
+	@echo "Building with coverage flags..."
+	fpm build --flag '-fprofile-arcs -ftest-coverage'
+	@echo "Running tests with coverage..."
+	fpm test --flag '-fprofile-arcs -ftest-coverage'
+	@echo "Generating coverage report..."
+	gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' --exclude 'example/*' --exclude 'test/*' --txt -o coverage.txt --print-summary
+	@echo "Coverage report generated: coverage.txt"
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -75,6 +85,7 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
+	@echo "  coverage         - Generate coverage report"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
