@@ -103,11 +103,14 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: pdf_x, pdf_y
         character(len=200) :: text_cmd
-        character(len=500) :: processed_text
+        character(len=500) :: processed_text, escaped_text
         integer :: processed_len
         
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Escape Unicode characters for PDF compatibility
+        call escape_unicode_for_pdf(processed_text(1:processed_len), escaped_text)
         
         call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
         
@@ -116,7 +119,7 @@ contains
         call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') pdf_x, pdf_y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') processed_text(1:processed_len)
+        write(text_cmd, '("(", A, ") Tj")') trim(escaped_text)
         call this%stream_writer%add_to_stream(text_cmd)
         call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text
@@ -127,18 +130,21 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=200) :: text_cmd
-        character(len=500) :: processed_text
+        character(len=500) :: processed_text, escaped_text
         integer :: processed_len
         
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Escape Unicode characters for PDF compatibility
+        call escape_unicode_for_pdf(processed_text(1:processed_len), escaped_text)
         
         call this%stream_writer%add_to_stream("BT")
         write(text_cmd, '("/F1 12 Tf")') 
         call this%stream_writer%add_to_stream(text_cmd)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') processed_text(1:processed_len)
+        write(text_cmd, '("(", A, ") Tj")') trim(escaped_text)
         call this%stream_writer%add_to_stream(text_cmd)
         call this%stream_writer%add_to_stream("ET")
     end subroutine draw_pdf_text_direct
@@ -339,6 +345,151 @@ contains
         write(unit) bytes
         deallocate(bytes)
     end subroutine write_string_to_unit
+
+    subroutine escape_unicode_for_pdf(input_text, escaped_text)
+        !! Convert Unicode characters to PDF-compatible escape sequences
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: escaped_text
+        integer :: i, pos, codepoint, seq_len
+        logical :: is_valid
+        character(len=10) :: escape_seq
+        
+        escaped_text = ""
+        pos = 1
+        i = 1
+        
+        do while (i <= len_trim(input_text))
+            if (iachar(input_text(i:i)) >= 128) then
+                ! Unicode character - convert to escape sequence
+                call check_utf8_sequence(input_text, i, is_valid, seq_len)
+                if (is_valid .and. seq_len > 0) then
+                    codepoint = utf8_to_codepoint(input_text, i)
+                    call unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
+                    escaped_text(pos:pos+len_trim(escape_seq)-1) = trim(escape_seq)
+                    pos = pos + len_trim(escape_seq)
+                    i = i + seq_len
+                else
+                    ! Invalid UTF-8, skip this byte
+                    i = i + 1
+                end if
+            else
+                ! ASCII character - copy as is
+                escaped_text(pos:pos) = input_text(i:i)
+                pos = pos + 1
+                i = i + 1
+            end if
+        end do
+    end subroutine escape_unicode_for_pdf
+
+    subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
+        !! Convert Unicode codepoint to PDF escape sequence
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: escape_seq
+        
+        ! For now, convert Greek letters to ASCII equivalents
+        ! TODO: Use proper PDF Unicode escape sequences
+        select case (codepoint)
+        case (945) ! α
+            escape_seq = "alpha"
+        case (946) ! β
+            escape_seq = "beta"
+        case (947) ! γ
+            escape_seq = "gamma"
+        case (948) ! δ
+            escape_seq = "delta"
+        case (949) ! ε
+            escape_seq = "epsilon"
+        case (950) ! ζ
+            escape_seq = "zeta"
+        case (951) ! η
+            escape_seq = "eta"
+        case (952) ! θ
+            escape_seq = "theta"
+        case (953) ! ι
+            escape_seq = "iota"
+        case (954) ! κ
+            escape_seq = "kappa"
+        case (955) ! λ
+            escape_seq = "lambda"
+        case (956) ! μ
+            escape_seq = "mu"
+        case (957) ! ν
+            escape_seq = "nu"
+        case (958) ! ξ
+            escape_seq = "xi"
+        case (959) ! ο
+            escape_seq = "omicron"
+        case (960) ! π
+            escape_seq = "pi"
+        case (961) ! ρ
+            escape_seq = "rho"
+        case (963) ! σ
+            escape_seq = "sigma"
+        case (964) ! τ
+            escape_seq = "tau"
+        case (965) ! υ
+            escape_seq = "upsilon"
+        case (966) ! φ
+            escape_seq = "phi"
+        case (967) ! χ
+            escape_seq = "chi"
+        case (968) ! ψ
+            escape_seq = "psi"
+        case (969) ! ω
+            escape_seq = "omega"
+        case (913) ! Α
+            escape_seq = "Alpha"
+        case (914) ! Β
+            escape_seq = "Beta"
+        case (915) ! Γ
+            escape_seq = "Gamma"
+        case (916) ! Δ
+            escape_seq = "Delta"
+        case (917) ! Ε
+            escape_seq = "Epsilon"
+        case (918) ! Ζ
+            escape_seq = "Zeta"
+        case (919) ! Η
+            escape_seq = "Eta"
+        case (920) ! Θ
+            escape_seq = "Theta"
+        case (921) ! Ι
+            escape_seq = "Iota"
+        case (922) ! Κ
+            escape_seq = "Kappa"
+        case (923) ! Λ
+            escape_seq = "Lambda"
+        case (924) ! Μ
+            escape_seq = "Mu"
+        case (925) ! Ν
+            escape_seq = "Nu"
+        case (926) ! Ξ
+            escape_seq = "Xi"
+        case (927) ! Ο
+            escape_seq = "Omicron"
+        case (928) ! Π
+            escape_seq = "Pi"
+        case (929) ! Ρ
+            escape_seq = "Rho"
+        case (931) ! Σ
+            escape_seq = "Sigma"
+        case (932) ! Τ
+            escape_seq = "Tau"
+        case (933) ! Υ
+            escape_seq = "Upsilon"
+        case (934) ! Φ
+            escape_seq = "Phi"
+        case (935) ! Χ
+            escape_seq = "Chi"
+        case (936) ! Ψ
+            escape_seq = "Psi"
+        case (937) ! Ω
+            escape_seq = "Omega"
+        case default
+            ! For other Unicode characters, use a placeholder
+            write(escape_seq, '("U+", Z4.4)') codepoint
+        end select
+    end subroutine unicode_codepoint_to_pdf_escape
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
@@ -583,10 +734,18 @@ contains
         character(len=*), intent(in) :: text
         real(wp) :: label_x, label_y
         character(len=200) :: text_cmd
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Escape Unicode characters for PDF compatibility
+        call escape_unicode_for_pdf(processed_text(1:processed_len), escaped_text)
         
         ! Position for rotated Y-axis label using proper axis label positioning
         call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
-                                           real(ctx%plot_area%left, wp), text, label_x, label_y)
+                                           real(ctx%plot_area%left, wp), trim(escaped_text), label_x, label_y)
         ! Convert to PDF coordinates (Y is flipped)
         label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
         
@@ -599,7 +758,7 @@ contains
         write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') label_x, label_y
         call ctx%stream_writer%add_to_stream(text_cmd)
         
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        write(text_cmd, '("(", A, ") Tj")') trim(escaped_text)
         call ctx%stream_writer%add_to_stream(text_cmd)
         call ctx%stream_writer%add_to_stream("ET")
     end subroutine draw_vertical_text_pdf
@@ -625,13 +784,21 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=200) :: text_cmd
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
         real(wp) :: text_width, centered_x
         
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Escape Unicode characters for PDF compatibility
+        call escape_unicode_for_pdf(processed_text(1:processed_len), escaped_text)
+        
         ! Calculate text width for centering (fallback to character estimation if text system fails)
-        text_width = real(calculate_text_width(trim(text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
+        text_width = real(calculate_text_width(trim(escaped_text)), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
         if (text_width <= 0.0_wp) then
             ! Fallback: estimate 8 pixels per character for 14pt font
-            text_width = real(len_trim(text) * 8, wp)
+            text_width = real(len_trim(escaped_text) * 8, wp)
         end if
         centered_x = x - text_width / 2.0_wp
         
@@ -642,7 +809,7 @@ contains
         call this%stream_writer%add_to_stream("0.5 w")  ! Line width for stroke (isolated - won't affect main state)
         write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') centered_x, y
         call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("(", A, ") Tj")') trim(text)
+        write(text_cmd, '("(", A, ") Tj")') trim(escaped_text)
         call this%stream_writer%add_to_stream(text_cmd)
         call this%stream_writer%add_to_stream("0 Tr")  ! Reset to normal text rendering
         call this%stream_writer%add_to_stream("ET")
