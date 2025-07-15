@@ -47,6 +47,18 @@ call legend()
 call savefig("trig_functions.pdf")
 ```
 
+#### Unicode and Greek letters in scientific plots
+```fortran
+call figure(800, 600)
+call title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t)")
+call xlabel("Time \tau (normalized)")
+call ylabel("Amplitude \Psi (V)")
+call plot(t, damped_sine, label="\alpha decay")
+call plot(t, damped_cosine, label="\beta oscillation")
+call legend()
+call savefig("unicode_demo.png")  ! Works in PNG, PDF, and ASCII
+```
+
 #### Contour plot with colorbar
 ```fortran
 call figure()
@@ -154,9 +166,9 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
+- [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations
-- [ ] LaTeX math text
 
 
 ## Why though?
