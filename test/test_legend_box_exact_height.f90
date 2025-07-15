@@ -18,7 +18,7 @@ program test_legend_box_exact_height
     call fig%initialize(400, 300)
     call fig%add_plot(x, y, label='Single entry')
     call fig%legend()
-    call fig%savefig('test_legend_single.png')
+    call fig%savefig('/tmp/test_legend_single.png')
     print *, 'Created test_legend_single.png'
     
     ! Test with two entries
@@ -26,7 +26,7 @@ program test_legend_box_exact_height
     call fig%add_plot(x, y, label='Entry 1')
     call fig%add_plot(x, y*2, label='Entry 2')
     call fig%legend()
-    call fig%savefig('test_legend_double.png')
+    call fig%savefig('/tmp/test_legend_double.png')
     print *, 'Created test_legend_double.png'
     
     ! Test with four entries
@@ -36,7 +36,7 @@ program test_legend_box_exact_height
     call fig%add_plot(x, y*3, label='Entry 3')
     call fig%add_plot(x, y*4, label='Entry 4')
     call fig%legend()
-    call fig%savefig('test_legend_quad.png')
+    call fig%savefig('/tmp/test_legend_quad.png')
     print *, 'Created test_legend_quad.png'
     
     deallocate(x, y)

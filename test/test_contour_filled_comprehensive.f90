@@ -32,7 +32,7 @@ contains
         
         call fig%initialize(80, 25)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_basic.txt')
+        call fig%savefig('/tmp/test_contour_basic.txt')
         
         print *, "test_contour_filled_basic_functionality: PASSED"
     end subroutine
@@ -56,7 +56,7 @@ contains
             
             call fig%initialize(40, 20)
             call fig%add_contour_filled(x, y, z)
-            call fig%savefig('test_contour_small.txt')
+            call fig%savefig('/tmp/test_contour_small.txt')
         end block
         
         ! Test larger grid (50x30)
@@ -82,7 +82,7 @@ contains
             
             call fig%initialize(100, 40)
             call fig%add_contour_filled(x, y, z)
-            call fig%savefig('test_contour_large.txt')
+            call fig%savefig('/tmp/test_contour_large.txt')
         end block
         
         print *, "test_contour_filled_different_grid_sizes: PASSED"
@@ -107,7 +107,7 @@ contains
         
         call fig%initialize(60, 20)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_positive.txt')
+        call fig%savefig('/tmp/test_contour_positive.txt')
         
         ! Test with negative values
         do i = 1, 10
@@ -118,7 +118,7 @@ contains
         
         call fig%initialize(60, 20)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_negative.txt')
+        call fig%savefig('/tmp/test_contour_negative.txt')
         
         ! Test with very small range
         do i = 1, 10
@@ -129,7 +129,7 @@ contains
         
         call fig%initialize(60, 20)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_small_range.txt')
+        call fig%savefig('/tmp/test_contour_small_range.txt')
         
         print *, "test_contour_filled_various_value_ranges: PASSED"
     end subroutine
@@ -152,14 +152,14 @@ contains
         
         call fig%initialize(50, 25)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_levels.txt')
+        call fig%savefig('/tmp/test_contour_levels.txt')
         
         ! Test with uniform values (should produce uniform character)
         z = 5.0_wp
         
         call fig%initialize(50, 25)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_uniform.txt')
+        call fig%savefig('/tmp/test_contour_uniform.txt')
         
         print *, "test_contour_filled_ascii_character_mapping: PASSED"
     end subroutine
@@ -175,12 +175,12 @@ contains
         
         call fig%initialize(30, 15)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_minimal.txt')
+        call fig%savefig('/tmp/test_contour_minimal.txt')
         
         ! Test with very small figure size
         call fig%initialize(20, 10)
         call fig%add_contour_filled(x, y, z)
-        call fig%savefig('test_contour_tiny.txt')
+        call fig%savefig('/tmp/test_contour_tiny.txt')
         
         ! Test with irregular spacing
         block
@@ -198,7 +198,7 @@ contains
             
             call fig%initialize(60, 25)
             call fig%add_contour_filled(x_irreg, y_irreg, z_irreg)
-            call fig%savefig('test_contour_irregular.txt')
+            call fig%savefig('/tmp/test_contour_irregular.txt')
         end block
         
         print *, "test_contour_filled_edge_cases: PASSED"
@@ -229,7 +229,7 @@ contains
         call fig%set_xlabel("X axis")
         call fig%set_ylabel("Y axis")
         call fig%set_title("Contour Filled Test with Labels")
-        call fig%savefig('test_contour_labeled.txt')
+        call fig%savefig('/tmp/test_contour_labeled.txt')
         
         print *, "test_contour_filled_with_labels: PASSED"
     end subroutine

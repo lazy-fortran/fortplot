@@ -2,6 +2,8 @@ module fortplot_raster
     use iso_c_binding
     use fortplot_context
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
+    use fortplot_latex_parser
+    use fortplot_unicode
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -448,12 +450,138 @@ contains
         end if
     end subroutine raster_set_line_width
 
+    subroutine escape_unicode_for_raster(input_text, escaped_text)
+        !! Pass through Unicode for raster rendering (STB TrueType supports Unicode)
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: escaped_text
+        
+        ! STB TrueType can handle Unicode directly, so just pass through
+        escaped_text = input_text
+    end subroutine escape_unicode_for_raster
+
+    subroutine unicode_codepoint_to_ascii(codepoint, ascii_equiv)
+        !! Convert Unicode codepoint to ASCII equivalent
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+        
+        ! Convert Greek letters to ASCII names
+        select case (codepoint)
+        case (945) ! α
+            ascii_equiv = "alpha"
+        case (946) ! β
+            ascii_equiv = "beta"
+        case (947) ! γ
+            ascii_equiv = "gamma"
+        case (948) ! δ
+            ascii_equiv = "delta"
+        case (949) ! ε
+            ascii_equiv = "epsilon"
+        case (950) ! ζ
+            ascii_equiv = "zeta"
+        case (951) ! η
+            ascii_equiv = "eta"
+        case (952) ! θ
+            ascii_equiv = "theta"
+        case (953) ! ι
+            ascii_equiv = "iota"
+        case (954) ! κ
+            ascii_equiv = "kappa"
+        case (955) ! λ
+            ascii_equiv = "lambda"
+        case (956) ! μ
+            ascii_equiv = "mu"
+        case (957) ! ν
+            ascii_equiv = "nu"
+        case (958) ! ξ
+            ascii_equiv = "xi"
+        case (959) ! ο
+            ascii_equiv = "omicron"
+        case (960) ! π
+            ascii_equiv = "pi"
+        case (961) ! ρ
+            ascii_equiv = "rho"
+        case (963) ! σ
+            ascii_equiv = "sigma"
+        case (964) ! τ
+            ascii_equiv = "tau"
+        case (965) ! υ
+            ascii_equiv = "upsilon"
+        case (966) ! φ
+            ascii_equiv = "phi"
+        case (967) ! χ
+            ascii_equiv = "chi"
+        case (968) ! ψ
+            ascii_equiv = "psi"
+        case (969) ! ω
+            ascii_equiv = "omega"
+        case (913) ! Α
+            ascii_equiv = "Alpha"
+        case (914) ! Β
+            ascii_equiv = "Beta"
+        case (915) ! Γ
+            ascii_equiv = "Gamma"
+        case (916) ! Δ
+            ascii_equiv = "Delta"
+        case (917) ! Ε
+            ascii_equiv = "Epsilon"
+        case (918) ! Ζ
+            ascii_equiv = "Zeta"
+        case (919) ! Η
+            ascii_equiv = "Eta"
+        case (920) ! Θ
+            ascii_equiv = "Theta"
+        case (921) ! Ι
+            ascii_equiv = "Iota"
+        case (922) ! Κ
+            ascii_equiv = "Kappa"
+        case (923) ! Λ
+            ascii_equiv = "Lambda"
+        case (924) ! Μ
+            ascii_equiv = "Mu"
+        case (925) ! Ν
+            ascii_equiv = "Nu"
+        case (926) ! Ξ
+            ascii_equiv = "Xi"
+        case (927) ! Ο
+            ascii_equiv = "Omicron"
+        case (928) ! Π
+            ascii_equiv = "Pi"
+        case (929) ! Ρ
+            ascii_equiv = "Rho"
+        case (931) ! Σ
+            ascii_equiv = "Sigma"
+        case (932) ! Τ
+            ascii_equiv = "Tau"
+        case (933) ! Υ
+            ascii_equiv = "Upsilon"
+        case (934) ! Φ
+            ascii_equiv = "Phi"
+        case (935) ! Χ
+            ascii_equiv = "Chi"
+        case (936) ! Ψ
+            ascii_equiv = "Psi"
+        case (937) ! Ω
+            ascii_equiv = "Omega"
+        case default
+            ! For other Unicode characters, use a placeholder
+            write(ascii_equiv, '("U+", Z4.4)') codepoint
+        end select
+    end subroutine unicode_codepoint_to_ascii
+
     subroutine raster_draw_text(this, x, y, text)
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: px, py
         integer(1) :: r, g, b
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+
+        ! Escape Unicode characters for raster rendering
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
 
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
@@ -463,7 +591,7 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
         call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                 int(px), int(py), text, r, g, b)
+                                 int(px), int(py), trim(escaped_text), r, g, b)
     end subroutine raster_draw_text
 
     subroutine raster_save_dummy(this, filename)
@@ -1117,29 +1245,39 @@ contains
         class(raster_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel
         real(wp) :: label_x, label_y, text_width
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
 
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
+            ! Process LaTeX commands to Unicode and escape for raster rendering
+            call process_latex_in_text(title, processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            
             ! Center horizontally across the entire figure width (like matplotlib)
-            text_width = real(calculate_text_width(trim(title)), wp)
+            text_width = real(calculate_text_width(trim(escaped_text)), wp)
             if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
+                text_width = real(len_trim(escaped_text) * 8, wp)  ! 8 pixels per char for 12pt font
             end if
             label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
             ! Position title in the top margin area (matplotlib uses ~25px from top)
             label_y = 25.0_wp
             call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(title), &
+                                     int(label_x), int(label_y), trim(escaped_text), &
                                      0_1, 0_1, 0_1)  ! Black text, normal weight (non-bold)
         end if
 
         ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
+            ! Process LaTeX commands to Unicode and escape for raster rendering
+            call process_latex_in_text(xlabel, processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            
             call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(xlabel), label_x, label_y)
+                                               trim(escaped_text), label_x, label_y)
             call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(xlabel), &
+                                     int(label_x), int(label_y), trim(escaped_text), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
     end subroutine draw_raster_title_and_xlabel
@@ -1152,10 +1290,16 @@ contains
         integer :: text_width, text_height, padding
         integer :: buf_width, buf_height, i, j, src_x, src_y, dst_x, dst_y
         integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode and escape for raster rendering
+        call process_latex_in_text(text, processed_text, processed_len)
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
         
         ! Calculate text dimensions and position
-        text_width = calculate_text_width(trim(text))
-        text_height = calculate_text_height(trim(text))
+        text_width = calculate_text_width(trim(escaped_text))
+        text_height = calculate_text_height(trim(escaped_text))
         
         padding = 2
         buf_width = text_width + 2 * padding  
@@ -1167,7 +1311,7 @@ contains
         
         ! Render text to bitmap
         call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
-                                  padding, padding + text_height, trim(text))
+                                  padding, padding + text_height, trim(escaped_text))
                                   
         ! Rotate bitmap 90 degrees counter-clockwise (text reads bottom to top)
         allocate(rotated_bitmap(buf_height, buf_width, 3))

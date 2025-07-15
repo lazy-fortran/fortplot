@@ -68,6 +68,8 @@ doc:
 
 # Generate coverage report
 coverage:
+	@echo "Cleaning old coverage data..."
+	find . -name '*.gcda' -delete
 	@echo "Building with coverage flags..."
 	fpm build --flag '-fprofile-arcs -ftest-coverage'
 	@echo "Running tests with coverage..."

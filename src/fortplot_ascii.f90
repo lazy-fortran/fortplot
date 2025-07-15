@@ -8,6 +8,8 @@ module fortplot_ascii
     !! Author: fortplotlib contributors
     
     use fortplot_context
+    use fortplot_latex_parser
+    use fortplot_unicode
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -176,10 +178,15 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         integer :: text_x, text_y
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         ! Only store as title if not explicitly set and no title allocated yet
         if (.not. this%title_set .and. .not. allocated(this%title_text)) then
-            this%title_text = text
+            this%title_text = processed_text(1:processed_len)
         end if
         
         ! Store text element for later rendering
@@ -199,10 +206,18 @@ contains
             end if
             
             ! Clamp to canvas bounds
-            text_x = max(1, min(text_x, this%plot_width - len_trim(text)))
+            ! For legend text (already in screen coordinates), don't truncate based on length
+            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
+                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
+                ! For legend text, only clamp starting position, let text extend as needed
+                text_x = max(1, min(text_x, this%plot_width))
+            else
+                ! For other text, prevent overflow
+                text_x = max(1, min(text_x, this%plot_width - processed_len))
+            end if
             text_y = max(1, min(text_y, this%plot_height))
             
-            this%text_elements(this%num_text_elements)%text = trim(text)
+            this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
             this%text_elements(this%num_text_elements)%x = text_x
             this%text_elements(this%num_text_elements)%y = text_y
             this%text_elements(this%num_text_elements)%color_r = this%current_r
@@ -215,8 +230,12 @@ contains
         !! Explicitly set title for ASCII backend
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: title
+        character(len=500) :: processed_title
+        integer :: processed_len
         
-        this%title_text = title
+        ! Process LaTeX commands in title
+        call process_latex_in_text(title, processed_title, processed_len)
+        this%title_text = processed_title(1:processed_len)
         this%title_set = .true.
     end subroutine ascii_set_title
     

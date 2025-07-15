@@ -1,13 +1,14 @@
 module fortplot_text
     use iso_c_binding
     use fortplot_stb_truetype
+    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: init_text_system, cleanup_text_system, render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, get_font_metrics
-    public :: get_font_ascent_ratio, find_font_by_name
+    public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -90,6 +91,36 @@ contains
         end select
         
     end function find_font_by_name
+
+    function find_any_available_font(font_path) result(found)
+        !! Find any available font using same priority order as system initialization
+        character(len=256), intent(out) :: font_path
+        logical :: found
+        
+        found = .false.
+        
+        ! Use same priority order as discover_and_init_font
+        if (find_font_by_name("Helvetica", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("Liberation Sans", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("Arial", font_path)) then
+            found = .true.
+            return
+        end if
+        
+        if (find_font_by_name("DejaVu Sans", font_path)) then
+            found = .true.
+            return
+        end if
+        
+    end function find_any_available_font
 
     subroutine check_helvetica_paths(font_path, found)
         character(len=256), intent(out) :: font_path
@@ -213,10 +244,11 @@ contains
     end subroutine cleanup_text_system
 
     function calculate_text_width(text) result(width)
-        !! Calculate the pixel width of text using STB TrueType
+        !! Calculate the pixel width of text using STB TrueType with UTF-8 support
         character(len=*), intent(in) :: text
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
+        integer :: char_len
         
         ! Initialize text system if not already done
         if (.not. font_initialized) then
@@ -228,8 +260,18 @@ contains
         end if
         
         width = 0
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
             call stb_get_codepoint_hmetrics(global_font, char_code, advance_width, left_side_bearing)
             ! Scale to pixel coordinates
             width = width + int(real(advance_width) * font_scale)
@@ -263,7 +305,7 @@ contains
     end function calculate_text_height
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
-        !! Render text to image using STB TrueType
+        !! Render text to image using STB TrueType with UTF-8 support
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -272,6 +314,7 @@ contains
         integer :: advance_width, left_side_bearing
         type(c_ptr) :: bitmap_ptr
         integer :: bmp_width, bmp_height, xoff, yoff
+        integer :: char_len
         
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
@@ -283,8 +326,17 @@ contains
         pen_x = x
         pen_y = y
         
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
             
             ! Get character bitmap
             bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
@@ -418,7 +470,7 @@ contains
     end function get_character_pixel
 
     subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
-        !! Render rotated text to PNG image using STB TrueType (simplified rotation)
+        !! Render rotated text to PNG image using STB TrueType with UTF-8 support
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -430,6 +482,7 @@ contains
         type(c_ptr) :: bitmap_ptr
         integer :: bmp_width, bmp_height, xoff, yoff
         real(wp) :: cos_a, sin_a
+        integer :: char_len
         
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
@@ -444,8 +497,17 @@ contains
         
         ! For now, render text normally (STB doesn't have built-in rotation)
         ! TODO: Implement proper bitmap rotation if needed
-        do i = 1, len_trim(text)
-            char_code = iachar(text(i:i))
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
             
             bitmap_ptr = stb_get_codepoint_bitmap(global_font, font_scale, font_scale, char_code, &
                                                  bmp_width, bmp_height, xoff, yoff)
