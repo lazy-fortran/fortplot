@@ -1,7 +1,7 @@
 program debug_stb_positioning
     !! Debug STB TrueType positioning to understand coordinate system
     use fortplot_stb_truetype
-    use fortplot_text, only: find_font_by_name
+    use fortplot_text, only: find_any_available_font
     use iso_c_binding
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -18,9 +18,9 @@ program debug_stb_positioning
     character(len=256) :: font_path
     logical :: found
     
-    ! Initialize font using dynamic font discovery
-    if (.not. find_font_by_name("DejaVu Sans", font_path)) then
-        print *, "ERROR: Could not find DejaVu Sans font"
+    ! Initialize font using dynamic font discovery (tries multiple fonts)
+    if (.not. find_any_available_font(font_path)) then
+        print *, "ERROR: Could not find any supported font"
         stop 1
     end if
     
