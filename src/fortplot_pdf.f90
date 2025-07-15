@@ -120,7 +120,7 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, char_len, codepoint, symbol_char
+        integer :: i, char_len, codepoint, symbol_char, text_len
         character(len=1) :: current_char
         character(len=200) :: text_cmd
         character(len=500) :: current_segment
@@ -139,7 +139,10 @@ contains
         current_segment = ""
         segment_pos = 1
         
-        do while (i <= len_trim(text))
+        ! Find the actual length excluding null terminators and padding
+        text_len = len_trim(text)
+        
+        do while (i <= text_len)
             current_char = text(i:i)
             need_font_switch = .false.
             
