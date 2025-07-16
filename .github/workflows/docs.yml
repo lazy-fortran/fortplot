@@ -28,8 +28,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         
-      - name: Install FORD
-        run: pip install ford
+      - name: Setup Fortran
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+          version: 13
+          
+      - name: Install dependencies
+        run: |
+          pip install ford
+          
+      - name: Build fortplotlib
+        run: make build
+        
+      - name: Generate example outputs
+        run: |
+          # Create output directories
+          mkdir -p doc/media/examples
+          
+          # Run all examples to generate outputs
+          make example
+          
+          # Copy generated outputs to media directory
+          find example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
+          find example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \;
+          find example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \;
+          
+          # Generate example documentation pages
+          make debug ARGS="generate_example_docs"
         
       - name: Build documentation
         run: make doc
