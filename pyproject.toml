@@ -5,7 +5,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "fortplotlib"
 version = "0.0.0"
-dependencies = ["numpy"]
+dependencies = ["numpy", "f90wrap>=0.2.16"]
 
 [tool.scikit-build]
 build-dir = "build_cmake"
