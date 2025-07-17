@@ -42,7 +42,7 @@ Values mapped to density characters:
 - **Log files**: Can be saved as text
 - **CI/CD pipelines**: Terminal-based testing
 
-## Example Output
+## Output Examples
 
 ```
 ASCII Heatmap Demo
