@@ -109,11 +109,14 @@ contains
         
         in_output_section = .false.
         
+        ! Write FORD front matter first
+        write(unit_out, '(A)') 'title: ' // trim(title_case(example_name))
+        
         do
             read(unit_in, '(A)', iostat=ios) line
             if (ios /= 0) exit
             
-            ! Skip the title line from README (we'll use our own)
+            ! Skip the title line from README
             if (index(line, 'title:') == 1) cycle
             
             ! Check if we're entering the output examples section
