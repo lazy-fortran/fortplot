@@ -9,7 +9,6 @@ output_dir: ./build/doc
 media_dir: ./doc/media
 page_dir: ./doc
           ./doc/examples
-          ./example/fortran
 src_dir: ./src
          ./example
 exclude_dir: ./thirdparty
