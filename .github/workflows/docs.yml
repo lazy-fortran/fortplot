@@ -63,7 +63,12 @@ jobs:
           make example ARGS="generate_example_docs"
         
       - name: Build documentation
-        run: make doc
+        run: |
+          make doc
+          
+          # Copy media files to build directory after FORD runs
+          mkdir -p build/doc/media/examples
+          cp doc/media/examples/* build/doc/media/examples/ || true
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
