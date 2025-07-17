@@ -1,3 +1,4 @@
+title: Legend Demo
 ---
 
 # Legend Demo

@@ -1,3 +1,4 @@
+title: Line Styles
 ---
 
 # Line Styles
@@ -31,7 +32,7 @@ make example ARGS="line_styles"
 
 ## Output
 
-### Line Styles                                                                                                                                                                                                                                                     
+### Line Styles
 
 ![line_styles.png](../media/examples/line_styles.png)
 
@@ -73,5 +74,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/line_styles.pdf                                                                                                                                                                                                                                                 )
+[Download PDF](../media/examples/line_styles.pdf)
 

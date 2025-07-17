@@ -1,3 +1,4 @@
+title: Colored Contours
 ---
 
 # Colored Contours

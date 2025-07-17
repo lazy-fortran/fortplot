@@ -1,3 +1,4 @@
+title: Smart Show Demo
 ---
 
 # Smart Show Demo

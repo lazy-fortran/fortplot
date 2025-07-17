@@ -1,3 +1,4 @@
+title: Ascii Heatmap
 ---
 
 # ASCII Heatmap

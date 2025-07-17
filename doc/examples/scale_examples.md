@@ -1,3 +1,4 @@
+title: Scale Examples
 ---
 
 # Scale Examples
@@ -25,7 +26,7 @@ make example ARGS="scale_examples"
 
 ## Output
 
-### Log Scale                                                                                                                                                                                                                                                       
+### Log Scale
 
 ![log_scale.png](../media/examples/log_scale.png)
 
@@ -67,9 +68,9 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/log_scale.pdf                                                                                                                                                                                                                                                   )
+[Download PDF](../media/examples/log_scale.pdf)
 
-### Symlog Scale                                                                                                                                                                                                                                                    
+### Symlog Scale
 
 ![symlog_scale.png](../media/examples/symlog_scale.png)
 
@@ -111,5 +112,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/symlog_scale.pdf                                                                                                                                                                                                                                                )
+[Download PDF](../media/examples/symlog_scale.pdf)
 

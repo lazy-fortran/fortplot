@@ -1,3 +1,4 @@
+title: Contour Demo
 ---
 
 # Contour Demo
@@ -25,7 +26,7 @@ make example ARGS="contour_demo"
 
 ## Output
 
-### Contour Gaussian                                                                                                                                                                                                                                                
+### Contour Gaussian
 
 ![contour_gaussian.png](../media/examples/contour_gaussian.png)
 
@@ -67,9 +68,9 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/contour_gaussian.pdf                                                                                                                                                                                                                                            )
+[Download PDF](../media/examples/contour_gaussian.pdf)
 
-### Mixed Plot                                                                                                                                                                                                                                                      
+### Mixed Plot
 
 ![mixed_plot.png](../media/examples/mixed_plot.png)
 
@@ -111,5 +112,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/mixed_plot.pdf                                                                                                                                                                                                                                                  )
+[Download PDF](../media/examples/mixed_plot.pdf)
 

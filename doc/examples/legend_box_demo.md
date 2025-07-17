@@ -1,3 +1,4 @@
+title: Legend Box Demo
 ---
 
 # Legend Box Demo

@@ -1,3 +1,4 @@
+title: Unicode Demo
 ---
 
 # Unicode Demo
@@ -39,7 +40,7 @@ make example ARGS="unicode_demo"
 
 ## Output
 
-### Unicode Demo                                                                                                                                                                                                                                                    
+### Unicode Demo
 
 ![unicode_demo.png](../media/examples/unicode_demo.png)
 
@@ -81,7 +82,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/unicode_demo.pdf                                                                                                                                                                                                                                                )
+[Download PDF](../media/examples/unicode_demo.pdf)
 
 ### Unicode Demo
 ![Unicode Demo](../media/examples/unicode_demo.png)

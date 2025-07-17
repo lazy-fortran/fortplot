@@ -1,3 +1,4 @@
+title: Stateful Streamplot
 ---
 
 # Stateful Streamplot
