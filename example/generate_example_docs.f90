@@ -83,7 +83,7 @@ contains
         
         ! Build file paths
         readme_file = trim(example_dir) // "/README.md"
-        output_file = "build/example/" // trim(example_name) // ".md"
+        output_file = "doc/example/" // trim(example_name) // ".md"
         
         ! Check if README exists
         inquire(file=trim(readme_file), exist=file_exists)
@@ -289,7 +289,7 @@ contains
                 write(unit_out, '(A)') ''
                 
                 ! Add corresponding ASCII output
-                ascii_file = 'build/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
+                ascii_file = 'doc/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
                 inquire(file=trim(ascii_file), exist=file_exists)
                 if (file_exists) then
                     write(unit_out, '(A)') 'ASCII output:'
