@@ -23,3 +23,5 @@ terminal
 *.avi
 *.mov
 *.flv
+
+doc/example
