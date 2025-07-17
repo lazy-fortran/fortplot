@@ -303,19 +303,25 @@ contains
         
         select case(name)
         case('basic_plots')
-            desc = 'This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API and the object-oriented interface.'
+            desc = 'This example demonstrates the fundamental plotting capabilities of fortplotlib ' // &
+                   'using both the simple functional API and the object-oriented interface.'
         case('line_styles')
-            desc = 'This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotted lines.'
+            desc = 'This example demonstrates all available line styles in fortplotlib, ' // &
+                   'showing how to customize the appearance of plotted lines.'
         case('contour_demo')
-            desc = 'This example demonstrates contour plotting capabilities, including basic contours, custom levels, and mixing contour plots with line plots.'
+            desc = 'This example demonstrates contour plotting capabilities, including basic contours, ' // &
+                   'custom levels, and mixing contour plots with line plots.'
         case('scale_examples')
-            desc = 'This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog) scales.'
+            desc = 'This example demonstrates different axis scaling options including ' // &
+                   'logarithmic and symmetric logarithmic (symlog) scales.'
         case('marker_demo')
             desc = 'This example showcases various marker types and scatter plot capabilities in fortplotlib.'
         case('format_string_demo')
-            desc = 'This example demonstrates matplotlib-style format strings for quick and intuitive plot styling.'
+            desc = 'This example demonstrates matplotlib-style format strings for quick and intuitive ' // &
+                   'plot styling.'
         case('colored_contours')
-            desc = 'This example shows filled contour plots with customizable colormaps for visualizing 2D scalar fields.'
+            desc = 'This example shows filled contour plots with customizable colormaps for ' // &
+                   'visualizing 2D scalar fields.'
         case('pcolormesh_demo')
             desc = 'This example demonstrates pseudocolor plots for efficient 2D data visualization.'
         case('streamplot_demo')
