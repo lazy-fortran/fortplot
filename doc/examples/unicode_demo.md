@@ -5,11 +5,15 @@ title: Unicode Demo
 
 This example demonstrates mathematical symbols and Unicode support in plots.
 
-## Files
+## Source Files
 
-- `unicode_demo.f90` - Source code
-- `unicode_demo.png/pdf/txt` - Greek letters and math symbols
-- `math_examples.png/pdf/txt` - Mathematical expressions
+### Fortran Source
+
+📄 [unicode_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

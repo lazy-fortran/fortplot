@@ -5,13 +5,20 @@ title: Colored Contours
 
 This example shows filled contour plots with customizable colormaps for visualizing 2D scalar fields.
 
-## Files
+## Source Files
 
-- `colored_contours.f90` - Source code
-- `gaussian_default.png/pdf/txt` - Gaussian with default colormap
-- `ripple_jet.png/pdf/txt` - Ripple pattern with jet colormap
-- `ripple_coolwarm.png/pdf/txt` - Ripple pattern with coolwarm colormap
-- `ripple_inferno.png/pdf/txt` - Ripple pattern with inferno colormap
+### Fortran Source
+
+📄 [colored_contours.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/colored_contours/colored_contours.f90)
+
+### Python Equivalent
+
+🐍 [colored_contours.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/colored_contours/colored_contours.py)
+
+### Generated Output Files
+
+- `gaussian_default.png/pdf/txt` - Default colormap
+- `ripple_*.png/pdf/txt` - Various colormaps (jet, coolwarm, inferno)
 - `saddle_plasma.png/pdf/txt` - Saddle point with plasma colormap
 
 ## Running

@@ -5,15 +5,21 @@ title: Legend Demo
 
 This example demonstrates legend placement and customization options.
 
-## Files
+## Source Files
 
-- `legend_demo.f90` - Source code
-- `basic_legend.png/pdf/txt` - Basic legend with default placement
-- `legend_upper_left.png/pdf/txt` - Legend in upper left
-- `legend_upper_right.png/pdf/txt` - Legend in upper right
-- `legend_lower_left.png/pdf/txt` - Legend in lower left
-- `legend_lower_right.png/pdf/txt` - Legend in lower right
-- `multi_function_legend.png/pdf/txt` - Multiple functions with legend
+### Fortran Source
+
+📄 [legend_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/legend_demo/legend_demo.f90)
+
+### Python Equivalent
+
+🐍 [legend_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/legend_demo/legend_demo.py)
+
+### Generated Output Files
+
+- `basic_legend.png/pdf/txt` - Basic legend example
+- `legend_*.png/pdf/txt` - Various legend positions
+- `multi_function_legend.png/pdf/txt` - Multiple functions
 
 ## Running
 

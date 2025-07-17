@@ -5,9 +5,15 @@ title: Show Viewer Demo
 
 This example demonstrates using the built-in viewer for interactive display.
 
-## Files
+## Source Files
 
-- `show_viewer_demo.f90` - Source code
+### Fortran Source
+
+📄 [show_viewer_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/show_viewer_demo/show_viewer_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

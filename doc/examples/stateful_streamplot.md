@@ -5,10 +5,15 @@ title: Stateful Streamplot
 
 This example shows time-evolving vector field animations using streamplots.
 
-## Files
+## Source Files
 
-- `stateful_streamplot.f90` - Source code
-- `stateful_streamplot.png/pdf/txt` - Static snapshot
+### Fortran Source
+
+📄 [stateful_streamplot.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/stateful_streamplot/stateful_streamplot.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

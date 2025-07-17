@@ -5,10 +5,19 @@ title: Line Styles
 
 This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotted lines.
 
-## Files
+## Source Files
 
-- `line_styles.f90` - Source code
-- `line_styles.png/pdf/txt` - Output showing all line styles
+### Fortran Source
+
+📄 [line_styles.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/line_styles/line_styles.f90)
+
+### Python Equivalent
+
+🐍 [line_styles.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/line_styles/line_styles.py)
+
+### Generated Output Files
+
+- `line_styles.png/pdf/txt` - Demonstration of all line styles
 
 ## Running
 

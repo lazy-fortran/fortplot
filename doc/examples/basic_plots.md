@@ -5,11 +5,20 @@ title: Basic Plots
 
 This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API and the object-oriented interface.
 
-## Files
+## Source Files
 
-- `basic_plots.f90` - Source code
-- `simple_plot.png/pdf/txt` - Simple sine wave outputs
-- `multi_line.png/pdf/txt` - Multi-line plot outputs
+### Fortran Source
+
+📄 [basic_plots.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/basic_plots/basic_plots.f90)
+
+### Python Equivalent
+
+🐍 [basic_plots.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/basic_plots/basic_plots.py)
+
+### Generated Output Files
+
+- `simple_plot.png/pdf/txt` - Simple sine wave visualization
+- `multi_line.png/pdf/txt` - Multiple functions on the same plot
 
 ## Running
 

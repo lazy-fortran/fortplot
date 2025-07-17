@@ -5,10 +5,19 @@ title: Format String Demo
 
 This example demonstrates matplotlib-style format strings for quick and intuitive plot styling.
 
-## Files
+## Source Files
 
-- `format_string_demo.f90` - Source code
-- `format_string_demo.png/pdf/txt` - Various format string examples
+### Fortran Source
+
+📄 [format_string_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/format_string_demo/format_string_demo.f90)
+
+### Python Equivalent
+
+🐍 [format_string_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/format_string_demo/format_string_demo.py)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

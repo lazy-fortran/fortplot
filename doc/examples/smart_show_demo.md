@@ -5,9 +5,15 @@ title: Smart Show Demo
 
 This example demonstrates intelligent display mode selection based on environment.
 
-## Files
+## Source Files
 
-- `smart_show_demo.f90` - Source code
+### Fortran Source
+
+📄 [smart_show_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/smart_show_demo/smart_show_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

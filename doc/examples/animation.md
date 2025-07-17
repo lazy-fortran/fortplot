@@ -5,10 +5,15 @@ title: Animation
 
 This example demonstrates creating animated plots and saving to video files.
 
-## Files
+## Source Files
 
-- `save_animation_demo.f90` - Animation saving example
-- `wave_animation.mp4` - Example output video
+### Fortran Source
+
+📄 [save_animation_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/animation/save_animation_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

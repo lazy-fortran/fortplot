@@ -5,10 +5,19 @@ title: Streamplot Demo
 
 This example shows vector field visualization using streamlines.
 
-## Files
+## Source Files
 
-- `streamplot_demo.f90` - Source code
-- `streamplot_demo.png/pdf/txt` - Vector field streamlines
+### Fortran Source
+
+📄 [streamplot_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/streamplot_demo/streamplot_demo.f90)
+
+### Python Equivalent
+
+🐍 [streamplot_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/streamplot_demo/streamplot_demo.py)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

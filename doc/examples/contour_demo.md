@@ -5,10 +5,19 @@ title: Contour Demo
 
 This example demonstrates contour plotting capabilities, including basic contours, custom levels, and mixing contour plots with line plots.
 
-## Files
+## Source Files
 
-- `contour_demo.f90` - Source code
-- `contour_gaussian.png/pdf/txt` - Gaussian function contour plot
+### Fortran Source
+
+📄 [contour_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/contour_demo/contour_demo.f90)
+
+### Python Equivalent
+
+🐍 [contour_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/contour_demo/contour_demo.py)
+
+### Generated Output Files
+
+- `contour_gaussian.png/pdf/txt` - Gaussian function contours
 - `mixed_plot.png/pdf/txt` - Combined contour and line plot
 
 ## Running

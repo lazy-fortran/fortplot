@@ -5,11 +5,20 @@ title: Scale Examples
 
 This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog) scales.
 
-## Files
+## Source Files
 
-- `scale_examples.f90` - Source code
+### Fortran Source
+
+📄 [scale_examples.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/scale_examples/scale_examples.f90)
+
+### Python Equivalent
+
+🐍 [scale_examples.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/scale_examples/scale_examples.py)
+
+### Generated Output Files
+
 - `log_scale.png/pdf/txt` - Logarithmic scale example
-- `symlog_scale.png/pdf/txt` - Symmetric logarithmic scale example
+- `symlog_scale.png/pdf/txt` - Symmetric logarithmic scale
 
 ## Running
 

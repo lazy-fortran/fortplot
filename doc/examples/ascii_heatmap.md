@@ -5,10 +5,15 @@ title: Ascii Heatmap
 
 This example demonstrates terminal-based heatmap visualization using ASCII characters.
 
-## Files
+## Source Files
 
-- `ascii_heatmap_demo.f90` - Source code
-- Output shown directly in terminal
+### Fortran Source
+
+📄 [ascii_heatmap_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/ascii_heatmap/ascii_heatmap_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

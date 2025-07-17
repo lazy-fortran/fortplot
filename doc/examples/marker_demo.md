@@ -5,12 +5,21 @@ title: Marker Demo
 
 This example showcases various marker types and scatter plot capabilities in fortplotlib.
 
-## Files
+## Source Files
 
-- `marker_demo.f90` - Source code
+### Fortran Source
+
+📄 [marker_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/marker_demo/marker_demo.f90)
+
+### Python Equivalent
+
+🐍 [marker_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/marker_demo/marker_demo.py)
+
+### Generated Output Files
+
 - `scatter_plot.png/pdf/txt` - Basic scatter plot
-- `all_marker_types.png/pdf/txt` - All available marker types
-- `marker_colors.png/pdf/txt` - Colored markers example
+- `all_marker_types.png/pdf/txt` - All available markers
+- `marker_colors.png/pdf/txt` - Colored markers
 
 ## Running
 

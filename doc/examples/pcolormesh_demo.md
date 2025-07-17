@@ -5,12 +5,19 @@ title: Pcolormesh Demo
 
 This example demonstrates pseudocolor plots for efficient 2D data visualization.
 
-## Files
+## Source Files
 
-- `pcolormesh_demo.f90` - Source code
-- `pcolormesh_basic.png/pdf/txt` - Basic pcolormesh plot
-- `pcolormesh_plasma.png/pdf/txt` - Pcolormesh with plasma colormap
-- `pcolormesh_sinusoidal.png/pdf/txt` - Sinusoidal pattern
+### Fortran Source
+
+📄 [pcolormesh_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
+
+### Python Equivalent
+
+🐍 [pcolormesh_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/pcolormesh_demo/pcolormesh_demo.py)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 

@@ -5,12 +5,15 @@ title: Legend Box Demo
 
 This example shows advanced legend styling with boxes and frames.
 
-## Files
+## Source Files
 
-- `legend_box_demo.f90` - Source code
-- `legend_box_demo_default.png/pdf/txt` - Default legend box
-- `legend_box_demo_upper_left.png/pdf/txt` - Legend box in upper left
-- `legend_box_demo_lower_right.png/pdf/txt` - Legend box in lower right
+### Fortran Source
+
+📄 [legend_box_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/legend_box_demo/legend_box_demo.f90)
+
+### Generated Output Files
+
+- Various output files in PNG, PDF, and ASCII formats
 
 ## Running
 
