@@ -13,5 +13,4 @@ Welcome to the fortplotlib documentation. This library provides a modern, matplo
 ## Navigation
 
 - [API Documentation](./page/index.html) - Detailed module and procedure documentation
-- [Examples Gallery](./page/examples/index.html) - Visual examples with code
-- [Getting Started](./page/fpm_example/index.html) - Quick start guide
+- [Examples Gallery](./page/example/index.html) - Visual examples with code
