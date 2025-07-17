@@ -222,19 +222,16 @@ contains
         write(unit_out, '(A)') '## Source Code'
         write(unit_out, '(A)') ''
         
-        ! Write Fortran link
-        write(unit_out, '(A)') '### Fortran Implementation'
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') '📄 View on GitHub: [' // trim(fortran_file) // '](' // trim(fortran_path) // ')'
-        write(unit_out, '(A)') ''
+        ! Write both links in a compact format
+        write(unit_out, '(A)') '**Fortran:** [' // trim(fortran_file) // '](' // trim(fortran_path) // ')'
         
         ! Write Python link if exists
         if (python_exists) then
-            write(unit_out, '(A)') '🐍 Python equivalent: [' // trim(example_name) // &
+            write(unit_out, '(A)') '**Python:** [' // trim(example_name) // &
                                    '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
                                    trim(python_path) // ')'
-            write(unit_out, '(A)') ''
         end if
+        write(unit_out, '(A)') ''
         
         ! Include the source code
         write(unit_out, '(A)') '```fortran'
