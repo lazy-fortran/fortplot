@@ -58,3 +58,7 @@ end do
 ! Save video
 call anim%save('animation.mp4')
 ```
+
+## Output Examples
+
+The animation example generates an MP4 video file showing a wave that changes over time.

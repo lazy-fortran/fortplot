@@ -58,6 +58,7 @@ jobs:
           find example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
           find example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \;
           find example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \;
+          find example/fortran -name "*.mp4" -exec cp {} doc/media/examples/ \;
           
           # Generate example documentation from README files
           make example ARGS="generate_example_docs"

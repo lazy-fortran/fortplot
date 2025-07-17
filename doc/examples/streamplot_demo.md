@@ -7,22 +7,61 @@ This example shows vector field visualization using streamlines.
 
 ## Source Files
 
-### Fortran Source
+## Source Code
 
-📄 [streamplot_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/streamplot_demo/streamplot_demo.f90)
+### Fortran Implementation
 
-### Python Equivalent
+📄 View on GitHub: [streamplot_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/streamplot_demo/streamplot_demo.f90)
 
-🐍 [streamplot_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/streamplot_demo/streamplot_demo.py)
+🐍 Python equivalent: [streamplot_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/streamplot_demo/streamplot_demo.py)
 
-### Generated Output Files
+```fortran
+program streamplot_demo
+    use fortplot
+    use, intrinsic :: iso_fortran_env, only: real64
+    implicit none
 
-- Various output files in PNG, PDF, and ASCII formats
+    integer, parameter :: nx = 20, ny = 20
+    real(real64), dimension(nx) :: x
+    real(real64), dimension(ny) :: y
+    real(real64), dimension(nx, ny) :: u, v
+    integer :: i, j
+    type(figure_t) :: fig
 
-## Running
+    ! Create grid
+    do i = 1, nx
+        x(i) = -2.0_real64 + 4.0_real64 * real(i-1, real64) / real(nx-1, real64)
+    end do
 
-```bash
-make example ARGS="streamplot_demo"
+    do j = 1, ny
+        y(j) = -2.0_real64 + 4.0_real64 * real(j-1, real64) / real(ny-1, real64)
+    end do
+
+    ! Create circular flow field
+    do j = 1, ny
+        do i = 1, nx
+            u(i,j) = -y(j)
+            v(i,j) = x(i)
+        end do
+    end do
+
+    ! Create figure and add streamplot
+    call fig%initialize(800, 600)
+    ! Try with broken_streamlines=False to allow circles to complete
+    ! (This parameter doesn't exist yet in our API, so let's just use default for now)
+    call fig%streamplot(x, y, u, v, density=1.0_real64)
+    call fig%set_xlabel('X')
+    call fig%set_ylabel('Y')
+    call fig%set_title('Streamline Plot Demo - Circular Flow')
+
+    ! Save figure
+    call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.png')
+    call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.pdf')
+    call fig%savefig('example/fortran/streamplot_demo/streamplot_demo.txt')
+
+    print *, 'Streamplot demo completed!'
+
+end program streamplot_demo
 ```
 
 ## Features Demonstrated
