@@ -9,7 +9,7 @@ This example demonstrates terminal-based heatmap visualization using ASCII chara
 
 ## Source Code
 
-**Fortran:** [ascii_heatmap_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/ascii_heatmap/ascii_heatmap_demo.f90)
+🔷 **Fortran:** [ascii_heatmap_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/ascii_heatmap/ascii_heatmap_demo.f90)
 
 ```fortran
 program ascii_heatmap_demo

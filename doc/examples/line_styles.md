@@ -9,8 +9,9 @@ This example demonstrates all available line styles in fortplotlib, showing how 
 
 ## Source Code
 
-**Fortran:** [line_styles.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/line_styles/line_styles.f90)
-**Python:** [line_styles.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/line_styles/line_styles.py)
+🔷 **Fortran:** [line_styles.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/line_styles/line_styles.f90)
+
+🐍 **Python:** [line_styles.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/line_styles/line_styles.py)
 
 ```fortran
 program line_styles

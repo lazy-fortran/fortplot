@@ -9,7 +9,7 @@ This example demonstrates creating animated plots and saving to video files.
 
 ## Source Code
 
-**Fortran:** [save_animation_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/animation/save_animation_demo.f90)
+🔷 **Fortran:** [save_animation_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/animation/save_animation_demo.f90)
 
 ```fortran
 program save_animation_demo
