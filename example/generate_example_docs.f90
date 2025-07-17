@@ -230,7 +230,8 @@ contains
         
         ! Write Python link if exists
         if (python_exists) then
-            write(unit_out, '(A)') '🐍 Python equivalent: [' // trim(example_name) // '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
+            write(unit_out, '(A)') '🐍 Python equivalent: [' // trim(example_name) // &
+                                   '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
                                    trim(python_path) // ')'
             write(unit_out, '(A)') ''
         end if
