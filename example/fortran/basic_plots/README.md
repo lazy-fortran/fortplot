@@ -27,8 +27,8 @@ make example ARGS="basic_plots"
 
 ## Output Examples
 
-### Simple Plot
-![Simple Plot](simple_plot.png)
+The example generates the following output files:
+- `simple_plot.png` - Simple sine wave visualization
+- `multi_line.png` - Multiple functions on the same plot
 
-### Multi-line Plot
-![Multi-line Plot](multi_line.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.

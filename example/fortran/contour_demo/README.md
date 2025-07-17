@@ -26,8 +26,12 @@ make example ARGS="contour_demo"
 
 ## Output Examples
 
-### Gaussian Contour
-![Gaussian Contour](contour_gaussian.png)
+The example generates the following output files:
+- `contour_gaussian.png` - Contour plot of a Gaussian function with automatic level selection
+- `contour_gaussian.pdf` - Vector format of the Gaussian contour plot
+- `contour_gaussian.txt` - ASCII art representation of the contours
+- `mixed_plot.png` - Combined contour and line plot showing integration of different plot types
+- `mixed_plot.pdf` - Vector format of the mixed plot
+- `mixed_plot.txt` - ASCII art representation of the mixed plot
 
-### Mixed Plot
-![Mixed Plot](mixed_plot.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
