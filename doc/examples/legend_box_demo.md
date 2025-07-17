@@ -35,7 +35,7 @@ make example ARGS="legend_box_demo"
 ## Output
 
 ### Default Legend Box
-![Default Legend Box](../media/examples/legend_box_demo_default.png)
+![Default Legend Box](../../media/examples/legend_box_demo_default.png)
 
 ### Upper Left Position
-![Upper Left](../media/examples/legend_box_demo_upper_left.png)
+![Upper Left](../../media/examples/legend_box_demo_upper_left.png)

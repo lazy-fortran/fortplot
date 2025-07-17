@@ -171,7 +171,7 @@ contains
         do j = 1, n_png
             write(unit_out, '(A)') '### ' // trim(get_output_title(png_files(j)))
             write(unit_out, '(A)') ''
-            write(unit_out, '(A)') '![' // trim(png_files(j)) // '](../media/examples/' // trim(png_files(j)) // ')'
+            write(unit_out, '(A)') '![' // trim(png_files(j)) // '](../../media/examples/' // trim(png_files(j)) // ')'
             write(unit_out, '(A)') ''
             
             ! Add corresponding ASCII output
@@ -196,7 +196,7 @@ contains
             end if
             
             ! Add PDF link
-            write(unit_out, '(A)') '[Download PDF](../media/examples/' // &
+            write(unit_out, '(A)') '[Download PDF](../../media/examples/' // &
                 trim(replace_extension(png_files(j), 'pdf')) // ')'
             write(unit_out, '(A)') ''
         end do
@@ -222,7 +222,7 @@ contains
                     filename = filename(index(filename, '/', back=.true.)+1:)
                 end if
                 ! Replace with media path
-                new_path = '../media/examples/' // trim(filename)
+                new_path = '../../media/examples/' // trim(filename)
                 line = line(1:start_pos+1) // trim(new_path) // ')'
             end if
         end if

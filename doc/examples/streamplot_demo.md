@@ -32,4 +32,4 @@ make example ARGS="streamplot_demo"
 
 ## Output Example
 
-![Streamplot Demo](../media/examples/streamplot_demo.png)
+![Streamplot Demo](../../media/examples/streamplot_demo.png)

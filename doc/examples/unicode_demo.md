@@ -42,7 +42,7 @@ make example ARGS="unicode_demo"
 
 ### Unicode Demo
 
-![unicode_demo.png](../media/examples/unicode_demo.png)
+![unicode_demo.png](../../media/examples/unicode_demo.png)
 
 ASCII output:
 ```
@@ -82,10 +82,10 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/unicode_demo.pdf)
+[Download PDF](../../media/examples/unicode_demo.pdf)
 
 ### Unicode Demo
-![Unicode Demo](../media/examples/unicode_demo.png)
+![Unicode Demo](../../media/examples/unicode_demo.png)
 
 ### Math Examples
-![Math Examples](../media/examples/math_examples.png)
+![Math Examples](../../media/examples/math_examples.png)

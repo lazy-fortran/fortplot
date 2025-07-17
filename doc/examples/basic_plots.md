@@ -29,7 +29,7 @@ make example ARGS="basic_plots"
 
 ### Simple Plot
 
-![simple_plot.png](../media/examples/simple_plot.png)
+![simple_plot.png](../../media/examples/simple_plot.png)
 
 ASCII output:
 ```
@@ -69,11 +69,11 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/simple_plot.pdf)
+[Download PDF](../../media/examples/simple_plot.pdf)
 
 ### Multi Line
 
-![multi_line.png](../media/examples/multi_line.png)
+![multi_line.png](../../media/examples/multi_line.png)
 
 ASCII output:
 ```
@@ -113,5 +113,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../media/examples/multi_line.pdf)
+[Download PDF](../../media/examples/multi_line.pdf)
 
