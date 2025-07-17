@@ -276,15 +276,15 @@ contains
             if (extension == 'mp4') then
                 ! Embed video using HTML
                 write(unit_out, '(A)') '<video width="800" height="600" controls>'
-                write(unit_out, '(A)') '  <source src="example/' // trim(example_name) // '/' // &
+                write(unit_out, '(A)') '  <source src="../../example/' // trim(example_name) // '/' // &
                                        trim(media_files(j)) // '" type="video/mp4">'
                 write(unit_out, '(A)') '  Your browser does not support the video tag.'
                 write(unit_out, '(A)') '</video>'
                 write(unit_out, '(A)') ''
-                write(unit_out, '(A)') '[Download MP4](example/' // trim(example_name) // '/' // trim(media_files(j)) // ')'
+                write(unit_out, '(A)') '[Download MP4](../../example/' // trim(example_name) // '/' // trim(media_files(j)) // ')'
             else
                 ! Regular image
-                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](example/' // &
+                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../../example/' // &
                                        trim(example_name) // '/' // trim(media_files(j)) // ')'
                 write(unit_out, '(A)') ''
                 
@@ -310,7 +310,7 @@ contains
                 end if
                 
                 ! Add PDF link
-                write(unit_out, '(A)') '[Download PDF](example/' // trim(example_name) // '/' // &
+                write(unit_out, '(A)') '[Download PDF](../../example/' // trim(example_name) // '/' // &
                     trim(replace_extension(media_files(j), 'pdf')) // ')'
             end if
             write(unit_out, '(A)') ''
@@ -338,7 +338,7 @@ contains
                     filename = filename(index(filename, '/', back=.true.)+1:)
                 end if
                 ! Replace with relative path to example directory
-                new_path = 'example/' // trim(example_name) // '/' // trim(filename)
+                new_path = '../../example/' // trim(example_name) // '/' // trim(filename)
                 line = line(1:start_pos+1) // trim(new_path) // ')'
             end if
         end if
