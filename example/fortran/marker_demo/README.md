@@ -40,8 +40,15 @@ make example ARGS="marker_demo"
 
 ## Output Examples
 
-### Scatter Plot
-![Scatter Plot](scatter_plot.png)
+The example generates the following output files:
+- `scatter_plot.png` - Basic scatter plot demonstrating data points without connecting lines
+- `scatter_plot.pdf` - Vector format of the scatter plot
+- `scatter_plot.txt` - ASCII art representation of scatter points
+- `all_marker_types.png` - Showcase of all available marker types (circle, square, triangle variants, diamond, plus, cross, star)
+- `all_marker_types.pdf` - Vector format showing all marker types
+- `all_marker_types.txt` - ASCII representation of different markers
+- `marker_colors.png` - Demonstrates colored markers with size variations
+- `marker_colors.pdf` - Vector format of colored markers
+- `marker_colors.txt` - ASCII art with different marker representations
 
-### All Marker Types
-![All Marker Types](all_marker_types.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.

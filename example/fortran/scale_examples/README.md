@@ -26,8 +26,12 @@ make example ARGS="scale_examples"
 
 ## Output Examples
 
-### Logarithmic Scale
-![Log Scale](log_scale.png)
+The example generates the following output files:
+- `log_scale.png` - Demonstrates logarithmic scaling for exponential growth visualization
+- `log_scale.pdf` - Vector format of the logarithmic scale plot
+- `log_scale.txt` - ASCII art representation with logarithmic axes
+- `symlog_scale.png` - Shows symmetric logarithmic scaling that handles positive and negative values
+- `symlog_scale.pdf` - Vector format of the symlog scale plot
+- `symlog_scale.txt` - ASCII art representation with symmetric log axes
 
-### Symmetric Logarithmic Scale
-![Symlog Scale](symlog_scale.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.

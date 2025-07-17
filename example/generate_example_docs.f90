@@ -77,30 +77,23 @@ contains
         character(len=*), intent(in) :: example_dir
         character(len=*), intent(in) :: example_name
         
-        character(len=1024) :: line, source_content
-        character(len=4096) :: ascii_content
-        character(len=256) :: source_file, output_file, ascii_file
-        character(len=256) :: png_files(10), pdf_files(10), txt_files(10)
-        integer :: unit_in, unit_out, unit_ascii, ios, j
-        integer :: n_png, n_pdf, n_txt
-        logical :: file_exists
+        character(len=1024) :: line
+        character(len=256) :: readme_file, output_file
+        integer :: unit_in, unit_out, ios
+        logical :: file_exists, in_output_section
         
         print *, "Processing: ", trim(example_name)
         
         ! Build file paths
-        source_file = trim(example_dir) // "/" // trim(example_name) // ".f90"
+        readme_file = trim(example_dir) // "/README.md"
         output_file = "doc/examples/" // trim(example_name) // ".md"
         
-        ! Check if source exists
-        inquire(file=trim(source_file), exist=file_exists)
+        ! Check if README exists
+        inquire(file=trim(readme_file), exist=file_exists)
         if (.not. file_exists) then
-            print *, "Warning: Source file not found: ", trim(source_file)
+            print *, "Warning: README.md not found: ", trim(readme_file)
             return
         end if
-        
-        ! Find output files
-        call find_output_files(example_dir, example_name, png_files, n_png, &
-                              pdf_files, n_pdf, txt_files, n_txt)
         
         ! Open output markdown file
         open(newunit=unit_out, file=trim(output_file), status='replace', iostat=ios)
@@ -109,33 +102,70 @@ contains
             return
         end if
         
-        ! Write header
-        write(unit_out, '(A)') 'title: ' // title_case(example_name)
-        write(unit_out, '(A)') '---'
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') '# ' // title_case(example_name)
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') get_example_description(example_name)
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') '## Source Code'
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') '```fortran'
-        
-        ! Copy source code
-        open(newunit=unit_in, file=trim(source_file), status='old', iostat=ios)
-        if (ios == 0) then
-            do
-                read(unit_in, '(A)', iostat=ios) line
-                if (ios /= 0) exit
-                write(unit_out, '(A)') trim(line)
-            end do
-            close(unit_in)
+        ! Process README and copy content with modifications
+        open(newunit=unit_in, file=trim(readme_file), status='old', iostat=ios)
+        if (ios /= 0) then
+            print *, "Error: Cannot read ", trim(readme_file)
+            close(unit_out)
+            return
         end if
         
-        write(unit_out, '(A)') '```'
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') '## Output'
-        write(unit_out, '(A)') ''
+        in_output_section = .false.
+        
+        do
+            read(unit_in, '(A)', iostat=ios) line
+            if (ios /= 0) exit
+            
+            ! Skip the title line from README (we'll use our own)
+            if (index(line, 'title:') == 1) cycle
+            
+            ! Check if we're entering the output examples section
+            if (index(line, '## Output Examples') > 0) then
+                in_output_section = .true.
+                ! Write the output section with generated content
+                write(unit_out, '(A)') '## Output'
+                write(unit_out, '(A)') ''
+                call write_generated_outputs(unit_out, example_dir, example_name)
+                ! Skip until next section
+                cycle
+            end if
+            
+            ! Skip content in output section
+            if (in_output_section) then
+                if (index(line, '##') == 1 .and. index(line, '## Output') == 0) then
+                    in_output_section = .false.
+                else
+                    cycle
+                end if
+            end if
+            
+            ! Replace relative image paths with correct paths for docs
+            if (index(line, '![') > 0 .and. index(line, '](') > 0) then
+                call process_image_path(line)
+            end if
+            
+            ! Write the line
+            write(unit_out, '(A)') trim(line)
+        end do
+        
+        close(unit_in)
+        close(unit_out)
+        
+    end subroutine process_example
+    
+    subroutine write_generated_outputs(unit_out, example_dir, example_name)
+        integer, intent(in) :: unit_out
+        character(len=*), intent(in) :: example_dir, example_name
+        
+        character(len=256) :: png_files(10), pdf_files(10), txt_files(10)
+        character(len=256) :: ascii_file
+        character(len=1024) :: line
+        integer :: n_png, n_pdf, n_txt, j, unit_ascii, ios
+        logical :: file_exists
+        
+        ! Find output files
+        call find_output_files(example_dir, example_name, png_files, n_png, &
+                              pdf_files, n_pdf, txt_files, n_txt)
         
         ! Add PNG outputs
         do j = 1, n_png
@@ -171,14 +201,26 @@ contains
             write(unit_out, '(A)') ''
         end do
         
-        ! Add key features section
-        write(unit_out, '(A)') '## Key Features Demonstrated'
-        write(unit_out, '(A)') ''
-        write(unit_out, '(A)') get_key_features(example_name)
+    end subroutine write_generated_outputs
+    
+    subroutine process_image_path(line)
+        character(len=*), intent(inout) :: line
+        integer :: start_pos, end_pos, path_start, path_end
+        character(len=256) :: new_path
         
-        close(unit_out)
-        
-    end subroutine process_example
+        ! Find image markdown pattern ![...](...) 
+        start_pos = index(line, '](')
+        if (start_pos > 0) then
+            path_start = start_pos + 2
+            path_end = index(line(path_start:), ')')
+            if (path_end > 0) then
+                path_end = path_start + path_end - 2
+                ! Replace with media path
+                new_path = '../media/examples/' // line(path_start:path_end)
+                line = line(1:start_pos+1) // trim(new_path) // line(path_end+1:)
+            end if
+        end if
+    end subroutine process_image_path
     
     subroutine find_output_files(dir, base_name, png_files, n_png, pdf_files, n_pdf, txt_files, n_txt)
         character(len=*), intent(in) :: dir, base_name
@@ -296,67 +338,5 @@ contains
         
         title = title_case(base)
     end function get_output_title
-    
-    function get_example_description(name) result(desc)
-        character(len=*), intent(in) :: name
-        character(len=512) :: desc
-        
-        select case(name)
-        case('basic_plots')
-            desc = 'This example demonstrates the fundamental plotting capabilities of fortplotlib ' // &
-                   'using both the simple functional API and the object-oriented interface.'
-        case('line_styles')
-            desc = 'This example demonstrates all available line styles in fortplotlib, ' // &
-                   'showing how to customize the appearance of plotted lines.'
-        case('contour_demo')
-            desc = 'This example demonstrates contour plotting capabilities, including basic contours, ' // &
-                   'custom levels, and mixing contour plots with line plots.'
-        case('scale_examples')
-            desc = 'This example demonstrates different axis scaling options including ' // &
-                   'logarithmic and symmetric logarithmic (symlog) scales.'
-        case('marker_demo')
-            desc = 'This example showcases various marker types and scatter plot capabilities in fortplotlib.'
-        case('format_string_demo')
-            desc = 'This example demonstrates matplotlib-style format strings for quick and intuitive ' // &
-                   'plot styling.'
-        case('colored_contours')
-            desc = 'This example shows filled contour plots with customizable colormaps for ' // &
-                   'visualizing 2D scalar fields.'
-        case('pcolormesh_demo')
-            desc = 'This example demonstrates pseudocolor plots for efficient 2D data visualization.'
-        case('streamplot_demo')
-            desc = 'This example shows vector field visualization using streamlines.'
-        case('legend_demo')
-            desc = 'This example demonstrates legend placement and customization options.'
-        case default
-            desc = 'This example demonstrates ' // trim(title_case(name)) // ' capabilities in fortplotlib.'
-        end select
-    end function get_example_description
-    
-    function get_key_features(name) result(features)
-        character(len=*), intent(in) :: name
-        character(len=1024) :: features
-        
-        select case(name)
-        case('basic_plots')
-            features = '- **Functional API**: Simple, matplotlib-like interface with global figure management' // new_line('A') // &
-                      '- **Object-Oriented API**: More control through `figure_t` type' // new_line('A') // &
-                      '- **Multiple output formats**: PNG, PDF, and ASCII text' // new_line('A') // &
-                      '- **Line labeling**: Automatic legend generation' // new_line('A') // &
-                      '- **Axis labeling**: Clear axis titles and labels'
-        case('line_styles')
-            features = '- **Named Constants**: Use predefined constants for better code readability' // new_line('A') // &
-                      '- **String Shortcuts**: Compatible with matplotlib-style strings' // new_line('A') // &
-                      '- **Marker Combinations**: Combine with markers for scatter plots' // new_line('A') // &
-                      '- **Clear Separation**: Data offset vertically for visual clarity'
-        case('scale_examples')
-            features = '- **Logarithmic scaling**: For exponential growth visualization' // new_line('A') // &
-                      '- **Symmetric log**: Handles positive and negative values with log-like behavior' // new_line('A') // &
-                      '- **Linear threshold**: Symlog parameter controls transition to linear near zero' // new_line('A') // &
-                      '- **Automatic tick generation**: Smart tick placement for non-linear scales'
-        case default
-            features = '- See source code for detailed feature demonstration'
-        end select
-    end function get_key_features
 
 end program generate_example_docs

@@ -30,6 +30,11 @@ make example ARGS="line_styles"
 - Dotted line (`:` or `LINESTYLE_DOTTED`)
 - Dash-dot line (`-.` or `LINESTYLE_DASHDOT`)
 
-## Output Example
+## Output Examples
 
-![Line Styles](line_styles.png)
+The example generates the following output files:
+- `line_styles.png` - Shows all available line styles (solid, dashed, dotted, dash-dot) with clear visual separation
+- `line_styles.pdf` - Vector format of the same visualization
+- `line_styles.txt` - ASCII art representation of the line styles
+
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.

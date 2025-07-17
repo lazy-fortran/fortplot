@@ -33,8 +33,15 @@ make example ARGS="pcolormesh_demo"
 
 ## Output Examples
 
-### Basic Pcolormesh
-![Basic Pcolormesh](pcolormesh_basic.png)
+The example generates the following output files:
+- `pcolormesh_basic.png` - Basic pcolormesh plot showing grid-based data visualization
+- `pcolormesh_basic.pdf` - Vector format of the basic pcolormesh
+- `pcolormesh_basic.txt` - ASCII representation of the grid data
+- `pcolormesh_plasma.png` - Pcolormesh visualization using the plasma colormap
+- `pcolormesh_plasma.pdf` - Vector format with plasma colormap
+- `pcolormesh_plasma.txt` - ASCII art with plasma color representation
+- `pcolormesh_sinusoidal.png` - Sinusoidal pattern demonstrating smooth gradients
+- `pcolormesh_sinusoidal.pdf` - Vector format of the sinusoidal pattern
+- `pcolormesh_sinusoidal.txt` - ASCII representation of the sine wave pattern
 
-### Plasma Colormap
-![Plasma Colormap](pcolormesh_plasma.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.

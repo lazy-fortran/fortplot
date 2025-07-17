@@ -37,8 +37,21 @@ make example ARGS="colored_contours"
 
 ## Output Examples
 
-### Gaussian Default
-![Gaussian Default](gaussian_default.png)
+The example generates the following output files:
+- `gaussian_default.png` - Gaussian function with default viridis colormap showing perceptually uniform colors
+- `gaussian_default.pdf` - Vector format of the Gaussian contour plot
+- `gaussian_default.txt` - ASCII representation of filled contours
+- `ripple_jet.png` - Ripple pattern visualized with classic rainbow jet colormap
+- `ripple_jet.pdf` - Vector format of the ripple with jet colormap
+- `ripple_jet.txt` - ASCII art version of the ripple pattern
+- `ripple_coolwarm.png` - Same ripple pattern with blue-to-red diverging colormap
+- `ripple_coolwarm.pdf` - Vector format with coolwarm colormap
+- `ripple_coolwarm.txt` - ASCII representation with coolwarm styling
+- `ripple_inferno.png` - Ripple pattern with black-to-yellow inferno colormap
+- `ripple_inferno.pdf` - Vector format with inferno colormap
+- `ripple_inferno.txt` - ASCII version with inferno representation
+- `saddle_plasma.png` - Saddle point function with purple-to-yellow plasma colormap
+- `saddle_plasma.pdf` - Vector format of the saddle point
+- `saddle_plasma.txt` - ASCII art of the saddle point pattern
 
-### Ripple Jet
-![Ripple Jet](ripple_jet.png)
+See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
