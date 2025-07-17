@@ -38,6 +38,12 @@ jobs:
         run: |
           pip install ford
           
+          # Install fpm (Fortran Package Manager)
+          wget https://github.com/fortran-lang/fpm/releases/download/v0.10.0/fpm-0.10.0-linux-x86_64.sh
+          chmod +x fpm-0.10.0-linux-x86_64.sh
+          ./fpm-0.10.0-linux-x86_64.sh --prefix=/usr/local
+          echo "/usr/local/bin" >> $GITHUB_PATH
+          
       - name: Build fortplotlib
         run: make build
         
