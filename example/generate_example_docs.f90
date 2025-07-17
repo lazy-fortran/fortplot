@@ -83,7 +83,7 @@ contains
         
         ! Build file paths
         readme_file = trim(example_dir) // "/README.md"
-        output_file = "doc/examples/" // trim(example_name) // ".md"
+        output_file = "build/example/" // trim(example_name) // ".md"
         
         ! Check if README exists
         inquire(file=trim(readme_file), exist=file_exists)
@@ -174,7 +174,7 @@ contains
             
             ! Replace relative image paths with correct paths for docs
             if (index(line, '![') > 0 .and. index(line, '](') > 0) then
-                call process_image_path(line)
+                call process_image_path(line, example_name)
             end if
             
             ! Write the line
@@ -276,18 +276,20 @@ contains
             if (extension == 'mp4') then
                 ! Embed video using HTML
                 write(unit_out, '(A)') '<video width="800" height="600" controls>'
-                write(unit_out, '(A)') '  <source src="../../media/examples/' // trim(media_files(j)) // '" type="video/mp4">'
+                write(unit_out, '(A)') '  <source src="../' // trim(example_name) // '/' // &
+                                       trim(media_files(j)) // '" type="video/mp4">'
                 write(unit_out, '(A)') '  Your browser does not support the video tag.'
                 write(unit_out, '(A)') '</video>'
                 write(unit_out, '(A)') ''
-                write(unit_out, '(A)') '[Download MP4](../../media/examples/' // trim(media_files(j)) // ')'
+                write(unit_out, '(A)') '[Download MP4](../' // trim(example_name) // '/' // trim(media_files(j)) // ')'
             else
                 ! Regular image
-                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../../media/examples/' // trim(media_files(j)) // ')'
+                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../' // &
+                                       trim(example_name) // '/' // trim(media_files(j)) // ')'
                 write(unit_out, '(A)') ''
                 
                 ! Add corresponding ASCII output
-                ascii_file = trim(example_dir) // '/' // replace_extension(media_files(j), 'txt')
+                ascii_file = 'build/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
                 inquire(file=trim(ascii_file), exist=file_exists)
                 if (file_exists) then
                     write(unit_out, '(A)') 'ASCII output:'
@@ -308,7 +310,7 @@ contains
                 end if
                 
                 ! Add PDF link
-                write(unit_out, '(A)') '[Download PDF](../../media/examples/' // &
+                write(unit_out, '(A)') '[Download PDF](../' // trim(example_name) // '/' // &
                     trim(replace_extension(media_files(j), 'pdf')) // ')'
             end if
             write(unit_out, '(A)') ''
@@ -316,8 +318,9 @@ contains
         
     end subroutine write_generated_outputs
     
-    subroutine process_image_path(line)
+    subroutine process_image_path(line, example_name)
         character(len=*), intent(inout) :: line
+        character(len=*), intent(in) :: example_name
         integer :: start_pos, end_pos, path_start, path_end
         character(len=256) :: new_path, filename
         
@@ -334,8 +337,8 @@ contains
                 if (index(filename, '/') > 0) then
                     filename = filename(index(filename, '/', back=.true.)+1:)
                 end if
-                ! Replace with media path
-                new_path = '../../media/examples/' // trim(filename)
+                ! Replace with relative path to example directory
+                new_path = '../' // trim(example_name) // '/' // trim(filename)
                 line = line(1:start_pos+1) // trim(new_path) // ')'
             end if
         end if

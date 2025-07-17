@@ -1,7 +1,7 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs
 
 # Default target
 all: build
@@ -11,7 +11,7 @@ build:
 	fpm build $(ARGS)
 
 # Build and run the examples
-example:
+example: create_build_dirs
 	fpm run --example $(ARGS)
 
 # Build and run the apps for debugging
@@ -50,6 +50,7 @@ matplotlib: example_matplotlib
 # Clean build artifacts
 clean:
 	echo y | fpm clean
+	rm -rf build/example
 	find . \( -name "*.png" -o -name "*.pdf" -o -name "*.txt" \
 	       -o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \) \
 	       -not -name "CMakeLists.txt" -type f -exec rm -f {} \;
@@ -77,6 +78,26 @@ coverage:
 	@echo "Generating coverage report..."
 	gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' --exclude 'example/*' --exclude 'test/*' --txt -o coverage.txt --print-summary
 	@echo "Coverage report generated: coverage.txt"
+
+# Create build directories for examples
+create_build_dirs:
+	@mkdir -p build/example/basic_plots
+	@mkdir -p build/example/line_styles
+	@mkdir -p build/example/marker_demo
+	@mkdir -p build/example/format_string_demo
+	@mkdir -p build/example/contour_demo
+	@mkdir -p build/example/colored_contours
+	@mkdir -p build/example/pcolormesh_demo
+	@mkdir -p build/example/streamplot_demo
+	@mkdir -p build/example/ascii_heatmap
+	@mkdir -p build/example/scale_examples
+	@mkdir -p build/example/legend_demo
+	@mkdir -p build/example/legend_box_demo
+	@mkdir -p build/example/unicode_demo
+	@mkdir -p build/example/show_viewer_demo
+	@mkdir -p build/example/smart_show_demo
+	@mkdir -p build/example/animation
+	@mkdir -p build/example/stateful_streamplot
 
 # Help target
 help:
