@@ -7,7 +7,7 @@ program generate_example_docs
     integer :: n_examples, i
     
     ! List of examples to document
-    n_examples = 18
+    n_examples = 17
     example_dirs(1) = "example/fortran/basic_plots"
     example_names(1) = "basic_plots"
     
@@ -53,14 +53,11 @@ program generate_example_docs
     example_dirs(15) = "example/fortran/smart_show_demo"
     example_names(15) = "smart_show_demo"
     
-    example_dirs(16) = "example/fortran/save_animation_demo"
-    example_names(16) = "save_animation"
+    example_dirs(16) = "example/fortran/animation"
+    example_names(16) = "animation"
     
     example_dirs(17) = "example/fortran/stateful_streamplot"
     example_names(17) = "stateful_streamplot"
-    
-    example_dirs(18) = "example/fortran/animation"
-    example_names(18) = "animation"
     
     print *, "Generating example documentation..."
     
@@ -169,7 +166,7 @@ contains
         
         ! Add PNG outputs
         do j = 1, n_png
-            write(unit_out, '(A)') '### ' // get_output_title(png_files(j))
+            write(unit_out, '(A)') '### ' // trim(get_output_title(png_files(j)))
             write(unit_out, '(A)') ''
             write(unit_out, '(A)') '![' // trim(png_files(j)) // '](../media/examples/' // trim(png_files(j)) // ')'
             write(unit_out, '(A)') ''
@@ -197,7 +194,7 @@ contains
             
             ! Add PDF link
             write(unit_out, '(A)') '[Download PDF](../media/examples/' // &
-                replace_extension(png_files(j), 'pdf') // ')'
+                trim(replace_extension(png_files(j), 'pdf')) // ')'
             write(unit_out, '(A)') ''
         end do
         
@@ -206,7 +203,7 @@ contains
     subroutine process_image_path(line)
         character(len=*), intent(inout) :: line
         integer :: start_pos, end_pos, path_start, path_end
-        character(len=256) :: new_path
+        character(len=256) :: new_path, filename
         
         ! Find image markdown pattern ![...](...) 
         start_pos = index(line, '](')
@@ -215,9 +212,15 @@ contains
             path_end = index(line(path_start:), ')')
             if (path_end > 0) then
                 path_end = path_start + path_end - 2
+                ! Extract just the filename
+                filename = adjustl(trim(line(path_start:path_end)))
+                ! Get just the filename if it's a path
+                if (index(filename, '/') > 0) then
+                    filename = filename(index(filename, '/', back=.true.)+1:)
+                end if
                 ! Replace with media path
-                new_path = '../media/examples/' // line(path_start:path_end)
-                line = line(1:start_pos+1) // trim(new_path) // line(path_end+1:)
+                new_path = '../media/examples/' // trim(filename)
+                line = line(1:start_pos+1) // trim(new_path) // ')'
             end if
         end if
     end subroutine process_image_path
