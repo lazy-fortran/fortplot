@@ -21,7 +21,7 @@ implicit-external = false
 source-form = "free"
 
 [extra.ford]
-project = "Fortplotlib"
+project = "fortplotlib"
 src_dir = "src"
 output_dir = "build/doc"
 page_dir = "doc"
