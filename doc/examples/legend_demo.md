@@ -9,11 +9,8 @@ This example demonstrates legend placement and customization options.
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [legend_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/legend_demo/legend_demo.f90)
-
-🐍 Python equivalent: [legend_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/legend_demo/legend_demo.py)
+**Fortran:** [legend_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/legend_demo/legend_demo.f90)
+**Python:** [legend_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/legend_demo/legend_demo.py)
 
 ```fortran
 program legend_demo

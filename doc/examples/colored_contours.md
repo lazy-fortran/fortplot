@@ -9,11 +9,8 @@ This example shows filled contour plots with customizable colormaps for visualiz
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [colored_contours.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/colored_contours/colored_contours.f90)
-
-🐍 Python equivalent: [colored_contours.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/colored_contours/colored_contours.py)
+**Fortran:** [colored_contours.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/colored_contours/colored_contours.f90)
+**Python:** [colored_contours.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/colored_contours/colored_contours.py)
 
 ```fortran
 program colored_contours_example

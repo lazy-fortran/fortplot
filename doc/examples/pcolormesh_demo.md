@@ -9,11 +9,8 @@ This example demonstrates pseudocolor plots for efficient 2D data visualization.
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [pcolormesh_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
-
-🐍 Python equivalent: [pcolormesh_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/pcolormesh_demo/pcolormesh_demo.py)
+**Fortran:** [pcolormesh_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
+**Python:** [pcolormesh_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/pcolormesh_demo/pcolormesh_demo.py)
 
 ```fortran
 program pcolormesh_demo

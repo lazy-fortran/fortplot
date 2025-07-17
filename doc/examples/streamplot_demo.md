@@ -9,11 +9,8 @@ This example shows vector field visualization using streamlines.
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [streamplot_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/streamplot_demo/streamplot_demo.f90)
-
-🐍 Python equivalent: [streamplot_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/streamplot_demo/streamplot_demo.py)
+**Fortran:** [streamplot_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/streamplot_demo/streamplot_demo.f90)
+**Python:** [streamplot_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/streamplot_demo/streamplot_demo.py)
 
 ```fortran
 program streamplot_demo

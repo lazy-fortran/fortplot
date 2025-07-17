@@ -9,9 +9,7 @@ This example shows time-evolving vector field animations using streamplots.
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [stateful_streamplot.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/stateful_streamplot/stateful_streamplot.f90)
+**Fortran:** [stateful_streamplot.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/stateful_streamplot/stateful_streamplot.f90)
 
 ```fortran
 program stateful_streamplot

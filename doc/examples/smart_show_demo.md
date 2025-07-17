@@ -9,9 +9,7 @@ This example demonstrates intelligent display mode selection based on environmen
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [smart_show_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/smart_show_demo/smart_show_demo.f90)
+**Fortran:** [smart_show_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/smart_show_demo/smart_show_demo.f90)
 
 ```fortran
 program smart_show_demo

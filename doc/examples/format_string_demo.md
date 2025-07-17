@@ -9,11 +9,8 @@ This example demonstrates matplotlib-style format strings for quick and intuitiv
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [format_string_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/format_string_demo/format_string_demo.f90)
-
-🐍 Python equivalent: [format_string_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/format_string_demo/format_string_demo.py)
+**Fortran:** [format_string_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/format_string_demo/format_string_demo.f90)
+**Python:** [format_string_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/format_string_demo/format_string_demo.py)
 
 ```fortran
 program format_string_demo

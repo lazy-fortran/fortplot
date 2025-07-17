@@ -9,11 +9,8 @@ This example demonstrates contour plotting capabilities, including basic contour
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [contour_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/contour_demo/contour_demo.f90)
-
-🐍 Python equivalent: [contour_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/contour_demo/contour_demo.py)
+**Fortran:** [contour_demo.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/contour_demo/contour_demo.f90)
+**Python:** [contour_demo.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/contour_demo/contour_demo.py)
 
 ```fortran
 program contour_demo

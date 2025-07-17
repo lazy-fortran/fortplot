@@ -9,11 +9,8 @@ This example demonstrates the fundamental plotting capabilities of fortplotlib u
 
 ## Source Code
 
-### Fortran Implementation
-
-📄 View on GitHub: [basic_plots.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/basic_plots/basic_plots.f90)
-
-🐍 Python equivalent: [basic_plots.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/basic_plots/basic_plots.py)
+**Fortran:** [basic_plots.f90](https://github.com/krystophny/fortplotlib/blob/main/example/fortran/basic_plots/basic_plots.f90)
+**Python:** [basic_plots.py](https://github.com/krystophny/fortplotlib/blob/main/example/python/basic_plots/basic_plots.py)
 
 ```fortran
 program basic_plots
