@@ -25,9 +25,6 @@ graph: true
 search: true
 extra_mods: iso_fortran_env:https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fFORTRAN_005fENV.html
             iso_c_binding:https://gcc.gnu.org/onlinedocs/gfortran/ISO_005fC_005fBINDING.html
----
-
-# Project Documentation
 
 Welcome to the fortplotlib documentation. This library provides a modern, matplotlib-inspired plotting interface for Fortran with multiple backends including PNG, PDF, and ASCII.
 
@@ -46,5 +43,3 @@ Welcome to the fortplotlib documentation. This library provides a modern, matplo
 - [API Documentation](./page/index.html) - Detailed module and procedure documentation
 - [Examples Gallery](./page/examples/index.html) - Visual examples with code
 - [Getting Started](./page/fpm_example/index.html) - Quick start guide
-
----
