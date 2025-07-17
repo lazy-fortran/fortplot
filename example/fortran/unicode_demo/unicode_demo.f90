@@ -56,18 +56,18 @@ program unicode_demo
     ! Save to all three backends to demonstrate Unicode support
     
     ! 1. PNG - High quality with antialiased Unicode
-    call fig%savefig("example/fortran/unicode_demo/unicode_demo.png")
-    print *, "✓ PNG saved: example/fortran/unicode_demo/unicode_demo.png"
+    call fig%savefig("build/example/unicode_demo/unicode_demo.png")
+    print *, "✓ PNG saved: build/example/unicode_demo/unicode_demo.png"
     print *, "  (High-quality antialiased Greek letters via STB TrueType)"
     
     ! 2. PDF - Vector graphics with Unicode
-    call fig%savefig("example/fortran/unicode_demo/unicode_demo.pdf") 
-    print *, "✓ PDF saved: example/fortran/unicode_demo/unicode_demo.pdf"
+    call fig%savefig("build/example/unicode_demo/unicode_demo.pdf") 
+    print *, "✓ PDF saved: build/example/unicode_demo/unicode_demo.pdf"
     print *, "  (Vector Unicode characters, scalable and professional)"
     
     ! 3. ASCII - Terminal output with Unicode
-    call fig%savefig("example/fortran/unicode_demo/unicode_demo.txt")
-    print *, "✓ ASCII saved: example/fortran/unicode_demo/unicode_demo.txt"
+    call fig%savefig("build/example/unicode_demo/unicode_demo.txt")
+    print *, "✓ ASCII saved: build/example/unicode_demo/unicode_demo.txt"
     print *, "  (Terminal-friendly Unicode display)"
     
     print *, ""
@@ -112,11 +112,11 @@ program unicode_demo
     call fig%add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
     call fig%legend("upper right")
     
-    call fig%savefig("example/fortran/unicode_demo/math_examples.png")
-    call fig%savefig("example/fortran/unicode_demo/math_examples.pdf")
-    call fig%savefig("example/fortran/unicode_demo/math_examples.txt")
+    call fig%savefig("build/example/unicode_demo/math_examples.png")
+    call fig%savefig("build/example/unicode_demo/math_examples.pdf")
+    call fig%savefig("build/example/unicode_demo/math_examples.txt")
     
-    print *, "✓ Mathematical examples saved: example/fortran/unicode_demo/math_examples.*"
+    print *, "✓ Mathematical examples saved: build/example/unicode_demo/math_examples.*"
     print *, ""
     print *, "Demo completed! Check the generated files to see Unicode rendering."
     

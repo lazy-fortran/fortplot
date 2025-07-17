@@ -45,7 +45,7 @@ program ascii_heatmap_demo
     call fig%initialize(80, 25)
     call fig%add_contour_filled(x, y, z1, label="Ripples")
     call fig%set_title("ASCII Heatmap: Circular Ripples")
-    call fig%savefig('circular_ripples.txt')
+    call fig%savefig('build/example/ascii_heatmap/circular_ripples.txt')
     
     ! Demo 2: Saddle point with pcolormesh
     block
@@ -64,18 +64,18 @@ program ascii_heatmap_demo
         call fig%initialize(80, 25)
         call fig%add_pcolormesh(x_edges, y_edges, transpose(z2))
         call fig%set_title("ASCII Heatmap: Saddle Point")
-        call fig%savefig('saddle_point.txt')
+        call fig%savefig('build/example/ascii_heatmap/saddle_point.txt')
     end block
     
     ! Demo 3: Four peaks
     call fig%initialize(80, 25)
     call fig%add_contour_filled(x, y, z3, label="Four Peaks")
     call fig%set_title("ASCII Heatmap: Four Gaussian Peaks")
-    call fig%savefig('four_peaks.txt')
+    call fig%savefig('build/example/ascii_heatmap/four_peaks.txt')
     
     print *, "ASCII heatmap demos saved:"
-    print *, "  - circular_ripples.txt"
-    print *, "  - saddle_point.txt"
-    print *, "  - four_peaks.txt"
+    print *, "  - build/example/ascii_heatmap/circular_ripples.txt"
+    print *, "  - build/example/ascii_heatmap/saddle_point.txt"
+    print *, "  - build/example/ascii_heatmap/four_peaks.txt"
     
 end program ascii_heatmap_demo

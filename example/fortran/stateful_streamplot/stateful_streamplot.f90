@@ -34,9 +34,9 @@ program stateful_streamplot
     call title('Stateful Interface Streamplot Demo - Circular Flow')
     
     ! Save figure
-    call savefig('example/fortran/stateful_streamplot/stateful_streamplot.png')
-    call savefig('example/fortran/stateful_streamplot/stateful_streamplot.pdf')
-    call savefig('example/fortran/stateful_streamplot/stateful_streamplot.txt')
+    call savefig('build/example/stateful_streamplot/stateful_streamplot.png')
+    call savefig('build/example/stateful_streamplot/stateful_streamplot.pdf')
+    call savefig('build/example/stateful_streamplot/stateful_streamplot.txt')
     
     print *, 'Stateful streamplot demo completed!'
     
