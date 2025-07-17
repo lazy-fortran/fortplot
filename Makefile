@@ -1,6 +1,9 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
+# FPM flags for C compilation compatibility
+FPM_FLAGS = --flag -fPIC
+
 .PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs
 
 # Default target
@@ -8,19 +11,19 @@ all: build
 
 # Build the project
 build:
-	fpm build $(ARGS)
+	fpm build $(FPM_FLAGS) $(ARGS)
 
 # Build and run the examples
 example: create_build_dirs
-	fpm run --example $(ARGS)
+	fpm run --example $(FPM_FLAGS) $(ARGS)
 
 # Build and run the apps for debugging
 debug:
-	fpm run $(ARGS)
+	fpm run $(FPM_FLAGS) $(ARGS)
 
 # Run tests
 test:
-	fpm test $(ARGS)
+	fpm test $(FPM_FLAGS) $(ARGS)
 
 # Run Python examples with fortplotlib (default mode)
 example_python:
@@ -66,6 +69,9 @@ run-release:
 # Build documentation with FORD
 doc:
 	ford doc.md
+	# Copy example media files to doc build directory for proper linking
+	mkdir -p build/doc/example
+	if [ -d build/example ]; then cp -r build/example/* build/doc/example/ 2>/dev/null || true; fi
 
 # Generate coverage report
 coverage:
