@@ -261,8 +261,8 @@ contains
         logical :: file_exists
         character(len=10) :: extension
         
-        ! Find output files
-        call find_output_files(example_dir, example_name, media_files, n_media, &
+        ! Find output files in build directory
+        call find_output_files('build/example/' // trim(example_name), example_name, media_files, n_media, &
                               pdf_files, n_pdf, txt_files, n_txt)
         
         ! Add media outputs (PNG or MP4)
@@ -289,7 +289,7 @@ contains
                 write(unit_out, '(A)') ''
                 
                 ! Add corresponding ASCII output
-                ascii_file = 'doc/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
+                ascii_file = 'build/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
                 inquire(file=trim(ascii_file), exist=file_exists)
                 if (file_exists) then
                     write(unit_out, '(A)') 'ASCII output:'
@@ -372,54 +372,54 @@ contains
         
         n_media = 0
         
-        ! Check each known pattern
-        select case(dir)
-        case('example/fortran/animation')
+        ! Check each known pattern - extract example name from build path
+        select case(trim(dir))
+        case('build/example/animation')
             call add_if_exists(dir, 'wave_animation.mp4', media_files, n_media)
-        case('example/fortran/basic_plots')
+        case('build/example/basic_plots')
             call add_if_exists(dir, 'simple_plot.png', media_files, n_media)
             call add_if_exists(dir, 'multi_line.png', media_files, n_media)
-        case('example/fortran/line_styles')
+        case('build/example/line_styles')
             call add_if_exists(dir, 'line_styles.png', media_files, n_media)
-        case('example/fortran/contour_demo')
+        case('build/example/contour_demo')
             call add_if_exists(dir, 'contour_gaussian.png', media_files, n_media)
             call add_if_exists(dir, 'mixed_plot.png', media_files, n_media)
-        case('example/fortran/scale_examples')
+        case('build/example/scale_examples')
             call add_if_exists(dir, 'log_scale.png', media_files, n_media)
             call add_if_exists(dir, 'symlog_scale.png', media_files, n_media)
-        case('example/fortran/marker_demo')
+        case('build/example/marker_demo')
             call add_if_exists(dir, 'scatter_plot.png', media_files, n_media)
             call add_if_exists(dir, 'all_marker_types.png', media_files, n_media)
             call add_if_exists(dir, 'marker_colors.png', media_files, n_media)
-        case('example/fortran/colored_contours')
+        case('build/example/colored_contours')
             call add_if_exists(dir, 'gaussian_default.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_jet.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_coolwarm.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_inferno.png', media_files, n_media)
             call add_if_exists(dir, 'saddle_plasma.png', media_files, n_media)
-        case('example/fortran/legend_demo')
+        case('build/example/legend_demo')
             call add_if_exists(dir, 'basic_legend.png', media_files, n_media)
             call add_if_exists(dir, 'legend_upper_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_upper_right.png', media_files, n_media)
             call add_if_exists(dir, 'legend_lower_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_lower_right.png', media_files, n_media)
             call add_if_exists(dir, 'multi_function_legend.png', media_files, n_media)
-        case('example/fortran/legend_box_demo')
+        case('build/example/legend_box_demo')
             call add_if_exists(dir, 'legend_box_demo_default.png', media_files, n_media)
             call add_if_exists(dir, 'legend_box_demo_upper_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_box_demo_lower_right.png', media_files, n_media)
-        case('example/fortran/format_string_demo')
+        case('build/example/format_string_demo')
             call add_if_exists(dir, 'format_string_demo.png', media_files, n_media)
-        case('example/fortran/pcolormesh_demo')
+        case('build/example/pcolormesh_demo')
             call add_if_exists(dir, 'pcolormesh_basic.png', media_files, n_media)
             call add_if_exists(dir, 'pcolormesh_plasma.png', media_files, n_media)
             call add_if_exists(dir, 'pcolormesh_sinusoidal.png', media_files, n_media)
-        case('example/fortran/streamplot_demo')
+        case('build/example/streamplot_demo')
             call add_if_exists(dir, 'streamplot_demo.png', media_files, n_media)
-        case('example/fortran/unicode_demo')
+        case('build/example/unicode_demo')
             call add_if_exists(dir, 'unicode_demo.png', media_files, n_media)
             call add_if_exists(dir, 'math_examples.png', media_files, n_media)
-        case('example/fortran/stateful_streamplot')
+        case('build/example/stateful_streamplot')
             call add_if_exists(dir, 'stateful_streamplot.png', media_files, n_media)
         case default
             ! For other examples, try the standard pattern
