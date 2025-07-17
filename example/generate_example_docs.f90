@@ -119,6 +119,25 @@ contains
             ! Skip the title line from README
             if (index(line, 'title:') == 1) cycle
             
+            ! Check if we're entering the files section
+            if (index(line, '## Files') > 0) then
+                ! Write enhanced files section with links
+                write(unit_out, '(A)') '## Source Files'
+                write(unit_out, '(A)') ''
+                call write_source_links(unit_out, example_name)
+                ! Skip original files section
+                do
+                    read(unit_in, '(A)', iostat=ios) line
+                    if (ios /= 0) exit
+                    if (index(line, '##') == 1 .and. index(line, '## Files') == 0) then
+                        ! Process this line in the main loop
+                        backspace(unit_in)
+                        exit
+                    end if
+                end do
+                cycle
+            end if
+            
             ! Check if we're entering the output examples section
             if (index(line, '## Output Examples') > 0) then
                 in_output_section = .true.
@@ -152,6 +171,88 @@ contains
         close(unit_out)
         
     end subroutine process_example
+    
+    subroutine write_source_links(unit_out, example_name)
+        integer, intent(in) :: unit_out
+        character(len=*), intent(in) :: example_name
+        
+        character(len=256) :: fortran_path, python_path
+        logical :: python_exists
+        
+        ! Build paths
+        select case(example_name)
+        case('animation')
+            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+                           trim(example_name) // '/save_animation_demo.f90'
+        case('ascii_heatmap')
+            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+                           trim(example_name) // '/ascii_heatmap_demo.f90'
+        case default
+            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+                           trim(example_name) // '/' // trim(example_name) // '.f90'
+        end select
+        python_path = 'example/python/' // trim(example_name) // '/' // trim(example_name) // '.py'
+        
+        ! Check if Python example exists
+        inquire(file=trim(python_path), exist=python_exists)
+        
+        ! Write Fortran link
+        write(unit_out, '(A)') '### Fortran Source'
+        write(unit_out, '(A)') ''
+        select case(example_name)
+        case('animation')
+            write(unit_out, '(A)') '📄 [save_animation_demo.f90](' // trim(fortran_path) // ')'
+        case('ascii_heatmap')
+            write(unit_out, '(A)') '📄 [ascii_heatmap_demo.f90](' // trim(fortran_path) // ')'
+        case default
+            write(unit_out, '(A)') '📄 [' // trim(example_name) // '.f90](' // trim(fortran_path) // ')'
+        end select
+        write(unit_out, '(A)') ''
+        
+        ! Write Python link if exists
+        if (python_exists) then
+            write(unit_out, '(A)') '### Python Equivalent'
+            write(unit_out, '(A)') ''
+            write(unit_out, '(A)') '🐍 [' // trim(example_name) // '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
+                                   trim(python_path) // ')'
+            write(unit_out, '(A)') ''
+        end if
+        
+        ! Add output files description
+        write(unit_out, '(A)') '### Generated Output Files'
+        write(unit_out, '(A)') ''
+        
+        ! List common output patterns
+        select case(example_name)
+        case('basic_plots')
+            write(unit_out, '(A)') '- `simple_plot.png/pdf/txt` - Simple sine wave visualization'
+            write(unit_out, '(A)') '- `multi_line.png/pdf/txt` - Multiple functions on the same plot'
+        case('line_styles')
+            write(unit_out, '(A)') '- `line_styles.png/pdf/txt` - Demonstration of all line styles'
+        case('contour_demo')
+            write(unit_out, '(A)') '- `contour_gaussian.png/pdf/txt` - Gaussian function contours'
+            write(unit_out, '(A)') '- `mixed_plot.png/pdf/txt` - Combined contour and line plot'
+        case('scale_examples')
+            write(unit_out, '(A)') '- `log_scale.png/pdf/txt` - Logarithmic scale example'
+            write(unit_out, '(A)') '- `symlog_scale.png/pdf/txt` - Symmetric logarithmic scale'
+        case('marker_demo')
+            write(unit_out, '(A)') '- `scatter_plot.png/pdf/txt` - Basic scatter plot'
+            write(unit_out, '(A)') '- `all_marker_types.png/pdf/txt` - All available markers'
+            write(unit_out, '(A)') '- `marker_colors.png/pdf/txt` - Colored markers'
+        case('colored_contours')
+            write(unit_out, '(A)') '- `gaussian_default.png/pdf/txt` - Default colormap'
+            write(unit_out, '(A)') '- `ripple_*.png/pdf/txt` - Various colormaps (jet, coolwarm, inferno)'
+            write(unit_out, '(A)') '- `saddle_plasma.png/pdf/txt` - Saddle point with plasma colormap'
+        case('legend_demo')
+            write(unit_out, '(A)') '- `basic_legend.png/pdf/txt` - Basic legend example'
+            write(unit_out, '(A)') '- `legend_*.png/pdf/txt` - Various legend positions'
+            write(unit_out, '(A)') '- `multi_function_legend.png/pdf/txt` - Multiple functions'
+        case default
+            write(unit_out, '(A)') '- Various output files in PNG, PDF, and ASCII formats'
+        end select
+        write(unit_out, '(A)') ''
+        
+    end subroutine write_source_links
     
     subroutine write_generated_outputs(unit_out, example_dir, example_name)
         integer, intent(in) :: unit_out
