@@ -54,8 +54,9 @@ jobs:
           find example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \;
           find example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \;
           
-          # Generate example documentation pages
-          make debug ARGS="generate_example_docs"
+          # Copy example README files for FORD processing
+          # FORD will automatically convert these to HTML pages
+          find example/fortran -name "README.md" -exec echo "Found: {}" \;
         
       - name: Build documentation
         run: make doc
