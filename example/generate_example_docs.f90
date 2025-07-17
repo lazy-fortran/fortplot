@@ -222,12 +222,13 @@ contains
         write(unit_out, '(A)') '## Source Code'
         write(unit_out, '(A)') ''
         
-        ! Write both links in a compact format
-        write(unit_out, '(A)') '**Fortran:** [' // trim(fortran_file) // '](' // trim(fortran_path) // ')'
+        ! Write Fortran link with emoji
+        write(unit_out, '(A)') '🔷 **Fortran:** [' // trim(fortran_file) // '](' // trim(fortran_path) // ')'
         
         ! Write Python link if exists
         if (python_exists) then
-            write(unit_out, '(A)') '**Python:** [' // trim(example_name) // &
+            write(unit_out, '(A)') ''
+            write(unit_out, '(A)') '🐍 **Python:** [' // trim(example_name) // &
                                    '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
                                    trim(python_path) // ')'
         end if
