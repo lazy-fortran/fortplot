@@ -11,6 +11,7 @@ module fortplot_text_interface
     public :: calculate_text_width, calculate_text_height
     public :: get_font_metrics, get_font_ascent_ratio
     public :: set_font_backend_preference, get_current_font_backend
+    public :: check_backend_availability, list_available_backends
     
     ! Module state
     class(font_renderer_t), allocatable :: global_renderer
@@ -101,7 +102,59 @@ contains
             success = global_renderer%load_font(font_path)
             if (success) return
         end if
+        
+        ! If we get here and the preferred backend failed, try fallback
+        if (.not. success) then
+            call try_fallback_backend()
+            if (allocated(global_renderer)) then
+                success = try_load_fonts_simple()  ! Non-recursive call
+            end if
+        end if
     end function discover_and_load_font
+    
+    subroutine try_fallback_backend()
+        ! If current backend failed, try the other one
+        if (allocated(global_renderer)) then
+            call global_renderer%cleanup()
+            deallocate(global_renderer)
+        end if
+        
+        if (preferred_backend == "freetype") then
+            global_renderer = create_font_renderer("stb")
+        else if (preferred_backend == "stb") then
+            global_renderer = create_font_renderer("freetype")
+        else
+            global_renderer = create_font_renderer("stb")  ! Default fallback
+        end if
+    end subroutine try_fallback_backend
+    
+    function try_load_fonts_simple() result(success)
+        logical :: success
+        character(len=256) :: font_path
+        
+        success = .false.
+        
+        ! Simple version without recursion
+        if (global_renderer%find_system_font("Liberation Sans", font_path)) then
+            success = global_renderer%load_font(font_path)
+            if (success) return
+        end if
+        
+        if (global_renderer%find_system_font("Helvetica", font_path)) then
+            success = global_renderer%load_font(font_path)
+            if (success) return
+        end if
+        
+        if (global_renderer%find_system_font("Arial", font_path)) then
+            success = global_renderer%load_font(font_path)
+            if (success) return
+        end if
+        
+        if (global_renderer%find_system_font("DejaVu Sans", font_path)) then
+            success = global_renderer%load_font(font_path)
+            if (success) return
+        end if
+    end function try_load_fonts_simple
     
     function calculate_text_width(text) result(width)
         character(len=*), intent(in) :: text
@@ -383,5 +436,37 @@ contains
             backend_name = preferred_backend
         end if
     end subroutine get_current_font_backend
+    
+    function check_backend_availability(backend_name) result(available)
+        use fortplot_freetype_bindings, only: ft_library_available
+        character(len=*), intent(in) :: backend_name
+        logical :: available
+        
+        available = .false.
+        
+        select case (trim(backend_name))
+        case ("stb")
+            available = .true.  ! STB is always available
+        case ("freetype")
+            available = ft_library_available()
+        end select
+    end function check_backend_availability
+    
+    subroutine list_available_backends(backends, count)
+        character(len=32), intent(out) :: backends(2)
+        integer, intent(out) :: count
+        
+        count = 0
+        
+        ! STB is always available
+        count = count + 1
+        backends(count) = "stb"
+        
+        ! Check FreeType availability
+        if (check_backend_availability("freetype")) then
+            count = count + 1
+            backends(count) = "freetype"
+        end if
+    end subroutine list_available_backends
 
 end module fortplot_text_interface

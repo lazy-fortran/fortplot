@@ -10,6 +10,7 @@ module fortplot_text
     
     ! Re-export interface functions
     public :: set_font_backend_preference, get_current_font_backend
+    public :: check_backend_availability, list_available_backends
     
 contains
 
