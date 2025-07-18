@@ -49,10 +49,14 @@ module fortplot_freetype_bindings
 contains
 
     function ft_library_available() result(available)
+        use fortplot_freetype_pkg_config, only: detect_freetype_cross_platform, &
+                                                 freetype_detection_result
         logical :: available
+        type(freetype_detection_result) :: result
         
-        ! For now, FreeType is not available until we implement proper bindings
-        available = .false.
+        ! Use the comprehensive detection system
+        call detect_freetype_cross_platform(result)
+        available = result%available
     end function ft_library_available
     
     function ft_init_freetype(library) result(error)

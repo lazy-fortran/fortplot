@@ -158,6 +158,125 @@ program font_backend_demo
 end program
 ```
 
+## FreeType Runtime Detection
+
+FreeType detection is performed automatically when you check backend availability:
+
+```fortran
+use fortplot
+logical :: available
+
+available = check_backend_availability("freetype")
+if (available) then
+    print *, "FreeType is available!"
+else
+    print *, "FreeType is not available, using STB fallback"
+end if
+```
+
+## Detection Methods
+
+The system uses multiple methods to detect FreeType, prioritized by reliability and performance:
+
+### 1. pkg-config Detection (Preferred)
+- **Speed**: Very fast
+- **Reliability**: Highest
+- **Coverage**: Linux, macOS, some Windows setups
+- **Requirements**: pkg-config must be installed
+
+Uses `pkg-config --libs-only-L freetype2` to find library paths and `pkg-config --modversion freetype2` for version information.
+
+### 2. Cross-Platform System Paths
+- **Speed**: Fast
+- **Reliability**: Good
+- **Coverage**: Linux, macOS, Windows
+- **Requirements**: Standard system installation
+
+Checks common library locations:
+- **Linux**: `/usr/lib/x86_64-linux-gnu`, `/usr/lib64`, `/usr/lib`, `/lib`
+- **macOS**: `/opt/homebrew/lib`, `/usr/local/lib`, `/usr/lib`
+- **Windows**: `C:\Windows\System32`, `C:\Windows\SysWOW64`
+
+### 3. Dynamic Library Loading
+- **Speed**: Moderate
+- **Reliability**: Highest accuracy
+- **Coverage**: All platforms
+- **Requirements**: FreeType runtime library
+
+Attempts to load FreeType library using:
+- `dlopen()` on Linux/macOS
+- `LoadLibrary()` on Windows (future)
+
+### 4. Function Verification
+- **Speed**: Moderate
+- **Reliability**: Very high
+- **Coverage**: All platforms
+- **Requirements**: FreeType library loaded
+
+Verifies availability of required FreeType functions:
+- `FT_Init_FreeType`
+- `FT_Done_FreeType`
+- `FT_New_Face`
+- `FT_Done_Face`
+- `FT_Set_Pixel_Sizes`
+- `FT_Load_Glyph`
+- `FT_Render_Glyph`
+- `FT_Get_Char_Index`
+
+## Platform-Specific Notes
+
+### Linux Distributions
+
+Different Linux distributions place FreeType in different locations:
+
+- **Debian/Ubuntu**: `/usr/lib/x86_64-linux-gnu/libfreetype.so.6`
+- **RedHat/CentOS**: `/usr/lib64/libfreetype.so.6`
+- **Arch Linux**: `/usr/lib/libfreetype.so.6`
+- **Alpine**: `/usr/lib/libfreetype.so.6`
+
+The detection system automatically checks all common locations.
+
+### macOS
+
+On macOS, FreeType is typically installed via Homebrew:
+
+- **Apple Silicon**: `/opt/homebrew/lib/libfreetype.dylib`
+- **Intel**: `/usr/local/lib/libfreetype.dylib`
+
+### Windows
+
+Windows support is planned with these expected locations:
+
+- **System32**: `C:\Windows\System32\freetype.dll`
+- **SysWOW64**: `C:\Windows\SysWOW64\freetype.dll`
+
+## Troubleshooting
+
+### FreeType Not Detected
+
+1. **Check installation**: Verify FreeType is installed
+2. **Check pkg-config**: Run `pkg-config --exists freetype2`
+3. **Check library paths**: Run `pkg-config --libs-only-L freetype2`
+4. **Check permissions**: Ensure read access to library files
+
+### Debug Information
+
+Use the debug functions to get detailed information:
+
+```fortran
+use fortplot_freetype_pkg_config
+type(freetype_detection_result) :: result
+
+call detect_freetype_cross_platform(result)
+print *, "Available: ", result%available
+print *, "Method: ", trim(result%method_used)
+print *, "Paths: ", trim(result%library_paths)
+print *, "Version: ", trim(result%version)
+if (len_trim(result%error_message) > 0) then
+    print *, "Error: ", trim(result%error_message)
+end if
+```
+
 ## Technical Details
 
 - Backend selection happens at runtime, not compile time
@@ -165,3 +284,6 @@ end program
 - No performance penalty when FreeType is not available
 - All backends provide the same API interface
 - Font metrics are consistent between backends
+- Detection uses multiple fallback methods for maximum compatibility
+- pkg-config is preferred for speed and reliability
+- Dynamic loading provides the most accurate verification
