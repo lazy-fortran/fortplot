@@ -60,10 +60,31 @@ Add FreeType font rendering support to fortplotlib with runtime dispatch between
 - ✅ All tests passing for both STB and FreeType backends
 - ✅ Backward compatibility maintained for existing API
 
-## Implementation Complete
+## Implementation Complete ✅
 Core font interface system is now fully implemented:
 - Clean separation between font backends and application code
 - Runtime selection between STB TrueType and FreeType
 - Graceful fallback when preferred backend unavailable
 - Comprehensive test coverage
 - Zero breaking changes to existing API
+
+## Runtime Detection Features ✅
+Advanced runtime backend detection and selection:
+- Automatic FreeType library availability detection
+- User-friendly backend preference API
+- Intelligent fallback system with error recovery
+- Complete backend listing and availability checking
+- Comprehensive demo and documentation
+
+## Usage Examples
+```fortran
+! Check availability
+available = check_backend_availability("freetype")
+
+! Set preference with fallback
+call set_font_backend_preference("freetype")
+success = init_text_system()  ! Falls back to STB if FreeType unavailable
+
+! List all available backends
+call list_available_backends(backends, count)
+```
