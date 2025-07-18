@@ -356,46 +356,107 @@ contains
         bitmap%yoff = 0
     end subroutine stb_free_glyph_bitmap
     
-    ! FreeType font renderer implementations (placeholder for now)
+    ! FreeType font renderer implementations
     function ft_load_font(this, font_path) result(success)
+        use fortplot_freetype_bindings, only: ft_library_available, ft_init_freetype, &
+                                             ft_new_face, ft_set_pixel_sizes, ft_done_face, &
+                                             ft_done_freetype
         class(freetype_font_renderer_t), intent(inout) :: this
         character(len=*), intent(in) :: font_path
         logical :: success
+        integer(c_int) :: error
         
-        ! Suppress unused parameter warnings
-        associate(unused_path => font_path); end associate
-        
-        ! TODO: Implement FreeType loading
         success = .false.
-        this%initialized = .false.
+        
+        ! Check if FreeType is available
+        if (.not. ft_library_available()) then
+            return
+        end if
+        
+        ! Initialize FreeType library
+        error = ft_init_freetype(this%library_ptr)
+        if (error /= 0) then
+            return
+        end if
+        
+        ! Load font face
+        error = ft_new_face(this%library_ptr, font_path, 0_c_long, this%face_ptr)
+        if (error /= 0) then
+            call ft_done_freetype(this%library_ptr)
+            return
+        end if
+        
+        ! Set default pixel height
+        error = ft_set_pixel_sizes(this%face_ptr, 0_c_int, int(this%pixel_height, c_int))
+        if (error == 0) then
+            this%initialized = .true.
+            success = .true.
+        else
+            call ft_done_face(this%face_ptr)
+            call ft_done_freetype(this%library_ptr)
+        end if
     end function ft_load_font
     
     subroutine ft_cleanup(this)
+        use fortplot_freetype_bindings, only: ft_done_face, ft_done_freetype
         class(freetype_font_renderer_t), intent(inout) :: this
         
-        ! TODO: Implement FreeType cleanup
+        if (c_associated(this%face_ptr)) then
+            call ft_done_face(this%face_ptr)
+        end if
+        
+        if (c_associated(this%library_ptr)) then
+            call ft_done_freetype(this%library_ptr)
+        end if
+        
         this%initialized = .false.
     end subroutine ft_cleanup
     
     subroutine ft_set_pixel_height(this, height)
+        use fortplot_freetype_bindings, only: ft_set_pixel_sizes
         class(freetype_font_renderer_t), intent(inout) :: this
         real(wp), intent(in) :: height
+        integer(c_int) :: error
         
         this%pixel_height = height
-        ! TODO: Implement FreeType pixel height setting
+        
+        if (c_associated(this%face_ptr)) then
+            error = ft_set_pixel_sizes(this%face_ptr, 0_c_int, int(height, c_int))
+            ! Update scale factor based on success
+            if (error == 0) then
+                this%scale_factor = 1.0_wp  ! FreeType handles scaling internally
+            end if
+        end if
     end subroutine ft_set_pixel_height
     
     subroutine ft_get_codepoint_metrics(this, codepoint, advance_width, left_bearing)
+        use fortplot_freetype_bindings, only: ft_get_char_index, ft_load_glyph, ft_get_glyph_metrics, &
+                                             FT_LOAD_DEFAULT, ft_glyph_metrics_t
         class(freetype_font_renderer_t), intent(in) :: this
         integer, intent(in) :: codepoint
         integer, intent(out) :: advance_width, left_bearing
-        
-        ! Suppress unused parameter warnings
-        associate(unused_cp => codepoint); end associate
+        integer(c_int) :: glyph_index, error
+        type(ft_glyph_metrics_t) :: metrics
         
         advance_width = 0
         left_bearing = 0
-        ! TODO: Implement FreeType glyph metrics
+        
+        if (.not. c_associated(this%face_ptr)) return
+        
+        ! Get glyph index
+        glyph_index = ft_get_char_index(this%face_ptr, int(codepoint, c_long))
+        if (glyph_index == 0) return
+        
+        ! Load glyph to get metrics
+        error = ft_load_glyph(this%face_ptr, glyph_index, FT_LOAD_DEFAULT)
+        if (error /= 0) return
+        
+        ! Get glyph metrics
+        call ft_get_glyph_metrics(this%face_ptr, metrics)
+        
+        ! Convert from 26.6 fixed point to pixels
+        advance_width = int(metrics%horiAdvance / 64)
+        left_bearing = int(metrics%horiBearingX / 64)
     end subroutine ft_get_codepoint_metrics
     
     subroutine ft_get_font_metrics(this, ascent, descent, line_gap)
@@ -405,23 +466,53 @@ contains
         ascent = 0.0_wp
         descent = 0.0_wp
         line_gap = 0.0_wp
-        ! TODO: Implement FreeType font metrics
+        
+        if (.not. c_associated(this%face_ptr)) return
+        
+        ! For stub implementation, return reasonable defaults
+        ! Real implementation would extract from face->size->metrics
+        ascent = this%pixel_height * 0.8_wp
+        descent = this%pixel_height * 0.2_wp
+        line_gap = this%pixel_height * 0.1_wp
     end subroutine ft_get_font_metrics
     
     subroutine ft_render_glyph(this, codepoint, bitmap)
+        use fortplot_freetype_bindings, only: ft_get_char_index, ft_load_glyph, ft_get_glyph_bitmap, &
+                                             FT_LOAD_RENDER, ft_bitmap_t
         class(freetype_font_renderer_t), intent(in) :: this
         integer, intent(in) :: codepoint
         type(glyph_bitmap_t), intent(out) :: bitmap
-        
-        ! Suppress unused parameter warnings
-        associate(unused_cp => codepoint); end associate
+        integer(c_int) :: glyph_index, error
+        type(ft_bitmap_t) :: ft_bitmap
         
         bitmap%width = 0
         bitmap%height = 0
         bitmap%xoff = 0
         bitmap%yoff = 0
         nullify(bitmap%data)
-        ! TODO: Implement FreeType glyph rendering
+        
+        if (.not. c_associated(this%face_ptr)) return
+        
+        ! Get glyph index
+        glyph_index = ft_get_char_index(this%face_ptr, int(codepoint, c_long))
+        if (glyph_index == 0) return
+        
+        ! Load and render glyph
+        error = ft_load_glyph(this%face_ptr, glyph_index, FT_LOAD_RENDER)
+        if (error /= 0) return
+        
+        ! Get bitmap from glyph
+        call ft_get_glyph_bitmap(this%face_ptr, ft_bitmap)
+        
+        if (ft_bitmap%rows > 0 .and. ft_bitmap%width > 0) then
+            bitmap%width = ft_bitmap%width
+            bitmap%height = ft_bitmap%rows
+            bitmap%xoff = 0  ! TODO: Get from glyph bearing
+            bitmap%yoff = 0  ! TODO: Get from glyph bearing
+            
+            ! For stub implementation, don't allocate data
+            ! Real implementation would copy bitmap buffer
+        end if
     end subroutine ft_render_glyph
     
     subroutine ft_free_glyph_bitmap(this, bitmap)
