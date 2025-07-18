@@ -52,7 +52,7 @@ contains
         end if
         
         ! Create temporary file for command output
-        temp_file = "/tmp/fortplot_pkg_config_output.txt"
+        call get_temp_filename(temp_file)
         
         ! Execute pkg-config command to get library paths
         call execute_command_line("pkg-config --libs-only-L freetype2 > " // &
@@ -198,7 +198,7 @@ contains
             return
         end if
         
-        temp_file = "/tmp/fortplot_version_output.txt"
+        call get_temp_filename(temp_file)
         
         call execute_command_line("pkg-config --modversion freetype2 > " // &
                                   trim(temp_file) // " 2>&1", &
@@ -334,5 +334,36 @@ contains
         logical, intent(in) :: unavailable
         mock_pkg_config_unavailable = unavailable
     end subroutine set_mock_pkg_config_unavailable
+
+    subroutine get_temp_filename(filename)
+        character(len=*), intent(out) :: filename
+        character(len=256) :: temp_dir
+        integer :: pid
+        
+        ! Try to get a proper temporary directory
+        call get_environment_variable("TMPDIR", temp_dir)
+        if (len_trim(temp_dir) == 0) then
+            call get_environment_variable("TMP", temp_dir)
+        end if
+        if (len_trim(temp_dir) == 0) then
+            call get_environment_variable("TEMP", temp_dir)
+        end if
+        if (len_trim(temp_dir) == 0) then
+            temp_dir = "/tmp"
+        end if
+        
+        ! Create a unique filename using process ID
+        pid = getpid()
+        write(filename, '(A,A,I0,A)') trim(temp_dir), "/fortplot_", pid, ".tmp"
+    end subroutine get_temp_filename
+
+    function getpid() result(pid)
+        integer :: pid
+        integer :: values(8)
+        
+        ! Use date_and_time to get a pseudo-unique ID
+        call date_and_time(values=values)
+        pid = values(7) * 1000 + values(8)  ! milliseconds + subseconds
+    end function getpid
 
 end module fortplot_freetype_pkg_config

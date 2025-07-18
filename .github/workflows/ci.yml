@@ -34,9 +34,9 @@ jobs:
           chmod +x fpm-0.12.0-linux-x86_64-gcc-12
           sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
         elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-macos-aarch64-gcc-12
-          chmod +x fpm-0.12.0-macos-aarch64-gcc-12
-          sudo mv fpm-0.12.0-macos-aarch64-gcc-12 /usr/local/bin/fpm
+          wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-macos-x86_64-gcc-12
+          chmod +x fpm-0.12.0-macos-x86_64-gcc-12
+          sudo mv fpm-0.12.0-macos-x86_64-gcc-12 /usr/local/bin/fpm
         fi
 
     - name: Install dependencies
