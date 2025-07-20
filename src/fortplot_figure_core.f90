@@ -529,6 +529,9 @@ contains
         
         ! Handle asymmetric error bars
         if (present(xerr_lower) .and. present(xerr_upper)) then
+            if (present(xerr)) then
+                write(*,*) 'Warning: Both symmetric xerr and asymmetric xerr_lower/xerr_upper provided. Using asymmetric values.'
+            end if
             if (size(xerr_lower) /= n_points .or. size(xerr_upper) /= n_points) then
                 write(*,*) 'Error: xerr_lower and xerr_upper array sizes must match x and y'
                 return
@@ -541,6 +544,9 @@ contains
         end if
         
         if (present(yerr_lower) .and. present(yerr_upper)) then
+            if (present(yerr)) then
+                write(*,*) 'Warning: Both symmetric yerr and asymmetric yerr_lower/yerr_upper provided. Using asymmetric values.'
+            end if
             if (size(yerr_lower) /= n_points .or. size(yerr_upper) /= n_points) then
                 write(*,*) 'Error: yerr_lower and yerr_upper array sizes must match x and y'
                 return
