@@ -1028,7 +1028,8 @@ contains
     end subroutine render_line_plot
 
     subroutine render_markers(self, plot_idx)
-        !! Render markers at each data point
+        !! Render markers at each data point, skipping NaN values
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=:), allocatable :: marker
@@ -1042,6 +1043,9 @@ contains
         if (marker == 'None') return
 
         do i = 1, size(self%plots(plot_idx)%x)
+            ! Skip points with NaN values
+            if (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i))) cycle
+            
             x_trans = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
             y_trans = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
             call self%backend%draw_marker(x_trans, y_trans, marker)
@@ -1411,13 +1415,20 @@ contains
     end subroutine draw_line_with_style
 
     subroutine render_solid_line(self, plot_idx)
-        !! Render solid line by drawing all segments
+        !! Render solid line by drawing all segments, breaking on NaN values
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         integer :: i
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
         
         do i = 1, size(self%plots(plot_idx)%x) - 1
+            ! Skip segment if either point contains NaN
+            if (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i)) .or. &
+                ieee_is_nan(self%plots(plot_idx)%x(i+1)) .or. ieee_is_nan(self%plots(plot_idx)%y(i+1))) then
+                cycle
+            end if
+            
             ! Apply scale transformations
             x1_screen = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
             y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
@@ -1430,6 +1441,7 @@ contains
 
     subroutine render_patterned_line(self, plot_idx, linestyle)
         !! Render line with continuous pattern across segments (matplotlib-style)
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
@@ -1439,20 +1451,30 @@ contains
         real(wp) :: pattern(20), pattern_length
         integer :: pattern_size, pattern_index
         logical :: drawing
-        integer :: i
+        integer :: i, valid_count
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen, dx, dy
         
         ! Get transformed data range for proper pattern scaling
         real(wp) :: x_range, y_range, plot_scale
         real(wp), allocatable :: x_trans(:), y_trans(:)
+        logical, allocatable :: valid_points(:)
         
         ! Transform all data points to get proper scaling
         allocate(x_trans(size(self%plots(plot_idx)%x)))
         allocate(y_trans(size(self%plots(plot_idx)%y)))
+        allocate(valid_points(size(self%plots(plot_idx)%x)))
         
+        valid_count = 0
         do i = 1, size(self%plots(plot_idx)%x)
-            x_trans(i) = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
-            y_trans(i) = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+            valid_points(i) = .not. (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i)))
+            if (valid_points(i)) then
+                x_trans(i) = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+                y_trans(i) = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
+                valid_count = valid_count + 1
+            else
+                x_trans(i) = 0.0_wp
+                y_trans(i) = 0.0_wp
+            end if
         end do
         
         x_range = maxval(x_trans) - minval(x_trans)
@@ -1502,6 +1524,15 @@ contains
         drawing = .true.  ! Start drawing
         
         do i = 1, size(self%plots(plot_idx)%x) - 1
+            ! Skip segment if either point is invalid (NaN)
+            if (.not. valid_points(i) .or. .not. valid_points(i+1)) then
+                ! Reset pattern state when encountering NaN
+                current_distance = 0.0_wp
+                pattern_index = 1
+                drawing = .true.
+                cycle
+            end if
+            
             x1_screen = x_trans(i)
             y1_screen = y_trans(i)
             x2_screen = x_trans(i+1)
@@ -1519,7 +1550,7 @@ contains
         end do
         
         ! Clean up
-        deallocate(x_trans, y_trans)
+        deallocate(x_trans, y_trans, valid_points)
     end subroutine render_patterned_line
 
     subroutine render_segment_with_pattern(self, x1, y1, x2, y2, segment_length, &
