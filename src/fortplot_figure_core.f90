@@ -488,18 +488,30 @@ contains
         end if
         
         if (present(axis)) then
-            self%grid_axis = axis
-            self%grid_enabled = .true.
+            if (axis == 'x' .or. axis == 'y' .or. axis == 'both') then
+                self%grid_axis = axis
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid axis value. Use "x", "y", or "both"'
+            end if
         end if
         
         if (present(which)) then
-            self%grid_which = which
-            self%grid_enabled = .true.
+            if (which == 'major' .or. which == 'minor') then
+                self%grid_which = which
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid which value. Use "major" or "minor"'
+            end if
         end if
         
         if (present(alpha)) then
-            self%grid_alpha = alpha
-            self%grid_enabled = .true.
+            if (alpha >= 0.0_wp .and. alpha <= 1.0_wp) then
+                self%grid_alpha = alpha
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Alpha must be between 0.0 and 1.0'
+            end if
         end if
         
         if (present(linestyle)) then

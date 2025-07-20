@@ -1183,7 +1183,7 @@ contains
         
         ! Draw vertical grid lines (at x tick positions)
         if (axis_choice == 'both' .or. axis_choice == 'x') then
-            do i = 1, num_x_ticks
+            do i = 1, min(num_x_ticks, size(x_positions))
                 call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                           x_positions(i), grid_y_bottom, &
                                           x_positions(i), grid_y_top, &
@@ -1196,7 +1196,7 @@ contains
         
         ! Draw horizontal grid lines (at y tick positions)
         if (axis_choice == 'both' .or. axis_choice == 'y') then
-            do i = 1, num_y_ticks
+            do i = 1, min(num_y_ticks, size(y_positions))
                 call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                           grid_x_left, y_positions(i), &
                                           grid_x_right, y_positions(i), &
