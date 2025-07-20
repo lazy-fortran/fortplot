@@ -6,6 +6,8 @@ program test_disconnected_lines
     
     call test_multiple_plots_should_not_connect()
     call test_nan_values_should_break_lines()
+    call test_nan_with_patterned_lines()
+    call test_nan_with_markers_only()
     
     print *, "All disconnected lines tests passed!"
     
@@ -52,5 +54,45 @@ contains
         
         print *, "Test NaN line breaks: Generated test_disconnected_nan_break.png"
     end subroutine test_nan_values_should_break_lines
+    
+    subroutine test_nan_with_patterned_lines()
+        type(figure_t) :: fig
+        real(8) :: x(7), y(7), nan
+        
+        ! Get NaN value
+        nan = ieee_value(nan, ieee_quiet_nan)
+        
+        call fig%initialize(400, 300)
+        
+        ! Test dashed line with NaN breaks
+        x = [0.0_8, 1.0_8, 2.0_8, nan, 3.0_8, 4.0_8, 5.0_8]
+        y = [0.0_8, 1.0_8, 0.0_8, nan, 1.0_8, 0.0_8, 1.0_8]
+        
+        call fig%add_plot(x, y, linestyle='--')
+        
+        call fig%savefig("test_disconnected_dashed.png")
+        
+        print *, "Test dashed NaN breaks: Generated test_disconnected_dashed.png"
+    end subroutine test_nan_with_patterned_lines
+    
+    subroutine test_nan_with_markers_only()
+        type(figure_t) :: fig
+        real(8) :: x(5), y(5), nan
+        
+        ! Get NaN value
+        nan = ieee_value(nan, ieee_quiet_nan)
+        
+        call fig%initialize(400, 300)
+        
+        ! Test markers only with NaN values
+        x = [0.0_8, 1.0_8, nan, 3.0_8, 4.0_8]
+        y = [0.0_8, 1.0_8, nan, 1.0_8, 0.0_8]
+        
+        call fig%add_plot(x, y, linestyle='o')
+        
+        call fig%savefig("test_disconnected_markers.png")
+        
+        print *, "Test markers with NaN: Generated test_disconnected_markers.png"
+    end subroutine test_nan_with_markers_only
     
 end program test_disconnected_lines
