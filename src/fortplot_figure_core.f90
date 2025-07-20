@@ -2026,7 +2026,19 @@ contains
         logical :: first_plot
         
         if (.not. allocated(self%subplots_array)) return
-        if (self%subplots_array(row, col)%plot_count == 0) return
+        
+        ! Handle empty subplots with default ranges
+        if (self%subplots_array(row, col)%plot_count == 0) then
+            if (.not. self%subplots_array(row, col)%xlim_set) then
+                self%subplots_array(row, col)%x_min = 0.0_wp
+                self%subplots_array(row, col)%x_max = 1.0_wp
+            end if
+            if (.not. self%subplots_array(row, col)%ylim_set) then
+                self%subplots_array(row, col)%y_min = 0.0_wp
+                self%subplots_array(row, col)%y_max = 1.0_wp
+            end if
+            return
+        end if
         
         first_plot = .true.
         
@@ -2078,12 +2090,13 @@ contains
         ! First render the overall figure background
         call render_figure_background(self)
         
-        ! Render each subplot
+        ! Render each subplot (even empty ones need axes)
         do row = 1, self%subplot_rows
             do col = 1, self%subplot_cols
-                if (self%subplots_array(row, col)%plot_count > 0) then
-                    call render_single_subplot(self, row, col)
-                end if
+                ! Update subplot ranges first
+                call update_subplot_ranges(self, row, col)
+                ! Render the subplot
+                call render_single_subplot(self, row, col)
             end do
         end do
     end subroutine render_subplots
@@ -2191,49 +2204,39 @@ contains
     end subroutine render_subplot_axes
     
     subroutine render_subplot_line_plot(self, subplot, plot_idx)
-        !! Render a line plot within a subplot
+        !! Render a line plot within a subplot using proper coordinate transformation
         class(figure_t), intent(inout) :: self
         type(subplot_t), intent(in) :: subplot
         integer, intent(in) :: plot_idx
         
         integer :: i
-        real(wp) :: x_norm, y_norm, x_norm_next, y_norm_next
-        real(wp) :: x_pixel, y_pixel, x_pixel_next, y_pixel_next
-        real(wp) :: subplot_width, subplot_height
+        real(wp) :: x_screen, y_screen, x_screen_next, y_screen_next
         character(len=:), allocatable :: linestyle
         
         if (.not. allocated(subplot%plots(plot_idx)%x)) return
         if (size(subplot%plots(plot_idx)%x) < 1) return
         
-        linestyle = subplot%plots(plot_idx)%linestyle
-        
-        ! Calculate subplot dimensions
-        subplot_width = real(subplot%x2 - subplot%x1, wp)
-        subplot_height = real(subplot%y2 - subplot%y1, wp)
+        if (allocated(subplot%plots(plot_idx)%linestyle)) then
+            linestyle = subplot%plots(plot_idx)%linestyle
+        else
+            linestyle = '-'  ! Default linestyle
+        end if
         
         ! Draw lines if linestyle is not 'None' and we have at least 2 points
         if (linestyle /= 'None' .and. size(subplot%plots(plot_idx)%x) >= 2) then
             call self%backend%set_line_width(2.0_wp)
             
-            ! Draw line segments
+            ! Draw line segments using proper coordinate transformation
             do i = 1, size(subplot%plots(plot_idx)%x) - 1
-                ! Normalize to [0,1] based on subplot data range
-                x_norm = (subplot%plots(plot_idx)%x(i) - subplot%x_min) / &
-                        (subplot%x_max - subplot%x_min)
-                y_norm = (subplot%plots(plot_idx)%y(i) - subplot%y_min) / &
-                        (subplot%y_max - subplot%y_min)
-                x_norm_next = (subplot%plots(plot_idx)%x(i+1) - subplot%x_min) / &
-                             (subplot%x_max - subplot%x_min)
-                y_norm_next = (subplot%plots(plot_idx)%y(i+1) - subplot%y_min) / &
-                             (subplot%y_max - subplot%y_min)
+                ! Transform data coordinates to screen coordinates for this subplot
+                call transform_subplot_coordinates(self, subplot, &
+                    subplot%plots(plot_idx)%x(i), subplot%plots(plot_idx)%y(i), &
+                    x_screen, y_screen)
+                call transform_subplot_coordinates(self, subplot, &
+                    subplot%plots(plot_idx)%x(i+1), subplot%plots(plot_idx)%y(i+1), &
+                    x_screen_next, y_screen_next)
                 
-                ! Convert to pixel coordinates within subplot
-                x_pixel = real(subplot%x1, wp) + x_norm * subplot_width
-                y_pixel = real(subplot%y2, wp) - y_norm * subplot_height  ! Flip Y
-                x_pixel_next = real(subplot%x1, wp) + x_norm_next * subplot_width
-                y_pixel_next = real(subplot%y2, wp) - y_norm_next * subplot_height
-                
-                call self%backend%line(x_pixel, y_pixel, x_pixel_next, y_pixel_next)
+                call self%backend%line(x_screen, y_screen, x_screen_next, y_screen_next)
             end do
         end if
         
@@ -2241,17 +2244,11 @@ contains
         if (allocated(subplot%plots(plot_idx)%marker)) then
             if (subplot%plots(plot_idx)%marker /= 'None') then
                 do i = 1, size(subplot%plots(plot_idx)%x)
-                    ! Normalize to [0,1]
-                    x_norm = (subplot%plots(plot_idx)%x(i) - subplot%x_min) / &
-                            (subplot%x_max - subplot%x_min)
-                    y_norm = (subplot%plots(plot_idx)%y(i) - subplot%y_min) / &
-                            (subplot%y_max - subplot%y_min)
+                    call transform_subplot_coordinates(self, subplot, &
+                        subplot%plots(plot_idx)%x(i), subplot%plots(plot_idx)%y(i), &
+                        x_screen, y_screen)
                     
-                    ! Convert to pixel coordinates
-                    x_pixel = real(subplot%x1, wp) + x_norm * subplot_width
-                    y_pixel = real(subplot%y2, wp) - y_norm * subplot_height
-                    
-                    call self%backend%draw_marker(x_pixel, y_pixel, &
+                    call self%backend%draw_marker(x_screen, y_screen, &
                                                  subplot%plots(plot_idx)%marker)
                 end do
             end if
@@ -2286,5 +2283,38 @@ contains
             call self%backend%text(text_x, text_y, subplot%ylabel)
         end if
     end subroutine render_subplot_labels
+    
+    subroutine transform_subplot_coordinates(self, subplot, data_x, data_y, screen_x, screen_y)
+        !! Transform data coordinates to screen coordinates for a subplot
+        class(figure_t), intent(in) :: self
+        type(subplot_t), intent(in) :: subplot
+        real(wp), intent(in) :: data_x, data_y
+        real(wp), intent(out) :: screen_x, screen_y
+        
+        real(wp) :: x_norm, y_norm
+        real(wp) :: subplot_width, subplot_height
+        
+        ! Normalize data to [0,1] range within subplot data bounds
+        if (subplot%x_max > subplot%x_min) then
+            x_norm = (data_x - subplot%x_min) / (subplot%x_max - subplot%x_min)
+        else
+            x_norm = 0.5_wp  ! Center if no range
+        end if
+        
+        if (subplot%y_max > subplot%y_min) then
+            y_norm = (data_y - subplot%y_min) / (subplot%y_max - subplot%y_min)
+        else
+            y_norm = 0.5_wp  ! Center if no range
+        end if
+        
+        ! Calculate subplot dimensions in pixels
+        subplot_width = real(subplot%x2 - subplot%x1, wp)
+        subplot_height = real(subplot%y2 - subplot%y1, wp)
+        
+        ! Transform to screen coordinates
+        ! Note: Y is flipped because screen coordinates have origin at top-left
+        screen_x = real(subplot%x1, wp) + x_norm * subplot_width
+        screen_y = real(subplot%y2, wp) - y_norm * subplot_height
+    end subroutine transform_subplot_coordinates
 
 end module fortplot_figure_core
