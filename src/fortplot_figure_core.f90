@@ -1477,9 +1477,15 @@ contains
             end if
         end do
         
-        x_range = maxval(x_trans) - minval(x_trans)
-        y_range = maxval(y_trans) - minval(y_trans)
-        plot_scale = max(x_range, y_range)
+        ! Handle case where all points are NaN
+        if (valid_count > 0) then
+            x_range = maxval(x_trans, mask=valid_points) - minval(x_trans, mask=valid_points)
+            y_range = maxval(y_trans, mask=valid_points) - minval(y_trans, mask=valid_points)
+            plot_scale = max(x_range, y_range)
+        else
+            ! All points are NaN, use default scale
+            plot_scale = 1.0_wp
+        end if
         
         ! Define pattern lengths (matplotlib-like)
         dash_len = plot_scale * 0.03_wp    ! 3% of range
