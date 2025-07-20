@@ -27,7 +27,7 @@ program disconnected_lines
     ! Second segment: cosine wave from pi to 2pi
     x(6:9) = [3.142_8, 4.189_8, 5.236_8, 6.283_8]  ! pi, 4pi/3, 5pi/3, 2pi
     do i = 6, 9
-        y(i) = cos(x(i-5+1))
+        y(i) = cos(x(i))
     end do
     
     ! NaN separator
