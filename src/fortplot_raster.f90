@@ -1019,7 +1019,9 @@ contains
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                   title, xlabel, ylabel)
+                                   title, xlabel, ylabel, &
+                                   grid_enabled, grid_axis, grid_which, &
+                                   grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame with scale-aware tick generation
         !! FIXED: Now generates tick values first, then positions to ensure proper alignment
         class(raster_context), intent(inout) :: ctx
@@ -1027,6 +1029,10 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         character(len=*), intent(in), optional :: title, xlabel, ylabel
+        logical, intent(in), optional :: grid_enabled
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
         
         real(wp) :: x_tick_values(20), y_tick_values(20)
         real(wp) :: x_positions(20), y_positions(20)
@@ -1132,7 +1138,75 @@ contains
         if (present(ylabel)) then
             call draw_rotated_ylabel_raster(ctx, ylabel)
         end if
+        
+        ! Draw grid lines if enabled
+        if (present(grid_enabled) .and. grid_enabled) then
+            call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                      grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        end if
     end subroutine draw_axes_and_labels
+
+    subroutine draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                     grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        !! Draw grid lines at tick positions
+        class(raster_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
+        
+        character(len=10) :: axis_choice, which_choice
+        real(wp) :: alpha_value, line_color(3)
+        integer :: i
+        real(wp) :: grid_y_top, grid_y_bottom, grid_x_left, grid_x_right
+        
+        ! Set default values
+        axis_choice = 'both'
+        which_choice = 'major'
+        alpha_value = 0.3_wp
+        line_color = [0.5_wp, 0.5_wp, 0.5_wp]
+        
+        if (present(grid_axis)) axis_choice = grid_axis
+        if (present(grid_which)) which_choice = grid_which
+        if (present(grid_alpha)) alpha_value = grid_alpha
+        if (present(grid_color)) line_color = grid_color
+        
+        ! Set grid line color with transparency
+        call ctx%raster%set_color(line_color(1), line_color(2), line_color(3))
+        
+        ! Calculate plot area boundaries
+        grid_y_top = real(ctx%plot_area%bottom + ctx%plot_area%height, wp)
+        grid_y_bottom = real(ctx%plot_area%bottom, wp)
+        grid_x_left = real(ctx%plot_area%left, wp)
+        grid_x_right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
+        
+        ! Draw vertical grid lines (at x tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'x') then
+            do i = 1, num_x_ticks
+                call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
+                                          x_positions(i), grid_y_bottom, &
+                                          x_positions(i), grid_y_top, &
+                                          int(line_color(1) * 255, 1), &
+                                          int(line_color(2) * 255, 1), &
+                                          int(line_color(3) * 255, 1), &
+                                          alpha_value)
+            end do
+        end if
+        
+        ! Draw horizontal grid lines (at y tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'y') then
+            do i = 1, num_y_ticks
+                call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
+                                          grid_x_left, y_positions(i), &
+                                          grid_x_right, y_positions(i), &
+                                          int(line_color(1) * 255, 1), &
+                                          int(line_color(2) * 255, 1), &
+                                          int(line_color(3) * 255, 1), &
+                                          alpha_value)
+            end do
+        end if
+    end subroutine draw_raster_grid_lines
 
     subroutine draw_raster_frame(ctx)
         !! Draw the plot frame for raster backend

@@ -821,7 +821,9 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                      title, xlabel, ylabel)
+                                      title, xlabel, ylabel, &
+                                      grid_enabled, grid_axis, grid_which, &
+                                      grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
         !! Now matches PNG backend behavior with nice tick boundaries
         type(pdf_context), intent(inout) :: ctx
@@ -829,6 +831,10 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         character(len=*), intent(in), optional :: title, xlabel, ylabel
+        logical, intent(in), optional :: grid_enabled
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
         
         real(wp) :: x_tick_values(20), y_tick_values(20)
         real(wp) :: x_positions(20), y_positions(20)
@@ -922,7 +928,79 @@ contains
         
         ! Draw title and axis labels
         call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+        
+        ! Draw grid lines if enabled
+        if (present(grid_enabled) .and. grid_enabled) then
+            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                   grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        end if
     end subroutine draw_pdf_axes_and_labels
+
+    subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                 grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        !! Draw grid lines at tick positions for PDF backend
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
+        
+        character(len=10) :: axis_choice, which_choice
+        real(wp) :: alpha_value, line_color(3)
+        integer :: i
+        real(wp) :: grid_y_top, grid_y_bottom, grid_x_left, grid_x_right
+        character(len=100) :: draw_cmd
+        
+        ! Set default values
+        axis_choice = 'both'
+        which_choice = 'major'
+        alpha_value = 0.3_wp
+        line_color = [0.5_wp, 0.5_wp, 0.5_wp]
+        
+        if (present(grid_axis)) axis_choice = grid_axis
+        if (present(grid_which)) which_choice = grid_which
+        if (present(grid_alpha)) alpha_value = grid_alpha
+        if (present(grid_color)) line_color = grid_color
+        
+        ! Calculate plot area boundaries (PDF coordinates: Y=0 at bottom)
+        grid_y_bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
+        grid_y_top = real(ctx%height - ctx%plot_area%bottom, wp)
+        grid_x_left = real(ctx%plot_area%left, wp)
+        grid_x_right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
+        
+        ! Set grid line color with transparency
+        write(draw_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') line_color(1), line_color(2), line_color(3)
+        call ctx%stream_writer%add_to_stream(draw_cmd)
+        
+        ! Draw vertical grid lines (at x tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'x') then
+            do i = 1, num_x_ticks
+                ! Convert from raster to PDF coordinates
+                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "m")') &
+                    x_positions(i), grid_y_bottom
+                call ctx%stream_writer%add_to_stream(draw_cmd)
+                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "l")') &
+                    x_positions(i), grid_y_top
+                call ctx%stream_writer%add_to_stream(draw_cmd)
+                call ctx%stream_writer%add_to_stream("S")
+            end do
+        end if
+        
+        ! Draw horizontal grid lines (at y tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'y') then
+            do i = 1, num_y_ticks
+                ! Convert Y position to PDF coordinates
+                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "m")') &
+                    grid_x_left, real(ctx%height, wp) - y_positions(i)
+                call ctx%stream_writer%add_to_stream(draw_cmd)
+                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "l")') &
+                    grid_x_right, real(ctx%height, wp) - y_positions(i)
+                call ctx%stream_writer%add_to_stream(draw_cmd)
+                call ctx%stream_writer%add_to_stream("S")
+            end do
+        end if
+    end subroutine draw_pdf_grid_lines
     
     subroutine draw_pdf_frame(ctx)
         !! Draw the plot frame for PDF backend
