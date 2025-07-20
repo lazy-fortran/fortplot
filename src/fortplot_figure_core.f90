@@ -1662,6 +1662,7 @@ contains
             x_range = maxval(x_trans, mask=valid_points) - minval(x_trans, mask=valid_points)
             y_range = maxval(y_trans, mask=valid_points) - minval(y_trans, mask=valid_points)
             plot_scale = max(x_range, y_range)
+            if (plot_scale <= 0.0_wp) plot_scale = 1.0_wp
         else
             ! All points are NaN, use default scale
             plot_scale = 1.0_wp
@@ -1931,6 +1932,13 @@ contains
         data_min = minval(data)
         data_max = maxval(data)
         
+        ! Handle case where all data points are identical
+        if (data_min == data_max) then
+            ! Create bins centered around the single value
+            data_min = data_min - 0.5_wp
+            data_max = data_max + 0.5_wp
+        end if
+        
         ! Add small padding to avoid edge cases
         bin_width = (data_max - data_min) / real(n_bins, wp)
         data_min = data_min - bin_width * 0.001_wp
@@ -1964,26 +1972,38 @@ contains
     end subroutine calculate_histogram_counts
 
     integer function find_bin_index(value, bin_edges) result(bin_idx)
-        !! Find which bin a value belongs to
+        !! Find which bin a value belongs to using binary search
         real(wp), intent(in) :: value
         real(wp), intent(in) :: bin_edges(:)
         
-        integer :: i, n_bins
+        integer :: left, right, mid, n_bins
         
         n_bins = size(bin_edges) - 1
         bin_idx = 0
         
-        do i = 1, n_bins
-            if (value >= bin_edges(i) .and. value < bin_edges(i+1)) then
-                bin_idx = i
-                return
-            end if
-        end do
-        
-        ! Handle edge case: value equals last bin edge
+        ! Handle edge cases
+        if (value < bin_edges(1)) return
+        if (value > bin_edges(n_bins + 1)) return
         if (value == bin_edges(n_bins + 1)) then
             bin_idx = n_bins
+            return
         end if
+        
+        ! Binary search
+        left = 1
+        right = n_bins
+        
+        do while (left <= right)
+            mid = (left + right) / 2
+            if (value >= bin_edges(mid) .and. value < bin_edges(mid + 1)) then
+                bin_idx = mid
+                return
+            else if (value < bin_edges(mid)) then
+                right = mid - 1
+            else
+                left = mid + 1
+            end if
+        end do
     end function find_bin_index
 
     subroutine normalize_histogram_density(counts, bin_edges)
@@ -1993,6 +2013,11 @@ contains
         
         real(wp) :: total_area, bin_width
         integer :: i
+        
+        if (size(bin_edges) /= size(counts) + 1) then
+            print *, 'Warning: bin_edges size mismatch in density normalization'
+            return
+        end if
         
         total_area = 0.0_wp
         do i = 1, size(counts)
