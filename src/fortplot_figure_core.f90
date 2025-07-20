@@ -2177,8 +2177,14 @@ contains
         class(figure_t), intent(inout) :: self
         type(subplot_t), intent(in) :: subplot
         
-        ! For now, we'll pass subplot boundaries directly to rendering functions
-        ! Backend coordinate system updates will be handled in each draw call
+        ! Set backend coordinate system to subplot data ranges
+        self%backend%x_min = subplot%x_min
+        self%backend%x_max = subplot%x_max
+        self%backend%y_min = subplot%y_min
+        self%backend%y_max = subplot%y_max
+        
+        ! Backend plot area handling would go here if supported
+        ! For now, coordinate transformation handles the mapping
     end subroutine setup_subplot_coordinate_system
     
     subroutine render_subplot_axes(self, subplot)
@@ -2226,15 +2232,17 @@ contains
         if (linestyle /= 'None' .and. size(subplot%plots(plot_idx)%x) >= 2) then
             call self%backend%set_line_width(2.0_wp)
             
-            ! Draw line segments using proper coordinate transformation
+            ! Draw line segments using backend's coordinate transformation
             do i = 1, size(subplot%plots(plot_idx)%x) - 1
-                ! Transform data coordinates to screen coordinates for this subplot
-                call transform_subplot_coordinates(self, subplot, &
-                    subplot%plots(plot_idx)%x(i), subplot%plots(plot_idx)%y(i), &
-                    x_screen, y_screen)
-                call transform_subplot_coordinates(self, subplot, &
-                    subplot%plots(plot_idx)%x(i+1), subplot%plots(plot_idx)%y(i+1), &
-                    x_screen_next, y_screen_next)
+                ! Use apply_scale_transform like regular plots
+                x_screen = apply_scale_transform(subplot%plots(plot_idx)%x(i), &
+                                               self%xscale, self%symlog_threshold)
+                y_screen = apply_scale_transform(subplot%plots(plot_idx)%y(i), &
+                                               self%yscale, self%symlog_threshold)
+                x_screen_next = apply_scale_transform(subplot%plots(plot_idx)%x(i+1), &
+                                                    self%xscale, self%symlog_threshold)
+                y_screen_next = apply_scale_transform(subplot%plots(plot_idx)%y(i+1), &
+                                                    self%yscale, self%symlog_threshold)
                 
                 call self%backend%line(x_screen, y_screen, x_screen_next, y_screen_next)
             end do
@@ -2244,9 +2252,10 @@ contains
         if (allocated(subplot%plots(plot_idx)%marker)) then
             if (subplot%plots(plot_idx)%marker /= 'None') then
                 do i = 1, size(subplot%plots(plot_idx)%x)
-                    call transform_subplot_coordinates(self, subplot, &
-                        subplot%plots(plot_idx)%x(i), subplot%plots(plot_idx)%y(i), &
-                        x_screen, y_screen)
+                    x_screen = apply_scale_transform(subplot%plots(plot_idx)%x(i), &
+                                                   self%xscale, self%symlog_threshold)
+                    y_screen = apply_scale_transform(subplot%plots(plot_idx)%y(i), &
+                                                   self%yscale, self%symlog_threshold)
                     
                     call self%backend%draw_marker(x_screen, y_screen, &
                                                  subplot%plots(plot_idx)%marker)
