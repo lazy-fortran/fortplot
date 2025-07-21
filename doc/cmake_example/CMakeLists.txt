@@ -7,19 +7,19 @@ enable_language(Fortran)
 # Include FetchContent module
 include(FetchContent)
 
-# Fetch and build fortplot using CMake
+# Fetch and build fortplotlib using CMake
 FetchContent_Declare(
-    fortplot
+    fortplotlib
     GIT_REPOSITORY https://github.com/krystophny/fortplot
     GIT_TAG main
 )
-FetchContent_MakeAvailable(fortplot)
+FetchContent_MakeAvailable(fortplotlib)
 
 # Create a simple test program
 add_executable(fortplot_test main.f90)
 
-# Link against fortplot
-target_link_libraries(fortplot_test fortplot::fortplot)
+# Link against fortplotlib (using old name until rename is merged to main)
+target_link_libraries(fortplot_test fortplotlib::fortplotlib)
 
 # Set Fortran compiler flags
 set(CMAKE_Fortran_FLAGS "-Wall -Wextra -fimplicit-none")
