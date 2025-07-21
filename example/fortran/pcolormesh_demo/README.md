@@ -44,4 +44,4 @@ The example generates the following output files:
 - `pcolormesh_sinusoidal.pdf` - Vector format of the sinusoidal pattern
 - `pcolormesh_sinusoidal.txt` - ASCII representation of the sine wave pattern
 
-See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
+See the [documentation gallery](https://krystophny.github.io/fortplot/) for visual examples.

@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Demonstrates different marker types and styles - Dual mode: fortplotlib or matplotlib"""
+"""Demonstrates different marker types and styles - Dual mode: fortplot or matplotlib"""
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def demo_scatter_plot():
     """Creates a scatter plot to demonstrate markers in practical use"""
@@ -33,8 +33,8 @@ def demo_scatter_plot():
     plt.savefig('scatter_plot.png')
     plt.savefig('scatter_plot.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('scatter_plot.txt')
     
     if backend == "matplotlib":

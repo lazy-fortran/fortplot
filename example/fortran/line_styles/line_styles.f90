@@ -1,5 +1,5 @@
 program line_styles
-    !! Comprehensive demonstration of line styles in fortplotlib
+    !! Comprehensive demonstration of line styles in fortplot
     !!
     !! This example shows all available line styles:
     !! - Solid lines (-)

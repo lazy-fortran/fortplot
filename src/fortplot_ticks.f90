@@ -6,7 +6,7 @@ module fortplot_ticks
     !! following Single Responsibility Principle by focusing solely
     !! on tick calculation and formatting.
     !! 
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none

@@ -1,4 +1,4 @@
-Welcome to the fortplotlib documentation. This library provides a modern, matplotlib-inspired plotting interface for Fortran with multiple backends including PNG, PDF, and ASCII.
+Welcome to the fortplot documentation. This library provides a modern, matplotlib-inspired plotting interface for Fortran with multiple backends including PNG, PDF, and ASCII.
 
 ## Features
 

@@ -25,9 +25,9 @@ debug:
 test:
 	fpm test $(FPM_FLAGS) $(ARGS)
 
-# Run Python examples with fortplotlib (default mode)
+# Run Python examples with fortplot (default mode)
 example_python:
-	@echo "Running Python examples with fortplotlib..."
+	@echo "Running Python examples with fortplot..."
 	@for dir in example/python/*/; do \
 		if [ -f "$$dir"*.py ]; then \
 			echo "Running $$dir"; \
@@ -104,13 +104,14 @@ create_build_dirs:
 	@mkdir -p build/example/smart_show_demo
 	@mkdir -p build/example/animation
 	@mkdir -p build/example/stateful_streamplot
+	@mkdir -p build/example/subplot_demo
 
 # Help target
 help:
 	@echo "Available targets:"
 	@echo "  build            - Compile the project"
 	@echo "  example          - Build and run all Fortran examples"
-	@echo "  example_python   - Run Python examples with fortplotlib"
+	@echo "  example_python   - Run Python examples with fortplot"
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"

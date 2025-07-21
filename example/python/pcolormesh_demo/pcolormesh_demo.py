@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Demonstrates pcolormesh functionality with different colormaps - Dual mode: fortplotlib or matplotlib"""
+"""Demonstrates pcolormesh functionality with different colormaps - Dual mode: fortplot or matplotlib"""
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def demo_basic_gradient():
     """Basic pcolormesh with simple gradient"""
@@ -38,8 +38,8 @@ def demo_basic_gradient():
     plt.savefig('pcolormesh_basic.png')
     plt.savefig('pcolormesh_basic.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('pcolormesh_basic.txt')
     
     if backend == "matplotlib":
@@ -72,8 +72,8 @@ def demo_sinusoidal_pattern():
     plt.savefig('pcolormesh_sinusoidal.png')
     plt.savefig('pcolormesh_sinusoidal.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('pcolormesh_sinusoidal.txt')
     
     if backend == "matplotlib":
@@ -105,8 +105,8 @@ def demo_different_colormaps():
     plt.savefig('pcolormesh_plasma.png')
     plt.savefig('pcolormesh_plasma.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('pcolormesh_plasma.txt')
     
     if backend == "matplotlib":

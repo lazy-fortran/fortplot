@@ -1,5 +1,5 @@
 module fortplot
-    !! Top-level public interface for fortplotlib
+    !! Top-level public interface for fortplot
     !!
     !! This module provides a clean, user-friendly API for creating scientific plots
     !! with support for line plots, contour plots, and multiple output formats.
@@ -12,7 +12,7 @@ module fortplot
     !!   call fig%add_plot(x, y, label="data")
     !!   call fig%savefig('output.png')
     !!
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
 
     use iso_fortran_env, only: wp => real64
     use fortplot_figure, only: figure_t

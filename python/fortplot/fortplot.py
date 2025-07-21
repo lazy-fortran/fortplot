@@ -2,39 +2,39 @@ import os
 import tempfile
 import webbrowser
 import numpy as np
-import fortplotlib.fortplot_wrapper as _fortplotlib
+import fortplot.fortplot_wrapper as _fortplot
 
 DEFAULT_DPI = 100
 
 def figure(figsize=[6.4, 4.8]):
     width = int(figsize[0] * DEFAULT_DPI)
     height = int(figsize[1] * DEFAULT_DPI)
-    _fortplotlib.fortplot.figure(width, height)
+    _fortplot.fortplot.figure(width, height)
 
 def plot(x, y, linestyle="-", label=""):
     if not isinstance(x, np.ndarray):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
         y = np.array(y)
-    _fortplotlib.fortplot.plot(x, y, label, linestyle)
+    _fortplot.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
     if label is None:
         label = ""
-    _fortplotlib.fortplot.title(label)
+    _fortplot.fortplot.title(label)
 
 def xlabel(xlabel):
     if xlabel is None:
         xlabel = ""
-    _fortplotlib.fortplot.xlabel(xlabel)
+    _fortplot.fortplot.xlabel(xlabel)
 
 def ylabel(ylabel):
     if ylabel is None:
         ylabel = ""
-    _fortplotlib.fortplot.ylabel(ylabel)
+    _fortplot.fortplot.ylabel(ylabel)
 
 def savefig(filename):
-    _fortplotlib.fortplot.savefig(filename)
+    _fortplot.fortplot.savefig(filename)
 
 def contour(X, Y, Z, levels=None):
     """Draw contour lines.
@@ -69,11 +69,11 @@ def contour(X, Y, Z, levels=None):
     z = Z.T.copy()
 
     if levels is None:
-        _fortplotlib.fortplot.contour(x, y, z)
+        _fortplot.fortplot.contour(x, y, z)
     else:
         if not isinstance(levels, np.ndarray):
             levels = np.array(levels)
-        _fortplotlib.fortplot.contour(x, y, z, levels)
+        _fortplot.fortplot.contour(x, y, z, levels)
 
 def contourf(X, Y, Z, levels=None, **kwargs):
     """Draw filled contours.
@@ -108,11 +108,11 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     z = Z.T.copy()
 
     if levels is None:
-        _fortplotlib.fortplot.contour_filled(x, y, z)
+        _fortplot.fortplot.contour_filled(x, y, z)
     else:
         if not isinstance(levels, np.ndarray):
             levels = np.array(levels)
-        _fortplotlib.fortplot.contour_filled(x, y, z, levels)
+        _fortplot.fortplot.contour_filled(x, y, z, levels)
 
 def streamplot(X, Y, U, V, density=1.0, **kwargs):
     """Draw streamlines of a vector flow.
@@ -150,7 +150,7 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
     u = U.T.copy()
     v = V.T.copy()
 
-    _fortplotlib.fortplot.streamplot(x, y, u, v, density)
+    _fortplot.fortplot.streamplot(x, y, u, v, density)
 
 def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', linewidths=None, **kwargs):
     """Create a pseudocolor plot with a non-regular rectangular grid.
@@ -222,17 +222,17 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     # Call Fortran function with optional arguments
     if vmin is not None and vmax is not None:
         if edgecolors != 'none' and linewidths is not None:
-            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors, linewidths)
+            _fortplot.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors, linewidths)
         elif edgecolors != 'none':
-            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors)
+            _fortplot.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax, edgecolors)
         else:
-            _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax)
+            _fortplot.fortplot.pcolormesh(x, y, c, cmap, vmin, vmax)
     elif vmin is not None:
-        _fortplotlib.fortplot.pcolormesh(x, y, c, cmap, vmin)
+        _fortplot.fortplot.pcolormesh(x, y, c, cmap, vmin)
     elif cmap != 'viridis':
-        _fortplotlib.fortplot.pcolormesh(x, y, c, cmap)
+        _fortplot.fortplot.pcolormesh(x, y, c, cmap)
     else:
-        _fortplotlib.fortplot.pcolormesh(x, y, c)
+        _fortplot.fortplot.pcolormesh(x, y, c)
     
     # Return placeholder object for matplotlib compatibility
     class QuadMeshPlaceholder:
@@ -241,7 +241,7 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
 
 def legend(**kwargs):
     """Add a legend to the current axes."""
-    _fortplotlib.fortplot.legend()
+    _fortplot.fortplot.legend()
 
 def xscale(scale):
     """Set the x-axis scale.
@@ -251,7 +251,7 @@ def xscale(scale):
     scale : {'linear', 'log', 'symlog'}
         The axis scale type to apply.
     """
-    _fortplotlib.fortplot.set_xscale(scale)
+    _fortplot.fortplot.set_xscale(scale)
 
 def yscale(scale):
     """Set the y-axis scale.
@@ -261,7 +261,7 @@ def yscale(scale):
     scale : {'linear', 'log', 'symlog'}
         The axis scale type to apply.
     """
-    _fortplotlib.fortplot.set_yscale(scale)
+    _fortplot.fortplot.set_yscale(scale)
 
 def xlim(xmin, xmax):
     """Set the x-axis limits.
@@ -271,7 +271,7 @@ def xlim(xmin, xmax):
     xmin, xmax : float
         The left and right xlim values.
     """
-    _fortplotlib.fortplot.xlim(xmin, xmax)
+    _fortplot.fortplot.xlim(xmin, xmax)
 
 def ylim(ymin, ymax):
     """Set the y-axis limits.
@@ -281,7 +281,7 @@ def ylim(ymin, ymax):
     ymin, ymax : float
         The bottom and top ylim values.
     """
-    _fortplotlib.fortplot.ylim(ymin, ymax)
+    _fortplot.fortplot.ylim(ymin, ymax)
 
 def show():
     """Display the current figure in the default system viewer."""
@@ -289,7 +289,7 @@ def show():
         tmp_filename = tmp_file.name
     
     try:
-        _fortplotlib.fortplot.savefig(tmp_filename)
+        _fortplot.fortplot.savefig(tmp_filename)
         webbrowser.open(f'file://{tmp_filename}')
         
         # Block like matplotlib.pyplot.show()

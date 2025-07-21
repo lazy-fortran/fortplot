@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible axes and layout management system in fortplotlib, covering coordinate systems, axis scaling, tick generation, spine rendering, and layout optimization. The implementation follows matplotlib's Axes class architecture and transform system patterns while maintaining Fortran's performance characteristics.
+This document describes the matplotlib-compatible axes and layout management system in fortplot, covering coordinate systems, axis scaling, tick generation, spine rendering, and layout optimization. The implementation follows matplotlib's Axes class architecture and transform system patterns while maintaining Fortran's performance characteristics.
 
 ## Problem Statement
 
@@ -461,4 +461,4 @@ end subroutine
 - **`test/test_transforms.f90`** - Coordinate transformation verification
 - **`test/test_tight_layout.f90`** - Layout optimization algorithm tests
 
-This implementation ensures fortplotlib provides matplotlib-compatible axes and layout management with professional coordinate systems, flexible spine positioning, automatic layout optimization, and complete multi-axes support for complex scientific visualization workflows.
+This implementation ensures fortplot provides matplotlib-compatible axes and layout management with professional coordinate systems, flexible spine positioning, automatic layout optimization, and complete multi-axes support for complex scientific visualization workflows.
