@@ -2313,16 +2313,35 @@ contains
     
     subroutine render_subplot_title(self, subplot)
         !! Render title for a subplot (positioned above the subplot)
+        use fortplot_text, only: render_text_to_image, calculate_text_width
+        use, intrinsic :: iso_fortran_env, only: int8
         class(figure_t), intent(inout) :: self
         type(subplot_t), intent(in) :: subplot
         
         real(wp) :: text_x, text_y
         real(wp), parameter :: title_padding = 20.0_wp  ! Padding above subplot top
+        character(len=500) :: processed_text
+        integer :: processed_len, text_width_int
+        real(wp) :: text_width
         
         ! Render title above the subplot
         if (allocated(subplot%title)) then
+            ! Process LaTeX (for now, just use the original text)
+            ! TODO: Add proper LaTeX processing when needed
+            processed_text = subplot%title
+            processed_len = len_trim(subplot%title)
+            
+            ! Calculate text width for centering
+            text_width_int = calculate_text_width(trim(processed_text))
+            if (text_width_int < 0) then
+                ! Fallback if width calculation fails
+                text_width = real(processed_len * 8, wp)
+            else
+                text_width = real(text_width_int, wp)
+            end if
+            
             ! Center horizontally within subplot
-            text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp
+            text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp - text_width / 2.0_wp
             
             ! Position title above subplot with consistent padding
             ! subplot%y1 is the top of the subplot in screen coordinates
@@ -2334,9 +2353,21 @@ contains
                 text_y = 15.0_wp
             end if
             
-            ! Set color to black for title
-            call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
-            call self%backend%text(text_x, text_y, subplot%title)
+            ! Render text directly to image using screen coordinates
+            select type (backend => self%backend)
+            type is (png_context)
+                ! Use int8 literal notation
+                call render_text_to_image(backend%raster%image_data, backend%width, backend%height, &
+                                        int(text_x), int(text_y), trim(processed_text), &
+                                        0_int8, 0_int8, 0_int8)
+            type is (pdf_context)
+                ! PDF backend can use the text method as it doesn't transform coordinates
+                call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+                call backend%text(text_x, text_y, subplot%title)
+            type is (ascii_context)
+                ! ASCII backend handles text differently
+                call backend%text(text_x, text_y, subplot%title)
+            end select
         end if
     end subroutine render_subplot_title
     
