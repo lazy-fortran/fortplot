@@ -133,7 +133,7 @@ module fortplot_figure_core
         type(subplot_t), allocatable :: subplots_array(:,:)
         logical :: using_subplots = .false.
         real(wp) :: subplot_hgap = 0.05_wp  ! Horizontal gap between subplots
-        real(wp) :: subplot_vgap = 0.05_wp  ! Vertical gap between subplots
+        real(wp) :: subplot_vgap = 0.08_wp  ! Vertical gap between subplots (increased for titles)
 
     contains
         procedure :: initialize
@@ -2170,8 +2170,8 @@ contains
             ! Add other plot types as needed
         end do
         
-        ! Render subplot labels
-        call render_subplot_labels(self, subplot)
+        ! Draw subplot title separately (axes labels are handled by draw_axes_and_labels)
+        call render_subplot_title(self, subplot)
         
         ! Reset clipping region
         ! TODO: Add clipping support to backends
@@ -2235,21 +2235,22 @@ contains
         class(figure_t), intent(inout) :: self
         type(subplot_t), intent(in) :: subplot
         
-        real(wp) :: x1, y1, x2, y2
-        
-        ! Convert to real for backend calls
-        x1 = real(subplot%x1, wp)
-        y1 = real(subplot%y1, wp)
-        x2 = real(subplot%x2, wp)
-        y2 = real(subplot%y2, wp)
-        
-        ! Draw the axes frame (simple rectangle)
-        call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black
-        call self%backend%set_line_width(1.0_wp)
-        call self%backend%line(x1, y1, x2, y1)  ! Bottom
-        call self%backend%line(x2, y1, x2, y2)  ! Right
-        call self%backend%line(x2, y2, x1, y2)  ! Top
-        call self%backend%line(x1, y2, x1, y1)  ! Left
+        ! Use the backend's proper axes drawing functions
+        select type (backend => self%backend)
+        type is (png_context)
+            ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
+            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                    subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
+                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+        type is (pdf_context)
+            ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
+            call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                        subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
+                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+        type is (ascii_context)
+            ! ASCII backend doesn't support subplots yet
+            ! Could draw a simple frame here if needed
+        end select
     end subroutine render_subplot_axes
     
     subroutine render_subplot_line_plot(self, subplot, plot_idx)
@@ -2307,34 +2308,42 @@ contains
         end if
     end subroutine render_subplot_line_plot
     
-    subroutine render_subplot_labels(self, subplot)
-        !! Render labels for a subplot
+    subroutine render_subplot_title(self, subplot)
+        !! Render title for a subplot (positioned above the subplot)
         class(figure_t), intent(inout) :: self
         type(subplot_t), intent(in) :: subplot
         
         real(wp) :: text_x, text_y
+        real(wp) :: gap_pixels
+        real(wp) :: first_row_y
         
-        ! Render title
+        ! Render title above the subplot
         if (allocated(subplot%title)) then
+            ! Center horizontally within subplot
             text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp
-            text_y = real(subplot%y1 - 10, wp)  ! Above the subplot
+            
+            ! Calculate vertical position
+            gap_pixels = self%subplot_vgap * real(self%height, wp)
+            
+            ! Calculate y position of first row of subplots
+            first_row_y = self%margin_top * real(self%height, wp)
+            
+            if (abs(real(subplot%y1, wp) - first_row_y) < 1.0_wp) then
+                ! First row - position like main title
+                text_y = 25.0_wp
+            else
+                ! Other rows - position in the middle of the gap above
+                text_y = real(subplot%y1, wp) - gap_pixels / 2.0_wp
+            end if
+            
+            ! Ensure we stay within image bounds
+            text_y = max(20.0_wp, text_y)  ! Don't go too close to top edge
+            
+            ! Set color to black for title
+            call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
             call self%backend%text(text_x, text_y, subplot%title)
         end if
-        
-        ! Render xlabel
-        if (allocated(subplot%xlabel)) then
-            text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp
-            text_y = real(subplot%y2 + 30, wp)  ! Below the subplot
-            call self%backend%text(text_x, text_y, subplot%xlabel)
-        end if
-        
-        ! Render ylabel (simplified for now)
-        if (allocated(subplot%ylabel)) then
-            text_x = real(subplot%x1 - 40, wp)  ! Left of the subplot
-            text_y = real(subplot%y1 + subplot%y2, wp) / 2.0_wp
-            call self%backend%text(text_x, text_y, subplot%ylabel)
-        end if
-    end subroutine render_subplot_labels
+    end subroutine render_subplot_title
     
     subroutine transform_subplot_coordinates(self, subplot, data_x, data_y, screen_x, screen_y)
         !! Transform data coordinates to screen coordinates for a subplot
