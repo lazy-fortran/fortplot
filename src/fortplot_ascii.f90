@@ -5,7 +5,7 @@ module fortplot_ascii
     !! ASCII characters and Unicode box drawing characters. Provides basic
     !! line plotting with character density mapping for visualization.
     !!
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use fortplot_context
     use fortplot_latex_parser

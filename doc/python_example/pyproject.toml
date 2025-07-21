@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fortplotlib-example"
+name = "fortplot-example"
 version = "0.1.0"
 dependencies = [
-    "fortplotlib @ git+https://github.com/krystophny/fortplotlib.git",
+    "fortplot @ git+https://github.com/krystophny/fortplot.git",
     "numpy"
 ]

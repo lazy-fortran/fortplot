@@ -1,8 +1,8 @@
-# Unicode and LaTeX Support in fortplotlib
+# Unicode and LaTeX Support in fortplot
 
 ## Overview
 
-fortplotlib provides comprehensive support for Unicode characters and LaTeX-style Greek letter commands across all backends (PNG, PDF, ASCII). This enables professional scientific plotting with mathematical notation directly from Fortran code.
+fortplot provides comprehensive support for Unicode characters and LaTeX-style Greek letter commands across all backends (PNG, PDF, ASCII). This enables professional scientific plotting with mathematical notation directly from Fortran code.
 
 ## Features
 
