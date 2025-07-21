@@ -2356,7 +2356,6 @@ contains
             ! Render text directly to image using screen coordinates
             select type (backend => self%backend)
             type is (png_context)
-                ! Use int8 literal notation
                 call render_text_to_image(backend%raster%image_data, backend%width, backend%height, &
                                         int(text_x), int(text_y), trim(processed_text), &
                                         0_int8, 0_int8, 0_int8)
