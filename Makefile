@@ -104,6 +104,7 @@ create_build_dirs:
 	@mkdir -p build/example/smart_show_demo
 	@mkdir -p build/example/animation
 	@mkdir -p build/example/stateful_streamplot
+	@mkdir -p build/example/histogram_demo
 
 # Help target
 help:

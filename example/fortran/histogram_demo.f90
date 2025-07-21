@@ -29,7 +29,7 @@ program histogram_demo
     call fig%set_title('Basic Histogram Example')
     call fig%set_xlabel('Value')
     call fig%set_ylabel('Frequency')
-    call fig%savefig('plots/histogram_basic.png')
+    call fig%savefig('build/example/histogram_demo/histogram_basic.png')
     write(*,*) 'Created histogram_basic.png'
     
     ! Custom bins histogram  
@@ -38,7 +38,7 @@ program histogram_demo
     call fig%set_title('Histogram with 20 Bins')
     call fig%set_xlabel('Value')
     call fig%set_ylabel('Frequency')
-    call fig%savefig('plots/histogram_custom_bins.png')
+    call fig%savefig('build/example/histogram_demo/histogram_custom_bins.png')
     write(*,*) 'Created histogram_custom_bins.png'
     
     ! Density histogram
@@ -47,7 +47,7 @@ program histogram_demo
     call fig%set_title('Normalized Histogram (Density)')
     call fig%set_xlabel('Value')
     call fig%set_ylabel('Probability Density')
-    call fig%savefig('plots/histogram_density.png')
+    call fig%savefig('build/example/histogram_demo/histogram_density.png')
     write(*,*) 'Created histogram_density.png'
     
     ! Multiple histograms with labels
@@ -58,7 +58,7 @@ program histogram_demo
     call fig%set_title('Multiple Histograms')
     call fig%set_xlabel('Value')
     call fig%set_ylabel('Frequency')
-    call fig%savefig('plots/histogram_multiple.png')
+    call fig%savefig('build/example/histogram_demo/histogram_multiple.png')
     write(*,*) 'Created histogram_multiple.png'
     
     write(*,*) 'Histogram demonstration completed!'
