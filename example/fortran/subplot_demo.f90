@@ -52,7 +52,7 @@ program subplot_demo
     call fig%subplot_plot(2, 2, x2, x2**2 / 50.0_wp, label='x^2')
     
     ! Save the figure
-    call fig%savefig('plots/subplot_demo.png')
+    call fig%savefig('build/example/subplot_demo/subplot_demo.png')
     print *, 'Created subplot_demo.png'
     
     ! Create another example with different layout
@@ -69,7 +69,7 @@ program subplot_demo
     call fig%subplot_set_title(1, 3, 'Cubic')
     call fig%subplot_plot(1, 3, x2, x2**3)
     
-    call fig%savefig('plots/subplot_layout.png')
+    call fig%savefig('build/example/subplot_demo/subplot_layout.png')
     print *, 'Created subplot_layout.png'
     
     print *, 'Subplot demonstration completed!'
