@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(fortplotlib VERSION 2025.06.25 LANGUAGES Fortran C)
+project(fortplot VERSION 2025.06.25 LANGUAGES Fortran C)
 
 # Set default build type
 if(NOT CMAKE_BUILD_TYPE)
@@ -12,31 +12,31 @@ set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fcheck=all")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
 
 # Automatically collect all source files from src directory
-file(GLOB_RECURSE FORTPLOTLIB_SOURCES "src/*.f90" "src/*.c")
+file(GLOB_RECURSE FORTPLOT_SOURCES "src/*.f90" "src/*.c")
 
 # Create static library
-add_library(fortplotlib STATIC ${FORTPLOTLIB_SOURCES})
+add_library(fortplot STATIC ${FORTPLOT_SOURCES})
 
 # Set module directory and enable position-independent code for shared library usage
-set_target_properties(fortplotlib PROPERTIES
+set_target_properties(fortplot PROPERTIES
     Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
     POSITION_INDEPENDENT_CODE ON
 )
 
 # Make modules available to consumers
-target_include_directories(fortplotlib
+target_include_directories(fortplot
     PUBLIC 
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
 # Create alias for FetchContent compatibility
-add_library(fortplotlib::fortplotlib ALIAS fortplotlib)
+add_library(fortplot::fortplot ALIAS fortplot)
 
 # Export targets for FetchContent
-export(TARGETS fortplotlib
-    NAMESPACE fortplotlib::
-    FILE ${CMAKE_CURRENT_BINARY_DIR}/fortplotlibTargets.cmake
+export(TARGETS fortplot
+    NAMESPACE fortplot::
+    FILE ${CMAKE_CURRENT_BINARY_DIR}/fortplotTargets.cmake
 )
 
 # Check if Python interface should be built
@@ -44,7 +44,7 @@ if (ENABLE_PYTHON)
     include(cmake/PythonHelpers.cmake)
     add_f90wrap_wrapper(
         fortplot_wrapper
-        fortplotlib
+        fortplot
         src/fortplot.f90
     )
     # After f90wrap generates files, fix the imports

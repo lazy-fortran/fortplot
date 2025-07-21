@@ -5,7 +5,7 @@ module fortplot_layout
     !! following Single Responsibility Principle by focusing solely
     !! on layout-related functionality.
     !! 
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none

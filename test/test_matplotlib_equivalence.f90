@@ -41,7 +41,7 @@ contains
         call fig%initialize(800, 600)
         ! Use exact matplotlib defaults: density=1.0, broken_streamlines=True, maxlength=4.0
         call fig%streamplot(x, y, u, v, density=1.0_real64)
-        call fig%set_title('Fortplotlib - Should match matplotlib behavior')
+        call fig%set_title('Fortplot - Should match matplotlib behavior')
         call fig%savefig('/tmp/test/test_matplotlib_equivalent.png')
         
         print *, "Same parameters test completed - compare with matplotlib reference"

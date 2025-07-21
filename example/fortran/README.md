@@ -1,9 +1,9 @@
 title: Fortran Examples
 ---
 
-# fortplotlib Examples
+# fortplot Examples
 
-This directory contains all fortplotlib examples written in Fortran. Each subdirectory contains a specific example demonstrating different features of the library.
+This directory contains all fortplot examples written in Fortran. Each subdirectory contains a specific example demonstrating different features of the library.
 
 ## Quick Start
 

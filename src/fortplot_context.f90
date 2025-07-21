@@ -5,7 +5,7 @@ module fortplot_context
     !! (PNG, PDF, ASCII) must implement. Provides polymorphic interface
     !! for unified plotting operations across different output formats.
     !!
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
