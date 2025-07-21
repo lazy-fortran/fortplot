@@ -2326,8 +2326,7 @@ contains
         
         ! Render title above the subplot
         if (allocated(subplot%title)) then
-            ! Process LaTeX (for now, just use the original text)
-            ! TODO: Add proper LaTeX processing when needed
+            ! Use the original text (LaTeX processing can be added later if needed)
             processed_text = subplot%title
             processed_len = len_trim(subplot%title)
             

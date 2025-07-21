@@ -53,7 +53,6 @@ program subplot_demo
     
     ! Save the figure
     call fig%savefig('build/example/subplot_demo/subplot_demo.png')
-    print *, 'Created subplot_demo.png'
     
     ! Create another example with different layout
     call fig%initialize(800, 400)
@@ -70,8 +69,5 @@ program subplot_demo
     call fig%subplot_plot(1, 3, x2, x2**3)
     
     call fig%savefig('build/example/subplot_demo/subplot_layout.png')
-    print *, 'Created subplot_layout.png'
-    
-    print *, 'Subplot demonstration completed!'
     
 end program subplot_demo
