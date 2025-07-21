@@ -2109,6 +2109,7 @@ contains
         type(subplot_t) :: subplot
         integer :: i
         real(wp) :: old_x_min, old_x_max, old_y_min, old_y_max
+        integer :: old_plot_left, old_plot_bottom, old_plot_width, old_plot_height
         
         subplot = self%subplots_array(row, col)
         
@@ -2117,6 +2118,20 @@ contains
         old_x_max = self%x_max
         old_y_min = self%y_min
         old_y_max = self%y_max
+        
+        ! Save current plot area (backend-specific)
+        select type (backend => self%backend)
+        type is (png_context)
+            old_plot_left = backend%plot_area%left
+            old_plot_bottom = backend%plot_area%bottom
+            old_plot_width = backend%plot_area%width
+            old_plot_height = backend%plot_area%height
+        type is (pdf_context)
+            old_plot_left = backend%plot_area%left
+            old_plot_bottom = backend%plot_area%bottom
+            old_plot_width = backend%plot_area%width
+            old_plot_height = backend%plot_area%height
+        end select
         
         ! Set subplot data ranges for this rendering
         self%x_min = subplot%x_min
@@ -2170,6 +2185,20 @@ contains
         self%x_max = old_x_max
         self%y_min = old_y_min
         self%y_max = old_y_max
+        
+        ! Restore plot area (backend-specific)
+        select type (backend => self%backend)
+        type is (png_context)
+            backend%plot_area%left = old_plot_left
+            backend%plot_area%bottom = old_plot_bottom
+            backend%plot_area%width = old_plot_width
+            backend%plot_area%height = old_plot_height
+        type is (pdf_context)
+            backend%plot_area%left = old_plot_left
+            backend%plot_area%bottom = old_plot_bottom
+            backend%plot_area%width = old_plot_width
+            backend%plot_area%height = old_plot_height
+        end select
     end subroutine render_single_subplot
     
     subroutine setup_subplot_coordinate_system(self, subplot)
@@ -2183,8 +2212,22 @@ contains
         self%backend%y_min = subplot%y_min
         self%backend%y_max = subplot%y_max
         
-        ! Backend plot area handling would go here if supported
-        ! For now, coordinate transformation handles the mapping
+        ! Update backend plot area to subplot boundaries
+        ! This ensures drawing is constrained to the subplot region
+        select type (backend => self%backend)
+        type is (png_context)
+            backend%plot_area%left = subplot%x1
+            backend%plot_area%bottom = subplot%y1
+            backend%plot_area%width = subplot%x2 - subplot%x1
+            backend%plot_area%height = subplot%y2 - subplot%y1
+        type is (pdf_context)
+            backend%plot_area%left = subplot%x1
+            backend%plot_area%bottom = subplot%y1
+            backend%plot_area%width = subplot%x2 - subplot%x1
+            backend%plot_area%height = subplot%y2 - subplot%y1
+        type is (ascii_context)
+            ! ASCII backend doesn't support subplots yet
+        end select
     end subroutine setup_subplot_coordinate_system
     
     subroutine render_subplot_axes(self, subplot)
