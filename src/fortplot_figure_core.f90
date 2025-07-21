@@ -523,6 +523,9 @@ contains
         if (present(hgap)) self%subplot_hgap = hgap
         if (present(vgap)) self%subplot_vgap = vgap
         
+        ! Increase top margin to accommodate subplot titles
+        self%margin_top = 0.10_wp  ! 10% instead of default 5%
+        
         ! Allocate subplot array
         if (allocated(self%subplots_array)) deallocate(self%subplots_array)
         allocate(self%subplots_array(rows, cols))
@@ -2314,30 +2317,22 @@ contains
         type(subplot_t), intent(in) :: subplot
         
         real(wp) :: text_x, text_y
-        real(wp) :: gap_pixels
-        real(wp) :: first_row_y
+        real(wp), parameter :: title_padding = 20.0_wp  ! Padding above subplot top
         
         ! Render title above the subplot
         if (allocated(subplot%title)) then
             ! Center horizontally within subplot
             text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp
             
-            ! Calculate vertical position
-            gap_pixels = self%subplot_vgap * real(self%height, wp)
-            
-            ! Calculate y position of first row of subplots
-            first_row_y = self%margin_top * real(self%height, wp)
-            
-            if (abs(real(subplot%y1, wp) - first_row_y) < 1.0_wp) then
-                ! First row - position like main title
-                text_y = 25.0_wp
-            else
-                ! Other rows - position in the middle of the gap above
-                text_y = real(subplot%y1, wp) - gap_pixels / 2.0_wp
-            end if
+            ! Position title above subplot with consistent padding
+            ! subplot%y1 is the top of the subplot in screen coordinates
+            ! In screen coordinates, y increases downward, so subtract padding to go up
+            text_y = real(subplot%y1, wp) - title_padding
             
             ! Ensure we stay within image bounds
-            text_y = max(20.0_wp, text_y)  ! Don't go too close to top edge
+            if (text_y < 15.0_wp) then
+                text_y = 15.0_wp
+            end if
             
             ! Set color to black for title
             call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
