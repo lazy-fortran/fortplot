@@ -106,6 +106,14 @@ module fortplot_figure_core
         ! Line drawing properties
         real(wp) :: current_line_width = 1.0_wp
         
+        ! Grid line properties
+        logical :: grid_enabled = .false.
+        character(len=10) :: grid_axis = 'both'
+        character(len=10) :: grid_which = 'major'
+        real(wp) :: grid_alpha = 0.3_wp
+        character(len=10) :: grid_linestyle = '-'
+        real(wp), dimension(3) :: grid_color = [0.5_wp, 0.5_wp, 0.5_wp]
+        
         ! Streamline data (temporary placeholder)
         type(plot_data_t), allocatable :: streamlines(:)
         logical :: has_error = .false.
@@ -126,6 +134,7 @@ module fortplot_figure_core
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
+        procedure :: grid
         procedure :: set_ydata
         procedure :: legend => figure_legend
         procedure :: show
@@ -465,6 +474,56 @@ contains
         
         self%current_line_width = width
     end subroutine set_line_width
+
+    subroutine grid(self, enable, axis, which, alpha, linestyle, color)
+        !! Enable/disable and customize grid lines
+        class(figure_t), intent(inout) :: self
+        logical, intent(in), optional :: enable
+        character(len=*), intent(in), optional :: axis, which, linestyle
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: color(3)
+        
+        if (present(enable)) then
+            self%grid_enabled = enable
+        end if
+        
+        if (present(axis)) then
+            if (axis == 'x' .or. axis == 'y' .or. axis == 'both') then
+                self%grid_axis = axis
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid axis value. Use "x", "y", or "both"'
+            end if
+        end if
+        
+        if (present(which)) then
+            if (which == 'major' .or. which == 'minor') then
+                self%grid_which = which
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid which value. Use "major" or "minor"'
+            end if
+        end if
+        
+        if (present(alpha)) then
+            if (alpha >= 0.0_wp .and. alpha <= 1.0_wp) then
+                self%grid_alpha = alpha
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Alpha must be between 0.0 and 1.0'
+            end if
+        end if
+        
+        if (present(linestyle)) then
+            self%grid_linestyle = linestyle
+            self%grid_enabled = .true.
+        end if
+        
+        if (present(color)) then
+            self%grid_color = color
+            self%grid_enabled = .true.
+        end if
+    end subroutine grid
 
     subroutine destroy(self)
         !! Clean up figure resources
@@ -926,11 +985,15 @@ contains
         type is (png_context)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel)
+                                    self%title, self%xlabel, self%ylabel, &
+                                    self%grid_enabled, self%grid_axis, self%grid_which, &
+                                    self%grid_alpha, self%grid_linestyle, self%grid_color)
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel)
+                                        self%title, self%xlabel, self%ylabel, &
+                                        self%grid_enabled, self%grid_axis, self%grid_which, &
+                                        self%grid_alpha, self%grid_linestyle, self%grid_color)
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
