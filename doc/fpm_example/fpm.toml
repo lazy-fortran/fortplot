@@ -3,5 +3,5 @@ version = "0.1.0"
 license = "MIT"
 
 [dependencies]
-fortplotlib = { git = "https://github.com/krystophny/fortplotlib" }
+fortplot = { git = "https://github.com/krystophny/fortplot" }
 
