@@ -271,15 +271,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         
-        if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
-            return
-        end if
-        
-        if (size(data) == 0) then
-            write(*, '(A)') 'Warning: Cannot create histogram from empty data'
-            return
-        end if
+        if (.not. validate_histogram_input(self, data)) return
         
         self%plot_count = self%plot_count + 1
         
@@ -2149,5 +2141,26 @@ contains
         y(point_idx) = 0.0_wp
         point_idx = point_idx + 1
     end subroutine add_bar_outline_points
+
+    function validate_histogram_input(self, data) result(is_valid)
+        !! Validate histogram input parameters
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        logical :: is_valid
+        
+        is_valid = .true.
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            is_valid = .false.
+            return
+        end if
+        
+        if (size(data) == 0) then
+            write(*, '(A)') 'Warning: Cannot create histogram from empty data'
+            is_valid = .false.
+            return
+        end if
+    end function validate_histogram_input
 
 end module fortplot_figure_core
