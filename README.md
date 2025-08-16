@@ -146,7 +146,7 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Streamplots (`streamplot`) for vector field visualization
 - [ ] Scatter plots (`scatter`)
 - [ ] Bar charts (`bar`)
-- [ ] Histograms (`hist`)
+- [x] Histograms (`hist`)
 - [ ] Images (`imshow`)
 
 ### Backends
