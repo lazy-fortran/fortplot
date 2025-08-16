@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible basic plotting implementation in fortplotlib, covering line plots, scatter plots, and bar charts. The implementation follows matplotlib's API and behavior exactly to ensure drop-in compatibility and familiar user experience.
+This document describes the matplotlib-compatible basic plotting implementation in fortplot, covering line plots, scatter plots, and bar charts. The implementation follows matplotlib's API and behavior exactly to ensure drop-in compatibility and familiar user experience.
 
 ## Problem Statement
 
@@ -294,8 +294,8 @@ end function
 - **`src/fortplot_markers.f90`** - Extended marker support and rendering
 - **`src/fortplot_linestyles.f90`** - Complete line style implementations
 - **`src/fortplot_colors.f90`** - Color cycle and named color support
-- **`python/fortplotlib/fortplot.py`** - Updated Python interface
+- **`python/fortplot/fortplot.py`** - Updated Python interface
 - **`test/test_basic_plots.f90`** - Comprehensive plotting tests
 - **`test/test_format_parser.f90`** - Format string parsing verification
 
-This implementation ensures fortplotlib provides matplotlib-compatible basic plotting functionality with professional rendering quality and complete API compatibility for seamless migration from matplotlib-based workflows.
+This implementation ensures fortplot provides matplotlib-compatible basic plotting functionality with professional rendering quality and complete API compatibility for seamless migration from matplotlib-based workflows.

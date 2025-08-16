@@ -8,8 +8,8 @@ if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def main():
     nx, ny = 20, 20
@@ -32,8 +32,8 @@ def main():
     plt.savefig('streamplot_demo.png')
     plt.savefig('streamplot_demo.pdf')
 
-    # Export TXT for fortplotlib mode
-    if backend == "fortplotlib":
+    # Export TXT for fortplot mode
+    if backend == "fortplot":
         with open('streamplot_demo.txt', 'w') as f:
             f.write("Streamline Plot Demo - Circular Flow\n")
             f.write("=====================================\n\n")

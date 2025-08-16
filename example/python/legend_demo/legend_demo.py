@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Demonstration of legend functionality following SOLID principles
-Shows legend positioning, labeling, and rendering across all backends - Dual mode: fortplotlib or matplotlib"""
+Shows legend positioning, labeling, and rendering across all backends - Dual mode: fortplot or matplotlib"""
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def basic_legend_example():
     """Basic legend usage with labeled plots"""
@@ -37,8 +37,8 @@ def basic_legend_example():
     plt.savefig('basic_legend.png')
     plt.savefig('basic_legend.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('basic_legend.txt')
     
     if backend == "matplotlib":
@@ -67,8 +67,8 @@ def positioned_legend_example():
     plt.savefig('legend_positioning.png')
     plt.savefig('legend_positioning.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('legend_positioning.txt')
     
     if backend == "matplotlib":
@@ -105,8 +105,8 @@ def multi_function_legend_example():
     plt.savefig('multi_function_legend.png')
     plt.savefig('multi_function_legend.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('multi_function_legend.txt')
     
     if backend == "matplotlib":

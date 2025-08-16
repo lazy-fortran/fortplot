@@ -34,4 +34,4 @@ The example generates the following output files:
 - `symlog_scale.pdf` - Vector format of the symlog scale plot
 - `symlog_scale.txt` - ASCII art representation with symmetric log axes
 
-See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
+See the [documentation gallery](https://krystophny.github.io/fortplot/) for visual examples.
