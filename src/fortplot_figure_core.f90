@@ -25,11 +25,17 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 5
+
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -46,6 +52,15 @@ module fortplot_figure_core
         logical :: show_colorbar = .true.
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
+        ! Box plot data
+        real(wp), allocatable :: box_data(:)
+        real(wp) :: position = 1.0_wp
+        real(wp) :: width = 0.6_wp
+        logical :: show_outliers = .true.
+        logical :: horizontal = .false.
+        real(wp) :: q1, q2, q3  ! Quartiles
+        real(wp) :: whisker_low, whisker_high
+        real(wp), allocatable :: outliers(:)
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -149,6 +164,7 @@ module fortplot_figure_core
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -285,6 +301,27 @@ contains
         call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         call update_data_ranges_pcolormesh(self)
     end subroutine add_pcolormesh
+
+    subroutine boxplot(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot to figure using statistical data
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        ! Basic input validation (following NO DEFENSIVE PROGRAMMING principle)
+        if (size(data) < 1) then
+            print *, "Warning: Box plot requires at least 1 data point"
+            return
+        end if
+        
+        call add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        call update_data_ranges_boxplot(self)
+    end subroutine boxplot
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
@@ -969,6 +1006,346 @@ contains
         self%plot_count = plot_idx
     end subroutine update_data_ranges_pcolormesh
 
+    subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot data to internal storage with statistical calculations
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx, color_idx
+        
+        ! Expand plots array
+        plot_idx = self%plot_count + 1
+        call expand_plots_array(self, plot_idx)
+        
+        ! Set plot type and copy data
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        if (allocated(self%plots(plot_idx)%box_data)) deallocate(self%plots(plot_idx)%box_data)
+        allocate(self%plots(plot_idx)%box_data(size(data)))
+        self%plots(plot_idx)%box_data = data
+        
+        ! Set optional parameters
+        if (present(position)) then
+            self%plots(plot_idx)%position = position
+        end if
+        
+        if (present(width)) then
+            self%plots(plot_idx)%width = width
+        end if
+        
+        if (present(show_outliers)) then
+            self%plots(plot_idx)%show_outliers = show_outliers
+        end if
+        
+        if (present(horizontal)) then
+            self%plots(plot_idx)%horizontal = horizontal
+        end if
+        
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        end if
+        
+        ! Set color
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Calculate statistics
+        call calculate_box_statistics(self%plots(plot_idx))
+    end subroutine add_boxplot_data
+
+    subroutine expand_plots_array(self, required_size)
+        !! Expand plots array if needed to accommodate new plot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: required_size
+        
+        ! Simple check - the plots array should already be allocated in initialize
+        ! This is just a placeholder to satisfy the call
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
+    end subroutine expand_plots_array
+
+    subroutine update_data_ranges_boxplot(self)
+        !! Update figure data ranges after adding box plot
+        class(figure_t), intent(inout) :: self
+        
+        integer :: plot_idx
+        real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
+        
+        plot_idx = self%plot_count + 1
+        
+        if (self%plots(plot_idx)%horizontal) then
+            ! Horizontal box plot - data range is in X direction
+            x_min_plot = self%plots(plot_idx)%whisker_low
+            x_max_plot = self%plots(plot_idx)%whisker_high
+            if (allocated(self%plots(plot_idx)%outliers)) then
+                if (size(self%plots(plot_idx)%outliers) > 0) then
+                    x_min_plot = min(x_min_plot, minval(self%plots(plot_idx)%outliers))
+                    x_max_plot = max(x_max_plot, maxval(self%plots(plot_idx)%outliers))
+                end if
+            end if
+            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
+        else
+            ! Vertical box plot - data range is in Y direction
+            y_min_plot = self%plots(plot_idx)%whisker_low
+            y_max_plot = self%plots(plot_idx)%whisker_high
+            if (allocated(self%plots(plot_idx)%outliers)) then
+                if (size(self%plots(plot_idx)%outliers) > 0) then
+                    y_min_plot = min(y_min_plot, minval(self%plots(plot_idx)%outliers))
+                    y_max_plot = max(y_max_plot, maxval(self%plots(plot_idx)%outliers))
+                end if
+            end if
+            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
+        end if
+        
+        ! Update figure ranges
+        if (self%plot_count == 0) then
+            self%x_min = x_min_plot
+            self%x_max = x_max_plot
+            self%y_min = y_min_plot
+            self%y_max = y_max_plot
+        else
+            self%x_min = min(self%x_min, x_min_plot)
+            self%x_max = max(self%x_max, x_max_plot)
+            self%y_min = min(self%y_min, y_min_plot)
+            self%y_max = max(self%y_max, y_max_plot)
+        end if
+        
+        self%plot_count = plot_idx
+    end subroutine update_data_ranges_boxplot
+
+    subroutine calculate_box_statistics(plot_data)
+        !! Calculate quartiles, whiskers, and outliers for box plot
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp), allocatable :: sorted_data(:)
+        
+        if (.not. allocated(plot_data%box_data)) return
+        if (size(plot_data%box_data) < 1) return
+        
+        call sort_data(plot_data%box_data, sorted_data)
+        call calculate_quartiles(sorted_data, plot_data)
+        call calculate_whiskers(sorted_data, plot_data)
+        call identify_outliers(sorted_data, plot_data)
+    end subroutine calculate_box_statistics
+    
+    subroutine sort_data(input_data, sorted_data)
+        !! Sort input data using quicksort algorithm
+        real(wp), intent(in) :: input_data(:)
+        real(wp), allocatable, intent(out) :: sorted_data(:)
+        
+        integer :: n
+        
+        n = size(input_data)
+        allocate(sorted_data(n))
+        sorted_data = input_data
+        call quicksort(sorted_data, 1, n)
+    end subroutine sort_data
+    
+    subroutine calculate_quartiles(sorted_data, plot_data)
+        !! Calculate Q1, Q2 (median), Q3 from sorted data
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        
+        if (n == 1) then
+            plot_data%q1 = sorted_data(1)
+            plot_data%q2 = sorted_data(1)
+            plot_data%q3 = sorted_data(1)
+        else if (n == 2) then
+            plot_data%q1 = sorted_data(1)
+            plot_data%q2 = (sorted_data(1) + sorted_data(2)) * HALF_WIDTH
+            plot_data%q3 = sorted_data(2)
+        else
+            call calculate_standard_quartiles(sorted_data, plot_data)
+        end if
+    end subroutine calculate_quartiles
+    
+    subroutine calculate_standard_quartiles(sorted_data, plot_data)
+        !! Calculate quartiles for datasets with n >= 3
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        q2_idx = (n + 1) / 2
+        
+        if (mod(n + 1, 2) == 0) then
+            plot_data%q2 = sorted_data(q2_idx)
+        else
+            plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * HALF_WIDTH
+        end if
+        
+        call calculate_q1_q3(sorted_data, q2_idx, plot_data)
+    end subroutine calculate_standard_quartiles
+    
+    subroutine calculate_q1_q3(sorted_data, q2_idx, plot_data)
+        !! Calculate Q1 and Q3 values
+        real(wp), intent(in) :: sorted_data(:)
+        integer, intent(in) :: q2_idx
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q3_idx
+        
+        n = size(sorted_data)
+        
+        q1_idx = (q2_idx + 1) / 2
+        if (q2_idx > 1 .and. mod(q2_idx + 1, 2) == 0) then
+            plot_data%q1 = sorted_data(q1_idx)
+        else if (q2_idx > 1) then
+            plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * HALF_WIDTH
+        else
+            plot_data%q1 = sorted_data(1)
+        end if
+        
+        q3_idx = q2_idx + (n - q2_idx + 1) / 2
+        if (q3_idx <= n .and. mod(n - q2_idx + 1, 2) == 0) then
+            plot_data%q3 = sorted_data(q3_idx)
+        else if (q3_idx < n) then
+            plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * HALF_WIDTH
+        else
+            plot_data%q3 = sorted_data(n)
+        end if
+    end subroutine calculate_q1_q3
+    
+    subroutine calculate_whiskers(sorted_data, plot_data)
+        !! Calculate whisker positions based on IQR
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp) :: iqr, whisker_range
+        integer :: i, n
+        
+        n = size(sorted_data)
+        iqr = plot_data%q3 - plot_data%q1
+        whisker_range = IQR_WHISKER_MULTIPLIER * iqr
+        
+        plot_data%whisker_low = plot_data%q1 - whisker_range
+        plot_data%whisker_high = plot_data%q3 + whisker_range
+        
+        do i = 1, n
+            if (sorted_data(i) >= plot_data%q1 - whisker_range) then
+                plot_data%whisker_low = sorted_data(i)
+                exit
+            end if
+        end do
+        
+        do i = n, 1, -1
+            if (sorted_data(i) <= plot_data%q3 + whisker_range) then
+                plot_data%whisker_high = sorted_data(i)
+                exit
+            end if
+        end do
+    end subroutine calculate_whiskers
+    
+    subroutine identify_outliers(sorted_data, plot_data)
+        !! Identify and store outlier values
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        logical, allocatable :: is_outlier(:)
+        integer :: n, outlier_count, i
+        
+        n = size(sorted_data)
+        allocate(is_outlier(n))
+        is_outlier = .false.
+        outlier_count = 0
+        
+        do i = 1, n
+            if (sorted_data(i) < plot_data%whisker_low .or. sorted_data(i) > plot_data%whisker_high) then
+                is_outlier(i) = .true.
+                outlier_count = outlier_count + 1
+            end if
+        end do
+        
+        call store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+    end subroutine identify_outliers
+    
+    subroutine store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+        !! Store identified outliers in plot data
+        real(wp), intent(in) :: sorted_data(:)
+        logical, intent(in) :: is_outlier(:)
+        integer, intent(in) :: outlier_count
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: i, count
+        
+        if (outlier_count > 0) then
+            allocate(plot_data%outliers(outlier_count))
+            count = 0
+            do i = 1, size(sorted_data)
+                if (is_outlier(i)) then
+                    count = count + 1
+                    plot_data%outliers(count) = sorted_data(i)
+                end if
+            end do
+        end if
+    end subroutine store_outliers
+
+    recursive subroutine quicksort(arr, low, high)
+        !! Efficient O(n log n) quicksort algorithm
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: low, high
+        
+        integer :: pivot_idx
+        
+        if (low < high) then
+            call partition(arr, low, high, pivot_idx)
+            call quicksort(arr, low, pivot_idx - 1)
+            call quicksort(arr, pivot_idx + 1, high)
+        end if
+    end subroutine quicksort
+    
+    subroutine partition(arr, low, high, pivot_idx)
+        !! Partition array for quicksort
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: low, high
+        integer, intent(out) :: pivot_idx
+        
+        real(wp) :: pivot
+        integer :: i
+        
+        pivot = arr(high)
+        pivot_idx = low - 1
+        
+        do i = low, high - 1
+            if (arr(i) <= pivot) then
+                pivot_idx = pivot_idx + 1
+                call swap_elements(arr, pivot_idx, i)
+            end if
+        end do
+        
+        call swap_elements(arr, pivot_idx + 1, high)
+        pivot_idx = pivot_idx + 1
+    end subroutine partition
+    
+    subroutine swap_elements(arr, i, j)
+        !! Swap two elements in array
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: i, j
+        
+        real(wp) :: temp
+        
+        temp = arr(i)
+        arr(i) = arr(j)
+        arr(j) = temp
+    end subroutine swap_elements
+
     subroutine update_data_ranges(self)
         !! Update figure data ranges after adding plots
         class(figure_t), intent(inout) :: self
@@ -1149,6 +1526,63 @@ contains
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%y_vertices), &
                                                                          self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
+                if (first_plot) then
+                    ! Store ORIGINAL box plot ranges
+                    if (self%plots(i)%horizontal) then
+                        x_min_orig = self%plots(i)%whisker_low
+                        x_max_orig = self%plots(i)%whisker_high
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
+                            x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        y_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        y_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
+                    else
+                        y_min_orig = self%plots(i)%whisker_low
+                        y_max_orig = self%plots(i)%whisker_high
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
+                            y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        x_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        x_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
+                    end if
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                else
+                    ! Update original ranges for box plot
+                    if (self%plots(i)%horizontal) then
+                        x_min_orig = min(x_min_orig, self%plots(i)%whisker_low)
+                        x_max_orig = max(x_max_orig, self%plots(i)%whisker_high)
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
+                            x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        y_min_orig = min(y_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        y_max_orig = max(y_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
+                    else
+                        y_min_orig = min(y_min_orig, self%plots(i)%whisker_low)
+                        y_max_orig = max(y_max_orig, self%plots(i)%whisker_high)
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
+                            y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        x_min_orig = min(x_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        x_max_orig = max(x_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
+                    end if
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold))
+                end if
             end if
         end do
         
@@ -1238,6 +1672,8 @@ contains
                 call render_contour_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
                 call render_pcolormesh_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
+                call render_boxplot_plot(self, i)
             end if
         end do
         
@@ -1458,6 +1894,170 @@ contains
         end do
     end subroutine render_pcolormesh_plot
 
+    subroutine render_boxplot_plot(self, plot_idx)
+        !! Render box plot with quartiles, whiskers, and outliers
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        if (.not. allocated(self%plots(plot_idx)%box_data)) return
+        
+        ! Set line width for box plot elements
+        call self%backend%set_line_width(BOX_PLOT_LINE_WIDTH)
+        
+        if (self%plots(plot_idx)%horizontal) then
+            call render_horizontal_boxplot(self, plot_idx)
+        else
+            call render_vertical_boxplot(self, plot_idx)
+        end if
+    end subroutine render_boxplot_plot
+
+    subroutine render_horizontal_boxplot(self, plot_idx)
+        !! Render horizontal box plot - data values are in X direction
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: box_left, box_right, box_bottom, box_top
+        real(wp) :: whisker_x1, whisker_y1, whisker_x2, whisker_y2
+        real(wp) :: median_x1, median_y1, median_x2, median_y2
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%q1, self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%q3, self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                         self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                      self%yscale, self%symlog_threshold)
+        
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
+        
+        ! Draw median line
+        median_x1 = apply_scale_transform(self%plots(plot_idx)%q2, self%xscale, self%symlog_threshold)
+        median_x2 = median_x1
+        median_y1 = box_bottom
+        median_y2 = box_top
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        call render_horizontal_outliers(self, plot_idx)
+    end subroutine render_horizontal_boxplot
+
+    subroutine render_vertical_boxplot(self, plot_idx)
+        !! Render vertical box plot - data values are in Y direction
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: box_left, box_right, box_bottom, box_top
+        real(wp) :: median_y1, median_y2, median_x1, median_x2
+        
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                       self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                        self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%q1, self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%q3, self%yscale, self%symlog_threshold)
+        
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
+        
+        ! Draw median line
+        median_y1 = apply_scale_transform(self%plots(plot_idx)%q2, self%yscale, self%symlog_threshold)
+        median_y2 = median_y1
+        median_x1 = box_left
+        median_x2 = box_right
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        call render_vertical_outliers(self, plot_idx)
+    end subroutine render_vertical_boxplot
+
+    subroutine render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        !! Render whiskers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_left, box_right
+        
+        real(wp) :: whisker_x1, whisker_y1, whisker_x2, whisker_y2
+        
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%xscale, self%symlog_threshold)
+        whisker_x2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%xscale, self%symlog_threshold)
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+        whisker_y2 = whisker_y1
+        
+        ! Left whisker
+        call self%backend%line(whisker_x1, whisker_y1, box_left, whisker_y2)
+        ! Right whisker  
+        call self%backend%line(box_right, whisker_y1, whisker_x2, whisker_y2)
+    end subroutine render_horizontal_whiskers
+
+    subroutine render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        !! Render whiskers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_bottom, box_top
+        
+        real(wp) :: whisker_y1, whisker_x1, whisker_y2, whisker_x2
+        
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%yscale, self%symlog_threshold)
+        whisker_y2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%yscale, self%symlog_threshold)
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+        whisker_x2 = whisker_x1
+        
+        ! Bottom whisker
+        call self%backend%line(whisker_x1, whisker_y1, whisker_x2, box_bottom)
+        ! Top whisker
+        call self%backend%line(whisker_x1, box_top, whisker_x2, whisker_y2)
+    end subroutine render_vertical_whiskers
+
+    subroutine render_horizontal_outliers(self, plot_idx)
+        !! Render outliers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_horizontal_outliers
+
+    subroutine render_vertical_outliers(self, plot_idx)
+        !! Render outliers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_vertical_outliers
+
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
         class(figure_t), intent(inout) :: self
@@ -1586,8 +2186,8 @@ contains
             xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
             ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
         else
-            xa = (x1 + x2) * 0.5_wp
-            ya = (y1 + y2) * 0.5_wp
+            xa = (x1 + x2) * HALF_WIDTH
+            ya = (y1 + y2) * HALF_WIDTH
         end if
         
         ! Edge 2-3 (right)
@@ -1595,8 +2195,8 @@ contains
             xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
             yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
         else
-            xb = (x2 + x3) * 0.5_wp
-            yb = (y2 + y3) * 0.5_wp
+            xb = (x2 + x3) * HALF_WIDTH
+            yb = (y2 + y3) * HALF_WIDTH
         end if
         
         ! Edge 3-4 (top)
@@ -1604,8 +2204,8 @@ contains
             xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
             yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
         else
-            xc = (x3 + x4) * 0.5_wp
-            yc = (y3 + y4) * 0.5_wp
+            xc = (x3 + x4) * HALF_WIDTH
+            yc = (y3 + y4) * HALF_WIDTH
         end if
         
         ! Edge 4-1 (left)
@@ -1613,8 +2213,8 @@ contains
             xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
             yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
         else
-            xd = (x4 + x1) * 0.5_wp
-            yd = (y4 + y1) * 0.5_wp
+            xd = (x4 + x1) * HALF_WIDTH
+            yd = (y4 + y1) * HALF_WIDTH
         end if
     end subroutine interpolate_edge_crossings
 
