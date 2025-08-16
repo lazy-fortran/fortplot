@@ -8,7 +8,8 @@ module fortplot_figure
     !! Re-exports: scale functions from fortplot_scales
     !! Re-exports: utility functions from fortplot_utils
     
-    use fortplot_figure_core, only: figure_t, plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
+    use fortplot_figure_core, only: figure_t, plot_data_t, PLOT_TYPE_LINE, &
+                                    PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
     use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform, &
                               transform_x_coordinate, transform_y_coordinate
     use fortplot_utils, only: get_backend_from_filename, initialize_backend
