@@ -25,7 +25,7 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, show, show_viewer
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, boxplot, show, show_viewer
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
@@ -163,6 +163,36 @@ contains
 
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
+
+    subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
+        !! Add a box plot to the global figure (matplotlib-style)
+        !!
+        !! Creates a box plot displaying the distribution of data through
+        !! quartiles, median, and outliers. Compatible with matplotlib boxplot function.
+        !!
+        !! Arguments:
+        !!   data: 1D array of data values for statistical analysis
+        !!   position: Optional x-axis position for the box (default: 1.0)
+        !!   width: Optional width of the box (default: 0.8)
+        !!   label: Optional label for the plot
+        !!   show_outliers: Optional flag to display outliers (default: true)
+        !!   horizontal: Optional flag for horizontal orientation (default: false)
+        !!   color: Optional RGB color array [0-1] for box coloring
+        !!
+        !! Example:
+        !!   ! Simple box plot
+        !!   call boxplot(measurement_data, label='Measurements')
+        real(8), dimension(:), intent(in) :: data
+        real(8), intent(in), optional :: position
+        real(8), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(8), intent(in), optional :: color(3)
+
+        call fig%boxplot(data, position=position, width=width, label=label, &
+                        show_outliers=show_outliers, horizontal=horizontal, color=color)
+    end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Display a line plot in the terminal using ASCII graphics
