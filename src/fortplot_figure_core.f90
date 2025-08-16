@@ -851,21 +851,38 @@ contains
         type(plot_data_t), intent(inout) :: plot_data
         
         real(wp), allocatable :: sorted_data(:)
-        real(wp) :: iqr, whisker_range
-        integer :: n, q1_idx, q2_idx, q3_idx, outlier_count, i
-        logical, allocatable :: is_outlier(:)
         
         if (.not. allocated(plot_data%box_data)) return
+        if (size(plot_data%box_data) < 1) return
         
-        n = size(plot_data%box_data)
-        if (n < 1) return
+        call sort_data(plot_data%box_data, sorted_data)
+        call calculate_quartiles(sorted_data, plot_data)
+        call calculate_whiskers(sorted_data, plot_data)
+        call identify_outliers(sorted_data, plot_data)
+    end subroutine calculate_box_statistics
+    
+    subroutine sort_data(input_data, sorted_data)
+        !! Sort input data using quicksort algorithm
+        real(wp), intent(in) :: input_data(:)
+        real(wp), allocatable, intent(out) :: sorted_data(:)
         
-        ! Sort data
+        integer :: n
+        
+        n = size(input_data)
         allocate(sorted_data(n))
-        sorted_data = plot_data%box_data
-        call sort_array(sorted_data)
+        sorted_data = input_data
+        call quicksort(sorted_data, 1, n)
+    end subroutine sort_data
+    
+    subroutine calculate_quartiles(sorted_data, plot_data)
+        !! Calculate Q1, Q2 (median), Q3 from sorted data
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
         
-        ! Calculate quartiles using median-based method
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        
         if (n == 1) then
             plot_data%q1 = sorted_data(1)
             plot_data%q2 = sorted_data(1)
@@ -875,38 +892,70 @@ contains
             plot_data%q2 = (sorted_data(1) + sorted_data(2)) * 0.5_wp
             plot_data%q3 = sorted_data(2)
         else
-            ! Standard quartile calculation
-            q2_idx = (n + 1) / 2
-            if (mod(n + 1, 2) == 0) then
-                plot_data%q2 = sorted_data(q2_idx)
-            else
-                plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * 0.5_wp
-            end if
-            
-            q1_idx = (q2_idx + 1) / 2
-            if (q2_idx > 1 .and. mod(q2_idx + 1, 2) == 0) then
-                plot_data%q1 = sorted_data(q1_idx)
-            else if (q2_idx > 1) then
-                plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * 0.5_wp
-            else
-                plot_data%q1 = sorted_data(1)
-            end if
-            
-            q3_idx = q2_idx + (n - q2_idx + 1) / 2
-            if (q3_idx <= n .and. mod(n - q2_idx + 1, 2) == 0) then
-                plot_data%q3 = sorted_data(q3_idx)
-            else if (q3_idx < n) then
-                plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * 0.5_wp
-            else
-                plot_data%q3 = sorted_data(n)
-            end if
+            call calculate_standard_quartiles(sorted_data, plot_data)
+        end if
+    end subroutine calculate_quartiles
+    
+    subroutine calculate_standard_quartiles(sorted_data, plot_data)
+        !! Calculate quartiles for datasets with n >= 3
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        q2_idx = (n + 1) / 2
+        
+        if (mod(n + 1, 2) == 0) then
+            plot_data%q2 = sorted_data(q2_idx)
+        else
+            plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * 0.5_wp
         end if
         
-        ! Calculate IQR and whisker positions
+        call calculate_q1_q3(sorted_data, q2_idx, plot_data)
+    end subroutine calculate_standard_quartiles
+    
+    subroutine calculate_q1_q3(sorted_data, q2_idx, plot_data)
+        !! Calculate Q1 and Q3 values
+        real(wp), intent(in) :: sorted_data(:)
+        integer, intent(in) :: q2_idx
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q3_idx
+        
+        n = size(sorted_data)
+        
+        q1_idx = (q2_idx + 1) / 2
+        if (q2_idx > 1 .and. mod(q2_idx + 1, 2) == 0) then
+            plot_data%q1 = sorted_data(q1_idx)
+        else if (q2_idx > 1) then
+            plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * 0.5_wp
+        else
+            plot_data%q1 = sorted_data(1)
+        end if
+        
+        q3_idx = q2_idx + (n - q2_idx + 1) / 2
+        if (q3_idx <= n .and. mod(n - q2_idx + 1, 2) == 0) then
+            plot_data%q3 = sorted_data(q3_idx)
+        else if (q3_idx < n) then
+            plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * 0.5_wp
+        else
+            plot_data%q3 = sorted_data(n)
+        end if
+    end subroutine calculate_q1_q3
+    
+    subroutine calculate_whiskers(sorted_data, plot_data)
+        !! Calculate whisker positions based on IQR
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp) :: iqr, whisker_range
+        integer :: i, n
+        
+        n = size(sorted_data)
         iqr = plot_data%q3 - plot_data%q1
         whisker_range = 1.5_wp * iqr
         
-        ! Find whisker limits (furthest non-outlier points)
         plot_data%whisker_low = plot_data%q1 - whisker_range
         plot_data%whisker_high = plot_data%q3 + whisker_range
         
@@ -923,8 +972,17 @@ contains
                 exit
             end if
         end do
+    end subroutine calculate_whiskers
+    
+    subroutine identify_outliers(sorted_data, plot_data)
+        !! Identify and store outlier values
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
         
-        ! Identify outliers
+        logical, allocatable :: is_outlier(:)
+        integer :: n, outlier_count, i
+        
+        n = size(sorted_data)
         allocate(is_outlier(n))
         is_outlier = .false.
         outlier_count = 0
@@ -936,38 +994,78 @@ contains
             end if
         end do
         
-        ! Store outliers
+        call store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+    end subroutine identify_outliers
+    
+    subroutine store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+        !! Store identified outliers in plot data
+        real(wp), intent(in) :: sorted_data(:)
+        logical, intent(in) :: is_outlier(:)
+        integer, intent(in) :: outlier_count
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: i, count
+        
         if (outlier_count > 0) then
             allocate(plot_data%outliers(outlier_count))
-            outlier_count = 0
-            do i = 1, n
+            count = 0
+            do i = 1, size(sorted_data)
                 if (is_outlier(i)) then
-                    outlier_count = outlier_count + 1
-                    plot_data%outliers(outlier_count) = sorted_data(i)
+                    count = count + 1
+                    plot_data%outliers(count) = sorted_data(i)
                 end if
             end do
         end if
-        
-        deallocate(sorted_data, is_outlier)
-    end subroutine calculate_box_statistics
+    end subroutine store_outliers
 
-    subroutine sort_array(arr)
-        !! Simple bubble sort for small arrays
+    recursive subroutine quicksort(arr, low, high)
+        !! Efficient O(n log n) quicksort algorithm
         real(wp), intent(inout) :: arr(:)
-        integer :: i, j, n
+        integer, intent(in) :: low, high
+        
+        integer :: pivot_idx
+        
+        if (low < high) then
+            call partition(arr, low, high, pivot_idx)
+            call quicksort(arr, low, pivot_idx - 1)
+            call quicksort(arr, pivot_idx + 1, high)
+        end if
+    end subroutine quicksort
+    
+    subroutine partition(arr, low, high, pivot_idx)
+        !! Partition array for quicksort
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: low, high
+        integer, intent(out) :: pivot_idx
+        
+        real(wp) :: pivot
+        integer :: i
+        
+        pivot = arr(high)
+        pivot_idx = low - 1
+        
+        do i = low, high - 1
+            if (arr(i) <= pivot) then
+                pivot_idx = pivot_idx + 1
+                call swap_elements(arr, pivot_idx, i)
+            end if
+        end do
+        
+        call swap_elements(arr, pivot_idx + 1, high)
+        pivot_idx = pivot_idx + 1
+    end subroutine partition
+    
+    subroutine swap_elements(arr, i, j)
+        !! Swap two elements in array
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: i, j
+        
         real(wp) :: temp
         
-        n = size(arr)
-        do i = 1, n - 1
-            do j = 1, n - i
-                if (arr(j) > arr(j + 1)) then
-                    temp = arr(j)
-                    arr(j) = arr(j + 1)
-                    arr(j + 1) = temp
-                end if
-            end do
-        end do
-    end subroutine sort_array
+        temp = arr(i)
+        arr(i) = arr(j)
+        arr(j) = temp
+    end subroutine swap_elements
 
     subroutine update_data_ranges(self)
         !! Update figure data ranges after adding plots
