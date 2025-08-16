@@ -34,8 +34,23 @@ module fortplot_figure_core
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    integer, parameter :: MAX_SAFE_BINS = 10000
     real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
     real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
+    ! Line rendering constants
+    real(wp), parameter :: PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: AXIS_LINE_WIDTH = 1.0_wp
+    
+    ! Contour level constants
+    real(wp), parameter :: CONTOUR_LEVEL_LOW = 0.2_wp
+    real(wp), parameter :: CONTOUR_LEVEL_MID = 0.5_wp
+    real(wp), parameter :: CONTOUR_LEVEL_HIGH = 0.8_wp
+    
+    ! Line style pattern constants (as percentage of plot scale)
+    real(wp), parameter :: DASH_LENGTH_FACTOR = 0.03_wp
+    real(wp), parameter :: DOT_LENGTH_FACTOR = 0.005_wp
+    real(wp), parameter :: GAP_LENGTH_FACTOR = 0.015_wp
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -180,7 +195,6 @@ contains
         character(len=20) :: parsed_marker, parsed_linestyle
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -205,7 +219,6 @@ contains
         character(len=*), intent(in), optional :: label
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -224,7 +237,6 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -399,7 +411,6 @@ contains
         call render_figure(self)
         call self%backend%save(filename)
         
-        write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
         
         ! If blocking requested, wait for user input
         if (do_block) then
@@ -743,6 +754,9 @@ contains
         integer :: n_bins
         
         if (present(bins)) then
+            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
+                return
+            end if
             n_bins = bins
         else
             n_bins = DEFAULT_HISTOGRAM_BINS
@@ -1170,7 +1184,7 @@ contains
         ! Draw lines only if linestyle is not 'None' and we have at least 2 points
         if (linestyle /= 'None' .and. size(self%plots(plot_idx)%x) >= 2) then
             ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
-            call self%backend%set_line_width(2.0_wp)
+            call self%backend%set_line_width(PLOT_LINE_WIDTH)
             
             ! Draw line segments using transformed coordinates with linestyle
             call draw_line_with_style(self, plot_idx, linestyle)
@@ -1409,9 +1423,9 @@ contains
         real(wp) :: level_values(3)
         integer :: i
         
-        level_values = [z_min + 0.2_wp * (z_max - z_min), &
-                       z_min + 0.5_wp * (z_max - z_min), &
-                       z_min + 0.8_wp * (z_max - z_min)]
+        level_values = [z_min + CONTOUR_LEVEL_LOW * (z_max - z_min), &
+                       z_min + CONTOUR_LEVEL_MID * (z_max - z_min), &
+                       z_min + CONTOUR_LEVEL_HIGH * (z_max - z_min)]
         
         do i = 1, 3
             ! Set color based on contour level
@@ -1709,9 +1723,9 @@ contains
         end if
         
         ! Define pattern lengths (matplotlib-like)
-        dash_len = plot_scale * 0.03_wp    ! 3% of range
-        dot_len = plot_scale * 0.005_wp    ! 0.5% of range  
-        gap_len = plot_scale * 0.015_wp    ! 1.5% of range
+        dash_len = plot_scale * DASH_LENGTH_FACTOR
+        dot_len = plot_scale * DOT_LENGTH_FACTOR
+        gap_len = plot_scale * GAP_LENGTH_FACTOR
         
         ! Define patterns like matplotlib
         select case (trim(linestyle))
@@ -2151,13 +2165,11 @@ contains
         is_valid = .true.
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             is_valid = .false.
             return
         end if
         
         if (size(data) == 0) then
-            write(*, '(A)') 'Warning: Cannot create histogram from empty data'
             is_valid = .false.
             return
         end if
