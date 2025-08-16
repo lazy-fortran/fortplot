@@ -32,6 +32,11 @@ module fortplot_figure_core
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
     integer, parameter :: PLOT_TYPE_BOXPLOT = 5
 
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
+
     type :: plot_data_t
         !! Data container for individual plots
         !! Separated from figure to follow Single Responsibility Principle
@@ -820,8 +825,8 @@ contains
                     x_max_plot = max(x_max_plot, maxval(self%plots(plot_idx)%outliers))
                 end if
             end if
-            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
-            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
         else
             ! Vertical box plot - data range is in Y direction
             y_min_plot = self%plots(plot_idx)%whisker_low
@@ -832,8 +837,8 @@ contains
                     y_max_plot = max(y_max_plot, maxval(self%plots(plot_idx)%outliers))
                 end if
             end if
-            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
-            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
         end if
         
         ! Update figure ranges
@@ -895,7 +900,7 @@ contains
             plot_data%q3 = sorted_data(1)
         else if (n == 2) then
             plot_data%q1 = sorted_data(1)
-            plot_data%q2 = (sorted_data(1) + sorted_data(2)) * 0.5_wp
+            plot_data%q2 = (sorted_data(1) + sorted_data(2)) * HALF_WIDTH
             plot_data%q3 = sorted_data(2)
         else
             call calculate_standard_quartiles(sorted_data, plot_data)
@@ -915,7 +920,7 @@ contains
         if (mod(n + 1, 2) == 0) then
             plot_data%q2 = sorted_data(q2_idx)
         else
-            plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * 0.5_wp
+            plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * HALF_WIDTH
         end if
         
         call calculate_q1_q3(sorted_data, q2_idx, plot_data)
@@ -935,7 +940,7 @@ contains
         if (q2_idx > 1 .and. mod(q2_idx + 1, 2) == 0) then
             plot_data%q1 = sorted_data(q1_idx)
         else if (q2_idx > 1) then
-            plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * 0.5_wp
+            plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * HALF_WIDTH
         else
             plot_data%q1 = sorted_data(1)
         end if
@@ -944,7 +949,7 @@ contains
         if (q3_idx <= n .and. mod(n - q2_idx + 1, 2) == 0) then
             plot_data%q3 = sorted_data(q3_idx)
         else if (q3_idx < n) then
-            plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * 0.5_wp
+            plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * HALF_WIDTH
         else
             plot_data%q3 = sorted_data(n)
         end if
@@ -960,7 +965,7 @@ contains
         
         n = size(sorted_data)
         iqr = plot_data%q3 - plot_data%q1
-        whisker_range = 1.5_wp * iqr
+        whisker_range = IQR_WHISKER_MULTIPLIER * iqr
         
         plot_data%whisker_low = plot_data%q1 - whisker_range
         plot_data%whisker_high = plot_data%q3 + whisker_range
@@ -1257,8 +1262,8 @@ contains
                             x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
                             x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
                         end if
-                        y_min_orig = self%plots(i)%position - self%plots(i)%width * 0.5_wp
-                        y_max_orig = self%plots(i)%position + self%plots(i)%width * 0.5_wp
+                        y_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        y_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
                     else
                         y_min_orig = self%plots(i)%whisker_low
                         y_max_orig = self%plots(i)%whisker_high
@@ -1266,8 +1271,8 @@ contains
                             y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
                             y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
                         end if
-                        x_min_orig = self%plots(i)%position - self%plots(i)%width * 0.5_wp
-                        x_max_orig = self%plots(i)%position + self%plots(i)%width * 0.5_wp
+                        x_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        x_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
                     end if
                     
                     ! Calculate transformed ranges for rendering
@@ -1285,8 +1290,8 @@ contains
                             x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
                             x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
                         end if
-                        y_min_orig = min(y_min_orig, self%plots(i)%position - self%plots(i)%width * 0.5_wp)
-                        y_max_orig = max(y_max_orig, self%plots(i)%position + self%plots(i)%width * 0.5_wp)
+                        y_min_orig = min(y_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        y_max_orig = max(y_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
                     else
                         y_min_orig = min(y_min_orig, self%plots(i)%whisker_low)
                         y_max_orig = max(y_max_orig, self%plots(i)%whisker_high)
@@ -1294,8 +1299,8 @@ contains
                             y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
                             y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
                         end if
-                        x_min_orig = min(x_min_orig, self%plots(i)%position - self%plots(i)%width * 0.5_wp)
-                        x_max_orig = max(x_max_orig, self%plots(i)%position + self%plots(i)%width * 0.5_wp)
+                        x_min_orig = min(x_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        x_max_orig = max(x_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
                     end if
                     
                     ! Update transformed ranges
@@ -1613,6 +1618,23 @@ contains
 
     subroutine render_boxplot_plot(self, plot_idx)
         !! Render box plot with quartiles, whiskers, and outliers
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        if (.not. allocated(self%plots(plot_idx)%box_data)) return
+        
+        ! Set line width for box plot elements
+        call self%backend%set_line_width(BOX_PLOT_LINE_WIDTH)
+        
+        if (self%plots(plot_idx)%horizontal) then
+            call render_horizontal_boxplot(self, plot_idx)
+        else
+            call render_vertical_boxplot(self, plot_idx)
+        end if
+    end subroutine render_boxplot_plot
+
+    subroutine render_horizontal_boxplot(self, plot_idx)
+        !! Render horizontal box plot - data values are in X direction
         use fortplot_scales, only: apply_scale_transform
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
@@ -1623,96 +1645,140 @@ contains
         real(wp) :: outlier_x, outlier_y
         integer :: i
         
-        if (.not. allocated(self%plots(plot_idx)%box_data)) return
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%q1, self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%q3, self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                         self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                      self%yscale, self%symlog_threshold)
         
-        ! Set line width for box plot elements
-        call self%backend%set_line_width(2.0_wp)
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
         
-        if (self%plots(plot_idx)%horizontal) then
-            ! Horizontal box plot - data values are in X direction
-            box_left = apply_scale_transform(self%plots(plot_idx)%q1, self%xscale, self%symlog_threshold)
-            box_right = apply_scale_transform(self%plots(plot_idx)%q3, self%xscale, self%symlog_threshold)
-            box_bottom = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
-                                             self%yscale, self%symlog_threshold)
-            box_top = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
-                                          self%yscale, self%symlog_threshold)
-            
-            ! Draw box using lines
-            call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
-            call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
-            call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
-            call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
-            
-            ! Draw median line
-            median_x1 = apply_scale_transform(self%plots(plot_idx)%q2, self%xscale, self%symlog_threshold)
-            median_x2 = median_x1
-            median_y1 = box_bottom
-            median_y2 = box_top
-            call self%backend%line(median_x1, median_y1, median_x2, median_y2)
-            
-            ! Draw whiskers
-            whisker_x1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%xscale, self%symlog_threshold)
-            whisker_x2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%xscale, self%symlog_threshold)
-            whisker_y1 = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
-            whisker_y2 = whisker_y1
-            
-            ! Left whisker
-            call self%backend%line(whisker_x1, whisker_y1, box_left, whisker_y2)
-            ! Right whisker  
-            call self%backend%line(box_right, whisker_y1, whisker_x2, whisker_y2)
-            
-            ! Draw outliers
-            if (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers)) then
-                do i = 1, size(self%plots(plot_idx)%outliers)
-                    outlier_x = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%xscale, self%symlog_threshold)
-                    outlier_y = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
-                    call self%backend%draw_marker(outlier_x, outlier_y, 'o')
-                end do
-            end if
-            
-        else
-            ! Vertical box plot - data values are in Y direction
-            box_left = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
-                                           self%xscale, self%symlog_threshold)
-            box_right = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
-                                            self%xscale, self%symlog_threshold)
-            box_bottom = apply_scale_transform(self%plots(plot_idx)%q1, self%yscale, self%symlog_threshold)
-            box_top = apply_scale_transform(self%plots(plot_idx)%q3, self%yscale, self%symlog_threshold)
-            
-            ! Draw box using lines
-            call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
-            call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
-            call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
-            call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
-            
-            ! Draw median line
-            median_y1 = apply_scale_transform(self%plots(plot_idx)%q2, self%yscale, self%symlog_threshold)
-            median_y2 = median_y1
-            median_x1 = box_left
-            median_x2 = box_right
-            call self%backend%line(median_x1, median_y1, median_x2, median_y2)
-            
-            ! Draw whiskers
-            whisker_y1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%yscale, self%symlog_threshold)
-            whisker_y2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%yscale, self%symlog_threshold)
-            whisker_x1 = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
-            whisker_x2 = whisker_x1
-            
-            ! Bottom whisker
-            call self%backend%line(whisker_x1, whisker_y1, whisker_x2, box_bottom)
-            ! Top whisker
-            call self%backend%line(whisker_x1, box_top, whisker_x2, whisker_y2)
-            
-            ! Draw outliers
-            if (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers)) then
-                do i = 1, size(self%plots(plot_idx)%outliers)
-                    outlier_x = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
-                    outlier_y = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%yscale, self%symlog_threshold)
-                    call self%backend%draw_marker(outlier_x, outlier_y, 'o')
-                end do
-            end if
-        end if
-    end subroutine render_boxplot_plot
+        ! Draw median line
+        median_x1 = apply_scale_transform(self%plots(plot_idx)%q2, self%xscale, self%symlog_threshold)
+        median_x2 = median_x1
+        median_y1 = box_bottom
+        median_y2 = box_top
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        call render_horizontal_outliers(self, plot_idx)
+    end subroutine render_horizontal_boxplot
+
+    subroutine render_vertical_boxplot(self, plot_idx)
+        !! Render vertical box plot - data values are in Y direction
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: box_left, box_right, box_bottom, box_top
+        real(wp) :: median_y1, median_y2, median_x1, median_x2
+        
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                       self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                        self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%q1, self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%q3, self%yscale, self%symlog_threshold)
+        
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
+        
+        ! Draw median line
+        median_y1 = apply_scale_transform(self%plots(plot_idx)%q2, self%yscale, self%symlog_threshold)
+        median_y2 = median_y1
+        median_x1 = box_left
+        median_x2 = box_right
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        call render_vertical_outliers(self, plot_idx)
+    end subroutine render_vertical_boxplot
+
+    subroutine render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        !! Render whiskers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_left, box_right
+        
+        real(wp) :: whisker_x1, whisker_y1, whisker_x2, whisker_y2
+        
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%xscale, self%symlog_threshold)
+        whisker_x2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%xscale, self%symlog_threshold)
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+        whisker_y2 = whisker_y1
+        
+        ! Left whisker
+        call self%backend%line(whisker_x1, whisker_y1, box_left, whisker_y2)
+        ! Right whisker  
+        call self%backend%line(box_right, whisker_y1, whisker_x2, whisker_y2)
+    end subroutine render_horizontal_whiskers
+
+    subroutine render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        !! Render whiskers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_bottom, box_top
+        
+        real(wp) :: whisker_y1, whisker_x1, whisker_y2, whisker_x2
+        
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%yscale, self%symlog_threshold)
+        whisker_y2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%yscale, self%symlog_threshold)
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+        whisker_x2 = whisker_x1
+        
+        ! Bottom whisker
+        call self%backend%line(whisker_x1, whisker_y1, whisker_x2, box_bottom)
+        ! Top whisker
+        call self%backend%line(whisker_x1, box_top, whisker_x2, whisker_y2)
+    end subroutine render_vertical_whiskers
+
+    subroutine render_horizontal_outliers(self, plot_idx)
+        !! Render outliers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_horizontal_outliers
+
+    subroutine render_vertical_outliers(self, plot_idx)
+        !! Render outliers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_vertical_outliers
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
@@ -1842,8 +1908,8 @@ contains
             xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
             ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
         else
-            xa = (x1 + x2) * 0.5_wp
-            ya = (y1 + y2) * 0.5_wp
+            xa = (x1 + x2) * HALF_WIDTH
+            ya = (y1 + y2) * HALF_WIDTH
         end if
         
         ! Edge 2-3 (right)
@@ -1851,8 +1917,8 @@ contains
             xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
             yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
         else
-            xb = (x2 + x3) * 0.5_wp
-            yb = (y2 + y3) * 0.5_wp
+            xb = (x2 + x3) * HALF_WIDTH
+            yb = (y2 + y3) * HALF_WIDTH
         end if
         
         ! Edge 3-4 (top)
@@ -1860,8 +1926,8 @@ contains
             xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
             yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
         else
-            xc = (x3 + x4) * 0.5_wp
-            yc = (y3 + y4) * 0.5_wp
+            xc = (x3 + x4) * HALF_WIDTH
+            yc = (y3 + y4) * HALF_WIDTH
         end if
         
         ! Edge 4-1 (left)
@@ -1869,8 +1935,8 @@ contains
             xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
             yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
         else
-            xd = (x4 + x1) * 0.5_wp
-            yd = (y4 + y1) * 0.5_wp
+            xd = (x4 + x1) * HALF_WIDTH
+            yd = (y4 + y1) * HALF_WIDTH
         end if
     end subroutine interpolate_edge_crossings
 
