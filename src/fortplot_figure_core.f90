@@ -722,34 +722,13 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         
-        integer :: plot_idx, color_idx, n_bins
-        real(wp) :: data_min, data_max, bin_width
-        integer :: i
+        integer :: plot_idx
         
         plot_idx = self%plot_count
         self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
         
-        ! Determine number of bins and bin edges
-        if (present(bins)) then
-            n_bins = bins
-        else
-            n_bins = DEFAULT_HISTOGRAM_BINS
-        end if
-        
-        call create_bin_edges_from_count(data, n_bins, self%plots(plot_idx)%hist_bin_edges)
-        
-        ! Calculate histogram counts
-        call calculate_histogram_counts(data, self%plots(plot_idx)%hist_bin_edges, &
-                                      self%plots(plot_idx)%hist_counts)
-        
-        ! Apply density normalization if requested
-        if (present(density)) then
-            self%plots(plot_idx)%hist_density = density
-            if (density) then
-                call normalize_histogram_density(self%plots(plot_idx)%hist_counts, &
-                                               self%plots(plot_idx)%hist_bin_edges)
-            end if
-        end if
+        ! Setup bins and calculate histogram data
+        call setup_histogram_bins(self, plot_idx, data, bins, density)
         
         ! Create x,y data for bar rendering
         call create_histogram_xy_data(self%plots(plot_idx)%hist_bin_edges, &
@@ -757,13 +736,56 @@ contains
                                     self%plots(plot_idx)%x, &
                                     self%plots(plot_idx)%y)
         
-        ! Set properties
+        ! Configure plot properties
+        call setup_histogram_plot_properties(self, plot_idx, label, color)
+    end subroutine add_histogram_plot_data
+
+    subroutine setup_histogram_bins(self, plot_idx, data, bins, density)
+        !! Setup histogram binning and calculate counts
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        
+        integer :: n_bins
+        
+        if (present(bins)) then
+            n_bins = bins
+        else
+            n_bins = DEFAULT_HISTOGRAM_BINS
+        end if
+        
+        call create_bin_edges_from_count(data, n_bins, self%plots(plot_idx)%hist_bin_edges)
+        call calculate_histogram_counts(data, self%plots(plot_idx)%hist_bin_edges, &
+                                      self%plots(plot_idx)%hist_counts)
+        
+        if (present(density)) then
+            self%plots(plot_idx)%hist_density = density
+            if (density) then
+                call normalize_histogram_density(self%plots(plot_idx)%hist_counts, &
+                                               self%plots(plot_idx)%hist_bin_edges)
+            end if
+        end if
+    end subroutine setup_histogram_bins
+
+    subroutine setup_histogram_plot_properties(self, plot_idx, label, color)
+        !! Configure histogram plot label, color, and style
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: color_idx
+        
+        ! Set label
         if (present(label)) then
             self%plots(plot_idx)%label = label
         else
             self%plots(plot_idx)%label = ''
         end if
         
+        ! Set color
         if (present(color)) then
             self%plots(plot_idx)%color = color
         else
@@ -771,10 +793,10 @@ contains
             self%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
         
-        ! Set default histogram style
+        ! Set default style
         self%plots(plot_idx)%linestyle = 'solid'
         self%plots(plot_idx)%marker = 'None'
-    end subroutine add_histogram_plot_data
+    end subroutine setup_histogram_plot_properties
 
     subroutine update_data_ranges_pcolormesh(self)
         !! Update figure data ranges after adding pcolormesh plot
@@ -1325,8 +1347,6 @@ contains
         integer, intent(in) :: plot_idx
         
         integer :: i, n_bins
-        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
-        real(wp) :: x_screen(4), y_screen(4)
         
         if (plot_idx > self%plot_count) return
         if (.not. allocated(self%plots(plot_idx)%hist_bin_edges)) return
@@ -1337,33 +1357,56 @@ contains
         ! Render each histogram bar as a filled rectangle
         do i = 1, n_bins
             if (self%plots(plot_idx)%hist_counts(i) > 0.0_wp) then
-                ! Get bin rectangle coordinates
-                x1 = self%plots(plot_idx)%hist_bin_edges(i)     ! left
-                x2 = self%plots(plot_idx)%hist_bin_edges(i+1)   ! right
-                y1 = 0.0_wp                                     ! bottom
-                y2 = self%plots(plot_idx)%hist_counts(i)        ! top
-                
-                ! Transform coordinates
-                x_screen(1) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
-                y_screen(1) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
-                x_screen(2) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
-                y_screen(2) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
-                x_screen(3) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
-                y_screen(3) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
-                x_screen(4) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
-                y_screen(4) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
-                
-                ! Draw filled rectangle
-                call draw_filled_quad(self%backend, x_screen, y_screen)
-                
-                ! Draw outline
-                call self%backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
-                call self%backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
-                call self%backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
-                call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+                call render_histogram_bar(self, plot_idx, i)
             end if
         end do
     end subroutine render_histogram_plot
+
+    subroutine render_histogram_bar(self, plot_idx, bin_idx)
+        !! Render individual histogram bar with coordinates and drawing
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx, bin_idx
+        
+        real(wp) :: x_screen(4), y_screen(4)
+        
+        call transform_histogram_bar_coordinates(self, plot_idx, bin_idx, x_screen, y_screen)
+        call draw_histogram_bar_shape(self, x_screen, y_screen)
+    end subroutine render_histogram_bar
+
+    subroutine transform_histogram_bar_coordinates(self, plot_idx, bin_idx, x_screen, y_screen)
+        !! Transform histogram bar coordinates from data to screen space
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx, bin_idx
+        real(wp), intent(out) :: x_screen(4), y_screen(4)
+        
+        real(wp) :: x1, y1, x2, y2
+        
+        x1 = self%plots(plot_idx)%hist_bin_edges(bin_idx)
+        x2 = self%plots(plot_idx)%hist_bin_edges(bin_idx+1)
+        y1 = 0.0_wp
+        y2 = self%plots(plot_idx)%hist_counts(bin_idx)
+        
+        x_screen(1) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
+        y_screen(1) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
+        x_screen(2) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
+        y_screen(2) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
+        x_screen(3) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
+        y_screen(3) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
+        x_screen(4) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
+        y_screen(4) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
+    end subroutine transform_histogram_bar_coordinates
+
+    subroutine draw_histogram_bar_shape(self, x_screen, y_screen)
+        !! Draw filled rectangle and outline for histogram bar
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
+        
+        call draw_filled_quad(self%backend, x_screen, y_screen)
+        call self%backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+        call self%backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+        call self%backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+        call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+    end subroutine draw_histogram_bar_shape
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
@@ -2071,30 +2114,40 @@ contains
         
         point_idx = 1
         do i = 1, n_bins
-            ! Bottom-left
-            x(point_idx) = bin_edges(i)
-            y(point_idx) = 0.0_wp
-            point_idx = point_idx + 1
-            
-            ! Top-left
-            x(point_idx) = bin_edges(i)
-            y(point_idx) = counts(i)
-            point_idx = point_idx + 1
-            
-            ! Top-right
-            x(point_idx) = bin_edges(i+1)
-            y(point_idx) = counts(i)
-            point_idx = point_idx + 1
-            
-            ! Bottom-right
-            x(point_idx) = bin_edges(i+1)
-            y(point_idx) = 0.0_wp
-            point_idx = point_idx + 1
+            call add_bar_outline_points(bin_edges(i), bin_edges(i+1), counts(i), &
+                                      x, y, point_idx)
         end do
         
         ! Close the shape
         x(point_idx) = bin_edges(1)
         y(point_idx) = 0.0_wp
     end subroutine create_histogram_xy_data
+
+    subroutine add_bar_outline_points(x_left, x_right, count, x, y, point_idx)
+        !! Add the 4 corner points for a single bin outline
+        real(wp), intent(in) :: x_left, x_right, count
+        real(wp), intent(inout) :: x(:), y(:)
+        integer, intent(inout) :: point_idx
+        
+        ! Bottom-left
+        x(point_idx) = x_left
+        y(point_idx) = 0.0_wp
+        point_idx = point_idx + 1
+        
+        ! Top-left
+        x(point_idx) = x_left
+        y(point_idx) = count
+        point_idx = point_idx + 1
+        
+        ! Top-right
+        x(point_idx) = x_right
+        y(point_idx) = count
+        point_idx = point_idx + 1
+        
+        ! Bottom-right
+        x(point_idx) = x_right
+        y(point_idx) = 0.0_wp
+        point_idx = point_idx + 1
+    end subroutine add_bar_outline_points
 
 end module fortplot_figure_core
