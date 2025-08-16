@@ -26,6 +26,7 @@ module fortplot
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, pcolormesh, streamplot, show, show_viewer
+    public :: hist, histogram
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
@@ -163,6 +164,55 @@ contains
 
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
+
+    subroutine hist(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        !!
+        !! Creates a histogram from input data, compatible with matplotlib.pyplot.hist
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color as RGB values [0-1]
+        !!
+        !! Example:
+        !!   ! Simple histogram
+        !!   call hist(data_values, bins=20, label='Distribution')
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
+    end subroutine hist
+
+    subroutine histogram(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        !!
+        !! Alias for hist() subroutine - creates a histogram from input data
+        !! Compatible with matplotlib.pyplot.histogram
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color as RGB values [0-1]
+        !!
+        !! Example:
+        !!   ! Simple histogram
+        !!   call histogram(data_values, bins=20, label='Distribution')
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
+    end subroutine histogram
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Display a line plot in the terminal using ASCII graphics
