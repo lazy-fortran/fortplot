@@ -283,7 +283,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         
-        if (.not. validate_histogram_input(self, data)) return
+        if (.not. validate_histogram_input(self, data, bins)) return
         
         self%plot_count = self%plot_count + 1
         
@@ -754,9 +754,6 @@ contains
         integer :: n_bins
         
         if (present(bins)) then
-            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
-                return
-            end if
             n_bins = bins
         else
             n_bins = DEFAULT_HISTOGRAM_BINS
@@ -2156,10 +2153,11 @@ contains
         point_idx = point_idx + 1
     end subroutine add_bar_outline_points
 
-    function validate_histogram_input(self, data) result(is_valid)
+    function validate_histogram_input(self, data, bins) result(is_valid)
         !! Validate histogram input parameters
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
         logical :: is_valid
         
         is_valid = .true.
@@ -2172,6 +2170,13 @@ contains
         if (size(data) == 0) then
             is_valid = .false.
             return
+        end if
+        
+        if (present(bins)) then
+            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
+                is_valid = .false.
+                return
+            end if
         end if
     end function validate_histogram_input
 
