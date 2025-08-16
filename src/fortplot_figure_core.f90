@@ -266,6 +266,12 @@ contains
         logical, intent(in), optional :: horizontal
         real(wp), intent(in), optional :: color(3)
         
+        ! Basic input validation (following NO DEFENSIVE PROGRAMMING principle)
+        if (size(data) < 1) then
+            print *, "Warning: Box plot requires at least 1 data point"
+            return
+        end if
+        
         call add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
         call update_data_ranges_boxplot(self)
     end subroutine boxplot
@@ -1607,7 +1613,7 @@ contains
 
     subroutine render_boxplot_plot(self, plot_idx)
         !! Render box plot with quartiles, whiskers, and outliers
-        use fortplot_scales, only: transform_x_coordinate, transform_y_coordinate
+        use fortplot_scales, only: apply_scale_transform
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         
@@ -1619,16 +1625,17 @@ contains
         
         if (.not. allocated(self%plots(plot_idx)%box_data)) return
         
+        ! Set line width for box plot elements
+        call self%backend%set_line_width(2.0_wp)
+        
         if (self%plots(plot_idx)%horizontal) then
-            ! Horizontal box plot
-            box_left = transform_x_coordinate(self%plots(plot_idx)%q1, &
-                                            self%x_min, self%x_max, self%width)
-            box_right = transform_x_coordinate(self%plots(plot_idx)%q3, &
-                                             self%x_min, self%x_max, self%width)
-            box_bottom = transform_y_coordinate(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
-                                              self%y_min, self%y_max, self%height, .true.)
-            box_top = transform_y_coordinate(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
-                                           self%y_min, self%y_max, self%height, .true.)
+            ! Horizontal box plot - data values are in X direction
+            box_left = apply_scale_transform(self%plots(plot_idx)%q1, self%xscale, self%symlog_threshold)
+            box_right = apply_scale_transform(self%plots(plot_idx)%q3, self%xscale, self%symlog_threshold)
+            box_bottom = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
+                                             self%yscale, self%symlog_threshold)
+            box_top = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
+                                          self%yscale, self%symlog_threshold)
             
             ! Draw box using lines
             call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
@@ -1637,20 +1644,16 @@ contains
             call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
             
             ! Draw median line
-            median_x1 = transform_x_coordinate(self%plots(plot_idx)%q2, &
-                                             self%x_min, self%x_max, self%width)
+            median_x1 = apply_scale_transform(self%plots(plot_idx)%q2, self%xscale, self%symlog_threshold)
             median_x2 = median_x1
             median_y1 = box_bottom
             median_y2 = box_top
             call self%backend%line(median_x1, median_y1, median_x2, median_y2)
             
             ! Draw whiskers
-            whisker_x1 = transform_x_coordinate(self%plots(plot_idx)%whisker_low, &
-                                              self%x_min, self%x_max, self%width)
-            whisker_x2 = transform_x_coordinate(self%plots(plot_idx)%whisker_high, &
-                                              self%x_min, self%x_max, self%width)
-            whisker_y1 = transform_y_coordinate(self%plots(plot_idx)%position, &
-                                              self%y_min, self%y_max, self%height, .true.)
+            whisker_x1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%xscale, self%symlog_threshold)
+            whisker_x2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%xscale, self%symlog_threshold)
+            whisker_y1 = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
             whisker_y2 = whisker_y1
             
             ! Left whisker
@@ -1661,24 +1664,20 @@ contains
             ! Draw outliers
             if (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers)) then
                 do i = 1, size(self%plots(plot_idx)%outliers)
-                    outlier_x = transform_x_coordinate(self%plots(plot_idx)%outliers(i), &
-                                                     self%x_min, self%x_max, self%width)
-                    outlier_y = transform_y_coordinate(self%plots(plot_idx)%position, &
-                                                     self%y_min, self%y_max, self%height, .true.)
+                    outlier_x = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%xscale, self%symlog_threshold)
+                    outlier_y = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
                     call self%backend%draw_marker(outlier_x, outlier_y, 'o')
                 end do
             end if
             
         else
-            ! Vertical box plot
-            box_left = transform_x_coordinate(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
-                                            self%x_min, self%x_max, self%width)
-            box_right = transform_x_coordinate(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
-                                             self%x_min, self%x_max, self%width)
-            box_bottom = transform_y_coordinate(self%plots(plot_idx)%q1, &
-                                              self%y_min, self%y_max, self%height, .true.)
-            box_top = transform_y_coordinate(self%plots(plot_idx)%q3, &
-                                           self%y_min, self%y_max, self%height, .true.)
+            ! Vertical box plot - data values are in Y direction
+            box_left = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp, &
+                                           self%xscale, self%symlog_threshold)
+            box_right = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp, &
+                                            self%xscale, self%symlog_threshold)
+            box_bottom = apply_scale_transform(self%plots(plot_idx)%q1, self%yscale, self%symlog_threshold)
+            box_top = apply_scale_transform(self%plots(plot_idx)%q3, self%yscale, self%symlog_threshold)
             
             ! Draw box using lines
             call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
@@ -1687,20 +1686,16 @@ contains
             call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
             
             ! Draw median line
-            median_y1 = transform_y_coordinate(self%plots(plot_idx)%q2, &
-                                             self%y_min, self%y_max, self%height, .true.)
+            median_y1 = apply_scale_transform(self%plots(plot_idx)%q2, self%yscale, self%symlog_threshold)
             median_y2 = median_y1
             median_x1 = box_left
             median_x2 = box_right
             call self%backend%line(median_x1, median_y1, median_x2, median_y2)
             
             ! Draw whiskers
-            whisker_y1 = transform_y_coordinate(self%plots(plot_idx)%whisker_low, &
-                                              self%y_min, self%y_max, self%height, .true.)
-            whisker_y2 = transform_y_coordinate(self%plots(plot_idx)%whisker_high, &
-                                              self%y_min, self%y_max, self%height, .true.)
-            whisker_x1 = transform_x_coordinate(self%plots(plot_idx)%position, &
-                                              self%x_min, self%x_max, self%width)
+            whisker_y1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%yscale, self%symlog_threshold)
+            whisker_y2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%yscale, self%symlog_threshold)
+            whisker_x1 = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
             whisker_x2 = whisker_x1
             
             ! Bottom whisker
@@ -1711,10 +1706,8 @@ contains
             ! Draw outliers
             if (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers)) then
                 do i = 1, size(self%plots(plot_idx)%outliers)
-                    outlier_x = transform_x_coordinate(self%plots(plot_idx)%position, &
-                                                     self%x_min, self%x_max, self%width)
-                    outlier_y = transform_y_coordinate(self%plots(plot_idx)%outliers(i), &
-                                                     self%y_min, self%y_max, self%height, .true.)
+                    outlier_x = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+                    outlier_y = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%yscale, self%symlog_threshold)
                     call self%backend%draw_marker(outlier_x, outlier_y, 'o')
                 end do
             end if
