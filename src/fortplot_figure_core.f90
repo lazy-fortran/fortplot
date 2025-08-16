@@ -32,6 +32,11 @@ module fortplot_figure_core
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
     integer, parameter :: PLOT_TYPE_HISTOGRAM = 4
 
+    ! Histogram constants
+    integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
+    real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+
     type :: plot_data_t
         !! Data container for individual plots
         !! Separated from figure to follow Single Responsibility Principle
@@ -728,7 +733,7 @@ contains
         if (present(bins)) then
             n_bins = bins
         else
-            n_bins = 10
+            n_bins = DEFAULT_HISTOGRAM_BINS
         end if
         
         call create_bin_edges_from_count(data, n_bins, self%plots(plot_idx)%hist_bin_edges)
@@ -1935,14 +1940,14 @@ contains
         ! Handle case where all data points are identical
         if (data_min == data_max) then
             ! Create bins centered around the single value
-            data_min = data_min - 0.5_wp
-            data_max = data_max + 0.5_wp
+            data_min = data_min - IDENTICAL_VALUE_PADDING
+            data_max = data_max + IDENTICAL_VALUE_PADDING
         end if
         
         ! Add small padding to avoid edge cases
         bin_width = (data_max - data_min) / real(n_bins, wp)
-        data_min = data_min - bin_width * 0.001_wp
-        data_max = data_max + bin_width * 0.001_wp
+        data_min = data_min - bin_width * BIN_EDGE_PADDING_FACTOR
+        data_max = data_max + bin_width * BIN_EDGE_PADDING_FACTOR
         bin_width = (data_max - data_min) / real(n_bins, wp)
         
         allocate(bin_edges(n_bins + 1))
@@ -1976,22 +1981,44 @@ contains
         real(wp), intent(in) :: value
         real(wp), intent(in) :: bin_edges(:)
         
-        integer :: left, right, mid, n_bins
+        integer :: n_bins
         
         n_bins = size(bin_edges) - 1
         bin_idx = 0
         
-        ! Handle edge cases
-        if (value < bin_edges(1)) return
-        if (value > bin_edges(n_bins + 1)) return
+        ! Check if value is outside bin range
+        if (.not. is_value_in_range(value, bin_edges, n_bins)) return
+        
+        ! Handle exact match with upper bound
         if (value == bin_edges(n_bins + 1)) then
             bin_idx = n_bins
             return
         end if
         
-        ! Binary search
+        ! Perform binary search
+        bin_idx = binary_search_bins(value, bin_edges, n_bins)
+    end function find_bin_index
+
+    logical function is_value_in_range(value, bin_edges, n_bins) result(in_range)
+        !! Check if value falls within bin range
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: bin_edges(:)
+        integer, intent(in) :: n_bins
+        
+        in_range = value >= bin_edges(1) .and. value <= bin_edges(n_bins + 1)
+    end function is_value_in_range
+
+    integer function binary_search_bins(value, bin_edges, n_bins) result(bin_idx)
+        !! Binary search to find bin containing value
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: bin_edges(:)
+        integer, intent(in) :: n_bins
+        
+        integer :: left, right, mid
+        
         left = 1
         right = n_bins
+        bin_idx = 0
         
         do while (left <= right)
             mid = (left + right) / 2
@@ -2004,7 +2031,7 @@ contains
                 left = mid + 1
             end if
         end do
-    end function find_bin_index
+    end function binary_search_bins
 
     subroutine normalize_histogram_density(counts, bin_edges)
         !! Normalize histogram to probability density
