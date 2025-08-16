@@ -182,13 +182,13 @@ contains
         !! Example:
         !!   ! Simple box plot
         !!   call boxplot(measurement_data, label='Measurements')
-        real(8), dimension(:), intent(in) :: data
-        real(8), intent(in), optional :: position
-        real(8), intent(in), optional :: width
+        real(wp), dimension(:), intent(in) :: data
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        real(8), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: color(3)
 
         call fig%boxplot(data, position=position, width=width, label=label, &
                         show_outliers=show_outliers, horizontal=horizontal, color=color)
