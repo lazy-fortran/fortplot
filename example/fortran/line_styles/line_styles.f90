@@ -38,9 +38,9 @@ program line_styles
     call xlabel('X values')
     call ylabel('Y values')
     call legend()
-    call savefig('build/example/line_styles/line_styles.png')
-    call savefig('build/example/line_styles/line_styles.pdf')
-    call savefig('build/example/line_styles/line_styles.txt')
+    call savefig('output/example/fortran/line_styles/line_styles.png')
+    call savefig('output/example/fortran/line_styles/line_styles.pdf')
+    call savefig('output/example/fortran/line_styles/line_styles.txt')
 
     print *, "Line style examples completed!"
     print *, "Files created: line_style_reference.png, line_style_reference.pdf"

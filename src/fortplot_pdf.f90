@@ -821,7 +821,7 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                      title, xlabel, ylabel, &
+                                      title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
                                       grid_enabled, grid_axis, grid_which, &
                                       grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
@@ -830,6 +830,8 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(in), optional :: z_min_orig, z_max_orig
+        logical, intent(in), optional :: is_3d_plot
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         logical, intent(in), optional :: grid_enabled
         character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
@@ -846,6 +848,31 @@ contains
         
         ! Set color to black for axes
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! For 3D plots, draw 3D axes instead of 2D frame
+        if (present(is_3d_plot) .and. is_3d_plot .and. &
+            present(z_min_orig) .and. present(z_max_orig)) then
+            ! Use provided data ranges
+            if (present(x_min_orig) .and. present(x_max_orig)) then
+                data_x_min = x_min_orig
+                data_x_max = x_max_orig
+            else
+                data_x_min = ctx%x_min
+                data_x_max = ctx%x_max
+            end if
+            
+            if (present(y_min_orig) .and. present(y_max_orig)) then
+                data_y_min = y_min_orig
+                data_y_max = y_max_orig
+            else
+                data_y_min = ctx%y_min
+                data_y_max = ctx%y_max
+            end if
+            
+            call draw_pdf_3d_axes_frame(ctx, data_x_min, data_x_max, &
+                                       data_y_min, data_y_max, z_min_orig, z_max_orig)
+            return
+        end if
         
         ! Use provided data ranges or backend ranges
         if (present(x_min_orig) .and. present(x_max_orig)) then
@@ -930,12 +957,70 @@ contains
         call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
         
         ! Draw grid lines if enabled
-        if (present(grid_enabled) .and. grid_enabled) then
-            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                   grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        ! Draw grid lines if enabled
+        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
+        if (present(grid_enabled)) then
+            if (grid_enabled) then
+                call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                       grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+            end if
         end if
     end subroutine draw_pdf_axes_and_labels
 
+    subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame for PDF backend
+        use fortplot_3d_axes, only: create_3d_axis_lines, project_3d_axis_lines
+        use fortplot_projection, only: get_default_view_angles
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        real(wp) :: azim, elev, dist
+        real(wp) :: axis_lines_3d(3,6), axis_lines_2d(2,6)
+        real(wp) :: x1, y1, x2, y2
+        integer :: i
+        
+        call get_default_view_angles(azim, elev, dist)
+        call create_3d_axis_lines(x_min, x_max, y_min, y_max, z_min, z_max, axis_lines_3d)
+        call project_3d_axis_lines(axis_lines_3d, azim, elev, dist, axis_lines_2d)
+        
+        ! Scale projected coordinates to plot area
+        call scale_2d_to_pdf_plot_area(axis_lines_2d, ctx, x_min, x_max, y_min, y_max)
+        
+        ! Draw three axis lines
+        do i = 1, 3
+            x1 = axis_lines_2d(1, 2*i-1)
+            y1 = axis_lines_2d(2, 2*i-1)
+            x2 = axis_lines_2d(1, 2*i)
+            y2 = axis_lines_2d(2, 2*i)
+            call ctx%line(x1, y1, x2, y2)
+        end do
+    end subroutine draw_pdf_3d_axes_frame
+
+    subroutine scale_2d_to_pdf_plot_area(points_2d, ctx, x_min, x_max, y_min, y_max)
+        !! Scale projected 2D coordinates to PDF plot area
+        real(wp), intent(inout) :: points_2d(:,:)
+        type(pdf_context), intent(in) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: scale_x, scale_y
+        integer :: i
+        
+        ! Find bounds of projected coordinates
+        proj_x_min = minval(points_2d(1,:))
+        proj_x_max = maxval(points_2d(1,:))
+        proj_y_min = minval(points_2d(2,:))
+        proj_y_max = maxval(points_2d(2,:))
+        
+        ! Scale to plot area using width/height
+        scale_x = real(ctx%plot_area%width, wp) / (proj_x_max - proj_x_min)
+        scale_y = real(ctx%plot_area%height, wp) / (proj_y_max - proj_y_min)
+        
+        do i = 1, size(points_2d, 2)
+            points_2d(1,i) = real(ctx%plot_area%left, wp) + (points_2d(1,i) - proj_x_min) * scale_x
+            points_2d(2,i) = real(ctx%plot_area%bottom, wp) + (points_2d(2,i) - proj_y_min) * scale_y
+        end do
+    end subroutine scale_2d_to_pdf_plot_area
     subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                  grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
         !! Draw grid lines at tick positions for PDF backend
@@ -1049,7 +1134,7 @@ contains
     end subroutine draw_pdf_tick_marks
     
     subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels for PDF backend like matplotlib
+        !! Draw tick labels for PDF backend like matplotlib with overlap detection
         type(pdf_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
@@ -1077,25 +1162,8 @@ contains
             call ctx%stream_writer%add_to_stream("ET")
         end do
         
-        ! Draw Y-axis tick labels with right alignment and proper spacing
-        do i = 1, num_y
-            ! Convert Y position to PDF coordinates for positioning calculation
-            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                     (y_positions(i) - real(ctx%plot_area%bottom, wp))
-            
-            ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_y_tick_label_position_pdf(tick_y, real(ctx%plot_area%left, wp), &
-                                                   trim(y_labels(i)), label_x, label_y)
-            
-            call ctx%stream_writer%add_to_stream("BT")
-            write(text_cmd, '("/F1 12 Tf")')
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '("(", A, ") Tj")') trim(y_labels(i))
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            call ctx%stream_writer%add_to_stream("ET")
-        end do
+        ! Draw Y-axis tick labels with overlap detection and spacing enforcement
+        call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, left)
     end subroutine draw_pdf_tick_labels
     
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
@@ -1134,6 +1202,147 @@ contains
         end if
     end subroutine draw_pdf_title_and_labels
     
+    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left)
+        !! Draw Y-axis tick labels with collision detection and spacing enforcement
+        !! Implements fix for Issue #39 - PDF Y-axis label overlap
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_y
+        real(wp), intent(in) :: plot_left
+        
+        real(wp) :: filtered_positions(num_y), filtered_label_y(num_y)
+        character(len=20) :: filtered_labels(num_y)
+        logical :: label_visible(num_y)
+        integer :: filtered_count, i
+        real(wp) :: label_x, label_y, tick_y
+        character(len=200) :: text_cmd
+        
+        ! Apply overlap detection and filtering
+        call filter_overlapping_y_labels(y_positions, y_labels, num_y, &
+                                        filtered_positions, filtered_labels, filtered_count, &
+                                        label_visible)
+        
+        ! Draw only the filtered (non-overlapping) labels
+        do i = 1, filtered_count
+            ! Convert Y position to PDF coordinates for positioning calculation
+            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+                     (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+            
+            ! Use PDF-specific tick label positioning (native PDF coordinates)
+            call calculate_y_tick_label_position_pdf(tick_y, plot_left, &
+                                                   trim(filtered_labels(i)), label_x, label_y)
+            
+            call ctx%stream_writer%add_to_stream("BT")
+            write(text_cmd, '("/F1 12 Tf")')
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            write(text_cmd, '("(", A, ") Tj")') trim(filtered_labels(i))
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            call ctx%stream_writer%add_to_stream("ET")
+        end do
+    end subroutine draw_pdf_y_labels_with_overlap_detection
+    
+    subroutine filter_overlapping_y_labels(y_positions, y_labels, num_labels, &
+                                          filtered_positions, filtered_labels, filtered_count, &
+                                          label_visible)
+        !! Filter out overlapping Y-axis labels to ensure minimum spacing
+        !! Core implementation for Issue #39 fix
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_labels
+        real(wp), intent(out) :: filtered_positions(:)
+        character(len=20), intent(out) :: filtered_labels(:)
+        integer, intent(out) :: filtered_count
+        logical, intent(out) :: label_visible(:)
+        
+        ! Minimum spacing constant - font height + spacing for clarity
+        real(wp), parameter :: MIN_SPACING_PIXELS = 18.0_wp  ! 16px font height + 2px gap
+        integer :: i, j
+        real(wp) :: spacing_to_prev, spacing_to_next
+        logical :: current_overlaps
+        
+        ! Initialize all labels as potentially visible
+        label_visible = .false.
+        filtered_count = 0
+        
+        ! Check each label for overlaps
+        do i = 1, num_labels
+            current_overlaps = .false.
+            
+            ! Check spacing to previous visible label
+            if (i > 1) then
+                do j = i - 1, 1, -1
+                    if (label_visible(j)) then
+                        spacing_to_prev = abs(y_positions(i) - y_positions(j))
+                        if (spacing_to_prev < MIN_SPACING_PIXELS) then
+                            current_overlaps = .true.
+                        end if
+                        exit  ! Found the nearest previous visible label
+                    end if
+                end do
+            end if
+            
+            ! Check spacing to next labels (look ahead)
+            if (.not. current_overlaps .and. i < num_labels) then
+                do j = i + 1, num_labels
+                    spacing_to_next = abs(y_positions(j) - y_positions(i))
+                    if (spacing_to_next < MIN_SPACING_PIXELS) then
+                        ! This label would overlap with next one - skip the next one instead
+                        ! (prioritize labels closer to data range center)
+                        current_overlaps = .false.  ! Keep current label
+                        exit
+                    end if
+                end do
+            end if
+            
+            ! Mark label as visible if no overlaps detected
+            if (.not. current_overlaps) then
+                label_visible(i) = .true.
+                filtered_count = filtered_count + 1
+                filtered_positions(filtered_count) = y_positions(i)
+                filtered_labels(filtered_count) = y_labels(i)
+            end if
+        end do
+        
+        ! Ensure we always show at least the first and last labels if num_labels > 1
+        if (num_labels > 1 .and. filtered_count < 2) then
+            call ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
+                                              filtered_positions, filtered_labels, &
+                                              filtered_count, label_visible)
+        end if
+    end subroutine filter_overlapping_y_labels
+    
+    subroutine ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
+                                            filtered_positions, filtered_labels, &
+                                            filtered_count, label_visible)
+        !! Ensure endpoint labels are visible for better axis comprehension
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_labels
+        real(wp), intent(inout) :: filtered_positions(:)
+        character(len=20), intent(inout) :: filtered_labels(:)
+        integer, intent(inout) :: filtered_count
+        logical, intent(inout) :: label_visible(:)
+        
+        ! Force first label visible if not already
+        if (.not. label_visible(1)) then
+            filtered_count = filtered_count + 1
+            filtered_positions(filtered_count) = y_positions(1)
+            filtered_labels(filtered_count) = y_labels(1)
+            label_visible(1) = .true.
+        end if
+        
+        ! Force last label visible if not already and different from first
+        if (num_labels > 1 .and. .not. label_visible(num_labels)) then
+            filtered_count = filtered_count + 1
+            filtered_positions(filtered_count) = y_positions(num_labels)
+            filtered_labels(filtered_count) = y_labels(num_labels)
+            label_visible(num_labels) = .true.
+        end if
+    end subroutine ensure_endpoint_labels_visible
+
     subroutine draw_vertical_text_pdf(ctx, text)
         !! Draw text rotated 90 degrees using PDF text matrix
         type(pdf_context), intent(inout) :: ctx

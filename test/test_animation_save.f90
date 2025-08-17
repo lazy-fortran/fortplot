@@ -1,5 +1,6 @@
 program test_animation_save
     use fortplot
+    use fortplot_pipe, only: check_ffmpeg_available
     use iso_fortran_env, only: real64
     implicit none
 
@@ -7,11 +8,18 @@ program test_animation_save
     type(figure_t) :: test_fig
     real(real64), dimension(10) :: test_x, test_y
     
-    call test_save_animation_mp4()
-    call test_save_animation_with_fps()
+    ! Check if ffmpeg is available before running video tests
+    if (check_ffmpeg_available()) then
+        call test_save_animation_mp4()
+        call test_save_animation_with_fps()
+        print *, "All animation save tests passed!"
+    else
+        print *, "SKIPPED: Animation save tests (ffmpeg not available)"
+        print *, "This is expected behavior in CI environments without ffmpeg"
+    end if
+    
+    ! Always test invalid format handling (doesn't require ffmpeg)
     call test_save_animation_invalid_format()
-
-    print *, "All animation save tests passed!"
 
 contains
 

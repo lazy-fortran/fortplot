@@ -32,10 +32,19 @@ call fig%set_title("Function Plot")
 call fig%set_xlabel("x")
 call fig%set_ylabel("y")
 call fig%add_plot(x, yf)
+call fig%add_3d_plot(x, y, z, label="3D data")  ! 3D plotting
 call fig%savefig("plot_oo.png")
 ```
 
 ### Advanced Examples
+
+#### 3D plotting
+```fortran
+call figure(800, 600)
+call add_3d_plot(x, y, z, label="3D curve")
+call title("3D Line Plot")
+call savefig("3d_plot.png")
+```
 
 #### Multiple plots with legend
 ```fortran
@@ -83,14 +92,24 @@ call savefig("log_plot.pdf")
 #### Animation example
 ```fortran
 type(animation_t) :: anim
+integer :: status
 anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
-call anim%save("animation.mp4")
+call anim%save("animation.mp4", fps=24, status=status)
+if (status /= 0) then
+    print *, "ERROR: Animation save failed. Check ffmpeg installation."
+end if
+```
+
+**MPEG Validation**: Use comprehensive validation framework to verify animation quality:
+```fortran
+logical :: is_valid
+is_valid = validate_mpeg_comprehensive("animation.mp4")
 ```
 
 For more examples, see the [example directory](example) and run
 
 ```bash
-fpm run --example
+make example
 ```
 
 to build and run them.
@@ -105,6 +124,9 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
+  - **5-Layer Validation**: Comprehensive framework prevents false positives (Issue #32)
+  - **External validation**: FFprobe integration for format verification
+  - **Documentation**: See [MPEG Validation Guide](doc/mpeg_validation.md) for details
 
 ### For fpm (Fortran Package Manager) projects
 
@@ -141,6 +163,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 
 ### Plot types
 - [x] Line plots (`plot`) with customizable line styles and markers
+- [x] 3D line plots (`add_3d_plot`) with automatic projection
+- [x] 3D surface plots (`add_surface`) for grid data visualization
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
@@ -166,6 +190,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
+  - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
+  - **False Positive Prevention**: Solves Issue #32 with multi-criteria validation
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations

@@ -37,9 +37,9 @@ program streamplot_demo
     call fig%set_title('Streamline Plot Demo - Circular Flow')
     
     ! Save figure
-    call fig%savefig('build/example/streamplot_demo/streamplot_demo.png')
-    call fig%savefig('build/example/streamplot_demo/streamplot_demo.pdf')
-    call fig%savefig('build/example/streamplot_demo/streamplot_demo.txt')
+    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.png')
+    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.pdf')
+    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.txt')
     
     print *, 'Streamplot demo completed!'
     

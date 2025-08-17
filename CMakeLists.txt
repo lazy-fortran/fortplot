@@ -1,57 +1,103 @@
 cmake_minimum_required(VERSION 3.20)
 project(fortplot VERSION 2025.06.25 LANGUAGES Fortran C)
 
-# Set default build type
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
-
-# Compiler flags
+# Set Fortran compiler flags
 set(CMAKE_Fortran_FLAGS "-Wall -Wextra -fimplicit-none")
 set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fcheck=all")
 set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
 
-# Automatically collect all source files from src directory
-file(GLOB_RECURSE FORTPLOT_SOURCES "src/*.f90" "src/*.c")
+# Default to Release build if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 
-# Create static library
+# Collect all source files
+file(GLOB_RECURSE FORTPLOT_SOURCES 
+    "src/*.f90"
+    "src/*.c"
+)
+
+# Create the library target
 add_library(fortplot STATIC ${FORTPLOT_SOURCES})
 
-# Set module directory and enable position-independent code for shared library usage
+# Set library properties
+target_include_directories(fortplot PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Set Fortran module directory
 set_target_properties(fortplot PROPERTIES
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include
-    POSITION_INDEPENDENT_CODE ON
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 
-# Make modules available to consumers
-target_include_directories(fortplot
-    PUBLIC 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+# Make modules available to dependent targets
+target_include_directories(fortplot PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+    $<INSTALL_INTERFACE:include>
 )
 
-# Create alias for FetchContent compatibility
+# Ensure module files are generated and accessible
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
+# Create namespaced alias target for FetchContent compatibility
 add_library(fortplot::fortplot ALIAS fortplot)
 
-# Export targets for FetchContent
-export(TARGETS fortplot
-    NAMESPACE fortplot::
-    FILE ${CMAKE_CURRENT_BINARY_DIR}/fortplotTargets.cmake
-)
+# Enable export of targets - ensure alias is available
+export(TARGETS fortplot 
+       NAMESPACE fortplot::
+       FILE "${CMAKE_CURRENT_BINARY_DIR}/fortplotTargets.cmake")
 
-# Check if Python interface should be built
-if (ENABLE_PYTHON)
-    include(cmake/PythonHelpers.cmake)
-    add_f90wrap_wrapper(
-        fortplot_wrapper
-        fortplot
-        src/fortplot.f90
+# For FetchContent users, ensure the alias target is visible
+set_target_properties(fortplot PROPERTIES EXPORT_NAME fortplot)
+
+# Configure package config file (only when not used as subproject)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/fortplotConfig.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/fortplotConfig.cmake"
+        INSTALL_DESTINATION lib/cmake/fortplot
     )
-    # After f90wrap generates files, fix the imports
-    add_custom_command(TARGET _fortplot_wrapper POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E echo "Fixing f90wrap imports..."
-        COMMAND sed -i.bak 's/import _fortplot_wrapper/from . import _fortplot_wrapper/g'
-            ${CMAKE_CURRENT_BINARY_DIR}/fortplot_wrapper.py
-        COMMENT "Fixing f90wrap relative imports"
+
+    # Generate the version file
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/fortplotConfigVersion.cmake"
+        VERSION ${PROJECT_VERSION}
+        COMPATIBILITY SameMajorVersion
     )
 endif()
+
+# Installation rules (only when not used as subproject)
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+    install(TARGETS fortplot
+        EXPORT fortplotTargets
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
+        INCLUDES DESTINATION include
+    )
+
+    install(DIRECTORY src/ DESTINATION include
+        FILES_MATCHING PATTERN "*.mod")
+
+    install(EXPORT fortplotTargets
+        FILE fortplotTargets.cmake
+        NAMESPACE fortplot::
+        DESTINATION lib/cmake/fortplot
+    )
+
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/fortplotConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/fortplotConfigVersion.cmake"
+        DESTINATION lib/cmake/fortplot
+    )
+endif()
+
+# Debug information
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+message(STATUS "Fortran compiler: ${CMAKE_Fortran_COMPILER}")
+message(STATUS "Fortran flags: ${CMAKE_Fortran_FLAGS}")
+list(LENGTH FORTPLOT_SOURCES list_length)
+message(STATUS "Found ${list_length} source files in fortplot library")

@@ -63,7 +63,7 @@ contains
 
         image%width = width
         image%height = height
-        allocate(image%image_data(height * (1 + width * 3)))
+        allocate(image%image_data(width * height * 3))
         call initialize_white_background(image%image_data, width, height)
     end function create_raster_image
 
@@ -97,12 +97,10 @@ contains
 
         k = 1
         do i = 1, h
-            image_data(k) = 0_1
-            k = k + 1
             do j = 1, w
-                image_data(k) = -1_1
-                image_data(k+1) = -1_1
-                image_data(k+2) = -1_1
+                image_data(k) = -1_1     ! R (white = 255 = -1 in signed byte)
+                image_data(k+1) = -1_1   ! G
+                image_data(k+2) = -1_1   ! B
                 k = k + 3
             end do
         end do
@@ -257,8 +255,8 @@ contains
                 if (img_x >= 1 .and. img_x <= main_width .and. &
                     img_y >= 1 .and. img_y <= main_height) then
                     
-                    src_idx = (y - 1) * (1 + overlay_width * 3) + 1 + (x - 1) * 3 + 1
-                    dst_idx = (img_y - 1) * (1 + main_width * 3) + 1 + (img_x - 1) * 3 + 1
+                    src_idx = ((y - 1) * overlay_width + (x - 1)) * 3 + 1
+                    dst_idx = ((img_y - 1) * main_width + (img_x - 1)) * 3 + 1
                     
                     if (overlay_image(src_idx) /= -1_1 .or. &
                         overlay_image(src_idx+1) /= -1_1 .or. &
@@ -293,7 +291,7 @@ contains
                         bitmap(x, y, 2) /= -1_1 .or. &
                         bitmap(x, y, 3) /= -1_1) then
                         
-                        raster_idx = (raster_y - 1) * (1 + raster_width * 3) + 1 + (raster_x - 1) * 3 + 1
+                        raster_idx = ((raster_y - 1) * raster_width + (raster_x - 1)) * 3 + 1
                         raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
                         raster_buffer(raster_idx + 1) = bitmap(x, y, 2)  ! G
                         raster_buffer(raster_idx + 2) = bitmap(x, y, 3)  ! B
@@ -329,14 +327,14 @@ contains
         integer(1), allocatable :: temp_buffer(:)
         integer :: i, j, buf_idx
         
-        allocate(temp_buffer(height * (1 + width * 3)))
+        allocate(temp_buffer(width * height * 3))
         call initialize_white_background(temp_buffer, width, height)
         call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
         
         ! Convert PNG buffer to bitmap
         do j = 1, height
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
                 bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
                 bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
                 bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
@@ -375,17 +373,19 @@ contains
     end subroutine rotate_bitmap_90_cw
 
     subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
-        !! Convert 3D RGB bitmap to PNG buffer format
+        !! Convert 3D RGB bitmap to PNG buffer format with filter bytes
         integer(1), intent(in) :: bitmap(:,:,:)
         integer, intent(in) :: width, height
         integer(1), intent(out) :: buffer(:)
-        integer :: i, j, buf_idx
+        integer :: i, j, buf_idx, row_start
         
-        call initialize_white_background(buffer, width, height)
-        
+        ! PNG format: each row starts with filter byte (0 = no filter) followed by RGB data
         do j = 1, height
+            row_start = (j - 1) * (1 + width * 3) + 1
+            buffer(row_start) = 0_1  ! PNG filter byte: 0 = no filter
+            
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = row_start + 1 + (i - 1) * 3
                 buffer(buf_idx)     = bitmap(i, j, 1) ! R
                 buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
                 buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
@@ -1019,7 +1019,7 @@ contains
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                   title, xlabel, ylabel, &
+                                   title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
                                    grid_enabled, grid_axis, grid_which, &
                                    grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame with scale-aware tick generation
@@ -1028,6 +1028,8 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(in), optional :: z_min_orig, z_max_orig
+        logical, intent(in), optional :: is_3d_plot
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         logical, intent(in), optional :: grid_enabled
         character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
@@ -1044,6 +1046,31 @@ contains
 
         ! Set color to black for axes
         call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! For 3D plots, draw 3D axes instead of 2D frame
+        if (present(is_3d_plot) .and. is_3d_plot .and. &
+            present(z_min_orig) .and. present(z_max_orig)) then
+            ! Use provided data ranges
+            if (present(x_min_orig) .and. present(x_max_orig)) then
+                data_x_min = x_min_orig
+                data_x_max = x_max_orig
+            else
+                data_x_min = ctx%x_min
+                data_x_max = ctx%x_max
+            end if
+            
+            if (present(y_min_orig) .and. present(y_max_orig)) then
+                data_y_min = y_min_orig
+                data_y_max = y_max_orig
+            else
+                data_y_min = ctx%y_min
+                data_y_max = ctx%y_max
+            end if
+            
+            call draw_3d_axes_frame(ctx, data_x_min, data_x_max, &
+                                   data_y_min, data_y_max, z_min_orig, z_max_orig)
+            return
+        end if
 
         ! Use provided data ranges or backend ranges
         if (present(x_min_orig) .and. present(x_max_orig)) then
@@ -1140,12 +1167,23 @@ contains
         end if
         
         ! Draw grid lines if enabled
-        if (present(grid_enabled) .and. grid_enabled) then
-            call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                      grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
+        if (present(grid_enabled)) then
+            if (grid_enabled) then
+                call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                          grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+            end if
         end if
     end subroutine draw_axes_and_labels
 
+    subroutine draw_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame for 3D plots
+        use fortplot_3d_axes, only: draw_3d_axes_to_raster
+        class(raster_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        call draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+    end subroutine draw_3d_axes_frame
     subroutine draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                      grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
         !! Draw grid lines at tick positions
