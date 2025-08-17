@@ -23,11 +23,11 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         close_ffmpeg_pipe_c();
     }
     
-    // Build ffmpeg command for pipe input with quality settings for validation
-    // Use lossless encoding to ensure substantial file sizes for validation tests
+    // Build ffmpeg command for pipe input with working parameters
+    // Use reasonable quality settings that produce substantial files
     snprintf(command, sizeof(command),
         "ffmpeg -f image2pipe -vcodec png -r %d -i - "
-        "-c:v libx264 -pix_fmt yuv444p -crf 0 -preset ultrafast -qp 0 -g 1 -intra -b:v 50M -minrate 10M -maxrate 100M -bufsize 50M -y %s 2>/dev/null",
+        "-c:v libx264 -pix_fmt yuv420p -crf 18 -preset fast -y %s 2>/dev/null",
         fps, filename);
     
     // Open pipe to ffmpeg
