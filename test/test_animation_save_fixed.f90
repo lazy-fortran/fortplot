@@ -1,5 +1,6 @@
 program test_animation_save_fixed
     use fortplot
+    use fortplot_pipe, only: check_ffmpeg_available
     use iso_fortran_env, only: real64
     implicit none
 
@@ -13,10 +14,19 @@ program test_animation_save_fixed
     
     print *, "=== FIXED ANIMATION SAVE TESTS WITH PROPER VALIDATION ==="
     
-    call test_save_animation_mp4_with_validation()
-    call test_save_animation_with_fps_validation()
+    ! Check if ffmpeg is available before running video tests
+    if (check_ffmpeg_available()) then
+        call test_save_animation_mp4_with_validation()
+        call test_save_animation_with_fps_validation()
+        call test_comprehensive_mpeg_file_validation()
+        print *, "All fixed animation save tests passed!"
+    else
+        print *, "SKIPPED: Fixed animation save tests (ffmpeg not available)"
+        print *, "This is expected behavior in CI environments without ffmpeg"
+    end if
+    
+    ! Always test invalid format handling (doesn't require ffmpeg)
     call test_save_animation_invalid_format()
-    call test_comprehensive_mpeg_file_validation()
 
     print *, "=== Fixed animation save tests completed ==="
     print *, "NOTE: These tests will FAIL with current implementation"
