@@ -27,14 +27,15 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
-    integer, parameter :: PLOT_TYPE_BAR = 4
-    integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
-    integer, parameter :: PLOT_TYPE_BOXPLOT = 6
+    integer, parameter :: PLOT_TYPE_ERRORBAR = 4
+    integer, parameter :: PLOT_TYPE_BAR = 5
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 6
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 7
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -79,6 +80,14 @@ module fortplot_figure_core
         real(wp) :: q1, q2, q3  ! Quartiles
         real(wp) :: whisker_low, whisker_high
         real(wp), allocatable :: outliers(:)
+        ! Error bar data
+        real(wp), allocatable :: xerr(:), yerr(:)
+        real(wp), allocatable :: xerr_lower(:), xerr_upper(:)
+        real(wp), allocatable :: yerr_lower(:), yerr_upper(:)
+        real(wp) :: capsize = 5.0_wp
+        real(wp) :: elinewidth = 1.0_wp
+        logical :: has_xerr = .false., has_yerr = .false.
+        logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -170,6 +179,7 @@ module fortplot_figure_core
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: errorbar
         procedure :: bar
         procedure :: barh
         ! TODO: Add hist and boxplot implementations from main branch
@@ -2681,5 +2691,66 @@ contains
         x(point_idx) = x(1)
         y(point_idx) = y(1)
     end subroutine create_bar_xy_data
+
+    subroutine errorbar(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
+                       yerr_lower, yerr_upper, capsize, elinewidth, &
+                       label, linestyle, marker, color)
+        !! Add error bar plot to figure
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        real(wp), intent(in), optional :: xerr_lower(:), xerr_upper(:)
+        real(wp), intent(in), optional :: yerr_lower(:), yerr_upper(:)
+        real(wp), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: color(3)
+        
+        type(plot_data_t) :: plot_data
+        integer :: n_points
+        
+        n_points = size(x)
+        
+        ! Validate input sizes
+        if (size(y) /= n_points) then
+            write(*,*) 'Error: x and y arrays must have the same size'
+            return
+        end if
+        
+        ! Initialize plot data
+        plot_data%plot_type = PLOT_TYPE_ERRORBAR
+        allocate(plot_data%x(n_points), plot_data%y(n_points))
+        plot_data%x = x
+        plot_data%y = y
+        
+        ! Handle error bar parameters (minimal implementation)
+        if (present(yerr)) then
+            allocate(plot_data%yerr(n_points))
+            plot_data%yerr = yerr
+            plot_data%has_yerr = .true.
+        end if
+        
+        if (present(xerr)) then
+            allocate(plot_data%xerr(n_points))
+            plot_data%xerr = xerr
+            plot_data%has_xerr = .true.
+        end if
+        
+        ! Handle optional styling parameters
+        if (present(capsize)) plot_data%capsize = capsize
+        if (present(elinewidth)) plot_data%elinewidth = elinewidth
+        if (present(label)) plot_data%label = label
+        if (present(linestyle)) plot_data%linestyle = linestyle
+        if (present(marker)) plot_data%marker = marker
+        if (present(color)) plot_data%color = color
+        
+        ! Add to plots array
+        self%plot_count = self%plot_count + 1
+        if (self%plot_count > self%max_plots) then
+            write(*,*) 'Warning: Maximum number of plots exceeded'
+            return
+        end if
+        
+        self%plots(self%plot_count) = plot_data
+    end subroutine errorbar
 
 end module fortplot_figure_core

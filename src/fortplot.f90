@@ -25,11 +25,11 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, boxplot, show, show_viewer
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
     public :: hist, histogram
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
-    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
+    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
     public :: add_3d_plot, add_surface
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
@@ -419,6 +419,52 @@ contains
         call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh
+
+    subroutine errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                       capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the error bar plot
+        !!   xerr, yerr: Optional symmetric error arrays
+        !!   xerr_lower, xerr_upper: Optional asymmetric X error arrays
+        !!   yerr_lower, yerr_upper: Optional asymmetric Y error arrays
+        !!   capsize: Optional cap size for error bars (default: 5.0)
+        !!   elinewidth: Optional error bar line width (default: 1.0)
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style
+        !!   marker: Optional marker style
+        !!   color: Optional RGB color array
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine errorbar
+
+    subroutine add_errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                           capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)
         !! Add a 3D line plot to the global figure
