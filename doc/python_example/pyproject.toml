@@ -6,6 +6,6 @@ build-backend = "setuptools.build_meta"
 name = "fortplotlib-example"
 version = "0.1.0"
 dependencies = [
-    "fortplotlib @ git+https://github.com/krystophny/fortplotlib.git",
+    "fortplotlib @ git+https://github.com/lazy-fortran/fortplot.git",
     "numpy"
 ]

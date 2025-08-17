@@ -91,7 +91,7 @@ def generate_example_page(example_info, output_dir):
         content += "### PDF Output\n\n"
         for pdf in pdf_files:
             pdf_name = Path(pdf).name
-            content += f"- [{pdf_name}](https://github.com/krystophny/fortplotlib/blob/main/{pdf})\n"
+            content += f"- [{pdf_name}](https://github.com/lazy-fortran/fortplot/blob/main/{pdf})\n"
         content += "\n"
     
     # Add link back to source
@@ -99,7 +99,7 @@ def generate_example_page(example_info, output_dir):
     content += f"""
 ---
 
-Source: [{rel_source}](https://github.com/krystophny/fortplotlib/blob/main/{rel_source})
+Source: [{rel_source}](https://github.com/lazy-fortran/fortplot/blob/main/{rel_source})
 """
     
     # Write the markdown file

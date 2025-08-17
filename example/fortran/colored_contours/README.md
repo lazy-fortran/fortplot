@@ -54,4 +54,4 @@ The example generates the following output files:
 - `saddle_plasma.pdf` - Vector format of the saddle point
 - `saddle_plasma.txt` - ASCII art of the saddle point pattern
 
-See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.
