@@ -87,6 +87,12 @@ anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
 call anim%save("animation.mp4")
 ```
 
+**MPEG Validation**: Use comprehensive validation framework to verify animation quality:
+```fortran
+logical :: is_valid
+is_valid = validate_mpeg_comprehensive("animation.mp4")
+```
+
 For more examples, see the [example directory](example) and run
 
 ```bash
@@ -105,8 +111,9 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
-  - **Validation**: Generated MPEG files should be >5KB for multi-frame content
-  - **Quality check**: Use `ffprobe -v error -show_format` to verify file validity
+  - **5-Layer Validation**: Comprehensive framework prevents false positives (Issue #32)
+  - **External validation**: FFprobe integration for format verification
+  - **Documentation**: See [MPEG Validation Guide](doc/mpeg_validation.md) for details
 
 ### For fpm (Fortran Package Manager) projects
 
@@ -168,7 +175,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
-  - **Note**: Proper MPEG validation requires multi-criteria checking (size, headers, external tools)
+  - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
+  - **False Positive Prevention**: Solves Issue #32 with multi-criteria validation
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations
