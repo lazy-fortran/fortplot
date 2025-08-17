@@ -373,17 +373,19 @@ contains
     end subroutine rotate_bitmap_90_cw
 
     subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
-        !! Convert 3D RGB bitmap to PNG buffer format
+        !! Convert 3D RGB bitmap to PNG buffer format with filter bytes
         integer(1), intent(in) :: bitmap(:,:,:)
         integer, intent(in) :: width, height
         integer(1), intent(out) :: buffer(:)
-        integer :: i, j, buf_idx
+        integer :: i, j, buf_idx, row_start
         
-        call initialize_white_background(buffer, width, height)
-        
+        ! PNG format: each row starts with filter byte (0 = no filter) followed by RGB data
         do j = 1, height
+            row_start = (j - 1) * (1 + width * 3) + 1
+            buffer(row_start) = 0_1  ! PNG filter byte: 0 = no filter
+            
             do i = 1, width
-                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
+                buf_idx = row_start + 1 + (i - 1) * 3
                 buffer(buf_idx)     = bitmap(i, j, 1) ! R
                 buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
                 buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
