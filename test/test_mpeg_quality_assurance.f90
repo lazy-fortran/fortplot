@@ -224,7 +224,7 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         adequate = (status == 0)
@@ -242,7 +242,7 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         good = (status == 0)
@@ -340,7 +340,7 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         correct = (status == 0)
@@ -358,7 +358,7 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         appropriate = (status == 0)

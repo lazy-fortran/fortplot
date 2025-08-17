@@ -216,7 +216,7 @@ contains
         integer :: status
         
         ! Use ffprobe to check for video stream
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         has_stream = (status == 0)

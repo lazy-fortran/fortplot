@@ -84,8 +84,8 @@ contains
         integer :: status
         
         ! Use ffprobe to check frame count (simplified check)
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames ', &
-                                  '-show_entries stream=nb_frames "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames ', &
+                                    '-show_entries stream=nb_frames "', trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_correct = (status == 0)
 
@@ -153,8 +153,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                  '-show_entries stream=width,height "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
+                                    '-show_entries stream=width,height "', trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_correct = (status == 0)
 
@@ -289,8 +289,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                  '-show_entries stream=codec_name "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
+                                    '-show_entries stream=codec_name "', trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_appropriate = (status == 0)
 
@@ -356,8 +356,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                  '-show_entries stream=bit_rate "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
+                                    '-show_entries stream=bit_rate "', trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_reasonable = (status == 0)
 
