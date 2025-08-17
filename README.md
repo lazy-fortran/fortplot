@@ -41,7 +41,7 @@ call fig%savefig("plot_oo.png")
 ```fortran
 call figure(800, 600)
 call add_3d_plot(x, y, z, label="3D curve")
-call set_title("3D Line Plot")
+call title("3D Line Plot")
 call savefig("3d_plot.png")
 ```
 
