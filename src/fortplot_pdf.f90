@@ -930,9 +930,13 @@ contains
         call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
         
         ! Draw grid lines if enabled
-        if (present(grid_enabled) .and. grid_enabled) then
-            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                   grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        ! Draw grid lines if enabled
+        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
+        if (present(grid_enabled)) then
+            if (grid_enabled) then
+                call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                       grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+            end if
         end if
     end subroutine draw_pdf_axes_and_labels
 

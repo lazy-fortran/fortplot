@@ -63,7 +63,7 @@ contains
 
         image%width = width
         image%height = height
-        allocate(image%image_data(height * (1 + width * 3)))
+        allocate(image%image_data(width * height * 3))
         call initialize_white_background(image%image_data, width, height)
     end function create_raster_image
 
@@ -97,12 +97,10 @@ contains
 
         k = 1
         do i = 1, h
-            image_data(k) = 0_1
-            k = k + 1
             do j = 1, w
-                image_data(k) = -1_1
-                image_data(k+1) = -1_1
-                image_data(k+2) = -1_1
+                image_data(k) = -1_1     ! R (white = 255 = -1 in signed byte)
+                image_data(k+1) = -1_1   ! G
+                image_data(k+2) = -1_1   ! B
                 k = k + 3
             end do
         end do
@@ -257,8 +255,8 @@ contains
                 if (img_x >= 1 .and. img_x <= main_width .and. &
                     img_y >= 1 .and. img_y <= main_height) then
                     
-                    src_idx = (y - 1) * (1 + overlay_width * 3) + 1 + (x - 1) * 3 + 1
-                    dst_idx = (img_y - 1) * (1 + main_width * 3) + 1 + (img_x - 1) * 3 + 1
+                    src_idx = ((y - 1) * overlay_width + (x - 1)) * 3 + 1
+                    dst_idx = ((img_y - 1) * main_width + (img_x - 1)) * 3 + 1
                     
                     if (overlay_image(src_idx) /= -1_1 .or. &
                         overlay_image(src_idx+1) /= -1_1 .or. &
@@ -293,7 +291,7 @@ contains
                         bitmap(x, y, 2) /= -1_1 .or. &
                         bitmap(x, y, 3) /= -1_1) then
                         
-                        raster_idx = (raster_y - 1) * (1 + raster_width * 3) + 1 + (raster_x - 1) * 3 + 1
+                        raster_idx = ((raster_y - 1) * raster_width + (raster_x - 1)) * 3 + 1
                         raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
                         raster_buffer(raster_idx + 1) = bitmap(x, y, 2)  ! G
                         raster_buffer(raster_idx + 2) = bitmap(x, y, 3)  ! B
@@ -329,14 +327,14 @@ contains
         integer(1), allocatable :: temp_buffer(:)
         integer :: i, j, buf_idx
         
-        allocate(temp_buffer(height * (1 + width * 3)))
+        allocate(temp_buffer(width * height * 3))
         call initialize_white_background(temp_buffer, width, height)
         call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
         
         ! Convert PNG buffer to bitmap
         do j = 1, height
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
                 bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
                 bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
                 bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
@@ -385,7 +383,7 @@ contains
         
         do j = 1, height
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
                 buffer(buf_idx)     = bitmap(i, j, 1) ! R
                 buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
                 buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
@@ -1140,9 +1138,12 @@ contains
         end if
         
         ! Draw grid lines if enabled
-        if (present(grid_enabled) .and. grid_enabled) then
-            call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                      grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
+        if (present(grid_enabled)) then
+            if (grid_enabled) then
+                call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                          grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+            end if
         end if
     end subroutine draw_axes_and_labels
 
