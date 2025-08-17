@@ -35,15 +35,22 @@ set_target_properties(fortplot PROPERTIES
 # Make modules available to dependent targets
 target_include_directories(fortplot PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+    $<INSTALL_INTERFACE:include>
 )
+
+# Ensure module files are generated and accessible
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 # Create namespaced alias target for FetchContent compatibility
 add_library(fortplot::fortplot ALIAS fortplot)
 
-# Enable export of targets
+# Enable export of targets - ensure alias is available
 export(TARGETS fortplot 
        NAMESPACE fortplot::
        FILE "${CMAKE_CURRENT_BINARY_DIR}/fortplotTargets.cmake")
+
+# For FetchContent users, ensure the alias target is visible
+set_target_properties(fortplot PROPERTIES EXPORT_NAME fortplot)
 
 # Configure package config file (only when not used as subproject)
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
