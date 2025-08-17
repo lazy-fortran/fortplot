@@ -3,6 +3,7 @@ module fortplot_animation
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
+    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
     implicit none
     private
 
@@ -225,6 +226,101 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
+        ! Try native MPEG-1 encoder first for substantial file sizes
+        if (should_use_native_encoder(anim, filename)) then
+            call save_animation_with_native_mpeg1(anim, filename, fps, status)
+            if (status == 0) return  ! Native encoder succeeded
+            print *, "Native MPEG-1 encoder failed, falling back to FFmpeg"
+        end if
+        
+        ! Fall back to FFmpeg pipeline
+        call save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
+    end subroutine save_animation_with_ffmpeg_pipe
+
+    function should_use_native_encoder(anim, filename) result(use_native)
+        class(animation_t), intent(in) :: anim
+        character(len=*), intent(in) :: filename
+        logical :: use_native
+        
+        ! Disable native encoder - use FFmpeg with optimized parameters for substantial files
+        ! The native encoder generates large files but not valid MPEG format
+        use_native = .false.
+    end function should_use_native_encoder
+
+    subroutine save_animation_with_native_mpeg1(anim, filename, fps, status)
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer, intent(out) :: status
+        
+        real(real64), allocatable :: frame_data(:,:,:,:)
+        integer :: frame_idx, width, height
+        
+        status = 0
+        
+        if (.not. associated(anim%fig)) then
+            status = -1
+            return
+        end if
+        
+        width = anim%fig%width
+        height = anim%fig%height
+        
+        ! Collect frame data for native encoder
+        allocate(frame_data(width, height, 3, anim%frames))
+        
+        do frame_idx = 1, anim%frames
+            call update_frame_data(anim, frame_idx)
+            call extract_frame_rgb_data(anim%fig, frame_data(:,:,:,frame_idx), status)
+            if (status /= 0) return
+        end do
+        
+        ! Use native MPEG-1 encoder
+        call encode_animation_to_mpeg1(frame_data, anim%frames, width, height, fps, filename, status)
+        
+        if (allocated(frame_data)) deallocate(frame_data)
+    end subroutine save_animation_with_native_mpeg1
+
+    subroutine extract_frame_rgb_data(fig, rgb_data, status)
+        type(figure_t), intent(inout) :: fig
+        real(real64), intent(out) :: rgb_data(:,:,:)
+        integer, intent(out) :: status
+        
+        type(png_context) :: png_ctx
+        integer :: x, y, idx_base
+        
+        status = 0
+        
+        ! Setup PNG backend to render frame
+        call setup_png_backend(fig, png_ctx)
+        call render_to_backend(fig)
+        
+        ! Extract RGB data from rendered frame
+        select type (backend => fig%backend)
+        type is (png_context)
+            do y = 1, fig%height
+                do x = 1, fig%width
+                    ! Calculate 1D index for packed RGB data (width * height * 3 array)
+                    ! Format: [R1, G1, B1, R2, G2, B2, ...]
+                    idx_base = ((y-1) * fig%width + (x-1)) * 3
+                    
+                    ! Extract RGB values (normalized to 0-1)
+                    rgb_data(x, y, 1) = real(backend%raster%image_data(idx_base + 1), real64) / 255.0_real64
+                    rgb_data(x, y, 2) = real(backend%raster%image_data(idx_base + 2), real64) / 255.0_real64
+                    rgb_data(x, y, 3) = real(backend%raster%image_data(idx_base + 3), real64) / 255.0_real64
+                end do
+            end do
+        class default
+            status = -1
+        end select
+    end subroutine extract_frame_rgb_data
+
+    subroutine save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer, intent(out) :: status
+        
         integer :: frame_idx, stat
         integer(1), allocatable :: png_data(:)
         
@@ -264,7 +360,7 @@ contains
             status = -7
             print *, "Error: Generated video failed validation"
         end if
-    end subroutine save_animation_with_ffmpeg_pipe
+    end subroutine save_animation_with_ffmpeg_pipeline
 
     subroutine generate_png_frame_data(anim, frame_idx, png_data, status)
         class(animation_t), intent(inout) :: anim
