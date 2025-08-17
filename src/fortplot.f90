@@ -29,6 +29,7 @@ module fortplot
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
+    public :: add_3d_plot, add_surface
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     
@@ -295,6 +296,35 @@ contains
         call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh
+
+    subroutine add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)
+        !! Add a 3D line plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y, z: Data arrays for the 3D line plot
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style and markers
+        !!   markersize: Optional marker size
+        !!   linewidth: Optional line width
+        real(8), dimension(:), intent(in) :: x, y, z
+        character(len=*), intent(in), optional :: label, linestyle
+        real(8), intent(in), optional :: markersize, linewidth
+        call fig%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
+                            markersize=markersize, linewidth=linewidth)
+    end subroutine add_3d_plot
+
+    subroutine add_surface(x, y, z, label)
+        !! Add a surface plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays (1D)
+        !!   z: 2D data array defining surface heights
+        !!   label: Optional label for the plot
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: label
+        call fig%add_surface(x, y, z, label=label)
+    end subroutine add_surface
 
     subroutine set_xscale(scale, threshold)
         !! Set x-axis scale for the global figure
