@@ -31,6 +31,7 @@ module fortplot
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
+    public :: bar, barh
     
     ! Animation interface
     public :: animation_t, FuncAnimation
@@ -163,6 +164,40 @@ contains
 
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
+
+    subroutine bar(x, heights, width, label, color)
+        !! Add a vertical bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x: X-axis positions for bars
+        !!   heights: Heights of bars
+        !!   width: Optional - width of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: x, heights
+        real(8), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%bar(x, heights, width=width, label=label, color=color)
+    end subroutine bar
+
+    subroutine barh(y, widths, height, label, color)
+        !! Add a horizontal bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   y: Y-axis positions for bars
+        !!   widths: Widths of bars
+        !!   height: Optional - height of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: y, widths
+        real(8), intent(in), optional :: height
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%barh(y, widths, height=height, label=label, color=color)
+    end subroutine barh
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Display a line plot in the terminal using ASCII graphics
