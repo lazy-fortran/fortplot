@@ -82,6 +82,7 @@ contains
         ! 1. Fits all text content without clipping
         ! 2. Has minimal excess space
         ! 3. Uses actual text width measurements
+        call fig%savefig('output/test/test_legend_systematic_sizing/test_content_based_sizing.png')
         call fig%savefig('/tmp/test/test_content_based_sizing.png')
         
         print *, "PASS: Content-based sizing test created"
@@ -103,6 +104,7 @@ contains
         ! This should produce a legend with:
         ! 1. Border thickness matching axes frame
         ! 2. Professional matplotlib-style appearance
+        call fig%savefig('output/test/test_legend_systematic_sizing/test_thin_border_styling.png')
         call fig%savefig('/tmp/test/test_thin_border_styling.png')
         
         print *, "PASS: Thin border styling test created"
@@ -127,6 +129,7 @@ contains
         call fig%legend()
         
         ! This should match the matplotlib reference plot closely
+        call fig%savefig('output/test/test_legend_systematic_sizing/test_matplotlib_comparison.png')
         call fig%savefig('/tmp/test/test_matplotlib_comparison.png')
         
         print *, "PASS: Matplotlib comparison test created"

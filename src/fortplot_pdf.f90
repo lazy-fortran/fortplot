@@ -821,7 +821,7 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                      title, xlabel, ylabel, &
+                                      title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
                                       grid_enabled, grid_axis, grid_which, &
                                       grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
@@ -830,6 +830,8 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(in), optional :: z_min_orig, z_max_orig
+        logical, intent(in), optional :: is_3d_plot
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         logical, intent(in), optional :: grid_enabled
         character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
@@ -846,6 +848,31 @@ contains
         
         ! Set color to black for axes
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! For 3D plots, draw 3D axes instead of 2D frame
+        if (present(is_3d_plot) .and. is_3d_plot .and. &
+            present(z_min_orig) .and. present(z_max_orig)) then
+            ! Use provided data ranges
+            if (present(x_min_orig) .and. present(x_max_orig)) then
+                data_x_min = x_min_orig
+                data_x_max = x_max_orig
+            else
+                data_x_min = ctx%x_min
+                data_x_max = ctx%x_max
+            end if
+            
+            if (present(y_min_orig) .and. present(y_max_orig)) then
+                data_y_min = y_min_orig
+                data_y_max = y_max_orig
+            else
+                data_y_min = ctx%y_min
+                data_y_max = ctx%y_max
+            end if
+            
+            call draw_pdf_3d_axes_frame(ctx, data_x_min, data_x_max, &
+                                       data_y_min, data_y_max, z_min_orig, z_max_orig)
+            return
+        end if
         
         ! Use provided data ranges or backend ranges
         if (present(x_min_orig) .and. present(x_max_orig)) then
@@ -940,6 +967,60 @@ contains
         end if
     end subroutine draw_pdf_axes_and_labels
 
+    subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame for PDF backend
+        use fortplot_3d_axes, only: create_3d_axis_lines, project_3d_axis_lines
+        use fortplot_projection, only: get_default_view_angles
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        real(wp) :: azim, elev, dist
+        real(wp) :: axis_lines_3d(3,6), axis_lines_2d(2,6)
+        real(wp) :: x1, y1, x2, y2
+        integer :: i
+        
+        call get_default_view_angles(azim, elev, dist)
+        call create_3d_axis_lines(x_min, x_max, y_min, y_max, z_min, z_max, axis_lines_3d)
+        call project_3d_axis_lines(axis_lines_3d, azim, elev, dist, axis_lines_2d)
+        
+        ! Scale projected coordinates to plot area
+        call scale_2d_to_pdf_plot_area(axis_lines_2d, ctx, x_min, x_max, y_min, y_max)
+        
+        ! Draw three axis lines
+        do i = 1, 3
+            x1 = axis_lines_2d(1, 2*i-1)
+            y1 = axis_lines_2d(2, 2*i-1)
+            x2 = axis_lines_2d(1, 2*i)
+            y2 = axis_lines_2d(2, 2*i)
+            call ctx%line(x1, y1, x2, y2)
+        end do
+    end subroutine draw_pdf_3d_axes_frame
+
+    subroutine scale_2d_to_pdf_plot_area(points_2d, ctx, x_min, x_max, y_min, y_max)
+        !! Scale projected 2D coordinates to PDF plot area
+        real(wp), intent(inout) :: points_2d(:,:)
+        type(pdf_context), intent(in) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: scale_x, scale_y
+        integer :: i
+        
+        ! Find bounds of projected coordinates
+        proj_x_min = minval(points_2d(1,:))
+        proj_x_max = maxval(points_2d(1,:))
+        proj_y_min = minval(points_2d(2,:))
+        proj_y_max = maxval(points_2d(2,:))
+        
+        ! Scale to plot area using width/height
+        scale_x = real(ctx%plot_area%width, wp) / (proj_x_max - proj_x_min)
+        scale_y = real(ctx%plot_area%height, wp) / (proj_y_max - proj_y_min)
+        
+        do i = 1, size(points_2d, 2)
+            points_2d(1,i) = real(ctx%plot_area%left, wp) + (points_2d(1,i) - proj_x_min) * scale_x
+            points_2d(2,i) = real(ctx%plot_area%bottom, wp) + (points_2d(2,i) - proj_y_min) * scale_y
+        end do
+    end subroutine scale_2d_to_pdf_plot_area
     subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                  grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
         !! Draw grid lines at tick positions for PDF backend

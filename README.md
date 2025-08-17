@@ -32,10 +32,19 @@ call fig%set_title("Function Plot")
 call fig%set_xlabel("x")
 call fig%set_ylabel("y")
 call fig%add_plot(x, yf)
+call fig%add_3d_plot(x, y, z, label="3D data")  ! 3D plotting
 call fig%savefig("plot_oo.png")
 ```
 
 ### Advanced Examples
+
+#### 3D plotting
+```fortran
+call figure(800, 600)
+call add_3d_plot(x, y, z, label="3D curve")
+call title("3D Line Plot")
+call savefig("3d_plot.png")
+```
 
 #### Multiple plots with legend
 ```fortran
@@ -90,7 +99,7 @@ call anim%save("animation.mp4")
 For more examples, see the [example directory](example) and run
 
 ```bash
-fpm run --example
+make example
 ```
 
 to build and run them.
@@ -143,6 +152,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 
 ### Plot types
 - [x] Line plots (`plot`) with customizable line styles and markers
+- [x] 3D line plots (`add_3d_plot`) with automatic projection
+- [x] 3D surface plots (`add_surface`) for grid data visualization
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization

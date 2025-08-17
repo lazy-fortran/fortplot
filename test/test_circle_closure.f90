@@ -41,6 +41,7 @@ contains
         call fig%initialize(400, 400)
         call fig%streamplot(x, y, u, v, density=1.5_real64)
         call fig%set_title('Circle Closure Test - All circles should be closed')
+        call fig%savefig('output/test/test_circle_closure/test_circle_closure_main.png')
         call fig%savefig('/tmp/test/test_circle_closure_main.png')
         
         ! For visual verification: in a circular flow u=-y, v=x
@@ -56,6 +57,7 @@ contains
         call fig%initialize(600, 600)
         call fig%streamplot(x, y, u, v, density=2.0_real64)
         call fig%set_title('Multiple Radii Test - Each radius should form closed circle')
+        call fig%savefig('output/test/test_circle_closure/test_circle_closure_radii.png')
         call fig%savefig('/tmp/test/test_circle_closure_radii.png')
         
         print *, "Multiple radii test completed - verify circles at all radii close"

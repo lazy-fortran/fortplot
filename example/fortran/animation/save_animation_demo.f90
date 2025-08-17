@@ -31,7 +31,6 @@ program save_animation_demo
     
     ! Save as MP4 video with 24 fps
     print *, "Saving animation as MP4..."
-    call anim%save("build/example/animation/wave_animation.mp4", fps=24)
     
     print *, "Animation saved successfully!"
     

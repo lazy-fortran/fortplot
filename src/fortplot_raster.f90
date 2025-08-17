@@ -1019,7 +1019,7 @@ contains
 
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                   title, xlabel, ylabel, &
+                                   title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
                                    grid_enabled, grid_axis, grid_which, &
                                    grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame with scale-aware tick generation
@@ -1028,6 +1028,8 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(in), optional :: z_min_orig, z_max_orig
+        logical, intent(in), optional :: is_3d_plot
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         logical, intent(in), optional :: grid_enabled
         character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
@@ -1044,6 +1046,31 @@ contains
 
         ! Set color to black for axes
         call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! For 3D plots, draw 3D axes instead of 2D frame
+        if (present(is_3d_plot) .and. is_3d_plot .and. &
+            present(z_min_orig) .and. present(z_max_orig)) then
+            ! Use provided data ranges
+            if (present(x_min_orig) .and. present(x_max_orig)) then
+                data_x_min = x_min_orig
+                data_x_max = x_max_orig
+            else
+                data_x_min = ctx%x_min
+                data_x_max = ctx%x_max
+            end if
+            
+            if (present(y_min_orig) .and. present(y_max_orig)) then
+                data_y_min = y_min_orig
+                data_y_max = y_max_orig
+            else
+                data_y_min = ctx%y_min
+                data_y_max = ctx%y_max
+            end if
+            
+            call draw_3d_axes_frame(ctx, data_x_min, data_x_max, &
+                                   data_y_min, data_y_max, z_min_orig, z_max_orig)
+            return
+        end if
 
         ! Use provided data ranges or backend ranges
         if (present(x_min_orig) .and. present(x_max_orig)) then
@@ -1149,6 +1176,14 @@ contains
         end if
     end subroutine draw_axes_and_labels
 
+    subroutine draw_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame for 3D plots
+        use fortplot_3d_axes, only: draw_3d_axes_to_raster
+        class(raster_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        call draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+    end subroutine draw_3d_axes_frame
     subroutine draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                      grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
         !! Draw grid lines at tick positions
