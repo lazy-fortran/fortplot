@@ -925,10 +925,10 @@ contains
                                 (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * ctx%plot_area%width
             end do
             
-            ! For Y axis in PDF (origin at bottom, no flipping needed)
+            ! For Y axis in PDF - use same coordinate transformation as normalize_to_pdf_coords
             do i = 1, num_y_ticks
-                y_positions(i) = ctx%plot_area%bottom + &
-                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
+                y_positions(i) = (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * real(ctx%plot_area%height, wp) + &
+                                real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
             end do
         end if
         
@@ -1075,12 +1075,12 @@ contains
         ! Draw horizontal grid lines (at y tick positions)
         if (axis_choice == 'both' .or. axis_choice == 'y') then
             do i = 1, num_y_ticks
-                ! Convert Y position to PDF coordinates
+                ! y_positions already contains PDF coordinates
                 write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "m")') &
-                    grid_x_left, real(ctx%height, wp) - y_positions(i)
+                    grid_x_left, y_positions(i)
                 call ctx%stream_writer%add_to_stream(draw_cmd)
                 write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "l")') &
-                    grid_x_right, real(ctx%height, wp) - y_positions(i)
+                    grid_x_right, y_positions(i)
                 call ctx%stream_writer%add_to_stream(draw_cmd)
                 call ctx%stream_writer%add_to_stream("S")
             end do
@@ -1126,10 +1126,8 @@ contains
         
         ! Draw Y-axis tick marks (at left of plot)  
         do i = 1, num_y
-            ! Convert Y position to PDF coordinates
-            pdf_y_pos = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                       (y_positions(i) - real(ctx%plot_area%bottom, wp))
-            call draw_vector_line(ctx, left, pdf_y_pos, left - 5.0_wp, pdf_y_pos)
+            ! y_positions already contains PDF coordinates
+            call draw_vector_line(ctx, left, y_positions(i), left - 5.0_wp, y_positions(i))
         end do
     end subroutine draw_pdf_tick_marks
     
@@ -1225,9 +1223,8 @@ contains
         
         ! Draw only the filtered (non-overlapping) labels
         do i = 1, filtered_count
-            ! Convert Y position to PDF coordinates for positioning calculation
-            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                     (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+            ! filtered_positions already contains PDF coordinates
+            tick_y = filtered_positions(i)
             
             ! Use PDF-specific tick label positioning (native PDF coordinates)
             call calculate_y_tick_label_position_pdf(tick_y, plot_left, &
