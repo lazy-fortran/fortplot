@@ -139,7 +139,10 @@ contains
         ! Manually render axes - this should expose clustering issues
         call draw_pdf_axes_and_labels(ctx, 'linear', 'linear', 1.0_wp, &
                                     x_min, x_max, y_min, y_max, &
-                                    'Clustering Test', 'X Values', 'Y Values')
+                                    'Clustering Test', 'X Values', 'Y Values', &
+                                    0.0_wp, 1.0_wp, .false., &
+                                    .false., 'both', 'major', &
+                                    0.3_wp, '-', [0.5_wp, 0.5_wp, 0.5_wp])
         
         call ctx%save('test_manual_axes_clustering.pdf')
         
