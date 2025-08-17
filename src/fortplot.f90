@@ -186,6 +186,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
 
+        call ensure_global_figure_initialized()
         call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine hist
 
@@ -211,6 +212,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
 
+        call ensure_global_figure_initialized()
         call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
@@ -593,5 +595,13 @@ contains
         
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
+
+    subroutine ensure_global_figure_initialized()
+        !! Ensure global figure is initialized before use (matplotlib compatibility)
+        !! Auto-initializes with default dimensions if not already initialized
+        if (.not. allocated(fig%backend)) then
+            call fig%initialize()
+        end if
+    end subroutine ensure_global_figure_initialized
 
 end module fortplot

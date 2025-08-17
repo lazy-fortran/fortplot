@@ -5,6 +5,7 @@ program test_global_hist_api
     use iso_fortran_env, only: wp => real64
     implicit none
     
+    call test_global_hist_without_init()
     call test_global_hist_zero_bins()
     call test_global_histogram_negative_bins()
     call test_global_hist_valid()
@@ -12,6 +13,17 @@ program test_global_hist_api
     print *, 'All global histogram API tests passed!'
     
 contains
+
+    subroutine test_global_hist_without_init()
+        !! Test global hist() function without explicit figure initialization
+        !! This should work like matplotlib.pyplot.hist() - auto-initialize
+        real(wp) :: data(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        
+        ! Should auto-initialize and not crash (matplotlib compatibility)
+        call hist(data, bins=5, label='Auto Init Test')
+        
+        print *, 'PASS: Global hist() auto-initializes figure like matplotlib'
+    end subroutine test_global_hist_without_init
 
     subroutine test_global_hist_zero_bins()
         !! Test global hist() function with zero bins
