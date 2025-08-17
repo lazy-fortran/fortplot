@@ -40,8 +40,9 @@ contains
         call fig%initialize(640, 480)
         call fig%add_plot(x_data, y_data)
         call fig%savefig('output/test/test_visual_boundaries/test_linear_visual.txt')
+        call fig%savefig('/tmp/test_linear_visual.txt')
         
-        if (validate_ascii_boundaries('test_linear_visual.txt')) then
+        if (validate_ascii_boundaries('/tmp/test_linear_visual.txt')) then
             print *, "  ✓ PASS: Linear plot stays within ASCII canvas bounds"
             passed_count = passed_count + 1
         else
@@ -69,8 +70,9 @@ contains
         call fig%set_yscale('log')
         call fig%add_plot(x_data, y_data)
         call fig%savefig('output/test/test_visual_boundaries/test_log_visual.txt')
+        call fig%savefig('/tmp/test_log_visual.txt')
         
-        if (validate_ascii_boundaries('test_log_visual.txt')) then
+        if (validate_ascii_boundaries('/tmp/test_log_visual.txt')) then
             print *, "  ✓ PASS: Log plot stays within ASCII canvas bounds"
             passed_count = passed_count + 1
         else
@@ -98,8 +100,9 @@ contains
         call fig%set_yscale('symlog', 10.0_wp)
         call fig%add_plot(x_data, y_data)
         call fig%savefig('output/test/test_visual_boundaries/test_symlog_visual.txt')
+        call fig%savefig('/tmp/test_symlog_visual.txt')
         
-        if (validate_ascii_boundaries('test_symlog_visual.txt')) then
+        if (validate_ascii_boundaries('/tmp/test_symlog_visual.txt')) then
             print *, "  ✓ PASS: Symlog plot stays within ASCII canvas bounds"
             passed_count = passed_count + 1
         else

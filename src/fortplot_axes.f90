@@ -51,7 +51,7 @@ contains
         integer, intent(out) :: num_ticks
         
         real(wp) :: range, step, nice_step, tick_value
-        integer :: i, max_ticks_desired
+        integer :: max_ticks_desired
         
         max_ticks_desired = 8
         range = data_max - data_min
@@ -177,21 +177,36 @@ contains
         real(wp), intent(in) :: data_min, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for negative symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => data_min + upper_bound, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for negative symlog region (placeholder)
     end subroutine add_negative_symlog_ticks
     
     subroutine add_linear_symlog_ticks(lower_bound, upper_bound, tick_positions, num_ticks)
         real(wp), intent(in) :: lower_bound, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for linear symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => lower_bound + upper_bound, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for linear symlog region (placeholder)
     end subroutine add_linear_symlog_ticks
     
     subroutine add_positive_symlog_ticks(lower_bound, data_max, tick_positions, num_ticks)
         real(wp), intent(in) :: lower_bound, data_max
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
-        ! Implementation for positive symlog region
+        
+        ! Suppress unused parameter warnings for stub implementation
+        associate(unused_real => lower_bound + data_max, &
+                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        
+        ! Implementation for positive symlog region (placeholder)
     end subroutine add_positive_symlog_ticks
     
     function is_power_of_ten(value) result(is_power)
@@ -214,34 +229,5 @@ contains
         end if
     end function format_power_of_ten
     
-    subroutine clean_scientific_notation(str)
-        character(len=*), intent(inout) :: str
-        ! Clean up scientific notation formatting
-    end subroutine clean_scientific_notation
-    
-    subroutine remove_trailing_zeros(str)
-        character(len=*), intent(inout) :: str
-        integer :: i
-        ! Remove trailing zeros after decimal point
-        do i = len_trim(str), 1, -1
-            if (str(i:i) == '0') then
-                str(i:i) = ' '
-            else if (str(i:i) == '.') then
-                str(i:i) = ' '
-                exit
-            else
-                exit
-            end if
-        end do
-    end subroutine remove_trailing_zeros
-    
-    subroutine draw_single_tick(backend, screen_pos, label, is_x_axis, plot_area)
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: screen_pos
-        character(len=*), intent(in) :: label
-        logical, intent(in) :: is_x_axis
-        integer, intent(in) :: plot_area(4)
-        ! Draw a single tick mark and label
-    end subroutine draw_single_tick
 
 end module fortplot_axes

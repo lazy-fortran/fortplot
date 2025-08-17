@@ -2,6 +2,8 @@ module fortplot_raster
     use iso_c_binding
     use fortplot_context
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
+    use fortplot_latex_parser
+    use fortplot_unicode
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -61,7 +63,7 @@ contains
 
         image%width = width
         image%height = height
-        allocate(image%image_data(height * (1 + width * 3)))
+        allocate(image%image_data(width * height * 3))
         call initialize_white_background(image%image_data, width, height)
     end function create_raster_image
 
@@ -95,12 +97,10 @@ contains
 
         k = 1
         do i = 1, h
-            image_data(k) = 0_1
-            k = k + 1
             do j = 1, w
-                image_data(k) = -1_1
-                image_data(k+1) = -1_1
-                image_data(k+2) = -1_1
+                image_data(k) = -1_1     ! R (white = 255 = -1 in signed byte)
+                image_data(k+1) = -1_1   ! G
+                image_data(k+2) = -1_1   ! B
                 k = k + 3
             end do
         end do
@@ -255,8 +255,8 @@ contains
                 if (img_x >= 1 .and. img_x <= main_width .and. &
                     img_y >= 1 .and. img_y <= main_height) then
                     
-                    src_idx = (y - 1) * (1 + overlay_width * 3) + 1 + (x - 1) * 3 + 1
-                    dst_idx = (img_y - 1) * (1 + main_width * 3) + 1 + (img_x - 1) * 3 + 1
+                    src_idx = ((y - 1) * overlay_width + (x - 1)) * 3 + 1
+                    dst_idx = ((img_y - 1) * main_width + (img_x - 1)) * 3 + 1
                     
                     if (overlay_image(src_idx) /= -1_1 .or. &
                         overlay_image(src_idx+1) /= -1_1 .or. &
@@ -291,7 +291,7 @@ contains
                         bitmap(x, y, 2) /= -1_1 .or. &
                         bitmap(x, y, 3) /= -1_1) then
                         
-                        raster_idx = (raster_y - 1) * (1 + raster_width * 3) + 1 + (raster_x - 1) * 3 + 1
+                        raster_idx = ((raster_y - 1) * raster_width + (raster_x - 1)) * 3 + 1
                         raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
                         raster_buffer(raster_idx + 1) = bitmap(x, y, 2)  ! G
                         raster_buffer(raster_idx + 2) = bitmap(x, y, 3)  ! B
@@ -327,14 +327,14 @@ contains
         integer(1), allocatable :: temp_buffer(:)
         integer :: i, j, buf_idx
         
-        allocate(temp_buffer(height * (1 + width * 3)))
+        allocate(temp_buffer(width * height * 3))
         call initialize_white_background(temp_buffer, width, height)
         call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
         
         ! Convert PNG buffer to bitmap
         do j = 1, height
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
                 bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
                 bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
                 bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
@@ -373,17 +373,19 @@ contains
     end subroutine rotate_bitmap_90_cw
 
     subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
-        !! Convert 3D RGB bitmap to PNG buffer format
+        !! Convert 3D RGB bitmap to PNG buffer format with filter bytes
         integer(1), intent(in) :: bitmap(:,:,:)
         integer, intent(in) :: width, height
         integer(1), intent(out) :: buffer(:)
-        integer :: i, j, buf_idx
+        integer :: i, j, buf_idx, row_start
         
-        call initialize_white_background(buffer, width, height)
-        
+        ! PNG format: each row starts with filter byte (0 = no filter) followed by RGB data
         do j = 1, height
+            row_start = (j - 1) * (1 + width * 3) + 1
+            buffer(row_start) = 0_1  ! PNG filter byte: 0 = no filter
+            
             do i = 1, width
-                buf_idx = (j - 1) * (1 + width * 3) + 1 + (i - 1) * 3 + 1
+                buf_idx = row_start + 1 + (i - 1) * 3
                 buffer(buf_idx)     = bitmap(i, j, 1) ! R
                 buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
                 buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
@@ -448,12 +450,138 @@ contains
         end if
     end subroutine raster_set_line_width
 
+    subroutine escape_unicode_for_raster(input_text, escaped_text)
+        !! Pass through Unicode for raster rendering (STB TrueType supports Unicode)
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: escaped_text
+        
+        ! STB TrueType can handle Unicode directly, so just pass through
+        escaped_text = input_text
+    end subroutine escape_unicode_for_raster
+
+    subroutine unicode_codepoint_to_ascii(codepoint, ascii_equiv)
+        !! Convert Unicode codepoint to ASCII equivalent
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+        
+        ! Convert Greek letters to ASCII names
+        select case (codepoint)
+        case (945) ! α
+            ascii_equiv = "alpha"
+        case (946) ! β
+            ascii_equiv = "beta"
+        case (947) ! γ
+            ascii_equiv = "gamma"
+        case (948) ! δ
+            ascii_equiv = "delta"
+        case (949) ! ε
+            ascii_equiv = "epsilon"
+        case (950) ! ζ
+            ascii_equiv = "zeta"
+        case (951) ! η
+            ascii_equiv = "eta"
+        case (952) ! θ
+            ascii_equiv = "theta"
+        case (953) ! ι
+            ascii_equiv = "iota"
+        case (954) ! κ
+            ascii_equiv = "kappa"
+        case (955) ! λ
+            ascii_equiv = "lambda"
+        case (956) ! μ
+            ascii_equiv = "mu"
+        case (957) ! ν
+            ascii_equiv = "nu"
+        case (958) ! ξ
+            ascii_equiv = "xi"
+        case (959) ! ο
+            ascii_equiv = "omicron"
+        case (960) ! π
+            ascii_equiv = "pi"
+        case (961) ! ρ
+            ascii_equiv = "rho"
+        case (963) ! σ
+            ascii_equiv = "sigma"
+        case (964) ! τ
+            ascii_equiv = "tau"
+        case (965) ! υ
+            ascii_equiv = "upsilon"
+        case (966) ! φ
+            ascii_equiv = "phi"
+        case (967) ! χ
+            ascii_equiv = "chi"
+        case (968) ! ψ
+            ascii_equiv = "psi"
+        case (969) ! ω
+            ascii_equiv = "omega"
+        case (913) ! Α
+            ascii_equiv = "Alpha"
+        case (914) ! Β
+            ascii_equiv = "Beta"
+        case (915) ! Γ
+            ascii_equiv = "Gamma"
+        case (916) ! Δ
+            ascii_equiv = "Delta"
+        case (917) ! Ε
+            ascii_equiv = "Epsilon"
+        case (918) ! Ζ
+            ascii_equiv = "Zeta"
+        case (919) ! Η
+            ascii_equiv = "Eta"
+        case (920) ! Θ
+            ascii_equiv = "Theta"
+        case (921) ! Ι
+            ascii_equiv = "Iota"
+        case (922) ! Κ
+            ascii_equiv = "Kappa"
+        case (923) ! Λ
+            ascii_equiv = "Lambda"
+        case (924) ! Μ
+            ascii_equiv = "Mu"
+        case (925) ! Ν
+            ascii_equiv = "Nu"
+        case (926) ! Ξ
+            ascii_equiv = "Xi"
+        case (927) ! Ο
+            ascii_equiv = "Omicron"
+        case (928) ! Π
+            ascii_equiv = "Pi"
+        case (929) ! Ρ
+            ascii_equiv = "Rho"
+        case (931) ! Σ
+            ascii_equiv = "Sigma"
+        case (932) ! Τ
+            ascii_equiv = "Tau"
+        case (933) ! Υ
+            ascii_equiv = "Upsilon"
+        case (934) ! Φ
+            ascii_equiv = "Phi"
+        case (935) ! Χ
+            ascii_equiv = "Chi"
+        case (936) ! Ψ
+            ascii_equiv = "Psi"
+        case (937) ! Ω
+            ascii_equiv = "Omega"
+        case default
+            ! For other Unicode characters, use a placeholder
+            write(ascii_equiv, '("U+", Z4.4)') codepoint
+        end select
+    end subroutine unicode_codepoint_to_ascii
+
     subroutine raster_draw_text(this, x, y, text)
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: px, py
         integer(1) :: r, g, b
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+
+        ! Escape Unicode characters for raster rendering
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
 
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
@@ -463,7 +591,7 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
         call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                 int(px), int(py), text, r, g, b)
+                                 int(px), int(py), trim(escaped_text), r, g, b)
     end subroutine raster_draw_text
 
     subroutine raster_save_dummy(this, filename)
@@ -504,12 +632,10 @@ contains
         
         select case (trim(style))
         case (MARKER_CIRCLE)
-            call draw_circle_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
-                                         color_to_byte(this%raster%current_r), &
-                                         color_to_byte(this%raster%current_g), &
-                                         color_to_byte(this%raster%current_b))
-            call draw_circle_outline_antialiased(this%raster%image_data, this%width, this%height, px, py, marker_size, &
-                                                 0_1, 0_1, 0_1)
+            call draw_circle_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
+                                           this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
+                                           this%raster%marker_edge_alpha, this%raster%marker_face_r, this%raster%marker_face_g, &
+                                           this%raster%marker_face_b, this%raster%marker_face_alpha)
         case (MARKER_SQUARE)
             call draw_square_with_edge_face(this%raster%image_data, this%width, this%height, px, py, marker_size, &
                                            this%raster%marker_edge_r, this%raster%marker_edge_g, this%raster%marker_edge_b, &
@@ -894,6 +1020,9 @@ contains
     subroutine draw_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                    x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
                                    title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot)
+                                   title, xlabel, ylabel, &
+                                   grid_enabled, grid_axis, grid_which, &
+                                   grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame with scale-aware tick generation
         !! FIXED: Now generates tick values first, then positions to ensure proper alignment
         class(raster_context), intent(inout) :: ctx
@@ -903,6 +1032,10 @@ contains
         real(wp), intent(in), optional :: z_min_orig, z_max_orig
         logical, intent(in), optional :: is_3d_plot
         character(len=*), intent(in), optional :: title, xlabel, ylabel
+        logical, intent(in), optional :: grid_enabled
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
         
         real(wp) :: x_tick_values(20), y_tick_values(20)
         real(wp) :: x_positions(20), y_positions(20)
@@ -1033,6 +1166,15 @@ contains
         if (present(ylabel)) then
             call draw_rotated_ylabel_raster(ctx, ylabel)
         end if
+        
+        ! Draw grid lines if enabled
+        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
+        if (present(grid_enabled)) then
+            if (grid_enabled) then
+                call draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                          grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+            end if
+        end if
     end subroutine draw_axes_and_labels
 
     subroutine draw_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
@@ -1043,6 +1185,67 @@ contains
         
         call draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_frame
+    subroutine draw_raster_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                     grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
+        !! Draw grid lines at tick positions
+        class(raster_context), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
+        real(wp), intent(in), optional :: grid_alpha
+        real(wp), intent(in), optional :: grid_color(3)
+        
+        character(len=10) :: axis_choice, which_choice
+        real(wp) :: alpha_value, line_color(3)
+        integer :: i
+        real(wp) :: grid_y_top, grid_y_bottom, grid_x_left, grid_x_right
+        
+        ! Set default values
+        axis_choice = 'both'
+        which_choice = 'major'
+        alpha_value = 0.3_wp
+        line_color = [0.5_wp, 0.5_wp, 0.5_wp]
+        
+        if (present(grid_axis)) axis_choice = grid_axis
+        if (present(grid_which)) which_choice = grid_which
+        if (present(grid_alpha)) alpha_value = grid_alpha
+        if (present(grid_color)) line_color = grid_color
+        
+        ! Set grid line color with transparency
+        call ctx%raster%set_color(line_color(1), line_color(2), line_color(3))
+        
+        ! Calculate plot area boundaries
+        grid_y_top = real(ctx%plot_area%bottom + ctx%plot_area%height, wp)
+        grid_y_bottom = real(ctx%plot_area%bottom, wp)
+        grid_x_left = real(ctx%plot_area%left, wp)
+        grid_x_right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
+        
+        ! Draw vertical grid lines (at x tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'x') then
+            do i = 1, min(num_x_ticks, size(x_positions))
+                call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
+                                          x_positions(i), grid_y_bottom, &
+                                          x_positions(i), grid_y_top, &
+                                          int(line_color(1) * 255, 1), &
+                                          int(line_color(2) * 255, 1), &
+                                          int(line_color(3) * 255, 1), &
+                                          alpha_value)
+            end do
+        end if
+        
+        ! Draw horizontal grid lines (at y tick positions)
+        if (axis_choice == 'both' .or. axis_choice == 'y') then
+            do i = 1, min(num_y_ticks, size(y_positions))
+                call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
+                                          grid_x_left, y_positions(i), &
+                                          grid_x_right, y_positions(i), &
+                                          int(line_color(1) * 255, 1), &
+                                          int(line_color(2) * 255, 1), &
+                                          int(line_color(3) * 255, 1), &
+                                          alpha_value)
+            end do
+        end if
+    end subroutine draw_raster_grid_lines
 
     subroutine draw_raster_frame(ctx)
         !! Draw the plot frame for raster backend
@@ -1155,29 +1358,39 @@ contains
         class(raster_context), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel
         real(wp) :: label_x, label_y, text_width
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
 
         ! Draw title at top center with proper margin (matplotlib-style)
         if (present(title)) then
+            ! Process LaTeX commands to Unicode and escape for raster rendering
+            call process_latex_in_text(title, processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            
             ! Center horizontally across the entire figure width (like matplotlib)
-            text_width = real(calculate_text_width(trim(title)), wp)
+            text_width = real(calculate_text_width(trim(escaped_text)), wp)
             if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
+                text_width = real(len_trim(escaped_text) * 8, wp)  ! 8 pixels per char for 12pt font
             end if
             label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
             ! Position title in the top margin area (matplotlib uses ~25px from top)
             label_y = 25.0_wp
             call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(title), &
+                                     int(label_x), int(label_y), trim(escaped_text), &
                                      0_1, 0_1, 0_1)  ! Black text, normal weight (non-bold)
         end if
 
         ! Draw X-axis label using proper axis label positioning
         if (present(xlabel)) then
+            ! Process LaTeX commands to Unicode and escape for raster rendering
+            call process_latex_in_text(xlabel, processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            
             call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
                                                real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               trim(xlabel), label_x, label_y)
+                                               trim(escaped_text), label_x, label_y)
             call render_text_to_image(ctx%raster%image_data, ctx%width, ctx%height, &
-                                     int(label_x), int(label_y), trim(xlabel), &
+                                     int(label_x), int(label_y), trim(escaped_text), &
                                      0_1, 0_1, 0_1)  ! Black text
         end if
     end subroutine draw_raster_title_and_xlabel
@@ -1190,10 +1403,16 @@ contains
         integer :: text_width, text_height, padding
         integer :: buf_width, buf_height, i, j, src_x, src_y, dst_x, dst_y
         integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode and escape for raster rendering
+        call process_latex_in_text(text, processed_text, processed_len)
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
         
         ! Calculate text dimensions and position
-        text_width = calculate_text_width(trim(text))
-        text_height = calculate_text_height(trim(text))
+        text_width = calculate_text_width(trim(escaped_text))
+        text_height = calculate_text_height(trim(escaped_text))
         
         padding = 2
         buf_width = text_width + 2 * padding  
@@ -1205,7 +1424,7 @@ contains
         
         ! Render text to bitmap
         call render_text_to_bitmap(text_bitmap, buf_width, buf_height, &
-                                  padding, padding + text_height, trim(text))
+                                  padding, padding + text_height, trim(escaped_text))
                                   
         ! Rotate bitmap 90 degrees counter-clockwise (text reads bottom to top)
         allocate(rotated_bitmap(buf_height, buf_width, 3))

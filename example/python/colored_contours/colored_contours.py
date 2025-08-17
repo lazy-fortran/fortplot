@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Demonstrates colored contour plots with different colormaps - Dual mode: fortplotlib or matplotlib"""
+"""Demonstrates colored contour plots with different colormaps - Dual mode: fortplot or matplotlib"""
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def default_gaussian_example():
     """Default colorblind-safe Gaussian example"""
@@ -35,8 +35,8 @@ def default_gaussian_example():
     plt.savefig('gaussian_default.png')
     plt.savefig('gaussian_default.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('gaussian_default.txt')
     
     if backend == "matplotlib":
@@ -70,8 +70,8 @@ def plasma_saddle_example():
     plt.savefig('saddle_plasma.png')
     plt.savefig('saddle_plasma.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('saddle_plasma.txt')
     
     if backend == "matplotlib":
@@ -100,8 +100,8 @@ def mixed_colormap_comparison():
     plt.savefig('ripple_inferno.png')
     plt.savefig('ripple_inferno.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('ripple_inferno.txt')
     
     if backend == "matplotlib":
@@ -116,8 +116,8 @@ def mixed_colormap_comparison():
     plt.savefig('ripple_coolwarm.png')
     plt.savefig('ripple_coolwarm.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('ripple_coolwarm.txt')
     
     if backend == "matplotlib":
@@ -132,8 +132,8 @@ def mixed_colormap_comparison():
     plt.savefig('ripple_jet.png')
     plt.savefig('ripple_jet.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('ripple_jet.txt')
     
     if backend == "matplotlib":

@@ -1,8 +1,9 @@
-# ![fortplotlib logo](media/logo.jpg)
+# ![fortplot logo](media/logo.jpg)
 
-[![codecov](https://codecov.io/gh/krystophny/fortplotlib/branch/main/graph/badge.svg)](https://codecov.io/gh/krystophny/fortplotlib)
+[![codecov](https://codecov.io/gh/lazy-fortran/fortplot/branch/main/graph/badge.svg)](https://codecov.io/gh/lazy-fortran/fortplot)
+[![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
-Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplotlib.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplot.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
 
 ## Usage
 
@@ -55,6 +56,18 @@ call legend()
 call savefig("trig_functions.pdf")
 ```
 
+#### Unicode and Greek letters in scientific plots
+```fortran
+call figure(800, 600)
+call title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t)")
+call xlabel("Time \tau (normalized)")
+call ylabel("Amplitude \Psi (V)")
+call plot(t, damped_sine, label="\alpha decay")
+call plot(t, damped_cosine, label="\beta oscillation")
+call legend()
+call savefig("unicode_demo.png")  ! Works in PNG, PDF, and ASCII
+```
+
 #### Contour plot with colorbar
 ```fortran
 call figure()
@@ -79,7 +92,7 @@ call savefig("log_plot.pdf")
 #### Animation example
 ```fortran
 type(animation_t) :: anim
-call FuncAnimation(anim, fig, update_func, frames=100, interval=50)
+anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
 call anim%save("animation.mp4")
 ```
 
@@ -93,12 +106,23 @@ to build and run them.
 
 ## Setup
 
+### Dependencies
+
+**Required:**
+- Modern Fortran compiler (gfortran-11 or newer)
+- FPM (Fortran Package Manager) or CMake
+
+**Optional:**
+- `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
+  - **Validation**: Generated MPEG files should be >5KB for multi-frame content
+  - **Quality check**: Use `ffprobe -v error -show_format` to verify file validity
+
 ### For fpm (Fortran Package Manager) projects
 
 Add to your `fpm.toml`:
 ```toml
 [[dependencies]]
-fortplotlib = { git = "https://github.com/krystophny/fortplotlib" }
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
 ```
 
 ### For CMake projects
@@ -108,20 +132,20 @@ Add to your `CMakeLists.txt`:
 include(FetchContent)
 
 FetchContent_Declare(
-    fortplotlib
-    GIT_REPOSITORY https://github.com/krystophny/fortplotlib
+    fortplot
+    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
     GIT_TAG        main
 )
-FetchContent_MakeAvailable(fortplotlib)
+FetchContent_MakeAvailable(fortplot)
 
-target_link_libraries(your_target fortplotlib::fortplotlib)
+target_link_libraries(your_target fortplot::fortplot)
 ```
 
 ### For Python projects
 Install the Python package with pip:
 
 ```bash
-pip install git+https://github.com/krystophny/fortplotlib.git
+pip install git+https://github.com/lazy-fortran/fortplot.git
 ```
 
 ## Features
@@ -134,8 +158,8 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
 - [ ] Scatter plots (`scatter`)
-- [ ] Bar charts (`bar`)
-- [ ] Histograms (`hist`)
+- [x] Bar charts (`bar`)
+- [x] Histograms (`hist`)
 - [ ] Images (`imshow`)
 
 ### Backends
@@ -154,10 +178,11 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Scales: linear, log, symlog (with configurable threshold)
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
-- [x] Animation support with `FuncAnimation`
+- [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
+  - **Note**: Proper MPEG validation requires multi-criteria checking (size, headers, external tools)
+- [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations
-- [ ] LaTeX math text
 
 
 ## Why though?

@@ -5,9 +5,11 @@ module fortplot_ascii
     !! ASCII characters and Unicode box drawing characters. Provides basic
     !! line plotting with character density mapping for visualization.
     !!
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use fortplot_context
+    use fortplot_latex_parser
+    use fortplot_unicode
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -38,6 +40,7 @@ module fortplot_ascii
         procedure :: draw_marker => ascii_draw_marker
         procedure :: set_marker_colors => ascii_set_marker_colors
         procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
+        procedure :: fill_heatmap => ascii_fill_heatmap
     end type ascii_context
     
     ! ASCII plotting constants
@@ -55,6 +58,9 @@ contains
         integer, intent(in), optional :: width, height
         type(ascii_context) :: ctx
         integer :: w, h
+        
+        ! Suppress unused parameter warnings
+        associate(unused_w => width, unused_h => height); end associate
         
         ! ASCII backend uses 4:3 aspect ratio accounting for terminal character dimensions
         ! Terminal chars are ~1.5x taller than wide, so for 4:3 visual ratio:
@@ -160,6 +166,9 @@ contains
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: width
         
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, unused_real => width); end associate
+        
         ! ASCII context doesn't support variable line widths
         ! This is a no-op to satisfy the interface
     end subroutine ascii_set_line_width
@@ -169,10 +178,15 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         integer :: text_x, text_y
+        character(len=500) :: processed_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
         
         ! Only store as title if not explicitly set and no title allocated yet
         if (.not. this%title_set .and. .not. allocated(this%title_text)) then
-            this%title_text = text
+            this%title_text = processed_text(1:processed_len)
         end if
         
         ! Store text element for later rendering
@@ -192,10 +206,18 @@ contains
             end if
             
             ! Clamp to canvas bounds
-            text_x = max(1, min(text_x, this%plot_width - len_trim(text)))
+            ! For legend text (already in screen coordinates), don't truncate based on length
+            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
+                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
+                ! For legend text, only clamp starting position, let text extend as needed
+                text_x = max(1, min(text_x, this%plot_width))
+            else
+                ! For other text, prevent overflow
+                text_x = max(1, min(text_x, this%plot_width - processed_len))
+            end if
             text_y = max(1, min(text_y, this%plot_height))
             
-            this%text_elements(this%num_text_elements)%text = trim(text)
+            this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
             this%text_elements(this%num_text_elements)%x = text_x
             this%text_elements(this%num_text_elements)%y = text_y
             this%text_elements(this%num_text_elements)%color_r = this%current_r
@@ -208,8 +230,12 @@ contains
         !! Explicitly set title for ASCII backend
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: title
+        character(len=500) :: processed_title
+        integer :: processed_len
         
-        this%title_text = title
+        ! Process LaTeX commands in title
+        call process_latex_in_text(title, processed_title, processed_len)
+        this%title_text = processed_title(1:processed_len)
         this%title_set = .true.
     end subroutine ascii_set_title
     
@@ -217,7 +243,7 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: i, j, unit
+        integer :: unit
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(this)
@@ -466,6 +492,10 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
+        
         ! ASCII backend doesn't support separate marker colors
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors
@@ -476,8 +506,64 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         
+        ! Suppress unused parameter warnings  
+        associate(unused_int => this%width, &
+                  unused_real => edge_r + edge_g + edge_b + edge_alpha + &
+                                face_r + face_g + face_b + face_alpha); end associate
+        
         ! ASCII backend doesn't support separate marker colors or transparency
         ! This is a stub implementation for interface compliance
     end subroutine ascii_set_marker_colors_with_alpha
+    
+    subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill ASCII canvas with heatmap representation of 2D data
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        integer :: nx, ny, i, j, px, py
+        real(wp) :: x_min, x_max, y_min, y_max
+        real(wp) :: z_normalized
+        integer :: char_idx
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        
+        x_min = minval(x_grid)
+        x_max = maxval(x_grid)
+        y_min = minval(y_grid)
+        y_max = maxval(y_grid)
+        
+        ! Fill the canvas with density characters based on z values
+        do i = 1, nx
+            do j = 1, ny
+                ! Map grid coordinates to canvas coordinates
+                px = int((x_grid(i) - this%x_min) / (this%x_max - this%x_min) * &
+                        real(this%plot_width - 3, wp)) + 2
+                py = (this%plot_height - 1) - int((y_grid(j) - this%y_min) / &
+                        (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
+                
+                ! Check bounds
+                if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
+                    ! Normalize z value to character index
+                    if (abs(z_max - z_min) > 1e-10_wp) then
+                        z_normalized = (z_grid(i, j) - z_min) / (z_max - z_min)
+                    else
+                        z_normalized = 0.5_wp
+                    end if
+                    
+                    ! Map to character index (1 to len(ASCII_CHARS))
+                    char_idx = min(len(ASCII_CHARS), max(1, int(z_normalized * real(len(ASCII_CHARS) - 1, wp)) + 1))
+                    
+                    ! Only overwrite if current position is empty or has lower density
+                    if (this%canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, this%canvas(py, px))) then
+                        this%canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
+                    end if
+                end if
+            end do
+        end do
+    end subroutine ascii_fill_heatmap
 
 end module fortplot_ascii

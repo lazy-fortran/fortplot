@@ -26,12 +26,26 @@ module fortplot_figure_core
     implicit none
 
     private
-    public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    public :: figure_t, plot_data_t, subplot_t
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
+    integer, parameter :: PLOT_TYPE_BAR = 4
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 6
+
+    ! Histogram constants
+    integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    integer, parameter :: MAX_SAFE_BINS = 10000
+    real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
+    real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -48,6 +62,23 @@ module fortplot_figure_core
         logical :: show_colorbar = .true.
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
+        ! Bar chart data
+        real(wp), allocatable :: bar_x(:), bar_heights(:)
+        real(wp) :: bar_width = 0.8_wp
+        logical :: bar_horizontal = .false.
+        ! Histogram data
+        real(wp), allocatable :: hist_bin_edges(:)
+        real(wp), allocatable :: hist_counts(:)
+        logical :: hist_density = .false.
+        ! Box plot data
+        real(wp), allocatable :: box_data(:)
+        real(wp) :: position = 1.0_wp
+        real(wp) :: width = 0.6_wp
+        logical :: show_outliers = .true.
+        logical :: horizontal = .false.
+        real(wp) :: q1, q2, q3  ! Quartiles
+        real(wp) :: whisker_low, whisker_high
+        real(wp), allocatable :: outliers(:)
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -56,6 +87,19 @@ module fortplot_figure_core
     contains
         procedure :: is_3d
     end type plot_data_t
+
+    type :: subplot_t
+        !! Individual subplot container
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: plot_count = 0
+        integer :: max_plots = 10
+        ! Subplot-specific properties
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        character(len=10) :: xscale = 'linear'
+        character(len=10) :: yscale = 'linear'
+    end type subplot_t
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -126,6 +170,11 @@ module fortplot_figure_core
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: bar
+        procedure :: barh
+        ! TODO: Add hist and boxplot implementations from main branch
+        ! procedure :: hist
+        ! procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -364,6 +413,78 @@ contains
         call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         call update_data_ranges_pcolormesh(self)
     end subroutine add_pcolormesh
+
+    subroutine bar(self, x, heights, width, label, color)
+        !! Add vertical bar chart to figure
+        !!
+        !! Arguments:
+        !!   x: X-axis positions for bars
+        !!   heights: Heights of bars
+        !!   width: Optional - width of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), heights(:)
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        if (size(x) == 0 .or. size(heights) == 0) then
+            write(*, '(A)') 'Warning: Cannot create bar chart from empty data'
+            return
+        end if
+        
+        if (size(x) /= size(heights)) then
+            write(*, '(A)') 'Warning: x and heights arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_bar_plot_data(self, x, heights, width, label, color, .false.)
+        call update_data_ranges(self)
+    end subroutine bar
+
+    subroutine barh(self, y, widths, height, label, color)
+        !! Add horizontal bar chart to figure
+        !!
+        !! Arguments:
+        !!   y: Y-axis positions for bars
+        !!   widths: Widths of bars
+        !!   height: Optional - height of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: y(:), widths(:)
+        real(wp), intent(in), optional :: height
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        if (size(y) == 0 .or. size(widths) == 0) then
+            write(*, '(A)') 'Warning: Cannot create bar chart from empty data'
+            return
+        end if
+        
+        if (size(y) /= size(widths)) then
+            write(*, '(A)') 'Warning: y and widths arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_bar_plot_data(self, y, widths, height, label, color, .true.)
+        call update_data_ranges(self)
+    end subroutine barh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
@@ -918,6 +1039,65 @@ contains
         call self%plots(plot_idx)%pcolormesh_data%get_data_range()
     end subroutine add_pcolormesh_plot_data
 
+    subroutine add_bar_plot_data(self, positions, values, bar_size, label, color, horizontal)
+        !! Add bar chart data to internal storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: positions(:), values(:)
+        real(wp), intent(in), optional :: bar_size
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        logical, intent(in) :: horizontal
+        
+        integer :: plot_idx, color_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
+        
+        ! Store bar data (deallocate first if already allocated)
+        if (allocated(self%plots(plot_idx)%bar_x)) deallocate(self%plots(plot_idx)%bar_x)
+        if (allocated(self%plots(plot_idx)%bar_heights)) deallocate(self%plots(plot_idx)%bar_heights)
+        allocate(self%plots(plot_idx)%bar_x(size(positions)))
+        allocate(self%plots(plot_idx)%bar_heights(size(values)))
+        self%plots(plot_idx)%bar_x = positions
+        self%plots(plot_idx)%bar_heights = values
+        
+        ! Set bar properties
+        if (present(bar_size)) then
+            self%plots(plot_idx)%bar_width = bar_size
+        else
+            self%plots(plot_idx)%bar_width = 0.8_wp
+        end if
+        
+        self%plots(plot_idx)%bar_horizontal = horizontal
+        
+        ! Set label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        ! Set color
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Set default bar style
+        self%plots(plot_idx)%linestyle = 'solid'
+        self%plots(plot_idx)%marker = 'None'
+        
+        ! Create x,y data for rendering from bar data
+        call create_bar_xy_data(self%plots(plot_idx)%bar_x, &
+                               self%plots(plot_idx)%bar_heights, &
+                               self%plots(plot_idx)%bar_width, &
+                               horizontal, &
+                               self%plots(plot_idx)%x, &
+                               self%plots(plot_idx)%y)
+    end subroutine add_bar_plot_data
+
     subroutine update_data_ranges_pcolormesh(self)
         !! Update figure data ranges after adding pcolormesh plot
         class(figure_t), intent(inout) :: self
@@ -1161,6 +1341,37 @@ contains
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%y_vertices), &
                                                                          self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BAR) then
+                if (first_plot) then
+                    ! Store ORIGINAL bar chart ranges
+                    x_min_orig = minval(self%plots(i)%x)
+                    x_max_orig = maxval(self%plots(i)%x)
+                    y_min_orig = minval(self%plots(i)%y)
+                    y_max_orig = maxval(self%plots(i)%y)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                else
+                    ! Update original ranges
+                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
+                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
+                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
+                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
+                end if
             end if
         end do
         
@@ -1248,6 +1459,8 @@ contains
                 call render_contour_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
                 call render_pcolormesh_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BAR) then
+                call render_bar_plot(self, i)
             end if
         end do
         
@@ -1639,6 +1852,19 @@ contains
         z_min = minval(self%plots(plot_idx)%z_grid)
         z_max = maxval(self%plots(plot_idx)%z_grid)
         
+        ! For ASCII backend with colored contours, render as heatmap
+        select type (backend => self%backend)
+        type is (ascii_context)
+            if (self%plots(plot_idx)%use_color_levels) then
+                ! Render as heatmap for filled contours
+                call backend%fill_heatmap(self%plots(plot_idx)%x_grid, &
+                                        self%plots(plot_idx)%y_grid, &
+                                        self%plots(plot_idx)%z_grid, &
+                                        z_min, z_max)
+                return
+            end if
+        end select
+        
         ! Render each contour level that falls within data range
         if (allocated(self%plots(plot_idx)%contour_levels)) then
             do level_idx = 1, size(self%plots(plot_idx)%contour_levels)
@@ -1676,6 +1902,37 @@ contains
         c_min = self%plots(plot_idx)%pcolormesh_data%vmin
         c_max = self%plots(plot_idx)%pcolormesh_data%vmax
         
+        ! For ASCII backend, render as heatmap
+        select type (backend => self%backend)
+        type is (ascii_context)
+            block
+                real(wp), allocatable :: x_centers(:), y_centers(:)
+                integer :: nx, ny, i, j
+                
+                nx = self%plots(plot_idx)%pcolormesh_data%nx
+                ny = self%plots(plot_idx)%pcolormesh_data%ny
+                
+                allocate(x_centers(nx), y_centers(ny))
+                
+                ! Calculate cell centers from vertices
+                do i = 1, nx
+                    x_centers(i) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i) + &
+                                           self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i+1))
+                end do
+                
+                do j = 1, ny
+                    y_centers(j) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%y_vertices(j, 1) + &
+                                           self%plots(plot_idx)%pcolormesh_data%y_vertices(j+1, 1))
+                end do
+                
+                ! Render as heatmap using cell centers
+                call backend%fill_heatmap(x_centers, y_centers, &
+                                        self%plots(plot_idx)%pcolormesh_data%c_values, &
+                                        c_min, c_max)
+            end block
+            return
+        end select
+        
         ! Render each quadrilateral
         do i = 1, self%plots(plot_idx)%pcolormesh_data%ny
             do j = 1, self%plots(plot_idx)%pcolormesh_data%nx
@@ -1705,6 +1962,66 @@ contains
             end do
         end do
     end subroutine render_pcolormesh_plot
+
+    subroutine render_bar_plot(self, plot_idx)
+        !! Render bar chart as filled rectangles
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        integer :: i, n_bars
+        real(wp) :: x1, y1, x2, y2
+        real(wp) :: x_screen(4), y_screen(4)
+        real(wp) :: bar_left, bar_right, bar_bottom, bar_top
+        
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%bar_x)) return
+        if (.not. allocated(self%plots(plot_idx)%bar_heights)) return
+        
+        n_bars = size(self%plots(plot_idx)%bar_x)
+        
+        ! Render each bar as a filled rectangle
+        do i = 1, n_bars
+            if (self%plots(plot_idx)%bar_horizontal) then
+                ! Horizontal bars
+                bar_left = 0.0_wp
+                bar_right = self%plots(plot_idx)%bar_heights(i)
+                bar_bottom = self%plots(plot_idx)%bar_x(i) - self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_top = self%plots(plot_idx)%bar_x(i) + self%plots(plot_idx)%bar_width * 0.5_wp
+            else
+                ! Vertical bars
+                bar_left = self%plots(plot_idx)%bar_x(i) - self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_right = self%plots(plot_idx)%bar_x(i) + self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_bottom = 0.0_wp
+                bar_top = self%plots(plot_idx)%bar_heights(i)
+            end if
+            
+            ! Skip bars with zero or negative height/width
+            if (self%plots(plot_idx)%bar_horizontal) then
+                if (abs(bar_right - bar_left) < 1e-10_wp) cycle
+            else
+                if (abs(bar_top - bar_bottom) < 1e-10_wp) cycle
+            end if
+            
+            ! Transform coordinates for rendering
+            x_screen(1) = apply_scale_transform(bar_left, self%xscale, self%symlog_threshold)
+            y_screen(1) = apply_scale_transform(bar_bottom, self%yscale, self%symlog_threshold)
+            x_screen(2) = apply_scale_transform(bar_right, self%xscale, self%symlog_threshold)
+            y_screen(2) = apply_scale_transform(bar_bottom, self%yscale, self%symlog_threshold)
+            x_screen(3) = apply_scale_transform(bar_right, self%xscale, self%symlog_threshold)
+            y_screen(3) = apply_scale_transform(bar_top, self%yscale, self%symlog_threshold)
+            x_screen(4) = apply_scale_transform(bar_left, self%xscale, self%symlog_threshold)
+            y_screen(4) = apply_scale_transform(bar_top, self%yscale, self%symlog_threshold)
+            
+            ! Draw filled rectangle
+            call draw_filled_quad(self%backend, x_screen, y_screen)
+            
+            ! Draw outline
+            call self%backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+            call self%backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+            call self%backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+            call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+        end do
+    end subroutine render_bar_plot
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
@@ -2311,5 +2628,58 @@ contains
             end if
         end if
     end subroutine ensure_directory_exists
+
+    subroutine create_bar_xy_data(positions, values, bar_width, horizontal, x, y)
+        !! Convert bar chart data to x,y coordinates for rendering
+        real(wp), intent(in) :: positions(:), values(:), bar_width
+        logical, intent(in) :: horizontal
+        real(wp), allocatable, intent(out) :: x(:), y(:)
+        
+        integer :: n_bars, i, point_idx
+        real(wp) :: bar_left, bar_right, bar_bottom, bar_top
+        
+        n_bars = size(positions)
+        
+        ! Create bar outline: 4 points per bar (corners of rectangle)
+        allocate(x(4 * n_bars + 1), y(4 * n_bars + 1))
+        
+        point_idx = 1
+        do i = 1, n_bars
+            if (horizontal) then
+                ! Horizontal bars: bar extends from 0 to value in x-direction
+                bar_left = 0.0_wp
+                bar_right = values(i)
+                bar_bottom = positions(i) - bar_width * 0.5_wp
+                bar_top = positions(i) + bar_width * 0.5_wp
+            else
+                ! Vertical bars: bar extends from 0 to value in y-direction
+                bar_left = positions(i) - bar_width * 0.5_wp
+                bar_right = positions(i) + bar_width * 0.5_wp
+                bar_bottom = 0.0_wp
+                bar_top = values(i)
+            end if
+            
+            ! Rectangle corners (bottom-left, bottom-right, top-right, top-left)
+            x(point_idx) = bar_left
+            y(point_idx) = bar_bottom
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_right
+            y(point_idx) = bar_bottom
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_right
+            y(point_idx) = bar_top
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_left
+            y(point_idx) = bar_top
+            point_idx = point_idx + 1
+        end do
+        
+        ! Close the shape to first point
+        x(point_idx) = x(1)
+        y(point_idx) = y(1)
+    end subroutine create_bar_xy_data
 
 end module fortplot_figure_core

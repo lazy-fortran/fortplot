@@ -42,7 +42,6 @@ contains
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf')
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_basic.txt')
         
-        print *, "Basic pcolormesh saved to example/fortran/pcolormesh_demo/pcolormesh_basic.{png,pdf,txt}"
     end subroutine demo_basic_gradient
 
     subroutine demo_sinusoidal_pattern()
@@ -79,7 +78,6 @@ contains
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf')
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.txt')
         
-        print *, "Sinusoidal pcolormesh saved to example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.{png,pdf,txt}"
     end subroutine demo_sinusoidal_pattern
 
     subroutine demo_different_colormaps()
@@ -115,7 +113,6 @@ contains
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_plasma.pdf')
         call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_plasma.txt')
         
-        print *, "Plasma colormap pcolormesh saved to example/fortran/pcolormesh_demo/pcolormesh_plasma.{png,pdf,txt}"
     end subroutine demo_different_colormaps
     
 end program pcolormesh_demo

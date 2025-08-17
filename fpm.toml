@@ -1,4 +1,4 @@
-name = "fortplotlib"
+name = "fortplot"
 version = "2025.06.25"
 license = "license"
 author = "Christopher Albert"
@@ -19,3 +19,9 @@ test = false
 implicit-typing = false
 implicit-external = false
 source-form = "free"
+
+[extra.ford]
+project = "fortplot"
+src_dir = "src"
+output_dir = "build/doc"
+page_dir = "doc"

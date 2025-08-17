@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Scale examples - Dual mode: fortplotlib or matplotlib
+Scale examples - Dual mode: fortplot or matplotlib
 Equivalent to scale_examples.f90 for visual comparison
 """
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def log_scale_demo():
     """Log scale demonstration - equivalent to Fortran version"""
@@ -32,8 +32,8 @@ def log_scale_demo():
     plt.savefig('log_scale.png')
     plt.savefig('log_scale.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('log_scale.txt')
     
     if backend == "matplotlib":
@@ -58,8 +58,8 @@ def symlog_scale_demo():
     plt.savefig('symlog_scale.png')
     plt.savefig('symlog_scale.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('symlog_scale.txt')
     
     if backend == "matplotlib":

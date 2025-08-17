@@ -295,7 +295,16 @@ contains
         select type (backend)
         type is (ascii_context)
             ! ASCII backend - use character coordinates
-            legend_width = 15.0_wp  ! Estimated characters for legend
+            ! Calculate actual legend width based on longest entry
+            legend_width = 15.0_wp  ! Default minimum width
+            do i = 1, legend%num_entries
+                legend_width = max(legend_width, real(len_trim(legend%entries(i)%label) + 5, wp))  ! +5 for "-- " prefix and margin
+            end do
+            
+            ! For ASCII backend, limit legend width to prevent overflow
+            ! Reserve space for plot border and margins
+            legend_width = min(legend_width, real(backend%width - 10, wp))
+            
             margin_x = 2.0_wp      ! 2 character margin
             margin_y = 1.0_wp      ! 1 line margin
             total_height = real(legend%num_entries, wp) * 1.0_wp  ! 1 line per entry
@@ -305,16 +314,23 @@ contains
                 x = margin_x
                 y = margin_y
             case (LEGEND_UPPER_RIGHT)
-                x = real(backend%width, wp) - legend_width - margin_x
+                ! Position legend so its text fits within the canvas
+                ! For ASCII, be more conservative to avoid clipping
+                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
+                x = max(margin_x, x)  ! But not too far left
                 y = margin_y + 2.0_wp  ! Start lower to leave room for multiple entries
             case (LEGEND_LOWER_LEFT)
                 x = margin_x
                 y = real(backend%height, wp) - total_height - margin_y
             case (LEGEND_LOWER_RIGHT)
-                x = real(backend%width, wp) - legend_width - margin_x
+                ! Position legend so its text fits within the canvas
+                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
+                x = max(margin_x, x)  ! But not too far left
                 y = real(backend%height, wp) - total_height - margin_y
             case default
-                x = real(backend%width, wp) - legend_width - margin_x
+                ! Position legend so its text fits within the canvas
+                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
+                x = max(margin_x, x)  ! But not too far left
                 y = margin_y
             end select
             

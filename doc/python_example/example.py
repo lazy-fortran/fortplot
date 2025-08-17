@@ -1,5 +1,5 @@
 import numpy as np
-import fortplotlib.fortplot as plt
+import fortplot.fortplot as plt
 
 # Generate data
 x = np.linspace(0, 10, 100)
