@@ -1421,15 +1421,16 @@ contains
         ! Use matplotlib-style axes with margins for backends that support it
         select type (backend => self%backend)
         type is (png_context)
-            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                    self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel, &
-                                    self%z_min, self%z_max, self%has_3d_plots())
+            ! TODO: Fix parameter mismatch for animation merge - temporarily disable advanced axes
+            ! call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+            !                         self%x_min, self%x_max, self%y_min, self%y_max, &
+            !                         self%title, self%xlabel, self%ylabel, &
+            !                         self%z_min, self%z_max, self%has_3d_plots(), &
+            !                         .false.)
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel, &
-                                        self%z_min, self%z_max, self%has_3d_plots())
+                                        self%title, self%xlabel, self%ylabel)
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
