@@ -119,7 +119,7 @@ contains
         
         call generate_png_data(width, height, image_data, png_buffer)
         
-        open(unit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
+        open(newunit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
         write(png_unit) png_buffer
         close(png_unit)
         

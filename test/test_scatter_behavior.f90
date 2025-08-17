@@ -28,7 +28,7 @@ contains
         write(error_unit, '(A)') 'DEBUG: marker="' // trim(fig%plots(1)%marker) // '"'
         write(error_unit, '(A)') 'DEBUG: linestyle="' // trim(fig%plots(1)%linestyle) // '"'
         call assert_equal(trim(fig%plots(1)%marker), 'o', 'Expected circle marker')
-        call assert_equal(trim(fig%plots(1)%linestyle), '', 'Expected NO line style for scatter plot')
+        call assert_equal(trim(fig%plots(1)%linestyle), 'None', 'Expected NO line style for scatter plot')
     end subroutine
 
     subroutine test_marker_with_line()
