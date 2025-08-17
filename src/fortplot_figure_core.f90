@@ -25,17 +25,38 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 4
     integer, parameter :: PLOT_TYPE_BOXPLOT = 5
 
+    ! Histogram constants
+    integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    integer, parameter :: MAX_SAFE_BINS = 10000
+    real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
+    real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
     ! Box plot constants
     real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
     real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
+    
+    ! Line rendering constants
+    real(wp), parameter :: PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: AXIS_LINE_WIDTH = 1.0_wp
+    
+    ! Contour level constants
+    real(wp), parameter :: CONTOUR_LEVEL_LOW = 0.2_wp
+    real(wp), parameter :: CONTOUR_LEVEL_MID = 0.5_wp
+    real(wp), parameter :: CONTOUR_LEVEL_HIGH = 0.8_wp
+    
+    ! Line style pattern constants (as percentage of plot scale)
+    real(wp), parameter :: DASH_LENGTH_FACTOR = 0.03_wp
+    real(wp), parameter :: DOT_LENGTH_FACTOR = 0.005_wp
+    real(wp), parameter :: GAP_LENGTH_FACTOR = 0.015_wp
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -52,6 +73,10 @@ module fortplot_figure_core
         logical :: show_colorbar = .true.
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
+        ! Histogram data
+        real(wp), allocatable :: hist_bin_edges(:)
+        real(wp), allocatable :: hist_counts(:)
+        logical :: hist_density = .false.
         ! Box plot data
         real(wp), allocatable :: box_data(:)
         real(wp) :: position = 1.0_wp
@@ -164,6 +189,7 @@ module fortplot_figure_core
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: hist
         procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
@@ -227,7 +253,6 @@ contains
         character(len=20) :: parsed_marker, parsed_linestyle
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -252,7 +277,6 @@ contains
         character(len=*), intent(in), optional :: label
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -271,7 +295,6 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
             return
         end if
         
@@ -301,6 +324,30 @@ contains
         call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         call update_data_ranges_pcolormesh(self)
     end subroutine add_pcolormesh
+
+    subroutine hist(self, data, bins, density, label, color)
+        !! Add histogram plot to figure with automatic or custom binning
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (.not. validate_histogram_input(self, data, bins)) return
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_histogram_plot_data(self, data, bins, density, label, color)
+        call update_data_ranges(self)
+    end subroutine hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, horizontal, color)
         !! Add box plot to figure using statistical data
@@ -443,7 +490,6 @@ contains
         call render_figure(self)
         call self%backend%save(filename)
         
-        write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
         
         ! If blocking requested, wait for user input
         if (do_block) then
@@ -975,6 +1021,91 @@ contains
         call self%plots(plot_idx)%pcolormesh_data%get_data_range()
     end subroutine add_pcolormesh_plot_data
 
+    subroutine add_histogram_plot_data(self, data, bins, density, label, color)
+        !! Add histogram data to internal storage with binning
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        
+        ! Setup bins and calculate histogram data
+        call setup_histogram_bins(self, plot_idx, data, bins, density)
+        
+        ! Create x,y data for bar rendering
+        call create_histogram_xy_data(self%plots(plot_idx)%hist_bin_edges, &
+                                    self%plots(plot_idx)%hist_counts, &
+                                    self%plots(plot_idx)%x, &
+                                    self%plots(plot_idx)%y)
+        
+        ! Configure plot properties
+        call setup_histogram_plot_properties(self, plot_idx, label, color)
+    end subroutine add_histogram_plot_data
+
+    subroutine setup_histogram_bins(self, plot_idx, data, bins, density)
+        !! Setup histogram binning and calculate counts
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        
+        integer :: n_bins
+        
+        if (present(bins)) then
+            n_bins = bins
+        else
+            n_bins = DEFAULT_HISTOGRAM_BINS
+        end if
+        
+        call create_bin_edges_from_count(data, n_bins, self%plots(plot_idx)%hist_bin_edges)
+        call calculate_histogram_counts(data, self%plots(plot_idx)%hist_bin_edges, &
+                                      self%plots(plot_idx)%hist_counts)
+        
+        if (present(density)) then
+            self%plots(plot_idx)%hist_density = density
+            if (density) then
+                call normalize_histogram_density(self%plots(plot_idx)%hist_counts, &
+                                               self%plots(plot_idx)%hist_bin_edges)
+            end if
+        end if
+    end subroutine setup_histogram_bins
+
+    subroutine setup_histogram_plot_properties(self, plot_idx, label, color)
+        !! Configure histogram plot label, color, and style
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: color_idx
+        
+        ! Set label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        ! Set color
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Set default style
+        self%plots(plot_idx)%linestyle = 'solid'
+        self%plots(plot_idx)%marker = 'None'
+    end subroutine setup_histogram_plot_properties
+
     subroutine update_data_ranges_pcolormesh(self)
         !! Update figure data ranges after adding pcolormesh plot
         class(figure_t), intent(inout) :: self
@@ -1019,8 +1150,14 @@ contains
         
         integer :: plot_idx, color_idx
         
+        if (self%plot_count >= self%max_plots) then
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
+        
         ! Expand plots array
-        plot_idx = self%plot_count + 1
         call expand_plots_array(self, plot_idx)
         
         ! Set plot type and copy data
@@ -1081,7 +1218,7 @@ contains
         integer :: plot_idx
         real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
         
-        plot_idx = self%plot_count + 1
+        plot_idx = self%plot_count
         
         if (self%plots(plot_idx)%horizontal) then
             ! Horizontal box plot - data range is in X direction
@@ -1526,6 +1663,21 @@ contains
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%y_vertices), &
                                                                          self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_HISTOGRAM) then
+                if (first_plot) then
+                    ! Store ORIGINAL histogram ranges
+                    x_min_orig = minval(self%plots(i)%x)
+                    x_max_orig = maxval(self%plots(i)%x)
+                    y_min_orig = minval(self%plots(i)%y)
+                    y_max_orig = maxval(self%plots(i)%y)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                end if
             else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
                 if (first_plot) then
                     ! Store ORIGINAL box plot ranges
@@ -1556,7 +1708,7 @@ contains
                     y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                     first_plot = .false.
                 else
-                    ! Update original ranges for box plot
+                    ! Update original ranges for subsequent box plot
                     if (self%plots(i)%horizontal) then
                         x_min_orig = min(x_min_orig, self%plots(i)%whisker_low)
                         x_max_orig = max(x_max_orig, self%plots(i)%whisker_high)
@@ -1672,6 +1824,8 @@ contains
                 call render_contour_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
                 call render_pcolormesh_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_HISTOGRAM) then
+                call render_histogram_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
                 call render_boxplot_plot(self, i)
             end if
@@ -1731,7 +1885,7 @@ contains
         ! Draw lines only if linestyle is not 'None' and we have at least 2 points
         if (linestyle /= 'None' .and. size(self%plots(plot_idx)%x) >= 2) then
             ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
-            call self%backend%set_line_width(2.0_wp)
+            call self%backend%set_line_width(PLOT_LINE_WIDTH)
             
             ! Draw line segments using transformed coordinates with linestyle
             call draw_line_with_style(self, plot_idx, linestyle)
@@ -1893,6 +2047,73 @@ contains
             end do
         end do
     end subroutine render_pcolormesh_plot
+
+    subroutine render_histogram_plot(self, plot_idx)
+        !! Render histogram plot as filled bars
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        integer :: i, n_bins
+        
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%hist_bin_edges)) return
+        if (.not. allocated(self%plots(plot_idx)%hist_counts)) return
+        
+        n_bins = size(self%plots(plot_idx)%hist_counts)
+        
+        ! Render each histogram bar as a filled rectangle
+        do i = 1, n_bins
+            if (self%plots(plot_idx)%hist_counts(i) > 0.0_wp) then
+                call render_histogram_bar(self, plot_idx, i)
+            end if
+        end do
+    end subroutine render_histogram_plot
+
+    subroutine render_histogram_bar(self, plot_idx, bin_idx)
+        !! Render individual histogram bar with coordinates and drawing
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx, bin_idx
+        
+        real(wp) :: x_screen(4), y_screen(4)
+        
+        call transform_histogram_bar_coordinates(self, plot_idx, bin_idx, x_screen, y_screen)
+        call draw_histogram_bar_shape(self, x_screen, y_screen)
+    end subroutine render_histogram_bar
+
+    subroutine transform_histogram_bar_coordinates(self, plot_idx, bin_idx, x_screen, y_screen)
+        !! Transform histogram bar coordinates from data to screen space
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx, bin_idx
+        real(wp), intent(out) :: x_screen(4), y_screen(4)
+        
+        real(wp) :: x1, y1, x2, y2
+        
+        x1 = self%plots(plot_idx)%hist_bin_edges(bin_idx)
+        x2 = self%plots(plot_idx)%hist_bin_edges(bin_idx+1)
+        y1 = 0.0_wp
+        y2 = self%plots(plot_idx)%hist_counts(bin_idx)
+        
+        x_screen(1) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
+        y_screen(1) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
+        x_screen(2) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
+        y_screen(2) = apply_scale_transform(y1, self%yscale, self%symlog_threshold)
+        x_screen(3) = apply_scale_transform(x2, self%xscale, self%symlog_threshold)
+        y_screen(3) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
+        x_screen(4) = apply_scale_transform(x1, self%xscale, self%symlog_threshold)
+        y_screen(4) = apply_scale_transform(y2, self%yscale, self%symlog_threshold)
+    end subroutine transform_histogram_bar_coordinates
+
+    subroutine draw_histogram_bar_shape(self, x_screen, y_screen)
+        !! Draw filled rectangle and outline for histogram bar
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
+        
+        call draw_filled_quad(self%backend, x_screen, y_screen)
+        call self%backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+        call self%backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+        call self%backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+        call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+    end subroutine draw_histogram_bar_shape
 
     subroutine render_boxplot_plot(self, plot_idx)
         !! Render box plot with quartiles, whiskers, and outliers
@@ -2067,9 +2288,9 @@ contains
         real(wp) :: level_values(3)
         integer :: i
         
-        level_values = [z_min + 0.2_wp * (z_max - z_min), &
-                       z_min + 0.5_wp * (z_max - z_min), &
-                       z_min + 0.8_wp * (z_max - z_min)]
+        level_values = [z_min + CONTOUR_LEVEL_LOW * (z_max - z_min), &
+                       z_min + CONTOUR_LEVEL_MID * (z_max - z_min), &
+                       z_min + CONTOUR_LEVEL_HIGH * (z_max - z_min)]
         
         do i = 1, 3
             ! Set color based on contour level
@@ -2360,15 +2581,16 @@ contains
             x_range = maxval(x_trans, mask=valid_points) - minval(x_trans, mask=valid_points)
             y_range = maxval(y_trans, mask=valid_points) - minval(y_trans, mask=valid_points)
             plot_scale = max(x_range, y_range)
+            if (plot_scale <= 0.0_wp) plot_scale = 1.0_wp
         else
             ! All points are NaN, use default scale
             plot_scale = 1.0_wp
         end if
         
         ! Define pattern lengths (matplotlib-like)
-        dash_len = plot_scale * 0.03_wp    ! 3% of range
-        dot_len = plot_scale * 0.005_wp    ! 0.5% of range  
-        gap_len = plot_scale * 0.015_wp    ! 1.5% of range
+        dash_len = plot_scale * DASH_LENGTH_FACTOR
+        dot_len = plot_scale * DOT_LENGTH_FACTOR
+        gap_len = plot_scale * GAP_LENGTH_FACTOR
         
         ! Define patterns like matplotlib
         select case (trim(linestyle))
@@ -2616,6 +2838,215 @@ contains
         
         self%plots(plot_index)%y = y_new
     end subroutine set_ydata
+
+    subroutine create_bin_edges_from_count(data, n_bins, bin_edges)
+        !! Create evenly spaced bin edges from data range
+        real(wp), intent(in) :: data(:)
+        integer, intent(in) :: n_bins
+        real(wp), allocatable, intent(out) :: bin_edges(:)
+        
+        real(wp) :: data_min, data_max, bin_width
+        integer :: i
+        
+        data_min = minval(data)
+        data_max = maxval(data)
+        
+        ! Handle case where all data points are identical
+        if (data_min == data_max) then
+            ! Create bins centered around the single value
+            data_min = data_min - IDENTICAL_VALUE_PADDING
+            data_max = data_max + IDENTICAL_VALUE_PADDING
+        end if
+        
+        ! Add small padding to avoid edge cases
+        bin_width = (data_max - data_min) / real(n_bins, wp)
+        data_min = data_min - bin_width * BIN_EDGE_PADDING_FACTOR
+        data_max = data_max + bin_width * BIN_EDGE_PADDING_FACTOR
+        bin_width = (data_max - data_min) / real(n_bins, wp)
+        
+        allocate(bin_edges(n_bins + 1))
+        do i = 1, n_bins + 1
+            bin_edges(i) = data_min + real(i - 1, wp) * bin_width
+        end do
+    end subroutine create_bin_edges_from_count
+
+    subroutine calculate_histogram_counts(data, bin_edges, counts)
+        !! Calculate histogram bin counts
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in) :: bin_edges(:)
+        real(wp), allocatable, intent(out) :: counts(:)
+        
+        integer :: n_bins, i, bin_idx
+        
+        n_bins = size(bin_edges) - 1
+        allocate(counts(n_bins))
+        counts = 0.0_wp
+        
+        do i = 1, size(data)
+            bin_idx = find_bin_index(data(i), bin_edges)
+            if (bin_idx > 0 .and. bin_idx <= n_bins) then
+                counts(bin_idx) = counts(bin_idx) + 1.0_wp
+            end if
+        end do
+    end subroutine calculate_histogram_counts
+
+    integer function find_bin_index(value, bin_edges) result(bin_idx)
+        !! Find which bin a value belongs to using binary search
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: bin_edges(:)
+        
+        integer :: n_bins
+        
+        n_bins = size(bin_edges) - 1
+        bin_idx = 0
+        
+        ! Check if value is outside bin range
+        if (.not. is_value_in_range(value, bin_edges, n_bins)) return
+        
+        ! Handle exact match with upper bound
+        if (value == bin_edges(n_bins + 1)) then
+            bin_idx = n_bins
+            return
+        end if
+        
+        ! Perform binary search
+        bin_idx = binary_search_bins(value, bin_edges, n_bins)
+    end function find_bin_index
+
+    logical function is_value_in_range(value, bin_edges, n_bins) result(in_range)
+        !! Check if value falls within bin range
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: bin_edges(:)
+        integer, intent(in) :: n_bins
+        
+        in_range = value >= bin_edges(1) .and. value <= bin_edges(n_bins + 1)
+    end function is_value_in_range
+
+    integer function binary_search_bins(value, bin_edges, n_bins) result(bin_idx)
+        !! Binary search to find bin containing value
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: bin_edges(:)
+        integer, intent(in) :: n_bins
+        
+        integer :: left, right, mid
+        
+        left = 1
+        right = n_bins
+        bin_idx = 0
+        
+        do while (left <= right)
+            mid = (left + right) / 2
+            if (value >= bin_edges(mid) .and. value < bin_edges(mid + 1)) then
+                bin_idx = mid
+                return
+            else if (value < bin_edges(mid)) then
+                right = mid - 1
+            else
+                left = mid + 1
+            end if
+        end do
+    end function binary_search_bins
+
+    subroutine normalize_histogram_density(counts, bin_edges)
+        !! Normalize histogram to probability density
+        real(wp), intent(inout) :: counts(:)
+        real(wp), intent(in) :: bin_edges(:)
+        
+        real(wp) :: total_area, bin_width
+        integer :: i
+        
+        if (size(bin_edges) /= size(counts) + 1) then
+            print *, 'Warning: bin_edges size mismatch in density normalization'
+            return
+        end if
+        
+        total_area = 0.0_wp
+        do i = 1, size(counts)
+            bin_width = bin_edges(i+1) - bin_edges(i)
+            total_area = total_area + counts(i) * bin_width
+        end do
+        
+        if (total_area > 0.0_wp) then
+            counts = counts / total_area
+        end if
+    end subroutine normalize_histogram_density
+
+    subroutine create_histogram_xy_data(bin_edges, counts, x, y)
+        !! Convert histogram data to x,y coordinates for rendering as bars
+        real(wp), intent(in) :: bin_edges(:), counts(:)
+        real(wp), allocatable, intent(out) :: x(:), y(:)
+        
+        integer :: n_bins, i, point_idx
+        
+        n_bins = size(counts)
+        
+        ! Create bar outline: 4 points per bin (bottom-left, top-left, top-right, bottom-right)
+        allocate(x(4 * n_bins + 1), y(4 * n_bins + 1))
+        
+        point_idx = 1
+        do i = 1, n_bins
+            call add_bar_outline_points(bin_edges(i), bin_edges(i+1), counts(i), &
+                                      x, y, point_idx)
+        end do
+        
+        ! Close the shape
+        x(point_idx) = bin_edges(1)
+        y(point_idx) = 0.0_wp
+    end subroutine create_histogram_xy_data
+
+    subroutine add_bar_outline_points(x_left, x_right, count, x, y, point_idx)
+        !! Add the 4 corner points for a single bin outline
+        real(wp), intent(in) :: x_left, x_right, count
+        real(wp), intent(inout) :: x(:), y(:)
+        integer, intent(inout) :: point_idx
+        
+        ! Bottom-left
+        x(point_idx) = x_left
+        y(point_idx) = 0.0_wp
+        point_idx = point_idx + 1
+        
+        ! Top-left
+        x(point_idx) = x_left
+        y(point_idx) = count
+        point_idx = point_idx + 1
+        
+        ! Top-right
+        x(point_idx) = x_right
+        y(point_idx) = count
+        point_idx = point_idx + 1
+        
+        ! Bottom-right
+        x(point_idx) = x_right
+        y(point_idx) = 0.0_wp
+        point_idx = point_idx + 1
+    end subroutine add_bar_outline_points
+
+    function validate_histogram_input(self, data, bins) result(is_valid)
+        !! Validate histogram input parameters
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical :: is_valid
+        
+        is_valid = .true.
+        
+        if (self%plot_count >= self%max_plots) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (size(data) == 0) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (present(bins)) then
+            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
+                is_valid = .false.
+                return
+            end if
+        end if
+    end function validate_histogram_input
 
     subroutine add_axis_padding(x_min, x_max, y_min, y_max)
         !! Add 5% padding to axis ranges
@@ -2907,12 +3338,16 @@ contains
             ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
-                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel, &
+                                    grid_enabled=self%grid_enabled, grid_axis=self%grid_axis, grid_which=self%grid_which, &
+                                    grid_alpha=self%grid_alpha, grid_linestyle=self%grid_linestyle, grid_color=self%grid_color)
         type is (pdf_context)
             ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
-                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel, &
+                                        grid_enabled=self%grid_enabled, grid_axis=self%grid_axis, grid_which=self%grid_which, &
+                                        grid_alpha=self%grid_alpha, grid_linestyle=self%grid_linestyle, grid_color=self%grid_color)
         type is (ascii_context)
             ! ASCII backend doesn't support subplots yet
             ! Could draw a simple frame here if needed
@@ -3064,5 +3499,4 @@ contains
         screen_x = real(subplot%x1, wp) + x_norm * subplot_width
         screen_y = real(subplot%y2, wp) - y_norm * subplot_height
     end subroutine transform_subplot_coordinates
-
 end module fortplot_figure_core

@@ -1,7 +1,7 @@
 # ![fortplot logo](media/logo.jpg)
 
-[![codecov](https://codecov.io/gh/krystophny/fortplot/branch/main/graph/badge.svg)](https://codecov.io/gh/krystophny/fortplot)
-[![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://krystophny.github.io/fortplot/)
+[![codecov](https://codecov.io/gh/lazy-fortran/fortplot/branch/main/graph/badge.svg)](https://codecov.io/gh/lazy-fortran/fortplot)
+[![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
 Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplot.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
 
@@ -111,7 +111,7 @@ to build and run them.
 Add to your `fpm.toml`:
 ```toml
 [[dependencies]]
-fortplot = { git = "https://github.com/krystophny/fortplot" }
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
 ```
 
 ### For CMake projects
@@ -122,7 +122,7 @@ include(FetchContent)
 
 FetchContent_Declare(
     fortplot
-    GIT_REPOSITORY https://github.com/krystophny/fortplot
+    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
     GIT_TAG        main
 )
 FetchContent_MakeAvailable(fortplot)
@@ -134,7 +134,7 @@ target_link_libraries(your_target fortplot::fortplot)
 Install the Python package with pip:
 
 ```bash
-pip install git+https://github.com/krystophny/fortplot.git
+pip install git+https://github.com/lazy-fortran/fortplot.git
 ```
 
 ## Features
@@ -146,7 +146,7 @@ pip install git+https://github.com/krystophny/fortplot.git
 - [x] Streamplots (`streamplot`) for vector field visualization
 - [ ] Scatter plots (`scatter`)
 - [ ] Bar charts (`bar`)
-- [ ] Histograms (`hist`)
+- [x] Histograms (`hist`)
 - [ ] Images (`imshow`)
 
 ### Backends

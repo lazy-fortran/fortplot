@@ -37,4 +37,4 @@ The example generates the following output files:
 - `line_styles.pdf` - Vector format of the same visualization
 - `line_styles.txt` - ASCII art representation of the line styles
 
-See the [documentation gallery](https://krystophny.github.io/fortplot/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.

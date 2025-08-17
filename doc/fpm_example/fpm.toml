@@ -3,5 +3,5 @@ version = "0.1.0"
 license = "MIT"
 
 [dependencies]
-fortplot = { path = "../.." }
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
 

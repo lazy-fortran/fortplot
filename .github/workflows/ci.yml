@@ -78,4 +78,4 @@ jobs:
         cd build
         cmake ..
         make
-        ./fortplotlib_test
+        ./fortplot_test
