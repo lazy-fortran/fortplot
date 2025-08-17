@@ -1150,8 +1150,14 @@ contains
         
         integer :: plot_idx, color_idx
         
+        if (self%plot_count >= self%max_plots) then
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
+        
         ! Expand plots array
-        plot_idx = self%plot_count + 1
         call expand_plots_array(self, plot_idx)
         
         ! Set plot type and copy data
@@ -1212,7 +1218,7 @@ contains
         integer :: plot_idx
         real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
         
-        plot_idx = self%plot_count + 1
+        plot_idx = self%plot_count
         
         if (self%plots(plot_idx)%horizontal) then
             ! Horizontal box plot - data range is in X direction
@@ -1702,25 +1708,7 @@ contains
                     y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                     first_plot = .false.
                 else
-                    ! Update original ranges for histogram
-                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
-                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
-                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
-                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
-                    
-                    ! Update transformed ranges
-                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
-                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
-                end if
-            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
-                if (.not. first_plot) then
-                    ! Update original ranges for box plot (subsequent plots)
+                    ! Update original ranges for subsequent box plot
                     if (self%plots(i)%horizontal) then
                         x_min_orig = min(x_min_orig, self%plots(i)%whisker_low)
                         x_max_orig = max(x_max_orig, self%plots(i)%whisker_high)
@@ -3350,12 +3338,16 @@ contains
             ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
-                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel, &
+                                    grid_enabled=self%grid_enabled, grid_axis=self%grid_axis, grid_which=self%grid_which, &
+                                    grid_alpha=self%grid_alpha, grid_linestyle=self%grid_linestyle, grid_color=self%grid_color)
         type is (pdf_context)
             ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
-                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel, &
+                                        grid_enabled=self%grid_enabled, grid_axis=self%grid_axis, grid_which=self%grid_which, &
+                                        grid_alpha=self%grid_alpha, grid_linestyle=self%grid_linestyle, grid_color=self%grid_color)
         type is (ascii_context)
             ! ASCII backend doesn't support subplots yet
             ! Could draw a simple frame here if needed
