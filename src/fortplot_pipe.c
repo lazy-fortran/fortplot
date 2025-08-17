@@ -23,10 +23,11 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         close_ffmpeg_pipe_c();
     }
     
-    // Build ffmpeg command for pipe input with quality settings for validation
+    // Build ffmpeg command for pipe input with working parameters
+    // Use reasonable quality settings that produce substantial files
     snprintf(command, sizeof(command),
         "ffmpeg -f image2pipe -vcodec png -r %d -i - "
-        "-c:v libx264 -pix_fmt yuv420p -crf 12 -preset ultrafast -tune stillimage -y %s 2>/dev/null",
+        "-c:v libx264 -pix_fmt yuv420p -crf 18 -preset fast -y %s 2>/dev/null",
         fps, filename);
     
     // Open pipe to ffmpeg
