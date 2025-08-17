@@ -173,8 +173,8 @@ contains
         test_file = "regression_624_bytes.mp4"
         
         ! Create minimal content that might trigger small file issue
-        test_x = [(real(i, real64), i=1,3)]
-        test_y = [(1.0_real64, i=1,3)]
+        test_x = [(real(i, real64), i=1,10)]
+        test_y = [(1.0_real64, i=1,10)]
 
         call test_fig%initialize(width=100, height=100)  ! Minimal size
         call test_fig%add_plot(test_x, test_y)
@@ -201,7 +201,7 @@ contains
     subroutine update_624_bytes_data(frame)
         integer, intent(in) :: frame
         ! Minimal change
-        test_y = [(real(frame, real64), i=1,3)]
+        test_y = [(real(frame, real64), i=1,10)]
         call test_fig%set_ydata(1, test_y)
     end subroutine
 
