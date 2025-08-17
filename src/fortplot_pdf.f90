@@ -821,8 +821,7 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                      title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot)
-                                      title, xlabel, ylabel, &
+                                      title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
                                       grid_enabled, grid_axis, grid_which, &
                                       grid_alpha, grid_linestyle, grid_color)
         !! Draw plot axes and frame for PDF backend with scale-aware tick generation
