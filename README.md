@@ -92,8 +92,12 @@ call savefig("log_plot.pdf")
 #### Animation example
 ```fortran
 type(animation_t) :: anim
+integer :: status
 anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
-call anim%save("animation.mp4")
+call anim%save("animation.mp4", fps=24, status=status)
+if (status /= 0) then
+    print *, "ERROR: Animation save failed. Check ffmpeg installation."
+end if
 ```
 
 **MPEG Validation**: Use comprehensive validation framework to verify animation quality:
