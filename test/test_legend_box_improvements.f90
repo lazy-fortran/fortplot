@@ -35,6 +35,7 @@ contains
         call fig%legend()
         
         ! Test files to verify box sizing
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_box_sizing.png')
         call fig%savefig('/tmp/test/test_legend_box_sizing.png')
         
         ! TODO: Add assertions to verify box dimensions contain text
@@ -61,6 +62,7 @@ contains
         call fig%add_plot(x, y2, label="cos(x)")
         
         call fig%legend()
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_text_positioning.png')
         call fig%savefig('/tmp/test/test_legend_text_positioning.png')
         
         ! TODO: Add assertions for text positioning
@@ -92,6 +94,16 @@ contains
         
         ! Test all legend positions
         call fig%legend(location="upper left")
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_margins_ul.png')
+        
+        call fig%legend(location="upper right")
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_margins_ur.png')
+        
+        call fig%legend(location="lower left")
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_margins_ll.png')
+        
+        call fig%legend(location="lower right")
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_margins_lr.png')
         call fig%savefig('/tmp/test/test_legend_margins_ul.png')
         
         call fig%legend(location="upper right")
@@ -130,6 +142,7 @@ contains
         call fig%add_plot(x, y3, label="Damped Cosine")
         
         call fig%legend()
+        call fig%savefig('output/test/test_legend_box_improvements/test_legend_visual_quality.png')
         call fig%savefig('/tmp/test/test_legend_visual_quality.png')
         
         ! TODO: Add assertions for visual quality

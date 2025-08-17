@@ -32,6 +32,7 @@ contains
         call fig%add_plot(x, y, linestyle='o', label='Markers Only')
         
         ! Save as ASCII to visually verify no connecting lines
+        call fig%savefig('output/test/test_scatter_marker_only/test_scatter_marker_only.txt')
         call fig%savefig('/tmp/test_scatter_marker_only.txt')
         
         ! TODO: Add proper assertions to check internal state
