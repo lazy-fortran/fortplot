@@ -83,7 +83,7 @@ call savefig("log_plot.pdf")
 #### Animation example
 ```fortran
 type(animation_t) :: anim
-call FuncAnimation(anim, fig, update_func, frames=100, interval=50)
+anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
 call anim%save("animation.mp4")
 ```
 
