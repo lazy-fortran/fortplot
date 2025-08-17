@@ -172,7 +172,7 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
@@ -302,7 +302,7 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
@@ -376,7 +376,7 @@ contains
         format_ok = (status == 0)
 
         ! Check stream
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         stream_ok = (status == 0)
@@ -388,7 +388,7 @@ contains
         duration_ok = (status == 0)
 
         ! Check codec
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
+        write(command, '(A,A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
                                   trim(filename), '" >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         codec_ok = (status == 0)
