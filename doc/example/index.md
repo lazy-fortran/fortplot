@@ -1,9 +1,9 @@
 title: Examples Gallery
 ---
 
-# fortplotlib Examples Gallery
+# fortplot Examples Gallery
 
-This gallery showcases the capabilities of fortplotlib through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
+This gallery showcases the capabilities of fortplot through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
 
 ## Basic Plotting
 
@@ -70,4 +70,4 @@ Time-evolving vector field animations.
 
 ---
 
-All examples are available in the [example/fortran/](https://github.com/krystophny/fortplotlib/tree/main/example/fortran) directory.
+All examples are available in the [example/fortran/](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran) directory.
