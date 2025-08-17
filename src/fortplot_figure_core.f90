@@ -13,6 +13,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
+    use fortplot_logging, only: log_warning, log_info
     use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_pcolormesh
@@ -630,11 +631,11 @@ contains
             call self%backend%save(filename)
         end select
         
-        write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
+        call log_info('Saved figure: ' // trim(filename))
         
         ! If blocking requested, wait for user input
         if (do_block) then
-            print *, "Press Enter to continue..."
+            call log_info("Press Enter to continue...")
             read(*,*)
         end if
     end subroutine savefig
@@ -663,7 +664,7 @@ contains
         
         ! If blocking requested, wait for user input
         if (do_block) then
-            print *, "Press Enter to continue..."
+            call log_info("Press Enter to continue...")
             read(*,*)
         end if
     end subroutine show
@@ -2536,23 +2537,22 @@ contains
         real(wp), intent(in) :: y_new(:)
         
         if (plot_index < 1 .or. plot_index > self%plot_count) then
-            print *, "Warning: Invalid plot index", plot_index, "for set_ydata"
+            call log_warning("Invalid plot index for set_ydata")
             return
         end if
         
         if (self%plots(plot_index)%plot_type /= PLOT_TYPE_LINE) then
-            print *, "Warning: set_ydata only supported for line plots"
+            call log_warning("set_ydata only supported for line plots")
             return
         end if
         
         if (.not. allocated(self%plots(plot_index)%y)) then
-            print *, "Warning: Plot", plot_index, "has no y data to update"
+            call log_warning("Plot has no y data to update")
             return
         end if
         
         if (size(y_new) /= size(self%plots(plot_index)%y)) then
-            print *, "Warning: New y data size", size(y_new), &
-                     "does not match existing size", size(self%plots(plot_index)%y)
+            call log_warning("New y data size does not match existing size")
             return
         end if
         
@@ -2634,7 +2634,7 @@ contains
             write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
             call execute_command_line(command, exitstat=status)
             if (status /= 0) then
-                print *, "Warning: Could not create directory: ", trim(dir_path)
+                call log_warning("Could not create directory: " // trim(dir_path))
             end if
         end if
     end subroutine ensure_directory_exists
