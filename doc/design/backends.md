@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible backend architecture in fortplotlib, covering rendering systems, output formats, and drawing primitives. The implementation follows matplotlib's three-layer backend architecture while leveraging Fortran's polymorphism and type safety for high-performance scientific visualization.
+This document describes the matplotlib-compatible backend architecture in fortplot, covering rendering systems, output formats, and drawing primitives. The implementation follows matplotlib's three-layer backend architecture while leveraging Fortran's polymorphism and type safety for high-performance scientific visualization.
 
 ## Problem Statement
 
@@ -490,4 +490,4 @@ end subroutine
 - **`test/test_drawing_primitives.f90`** - Drawing API compliance tests
 - **`test/test_performance_backends.f90`** - Backend performance benchmarks
 
-This implementation ensures fortplotlib provides matplotlib-compatible backend architecture with professional rendering capabilities, flexible output format support, sophisticated graphics state management, and high-performance optimization for scientific visualization workflows.
+This implementation ensures fortplot provides matplotlib-compatible backend architecture with professional rendering capabilities, flexible output format support, sophisticated graphics state management, and high-performance optimization for scientific visualization workflows.

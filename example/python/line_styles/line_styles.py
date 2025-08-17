@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Line styles demonstration - Dual mode: fortplotlib or matplotlib
+Line styles demonstration - Dual mode: fortplot or matplotlib
 Equivalent to line_styles.f90 for visual comparison
 """
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def main():
     print(f"=== Line Style Examples ({backend}) ===")
@@ -41,8 +41,8 @@ def main():
     plt.savefig('line_styles.png')
     plt.savefig('line_styles.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('line_styles.txt')
     
     if backend == "matplotlib":

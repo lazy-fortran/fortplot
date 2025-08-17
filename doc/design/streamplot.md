@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete matplotlib-compatible streamplot implementation in fortplotlib. The implementation follows matplotlib's algorithm exactly to ensure identical visual output and behavior.
+This document describes the complete matplotlib-compatible streamplot implementation in fortplot. The implementation follows matplotlib's algorithm exactly to ensure identical visual output and behavior.
 
 ## Problem Statement
 
@@ -261,18 +261,18 @@ maxds = min(1.0_wp/mask%nx, 1.0_wp/mask%ny, 0.1_wp)
 
 ### Implementation Comparison
 
-7. **Matplotlib vs Fortplotlib approach**:
+7. **Matplotlib vs Fortplot approach**:
    - **Matplotlib**: Python with C++ contourpy backend for performance
-   - **Fortplotlib**: Pure Fortran implementation for scientific computing integration
+   - **Fortplot**: Pure Fortran implementation for scientific computing integration
    - **Coordinate systems**: Both use three-layer coordinate mapping
    - **Collision detection**: Identical 30×30 mask approach with density scaling
-   - **Integration**: Matplotlib uses adaptive RK, fortplotlib uses fixed-step Euler
+   - **Integration**: Matplotlib uses adaptive RK, fortplot uses fixed-step Euler
    - **Seed generation**: Both use spiral boundary-first pattern
 
 8. **Performance characteristics**:
    - **Matplotlib**: ~6.2s for Python examples (includes Python overhead)
-   - **Fortplotlib**: ~1.6s for same examples (75% faster, pure Fortran)
-   - **Memory usage**: Fortplotlib more efficient due to static allocation
+   - **Fortplot**: ~1.6s for same examples (75% faster, pure Fortran)
+   - **Memory usage**: Fortplot more efficient due to static allocation
    - **Scalability**: Both algorithms scale O(mask_size × avg_trajectory_length)
 
 ## Implementation Files
@@ -283,4 +283,4 @@ maxds = min(1.0_wp/mask%nx, 1.0_wp/mask%ny, 0.1_wp)
 - **`test/test_streamline_placement.f90`** - Placement algorithm tests
 - **`test/test_matplotlib_comparison.f90`** - Compatibility verification
 
-This implementation ensures fortplotlib generates streamplots that are visually identical to matplotlib, following the exact same algorithms and data structures for professional-quality scientific visualization.
+This implementation ensures fortplot generates streamplots that are visually identical to matplotlib, following the exact same algorithms and data structures for professional-quality scientific visualization.

@@ -24,13 +24,26 @@ module fortplot_figure_core
     implicit none
 
     private
-    public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR
+    public :: figure_t, plot_data_t, subplot_t
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
     integer, parameter :: PLOT_TYPE_BAR = 4
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 6
+
+    ! Histogram constants
+    integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    integer, parameter :: MAX_SAFE_BINS = 10000
+    real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
+    real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -51,12 +64,38 @@ module fortplot_figure_core
         real(wp), allocatable :: bar_x(:), bar_heights(:)
         real(wp) :: bar_width = 0.8_wp
         logical :: bar_horizontal = .false.
+        ! Histogram data
+        real(wp), allocatable :: hist_bin_edges(:)
+        real(wp), allocatable :: hist_counts(:)
+        logical :: hist_density = .false.
+        ! Box plot data
+        real(wp), allocatable :: box_data(:)
+        real(wp) :: position = 1.0_wp
+        real(wp) :: width = 0.6_wp
+        logical :: show_outliers = .true.
+        logical :: horizontal = .false.
+        real(wp) :: q1, q2, q3  ! Quartiles
+        real(wp) :: whisker_low, whisker_high
+        real(wp), allocatable :: outliers(:)
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
     end type plot_data_t
+
+    type :: subplot_t
+        !! Individual subplot container
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: plot_count = 0
+        integer :: max_plots = 10
+        ! Subplot-specific properties
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        character(len=10) :: xscale = 'linear'
+        character(len=10) :: yscale = 'linear'
+    end type subplot_t
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -123,6 +162,8 @@ module fortplot_figure_core
         procedure :: add_pcolormesh
         procedure :: bar
         procedure :: barh
+        procedure :: hist
+        procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel

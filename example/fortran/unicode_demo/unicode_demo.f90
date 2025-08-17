@@ -1,5 +1,5 @@
 program unicode_demo
-    !! Demonstration of Unicode and Greek letter support in fortplotlib
+    !! Demonstration of Unicode and Greek letter support in fortplot
     !! 
     !! This example shows how to use LaTeX-style Greek letter commands
     !! in titles, axis labels, and legend entries across all backends.
@@ -29,7 +29,7 @@ program unicode_demo
         z(i) = sin(2.0_wp * t(i)) * 0.5_wp             ! Higher frequency wave
     end do
     
-    print *, "=== Unicode/Greek Letter Demo for fortplotlib ==="
+    print *, "=== Unicode/Greek Letter Demo for fortplot ==="
     print *, ""
     print *, "This demo creates plots with Greek letters and Unicode symbols"
     print *, "showing mathematical wave functions in three output formats:"

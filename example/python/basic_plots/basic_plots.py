@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """
-Basic plotting examples - Dual mode: fortplotlib or matplotlib
+Basic plotting examples - Dual mode: fortplot or matplotlib
 Equivalent to basic_plots.f90 for visual comparison
 """
 
 import sys
 import numpy as np
 
-# Dual-mode import: --matplotlib uses matplotlib, default uses fortplotlib
+# Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
     backend = "matplotlib"
 else:
-    import fortplotlib.fortplot as plt
-    backend = "fortplotlib"
+    import fortplot.fortplot as plt
+    backend = "fortplot"
 
 def simple_plots():
     """Simple plot - equivalent to Fortran functional API"""
@@ -32,8 +32,8 @@ def simple_plots():
     plt.savefig('simple_plot.png')
     plt.savefig('simple_plot.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('simple_plot.txt')
     
     if backend == "matplotlib":
@@ -59,8 +59,8 @@ def multi_line_plot():
     plt.savefig('multi_line.png')
     plt.savefig('multi_line.pdf')
     
-    # Save TXT for fortplotlib only
-    if backend == "fortplotlib":
+    # Save TXT for fortplot only
+    if backend == "fortplot":
         plt.savefig('multi_line.txt')
     
     if backend == "matplotlib":
