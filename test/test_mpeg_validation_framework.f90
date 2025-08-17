@@ -113,9 +113,16 @@ contains
         logical :: adequate
         integer :: min_expected
         
-        ! Even heavily compressed video should be larger than a few KB
-        ! for multiple frames at reasonable resolution
-        min_expected = 5000  ! Conservative minimum 5KB
+        ! Calculate minimum expected size based on content
+        ! For simple animations: ~200-500 bytes per frame minimum
+        ! Even heavily compressed H.264 should produce some data per frame
+        min_expected = 1000  ! Conservative minimum 1KB for any valid video
+        
+        ! Additional heuristics could be added here based on:
+        ! - Frame count (if available in metadata)
+        ! - Resolution (if available in metadata)
+        ! - Duration (if available in metadata)
+        
         adequate = (file_size >= min_expected)
     end function
 

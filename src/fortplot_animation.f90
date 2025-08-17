@@ -256,7 +256,14 @@ contains
         end do
         
         stat = close_ffmpeg_pipe()
-        status = 0
+        
+        ! Validate the generated video file
+        if (validate_generated_video(filename)) then
+            status = 0
+        else
+            status = -7
+            print *, "Error: Generated video failed validation"
+        end if
     end subroutine save_animation_with_ffmpeg_pipe
 
     subroutine generate_png_frame_data(anim, frame_idx, png_data, status)
@@ -441,5 +448,72 @@ contains
         call date_and_time(values=values)
         ts = values(5) * 10000 + values(6) * 100 + values(7)
     end function get_current_timestamp
+
+    function validate_generated_video(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        logical :: exists, has_content, has_video_header, passes_ffprobe, adequate_size
+        integer :: file_size
+        
+        ! Comprehensive validation for generated video files
+        inquire(file=filename, exist=exists, size=file_size)
+        
+        has_content = (file_size > 100)  ! Minimum reasonable size
+        adequate_size = validate_size_for_video_content(filename, file_size)
+        has_video_header = validate_video_header_format(filename)
+        passes_ffprobe = validate_with_ffprobe(filename)
+        
+        is_valid = exists .and. has_content .and. adequate_size .and. &
+                  has_video_header .and. passes_ffprobe
+    end function validate_generated_video
+
+    function validate_size_for_video_content(filename, file_size) result(adequate)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: file_size
+        logical :: adequate
+        integer :: min_expected
+        
+        ! Calculate minimum expected size based on content
+        ! For simple animations: ~200-500 bytes per frame minimum
+        ! Even heavily compressed H.264 should produce some data per frame
+        min_expected = 1000  ! Conservative minimum 1KB for any valid video
+        
+        adequate = (file_size >= min_expected)
+    end function validate_size_for_video_content
+
+    function validate_video_header_format(filename) result(valid_header)
+        character(len=*), intent(in) :: filename
+        logical :: valid_header
+        character(len=12) :: header
+        integer :: file_unit, ios
+        
+        valid_header = .false.
+        
+        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
+        if (ios /= 0) return
+        
+        read(file_unit, iostat=ios) header
+        close(file_unit)
+        
+        if (ios /= 0) return
+        
+        ! Look for MP4 box signatures
+        valid_header = (index(header, 'ftyp') > 0 .or. &
+                       index(header, 'mdat') > 0 .or. &
+                       index(header, 'moov') > 0 .or. &
+                       index(header, 'mp4') > 0)
+    end function validate_video_header_format
+
+    function validate_with_ffprobe(filename) result(valid)
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        character(len=500) :: command
+        integer :: status
+        
+        ! Use ffprobe to validate
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        call execute_command_line(command, exitstat=status)
+        valid = (status == 0)
+    end function validate_with_ffprobe
 
 end module fortplot_animation
