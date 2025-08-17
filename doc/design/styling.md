@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible styling and appearance system in fortplotlib, covering color management, typography, line styles, markers, and theme support. The implementation follows matplotlib's rcParams system and Artist property hierarchy while maintaining Fortran's type safety and performance characteristics.
+This document describes the matplotlib-compatible styling and appearance system in fortplot, covering color management, typography, line styles, markers, and theme support. The implementation follows matplotlib's rcParams system and Artist property hierarchy while maintaining Fortran's type safety and performance characteristics.
 
 ## Problem Statement
 
@@ -508,8 +508,8 @@ end function
 - **`src/fortplot_style_sheets.f90`** - Style sheet management
 - **`src/fortplot_artists.f90`** - Artist property hierarchy
 - **`src/fortplot_blending.f90`** - Transparency and compositing
-- **`python/fortplotlib/fortplot.py`** - Enhanced Python styling interface
+- **`python/fortplot/fortplot.py`** - Enhanced Python styling interface
 - **`test/test_styling.f90`** - Comprehensive styling system tests
 - **`test/test_color_management.f90`** - Color system verification
 
-This implementation ensures fortplotlib provides matplotlib-compatible styling and appearance management with professional color palettes, advanced typography, comprehensive style sheets, and flexible artist property systems for high-quality scientific visualization.
+This implementation ensures fortplot provides matplotlib-compatible styling and appearance management with professional color palettes, advanced typography, comprehensive style sheets, and flexible artist property systems for high-quality scientific visualization.

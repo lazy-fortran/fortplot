@@ -29,7 +29,7 @@ These are not suggestions - they are strict requirements that MUST be followed i
 
 ## Project Overview
 
-**fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
+**fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
 
 ## API Usage
 

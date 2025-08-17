@@ -3,7 +3,7 @@ title: Line Styles Example
 
 # Line Styles
 
-This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotted lines.
+This example demonstrates all available line styles in fortplot, showing how to customize the appearance of plotted lines.
 
 ## Files
 

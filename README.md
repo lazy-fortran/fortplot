@@ -1,9 +1,9 @@
-# ![fortplotlib logo](media/logo.jpg)
+# ![fortplot logo](media/logo.jpg)
 
 [![codecov](https://codecov.io/gh/lazy-fortran/fortplot/branch/main/graph/badge.svg)](https://codecov.io/gh/lazy-fortran/fortplot)
 [![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
-Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplotlib.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran . This library is under active development and API still subject to change. There are no external dependencies. Ironically, it has also Python interface installable via `pip` (see below) `fortplot.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
 
 ## Usage
 
@@ -111,7 +111,7 @@ to build and run them.
 Add to your `fpm.toml`:
 ```toml
 [[dependencies]]
-fortplotlib = { git = "https://github.com/lazy-fortran/fortplot" }
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
 ```
 
 ### For CMake projects
@@ -121,13 +121,13 @@ Add to your `CMakeLists.txt`:
 include(FetchContent)
 
 FetchContent_Declare(
-    fortplotlib
+    fortplot
     GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
     GIT_TAG        main
 )
-FetchContent_MakeAvailable(fortplotlib)
+FetchContent_MakeAvailable(fortplot)
 
-target_link_libraries(your_target fortplotlib::fortplotlib)
+target_link_libraries(your_target fortplot::fortplot)
 ```
 
 ### For Python projects

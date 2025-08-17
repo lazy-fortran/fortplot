@@ -3,7 +3,7 @@ title: Marker Demo Example
 
 # Marker Demo
 
-This example showcases various marker types and scatter plot capabilities in fortplotlib.
+This example showcases various marker types and scatter plot capabilities in fortplot.
 
 ## Files
 

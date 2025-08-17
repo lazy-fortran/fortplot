@@ -1,5 +1,5 @@
 program generate_example_docs
-    !! Generate FORD documentation pages for fortplotlib examples
+    !! Generate FORD documentation pages for fortplot examples
     implicit none
     
     character(len=256) :: example_dirs(20)

@@ -24,19 +24,25 @@ module fortplot_figure_core
     implicit none
 
     private
-    public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_HISTOGRAM
+    public :: figure_t, plot_data_t, subplot_t
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
     integer, parameter :: PLOT_TYPE_HISTOGRAM = 4
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 5
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
     integer, parameter :: MAX_SAFE_BINS = 10000
     real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
     real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
     
     ! Line rendering constants
     real(wp), parameter :: PLOT_LINE_WIDTH = 2.0_wp
@@ -71,12 +77,38 @@ module fortplot_figure_core
         real(wp), allocatable :: hist_bin_edges(:)
         real(wp), allocatable :: hist_counts(:)
         logical :: hist_density = .false.
+        ! Box plot data
+        real(wp), allocatable :: box_data(:)
+        real(wp) :: position = 1.0_wp
+        real(wp) :: width = 0.6_wp
+        logical :: show_outliers = .true.
+        logical :: horizontal = .false.
+        real(wp) :: q1, q2, q3  ! Quartiles
+        real(wp) :: whisker_low, whisker_high
+        real(wp), allocatable :: outliers(:)
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
     end type plot_data_t
+
+    type :: subplot_t
+        !! Individual subplot container
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: plot_count = 0
+        integer :: max_plots = 10
+        ! Subplot-specific properties
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        real(wp) :: x_min = 0.0_wp, x_max = 1.0_wp
+        real(wp) :: y_min = 0.0_wp, y_max = 1.0_wp
+        logical :: xlim_set = .false.
+        logical :: ylim_set = .false.
+        ! Subplot position in pixels
+        integer :: x1, y1, x2, y2
+    end type subplot_t
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -131,9 +163,25 @@ module fortplot_figure_core
         ! Line drawing properties
         real(wp) :: current_line_width = 1.0_wp
         
+        ! Grid line properties
+        logical :: grid_enabled = .false.
+        character(len=10) :: grid_axis = 'both'
+        character(len=10) :: grid_which = 'major'
+        real(wp) :: grid_alpha = 0.3_wp
+        character(len=10) :: grid_linestyle = '-'
+        real(wp), dimension(3) :: grid_color = [0.5_wp, 0.5_wp, 0.5_wp]
+        
         ! Streamline data (temporary placeholder)
         type(plot_data_t), allocatable :: streamlines(:)
         logical :: has_error = .false.
+
+        ! Subplot management
+        integer :: subplot_rows = 0
+        integer :: subplot_cols = 0
+        type(subplot_t), allocatable :: subplots_array(:,:)
+        logical :: using_subplots = .false.
+        real(wp) :: subplot_hgap = 0.05_wp  ! Horizontal gap between subplots
+        real(wp) :: subplot_vgap = 0.08_wp  ! Vertical gap between subplots (increased for titles)
 
     contains
         procedure :: initialize
@@ -142,6 +190,7 @@ module fortplot_figure_core
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
         procedure :: hist
+        procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -152,10 +201,19 @@ module fortplot_figure_core
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
+        procedure :: grid
         procedure :: set_ydata
         procedure :: legend => figure_legend
         procedure :: show
         procedure :: clear_streamlines
+        ! Subplot methods
+        procedure :: subplots
+        procedure :: subplot_plot
+        procedure :: subplot_plot_count
+        procedure :: subplot_set_title
+        procedure :: subplot_set_xlabel
+        procedure :: subplot_set_ylabel
+        procedure :: subplot_title => get_subplot_title
         final :: destroy
     end type figure_t
 
@@ -290,6 +348,27 @@ contains
         call add_histogram_plot_data(self, data, bins, density, label, color)
         call update_data_ranges(self)
     end subroutine hist
+
+    subroutine boxplot(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot to figure using statistical data
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        ! Basic input validation (following NO DEFENSIVE PROGRAMMING principle)
+        if (size(data) < 1) then
+            print *, "Warning: Box plot requires at least 1 data point"
+            return
+        end if
+        
+        call add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        call update_data_ranges_boxplot(self)
+    end subroutine boxplot
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
@@ -512,13 +591,239 @@ contains
         self%current_line_width = width
     end subroutine set_line_width
 
+    subroutine grid(self, enable, axis, which, alpha, linestyle, color)
+        !! Enable/disable and customize grid lines
+        class(figure_t), intent(inout) :: self
+        logical, intent(in), optional :: enable
+        character(len=*), intent(in), optional :: axis, which, linestyle
+        real(wp), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: color(3)
+        
+        if (present(enable)) then
+            self%grid_enabled = enable
+        end if
+        
+        if (present(axis)) then
+            if (axis == 'x' .or. axis == 'y' .or. axis == 'both') then
+                self%grid_axis = axis
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid axis value. Use "x", "y", or "both"'
+            end if
+        end if
+        
+        if (present(which)) then
+            if (which == 'major' .or. which == 'minor') then
+                self%grid_which = which
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Invalid which value. Use "major" or "minor"'
+            end if
+        end if
+        
+        if (present(alpha)) then
+            if (alpha >= 0.0_wp .and. alpha <= 1.0_wp) then
+                self%grid_alpha = alpha
+                self%grid_enabled = .true.
+            else
+                print *, 'Warning: Alpha must be between 0.0 and 1.0'
+            end if
+        end if
+        
+        if (present(linestyle)) then
+            self%grid_linestyle = linestyle
+            self%grid_enabled = .true.
+        end if
+        
+        if (present(color)) then
+            self%grid_color = color
+            self%grid_enabled = .true.
+        end if
+    end subroutine grid
+
     subroutine destroy(self)
         !! Clean up figure resources
         type(figure_t), intent(inout) :: self
         
         if (allocated(self%plots)) deallocate(self%plots)
         if (allocated(self%backend)) deallocate(self%backend)
+        if (allocated(self%subplots_array)) deallocate(self%subplots_array)
     end subroutine destroy
+
+    subroutine subplots(self, rows, cols, hgap, vgap)
+        !! Create subplot grid layout
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: rows, cols
+        real(wp), intent(in), optional :: hgap, vgap
+        
+        integer :: i, j
+        
+        self%subplot_rows = rows
+        self%subplot_cols = cols
+        self%using_subplots = .true.
+        
+        if (present(hgap)) self%subplot_hgap = hgap
+        if (present(vgap)) self%subplot_vgap = vgap
+        
+        ! Increase top margin to accommodate subplot titles
+        self%margin_top = 0.10_wp  ! 10% instead of default 5%
+        
+        ! Allocate subplot array
+        if (allocated(self%subplots_array)) deallocate(self%subplots_array)
+        allocate(self%subplots_array(rows, cols))
+        
+        ! Initialize each subplot
+        do i = 1, rows
+            do j = 1, cols
+                allocate(self%subplots_array(i,j)%plots(self%subplots_array(i,j)%max_plots))
+                self%subplots_array(i,j)%plot_count = 0
+            end do
+        end do
+        
+        ! Calculate subplot positions
+        call calculate_subplot_positions(self)
+    end subroutine subplots
+    
+    subroutine subplot_plot(self, row, col, x, y, label, linestyle, color, marker)
+        !! Add plot to specific subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx
+        
+        if (.not. allocated(self%subplots_array)) then
+            print *, "Error: Subplots not initialized. Call subplots() first."
+            return
+        end if
+        
+        if (row < 1 .or. row > self%subplot_rows .or. col < 1 .or. col > self%subplot_cols) then
+            print *, "Error: Invalid subplot position"
+            return
+        end if
+        
+        ! Add plot to subplot
+        plot_idx = self%subplots_array(row, col)%plot_count + 1
+        if (plot_idx > self%subplots_array(row, col)%max_plots) then
+            print *, "Warning: Maximum plots reached for subplot"
+            return
+        end if
+        
+        self%subplots_array(row, col)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        
+        ! Allocate and copy data
+        allocate(self%subplots_array(row, col)%plots(plot_idx)%x(size(x)))
+        allocate(self%subplots_array(row, col)%plots(plot_idx)%y(size(y)))
+        self%subplots_array(row, col)%plots(plot_idx)%x = x
+        self%subplots_array(row, col)%plots(plot_idx)%y = y
+        
+        ! Set optional parameters
+        if (present(label)) then
+            self%subplots_array(row, col)%plots(plot_idx)%label = label
+        end if
+        
+        if (present(linestyle)) then
+            self%subplots_array(row, col)%plots(plot_idx)%linestyle = linestyle
+        end if
+        
+        if (present(marker)) then
+            self%subplots_array(row, col)%plots(plot_idx)%marker = marker
+        end if
+        
+        if (present(color)) then
+            self%subplots_array(row, col)%plots(plot_idx)%color = color
+        else
+            ! Use default color cycling
+            self%subplots_array(row, col)%plots(plot_idx)%color = &
+                self%colors(:, mod(plot_idx - 1, 6) + 1)
+        end if
+        
+        self%subplots_array(row, col)%plot_count = plot_idx
+        
+        ! Update subplot data ranges
+        call update_subplot_ranges(self, row, col)
+    end subroutine subplot_plot
+    
+    function subplot_plot_count(self, row, col) result(count)
+        !! Get number of plots in specific subplot
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: row, col
+        integer :: count
+        
+        count = 0
+        if (allocated(self%subplots_array)) then
+            if (row >= 1 .and. row <= self%subplot_rows .and. &
+                col >= 1 .and. col <= self%subplot_cols) then
+                count = self%subplots_array(row, col)%plot_count
+            end if
+        end if
+    end function subplot_plot_count
+    
+    subroutine subplot_set_title(self, row, col, title)
+        !! Set title for specific subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        character(len=*), intent(in) :: title
+        
+        if (allocated(self%subplots_array)) then
+            if (row >= 1 .and. row <= self%subplot_rows .and. &
+                col >= 1 .and. col <= self%subplot_cols) then
+                self%subplots_array(row, col)%title = title
+            end if
+        end if
+    end subroutine subplot_set_title
+    
+    subroutine subplot_set_xlabel(self, row, col, label)
+        !! Set x-axis label for specific subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        character(len=*), intent(in) :: label
+        
+        if (allocated(self%subplots_array)) then
+            if (row >= 1 .and. row <= self%subplot_rows .and. &
+                col >= 1 .and. col <= self%subplot_cols) then
+                self%subplots_array(row, col)%xlabel = label
+            end if
+        end if
+    end subroutine subplot_set_xlabel
+    
+    subroutine subplot_set_ylabel(self, row, col, label)
+        !! Set y-axis label for specific subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        character(len=*), intent(in) :: label
+        
+        if (allocated(self%subplots_array)) then
+            if (row >= 1 .and. row <= self%subplot_rows .and. &
+                col >= 1 .and. col <= self%subplot_cols) then
+                self%subplots_array(row, col)%ylabel = label
+            end if
+        end if
+    end subroutine subplot_set_ylabel
+    
+    function get_subplot_title(self, row, col) result(title)
+        !! Get title of specific subplot
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: row, col
+        character(len=:), allocatable :: title
+        
+        if (allocated(self%subplots_array)) then
+            if (row >= 1 .and. row <= self%subplot_rows .and. &
+                col >= 1 .and. col <= self%subplot_cols) then
+                if (allocated(self%subplots_array(row, col)%title)) then
+                    title = self%subplots_array(row, col)%title
+                else
+                    title = ""
+                end if
+            else
+                title = ""
+            end if
+        else
+            title = ""
+        end if
+    end function get_subplot_title
 
     ! Private helper routines (implementation details)
     
@@ -832,6 +1137,346 @@ contains
         self%plot_count = plot_idx
     end subroutine update_data_ranges_pcolormesh
 
+    subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot data to internal storage with statistical calculations
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx, color_idx
+        
+        ! Expand plots array
+        plot_idx = self%plot_count + 1
+        call expand_plots_array(self, plot_idx)
+        
+        ! Set plot type and copy data
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        if (allocated(self%plots(plot_idx)%box_data)) deallocate(self%plots(plot_idx)%box_data)
+        allocate(self%plots(plot_idx)%box_data(size(data)))
+        self%plots(plot_idx)%box_data = data
+        
+        ! Set optional parameters
+        if (present(position)) then
+            self%plots(plot_idx)%position = position
+        end if
+        
+        if (present(width)) then
+            self%plots(plot_idx)%width = width
+        end if
+        
+        if (present(show_outliers)) then
+            self%plots(plot_idx)%show_outliers = show_outliers
+        end if
+        
+        if (present(horizontal)) then
+            self%plots(plot_idx)%horizontal = horizontal
+        end if
+        
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        end if
+        
+        ! Set color
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Calculate statistics
+        call calculate_box_statistics(self%plots(plot_idx))
+    end subroutine add_boxplot_data
+
+    subroutine expand_plots_array(self, required_size)
+        !! Expand plots array if needed to accommodate new plot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: required_size
+        
+        ! Simple check - the plots array should already be allocated in initialize
+        ! This is just a placeholder to satisfy the call
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%max_plots))
+        end if
+    end subroutine expand_plots_array
+
+    subroutine update_data_ranges_boxplot(self)
+        !! Update figure data ranges after adding box plot
+        class(figure_t), intent(inout) :: self
+        
+        integer :: plot_idx
+        real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
+        
+        plot_idx = self%plot_count + 1
+        
+        if (self%plots(plot_idx)%horizontal) then
+            ! Horizontal box plot - data range is in X direction
+            x_min_plot = self%plots(plot_idx)%whisker_low
+            x_max_plot = self%plots(plot_idx)%whisker_high
+            if (allocated(self%plots(plot_idx)%outliers)) then
+                if (size(self%plots(plot_idx)%outliers) > 0) then
+                    x_min_plot = min(x_min_plot, minval(self%plots(plot_idx)%outliers))
+                    x_max_plot = max(x_max_plot, maxval(self%plots(plot_idx)%outliers))
+                end if
+            end if
+            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
+        else
+            ! Vertical box plot - data range is in Y direction
+            y_min_plot = self%plots(plot_idx)%whisker_low
+            y_max_plot = self%plots(plot_idx)%whisker_high
+            if (allocated(self%plots(plot_idx)%outliers)) then
+                if (size(self%plots(plot_idx)%outliers) > 0) then
+                    y_min_plot = min(y_min_plot, minval(self%plots(plot_idx)%outliers))
+                    y_max_plot = max(y_max_plot, maxval(self%plots(plot_idx)%outliers))
+                end if
+            end if
+            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH
+            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH
+        end if
+        
+        ! Update figure ranges
+        if (self%plot_count == 0) then
+            self%x_min = x_min_plot
+            self%x_max = x_max_plot
+            self%y_min = y_min_plot
+            self%y_max = y_max_plot
+        else
+            self%x_min = min(self%x_min, x_min_plot)
+            self%x_max = max(self%x_max, x_max_plot)
+            self%y_min = min(self%y_min, y_min_plot)
+            self%y_max = max(self%y_max, y_max_plot)
+        end if
+        
+        self%plot_count = plot_idx
+    end subroutine update_data_ranges_boxplot
+
+    subroutine calculate_box_statistics(plot_data)
+        !! Calculate quartiles, whiskers, and outliers for box plot
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp), allocatable :: sorted_data(:)
+        
+        if (.not. allocated(plot_data%box_data)) return
+        if (size(plot_data%box_data) < 1) return
+        
+        call sort_data(plot_data%box_data, sorted_data)
+        call calculate_quartiles(sorted_data, plot_data)
+        call calculate_whiskers(sorted_data, plot_data)
+        call identify_outliers(sorted_data, plot_data)
+    end subroutine calculate_box_statistics
+    
+    subroutine sort_data(input_data, sorted_data)
+        !! Sort input data using quicksort algorithm
+        real(wp), intent(in) :: input_data(:)
+        real(wp), allocatable, intent(out) :: sorted_data(:)
+        
+        integer :: n
+        
+        n = size(input_data)
+        allocate(sorted_data(n))
+        sorted_data = input_data
+        call quicksort(sorted_data, 1, n)
+    end subroutine sort_data
+    
+    subroutine calculate_quartiles(sorted_data, plot_data)
+        !! Calculate Q1, Q2 (median), Q3 from sorted data
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        
+        if (n == 1) then
+            plot_data%q1 = sorted_data(1)
+            plot_data%q2 = sorted_data(1)
+            plot_data%q3 = sorted_data(1)
+        else if (n == 2) then
+            plot_data%q1 = sorted_data(1)
+            plot_data%q2 = (sorted_data(1) + sorted_data(2)) * HALF_WIDTH
+            plot_data%q3 = sorted_data(2)
+        else
+            call calculate_standard_quartiles(sorted_data, plot_data)
+        end if
+    end subroutine calculate_quartiles
+    
+    subroutine calculate_standard_quartiles(sorted_data, plot_data)
+        !! Calculate quartiles for datasets with n >= 3
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q2_idx, q3_idx
+        
+        n = size(sorted_data)
+        q2_idx = (n + 1) / 2
+        
+        if (mod(n + 1, 2) == 0) then
+            plot_data%q2 = sorted_data(q2_idx)
+        else
+            plot_data%q2 = (sorted_data(q2_idx) + sorted_data(q2_idx + 1)) * HALF_WIDTH
+        end if
+        
+        call calculate_q1_q3(sorted_data, q2_idx, plot_data)
+    end subroutine calculate_standard_quartiles
+    
+    subroutine calculate_q1_q3(sorted_data, q2_idx, plot_data)
+        !! Calculate Q1 and Q3 values
+        real(wp), intent(in) :: sorted_data(:)
+        integer, intent(in) :: q2_idx
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: n, q1_idx, q3_idx
+        
+        n = size(sorted_data)
+        
+        q1_idx = (q2_idx + 1) / 2
+        if (q2_idx > 1 .and. mod(q2_idx + 1, 2) == 0) then
+            plot_data%q1 = sorted_data(q1_idx)
+        else if (q2_idx > 1) then
+            plot_data%q1 = (sorted_data(q1_idx) + sorted_data(q1_idx + 1)) * HALF_WIDTH
+        else
+            plot_data%q1 = sorted_data(1)
+        end if
+        
+        q3_idx = q2_idx + (n - q2_idx + 1) / 2
+        if (q3_idx <= n .and. mod(n - q2_idx + 1, 2) == 0) then
+            plot_data%q3 = sorted_data(q3_idx)
+        else if (q3_idx < n) then
+            plot_data%q3 = (sorted_data(q3_idx) + sorted_data(q3_idx + 1)) * HALF_WIDTH
+        else
+            plot_data%q3 = sorted_data(n)
+        end if
+    end subroutine calculate_q1_q3
+    
+    subroutine calculate_whiskers(sorted_data, plot_data)
+        !! Calculate whisker positions based on IQR
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp) :: iqr, whisker_range
+        integer :: i, n
+        
+        n = size(sorted_data)
+        iqr = plot_data%q3 - plot_data%q1
+        whisker_range = IQR_WHISKER_MULTIPLIER * iqr
+        
+        plot_data%whisker_low = plot_data%q1 - whisker_range
+        plot_data%whisker_high = plot_data%q3 + whisker_range
+        
+        do i = 1, n
+            if (sorted_data(i) >= plot_data%q1 - whisker_range) then
+                plot_data%whisker_low = sorted_data(i)
+                exit
+            end if
+        end do
+        
+        do i = n, 1, -1
+            if (sorted_data(i) <= plot_data%q3 + whisker_range) then
+                plot_data%whisker_high = sorted_data(i)
+                exit
+            end if
+        end do
+    end subroutine calculate_whiskers
+    
+    subroutine identify_outliers(sorted_data, plot_data)
+        !! Identify and store outlier values
+        real(wp), intent(in) :: sorted_data(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        logical, allocatable :: is_outlier(:)
+        integer :: n, outlier_count, i
+        
+        n = size(sorted_data)
+        allocate(is_outlier(n))
+        is_outlier = .false.
+        outlier_count = 0
+        
+        do i = 1, n
+            if (sorted_data(i) < plot_data%whisker_low .or. sorted_data(i) > plot_data%whisker_high) then
+                is_outlier(i) = .true.
+                outlier_count = outlier_count + 1
+            end if
+        end do
+        
+        call store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+    end subroutine identify_outliers
+    
+    subroutine store_outliers(sorted_data, is_outlier, outlier_count, plot_data)
+        !! Store identified outliers in plot data
+        real(wp), intent(in) :: sorted_data(:)
+        logical, intent(in) :: is_outlier(:)
+        integer, intent(in) :: outlier_count
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        integer :: i, count
+        
+        if (outlier_count > 0) then
+            allocate(plot_data%outliers(outlier_count))
+            count = 0
+            do i = 1, size(sorted_data)
+                if (is_outlier(i)) then
+                    count = count + 1
+                    plot_data%outliers(count) = sorted_data(i)
+                end if
+            end do
+        end if
+    end subroutine store_outliers
+
+    recursive subroutine quicksort(arr, low, high)
+        !! Efficient O(n log n) quicksort algorithm
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: low, high
+        
+        integer :: pivot_idx
+        
+        if (low < high) then
+            call partition(arr, low, high, pivot_idx)
+            call quicksort(arr, low, pivot_idx - 1)
+            call quicksort(arr, pivot_idx + 1, high)
+        end if
+    end subroutine quicksort
+    
+    subroutine partition(arr, low, high, pivot_idx)
+        !! Partition array for quicksort
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: low, high
+        integer, intent(out) :: pivot_idx
+        
+        real(wp) :: pivot
+        integer :: i
+        
+        pivot = arr(high)
+        pivot_idx = low - 1
+        
+        do i = low, high - 1
+            if (arr(i) <= pivot) then
+                pivot_idx = pivot_idx + 1
+                call swap_elements(arr, pivot_idx, i)
+            end if
+        end do
+        
+        call swap_elements(arr, pivot_idx + 1, high)
+        pivot_idx = pivot_idx + 1
+    end subroutine partition
+    
+    subroutine swap_elements(arr, i, j)
+        !! Swap two elements in array
+        real(wp), intent(inout) :: arr(:)
+        integer, intent(in) :: i, j
+        
+        real(wp) :: temp
+        
+        temp = arr(i)
+        arr(i) = arr(j)
+        arr(j) = temp
+    end subroutine swap_elements
+
     subroutine update_data_ranges(self)
         !! Update figure data ranges after adding plots
         class(figure_t), intent(inout) :: self
@@ -847,29 +1492,35 @@ contains
         
         if (self%rendered) return
         
-        ! Setup coordinate system using scales module
-        call setup_coordinate_system(self)
-        
-        ! Render background and axes
-        call render_figure_background(self)
-        call render_figure_axes(self)
-        
-        ! Render individual plots
-        call render_all_plots(self)
-        
-        ! Render Y-axis label ABSOLUTELY LAST (after everything else)
-        select type (backend => self%backend)
-        type is (png_context)
-            if (allocated(self%ylabel)) then
-                call draw_rotated_ylabel_raster(backend, self%ylabel)
+        ! Check if we're using subplots
+        if (self%using_subplots) then
+            call render_subplots(self)
+        else
+            ! Regular figure rendering
+            ! Setup coordinate system using scales module
+            call setup_coordinate_system(self)
+            
+            ! Render background and axes
+            call render_figure_background(self)
+            call render_figure_axes(self)
+            
+            ! Render individual plots
+            call render_all_plots(self)
+            
+            ! Render Y-axis label ABSOLUTELY LAST (after everything else)
+            select type (backend => self%backend)
+            type is (png_context)
+                if (allocated(self%ylabel)) then
+                    call draw_rotated_ylabel_raster(backend, self%ylabel)
+                end if
+            type is (pdf_context)
+                ! PDF handles this differently - already done in draw_pdf_axes_and_labels
+            end select
+            
+            ! Render legend if requested (following SOLID principles)
+            if (self%show_legend) then
+                call legend_render(self%legend_data, self%backend)
             end if
-        type is (pdf_context)
-            ! PDF handles this differently - already done in draw_pdf_axes_and_labels
-        end select
-        
-        ! Render legend if requested (following SOLID principles)
-        if (self%show_legend) then
-            call legend_render(self%legend_data, self%backend)
         end if
         
         self%rendered = .true.
@@ -1020,8 +1671,38 @@ contains
                     y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
                     y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                     first_plot = .false.
+                end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
+                if (first_plot) then
+                    ! Store ORIGINAL box plot ranges
+                    if (self%plots(i)%horizontal) then
+                        x_min_orig = self%plots(i)%whisker_low
+                        x_max_orig = self%plots(i)%whisker_high
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
+                            x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        y_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        y_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
+                    else
+                        y_min_orig = self%plots(i)%whisker_low
+                        y_max_orig = self%plots(i)%whisker_high
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
+                            y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        x_min_orig = self%plots(i)%position - self%plots(i)%width * HALF_WIDTH
+                        x_max_orig = self%plots(i)%position + self%plots(i)%width * HALF_WIDTH
+                    end if
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
                 else
-                    ! Update original ranges
+                    ! Update original ranges for histogram
                     x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
                     x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
                     y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
@@ -1036,6 +1717,35 @@ contains
                                                                          self%yscale, self%symlog_threshold))
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
                                                                          self%yscale, self%symlog_threshold))
+                end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
+                if (.not. first_plot) then
+                    ! Update original ranges for box plot (subsequent plots)
+                    if (self%plots(i)%horizontal) then
+                        x_min_orig = min(x_min_orig, self%plots(i)%whisker_low)
+                        x_max_orig = max(x_max_orig, self%plots(i)%whisker_high)
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            x_min_orig = min(x_min_orig, minval(self%plots(i)%outliers))
+                            x_max_orig = max(x_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        y_min_orig = min(y_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        y_max_orig = max(y_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
+                    else
+                        y_min_orig = min(y_min_orig, self%plots(i)%whisker_low)
+                        y_max_orig = max(y_max_orig, self%plots(i)%whisker_high)
+                        if (allocated(self%plots(i)%outliers) .and. size(self%plots(i)%outliers) > 0) then
+                            y_min_orig = min(y_min_orig, minval(self%plots(i)%outliers))
+                            y_max_orig = max(y_max_orig, maxval(self%plots(i)%outliers))
+                        end if
+                        x_min_orig = min(x_min_orig, self%plots(i)%position - self%plots(i)%width * HALF_WIDTH)
+                        x_max_orig = max(x_max_orig, self%plots(i)%position + self%plots(i)%width * HALF_WIDTH)
+                    end if
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold))
                 end if
             end if
         end do
@@ -1088,11 +1798,15 @@ contains
         type is (png_context)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel)
+                                    self%title, self%xlabel, self%ylabel, &
+                                    self%grid_enabled, self%grid_axis, self%grid_which, &
+                                    self%grid_alpha, self%grid_linestyle, self%grid_color)
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel)
+                                        self%title, self%xlabel, self%ylabel, &
+                                        self%grid_enabled, self%grid_axis, self%grid_which, &
+                                        self%grid_alpha, self%grid_linestyle, self%grid_color)
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
@@ -1124,6 +1838,8 @@ contains
                 call render_pcolormesh_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_HISTOGRAM) then
                 call render_histogram_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BOXPLOT) then
+                call render_boxplot_plot(self, i)
             end if
         end do
         
@@ -1411,6 +2127,170 @@ contains
         call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
     end subroutine draw_histogram_bar_shape
 
+    subroutine render_boxplot_plot(self, plot_idx)
+        !! Render box plot with quartiles, whiskers, and outliers
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        if (.not. allocated(self%plots(plot_idx)%box_data)) return
+        
+        ! Set line width for box plot elements
+        call self%backend%set_line_width(BOX_PLOT_LINE_WIDTH)
+        
+        if (self%plots(plot_idx)%horizontal) then
+            call render_horizontal_boxplot(self, plot_idx)
+        else
+            call render_vertical_boxplot(self, plot_idx)
+        end if
+    end subroutine render_boxplot_plot
+
+    subroutine render_horizontal_boxplot(self, plot_idx)
+        !! Render horizontal box plot - data values are in X direction
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: box_left, box_right, box_bottom, box_top
+        real(wp) :: whisker_x1, whisker_y1, whisker_x2, whisker_y2
+        real(wp) :: median_x1, median_y1, median_x2, median_y2
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%q1, self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%q3, self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                         self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                      self%yscale, self%symlog_threshold)
+        
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
+        
+        ! Draw median line
+        median_x1 = apply_scale_transform(self%plots(plot_idx)%q2, self%xscale, self%symlog_threshold)
+        median_x2 = median_x1
+        median_y1 = box_bottom
+        median_y2 = box_top
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        call render_horizontal_outliers(self, plot_idx)
+    end subroutine render_horizontal_boxplot
+
+    subroutine render_vertical_boxplot(self, plot_idx)
+        !! Render vertical box plot - data values are in Y direction
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: box_left, box_right, box_bottom, box_top
+        real(wp) :: median_y1, median_y2, median_x1, median_x2
+        
+        ! Calculate box boundaries
+        box_left = apply_scale_transform(self%plots(plot_idx)%position - self%plots(plot_idx)%width * HALF_WIDTH, &
+                                       self%xscale, self%symlog_threshold)
+        box_right = apply_scale_transform(self%plots(plot_idx)%position + self%plots(plot_idx)%width * HALF_WIDTH, &
+                                        self%xscale, self%symlog_threshold)
+        box_bottom = apply_scale_transform(self%plots(plot_idx)%q1, self%yscale, self%symlog_threshold)
+        box_top = apply_scale_transform(self%plots(plot_idx)%q3, self%yscale, self%symlog_threshold)
+        
+        ! Draw box rectangle
+        call self%backend%line(box_left, box_bottom, box_right, box_bottom)    ! Bottom
+        call self%backend%line(box_right, box_bottom, box_right, box_top)      ! Right
+        call self%backend%line(box_right, box_top, box_left, box_top)          ! Top
+        call self%backend%line(box_left, box_top, box_left, box_bottom)        ! Left
+        
+        ! Draw median line
+        median_y1 = apply_scale_transform(self%plots(plot_idx)%q2, self%yscale, self%symlog_threshold)
+        median_y2 = median_y1
+        median_x1 = box_left
+        median_x2 = box_right
+        call self%backend%line(median_x1, median_y1, median_x2, median_y2)
+        
+        call render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        call render_vertical_outliers(self, plot_idx)
+    end subroutine render_vertical_boxplot
+
+    subroutine render_horizontal_whiskers(self, plot_idx, box_left, box_right)
+        !! Render whiskers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_left, box_right
+        
+        real(wp) :: whisker_x1, whisker_y1, whisker_x2, whisker_y2
+        
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%xscale, self%symlog_threshold)
+        whisker_x2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%xscale, self%symlog_threshold)
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+        whisker_y2 = whisker_y1
+        
+        ! Left whisker
+        call self%backend%line(whisker_x1, whisker_y1, box_left, whisker_y2)
+        ! Right whisker  
+        call self%backend%line(box_right, whisker_y1, whisker_x2, whisker_y2)
+    end subroutine render_horizontal_whiskers
+
+    subroutine render_vertical_whiskers(self, plot_idx, box_bottom, box_top)
+        !! Render whiskers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: box_bottom, box_top
+        
+        real(wp) :: whisker_y1, whisker_x1, whisker_y2, whisker_x2
+        
+        whisker_y1 = apply_scale_transform(self%plots(plot_idx)%whisker_low, self%yscale, self%symlog_threshold)
+        whisker_y2 = apply_scale_transform(self%plots(plot_idx)%whisker_high, self%yscale, self%symlog_threshold)
+        whisker_x1 = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+        whisker_x2 = whisker_x1
+        
+        ! Bottom whisker
+        call self%backend%line(whisker_x1, whisker_y1, whisker_x2, box_bottom)
+        ! Top whisker
+        call self%backend%line(whisker_x1, box_top, whisker_x2, whisker_y2)
+    end subroutine render_vertical_whiskers
+
+    subroutine render_horizontal_outliers(self, plot_idx)
+        !! Render outliers for horizontal box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%position, self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_horizontal_outliers
+
+    subroutine render_vertical_outliers(self, plot_idx)
+        !! Render outliers for vertical box plot
+        use fortplot_scales, only: apply_scale_transform
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp) :: outlier_x, outlier_y
+        integer :: i
+        
+        if (.not. (self%plots(plot_idx)%show_outliers .and. allocated(self%plots(plot_idx)%outliers))) return
+        
+        do i = 1, size(self%plots(plot_idx)%outliers)
+            outlier_x = apply_scale_transform(self%plots(plot_idx)%position, self%xscale, self%symlog_threshold)
+            outlier_y = apply_scale_transform(self%plots(plot_idx)%outliers(i), self%yscale, self%symlog_threshold)
+            call self%backend%draw_marker(outlier_x, outlier_y, 'o')
+        end do
+    end subroutine render_vertical_outliers
+
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
         class(figure_t), intent(inout) :: self
@@ -1539,8 +2419,8 @@ contains
             xa = x1 + (level - z1) / (z2 - z1) * (x2 - x1)
             ya = y1 + (level - z1) / (z2 - z1) * (y2 - y1)
         else
-            xa = (x1 + x2) * 0.5_wp
-            ya = (y1 + y2) * 0.5_wp
+            xa = (x1 + x2) * HALF_WIDTH
+            ya = (y1 + y2) * HALF_WIDTH
         end if
         
         ! Edge 2-3 (right)
@@ -1548,8 +2428,8 @@ contains
             xb = x2 + (level - z2) / (z3 - z2) * (x3 - x2)
             yb = y2 + (level - z2) / (z3 - z2) * (y3 - y2)
         else
-            xb = (x2 + x3) * 0.5_wp
-            yb = (y2 + y3) * 0.5_wp
+            xb = (x2 + x3) * HALF_WIDTH
+            yb = (y2 + y3) * HALF_WIDTH
         end if
         
         ! Edge 3-4 (top)
@@ -1557,8 +2437,8 @@ contains
             xc = x3 + (level - z3) / (z4 - z3) * (x4 - x3)
             yc = y3 + (level - z3) / (z4 - z3) * (y4 - y3)
         else
-            xc = (x3 + x4) * 0.5_wp
-            yc = (y3 + y4) * 0.5_wp
+            xc = (x3 + x4) * HALF_WIDTH
+            yc = (y3 + y4) * HALF_WIDTH
         end if
         
         ! Edge 4-1 (left)
@@ -1566,8 +2446,8 @@ contains
             xd = x4 + (level - z4) / (z1 - z4) * (x1 - x4)
             yd = y4 + (level - z4) / (z1 - z4) * (y1 - y4)
         else
-            xd = (x4 + x1) * 0.5_wp
-            yd = (y4 + y1) * 0.5_wp
+            xd = (x4 + x1) * HALF_WIDTH
+            yd = (y4 + y1) * HALF_WIDTH
         end if
     end subroutine interpolate_edge_crossings
 
@@ -2180,4 +3060,451 @@ contains
         end if
     end function validate_histogram_input
 
+    subroutine add_axis_padding(x_min, x_max, y_min, y_max)
+        !! Add 5% padding to axis ranges
+        real(wp), intent(inout) :: x_min, x_max, y_min, y_max
+        real(wp) :: x_range, y_range
+        
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        
+        if (x_range > 0.0_wp) then
+            x_min = x_min - 0.05_wp * x_range
+            x_max = x_max + 0.05_wp * x_range
+        else
+            x_min = x_min - 0.5_wp
+            x_max = x_max + 0.5_wp
+        end if
+        
+        if (y_range > 0.0_wp) then
+            y_min = y_min - 0.05_wp * y_range
+            y_max = y_max + 0.05_wp * y_range
+        else
+            y_min = y_min - 0.5_wp
+            y_max = y_max + 0.5_wp
+        end if
+    end subroutine add_axis_padding
+
+    subroutine calculate_subplot_positions(self)
+        !! Calculate pixel positions for each subplot
+        class(figure_t), intent(inout) :: self
+        
+        integer :: i, j
+        real(wp) :: subplot_width, subplot_height
+        real(wp) :: total_hgap, total_vgap
+        real(wp) :: available_width, available_height
+        real(wp) :: x_start, y_start
+        
+        if (.not. allocated(self%subplots_array)) return
+        
+        ! Calculate total gaps
+        total_hgap = self%subplot_hgap * real(self%subplot_cols - 1, wp)
+        total_vgap = self%subplot_vgap * real(self%subplot_rows - 1, wp)
+        
+        ! Calculate available space for subplots
+        available_width = 1.0_wp - self%margin_left - self%margin_right - total_hgap
+        available_height = 1.0_wp - self%margin_top - self%margin_bottom - total_vgap
+        
+        ! Calculate individual subplot size
+        subplot_width = available_width / real(self%subplot_cols, wp)
+        subplot_height = available_height / real(self%subplot_rows, wp)
+        
+        ! Set positions for each subplot
+        y_start = self%margin_top
+        do i = 1, self%subplot_rows
+            x_start = self%margin_left
+            do j = 1, self%subplot_cols
+                self%subplots_array(i,j)%x1 = nint(x_start * real(self%width, wp))
+                self%subplots_array(i,j)%y1 = nint(y_start * real(self%height, wp))
+                self%subplots_array(i,j)%x2 = nint((x_start + subplot_width) * real(self%width, wp))
+                self%subplots_array(i,j)%y2 = nint((y_start + subplot_height) * real(self%height, wp))
+                
+                x_start = x_start + subplot_width + self%subplot_hgap
+            end do
+            y_start = y_start + subplot_height + self%subplot_vgap
+        end do
+    end subroutine calculate_subplot_positions
+    
+    subroutine update_subplot_ranges(self, row, col)
+        !! Update data ranges for specific subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        
+        integer :: i
+        real(wp) :: x_min, x_max, y_min, y_max
+        logical :: first_plot
+        
+        if (.not. allocated(self%subplots_array)) return
+        
+        ! Handle empty subplots with default ranges
+        if (self%subplots_array(row, col)%plot_count == 0) then
+            if (.not. self%subplots_array(row, col)%xlim_set) then
+                self%subplots_array(row, col)%x_min = 0.0_wp
+                self%subplots_array(row, col)%x_max = 1.0_wp
+            end if
+            if (.not. self%subplots_array(row, col)%ylim_set) then
+                self%subplots_array(row, col)%y_min = 0.0_wp
+                self%subplots_array(row, col)%y_max = 1.0_wp
+            end if
+            return
+        end if
+        
+        first_plot = .true.
+        
+        do i = 1, self%subplots_array(row, col)%plot_count
+            if (allocated(self%subplots_array(row, col)%plots(i)%x) .and. &
+                allocated(self%subplots_array(row, col)%plots(i)%y)) then
+                
+                if (first_plot) then
+                    x_min = minval(self%subplots_array(row, col)%plots(i)%x)
+                    x_max = maxval(self%subplots_array(row, col)%plots(i)%x)
+                    y_min = minval(self%subplots_array(row, col)%plots(i)%y)
+                    y_max = maxval(self%subplots_array(row, col)%plots(i)%y)
+                    first_plot = .false.
+                else
+                    x_min = min(x_min, minval(self%subplots_array(row, col)%plots(i)%x))
+                    x_max = max(x_max, maxval(self%subplots_array(row, col)%plots(i)%x))
+                    y_min = min(y_min, minval(self%subplots_array(row, col)%plots(i)%y))
+                    y_max = max(y_max, maxval(self%subplots_array(row, col)%plots(i)%y))
+                end if
+            end if
+        end do
+        
+        if (.not. first_plot) then
+            ! Add 5% padding
+            call add_axis_padding(x_min, x_max, y_min, y_max)
+            
+            if (.not. self%subplots_array(row, col)%xlim_set) then
+                self%subplots_array(row, col)%x_min = x_min
+                self%subplots_array(row, col)%x_max = x_max
+            end if
+            
+            if (.not. self%subplots_array(row, col)%ylim_set) then
+                self%subplots_array(row, col)%y_min = y_min
+                self%subplots_array(row, col)%y_max = y_max
+            end if
+        end if
+    end subroutine update_subplot_ranges
+
+    subroutine render_subplots(self)
+        !! Render all subplots
+        class(figure_t), intent(inout) :: self
+        integer :: row, col
+        
+        if (.not. allocated(self%subplots_array)) return
+        
+        ! Calculate subplot positions
+        call calculate_subplot_positions(self)
+        
+        ! First render the overall figure background
+        call render_figure_background(self)
+        
+        ! Render each subplot (even empty ones need axes)
+        do row = 1, self%subplot_rows
+            do col = 1, self%subplot_cols
+                ! Update subplot ranges first
+                call update_subplot_ranges(self, row, col)
+                ! Render the subplot
+                call render_single_subplot(self, row, col)
+            end do
+        end do
+    end subroutine render_subplots
+    
+    subroutine render_single_subplot(self, row, col)
+        !! Render a single subplot with its axes and plots
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: row, col
+        
+        type(subplot_t) :: subplot
+        integer :: i
+        real(wp) :: old_x_min, old_x_max, old_y_min, old_y_max
+        integer :: old_plot_left, old_plot_bottom, old_plot_width, old_plot_height
+        
+        subplot = self%subplots_array(row, col)
+        
+        ! Save current figure ranges
+        old_x_min = self%x_min
+        old_x_max = self%x_max
+        old_y_min = self%y_min
+        old_y_max = self%y_max
+        
+        ! Save current plot area (backend-specific)
+        select type (backend => self%backend)
+        type is (png_context)
+            old_plot_left = backend%plot_area%left
+            old_plot_bottom = backend%plot_area%bottom
+            old_plot_width = backend%plot_area%width
+            old_plot_height = backend%plot_area%height
+        type is (pdf_context)
+            old_plot_left = backend%plot_area%left
+            old_plot_bottom = backend%plot_area%bottom
+            old_plot_width = backend%plot_area%width
+            old_plot_height = backend%plot_area%height
+        end select
+        
+        ! Set subplot data ranges for this rendering
+        self%x_min = subplot%x_min
+        self%x_max = subplot%x_max
+        self%y_min = subplot%y_min
+        self%y_max = subplot%y_max
+        
+        ! Set clipping region for this subplot
+        ! TODO: Add clipping support to backends
+        ! select type (backend => self%backend)
+        ! type is (png_context)
+        !     call backend%set_clip_region(subplot%x1, subplot%y1, subplot%x2, subplot%y2)
+        ! type is (pdf_context)
+        !     ! PDF backend handles clipping differently
+        ! type is (ascii_context)
+        !     ! ASCII backend doesn't support clipping
+        ! end select
+        
+        ! Setup coordinate system for this subplot
+        call setup_subplot_coordinate_system(self, subplot)
+        
+        ! Render subplot axes
+        call render_subplot_axes(self, subplot)
+        
+        ! Render subplot plots
+        do i = 1, subplot%plot_count
+            ! Set color for this plot
+            call self%backend%color(subplot%plots(i)%color(1), &
+                                   subplot%plots(i)%color(2), &
+                                   subplot%plots(i)%color(3))
+            
+            ! Render based on plot type
+            if (subplot%plots(i)%plot_type == PLOT_TYPE_LINE) then
+                call render_subplot_line_plot(self, subplot, i)
+            end if
+            ! Add other plot types as needed
+        end do
+        
+        ! Draw subplot title separately (axes labels are handled by draw_axes_and_labels)
+        call render_subplot_title(self, subplot)
+        
+        ! Reset clipping region
+        ! TODO: Add clipping support to backends
+        ! select type (backend => self%backend)
+        ! type is (png_context)
+        !     call backend%reset_clip_region()
+        ! end select
+        
+        ! Restore figure ranges
+        self%x_min = old_x_min
+        self%x_max = old_x_max
+        self%y_min = old_y_min
+        self%y_max = old_y_max
+        
+        ! Restore plot area (backend-specific)
+        select type (backend => self%backend)
+        type is (png_context)
+            backend%plot_area%left = old_plot_left
+            backend%plot_area%bottom = old_plot_bottom
+            backend%plot_area%width = old_plot_width
+            backend%plot_area%height = old_plot_height
+        type is (pdf_context)
+            backend%plot_area%left = old_plot_left
+            backend%plot_area%bottom = old_plot_bottom
+            backend%plot_area%width = old_plot_width
+            backend%plot_area%height = old_plot_height
+        end select
+    end subroutine render_single_subplot
+    
+    subroutine setup_subplot_coordinate_system(self, subplot)
+        !! Setup coordinate system for a subplot
+        class(figure_t), intent(inout) :: self
+        type(subplot_t), intent(in) :: subplot
+        
+        ! Set backend coordinate system to subplot data ranges
+        self%backend%x_min = subplot%x_min
+        self%backend%x_max = subplot%x_max
+        self%backend%y_min = subplot%y_min
+        self%backend%y_max = subplot%y_max
+        
+        ! Update backend plot area to subplot boundaries
+        ! This ensures drawing is constrained to the subplot region
+        select type (backend => self%backend)
+        type is (png_context)
+            backend%plot_area%left = subplot%x1
+            backend%plot_area%bottom = subplot%y1
+            backend%plot_area%width = subplot%x2 - subplot%x1
+            backend%plot_area%height = subplot%y2 - subplot%y1
+        type is (pdf_context)
+            backend%plot_area%left = subplot%x1
+            backend%plot_area%bottom = subplot%y1
+            backend%plot_area%width = subplot%x2 - subplot%x1
+            backend%plot_area%height = subplot%y2 - subplot%y1
+        type is (ascii_context)
+            ! ASCII backend doesn't support subplots yet
+        end select
+    end subroutine setup_subplot_coordinate_system
+    
+    subroutine render_subplot_axes(self, subplot)
+        !! Render axes for a subplot
+        class(figure_t), intent(inout) :: self
+        type(subplot_t), intent(in) :: subplot
+        
+        ! Use the backend's proper axes drawing functions
+        select type (backend => self%backend)
+        type is (png_context)
+            ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
+            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                    subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
+                                    title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+        type is (pdf_context)
+            ! Draw axes with ticks and axis labels, but NOT title (we'll draw that separately)
+            call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                        subplot%x_min, subplot%x_max, subplot%y_min, subplot%y_max, &
+                                        title="", xlabel=subplot%xlabel, ylabel=subplot%ylabel)
+        type is (ascii_context)
+            ! ASCII backend doesn't support subplots yet
+            ! Could draw a simple frame here if needed
+        end select
+    end subroutine render_subplot_axes
+    
+    subroutine render_subplot_line_plot(self, subplot, plot_idx)
+        !! Render a line plot within a subplot using proper coordinate transformation
+        class(figure_t), intent(inout) :: self
+        type(subplot_t), intent(in) :: subplot
+        integer, intent(in) :: plot_idx
+        
+        integer :: i
+        real(wp) :: x_screen, y_screen, x_screen_next, y_screen_next
+        character(len=:), allocatable :: linestyle
+        
+        if (.not. allocated(subplot%plots(plot_idx)%x)) return
+        if (size(subplot%plots(plot_idx)%x) < 1) return
+        
+        if (allocated(subplot%plots(plot_idx)%linestyle)) then
+            linestyle = subplot%plots(plot_idx)%linestyle
+        else
+            linestyle = '-'  ! Default linestyle
+        end if
+        
+        ! Draw lines if linestyle is not 'None' and we have at least 2 points
+        if (linestyle /= 'None' .and. size(subplot%plots(plot_idx)%x) >= 2) then
+            call self%backend%set_line_width(2.0_wp)
+            
+            ! Draw line segments using backend's coordinate transformation
+            do i = 1, size(subplot%plots(plot_idx)%x) - 1
+                ! Use apply_scale_transform like regular plots
+                x_screen = apply_scale_transform(subplot%plots(plot_idx)%x(i), &
+                                               self%xscale, self%symlog_threshold)
+                y_screen = apply_scale_transform(subplot%plots(plot_idx)%y(i), &
+                                               self%yscale, self%symlog_threshold)
+                x_screen_next = apply_scale_transform(subplot%plots(plot_idx)%x(i+1), &
+                                                    self%xscale, self%symlog_threshold)
+                y_screen_next = apply_scale_transform(subplot%plots(plot_idx)%y(i+1), &
+                                                    self%yscale, self%symlog_threshold)
+                
+                call self%backend%line(x_screen, y_screen, x_screen_next, y_screen_next)
+            end do
+        end if
+        
+        ! Draw markers if specified
+        if (allocated(subplot%plots(plot_idx)%marker)) then
+            if (subplot%plots(plot_idx)%marker /= 'None') then
+                do i = 1, size(subplot%plots(plot_idx)%x)
+                    x_screen = apply_scale_transform(subplot%plots(plot_idx)%x(i), &
+                                                   self%xscale, self%symlog_threshold)
+                    y_screen = apply_scale_transform(subplot%plots(plot_idx)%y(i), &
+                                                   self%yscale, self%symlog_threshold)
+                    
+                    call self%backend%draw_marker(x_screen, y_screen, &
+                                                 subplot%plots(plot_idx)%marker)
+                end do
+            end if
+        end if
+    end subroutine render_subplot_line_plot
+    
+    subroutine render_subplot_title(self, subplot)
+        !! Render title for a subplot (positioned above the subplot)
+        use fortplot_text, only: render_text_to_image, calculate_text_width
+        use, intrinsic :: iso_fortran_env, only: int8
+        class(figure_t), intent(inout) :: self
+        type(subplot_t), intent(in) :: subplot
+        
+        real(wp) :: text_x, text_y
+        real(wp), parameter :: title_padding = 20.0_wp  ! Padding above subplot top
+        character(len=500) :: processed_text
+        integer :: processed_len, text_width_int
+        real(wp) :: text_width
+        
+        ! Render title above the subplot
+        if (allocated(subplot%title)) then
+            ! Use the original text (LaTeX processing can be added later if needed)
+            processed_text = subplot%title
+            processed_len = len_trim(subplot%title)
+            
+            ! Calculate text width for centering
+            text_width_int = calculate_text_width(trim(processed_text))
+            if (text_width_int < 0) then
+                ! Fallback if width calculation fails
+                text_width = real(processed_len * 8, wp)
+            else
+                text_width = real(text_width_int, wp)
+            end if
+            
+            ! Center horizontally within subplot
+            text_x = real(subplot%x1 + subplot%x2, wp) / 2.0_wp - text_width / 2.0_wp
+            
+            ! Position title above subplot with consistent padding
+            ! subplot%y1 is the top of the subplot in screen coordinates
+            ! In screen coordinates, y increases downward, so subtract padding to go up
+            text_y = real(subplot%y1, wp) - title_padding
+            
+            ! Ensure we stay within image bounds
+            if (text_y < 15.0_wp) then
+                text_y = 15.0_wp
+            end if
+            
+            ! Render text directly to image using screen coordinates
+            select type (backend => self%backend)
+            type is (png_context)
+                call render_text_to_image(backend%raster%image_data, backend%width, backend%height, &
+                                        int(text_x), int(text_y), trim(processed_text), &
+                                        0_int8, 0_int8, 0_int8)
+            type is (pdf_context)
+                ! PDF backend can use the text method as it doesn't transform coordinates
+                call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+                call backend%text(text_x, text_y, subplot%title)
+            type is (ascii_context)
+                ! ASCII backend handles text differently
+                call backend%text(text_x, text_y, subplot%title)
+            end select
+        end if
+    end subroutine render_subplot_title
+    
+    subroutine transform_subplot_coordinates(self, subplot, data_x, data_y, screen_x, screen_y)
+        !! Transform data coordinates to screen coordinates for a subplot
+        class(figure_t), intent(in) :: self
+        type(subplot_t), intent(in) :: subplot
+        real(wp), intent(in) :: data_x, data_y
+        real(wp), intent(out) :: screen_x, screen_y
+        
+        real(wp) :: x_norm, y_norm
+        real(wp) :: subplot_width, subplot_height
+        
+        ! Normalize data to [0,1] range within subplot data bounds
+        if (subplot%x_max > subplot%x_min) then
+            x_norm = (data_x - subplot%x_min) / (subplot%x_max - subplot%x_min)
+        else
+            x_norm = 0.5_wp  ! Center if no range
+        end if
+        
+        if (subplot%y_max > subplot%y_min) then
+            y_norm = (data_y - subplot%y_min) / (subplot%y_max - subplot%y_min)
+        else
+            y_norm = 0.5_wp  ! Center if no range
+        end if
+        
+        ! Calculate subplot dimensions in pixels
+        subplot_width = real(subplot%x2 - subplot%x1, wp)
+        subplot_height = real(subplot%y2 - subplot%y1, wp)
+        
+        ! Transform to screen coordinates
+        ! Note: Y is flipped because screen coordinates have origin at top-left
+        screen_x = real(subplot%x1, wp) + x_norm * subplot_width
+        screen_y = real(subplot%y2, wp) - y_norm * subplot_height
+    end subroutine transform_subplot_coordinates
 end module fortplot_figure_core

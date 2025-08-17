@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(fortplotlib_cmake_example Fortran)
+project(fortplot_cmake_example Fortran)
 
 # Enable Fortran
 enable_language(Fortran)
@@ -16,10 +16,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(fortplotlib)
 
 # Create a simple test program
-add_executable(fortplotlib_test main.f90)
+add_executable(fortplot_test main.f90)
 
-# Link against fortplotlib
-target_link_libraries(fortplotlib_test fortplotlib::fortplotlib)
+# Link against fortplotlib (using old name until rename is merged to main)
+target_link_libraries(fortplot_test fortplotlib::fortplotlib)
 
 # Set Fortran compiler flags
 set(CMAKE_Fortran_FLAGS "-Wall -Wextra -fimplicit-none")
