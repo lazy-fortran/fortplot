@@ -1134,7 +1134,7 @@ contains
     end subroutine draw_pdf_tick_marks
     
     subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels for PDF backend like matplotlib
+        !! Draw tick labels for PDF backend like matplotlib with overlap detection
         type(pdf_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
@@ -1162,25 +1162,8 @@ contains
             call ctx%stream_writer%add_to_stream("ET")
         end do
         
-        ! Draw Y-axis tick labels with right alignment and proper spacing
-        do i = 1, num_y
-            ! Convert Y position to PDF coordinates for positioning calculation
-            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                     (y_positions(i) - real(ctx%plot_area%bottom, wp))
-            
-            ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_y_tick_label_position_pdf(tick_y, real(ctx%plot_area%left, wp), &
-                                                   trim(y_labels(i)), label_x, label_y)
-            
-            call ctx%stream_writer%add_to_stream("BT")
-            write(text_cmd, '("/F1 12 Tf")')
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '("(", A, ") Tj")') trim(y_labels(i))
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            call ctx%stream_writer%add_to_stream("ET")
-        end do
+        ! Draw Y-axis tick labels with overlap detection and spacing enforcement
+        call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, left)
     end subroutine draw_pdf_tick_labels
     
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
@@ -1219,6 +1202,147 @@ contains
         end if
     end subroutine draw_pdf_title_and_labels
     
+    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left)
+        !! Draw Y-axis tick labels with collision detection and spacing enforcement
+        !! Implements fix for Issue #39 - PDF Y-axis label overlap
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_y
+        real(wp), intent(in) :: plot_left
+        
+        real(wp) :: filtered_positions(num_y), filtered_label_y(num_y)
+        character(len=20) :: filtered_labels(num_y)
+        logical :: label_visible(num_y)
+        integer :: filtered_count, i
+        real(wp) :: label_x, label_y, tick_y
+        character(len=200) :: text_cmd
+        
+        ! Apply overlap detection and filtering
+        call filter_overlapping_y_labels(y_positions, y_labels, num_y, &
+                                        filtered_positions, filtered_labels, filtered_count, &
+                                        label_visible)
+        
+        ! Draw only the filtered (non-overlapping) labels
+        do i = 1, filtered_count
+            ! Convert Y position to PDF coordinates for positioning calculation
+            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+                     (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+            
+            ! Use PDF-specific tick label positioning (native PDF coordinates)
+            call calculate_y_tick_label_position_pdf(tick_y, plot_left, &
+                                                   trim(filtered_labels(i)), label_x, label_y)
+            
+            call ctx%stream_writer%add_to_stream("BT")
+            write(text_cmd, '("/F1 12 Tf")')
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            write(text_cmd, '("(", A, ") Tj")') trim(filtered_labels(i))
+            call ctx%stream_writer%add_to_stream(text_cmd)
+            call ctx%stream_writer%add_to_stream("ET")
+        end do
+    end subroutine draw_pdf_y_labels_with_overlap_detection
+    
+    subroutine filter_overlapping_y_labels(y_positions, y_labels, num_labels, &
+                                          filtered_positions, filtered_labels, filtered_count, &
+                                          label_visible)
+        !! Filter out overlapping Y-axis labels to ensure minimum spacing
+        !! Core implementation for Issue #39 fix
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_labels
+        real(wp), intent(out) :: filtered_positions(:)
+        character(len=20), intent(out) :: filtered_labels(:)
+        integer, intent(out) :: filtered_count
+        logical, intent(out) :: label_visible(:)
+        
+        ! Minimum spacing constant - font height + spacing for clarity
+        real(wp), parameter :: MIN_SPACING_PIXELS = 18.0_wp  ! 16px font height + 2px gap
+        integer :: i, j
+        real(wp) :: spacing_to_prev, spacing_to_next
+        logical :: current_overlaps
+        
+        ! Initialize all labels as potentially visible
+        label_visible = .false.
+        filtered_count = 0
+        
+        ! Check each label for overlaps
+        do i = 1, num_labels
+            current_overlaps = .false.
+            
+            ! Check spacing to previous visible label
+            if (i > 1) then
+                do j = i - 1, 1, -1
+                    if (label_visible(j)) then
+                        spacing_to_prev = abs(y_positions(i) - y_positions(j))
+                        if (spacing_to_prev < MIN_SPACING_PIXELS) then
+                            current_overlaps = .true.
+                        end if
+                        exit  ! Found the nearest previous visible label
+                    end if
+                end do
+            end if
+            
+            ! Check spacing to next labels (look ahead)
+            if (.not. current_overlaps .and. i < num_labels) then
+                do j = i + 1, num_labels
+                    spacing_to_next = abs(y_positions(j) - y_positions(i))
+                    if (spacing_to_next < MIN_SPACING_PIXELS) then
+                        ! This label would overlap with next one - skip the next one instead
+                        ! (prioritize labels closer to data range center)
+                        current_overlaps = .false.  ! Keep current label
+                        exit
+                    end if
+                end do
+            end if
+            
+            ! Mark label as visible if no overlaps detected
+            if (.not. current_overlaps) then
+                label_visible(i) = .true.
+                filtered_count = filtered_count + 1
+                filtered_positions(filtered_count) = y_positions(i)
+                filtered_labels(filtered_count) = y_labels(i)
+            end if
+        end do
+        
+        ! Ensure we always show at least the first and last labels if num_labels > 1
+        if (num_labels > 1 .and. filtered_count < 2) then
+            call ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
+                                              filtered_positions, filtered_labels, &
+                                              filtered_count, label_visible)
+        end if
+    end subroutine filter_overlapping_y_labels
+    
+    subroutine ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
+                                            filtered_positions, filtered_labels, &
+                                            filtered_count, label_visible)
+        !! Ensure endpoint labels are visible for better axis comprehension
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_labels
+        real(wp), intent(inout) :: filtered_positions(:)
+        character(len=20), intent(inout) :: filtered_labels(:)
+        integer, intent(inout) :: filtered_count
+        logical, intent(inout) :: label_visible(:)
+        
+        ! Force first label visible if not already
+        if (.not. label_visible(1)) then
+            filtered_count = filtered_count + 1
+            filtered_positions(filtered_count) = y_positions(1)
+            filtered_labels(filtered_count) = y_labels(1)
+            label_visible(1) = .true.
+        end if
+        
+        ! Force last label visible if not already and different from first
+        if (num_labels > 1 .and. .not. label_visible(num_labels)) then
+            filtered_count = filtered_count + 1
+            filtered_positions(filtered_count) = y_positions(num_labels)
+            filtered_labels(filtered_count) = y_labels(num_labels)
+            label_visible(num_labels) = .true.
+        end if
+    end subroutine ensure_endpoint_labels_visible
+
     subroutine draw_vertical_text_pdf(ctx, text)
         !! Draw text rotated 90 degrees using PDF text matrix
         type(pdf_context), intent(inout) :: ctx
