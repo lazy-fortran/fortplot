@@ -222,7 +222,9 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        ! TODO: Implement hist method in figure_core
+        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -248,7 +250,9 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        ! TODO: Implement hist method in figure_core
+        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -277,8 +281,10 @@ contains
         logical, intent(in), optional :: horizontal
         real(wp), intent(in), optional :: color(3)
 
-        call fig%boxplot(data, position=position, width=width, label=label, &
-                        show_outliers=show_outliers, horizontal=horizontal, color=color)
+        ! TODO: Implement boxplot method in figure_core
+        ! call fig%boxplot(data, position=position, width=width, label=label, &
+        !                show_outliers=show_outliers, horizontal=horizontal, color=color)
+        print *, "ERROR: boxplot() not yet implemented - please use main branch for boxplot support"
     end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)

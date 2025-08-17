@@ -162,8 +162,9 @@ module fortplot_figure_core
         procedure :: add_pcolormesh
         procedure :: bar
         procedure :: barh
-        procedure :: hist
-        procedure :: boxplot
+        ! TODO: Add hist and boxplot implementations from main branch
+        ! procedure :: hist
+        ! procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
