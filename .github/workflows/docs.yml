@@ -43,7 +43,7 @@ jobs:
           chmod +x fpm-0.12.0-linux-x86_64-gcc-12
           sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
           
-      - name: Build fortplotlib
+      - name: Build fortplot
         run: make build
         
       - name: Generate example outputs

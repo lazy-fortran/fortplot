@@ -13,6 +13,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
+    use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
@@ -21,23 +22,37 @@ module fortplot_figure_core
     use fortplot_raster, only: draw_rotated_ylabel_raster
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
+    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     implicit none
 
     private
-    public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_ERRORBAR
+    public :: figure_t, plot_data_t, subplot_t
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
-    integer, parameter :: PLOT_TYPE_ERRORBAR = 4
+    integer, parameter :: PLOT_TYPE_BAR = 4
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 6
+
+    ! Histogram constants
+    integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
+    integer, parameter :: MAX_SAFE_BINS = 10000
+    real(wp), parameter :: IDENTICAL_VALUE_PADDING = 0.5_wp
+    real(wp), parameter :: BIN_EDGE_PADDING_FACTOR = 0.001_wp
+    
+    ! Box plot constants
+    real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
+    real(wp), parameter :: HALF_WIDTH = 0.5_wp
+    real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
 
     type :: plot_data_t
         !! Data container for individual plots
         !! Separated from figure to follow Single Responsibility Principle
         integer :: plot_type = PLOT_TYPE_LINE
         ! Line plot data
-        real(wp), allocatable :: x(:), y(:)
+        real(wp), allocatable :: x(:), y(:), z(:)  ! z optional for 3D plots
         ! Contour plot data
         real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), allocatable :: contour_levels(:)
@@ -47,20 +62,44 @@ module fortplot_figure_core
         logical :: show_colorbar = .true.
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
-        ! Error bar data
-        real(wp), allocatable :: xerr(:), yerr(:)
-        real(wp), allocatable :: xerr_lower(:), xerr_upper(:)
-        real(wp), allocatable :: yerr_lower(:), yerr_upper(:)
-        real(wp) :: capsize = 5.0_wp
-        real(wp) :: elinewidth = 1.0_wp
-        logical :: has_xerr = .false., has_yerr = .false.
-        logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
+        ! Bar chart data
+        real(wp), allocatable :: bar_x(:), bar_heights(:)
+        real(wp) :: bar_width = 0.8_wp
+        logical :: bar_horizontal = .false.
+        ! Histogram data
+        real(wp), allocatable :: hist_bin_edges(:)
+        real(wp), allocatable :: hist_counts(:)
+        logical :: hist_density = .false.
+        ! Box plot data
+        real(wp), allocatable :: box_data(:)
+        real(wp) :: position = 1.0_wp
+        real(wp) :: width = 0.6_wp
+        logical :: show_outliers = .true.
+        logical :: horizontal = .false.
+        real(wp) :: q1, q2, q3  ! Quartiles
+        real(wp) :: whisker_low, whisker_high
+        real(wp), allocatable :: outliers(:)
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
+    contains
+        procedure :: is_3d
     end type plot_data_t
+
+    type :: subplot_t
+        !! Individual subplot container
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: plot_count = 0
+        integer :: max_plots = 10
+        ! Subplot-specific properties
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        character(len=10) :: xscale = 'linear'
+        character(len=10) :: yscale = 'linear'
+    end type subplot_t
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -86,6 +125,7 @@ module fortplot_figure_core
         
         ! Axis limits - separate original and transformed ranges
         real(wp) :: x_min, x_max, y_min, y_max  ! Original data ranges for tick generation
+        real(wp) :: z_min, z_max  ! Z-axis limits for 3D plots
         real(wp) :: x_min_transformed, x_max_transformed, y_min_transformed, y_max_transformed  ! Transformed for rendering
         logical :: xlim_set = .false., ylim_set = .false.
         
@@ -122,9 +162,19 @@ module fortplot_figure_core
     contains
         procedure :: initialize
         procedure :: add_plot
+        procedure :: add_3d_plot
+        procedure :: add_surface
+        procedure :: add_scatter_2d
+        procedure :: add_scatter_3d
+        generic :: add_scatter => add_scatter_2d, add_scatter_3d
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: bar
+        procedure :: barh
+        ! TODO: Add hist and boxplot implementations from main branch
+        ! procedure :: hist
+        ! procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -135,11 +185,11 @@ module fortplot_figure_core
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
-        procedure :: errorbar
         procedure :: set_ydata
         procedure :: legend => figure_legend
         procedure :: show
         procedure :: clear_streamlines
+        procedure :: has_3d_plots
         final :: destroy
     end type figure_t
 
@@ -195,6 +245,116 @@ contains
         end if
         call update_data_ranges(self)
     end subroutine add_plot
+    
+    subroutine add_3d_plot(self, x, y, z, label, linestyle, markersize, linewidth)
+        !! Add 3D line plot - pyplot-fortran compatible API
+        !! Natural extension of add_plot with z coordinate
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: markersize, linewidth
+        
+        character(len=20) :: parsed_marker, parsed_linestyle
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        ! Validate input sizes
+        if (size(x) /= size(y) .or. size(x) /= size(z)) then
+            write(*, '(A)') 'Error: x, y, z arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        ! Parse format string if needed
+        if (present(linestyle) .and. contains_format_chars(linestyle)) then
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            call add_3d_line_plot_data(self, x, y, z, label, parsed_linestyle, &
+                                      parsed_marker, markersize, linewidth)
+        else
+            call add_3d_line_plot_data(self, x, y, z, label, linestyle, &
+                                      '', markersize, linewidth)
+        end if
+        
+        call update_data_ranges(self)
+    end subroutine add_3d_plot
+    
+    subroutine add_scatter_2d(self, x, y, label, marker, markersize, color)
+        !! Add 2D scatter plot - points only, no lines
+        !! Following KISS principle - delegates to add_plot with no line
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        
+        character(len=10) :: linestyle
+        
+        ! Build linestyle string with marker only (no line)
+        if (present(marker)) then
+            linestyle = trim(marker)
+        else
+            linestyle = 'o'  ! Default to circles
+        end if
+        
+        ! Delegate to add_plot with marker-only style
+        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+    end subroutine add_scatter_2d
+    
+    subroutine add_scatter_3d(self, x, y, z, label, marker, markersize, color)
+        !! Add 3D scatter plot - points only, no lines
+        !! Following KISS principle - delegates to add_3d_plot with no line
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        
+        character(len=10) :: linestyle
+        
+        ! Build linestyle string with marker only (no line)
+        if (present(marker)) then
+            linestyle = trim(marker)
+        else
+            linestyle = 'o'  ! Default to circles
+        end if
+        
+        ! Delegate to add_3d_plot with marker-only style
+        call self%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
+                              markersize=markersize)
+    end subroutine add_scatter_3d
+    
+    subroutine add_surface(self, x, y, z, label)
+        !! Add surface plot - 3D grid data
+        !! x, y: 1D arrays defining grid
+        !! z: 2D array of values on grid
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:,:)
+        character(len=*), intent(in), optional :: label
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        ! Validate grid dimensions
+        if (size(z, 1) /= size(x) .or. size(z, 2) /= size(y)) then
+            write(*, '(A,I0,A,I0,A,I0,A,I0)') 'Error: Surface z dimensions (', &
+                size(z, 1), ',', size(z, 2), ') must match x size (', &
+                size(x), ') and y size (', size(y), ')'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_surface_plot_data(self, x, y, z, label)
+        call update_data_ranges(self)
+    end subroutine add_surface
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to figure
@@ -253,6 +413,78 @@ contains
         call add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         call update_data_ranges_pcolormesh(self)
     end subroutine add_pcolormesh
+
+    subroutine bar(self, x, heights, width, label, color)
+        !! Add vertical bar chart to figure
+        !!
+        !! Arguments:
+        !!   x: X-axis positions for bars
+        !!   heights: Heights of bars
+        !!   width: Optional - width of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), heights(:)
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        if (size(x) == 0 .or. size(heights) == 0) then
+            write(*, '(A)') 'Warning: Cannot create bar chart from empty data'
+            return
+        end if
+        
+        if (size(x) /= size(heights)) then
+            write(*, '(A)') 'Warning: x and heights arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_bar_plot_data(self, x, heights, width, label, color, .false.)
+        call update_data_ranges(self)
+    end subroutine bar
+
+    subroutine barh(self, y, widths, height, label, color)
+        !! Add horizontal bar chart to figure
+        !!
+        !! Arguments:
+        !!   y: Y-axis positions for bars
+        !!   widths: Widths of bars
+        !!   height: Optional - height of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: y(:), widths(:)
+        real(wp), intent(in), optional :: height
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        if (size(y) == 0 .or. size(widths) == 0) then
+            write(*, '(A)') 'Warning: Cannot create bar chart from empty data'
+            return
+        end if
+        
+        if (size(y) /= size(widths)) then
+            write(*, '(A)') 'Warning: y and widths arrays must have same size'
+            return
+        end if
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_bar_plot_data(self, y, widths, height, label, color, .true.)
+        call update_data_ranges(self)
+    end subroutine barh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
@@ -363,16 +595,30 @@ contains
         do_block = .false.
         if (present(blocking)) do_block = blocking
         
+        ! Create output directory if needed
+        call ensure_directory_exists(filename)
+        
         backend_type = get_backend_from_filename(filename)
         
         ! Always reinitialize backend for correct format
         if (allocated(self%backend)) deallocate(self%backend)
         call initialize_backend(self%backend, backend_type, self%width, self%height)
         
-        ! Reset rendered flag to force re-rendering for new backend
-        self%rendered = .false.
-        call render_figure(self)
-        call self%backend%save(filename)
+        ! Handle GLTF differently - needs 3D data not 2D rendering
+        select case (trim(backend_type))
+        case ('gltf', 'glb')
+            ! Pass 3D plot data directly to GLTF backend
+            select type (backend => self%backend)
+            type is (gltf_context)
+                call prepare_gltf_data(backend, self%plots(1:self%plot_count))
+            end select
+            call self%backend%save(filename)
+        case default
+            ! Reset rendered flag to force re-rendering for new backend
+            self%rendered = .false.
+            call render_figure(self)
+            call self%backend%save(filename)
+        end select
         
         write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
         
@@ -476,115 +722,6 @@ contains
         self%current_line_width = width
     end subroutine set_line_width
 
-    subroutine errorbar(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
-                       yerr_lower, yerr_upper, capsize, elinewidth, &
-                       label, linestyle, marker, color)
-        !! Add error bar plot to figure
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: xerr(:), yerr(:)
-        real(wp), intent(in), optional :: xerr_lower(:), xerr_upper(:)
-        real(wp), intent(in), optional :: yerr_lower(:), yerr_upper(:)
-        real(wp), intent(in), optional :: capsize, elinewidth
-        character(len=*), intent(in), optional :: label, linestyle, marker
-        real(wp), intent(in), optional :: color(3)
-        
-        type(plot_data_t) :: plot_data
-        integer :: n_points
-        
-        n_points = size(x)
-        
-        ! Validate input sizes
-        if (size(y) /= n_points) then
-            write(*,*) 'Error: x and y arrays must have the same size'
-            return
-        end if
-        
-        ! Initialize plot data
-        plot_data%plot_type = PLOT_TYPE_ERRORBAR
-        allocate(plot_data%x(n_points), plot_data%y(n_points))
-        plot_data%x = x
-        plot_data%y = y
-        
-        ! Handle symmetric error bars
-        if (present(xerr)) then
-            if (size(xerr) /= n_points) then
-                write(*,*) 'Error: xerr array size must match x and y'
-                return
-            end if
-            allocate(plot_data%xerr(n_points))
-            plot_data%xerr = xerr
-            plot_data%has_xerr = .true.
-        end if
-        
-        if (present(yerr)) then
-            if (size(yerr) /= n_points) then
-                write(*,*) 'Error: yerr array size must match x and y'
-                return
-            end if
-            allocate(plot_data%yerr(n_points))
-            plot_data%yerr = yerr
-            plot_data%has_yerr = .true.
-        end if
-        
-        ! Handle asymmetric error bars
-        if (present(xerr_lower) .and. present(xerr_upper)) then
-            if (present(xerr)) then
-                write(*,*) 'Warning: Both symmetric xerr and asymmetric xerr_lower/xerr_upper provided. Using asymmetric values.'
-            end if
-            if (size(xerr_lower) /= n_points .or. size(xerr_upper) /= n_points) then
-                write(*,*) 'Error: xerr_lower and xerr_upper array sizes must match x and y'
-                return
-            end if
-            allocate(plot_data%xerr_lower(n_points), plot_data%xerr_upper(n_points))
-            plot_data%xerr_lower = xerr_lower
-            plot_data%xerr_upper = xerr_upper
-            plot_data%has_xerr = .true.
-            plot_data%asymmetric_xerr = .true.
-        end if
-        
-        if (present(yerr_lower) .and. present(yerr_upper)) then
-            if (present(yerr)) then
-                write(*,*) 'Warning: Both symmetric yerr and asymmetric yerr_lower/yerr_upper provided. Using asymmetric values.'
-            end if
-            if (size(yerr_lower) /= n_points .or. size(yerr_upper) /= n_points) then
-                write(*,*) 'Error: yerr_lower and yerr_upper array sizes must match x and y'
-                return
-            end if
-            allocate(plot_data%yerr_lower(n_points), plot_data%yerr_upper(n_points))
-            plot_data%yerr_lower = yerr_lower
-            plot_data%yerr_upper = yerr_upper
-            plot_data%has_yerr = .true.
-            plot_data%asymmetric_yerr = .true.
-        end if
-        
-        ! Set customization options
-        if (present(capsize)) plot_data%capsize = capsize
-        if (present(elinewidth)) plot_data%elinewidth = elinewidth
-        if (present(label)) plot_data%label = label
-        if (present(linestyle)) plot_data%linestyle = linestyle
-        if (present(marker)) plot_data%marker = marker
-        
-        ! Set color (use next color in palette if not specified)
-        if (present(color)) then
-            plot_data%color = color
-        else
-            plot_data%color = self%colors(:, mod(self%plot_count, size(self%colors, 2)) + 1)
-        end if
-        
-        ! Check plot count limit
-        if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
-            return
-        end if
-        
-        self%plot_count = self%plot_count + 1
-        
-        ! Add to plot list
-        call add_errorbar_plot_data(self, plot_data)
-        call update_data_ranges(self)
-    end subroutine errorbar
-
     subroutine destroy(self)
         !! Clean up figure resources
         type(figure_t), intent(inout) :: self
@@ -641,24 +778,119 @@ contains
             self%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
     end subroutine add_line_plot_data
-
-    subroutine add_errorbar_plot_data(self, plot_data)
-        !! Add error bar plot data to internal storage
+    
+    subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
+        !! Add 3D line plot data to internal storage
+        !! Following SRP - only handles data storage
         class(figure_t), intent(inout) :: self
-        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: x(:), y(:), z(:)
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: markersize, linewidth
         
-        integer :: plot_idx
+        integer :: plot_idx, color_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        
+        ! Allocate and store coordinates
+        if (allocated(self%plots(plot_idx)%x)) deallocate(self%plots(plot_idx)%x)
+        if (allocated(self%plots(plot_idx)%y)) deallocate(self%plots(plot_idx)%y)
+        if (allocated(self%plots(plot_idx)%z)) deallocate(self%plots(plot_idx)%z)
+        
+        allocate(self%plots(plot_idx)%x(size(x)))
+        allocate(self%plots(plot_idx)%y(size(y)))
+        allocate(self%plots(plot_idx)%z(size(z)))
+        
+        self%plots(plot_idx)%x = x
+        self%plots(plot_idx)%y = y
+        self%plots(plot_idx)%z = z
+        
+        ! Set optional properties
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(linestyle)) then
+            self%plots(plot_idx)%linestyle = linestyle
+        else
+            self%plots(plot_idx)%linestyle = 'solid'
+        end if
+        
+        if (present(marker)) then
+            self%plots(plot_idx)%marker = marker
+        else
+            self%plots(plot_idx)%marker = 'None'
+        end if
+        
+        ! Use default color from palette
+        color_idx = mod(plot_idx - 1, 6) + 1
+        self%plots(plot_idx)%color = self%colors(:, color_idx)
+        
+        ! Update data ranges for 3D plots
+        if (.not. self%xlim_set) then
+            if (plot_idx == 1) then
+                self%x_min = minval(x)
+                self%x_max = maxval(x)
+            else
+                self%x_min = min(self%x_min, minval(x))
+                self%x_max = max(self%x_max, maxval(x))
+            end if
+        end if
+        
+        if (.not. self%ylim_set) then
+            if (plot_idx == 1) then
+                self%y_min = minval(y)
+                self%y_max = maxval(y)
+            else
+                self%y_min = min(self%y_min, minval(y))
+                self%y_max = max(self%y_max, maxval(y))
+            end if
+        end if
+        
+        ! Note: markersize and linewidth handled by backend
+    end subroutine add_3d_line_plot_data
+    
+    subroutine add_surface_plot_data(self, x, y, z, label)
+        !! Add surface plot data to internal storage
+        !! Following SRP - only handles data storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:,:)
+        character(len=*), intent(in), optional :: label
+        
+        integer :: plot_idx, color_idx
         
         plot_idx = self%plot_count
         
-        ! Ensure plots array is allocated
-        if (.not. allocated(self%plots)) then
-            allocate(self%plots(self%max_plots))
+        ! For now, reuse contour plot type (surface is similar to contour)
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        ! Store grid data
+        if (allocated(self%plots(plot_idx)%x_grid)) deallocate(self%plots(plot_idx)%x_grid)
+        if (allocated(self%plots(plot_idx)%y_grid)) deallocate(self%plots(plot_idx)%y_grid)
+        if (allocated(self%plots(plot_idx)%z_grid)) deallocate(self%plots(plot_idx)%z_grid)
+        
+        allocate(self%plots(plot_idx)%x_grid(size(x)))
+        allocate(self%plots(plot_idx)%y_grid(size(y)))
+        allocate(self%plots(plot_idx)%z_grid(size(z,1), size(z,2)))
+        
+        self%plots(plot_idx)%x_grid = x
+        self%plots(plot_idx)%y_grid = y
+        self%plots(plot_idx)%z_grid = z
+        
+        ! Set label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
         end if
         
-        ! Copy the complete plot_data structure
-        self%plots(plot_idx) = plot_data
-    end subroutine add_errorbar_plot_data
+        ! Use default color from palette
+        color_idx = mod(plot_idx - 1, 6) + 1
+        self%plots(plot_idx)%color = self%colors(:, color_idx)
+        
+    end subroutine add_surface_plot_data
 
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to internal storage
@@ -807,6 +1039,65 @@ contains
         call self%plots(plot_idx)%pcolormesh_data%get_data_range()
     end subroutine add_pcolormesh_plot_data
 
+    subroutine add_bar_plot_data(self, positions, values, bar_size, label, color, horizontal)
+        !! Add bar chart data to internal storage
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: positions(:), values(:)
+        real(wp), intent(in), optional :: bar_size
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        logical, intent(in) :: horizontal
+        
+        integer :: plot_idx, color_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
+        
+        ! Store bar data (deallocate first if already allocated)
+        if (allocated(self%plots(plot_idx)%bar_x)) deallocate(self%plots(plot_idx)%bar_x)
+        if (allocated(self%plots(plot_idx)%bar_heights)) deallocate(self%plots(plot_idx)%bar_heights)
+        allocate(self%plots(plot_idx)%bar_x(size(positions)))
+        allocate(self%plots(plot_idx)%bar_heights(size(values)))
+        self%plots(plot_idx)%bar_x = positions
+        self%plots(plot_idx)%bar_heights = values
+        
+        ! Set bar properties
+        if (present(bar_size)) then
+            self%plots(plot_idx)%bar_width = bar_size
+        else
+            self%plots(plot_idx)%bar_width = 0.8_wp
+        end if
+        
+        self%plots(plot_idx)%bar_horizontal = horizontal
+        
+        ! Set label
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        ! Set color
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Set default bar style
+        self%plots(plot_idx)%linestyle = 'solid'
+        self%plots(plot_idx)%marker = 'None'
+        
+        ! Create x,y data for rendering from bar data
+        call create_bar_xy_data(self%plots(plot_idx)%bar_x, &
+                               self%plots(plot_idx)%bar_heights, &
+                               self%plots(plot_idx)%bar_width, &
+                               horizontal, &
+                               self%plots(plot_idx)%x, &
+                               self%plots(plot_idx)%y)
+    end subroutine add_bar_plot_data
+
     subroutine update_data_ranges_pcolormesh(self)
         !! Update figure data ranges after adding pcolormesh plot
         class(figure_t), intent(inout) :: self
@@ -912,43 +1203,81 @@ contains
         integer :: i
         real(wp) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         real(wp) :: x_min_trans, x_max_trans, y_min_trans, y_max_trans
-        logical :: first_plot
+        logical :: first_plot, first_3d_plot
         
         if (self%plot_count == 0) return
         
         first_plot = .true.
+        first_3d_plot = .true.
         
         do i = 1, self%plot_count
-            if (self%plots(i)%plot_type == PLOT_TYPE_LINE .or. self%plots(i)%plot_type == PLOT_TYPE_ERRORBAR) then
-                if (first_plot) then
-                    ! Store ORIGINAL data ranges for tick generation
-                    x_min_orig = minval(self%plots(i)%x)
-                    x_max_orig = maxval(self%plots(i)%x)
-                    y_min_orig = minval(self%plots(i)%y)
-                    y_max_orig = maxval(self%plots(i)%y)
+            if (self%plots(i)%plot_type == PLOT_TYPE_LINE) then
+                if (self%plots(i)%is_3d()) then
+                    ! Handle 3D plots by projecting to 2D first
+                    call calculate_3d_plot_ranges(self, i, x_min_orig, x_max_orig, &
+                                                 y_min_orig, y_max_orig, first_plot)
+                    
+                    ! Calculate Z-axis ranges for 3D plots
+                    if (allocated(self%plots(i)%z)) then
+                        if (first_3d_plot) then
+                            self%z_min = minval(self%plots(i)%z)
+                            self%z_max = maxval(self%plots(i)%z)
+                            first_3d_plot = .false.
+                        else
+                            self%z_min = min(self%z_min, minval(self%plots(i)%z))
+                            self%z_max = max(self%z_max, maxval(self%plots(i)%z))
+                        end if
+                    end if
                     
                     ! Calculate transformed ranges for rendering
-                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
-                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
-                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
-                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
-                    first_plot = .false.
+                    if (first_plot) then
+                        x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                        x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                        y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                        y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                        first_plot = .false.
+                    else
+                        x_min_trans = min(x_min_trans, apply_scale_transform(x_min_orig, &
+                                                                           self%xscale, self%symlog_threshold))
+                        x_max_trans = max(x_max_trans, apply_scale_transform(x_max_orig, &
+                                                                           self%xscale, self%symlog_threshold))
+                        y_min_trans = min(y_min_trans, apply_scale_transform(y_min_orig, &
+                                                                           self%yscale, self%symlog_threshold))
+                        y_max_trans = max(y_max_trans, apply_scale_transform(y_max_orig, &
+                                                                           self%yscale, self%symlog_threshold))
+                    end if
                 else
-                    ! Update original ranges
-                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
-                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
-                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
-                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
-                    
-                    ! Update transformed ranges
-                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
-                                                                         self%xscale, self%symlog_threshold))
-                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
-                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
-                                                                         self%yscale, self%symlog_threshold))
+                    ! Handle 2D plots as before
+                    if (first_plot) then
+                        ! Store ORIGINAL data ranges for tick generation
+                        x_min_orig = minval(self%plots(i)%x)
+                        x_max_orig = maxval(self%plots(i)%x)
+                        y_min_orig = minval(self%plots(i)%y)
+                        y_max_orig = maxval(self%plots(i)%y)
+                        
+                        ! Calculate transformed ranges for rendering
+                        x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                        x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                        y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                        y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                        first_plot = .false.
+                    else
+                        ! Update original ranges
+                        x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
+                        x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
+                        y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
+                        y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                        
+                        ! Update transformed ranges
+                        x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                                                                             self%xscale, self%symlog_threshold))
+                        x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                                                                             self%xscale, self%symlog_threshold))
+                        y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                                                                             self%yscale, self%symlog_threshold))
+                        y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                                                                             self%yscale, self%symlog_threshold))
+                    end if
                 end if
             else if (self%plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
                 if (first_plot) then
@@ -1012,6 +1341,37 @@ contains
                     y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%pcolormesh_data%y_vertices), &
                                                                          self%yscale, self%symlog_threshold))
                 end if
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BAR) then
+                if (first_plot) then
+                    ! Store ORIGINAL bar chart ranges
+                    x_min_orig = minval(self%plots(i)%x)
+                    x_max_orig = maxval(self%plots(i)%x)
+                    y_min_orig = minval(self%plots(i)%y)
+                    y_max_orig = maxval(self%plots(i)%y)
+                    
+                    ! Calculate transformed ranges for rendering
+                    x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
+                    x_max_trans = apply_scale_transform(x_max_orig, self%xscale, self%symlog_threshold)
+                    y_min_trans = apply_scale_transform(y_min_orig, self%yscale, self%symlog_threshold)
+                    y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
+                    first_plot = .false.
+                else
+                    ! Update original ranges
+                    x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
+                    x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
+                    y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
+                    y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                    
+                    ! Update transformed ranges
+                    x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                                                                         self%xscale, self%symlog_threshold))
+                    y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
+                    y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                                                                         self%yscale, self%symlog_threshold))
+                end if
             end if
         end do
         
@@ -1063,11 +1423,13 @@ contains
         type is (png_context)
             call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                     self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel)
+                                    self%title, self%xlabel, self%ylabel, &
+                                    self%z_min, self%z_max, self%has_3d_plots())
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel)
+                                        self%title, self%xlabel, self%ylabel, &
+                                        self%z_min, self%z_max, self%has_3d_plots())
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
@@ -1097,8 +1459,8 @@ contains
                 call render_contour_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_PCOLORMESH) then
                 call render_pcolormesh_plot(self, i)
-            else if (self%plots(i)%plot_type == PLOT_TYPE_ERRORBAR) then
-                call render_errorbar_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_BAR) then
+                call render_bar_plot(self, i)
             end if
         end do
         
@@ -1139,7 +1501,7 @@ contains
     end subroutine render_streamline
 
     subroutine render_line_plot(self, plot_idx)
-        !! Render a single line plot with linestyle support
+        !! Render a single line plot with linestyle support (handles 2D and 3D)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         integer :: i
@@ -1158,104 +1520,24 @@ contains
             ! Set line width for all backends (2.0 for plot data, 1.0 for axes)
             call self%backend%set_line_width(2.0_wp)
             
-            ! Draw line segments using transformed coordinates with linestyle
-            call draw_line_with_style(self, plot_idx, linestyle)
+            ! Check if this is a 3D plot and handle projection
+            if (self%plots(plot_idx)%is_3d()) then
+                call draw_3d_line_with_style(self, plot_idx, linestyle)
+            else
+                call draw_line_with_style(self, plot_idx, linestyle)
+            end if
         end if
 
         ! Always render markers regardless of linestyle (matplotlib behavior)
-        call render_markers(self, plot_idx)
-    end subroutine render_line_plot
-
-    subroutine render_errorbar_plot(self, plot_idx)
-        !! Render error bars with caps
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        integer :: i
-        real(wp) :: x_screen, y_screen, x1_screen, y1_screen, x2_screen, y2_screen
-        real(wp) :: cap_half_size, x_err_lower, x_err_upper, y_err_lower, y_err_upper
-        
-        if (.not. allocated(self%plots(plot_idx)%x) .or. .not. allocated(self%plots(plot_idx)%y)) return
-        
-        cap_half_size = self%plots(plot_idx)%capsize * 0.5_wp
-        
-        do i = 1, size(self%plots(plot_idx)%x)
-            ! Skip NaN values
-            if (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i))) cycle
-            
-            ! Transform data point to screen coordinates
-            x_screen = transform_x_coordinate(self%plots(plot_idx)%x(i), &
-                                            self%x_min, self%x_max, self%width)
-            y_screen = transform_y_coordinate(self%plots(plot_idx)%y(i), &
-                                            self%y_min, self%y_max, self%height, .true.)
-            
-            ! Draw Y error bars if present
-            if (self%plots(plot_idx)%has_yerr) then
-                if (self%plots(plot_idx)%asymmetric_yerr) then
-                    ! Asymmetric Y error bars
-                    y_err_lower = self%plots(plot_idx)%y(i) - self%plots(plot_idx)%yerr_lower(i)
-                    y_err_upper = self%plots(plot_idx)%y(i) + self%plots(plot_idx)%yerr_upper(i)
-                else
-                    ! Symmetric Y error bars
-                    y_err_lower = self%plots(plot_idx)%y(i) - self%plots(plot_idx)%yerr(i)
-                    y_err_upper = self%plots(plot_idx)%y(i) + self%plots(plot_idx)%yerr(i)
-                end if
-                
-                ! Transform error bar endpoints
-                y1_screen = transform_y_coordinate(y_err_lower, &
-                                                 self%y_min, self%y_max, self%height, .true.)
-                y2_screen = transform_y_coordinate(y_err_upper, &
-                                                 self%y_min, self%y_max, self%height, .true.)
-                
-                ! Draw vertical error bar line
-                call self%backend%line(x_screen, y1_screen, x_screen, y2_screen)
-                
-                ! Draw caps
-                call self%backend%line(x_screen - cap_half_size, y1_screen, x_screen + cap_half_size, y1_screen)
-                call self%backend%line(x_screen - cap_half_size, y2_screen, x_screen + cap_half_size, y2_screen)
-            end if
-            
-            ! Draw X error bars if present
-            if (self%plots(plot_idx)%has_xerr) then
-                if (self%plots(plot_idx)%asymmetric_xerr) then
-                    ! Asymmetric X error bars
-                    x_err_lower = self%plots(plot_idx)%x(i) - self%plots(plot_idx)%xerr_lower(i)
-                    x_err_upper = self%plots(plot_idx)%x(i) + self%plots(plot_idx)%xerr_upper(i)
-                else
-                    ! Symmetric X error bars
-                    x_err_lower = self%plots(plot_idx)%x(i) - self%plots(plot_idx)%xerr(i)
-                    x_err_upper = self%plots(plot_idx)%x(i) + self%plots(plot_idx)%xerr(i)
-                end if
-                
-                ! Transform error bar endpoints
-                x1_screen = transform_x_coordinate(x_err_lower, &
-                                                 self%x_min, self%x_max, self%width)
-                x2_screen = transform_x_coordinate(x_err_upper, &
-                                                 self%x_min, self%x_max, self%width)
-                
-                ! Draw horizontal error bar line
-                call self%backend%line(x1_screen, y_screen, x2_screen, y_screen)
-                
-                ! Draw caps
-                call self%backend%line(x1_screen, y_screen - cap_half_size, x1_screen, y_screen + cap_half_size)
-                call self%backend%line(x2_screen, y_screen - cap_half_size, x2_screen, y_screen + cap_half_size)
-            end if
-        end do
-        
-        ! Render data points if marker is specified
-        if (allocated(self%plots(plot_idx)%marker) .and. len_trim(self%plots(plot_idx)%marker) > 0) then
+        if (self%plots(plot_idx)%is_3d()) then
+            call render_3d_markers(self, plot_idx)
+        else
             call render_markers(self, plot_idx)
         end if
-        
-        ! Render connecting lines if linestyle is specified
-        if (allocated(self%plots(plot_idx)%linestyle) .and. len_trim(self%plots(plot_idx)%linestyle) > 0) then
-            call render_line_plot(self, plot_idx)
-        end if
-    end subroutine render_errorbar_plot
+    end subroutine render_line_plot
 
     subroutine render_markers(self, plot_idx)
-        !! Render markers at each data point, skipping NaN values
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
+        !! Render markers at each data point
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=:), allocatable :: marker
@@ -1269,15 +1551,290 @@ contains
         if (marker == 'None') return
 
         do i = 1, size(self%plots(plot_idx)%x)
-            ! Skip points with NaN values
-            if (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i))) cycle
-            
             x_trans = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
             y_trans = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
             call self%backend%draw_marker(x_trans, y_trans, marker)
         end do
 
     end subroutine render_markers
+
+    subroutine draw_3d_line_with_style(self, plot_idx, linestyle)
+        !! Draw 3D line plot with projection to 2D
+        use fortplot_raster, only: raster_context
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        character(len=*), intent(in) :: linestyle
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
+        real(wp) :: azim, elev, dist
+        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
+        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp) :: plot_width, plot_height
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: x_scale, y_scale
+        real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
+        integer :: i, n
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        allocate(x_norm(n), y_norm(n), z_norm(n))
+        
+        ! Normalize 3D data to unit cube [0,1]
+        ! This ensures data fits within the 3D box
+        ! Handle case where data range is zero (single point or all points same)
+        do i = 1, n
+            if (self%x_max - self%x_min > 0.0_wp) then
+                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
+            else
+                x_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%y_max - self%y_min > 0.0_wp) then
+                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
+            else
+                y_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%z_max - self%z_min > 0.0_wp) then
+                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
+            else
+                z_norm(i) = 0.5_wp  ! Center if no range
+            end if
+        end do
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project normalized 3D data to 2D
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
+        
+        ! Get matplotlib-style margins
+        margin_left = 80.0_wp
+        margin_right = 40.0_wp
+        margin_bottom = 60.0_wp
+        margin_top = 60.0_wp
+        
+        ! Calculate plot area dimensions
+        select type (ctx => self%backend)
+        type is (raster_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        type is (png_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        class default
+            ! Default fallback
+            plot_width = 640.0_wp
+            plot_height = 480.0_wp
+        end select
+        
+        ! Find bounds of projected data (should be roughly in [-1,1] range)
+        proj_x_min = minval(x2d)
+        proj_x_max = maxval(x2d)
+        proj_y_min = minval(y2d)
+        proj_y_max = maxval(y2d)
+        
+        ! Calculate scaling to fit in plot area with some padding
+        if (proj_x_max > proj_x_min) then
+            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
+        else
+            x_scale = 1.0_wp
+        end if
+        
+        if (proj_y_max > proj_y_min) then
+            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
+        else
+            y_scale = 1.0_wp
+        end if
+        
+        ! Save original coordinate system and set to projected data for 3D plots
+        select type (ctx => self%backend)
+        class is (raster_context)
+            orig_x_min = ctx%x_min
+            orig_x_max = ctx%x_max
+            orig_y_min = ctx%y_min
+            orig_y_max = ctx%y_max
+            
+            ctx%x_min = proj_x_min
+            ctx%x_max = proj_x_max
+            ctx%y_min = proj_y_min
+            ctx%y_max = proj_y_max
+        end select
+        
+        ! Draw lines using projected coordinates
+        do i = 1, n-1
+            ! Use projected coordinates directly - backend will transform to screen
+            call self%backend%line(x2d(i), y2d(i), x2d(i+1), y2d(i+1))
+        end do
+        
+        ! Restore original coordinate system
+        select type (ctx => self%backend)
+        class is (raster_context)
+            ctx%x_min = orig_x_min
+            ctx%x_max = orig_x_max
+            ctx%y_min = orig_y_min
+            ctx%y_max = orig_y_max
+        end select
+    end subroutine draw_3d_line_with_style
+
+    subroutine render_3d_markers(self, plot_idx)
+        !! Render markers for 3D plot points
+        use fortplot_raster, only: raster_context
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
+        real(wp) :: azim, elev, dist
+        real(wp) :: x_screen, y_screen
+        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp) :: plot_width, plot_height
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp) :: x_scale, y_scale
+        real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
+        integer :: i, n
+        character(len=:), allocatable :: marker
+        
+        if (.not. allocated(self%plots(plot_idx)%marker)) return
+        marker = self%plots(plot_idx)%marker
+        if (marker == 'None' .or. marker == '') return
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        allocate(x_norm(n), y_norm(n), z_norm(n))
+        
+        ! Normalize 3D data to unit cube [0,1]
+        ! Handle case where data range is zero (single point or all points same)
+        do i = 1, n
+            if (self%x_max - self%x_min > 0.0_wp) then
+                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
+            else
+                x_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%y_max - self%y_min > 0.0_wp) then
+                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
+            else
+                y_norm(i) = 0.5_wp  ! Center if no range
+            end if
+            
+            if (self%z_max - self%z_min > 0.0_wp) then
+                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
+            else
+                z_norm(i) = 0.5_wp  ! Center if no range
+            end if
+        end do
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project normalized 3D data to 2D
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
+        
+        ! Get matplotlib-style margins
+        margin_left = 80.0_wp
+        margin_right = 40.0_wp
+        margin_bottom = 60.0_wp
+        margin_top = 60.0_wp
+        
+        ! Calculate plot area dimensions
+        select type (ctx => self%backend)
+        class is (raster_context)
+            plot_width = real(ctx%width, wp) - margin_left - margin_right
+            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
+        class default
+            ! Default fallback
+            plot_width = 640.0_wp
+            plot_height = 480.0_wp
+        end select
+        
+        ! Find bounds of projected data
+        proj_x_min = minval(x2d)
+        proj_x_max = maxval(x2d)
+        proj_y_min = minval(y2d)
+        proj_y_max = maxval(y2d)
+        
+        ! Calculate scaling to fit in plot area with some padding
+        if (proj_x_max > proj_x_min) then
+            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
+        else
+            x_scale = 1.0_wp
+        end if
+        
+        if (proj_y_max > proj_y_min) then
+            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
+        else
+            y_scale = 1.0_wp
+        end if
+        
+        ! Save original coordinate system and set to projected data for 3D plots
+        select type (ctx => self%backend)
+        class is (raster_context)
+            orig_x_min = ctx%x_min
+            orig_x_max = ctx%x_max
+            orig_y_min = ctx%y_min
+            orig_y_max = ctx%y_max
+            
+            ctx%x_min = proj_x_min
+            ctx%x_max = proj_x_max
+            ctx%y_min = proj_y_min
+            ctx%y_max = proj_y_max
+        end select
+        
+        ! Draw markers at projected positions
+        do i = 1, n
+            ! Use projected coordinates directly - backend will transform to screen
+            call self%backend%draw_marker(x2d(i), y2d(i), marker)
+        end do
+        
+        ! Restore original coordinate system
+        select type (ctx => self%backend)
+        class is (raster_context)
+            ctx%x_min = orig_x_min
+            ctx%x_max = orig_x_max
+            ctx%y_min = orig_y_min
+            ctx%y_max = orig_y_max
+        end select
+    end subroutine render_3d_markers
+
+    subroutine calculate_3d_plot_ranges(self, plot_idx, x_min, x_max, y_min, y_max, first_plot)
+        !! Calculate data ranges for 3D plot by projecting to 2D
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(inout) :: x_min, x_max, y_min, y_max
+        logical, intent(inout) :: first_plot
+        
+        real(wp), allocatable :: x2d(:), y2d(:)
+        real(wp) :: azim, elev, dist
+        integer :: n
+        
+        n = size(self%plots(plot_idx)%x)
+        allocate(x2d(n), y2d(n))
+        
+        ! Get default viewing angles
+        call get_default_view_angles(azim, elev, dist)
+        
+        ! Project 3D data to 2D
+        call project_3d_to_2d(self%plots(plot_idx)%x, &
+                              self%plots(plot_idx)%y, &
+                              self%plots(plot_idx)%z, &
+                              azim, elev, dist, x2d, y2d)
+        
+        ! Calculate ranges from projected data
+        if (first_plot) then
+            x_min = minval(x2d)
+            x_max = maxval(x2d)
+            y_min = minval(y2d)
+            y_max = maxval(y2d)
+            first_plot = .false.
+        else
+            x_min = min(x_min, minval(x2d))
+            x_max = max(x_max, maxval(x2d))
+            y_min = min(y_min, minval(y2d))
+            y_max = max(y_max, maxval(y2d))
+        end if
+    end subroutine calculate_3d_plot_ranges
 
     subroutine render_contour_plot(self, plot_idx)
         !! Render a single contour plot using proper marching squares algorithm
@@ -1405,6 +1962,66 @@ contains
             end do
         end do
     end subroutine render_pcolormesh_plot
+
+    subroutine render_bar_plot(self, plot_idx)
+        !! Render bar chart as filled rectangles
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        integer :: i, n_bars
+        real(wp) :: x1, y1, x2, y2
+        real(wp) :: x_screen(4), y_screen(4)
+        real(wp) :: bar_left, bar_right, bar_bottom, bar_top
+        
+        if (plot_idx > self%plot_count) return
+        if (.not. allocated(self%plots(plot_idx)%bar_x)) return
+        if (.not. allocated(self%plots(plot_idx)%bar_heights)) return
+        
+        n_bars = size(self%plots(plot_idx)%bar_x)
+        
+        ! Render each bar as a filled rectangle
+        do i = 1, n_bars
+            if (self%plots(plot_idx)%bar_horizontal) then
+                ! Horizontal bars
+                bar_left = 0.0_wp
+                bar_right = self%plots(plot_idx)%bar_heights(i)
+                bar_bottom = self%plots(plot_idx)%bar_x(i) - self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_top = self%plots(plot_idx)%bar_x(i) + self%plots(plot_idx)%bar_width * 0.5_wp
+            else
+                ! Vertical bars
+                bar_left = self%plots(plot_idx)%bar_x(i) - self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_right = self%plots(plot_idx)%bar_x(i) + self%plots(plot_idx)%bar_width * 0.5_wp
+                bar_bottom = 0.0_wp
+                bar_top = self%plots(plot_idx)%bar_heights(i)
+            end if
+            
+            ! Skip bars with zero or negative height/width
+            if (self%plots(plot_idx)%bar_horizontal) then
+                if (abs(bar_right - bar_left) < 1e-10_wp) cycle
+            else
+                if (abs(bar_top - bar_bottom) < 1e-10_wp) cycle
+            end if
+            
+            ! Transform coordinates for rendering
+            x_screen(1) = apply_scale_transform(bar_left, self%xscale, self%symlog_threshold)
+            y_screen(1) = apply_scale_transform(bar_bottom, self%yscale, self%symlog_threshold)
+            x_screen(2) = apply_scale_transform(bar_right, self%xscale, self%symlog_threshold)
+            y_screen(2) = apply_scale_transform(bar_bottom, self%yscale, self%symlog_threshold)
+            x_screen(3) = apply_scale_transform(bar_right, self%xscale, self%symlog_threshold)
+            y_screen(3) = apply_scale_transform(bar_top, self%yscale, self%symlog_threshold)
+            x_screen(4) = apply_scale_transform(bar_left, self%xscale, self%symlog_threshold)
+            y_screen(4) = apply_scale_transform(bar_top, self%yscale, self%symlog_threshold)
+            
+            ! Draw filled rectangle
+            call draw_filled_quad(self%backend, x_screen, y_screen)
+            
+            ! Draw outline
+            call self%backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+            call self%backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+            call self%backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+            call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+        end do
+    end subroutine render_bar_plot
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring
@@ -1641,20 +2258,13 @@ contains
     end subroutine draw_line_with_style
 
     subroutine render_solid_line(self, plot_idx)
-        !! Render solid line by drawing all segments, breaking on NaN values
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
+        !! Render solid line by drawing all segments
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         integer :: i
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
         
         do i = 1, size(self%plots(plot_idx)%x) - 1
-            ! Skip segment if either point contains NaN
-            if (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i)) .or. &
-                ieee_is_nan(self%plots(plot_idx)%x(i+1)) .or. ieee_is_nan(self%plots(plot_idx)%y(i+1))) then
-                cycle
-            end if
-            
             ! Apply scale transformations
             x1_screen = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
             y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
@@ -1667,7 +2277,6 @@ contains
 
     subroutine render_patterned_line(self, plot_idx, linestyle)
         !! Render line with continuous pattern across segments (matplotlib-style)
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
@@ -1677,41 +2286,25 @@ contains
         real(wp) :: pattern(20), pattern_length
         integer :: pattern_size, pattern_index
         logical :: drawing
-        integer :: i, valid_count
+        integer :: i
         real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen, dx, dy
         
         ! Get transformed data range for proper pattern scaling
         real(wp) :: x_range, y_range, plot_scale
         real(wp), allocatable :: x_trans(:), y_trans(:)
-        logical, allocatable :: valid_points(:)
         
         ! Transform all data points to get proper scaling
         allocate(x_trans(size(self%plots(plot_idx)%x)))
         allocate(y_trans(size(self%plots(plot_idx)%y)))
-        allocate(valid_points(size(self%plots(plot_idx)%x)))
         
-        valid_count = 0
         do i = 1, size(self%plots(plot_idx)%x)
-            valid_points(i) = .not. (ieee_is_nan(self%plots(plot_idx)%x(i)) .or. ieee_is_nan(self%plots(plot_idx)%y(i)))
-            if (valid_points(i)) then
-                x_trans(i) = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
-                y_trans(i) = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
-                valid_count = valid_count + 1
-            else
-                x_trans(i) = 0.0_wp
-                y_trans(i) = 0.0_wp
-            end if
+            x_trans(i) = apply_scale_transform(self%plots(plot_idx)%x(i), self%xscale, self%symlog_threshold)
+            y_trans(i) = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
         end do
         
-        ! Handle case where all points are NaN
-        if (valid_count > 0) then
-            x_range = maxval(x_trans, mask=valid_points) - minval(x_trans, mask=valid_points)
-            y_range = maxval(y_trans, mask=valid_points) - minval(y_trans, mask=valid_points)
-            plot_scale = max(x_range, y_range)
-        else
-            ! All points are NaN, use default scale
-            plot_scale = 1.0_wp
-        end if
+        x_range = maxval(x_trans) - minval(x_trans)
+        y_range = maxval(y_trans) - minval(y_trans)
+        plot_scale = max(x_range, y_range)
         
         ! Define pattern lengths (matplotlib-like)
         dash_len = plot_scale * 0.03_wp    ! 3% of range
@@ -1756,15 +2349,6 @@ contains
         drawing = .true.  ! Start drawing
         
         do i = 1, size(self%plots(plot_idx)%x) - 1
-            ! Skip segment if either point is invalid (NaN)
-            if (.not. valid_points(i) .or. .not. valid_points(i+1)) then
-                ! Reset pattern state when encountering NaN
-                current_distance = 0.0_wp
-                pattern_index = 1
-                drawing = .true.
-                cycle
-            end if
-            
             x1_screen = x_trans(i)
             y1_screen = y_trans(i)
             x2_screen = x_trans(i+1)
@@ -1782,7 +2366,7 @@ contains
         end do
         
         ! Clean up
-        deallocate(x_trans, y_trans, valid_points)
+        deallocate(x_trans, y_trans)
     end subroutine render_patterned_line
 
     subroutine render_segment_with_pattern(self, x1, y1, x2, y2, segment_length, &
@@ -1964,5 +2548,138 @@ contains
         
         self%plots(plot_index)%y = y_new
     end subroutine set_ydata
+    
+    logical function has_3d_plots(self) result(has_3d)
+        !! Check if figure contains any 3D plots
+        !! Following KISS - simple loop check
+        class(figure_t), intent(in) :: self
+        integer :: i
+        
+        has_3d = .false.
+        
+        do i = 1, self%plot_count
+            if (self%plots(i)%is_3d()) then
+                has_3d = .true.
+                return
+            end if
+        end do
+        
+    end function has_3d_plots
+    
+    logical function is_3d(self) result(is_3d_plot)
+        !! Check if plot data contains 3D coordinates
+        !! Following KISS principle - simple check for z allocation
+        class(plot_data_t), intent(in) :: self
+        
+        is_3d_plot = allocated(self%z) .or. allocated(self%z_grid)
+        
+    end function is_3d
+    
+    subroutine prepare_gltf_data(backend, plots)
+        !! Prepare GLTF data from plot data
+        !! Following SRP - handles data conversion
+        type(gltf_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        integer :: i
+        
+        ! Process each plot
+        do i = 1, size(plots)
+            if (plots(i)%is_3d()) then
+                select case (plots(i)%plot_type)
+                case (PLOT_TYPE_LINE)
+                    ! Add 3D line data
+                    if (allocated(plots(i)%z)) then
+                        call backend%add_3d_line_data(plots(i)%x, plots(i)%y, plots(i)%z)
+                    end if
+                case (PLOT_TYPE_CONTOUR)
+                    ! Add surface data (surface uses contour type)
+                    if (allocated(plots(i)%z_grid)) then
+                        call backend%add_3d_surface_data(plots(i)%x_grid, plots(i)%y_grid, &
+                                                       plots(i)%z_grid)
+                    end if
+                end select
+            end if
+        end do
+        
+    end subroutine prepare_gltf_data
+    
+    subroutine ensure_directory_exists(filename)
+        !! Create directory path for output file if it doesn't exist
+        character(len=*), intent(in) :: filename
+        character(len=:), allocatable :: dir_path
+        character(len=256) :: command
+        integer :: last_slash, status
+        
+        ! Find the last directory separator
+        last_slash = 0
+        do last_slash = len_trim(filename), 1, -1
+            if (filename(last_slash:last_slash) == '/') exit
+        end do
+        
+        ! If there's a directory path, create it
+        if (last_slash > 1) then
+            dir_path = filename(1:last_slash-1)
+            ! Use mkdir -p to create parent directories as needed
+            write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
+            call execute_command_line(command, exitstat=status)
+            if (status /= 0) then
+                print *, "Warning: Could not create directory: ", trim(dir_path)
+            end if
+        end if
+    end subroutine ensure_directory_exists
+
+    subroutine create_bar_xy_data(positions, values, bar_width, horizontal, x, y)
+        !! Convert bar chart data to x,y coordinates for rendering
+        real(wp), intent(in) :: positions(:), values(:), bar_width
+        logical, intent(in) :: horizontal
+        real(wp), allocatable, intent(out) :: x(:), y(:)
+        
+        integer :: n_bars, i, point_idx
+        real(wp) :: bar_left, bar_right, bar_bottom, bar_top
+        
+        n_bars = size(positions)
+        
+        ! Create bar outline: 4 points per bar (corners of rectangle)
+        allocate(x(4 * n_bars + 1), y(4 * n_bars + 1))
+        
+        point_idx = 1
+        do i = 1, n_bars
+            if (horizontal) then
+                ! Horizontal bars: bar extends from 0 to value in x-direction
+                bar_left = 0.0_wp
+                bar_right = values(i)
+                bar_bottom = positions(i) - bar_width * 0.5_wp
+                bar_top = positions(i) + bar_width * 0.5_wp
+            else
+                ! Vertical bars: bar extends from 0 to value in y-direction
+                bar_left = positions(i) - bar_width * 0.5_wp
+                bar_right = positions(i) + bar_width * 0.5_wp
+                bar_bottom = 0.0_wp
+                bar_top = values(i)
+            end if
+            
+            ! Rectangle corners (bottom-left, bottom-right, top-right, top-left)
+            x(point_idx) = bar_left
+            y(point_idx) = bar_bottom
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_right
+            y(point_idx) = bar_bottom
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_right
+            y(point_idx) = bar_top
+            point_idx = point_idx + 1
+            
+            x(point_idx) = bar_left
+            y(point_idx) = bar_top
+            point_idx = point_idx + 1
+        end do
+        
+        ! Close the shape to first point
+        x(point_idx) = x(1)
+        y(point_idx) = y(1)
+    end subroutine create_bar_xy_data
 
 end module fortplot_figure_core

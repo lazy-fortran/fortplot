@@ -36,6 +36,14 @@ make example ARGS="save_animation_demo"
 - **Frame rate**: Typically 30 fps for smooth playback
 - **Resolution**: Match your figure size
 
+## MPEG File Validation
+
+Generated MPEG files should meet these criteria:
+- **File size**: >5KB for multi-frame animations (typical range: 10KB-1MB+)
+- **Header validation**: Must contain valid MP4 box signatures (`ftyp`, `mdat`, `moov`)
+- **External validation**: Should pass `ffprobe -v error -show_format filename.mp4`
+- **Playback**: Should be compatible with standard media players
+
 ## Example Code Structure
 
 ```fortran
@@ -62,3 +70,17 @@ call anim%save('animation.mp4')
 ## Output Examples
 
 The animation example generates an MP4 video file showing a wave that changes over time.
+
+## Troubleshooting MPEG Issues
+
+If generated MPEG files are unusually small (<5KB) or fail to play:
+
+1. **Check file size**: `ls -la *.mp4` - should be >5KB for valid video
+2. **Validate with ffprobe**: `ffprobe -v error -show_format filename.mp4`
+3. **Test playback**: Open in VLC, mpv, or other media players
+4. **Check encoding**: Ensure proper frame rate and resolution settings
+
+**Common Issues:**
+- Files <1KB usually indicate encoding failure
+- Missing headers suggest incomplete MPEG-1 format compliance
+- Playback failures often indicate quantization or DCT encoding problems

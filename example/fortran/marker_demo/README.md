@@ -3,7 +3,7 @@ title: Marker Demo Example
 
 # Marker Demo
 
-This example showcases various marker types and scatter plot capabilities in fortplotlib.
+This example showcases various marker types and scatter plot capabilities in fortplot.
 
 ## Files
 
@@ -51,4 +51,4 @@ The example generates the following output files:
 - `marker_colors.pdf` - Vector format of colored markers
 - `marker_colors.txt` - ASCII art with different marker representations
 
-See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.

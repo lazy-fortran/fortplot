@@ -1,5 +1,5 @@
 module fortplot
-    !! Top-level public interface for fortplotlib
+    !! Top-level public interface for fortplot
     !!
     !! This module provides a clean, user-friendly API for creating scientific plots
     !! with support for line plots, contour plots, and multiple output formats.
@@ -12,7 +12,7 @@ module fortplot
     !!   call fig%add_plot(x, y, label="data")
     !!   call fig%savefig('output.png')
     !!
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
 
     use iso_fortran_env, only: wp => real64
     use fortplot_figure, only: figure_t
@@ -25,12 +25,15 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, show, show_viewer
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
+    public :: hist, histogram
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
+    public :: add_3d_plot, add_surface
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
+    public :: bar, barh
     
     ! Animation interface
     public :: animation_t, FuncAnimation
@@ -163,6 +166,127 @@ contains
 
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
+
+    subroutine bar(x, heights, width, label, color)
+        !! Add a vertical bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x: X-axis positions for bars
+        !!   heights: Heights of bars
+        !!   width: Optional - width of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: x, heights
+        real(8), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%bar(x, heights, width=width, label=label, color=color)
+    end subroutine bar
+
+    subroutine barh(y, widths, height, label, color)
+        !! Add a horizontal bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   y: Y-axis positions for bars
+        !!   widths: Widths of bars
+        !!   height: Optional - height of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: y, widths
+        real(8), intent(in), optional :: height
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%barh(y, widths, height=height, label=label, color=color)
+    end subroutine barh
+
+    subroutine hist(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        !!
+        !! Creates a histogram from input data, compatible with matplotlib.pyplot.hist
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color as RGB values [0-1]
+        !!
+        !! Example:
+        !!   ! Simple histogram
+        !!   call hist(data_values, bins=20, label='Distribution')
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+
+        call ensure_global_figure_initialized()
+        ! TODO: Implement hist method in figure_core
+        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+    end subroutine hist
+
+    subroutine histogram(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        !!
+        !! Alias for hist() subroutine - creates a histogram from input data
+        !! Compatible with matplotlib.pyplot.histogram
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color as RGB values [0-1]
+        !!
+        !! Example:
+        !!   ! Simple histogram
+        !!   call histogram(data_values, bins=20, label='Distribution')
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+
+        call ensure_global_figure_initialized()
+        ! TODO: Implement hist method in figure_core
+        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+    end subroutine histogram
+
+    subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
+        !! Add a box plot to the global figure (matplotlib-style)
+        !!
+        !! Creates a box plot displaying the distribution of data through
+        !! quartiles, median, and outliers. Compatible with matplotlib boxplot function.
+        !!
+        !! Arguments:
+        !!   data: 1D array of data values for statistical analysis
+        !!   position: Optional x-axis position for the box (default: 1.0)
+        !!   width: Optional width of the box (default: 0.8)
+        !!   label: Optional label for the plot
+        !!   show_outliers: Optional flag to display outliers (default: true)
+        !!   horizontal: Optional flag for horizontal orientation (default: false)
+        !!   color: Optional RGB color array [0-1] for box coloring
+        !!
+        !! Example:
+        !!   ! Simple box plot
+        !!   call boxplot(measurement_data, label='Measurements')
+        real(wp), dimension(:), intent(in) :: data
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+
+        ! TODO: Implement boxplot method in figure_core
+        ! call fig%boxplot(data, position=position, width=width, label=label, &
+        !                show_outliers=show_outliers, horizontal=horizontal, color=color)
+        print *, "ERROR: boxplot() not yet implemented - please use main branch for boxplot support"
+    end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
         !! Display a line plot in the terminal using ASCII graphics
@@ -341,6 +465,35 @@ contains
                          elinewidth=elinewidth, label=label, linestyle=linestyle, &
                          marker=marker, color=color)
     end subroutine add_errorbar
+
+    subroutine add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)
+        !! Add a 3D line plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y, z: Data arrays for the 3D line plot
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style and markers
+        !!   markersize: Optional marker size
+        !!   linewidth: Optional line width
+        real(8), dimension(:), intent(in) :: x, y, z
+        character(len=*), intent(in), optional :: label, linestyle
+        real(8), intent(in), optional :: markersize, linewidth
+        call fig%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
+                            markersize=markersize, linewidth=linewidth)
+    end subroutine add_3d_plot
+
+    subroutine add_surface(x, y, z, label)
+        !! Add a surface plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays (1D)
+        !!   z: 2D data array defining surface heights
+        !!   label: Optional label for the plot
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: label
+        call fig%add_surface(x, y, z, label=label)
+    end subroutine add_surface
 
     subroutine set_xscale(scale, threshold)
         !! Set x-axis scale for the global figure
@@ -559,5 +712,13 @@ contains
         
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
+
+    subroutine ensure_global_figure_initialized()
+        !! Ensure global figure is initialized before use (matplotlib compatibility)
+        !! Auto-initializes with default dimensions if not already initialized
+        if (.not. allocated(fig%backend)) then
+            call fig%initialize()
+        end if
+    end subroutine ensure_global_figure_initialized
 
 end module fortplot

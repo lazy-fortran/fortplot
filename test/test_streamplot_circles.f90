@@ -48,6 +48,7 @@ contains
         
         ! The visual test is: are the circles closed?
         ! This should be verified by examining the output
+        call fig%savefig('output/test/test_streamplot_circles/test_streamplot_circles_closure.png')
         call fig%savefig('/tmp/test/test_streamplot_circles_closure.png')
         print *, "Circle closure test completed - verify visually that circles are closed"
         
@@ -62,6 +63,7 @@ contains
         
         call fig%initialize(400, 400)  
         call fig%streamplot(x, y, u, v, density=2.0_real64)
+        call fig%savefig('output/test/test_streamplot_circles/test_streamplot_circles_radial.png')
         call fig%savefig('/tmp/test/test_streamplot_circles_radial.png')
         print *, "Radial positioning test completed - verify circles match expected radii"
         

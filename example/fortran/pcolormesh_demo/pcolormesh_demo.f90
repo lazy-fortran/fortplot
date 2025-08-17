@@ -38,11 +38,10 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='viridis')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_basic.png')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_basic.pdf')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_basic.txt')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_basic.png')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_basic.txt')
         
-        print *, "Basic pcolormesh saved to build/example/pcolormesh_demo/pcolormesh_basic.{png,pdf,txt}"
     end subroutine demo_basic_gradient
 
     subroutine demo_sinusoidal_pattern()
@@ -75,11 +74,10 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='coolwarm')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_sinusoidal.png')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_sinusoidal.pdf')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_sinusoidal.txt')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.png')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.txt')
         
-        print *, "Sinusoidal pcolormesh saved to build/example/pcolormesh_demo/pcolormesh_sinusoidal.{png,pdf,txt}"
     end subroutine demo_sinusoidal_pattern
 
     subroutine demo_different_colormaps()
@@ -111,11 +109,10 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='plasma')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_plasma.png')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_plasma.pdf')
-        call savefig('build/example/pcolormesh_demo/pcolormesh_plasma.txt')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_plasma.png')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_plasma.pdf')
+        call savefig('output/example/fortran/pcolormesh_demo/pcolormesh_plasma.txt')
         
-        print *, "Plasma colormap pcolormesh saved to build/example/pcolormesh_demo/pcolormesh_plasma.{png,pdf,txt}"
     end subroutine demo_different_colormaps
     
 end program pcolormesh_demo

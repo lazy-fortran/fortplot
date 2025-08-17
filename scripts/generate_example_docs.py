@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate FORD documentation pages for fortplotlib examples.
+Generate FORD documentation pages for fortplot examples.
 Extracts example descriptions from source files and creates markdown pages
 with embedded outputs (PNG images, ASCII output, and PDF links).
 """
@@ -21,7 +21,7 @@ def extract_example_info(fortran_file):
     
     # Extract description from initial comment block
     desc_match = re.search(r'program\s+\w+\s*\n\s*!!\s*(.+?)(?:\n(?!\s*!!)|\n\s*use)', content, re.DOTALL)
-    description = desc_match.group(1).strip() if desc_match else "Example demonstrating fortplotlib features."
+    description = desc_match.group(1).strip() if desc_match else "Example demonstrating fortplot features."
     
     # Extract output files from savefig calls
     output_files = re.findall(r"savefig\(['\"](.*?)['\"]\)", content)
@@ -91,7 +91,7 @@ def generate_example_page(example_info, output_dir):
         content += "### PDF Output\n\n"
         for pdf in pdf_files:
             pdf_name = Path(pdf).name
-            content += f"- [{pdf_name}](https://github.com/krystophny/fortplotlib/blob/main/{pdf})\n"
+            content += f"- [{pdf_name}](https://github.com/lazy-fortran/fortplot/blob/main/{pdf})\n"
         content += "\n"
     
     # Add link back to source
@@ -99,7 +99,7 @@ def generate_example_page(example_info, output_dir):
     content += f"""
 ---
 
-Source: [{rel_source}](https://github.com/krystophny/fortplotlib/blob/main/{rel_source})
+Source: [{rel_source}](https://github.com/lazy-fortran/fortplot/blob/main/{rel_source})
 """
     
     # Write the markdown file

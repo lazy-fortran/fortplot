@@ -1,10 +1,35 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides **MANDATORY** guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+**⚠️ CRITICAL: YOU MUST ADHERE TO ALL PRINCIPLES BELOW ⚠️**
+These are not suggestions - they are strict requirements that MUST be followed in every code change. In particular:
+
+1. Test-Driven Development
+2. SOLID, KISS and DRY
+3. Single responsibility principle
+
+**⚠️ COMMUNICATION REQUIREMENTS ⚠️**
+- Keep responses minimal and direct
+- No flattery, congratulations, or celebration language
+- Be brutally honest about issues and mistakes
+- Answer questions with facts only
+- Skip explanations unless specifically requested
+
+**⚠️ WORK ETHICS ⚠️**
+- Always prioritize correctness and clarity
+- Never be lazy or take shortcuts
+
+**⚠️ DEVELOPMENT WORKFLOW ⚠️**
+1. First collect the problem and solution strategy in a github issue
+2. Tackle one issue at a time
+3. Write tests first, then implement code to pass tests
+4. Once tests pass, clean up code while keeping tests green
+5. Commit, push, close the issue
 
 ## Project Overview
 
-**fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends. The architecture is heavily modularized following SOLID principles, with specialized modules handling specific concerns (text rendering, backends, scaling, etc.).
+**fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
 
 ## API Usage
 
@@ -20,13 +45,17 @@ call fig%savefig('output.png')  ! Auto-detects backend from extension
 
 ## Development Commands
 
+**⚠️ CRITICAL: ALWAYS USE MAKE FOR ALL DEVELOPMENT TASKS ⚠️**
+
 All development work must use the Makefile. Never run `fpm` commands directly.
+
+**⚠️ SPELLING: It is "fpm" (Fortran Package Manager) - NEVER "fmp" ⚠️**
 
 ### Primary Development Commands
 
-- `make test` - Run all unit tests (most important for TDD workflow)
-- `make example` - Build and run all examples
-- `make debug` - Build and run apps in app/ directory for debugging  
+- `make example` - Build and run all examples (default development workflow)
+- `make debug` - Build and run apps in app/ directory for debugging
+- `make test` - Run all unit tests in test/ directory
 - `make coverage` - Generate coverage report (coverage.txt)
 - `make build` - Compile the project
 - `make clean` - Clean build artifacts and generated plots
@@ -49,35 +78,12 @@ make debug ARGS="--target debug_feature"
 make build ARGS="--verbose"
 ```
 
-## Architecture Overview
-
-### Core Architecture 
-The library follows a layered architecture with clear separation of concerns:
-
-- **`fortplot.f90`** - Top-level public API module that re-exports functionality
-- **`fortplot_figure_core.f90`** - Main figure management and plot data structures
-- **`fortplot_figure.f90`** - Compatibility wrapper that delegates to specialized modules
-
-### Backend System
-Three output backends with polymorphic interfaces:
-- **PNG**: Raster graphics via STB libraries (`fortplot_png.f90`, `fortplot_raster.f90`) 
-- **PDF**: Vector graphics (`fortplot_pdf.f90`)
-- **ASCII**: Terminal display (`fortplot_ascii.f90`)
-
-### Specialized Modules
-Following Single Responsibility Principle:
-- **Text Rendering**: `fortplot_text.f90`, `fortplot_unicode.f90`, `fortplot_latex_parser.f90`
-- **Layout**: `fortplot_layout.f90`, `fortplot_margins.f90`, `fortplot_label_positioning.f90`
-- **Scaling**: `fortplot_scales.f90`, `fortplot_ticks.f90`, `fortplot_axes.f90`
-- **Visualization**: `fortplot_colormap.f90`, `fortplot_markers.f90`, `fortplot_legend.f90`
-- **Advanced**: `fortplot_streamline*.f90` (streamplot functionality), `fortplot_animation.f90`
-
-### File Organization
+## File Organization
 
 **Library Sources**: Place library sources in `src/` directory
 **Debugging**: Place debugging sources in `app/` directory and execute with `make debug`
 **Unit Tests**: Place unit tests in `test/` directory
-**Examples**: Place examples in `example/` directory under `example/<language>/<case>` subdirectories
+**Examples**: Place examples in `example/` directory under `example/<language>/<case>` subdirectories. Use correct relative path from top level inside exaples.
 
 ## Third party References and Inspiration
 
@@ -141,21 +147,53 @@ end program
 
 ## Coding Standards
 
-### SOLID Principles (Adapted for Fortran)
-- **Single Responsibility**: Each routine has one purpose, max 30 lines
-- **Open/Closed**: Extend through inheritance/composition, not modification  
-- **Dependency Inversion**: Depend on abstractions (abstract types), not concrete implementations
+### SOLID Principles (Adapted for Fortran) - MANDATORY
 
-### DRY and KISS Principles
-- **DRY**: Extract common functionality into shared modules (e.g., `fortplot_margins` for margin calculations)
-- **KISS**: Write clear, readable code over "clever" optimizations
+**⚠️ CRITICAL: ALL SOLID PRINCIPLES MUST BE FOLLOWED ⚠️**
 
-### Test-Driven Development
-All changes must follow strict TDD:
-1. Write failing test first in `test/test_*.f90`
-2. Run `make test` to confirm failure (RED)
-3. Write minimal code to pass (GREEN)  
-4. Refactor while keeping tests green (REFACTOR)
+**S - Single Responsibility**: Each routine has one clear purpose, max 30 lines - **ENFORCED**
+**O - Open/Closed**: Extend through inheritance/composition, not modification - **REQUIRED**
+**L - Liskov Substitution**: Derived types must work wherever base types do - **MANDATORY**
+**I - Interface Segregation**: Keep interfaces focused and minimal - **ENFORCED**
+**D - Dependency Inversion**: Depend on abstractions (abstract types), not concrete implementations - **REQUIRED**
+
+### DRY and KISS Principles - MANDATORY
+
+**⚠️ CRITICAL: DRY AND KISS ARE STRICTLY ENFORCED ⚠️**
+
+**DRY - Don't Repeat Yourself**: Extract common functionality into shared modules - **REQUIRED**
+- Create common modules for shared logic (e.g., `fortplot_margins` for margin calculations)
+- Use procedure pointers for backend-agnostic operations
+- Centralize constants and magic numbers in one place
+
+**KISS - Keep It Simple, Stupid**: Favor simplicity over cleverness - **MANDATORY**
+- Write clear, readable code over "clever" optimizations
+- Use straightforward algorithms unless performance demands complexity
+- Prefer explicit over implicit behavior
+- Choose clear variable names over short abbreviations
+
+### Test-Driven Development (MANDATORY)
+
+**⚠️ CRITICAL: TDD IS MANDATORY FOR ALL FEATURES AND REFACTORING ⚠️**
+**⚠️ WRITE TESTS FIRST - NO EXCEPTIONS ⚠️**
+**⚠️ DO NOT WRITE ANY CODE WITHOUT A FAILING TEST FIRST ⚠️**
+
+**MANDATORY TDD WORKFLOW - NEVER DEVIATE:**
+
+1. **WRITE FAILING TEST FIRST** in `test/test_*.f90` - **ALWAYS START HERE**
+2. **RUN `make test`** to confirm the test fails (RED)
+3. **Write minimal code** to make test pass (GREEN)
+4. **Refactor** while keeping tests green (REFACTOR)
+5. **Repeat RED-GREEN-REFACTOR** for next feature
+
+**FORBIDDEN:**
+- Writing implementation code before tests
+- Changing code without a test covering the change
+- Assuming existing code works without tests
+- Skipping tests "just this once"
+
+**TDD is not optional** - it is the foundation of all development in this codebase.
+**TESTS FIRST, ALWAYS. NO CODE WITHOUT TESTS.**
 
 ```fortran
 ! test/test_new_feature.f90
@@ -176,31 +214,63 @@ When implementing new features or improving existing ones:
 3. **Reference pyplot-fortran** in `thirdparty/pyplot-fortran/src/pyplot_module.F90` for clean API design patterns
 4. **Test against matplotlib output** using `make ref` to generate reference plots for comparison
 
-### Fortran-Specific Rules
-- Always explicitly import with `use only` (no wildcard imports)
-- Use `implicit none` in all modules and programs
-- Variable declarations MUST come before executable code in routines
-- No magic numbers - use named constants with descriptive names
-- Max 30 lines per routine, single responsibility
-- Never use `cd` in bash commands - use absolute paths instead
+### Code Organization (MANDATORY RULES)
 
-### State Management
-- No global mutable state - pass all state as parameters
-- Prefer immutable data structures and pure functions
-- Each piece of state must have clear ownership and scope
+**⚠️ CRITICAL: THESE RULES ARE NON-NEGOTIABLE ⚠️**
 
-### Backend Architecture
-- No scattered dispatch logic - backend-specific behavior in backend implementations
-- Use polymorphic interfaces to hide backend differences
-- Configure backend-specific behavior at initialization
+**Routine Size**: Max 30 lines, single responsibility - **NO EXCEPTIONS**
+**Naming**: Use descriptive verbs (`calculate_bounds` not `calc`) - **REQUIRED**
+**Placement**: Helper routines after caller, shared utilities at module end - **ENFORCED**
+**Comments**: Only for complex algorithms, let code self-document - **MANDATORY**
 
-### Boy Scout Rule
-**ALWAYS leave the code cleaner than you found it.** Everyone is encouraged to:
-- Fix any minor issues, cleanup, or improvements that fit the scope of current task
-- Make general fixes that are obviously beneficial (typos, formatting, dead code removal)
-- Commit and push these improvements immediately
+### State Management - CRITICALLY IMPORTANT
 
-**Timing Restrictions:**
-- **Before/During Development**: Full boy scout rule applies - clean freely
-- **During/After Review Phase**: Be very restrictive to avoid breaking things
+**⚠️ MUTABLE GLOBAL STATE IS THE SOURCE OF ALL EVIL AND MUST BE AVOIDED AT ALL COST ⚠️**
 
+**MANDATORY PRINCIPLES:**
+- **NO GLOBAL MUTABLE STATE** - All state must be explicitly passed as parameters
+- **IMMUTABLE BY DEFAULT** - Prefer immutable data structures and pure functions
+- **EXPLICIT STATE MANAGEMENT** - Always save/restore state when temporarily modifying context
+- **STATELESS OPERATIONS** - Functions should not rely on hidden global state
+- **CLEAR OWNERSHIP** - Each piece of state must have a clear owner and scope
+
+### Constants and Magic Numbers - STRICTLY ENFORCED
+
+**⚠️ MAGIC NUMBER CONSTANTS ARE FORBIDDEN ⚠️**
+
+**MANDATORY PRINCIPLES:**
+- **NO MAGIC NUMBERS** - If a number has meaning, it MUST be a named constant
+- **DESCRIPTIVE NAMES** - Constant names must clearly indicate their purpose
+- **CENTRALIZED CONSTANTS** - Group related constants in parameter declarations
+- **DOCUMENTED PURPOSE** - Each constant should have a clear comment explaining its meaning
+
+### Backend Specialization and Polymorphism - STRICTLY ENFORCED
+
+**⚠️ CRITICAL: NO SCATTERED DISPATCH LOGIC ALLOWED ⚠️**
+
+**MANDATORY PRINCIPLES:**
+- **NO SELECT TYPE IN BUSINESS LOGIC** - Backend-specific behavior must be handled in the backend implementations
+- **SPECIALIZATION AT INITIALIZATION** - Configure backend-specific behavior when the backend is created
+- **POLYMORPHIC INTERFACES** - Use abstract interfaces to hide backend differences from calling code
+- **ENCAPSULATED SCALING** - Each backend handles its own coordinate/value scaling internally
+
+### Misc - STRICTLY ENFORCED
+
+**⚠️ CRITICAL: THESE RULES HAVE NO EXCEPTIONS ⚠️**
+
+- Always explicitly import with `use only`. No wildcard imports allowed. - **MANDATORY**
+- Use `implicit none` in all modules and programs - **REQUIRED**
+- **ALL variable declarations MUST come before any executable code in routines** - **MANDATORY**
+  - Variables, parameters, and type declarations first
+  - Then executable statements and assignments
+  - Fortran requires this strict ordering
+- **cd COMMAND IS FORBIDDEN** - Never use `cd` in bash commands. Use absolute paths instead. - **MANDATORY**
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+
+      IMPORTANT: this context may or may not be relevant to your tasks. You should not respond to this context or otherwise consider it in your response unless it is highly relevant to your task. Most of the time, it is not relevant.

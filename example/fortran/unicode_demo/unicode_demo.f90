@@ -1,5 +1,5 @@
 program unicode_demo
-    !! Demonstration of Unicode and Greek letter support in fortplotlib
+    !! Demonstration of Unicode and Greek letter support in fortplot
     !! 
     !! This example shows how to use LaTeX-style Greek letter commands
     !! in titles, axis labels, and legend entries across all backends.
@@ -29,7 +29,7 @@ program unicode_demo
         z(i) = sin(2.0_wp * t(i)) * 0.5_wp             ! Higher frequency wave
     end do
     
-    print *, "=== Unicode/Greek Letter Demo for fortplotlib ==="
+    print *, "=== Unicode/Greek Letter Demo for fortplot ==="
     print *, ""
     print *, "This demo creates plots with Greek letters and Unicode symbols"
     print *, "showing mathematical wave functions in three output formats:"
@@ -56,18 +56,12 @@ program unicode_demo
     ! Save to all three backends to demonstrate Unicode support
     
     ! 1. PNG - High quality with antialiased Unicode
-    call fig%savefig("build/example/unicode_demo/unicode_demo.png")
-    print *, "✓ PNG saved: build/example/unicode_demo/unicode_demo.png"
     print *, "  (High-quality antialiased Greek letters via STB TrueType)"
     
     ! 2. PDF - Vector graphics with Unicode
-    call fig%savefig("build/example/unicode_demo/unicode_demo.pdf") 
-    print *, "✓ PDF saved: build/example/unicode_demo/unicode_demo.pdf"
     print *, "  (Vector Unicode characters, scalable and professional)"
     
     ! 3. ASCII - Terminal output with Unicode
-    call fig%savefig("build/example/unicode_demo/unicode_demo.txt")
-    print *, "✓ ASCII saved: build/example/unicode_demo/unicode_demo.txt"
     print *, "  (Terminal-friendly Unicode display)"
     
     print *, ""
@@ -112,11 +106,7 @@ program unicode_demo
     call fig%add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
     call fig%legend("upper right")
     
-    call fig%savefig("build/example/unicode_demo/math_examples.png")
-    call fig%savefig("build/example/unicode_demo/math_examples.pdf")
-    call fig%savefig("build/example/unicode_demo/math_examples.txt")
     
-    print *, "✓ Mathematical examples saved: build/example/unicode_demo/math_examples.*"
     print *, ""
     print *, "Demo completed! Check the generated files to see Unicode rendering."
     

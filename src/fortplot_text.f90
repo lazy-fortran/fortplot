@@ -387,7 +387,7 @@ contains
                     if (alpha_int < 0) alpha_int = alpha_int + 256
                     
                     if (alpha_int > 0) then  ! Only render non-transparent pixels
-                        pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
+                        pixel_idx = (img_y * width + img_x) * 3 + 1
                         
                         alpha_f = real(alpha_int) / 255.0
                         bg_r = real(int(image_data(pixel_idx), &
@@ -415,13 +415,13 @@ contains
         integer(1), intent(in) :: r, g, b
         integer :: pixel_idx, img_x, img_y, max_idx
         
-        max_idx = height * (1 + width * 3)
+        max_idx = width * height * 3
         
         
         do img_y = y, min(y + 6, height - 1)
             do img_x = x, min(x + 4, width - 1)
                 if (img_x >= 0 .and. img_y >= 0) then
-                    pixel_idx = img_y * (1 + width * 3) + 1 + img_x * 3 + 1
+                    pixel_idx = (img_y * width + img_x) * 3 + 1
                     if (pixel_idx > 0 .and. pixel_idx <= max_idx - 2) then
                         image_data(pixel_idx) = r
                         image_data(pixel_idx + 1) = g

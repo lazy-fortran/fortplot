@@ -1,5 +1,5 @@
 program generate_example_docs
-    !! Generate FORD documentation pages for fortplotlib examples
+    !! Generate FORD documentation pages for fortplot examples
     implicit none
     
     character(len=256) :: example_dirs(20)
@@ -199,17 +199,17 @@ contains
         select case(example_name)
         case('animation')
             fortran_file = 'save_animation_demo.f90'
-            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+            fortran_path = 'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
                            trim(example_name) // '/' // trim(fortran_file)
             local_fortran_path = 'example/fortran/' // trim(example_name) // '/' // trim(fortran_file)
         case('ascii_heatmap')
             fortran_file = 'ascii_heatmap_demo.f90'
-            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+            fortran_path = 'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
                            trim(example_name) // '/' // trim(fortran_file)
             local_fortran_path = 'example/fortran/' // trim(example_name) // '/' // trim(fortran_file)
         case default
             fortran_file = trim(example_name) // '.f90'
-            fortran_path = 'https://github.com/krystophny/fortplotlib/blob/main/example/fortran/' // &
+            fortran_path = 'https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/' // &
                            trim(example_name) // '/' // trim(fortran_file)
             local_fortran_path = 'example/fortran/' // trim(example_name) // '/' // trim(fortran_file)
         end select
@@ -229,7 +229,7 @@ contains
         if (python_exists) then
             write(unit_out, '(A)') ''
             write(unit_out, '(A)') '🐍 **Python:** [' // trim(example_name) // &
-                                   '.py](https://github.com/krystophny/fortplotlib/blob/main/' // &
+                                   '.py](https://github.com/lazy-fortran/fortplot/blob/main/' // &
                                    trim(python_path) // ')'
         end if
         write(unit_out, '(A)') ''

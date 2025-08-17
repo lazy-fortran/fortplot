@@ -3,7 +3,7 @@ title: Basic Plots Example
 
 # Basic Plots
 
-This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API and the object-oriented interface.
+This example demonstrates the fundamental plotting capabilities of fortplot using both the simple functional API and the object-oriented interface.
 
 ## Files
 
@@ -31,4 +31,4 @@ The example generates the following output files:
 - `simple_plot.png` - Simple sine wave visualization
 - `multi_line.png` - Multiple functions on the same plot
 
-See the [documentation gallery](https://krystophny.github.io/fortplotlib/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.
