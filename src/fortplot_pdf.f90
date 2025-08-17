@@ -1257,6 +1257,7 @@ contains
         integer, intent(out) :: filtered_count
         logical, intent(out) :: label_visible(:)
         
+        ! Minimum spacing constant - font height + spacing for clarity
         real(wp), parameter :: MIN_SPACING_PIXELS = 18.0_wp  ! 16px font height + 2px gap
         integer :: i, j
         real(wp) :: spacing_to_prev, spacing_to_next
