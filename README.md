@@ -105,6 +105,8 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
+  - **Validation**: Generated MPEG files should be >5KB for multi-frame content
+  - **Quality check**: Use `ffprobe -v error -show_format` to verify file validity
 
 ### For fpm (Fortran Package Manager) projects
 
@@ -166,6 +168,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Axis limits (`xlim`, `ylim`)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
+  - **Note**: Proper MPEG validation requires multi-criteria checking (size, headers, external tools)
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations
