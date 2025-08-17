@@ -69,6 +69,18 @@ call ylabel("Y Position")
 call savefig("temperature.png")
 ```
 
+#### Error bars for scientific data
+```fortran
+type(figure_t) :: fig
+call fig%initialize(800, 600)
+call fig%errorbar(x, y, yerr=measurement_errors, &
+                  marker='o', capsize=5.0_wp, &
+                  label='Experimental data')
+call fig%errorbar(x, y_theory, label='Theory', linestyle='-')
+call fig%legend()
+call fig%savefig("scientific_plot.png")
+```
+
 #### Log scale plot
 ```fortran
 call figure()
@@ -141,6 +153,7 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 
 ### Plot types
 - [x] Line plots (`plot`) with customizable line styles and markers
+- [x] Error bars (`errorbar`) with symmetric/asymmetric X/Y errors and customization
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
