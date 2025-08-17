@@ -145,7 +145,7 @@ pip install git+https://github.com/krystophny/fortplotlib.git
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
 - [ ] Scatter plots (`scatter`)
-- [ ] Bar charts (`bar`)
+- [x] Bar charts (`bar`)
 - [ ] Histograms (`hist`)
 - [ ] Images (`imshow`)
 
