@@ -1,0 +1,14 @@
+@PACKAGE_INIT@
+
+# Find the exported targets
+include("${CMAKE_CURRENT_LIST_DIR}/fortplotTargets.cmake")
+
+# Check that all required components are found
+check_required_components(fortplot)
+
+# Set fortplot_FOUND to TRUE when all components are available
+set(fortplot_FOUND TRUE)
+
+# Provide information about the package
+message(STATUS "Found fortplot: ${CMAKE_CURRENT_LIST_DIR}")
+message(STATUS "fortplot version: @PROJECT_VERSION@")
