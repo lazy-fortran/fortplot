@@ -10,7 +10,7 @@ include(FetchContent)
 # Fetch and build fortplotlib using CMake
 FetchContent_Declare(
     fortplotlib
-    GIT_REPOSITORY https://github.com/krystophny/fortplotlib
+    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
     GIT_TAG main
 )
 FetchContent_MakeAvailable(fortplotlib)
