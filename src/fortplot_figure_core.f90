@@ -763,7 +763,9 @@ contains
         plot_idx = self%plot_count
         self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
         
-        ! Store bar data (allocatables automatically deallocated when reassigned)
+        ! Store bar data (deallocate first if already allocated)
+        if (allocated(self%plots(plot_idx)%bar_x)) deallocate(self%plots(plot_idx)%bar_x)
+        if (allocated(self%plots(plot_idx)%bar_heights)) deallocate(self%plots(plot_idx)%bar_heights)
         allocate(self%plots(plot_idx)%bar_x(size(positions)))
         allocate(self%plots(plot_idx)%bar_heights(size(values)))
         self%plots(plot_idx)%bar_x = positions
