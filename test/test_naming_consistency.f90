@@ -22,7 +22,7 @@ program test_naming_consistency
     
     call test_no_fortplotlib_in_workflows()
     call test_no_fortplotlib_in_documentation()
-    call test_no_fortplotlib_in_examples()
+    call test_no_fortplotlib_in_design_docs()
     call test_python_module_consistency()
     call test_consistent_library_naming()
     
@@ -55,38 +55,32 @@ contains
         
         call start_test("No 'fortplotlib' in documentation")
         
-        ! Check key documentation files
+        ! Check existing documentation files only
         call check_file_for_forbidden_string('doc/example/index.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/basic_plots.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/line_styles.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/marker_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/unicode_demo.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/index.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/unicode_support.md', 'fortplotlib')
         
         call end_test()
     end subroutine test_no_fortplotlib_in_documentation
 
-    subroutine test_no_fortplotlib_in_examples()
-        ! Given: Example documentation should use consistent "fortplot" naming
-        ! When: Checking example documentation for "fortplotlib" instances
+    subroutine test_no_fortplotlib_in_design_docs()
+        ! Given: Design documentation should use consistent "fortplot" naming
+        ! When: Checking design documentation for "fortplotlib" instances
         ! Then: No "fortplotlib" instances should be found
         
-        call start_test("No 'fortplotlib' in example docs")
+        call start_test("No 'fortplotlib' in design docs")
         
-        ! Check example documentation files that commonly contain branding
-        call check_file_for_forbidden_string('doc/example/pcolormesh_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/animation.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/legend_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/contour_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/scale_examples.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/streamplot_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/show_viewer_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/legend_box_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/format_string_demo.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/colored_contours.md', 'fortplotlib')
-        call check_file_for_forbidden_string('doc/example/stateful_streamplot.md', 'fortplotlib')
+        ! Check existing design documentation files
+        call check_file_for_forbidden_string('doc/design/axes_layout.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/backends.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/basic_plots.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/contour.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/figure_management.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/streamplot.md', 'fortplotlib')
+        call check_file_for_forbidden_string('doc/design/styling.md', 'fortplotlib')
         
         call end_test()
-    end subroutine test_no_fortplotlib_in_examples
+    end subroutine test_no_fortplotlib_in_design_docs
 
     subroutine test_python_module_consistency()
         ! Given: Python module should enable "import fortplot" syntax
