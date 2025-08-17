@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible contour plotting implementation in fortplotlib, covering contour line generation, filled contours, automatic level calculation, and contour labeling. The implementation follows matplotlib's ContourSet architecture while leveraging fortplotlib's existing marching squares algorithm and colormap system.
+This document describes the matplotlib-compatible contour plotting implementation in fortplot, covering contour line generation, filled contours, automatic level calculation, and contour labeling. The implementation follows matplotlib's ContourSet architecture while leveraging fortplot's existing marching squares algorithm and colormap system.
 
 ## Problem Statement
 
@@ -306,7 +306,7 @@ end subroutine
 
 #### 5. Enhanced Marching Squares Integration
 
-Building on fortplotlib's existing implementation in `fortplot_figure_core.f90`:
+Building on fortplot's existing implementation in `fortplot_figure_core.f90`:
 
 ```fortran
 subroutine generate_contour_paths(cs, grid_x, grid_y, grid_z, levels)
@@ -341,7 +341,7 @@ end subroutine
 
 subroutine trace_contour_level(x, y, z, level, paths)
     ! Wrapper around existing marching squares implementation
-    ! Converts fortplotlib's current algorithm to path objects
+    ! Converts fortplot's current algorithm to path objects
     
     ! Use existing marching squares algorithm
     call generate_contour_lines(x, y, z, level, line_segments)
@@ -402,7 +402,7 @@ end subroutine
 
 ### Implementation Details
 
-#### Integration with Existing Fortplotlib Code
+#### Integration with Existing Fortplot Code
 
 Building on current strengths while adding missing functionality:
 
@@ -544,9 +544,9 @@ end type
 - **`src/fortplot_path_optimizer.f90`** - Contour path smoothing and optimization
 - **`src/fortplot_colorbar.f90`** - Colorbar creation and management
 - **`src/fortplot_contour_cache.f90`** - Performance caching system
-- **`python/fortplotlib/fortplot.py`** - Enhanced Python contour interface
+- **`python/fortplot/fortplot.py`** - Enhanced Python contour interface
 - **`test/test_contour_levels.f90`** - Level generation algorithm tests
 - **`test/test_contour_labeling.f90`** - Label placement verification
 - **`test/test_contour_performance.f90`** - Contour generation benchmarks
 
-This implementation ensures fortplotlib provides matplotlib-compatible contour plotting with professional labeling, optimal level generation, path optimization, and colorbar support while building on the existing robust marching squares foundation for high-quality scientific visualization.
+This implementation ensures fortplot provides matplotlib-compatible contour plotting with professional labeling, optimal level generation, path optimization, and colorbar support while building on the existing robust marching squares foundation for high-quality scientific visualization.

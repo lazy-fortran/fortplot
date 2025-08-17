@@ -32,6 +32,7 @@ contains
         
         ! Save as ASCII to visually verify both markers and lines
         call fig%savefig('output/test/test_mixed_marker_line/test_mixed_marker_line.txt')
+        call fig%savefig('/tmp/test_mixed_marker_line.txt')
         
         print *, "Check test_mixed_marker_line.txt - should show both 'o' markers and '#' lines"
     end subroutine test_should_draw_both_markers_and_lines

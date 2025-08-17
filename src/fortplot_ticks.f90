@@ -6,7 +6,7 @@ module fortplot_ticks
     !! following Single Responsibility Principle by focusing solely
     !! on tick calculation and formatting.
     !! 
-    !! Author: fortplotlib contributors
+    !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -17,7 +17,7 @@ module fortplot_ticks
     public :: calculate_tick_labels, calculate_tick_labels_log, calculate_tick_labels_symlog
     public :: format_tick_value, calculate_nice_axis_limits
     public :: generate_scale_aware_tick_labels, format_tick_value_smart, format_log_tick_value
-    public :: find_nice_tick_locations
+    public :: find_nice_tick_locations, format_tick_value_consistent
     
 contains
 
@@ -42,9 +42,9 @@ contains
         ! Determine consistent formatting for the nice step size
         decimal_places = determine_decimal_places_from_step(nice_step)
         
-        ! Format the nice tick locations with smart formatting (max 8 chars for clean appearance)
+        ! Format the nice tick locations with consistent decimal places
         do i = 1, min(actual_num_ticks, size(labels))
-            labels(i) = format_tick_value_smart(tick_locations(i), 8)
+            labels(i) = format_tick_value_consistent(tick_locations(i), decimal_places)
         end do
         
         ! Clear unused labels
@@ -165,26 +165,6 @@ contains
         end if
     end subroutine ensure_leading_zero
 
-    function format_tick_value_consistent(value, decimal_places) result(formatted)
-        !! Format tick value with consistent number of decimal places
-        real(wp), intent(in) :: value
-        integer, intent(in) :: decimal_places
-        character(len=20) :: formatted
-        
-        if (abs(value) < 1.0e-10_wp) then
-            if (decimal_places == 0) then
-                formatted = '0'
-            else
-                write(formatted, '(F0.' // char(decimal_places + 48) // ')') 0.0_wp
-                call ensure_leading_zero(formatted)
-            end if
-        else if (decimal_places == 0) then
-            write(formatted, '(I0)') nint(value)
-        else
-            write(formatted, '(F0.' // char(decimal_places + 48) // ')') value
-            call ensure_leading_zero(formatted)
-        end if
-    end function format_tick_value_consistent
 
     subroutine find_nice_tick_locations(data_min, data_max, target_num_ticks, &
                                        nice_min, nice_max, nice_step, &
@@ -417,8 +397,6 @@ contains
         real(wp), intent(in) :: data_min, data_max, linear_threshold
         real(wp), intent(out) :: tick_locations(:)
         integer, intent(out) :: actual_num_ticks
-        
-        integer :: i
         real(wp) :: candidates(20)
         integer :: num_candidates
         
@@ -660,13 +638,28 @@ contains
         is_power_of_ten = abs(log_val - real(exponent, wp)) < 1.0e-10_wp
         
         if (is_power_of_ten) then
-            ! Format as 10^n for exact powers of 10
+            ! Format common powers of 10 as decimal for readability
             if (value < 0.0_wp) then
-                write(formatted, '(A, I0)') '-10^', exponent
+                if (exponent >= -3 .and. exponent <= 3) then
+                    ! Use decimal format for common negative powers
+                    write(formatted, '(F0.0)') value
+                else
+                    write(formatted, '(A, I0)') '-10^', exponent
+                end if
             else if (exponent == 0) then
                 formatted = '1'
             else if (exponent == 1) then
                 formatted = '10'
+            else if (exponent == 2) then
+                formatted = '100'
+            else if (exponent == 3) then
+                formatted = '1000'
+            else if (exponent == -1) then
+                formatted = '0.1'
+            else if (exponent == -2) then
+                formatted = '0.01'
+            else if (exponent == -3) then
+                formatted = '0.001'
             else
                 write(formatted, '(A, I0)') '10^', exponent
             end if
@@ -679,5 +672,29 @@ contains
             end if
         end if
     end function format_log_tick_value
+
+    function format_tick_value_consistent(value, decimal_places) result(formatted)
+        !! Format tick value with consistent decimal places for uniform appearance
+        real(wp), intent(in) :: value
+        integer, intent(in) :: decimal_places
+        character(len=20) :: formatted
+        character(len=10) :: format_str
+        
+        if (abs(value) < 1.0e-10_wp) then
+            if (decimal_places == 0) then
+                formatted = '0'
+            else
+                write(format_str, '(A, I0, A)') '(F0.', decimal_places, ')'
+                write(formatted, format_str) 0.0_wp
+            end if
+        else if (decimal_places == 0) then
+            write(formatted, '(I0)') nint(value)
+        else
+            write(format_str, '(A, I0, A)') '(F0.', decimal_places, ')'
+            write(formatted, format_str) value
+        end if
+        
+        call ensure_leading_zero(formatted)
+    end function format_tick_value_consistent
 
 end module fortplot_ticks

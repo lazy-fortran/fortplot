@@ -15,24 +15,37 @@ jobs:
         chmod +x fpm-0.12.0-linux-x86_64-gcc-12
         sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
 
-    - name: Install GFortran and gcov
+    - name: Install GFortran, CMake and gcov
       run: |
         sudo apt-get update
-        sudo apt-get install -y gfortran gcovr
+        sudo apt-get install -y gfortran gcovr cmake ffmpeg
+
+    - name: Set compiler
+      run: |
+        echo "FC=gfortran" >> $GITHUB_ENV
+        echo "FPM_FC=gfortran" >> $GITHUB_ENV
 
     - name: Build with coverage flags
       run: |
         make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
 
-    - name: Run tests with coverage
-      continue-on-error: true
+    - name: Run FPM tests with coverage
       run: |
+        mkdir -p /tmp/test
         make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
+
+    - name: Test FPM example build
+      run: |
+        make test ARGS="--target test_system_fpm_example"
+
+    - name: Test CMake example build
+      run: |
+        make test ARGS="--target test_system_cmake_example"
 
     - name: Generate coverage report
       if: always()
       run: |
-        gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --xml -o coverage.xml
+        gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' --exclude 'example/*' --exclude 'test/*' --xml -o coverage.xml --print-summary
 
     - name: Upload coverage to Codecov
       if: always()

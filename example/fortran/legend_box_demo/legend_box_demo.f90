@@ -47,6 +47,9 @@ program legend_box_demo
     call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.png')
     call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.pdf')
     call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.txt')
+    print *, 'Created legend_box_demo_upper_left.png/pdf/txt'
+    
+    call fig%legend('lower right')
     print *, 'Created legend_box_demo_lower_right.png/pdf/txt'
     
     deallocate(x, y)

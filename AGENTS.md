@@ -29,7 +29,7 @@ These are not suggestions - they are strict requirements that MUST be followed i
 
 ## Project Overview
 
-**fortplotlib** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
+**fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, and ASCII backends.
 
 ## API Usage
 
@@ -56,6 +56,7 @@ All development work must use the Makefile. Never run `fpm` commands directly.
 - `make example` - Build and run all examples (default development workflow)
 - `make debug` - Build and run apps in app/ directory for debugging
 - `make test` - Run all unit tests in test/ directory
+- `make coverage` - Generate coverage report (coverage.txt)
 - `make build` - Compile the project
 - `make clean` - Clean build artifacts and generated plots
 

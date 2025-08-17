@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the matplotlib-compatible figure management system in fortplotlib, covering figure creation, sizing, layout management, and state handling. The implementation follows matplotlib's Figure class architecture and pyplot interface patterns to ensure familiar behavior and API compatibility.
+This document describes the matplotlib-compatible figure management system in fortplot, covering figure creation, sizing, layout management, and state handling. The implementation follows matplotlib's Figure class architecture and pyplot interface patterns to ensure familiar behavior and API compatibility.
 
 ## Problem Statement
 
@@ -402,8 +402,8 @@ end subroutine
 - **`src/fortplot_axes_stack.f90`** - Axes management and tracking
 - **`src/fortplot_coordinates.f90`** - DPI-aware coordinate systems
 - **`src/fortplot.f90`** - Updated pyplot-style interface
-- **`python/fortplotlib/fortplot.py`** - Enhanced Python figure interface
+- **`python/fortplot/fortplot.py`** - Enhanced Python figure interface
 - **`test/test_figure_management.f90`** - Figure lifecycle and state tests
 - **`test/test_subplot_system.f90`** - Subplot layout and sharing tests
 
-This implementation ensures fortplotlib provides matplotlib-compatible figure management with professional multi-figure support, DPI-aware sizing, complete subplot systems, and robust memory management for production scientific visualization workflows.
+This implementation ensures fortplot provides matplotlib-compatible figure management with professional multi-figure support, DPI-aware sizing, complete subplot systems, and robust memory management for production scientific visualization workflows.

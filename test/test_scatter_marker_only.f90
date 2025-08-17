@@ -33,6 +33,7 @@ contains
         
         ! Save as ASCII to visually verify no connecting lines
         call fig%savefig('output/test/test_scatter_marker_only/test_scatter_marker_only.txt')
+        call fig%savefig('/tmp/test_scatter_marker_only.txt')
         
         ! TODO: Add proper assertions to check internal state
         ! For now, manual verification via ASCII output

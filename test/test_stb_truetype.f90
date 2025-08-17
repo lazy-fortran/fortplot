@@ -35,34 +35,29 @@ contains
 
     function test_font_initialization() result(passed)
         !! Test that font can be initialized from file
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
-        character(len=256) :: font_paths(3)
-        integer :: i
+        character(len=256) :: font_path
         
         passed = .false.
         
         print *, "Test 1: Font Initialization"
         print *, "---------------------------"
         
-        ! Try multiple common font paths
-        font_paths(1) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
-        font_paths(2) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"  
-        font_paths(3) = "/System/Library/Fonts/Helvetica.ttc"
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Could not find any supported font"
+            return
+        end if
         
-        do i = 1, 3
-            if (stb_init_font(test_font, trim(font_paths(i)))) then
-                print *, "✅ Successfully loaded font:", trim(font_paths(i))
-                print *, "   Font start offset:", test_font%fontstart
-                print *, "   Number of glyphs:", test_font%numGlyphs
-                
-                call stb_cleanup_font(test_font)
-                passed = .true.
-                exit
-            else
-                print *, "❌ Failed to load font:", trim(font_paths(i))
-            end if
-        end do
+        if (stb_init_font(test_font, trim(font_path))) then
+            print *, "✅ Successfully loaded font:", trim(font_path)
+            passed = .true.
+            call stb_cleanup_font(test_font)
+        else
+            print *, "❌ Failed to load font:", trim(font_path)
+        end if
         
         if (.not. passed) then
             print *, "ERROR: Could not load any test fonts"
@@ -72,6 +67,7 @@ contains
     
     function test_font_metrics() result(passed)
         !! Test font metrics functions
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
         integer :: ascent, descent, line_gap
@@ -85,14 +81,15 @@ contains
         print *, "Test 2: Font Metrics"
         print *, "--------------------"
         
-        ! Try to load a font
-        font_path = "/usr/share/fonts/TTF/DejaVuSans.ttf"
-        if (.not. stb_init_font(test_font, font_path)) then
-            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-            if (.not. stb_init_font(test_font, font_path)) then
-                print *, "❌ Cannot load font for metrics test"
-                return
-            end if
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Cannot find any supported font for metrics test"
+            return
+        end if
+        
+        if (.not. stb_init_font(test_font, trim(font_path))) then
+            print *, "❌ Cannot load font for metrics test"
+            return
         end if
         
         ! Test scale calculation
@@ -132,6 +129,7 @@ contains
     
     function test_character_rendering() result(passed)
         !! Test character bitmap rendering
+        use fortplot_text, only: find_any_available_font
         logical :: passed
         type(stb_fontinfo_t) :: test_font
         type(c_ptr) :: bitmap_ptr
@@ -147,14 +145,15 @@ contains
         print *, "Test 3: Character Rendering"
         print *, "---------------------------"
         
-        ! Try to load a font
-        font_path = "/usr/share/fonts/TTF/DejaVuSans.ttf"
-        if (.not. stb_init_font(test_font, font_path)) then
-            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-            if (.not. stb_init_font(test_font, font_path)) then
-                print *, "❌ Cannot load font for rendering test"
-                return
-            end if
+        ! Use dynamic font discovery (tries multiple fonts)
+        if (.not. find_any_available_font(font_path)) then
+            print *, "❌ Cannot find any supported font for rendering test"
+            return
+        end if
+        
+        if (.not. stb_init_font(test_font, trim(font_path))) then
+            print *, "❌ Cannot load font for rendering test"
+            return
         end if
         
         ! Test glyph lookup

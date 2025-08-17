@@ -35,6 +35,7 @@ contains
         
         ! Save to test rendering
         call fig%savefig('output/test/test_legend/test_legend_basic.png')
+        call fig%savefig('/tmp/test/test_legend_basic.png')
         
         print *, "PASS: Legend API tests completed"
     end subroutine test_legend_api
@@ -57,6 +58,10 @@ contains
         
         call fig%legend(location="lower right")  
         call fig%savefig('output/test/test_legend/test_legend_lower_right.png')
+        call fig%savefig('/tmp/test/test_legend_upper_left.png')
+        
+        call fig%legend(location="lower right")  
+        call fig%savefig('/tmp/test/test_legend_lower_right.png')
         
         print *, "PASS: Legend positioning tests completed"
     end subroutine test_legend_positioning
@@ -84,6 +89,9 @@ contains
         call fig%savefig('output/test/test_legend/test_legend_render.png')
         call fig%savefig('output/test/test_legend/test_legend_render.pdf')
         call fig%savefig('output/test/test_legend/test_legend_render.txt')
+        call fig%savefig('/tmp/test/test_legend_render.png')
+        call fig%savefig('/tmp/test/test_legend_render.pdf')
+        call fig%savefig('/tmp/test/test_legend_render.txt')
         
         print *, "PASS: Legend rendering tests completed"
     end subroutine test_legend_rendering

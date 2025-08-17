@@ -1,6 +1,7 @@
 program debug_stb_positioning
     !! Debug STB TrueType positioning to understand coordinate system
     use fortplot_stb_truetype
+    use fortplot_text, only: find_any_available_font
     use iso_c_binding
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -14,10 +15,17 @@ program debug_stb_positioning
     real(wp) :: scale
     character(len=1) :: test_char = 'A'
     integer :: char_code
+    character(len=256) :: font_path
+    logical :: found
     
-    ! Initialize font
-    if (.not. stb_init_font(font_info, "/usr/share/fonts/TTF/DejaVuSans.ttf")) then
-        print *, "ERROR: Could not load font"
+    ! Initialize font using dynamic font discovery (tries multiple fonts)
+    if (.not. find_any_available_font(font_path)) then
+        print *, "ERROR: Could not find any supported font"
+        stop 1
+    end if
+    
+    if (.not. stb_init_font(font_info, trim(font_path))) then
+        print *, "ERROR: Could not load font:", trim(font_path)
         stop 1
     end if
     
