@@ -34,4 +34,4 @@ The example generates the following output files:
 - `mixed_plot.pdf` - Vector format of the mixed plot
 - `mixed_plot.txt` - ASCII art representation of the mixed plot
 
-See the [documentation gallery](https://krystophny.github.io/fortplot/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.

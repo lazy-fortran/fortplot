@@ -9,7 +9,8 @@ module fortplot_figure
     !! Re-exports: utility functions from fortplot_utils
     
     use fortplot_figure_core, only: figure_t, plot_data_t, PLOT_TYPE_LINE, &
-                                    PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
+                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+                                   PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
     use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform, &
                               transform_x_coordinate, transform_y_coordinate
     use fortplot_utils, only: get_backend_from_filename, initialize_backend
@@ -19,7 +20,8 @@ module fortplot_figure
     
     ! Re-export all public entities for backward compatibility
     public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+              PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
     public :: apply_scale_transform, apply_inverse_scale_transform
     public :: transform_x_coordinate, transform_y_coordinate
     public :: get_backend_from_filename, initialize_backend

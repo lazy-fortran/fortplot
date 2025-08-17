@@ -31,4 +31,4 @@ The example generates the following output files:
 - `simple_plot.png` - Simple sine wave visualization
 - `multi_line.png` - Multiple functions on the same plot
 
-See the [documentation gallery](https://krystophny.github.io/fortplot/) for visual examples.
+See the [documentation gallery](https://lazy-fortran.github.io/fortplot/) for visual examples.
