@@ -68,7 +68,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_unified_data(frame)
@@ -233,7 +232,6 @@ contains
                     print *, "Warning: Could not remove temporary file: " // trim(test_files(i_test))
                         end if
     end block
-            end block
         end do
     end subroutine
 
@@ -348,7 +346,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_performance_data(frame)

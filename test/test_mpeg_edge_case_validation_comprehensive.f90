@@ -114,7 +114,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(corrupted_file)
                     end if
-    end block
         end block
     end subroutine
 
@@ -166,7 +165,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(fake_file)
                     end if
-    end block
         end block
     end subroutine
 
@@ -238,7 +236,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(complete_file)
                     end if
-    end block
         end block
         block
             logical :: remove_success
@@ -246,7 +243,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(truncated_file)
                     end if
-    end block
         end block
     end subroutine
 
@@ -296,7 +292,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(zero_file)
                     end if
-    end block
         end block
     end subroutine
 
@@ -345,7 +340,6 @@ contains
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(garbage_file)
                     end if
-    end block
         end block
     end subroutine
 
