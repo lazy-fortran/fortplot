@@ -1,5 +1,7 @@
 program test_mpeg_semantic_validation_comprehensive
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, &
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -37,8 +39,7 @@ contains
         print *, "TEST: Video Frame Count Validation"
         print *, "================================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping frame count test - ffprobe not available"
@@ -67,7 +68,13 @@ contains
             print *, "Video frame count doesn't match animation specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_frame_count_data(frame)
@@ -83,11 +90,8 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Use ffprobe to check frame count (simplified check)
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames ', &
-                                    '-show_entries stream=nb_frames "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of ffprobe command
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Frame count semantic check exit status:", status
     end function
@@ -106,8 +110,7 @@ contains
         print *, "TEST: Video Resolution Validation"
         print *, "================================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping resolution test - ffprobe not available"
@@ -137,7 +140,13 @@ contains
             print *, "Video resolution doesn't match figure specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_resolution_data(frame)
@@ -153,10 +162,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=width,height "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Resolution semantic check exit status:", status
     end function
@@ -176,8 +183,7 @@ contains
         print *, "TEST: Video Duration Semantics"
         print *, "============================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping duration test - ffprobe not available"
@@ -208,7 +214,13 @@ contains
             print *, "Video duration doesn't match frame/FPS specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_duration_data(frame)
@@ -224,10 +236,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Duration semantic check exit status:", status
     end function
@@ -246,8 +256,7 @@ contains
         print *, "TEST: Video Codec Semantics"
         print *, "=========================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping codec test - ffprobe not available"
@@ -274,7 +283,13 @@ contains
             print *, "Video codec not appropriate for content type"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_codec_data(frame)
@@ -289,10 +304,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=codec_name "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_appropriate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_appropriate = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Codec semantic check exit status:", status
     end function
@@ -311,8 +324,7 @@ contains
         print *, "TEST: Video Bitrate Semantics"
         print *, "============================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping bitrate test - ffprobe not available"
@@ -339,7 +351,13 @@ contains
             print *, "Video bitrate not reasonable for content"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_bitrate_data(frame)
@@ -356,10 +374,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=bit_rate "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_reasonable = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_reasonable = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Bitrate semantic check exit status:", status
     end function

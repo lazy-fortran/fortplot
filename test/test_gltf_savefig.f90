@@ -4,6 +4,7 @@ program test_gltf_savefig
     
     use iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_security, only: safe_remove_file
     implicit none
     
     call test_savefig_gltf_3d_line()
@@ -40,7 +41,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
+        end block
         
     end subroutine test_savefig_gltf_3d_line
     
@@ -72,7 +79,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
+        end block
         
     end subroutine test_savefig_gltf_surface
     
@@ -104,7 +117,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
+        end block
         
     end subroutine test_mixed_2d_3d_export
     
@@ -139,7 +158,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
+        end block
         
     end subroutine test_gltf_file_structure
 

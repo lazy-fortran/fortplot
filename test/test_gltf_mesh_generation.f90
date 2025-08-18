@@ -4,6 +4,7 @@ program test_gltf_mesh_generation
     
     use iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_security, only: safe_remove_file
     implicit none
     
     call test_gltf_contains_mesh_data()
@@ -46,7 +47,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+                end if
+    end block
         
     end subroutine test_gltf_contains_mesh_data
     
@@ -84,7 +91,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+                end if
+    end block
         
     end subroutine test_gltf_contains_accessor_data
     
@@ -122,7 +135,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+                end if
+    end block
         
     end subroutine test_gltf_contains_buffer_data
     
@@ -160,7 +179,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        block
+        logical :: remove_success
+        call safe_remove_file(filename, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+                end if
+    end block
         
     end subroutine test_gltf_scene_structure
 

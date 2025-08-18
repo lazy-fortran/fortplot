@@ -1,5 +1,6 @@
 program test_mpeg_file_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -57,7 +58,13 @@ contains
                 print *, "Current tests give FALSE POSITIVE - they should FAIL here"
             end if
             
-            call execute_command_line("rm -f " // trim(test_file))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+            end if
+            end block
         else
             print *, "CRITICAL: No file created despite status 0"
         end if
@@ -119,7 +126,13 @@ contains
             print *, "CRITICAL: Generated MP4 lacks proper header structure"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_header_data(frame)
@@ -181,7 +194,13 @@ contains
             print *, "CRITICAL: Video file too small for content (likely corrupt)"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_size_data(frame)
@@ -211,8 +230,7 @@ contains
         test_file = "ffprobe_test.mp4"
         
         ! Check if ffprobe is available
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=i)
-        ffprobe_available = (i == 0)
+        ffprobe_available = safe_check_program_available('ffprobe')
         
         print *, "FFprobe available:", ffprobe_available
         
@@ -239,7 +257,13 @@ contains
             print *, "CRITICAL: ffprobe cannot read the generated video file"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_ffprobe_data(frame)
@@ -251,14 +275,9 @@ contains
     function validate_with_ffprobe(filename) result(is_valid)
         character(len=*), intent(in) :: filename
         logical :: is_valid
-        character(len=500) :: command
-        integer :: status
         
-        ! Use ffprobe to validate video file structure
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        
-        call execute_command_line(command, exitstat=status)
-        is_valid = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
 end program test_mpeg_file_validation

@@ -1,6 +1,7 @@
 program test_animation_ffmpeg_availability
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -64,7 +65,13 @@ contains
             end if
             print *, "✓ PASS: Animation saved successfully with ffmpeg available"
             ! Cleanup successful save
-            call execute_command_line("rm -f test_graceful.mp4")
+            block
+                logical :: remove_success
+                call safe_remove_file("test_graceful.mp4", remove_success)
+                if (.not. remove_success) then
+                    print *, "Warning: Could not remove temporary file: test_graceful.mp4"
+                end if
+            end block
         else
             ! If ffmpeg is not available, should get specific error code
             if (save_status /= -1) then
@@ -107,8 +114,8 @@ contains
         
         print *, "✓ PASS: PNG sequence fallback works regardless of ffmpeg availability"
         
-        ! Cleanup PNG files
-        call execute_command_line("rm -f test_fallback_frame_*.png")
+        ! Cleanup PNG files - in secure mode, user must clean manually
+        print *, "Note: Please manually clean up test_fallback_frame_*.png files"
     end subroutine test_animation_fallback_png_sequence
 
     subroutine dummy_animate(frame)

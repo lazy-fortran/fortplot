@@ -1,5 +1,6 @@
 program test_mpeg_integration_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -62,7 +63,13 @@ contains
             print *, "Validation not properly integrated with animation pipeline"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_pipeline_data(frame)
@@ -127,18 +134,15 @@ contains
     function check_tool_validation(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
-        integer :: status
+        logical :: ffprobe_available
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        ffprobe_available = safe_check_program_available('ffprobe')
+        if (.not. ffprobe_available) then
             valid = .true.  ! Tool not available, skip check
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_validation_workflow_integration()
@@ -187,7 +191,13 @@ contains
             print *, "Validation not properly integrated with workflow stages"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_workflow_data(frame)
@@ -247,7 +257,13 @@ contains
             print *, "Validation not properly integrated with figure backends"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_backend_data(frame)
@@ -320,7 +336,13 @@ contains
             print *, "Error handling not properly integrated with validation"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_error_data(frame)

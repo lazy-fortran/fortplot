@@ -1,5 +1,6 @@
 program test_mpeg_robust_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -75,7 +76,13 @@ contains
             print *, "SUCCESS: MPEG file meets robust validation criteria"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_robust_data(frame)
@@ -157,10 +164,8 @@ contains
         character(len=600) :: command
         integer :: status
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format -show_streams "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_reasonable_bitrate(filename, frames, fps) result(reasonable)
@@ -229,7 +234,13 @@ contains
                 print *, "  WARNING: Size inadequate for content"
             end if
             
-            call execute_command_line("rm -f " // trim(test_file))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+            end if
+            end block
         end do
     end subroutine
 
@@ -280,7 +291,13 @@ contains
             print *, "Some criteria failed - file validation issues detected"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_multicriteria_data(frame)
@@ -337,7 +354,13 @@ contains
         validation_result = validate_mpeg_robustly(empty_file, 5, 320, 240, 15)
         print *, "Empty file validation (should fail):", validation_result
         
-        call execute_command_line("rm -f " // trim(empty_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(empty_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(empty_file)
+        end if
+        end block
         
         print *, "Error reporting test completed"
     end subroutine

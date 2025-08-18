@@ -647,15 +647,12 @@ contains
     end function validate_video_header_format
 
     function validate_with_ffprobe(filename) result(valid)
+        use fortplot_security, only: safe_validate_mpeg_with_ffprobe
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
-        integer :: status
         
-        ! Use ffprobe to validate
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        ! Use secure validation instead of shell command
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function validate_with_ffprobe
 
 end module fortplot_animation

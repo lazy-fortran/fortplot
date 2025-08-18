@@ -1,5 +1,7 @@
 program test_mpeg_comprehensive_validation_framework
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, &
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -60,7 +62,13 @@ contains
             print *, "File passes comprehensive validation framework"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
     end subroutine
 
     subroutine update_unified_data(frame)
@@ -165,17 +173,12 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Check if ffprobe is available
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
-            ! If tool not available, pass this check
-            is_valid = .true.
-            return
+        ! Use secure MPEG validation instead of external ffprobe
+        if (.not. safe_check_program_available('ffprobe')) then
+            print *, "Operating in secure mode - using internal MPEG validation"
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_valid = (status == 0)
+        is_valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_validation_framework_reliability()
@@ -223,7 +226,13 @@ contains
         end if
 
         do i_test = 1, 3
-            call execute_command_line("rm -f " // trim(test_files(i_test)))
+            block
+                logical :: remove_success
+                call safe_remove_file(test_files(i_test), remove_success)
+                if (.not. remove_success) then
+                    print *, "Warning: Could not remove temporary file: " // trim(test_files(i_test))
+                        end if
+    end block
         end do
     end subroutine
 
@@ -275,7 +284,17 @@ contains
             print *, "Framework doesn't detect all failure types"
         end if
 
-        call execute_command_line("rm -f " // trim(empty_file) // " " // trim(fake_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(empty_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(empty_file)
+            end if
+            call safe_remove_file(fake_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(fake_file)
+            end if
+        end block
     end subroutine
 
     subroutine test_validation_framework_performance()
@@ -320,7 +339,13 @@ contains
             print *, "Validation takes too long to complete"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
     end subroutine
 
     subroutine update_performance_data(frame)

@@ -1,6 +1,7 @@
 program test_animation_save_fixed
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
+    use fortplot_security, only: safe_remove_file, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -88,7 +89,13 @@ contains
             print *, "SUCCESS: Animation created valid MP4 file"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_test_data_mp4(frame)
@@ -170,11 +177,8 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Use ffprobe for comprehensive validation
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format -show_streams "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        validates = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        validates = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_save_animation_with_fps_validation()
@@ -213,7 +217,13 @@ contains
             print *, "SUCCESS: Animation meets FPS quality standards"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_linear_data(frame)
@@ -317,7 +327,13 @@ contains
             print *, "EXPECTED: Some validation aspects failed with current implementation"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_comprehensive_data(frame)

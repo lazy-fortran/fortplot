@@ -3,6 +3,7 @@ program test_symlog_bounds
     !! Based on the actual scale_examples symlog implementation
     use fortplot
     use fortplot_figure, only: apply_scale_transform
+    use fortplot_security, only: safe_remove_file
     implicit none
     
     real(wp), dimension(50) :: x_exp, y_symlog
@@ -76,7 +77,13 @@ program test_symlog_bounds
     test_passed = .true.
     
     ! Clean up
-    call execute_command_line('rm -f test_symlog_bounds_check.png')
+    block
+        logical :: remove_success
+        call safe_remove_file('test_symlog_bounds_check.png', remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: test_symlog_bounds_check.png"
+                end if
+    end block
     
     if (.not. test_passed) then
         stop 1

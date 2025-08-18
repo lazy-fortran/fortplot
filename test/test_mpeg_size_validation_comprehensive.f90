@@ -1,5 +1,6 @@
 program test_mpeg_size_validation_comprehensive
     use fortplot
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -61,7 +62,13 @@ contains
             print *, "File below absolute minimum size for valid video"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_minimum_data(frame)
@@ -124,7 +131,12 @@ contains
             print *, "File sizes don't correlate properly with frame count"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file_5) // " " // trim(test_file_15) // " " // trim(test_file_30))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file_5, remove_success)
+        call safe_remove_file(test_file_15, remove_success)
+        call safe_remove_file(test_file_30, remove_success)
+        end block
     end subroutine
 
     subroutine update_frame_data(frame)
@@ -186,7 +198,12 @@ contains
             print *, "File sizes don't correlate with resolution"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file_low) // " " // trim(test_file_med) // " " // trim(test_file_high))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file_low, remove_success)
+        call safe_remove_file(test_file_med, remove_success)
+        call safe_remove_file(test_file_high, remove_success)
+        end block
     end subroutine
 
     subroutine update_resolution_data(frame)
@@ -248,7 +265,12 @@ contains
             print *, "File sizes don't correlate with duration"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file_short) // " " // trim(test_file_medium) // " " // trim(test_file_long))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file_short, remove_success)
+        call safe_remove_file(test_file_medium, remove_success)
+        call safe_remove_file(test_file_long, remove_success)
+        end block
     end subroutine
 
     subroutine update_duration_data(frame)
@@ -311,7 +333,12 @@ contains
             print *, "Some frame rates produce inadequate file sizes"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file_10fps) // " " // trim(test_file_24fps) // " " // trim(test_file_60fps))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file_10fps, remove_success)
+        call safe_remove_file(test_file_24fps, remove_success)
+        call safe_remove_file(test_file_60fps, remove_success)
+        end block
     end subroutine
 
     subroutine update_fps_data(frame)
