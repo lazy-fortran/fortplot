@@ -1,5 +1,6 @@
 program test_mpeg_validation_debug
     use fortplot
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -56,7 +57,13 @@ contains
         
         ! Clean up
         if (file_exists) then
-            call execute_command_line("rm -f " // trim(test_file))
+            block
+                logical :: remove_success
+                call safe_remove_file(test_file, remove_success)
+                if (.not. remove_success) then
+                    print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+            end block
         end if
     end subroutine
 

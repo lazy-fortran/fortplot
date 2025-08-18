@@ -1,6 +1,6 @@
 program test_mpeg_edge_case_validation_comprehensive
     use fortplot
-    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -59,9 +59,13 @@ contains
             print *, "GOOD: Empty file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(empty_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(empty_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(empty_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(empty_file)
+            end if
+        end block
     end subroutine
 
     subroutine test_corrupted_file_validation()
@@ -104,9 +108,13 @@ contains
             print *, "GOOD: Corrupted file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(corrupted_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(corrupted_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(corrupted_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(corrupted_file)
+            end if
+        end block
     end subroutine
 
     subroutine test_fake_mpeg_file_validation()
@@ -151,9 +159,13 @@ contains
             print *, "GOOD: Fake MPEG file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(fake_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(fake_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(fake_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(fake_file)
+            end if
+        end block
     end subroutine
 
     subroutine test_truncated_file_validation()
@@ -218,12 +230,20 @@ contains
             print *, "GOOD: Truncated file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(complete_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(complete_file)
-        end if
-        if (.not. secure_file_remove(truncated_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(truncated_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(complete_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(complete_file)
+            end if
+        end block
+        block
+            logical :: remove_success
+            call safe_remove_file(truncated_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(truncated_file)
+            end if
+        end block
     end subroutine
 
     subroutine update_truncated_data(frame)
@@ -266,9 +286,13 @@ contains
             print *, "GOOD: Zero-size file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(zero_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(zero_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(zero_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(zero_file)
+            end if
+        end block
     end subroutine
 
     subroutine test_binary_garbage_file_validation()
@@ -310,9 +334,13 @@ contains
             print *, "GOOD: Binary garbage file correctly rejected"
         end if
 
-        if (.not. secure_file_remove(garbage_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(garbage_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(garbage_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(garbage_file)
+            end if
+        end block
     end subroutine
 
     function validate_mpeg_file_comprehensive(filename) result(is_valid)
@@ -377,16 +405,12 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Check if ffprobe is available first using secure command test
-        if (.not. secure_command_test('ffprobe')) then
-            ! If ffprobe not available, skip this check (don't fail validation)
-            is_valid = .true.
-            return
+        ! Use secure MPEG validation instead of external ffprobe
+        if (.not. safe_check_program_available('ffprobe')) then
+            print *, "Operating in secure mode - using internal MPEG validation"
         end if
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show-format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_valid = (status == 0)
+        is_valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
 end program test_mpeg_edge_case_validation_comprehensive
