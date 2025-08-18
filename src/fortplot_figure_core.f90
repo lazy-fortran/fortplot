@@ -9,6 +9,7 @@ module fortplot_figure_core
     !! specialized tasks to focused modules.
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_context
     use fortplot_scales
     use fortplot_utils
@@ -31,6 +32,7 @@ module fortplot_figure_core
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
+    public :: ensure_directory_exists
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
@@ -1279,6 +1281,7 @@ contains
         integer :: i
         real(wp) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         real(wp) :: x_min_trans, x_max_trans, y_min_trans, y_max_trans
+        real(wp) :: plot_x_min, plot_x_max, plot_y_min, plot_y_max, plot_z_min, plot_z_max
         logical :: first_plot, first_3d_plot
         
         if (self%plot_count == 0) return
@@ -1293,15 +1296,16 @@ contains
                     call calculate_3d_plot_ranges(self, i, x_min_orig, x_max_orig, &
                                                  y_min_orig, y_max_orig, first_plot)
                     
-                    ! Calculate Z-axis ranges for 3D plots
+                    ! Calculate Z-axis ranges for 3D plots (safely handling NaN/Inf)
                     if (allocated(self%plots(i)%z)) then
+                        call safe_minmax_arrays(self%plots(i)%z, plot_z_min, plot_z_max)
                         if (first_3d_plot) then
-                            self%z_min = minval(self%plots(i)%z)
-                            self%z_max = maxval(self%plots(i)%z)
+                            self%z_min = plot_z_min
+                            self%z_max = plot_z_max
                             first_3d_plot = .false.
                         else
-                            self%z_min = min(self%z_min, minval(self%plots(i)%z))
-                            self%z_max = max(self%z_max, maxval(self%plots(i)%z))
+                            self%z_min = min(self%z_min, plot_z_min)
+                            self%z_max = max(self%z_max, plot_z_max)
                         end if
                     end if
                     
@@ -1325,11 +1329,9 @@ contains
                 else
                     ! Handle 2D plots as before
                     if (first_plot) then
-                        ! Store ORIGINAL data ranges for tick generation
-                        x_min_orig = minval(self%plots(i)%x)
-                        x_max_orig = maxval(self%plots(i)%x)
-                        y_min_orig = minval(self%plots(i)%y)
-                        y_max_orig = maxval(self%plots(i)%y)
+                        ! Store ORIGINAL data ranges for tick generation (safely handling NaN/Inf)
+                        call safe_minmax_arrays(self%plots(i)%x, x_min_orig, x_max_orig)
+                        call safe_minmax_arrays(self%plots(i)%y, y_min_orig, y_max_orig)
                         
                         ! Calculate transformed ranges for rendering
                         x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
@@ -1338,20 +1340,22 @@ contains
                         y_max_trans = apply_scale_transform(y_max_orig, self%yscale, self%symlog_threshold)
                         first_plot = .false.
                     else
-                        ! Update original ranges
-                        x_min_orig = min(x_min_orig, minval(self%plots(i)%x))
-                        x_max_orig = max(x_max_orig, maxval(self%plots(i)%x))
-                        y_min_orig = min(y_min_orig, minval(self%plots(i)%y))
-                        y_max_orig = max(y_max_orig, maxval(self%plots(i)%y))
+                        ! Update original ranges (safely handling NaN/Inf)
+                        call safe_minmax_arrays(self%plots(i)%x, plot_x_min, plot_x_max)
+                        call safe_minmax_arrays(self%plots(i)%y, plot_y_min, plot_y_max)
+                        x_min_orig = min(x_min_orig, plot_x_min)
+                        x_max_orig = max(x_max_orig, plot_x_max)
+                        y_min_orig = min(y_min_orig, plot_y_min)
+                        y_max_orig = max(y_max_orig, plot_y_max)
                         
-                        ! Update transformed ranges
-                        x_min_trans = min(x_min_trans, apply_scale_transform(minval(self%plots(i)%x), &
+                        ! Update transformed ranges (using already calculated plot ranges)
+                        x_min_trans = min(x_min_trans, apply_scale_transform(plot_x_min, &
                                                                              self%xscale, self%symlog_threshold))
-                        x_max_trans = max(x_max_trans, apply_scale_transform(maxval(self%plots(i)%x), &
+                        x_max_trans = max(x_max_trans, apply_scale_transform(plot_x_max, &
                                                                              self%xscale, self%symlog_threshold))
-                        y_min_trans = min(y_min_trans, apply_scale_transform(minval(self%plots(i)%y), &
+                        y_min_trans = min(y_min_trans, apply_scale_transform(plot_y_min, &
                                                                              self%yscale, self%symlog_threshold))
-                        y_max_trans = max(y_max_trans, apply_scale_transform(maxval(self%plots(i)%y), &
+                        y_max_trans = max(y_max_trans, apply_scale_transform(plot_y_max, &
                                                                              self%yscale, self%symlog_threshold))
                     end if
                 end if
@@ -3134,6 +3138,44 @@ contains
         self%plots(self%plot_count) = plot_data
     end subroutine add_scatter_plot_data
     
+    subroutine safe_minmax_arrays(arr, min_val, max_val)
+        !! Safely calculate min/max values ignoring NaN and infinite values
+        real(wp), intent(in) :: arr(:)
+        real(wp), intent(out) :: min_val, max_val
+        
+        real(wp), allocatable :: valid_values(:)
+        logical, allocatable :: valid_mask(:)
+        integer :: i, n_valid
+        
+        allocate(valid_mask(size(arr)))
+        
+        ! Create mask for finite values
+        do i = 1, size(arr)
+            valid_mask(i) = ieee_is_finite(arr(i))
+        end do
+        
+        n_valid = count(valid_mask)
+        
+        if (n_valid == 0) then
+            ! No valid values - set reasonable defaults
+            min_val = 0.0_wp
+            max_val = 1.0_wp
+            write(*, '(A)') 'Warning: No finite values in data array, using default range [0,1]'
+        else
+            ! Allocate and copy valid values
+            allocate(valid_values(n_valid))
+            valid_values = pack(arr, valid_mask)
+            
+            ! Calculate min/max of valid values
+            min_val = minval(valid_values)
+            max_val = maxval(valid_values)
+            
+            deallocate(valid_values)
+        end if
+        
+        deallocate(valid_mask)
+    end subroutine safe_minmax_arrays
+
     subroutine filter_valid_scatter_data(x_in, y_in, z_in, s_in, c_in, plot_data)
         !! Filter out NaN and infinite values from scatter data
         use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
