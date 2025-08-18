@@ -831,8 +831,286 @@ integer, parameter :: PLOT_TYPE_SCATTER = 5    ! New scatter plot type
 **Strategic Impact Assessment**:
 Enhanced scatter plot implementation significantly expands fortplot's scientific visualization capabilities while maintaining architectural consistency. The comprehensive feature set positions fortplot as a mature alternative to matplotlib for Fortran-based scientific applications, with performance advantages for large datasets and native integration with computational workflows.
 
+## Mandatory Functional Validation Architecture (Issue #92)
+
+### Critical Problem Analysis
+**SYSTEMIC FAILURE IDENTIFIED**: Multi-PR development period where unit tests passed but core plotting functionality completely failed - no visual output generated despite clean builds.
+
+**Root Cause Assessment**:
+- **Quality Gate Gap**: Unit tests validated code correctness but not functional output generation
+- **Review Blind Spot**: Reviewers focused on code quality without verifying actual plot generation
+- **CI Limitation**: Build system tested compilation success but not user workflow functionality
+- **Documentation Decay**: README examples became non-functional without detection
+- **Integration Gap**: Disconnect between passing tests and working user features
+
+### Mandatory Functional Validation System
+
+#### Core Architectural Principle
+**FUNCTIONAL OUTPUT VALIDATION IS MANDATORY**: Every change affecting plotting functionality MUST demonstrate actual visual output generation before merge approval.
+
+#### Integration with QADS Workflow
+
+**Enhanced TDD Requirements (georg-test-engineer)**:
+```fortran
+! MANDATORY: Every test must verify actual output generation
+program test_functional_output
+    use fortplot
+    type(figure_t) :: fig
+    logical :: file_exists, file_valid
+    
+    ! RED: Test fails if no output generated
+    call fig%initialize(800, 600)
+    call fig%add_plot([1.0, 2.0, 3.0], [1.0, 4.0, 9.0])
+    call fig%savefig('test_output.png')
+    
+    ! MANDATORY: Verify file generation
+    inquire(file='test_output.png', exist=file_exists)
+    call assert_true(file_exists, "Plot file must be generated")
+    
+    ! MANDATORY: Verify file validity (non-zero size, correct format)
+    call validate_image_file('test_output.png', file_valid)
+    call assert_true(file_valid, "Generated plot must be valid image")
+end program
+```
+
+**Quality Gate Integration Points**:
+
+**Phase 4 (RED) - georg-test-engineer ENHANCED**:
+- **MANDATORY**: All tests must verify actual output file generation
+- **MANDATORY**: Image validation utilities for format/content verification
+- **MANDATORY**: Visual regression baseline creation for new features
+- **FORBIDDEN**: Tests that only check code execution without output validation
+
+**Phase 6.1 (max-devops review) ENHANCED**:
+- **MANDATORY**: Execute `make example` and verify all examples generate expected outputs
+- **MANDATORY**: Check for generated plot files in expected locations
+- **MANDATORY**: Validate no regression in file formats (PNG/PDF/ASCII)
+- **CRITICAL HANDBACK**: If examples fail to generate output → immediate sergei handback
+
+**Phase 6.4 (vicky-acceptance-tester) ENHANCED**:
+- **MANDATORY**: Execute all README examples step-by-step
+- **MANDATORY**: Verify every documented example produces expected visual output
+- **MANDATORY**: Cross-reference documentation claims with actual generated files
+- **CRITICAL HANDBACK**: If documented examples fail → sergei handback for code fixes
+
+**Phase 6.2 (patrick-auditor) ENHANCED**:
+- **MANDATORY**: Code review must include functional validation checks
+- **MANDATORY**: Verify test suite includes output generation validation
+- **MANDATORY**: Check for proper error handling when output generation fails
+- **MAJOR FINDING**: Missing functional validation in tests → autonomous fix or issue filing
+
+**Phase 6.5 (chris-architect) ENHANCED**:
+- **MANDATORY**: Architecture review includes functional validation completeness
+- **MANDATORY**: Verify quality gates prevent functional regression scenarios
+- **MANDATORY**: Assess whether change requires visual regression baseline updates
+- **CRITICAL HANDBACK**: If functional validation architecture violated → immediate handback
+
+#### Functional Validation Infrastructure
+
+**Required Validation Utilities**:
+```fortran
+! Mandatory validation utilities in src/fortplot_validation.f90
+module fortplot_validation
+    implicit none
+    
+contains
+    ! Verify generated image file is valid
+    logical function validate_image_file(filename, min_size_bytes) result(valid)
+        character(len=*), intent(in) :: filename
+        integer, intent(in), optional :: min_size_bytes
+        
+        ! Check file existence, size, format headers
+    end function
+    
+    ! Verify ASCII output contains expected plot elements
+    logical function validate_ascii_plot(filename, expected_elements) result(valid)
+        character(len=*), intent(in) :: filename
+        character(len=*), intent(in) :: expected_elements(:)
+        
+        ! Check for plot characters, axes, labels
+    end function
+    
+    ! Visual regression comparison (simplified)
+    logical function compare_with_baseline(test_file, baseline_file, tolerance) result(similar)
+        character(len=*), intent(in) :: test_file, baseline_file
+        real, intent(in), optional :: tolerance
+        
+        ! Basic image comparison (file size, pixel differences)
+    end function
+end module
+```
+
+**CI Integration Requirements**:
+```bash
+# MANDATORY CI validation steps (in .github/workflows/)
+- name: Validate Functional Output
+  run: |
+    # Generate all examples
+    make example
+    
+    # Verify output files exist
+    ls -la *.png *.pdf || (echo "ERROR: No plot files generated" && exit 1)
+    
+    # Basic file validation
+    find . -name "*.png" -size -1k -exec echo "ERROR: {} too small" \; -exec exit 1 \;
+    
+    # Documentation example validation  
+    make test-docs || (echo "ERROR: Documentation examples failed" && exit 1)
+```
+
+**Documentation Testing Framework**:
+```makefile
+# MANDATORY Makefile targets for functional validation
+test-docs:
+	@echo "Testing documentation examples..."
+	@cd example/fortran && $(MAKE) all
+	@test -f example/fortran/basic_plot.png || (echo "ERROR: basic_plot.png not generated"; exit 1)
+	@test -f example/fortran/scatter_demo.png || (echo "ERROR: scatter_demo.png not generated"; exit 1)
+	@echo "Documentation examples validated successfully"
+
+test-functional:
+	@echo "Running functional validation tests..."
+	@$(MAKE) test
+	@$(MAKE) test-docs
+	@echo "All functional tests passed"
+
+validate-output: build
+	@echo "Validating plot output generation..."
+	@rm -f *.png *.pdf *.txt  # Clean slate
+	@$(MAKE) example
+	@ls -la *.png *.pdf || (echo "CRITICAL: No plot files generated" && exit 1)
+	@echo "Output validation successful"
+```
+
+#### Agent Role Enhancements
+
+**georg-test-engineer (Test Engineer) ENHANCED**:
+- **NEW RESPONSIBILITY**: Functional output validation in all tests
+- **MANDATORY**: Create `validate_output` utilities for image/plot verification
+- **MANDATORY**: Visual regression test infrastructure
+- **FORBIDDEN**: Tests without output generation verification
+
+**vicky-acceptance-tester (Customer/Tester) ENHANCED**:
+- **NEW RESPONSIBILITY**: Execute and validate all documented examples
+- **MANDATORY**: End-to-end workflow testing from user perspective
+- **MANDATORY**: Verify documentation accuracy against actual output
+- **HANDBACK AUTHORITY**: Code changes for non-functional examples
+
+**patrick-auditor (Code Reviewer/QA) ENHANCED**:
+- **NEW RESPONSIBILITY**: Code review includes functional validation completeness
+- **MANDATORY**: Verify adequate output validation in test suite
+- **AUTONOMOUS FIX SCOPE**: Add missing functional validation utilities
+- **FORBIDDEN**: Approve PRs without output generation verification
+
+**max-devops-engineer (Development Manager) ENHANCED**:
+- **NEW RESPONSIBILITY**: CI pipeline includes functional validation steps
+- **MANDATORY**: Execute `make validate-output` in review phase
+- **CRITICAL HANDBACK**: Immediate sergei handback for output generation failures
+- **INFRASTRUCTURE**: Maintain functional validation CI jobs
+
+**sergei-perfectionist-coder (Chief Programmer) ENHANCED**:
+- **NEW RESPONSIBILITY**: Ensure all code changes preserve output generation capability
+- **MANDATORY**: Fix functional validation failures from review findings
+- **QUALITY STANDARD**: Code must pass both unit tests AND output validation
+- **ERROR HANDLING**: Proper failure modes when output generation impossible
+
+#### Visual Regression Testing Architecture
+
+**Baseline Management Strategy**:
+- **Baseline Storage**: Store reference images in `test/baselines/` directory
+- **Update Protocol**: Baseline updates require explicit architectural review
+- **Comparison Tolerance**: Configurable pixel difference thresholds
+- **Cross-Platform**: Handle minor platform differences in rendering
+
+**Implementation Approach**:
+```fortran
+! Visual regression test example
+program test_visual_regression
+    use fortplot
+    use fortplot_validation
+    type(figure_t) :: fig
+    logical :: matches_baseline
+    
+    call fig%initialize(800, 600)
+    call fig%add_plot([1.0, 2.0, 3.0], [1.0, 4.0, 9.0])
+    call fig%savefig('current_output.png')
+    
+    ! Compare with established baseline
+    matches_baseline = compare_with_baseline('current_output.png', &
+                                           'test/baselines/basic_plot.png', &
+                                           tolerance=0.05)
+    call assert_true(matches_baseline, "Visual output matches baseline")
+end program
+```
+
+#### Critical Quality Gates
+
+**MANDATORY VALIDATION CHECKPOINTS**:
+1. **Phase 4**: All tests generate and validate actual output
+2. **Phase 6.1**: Examples execute and produce expected files  
+3. **Phase 6.2**: Code review verifies functional validation coverage
+4. **Phase 6.4**: Documentation examples work as described
+5. **Phase 6.5**: Architecture ensures functional validation completeness
+
+**ZERO TOLERANCE FAILURES**:
+- Tests pass but no output generated → CRITICAL handback
+- Examples documented but non-functional → CRITICAL handback  
+- Missing output validation in test suite → MAJOR finding
+- CI success but user workflow broken → CRITICAL handback
+
+#### Success Metrics
+
+**Functional Validation Coverage**:
+- ✅ 100% of plotting features have output validation tests
+- ✅ 100% of documentation examples generate expected output
+- ✅ CI pipeline catches functional failures within minutes
+- ✅ Visual regression testing prevents undetected output changes
+- ✅ Zero PRs merge with broken plotting functionality
+
+**Quality Improvement Indicators**:
+- **Reduced regression incidents**: Zero multi-PR functional failure periods
+- **Faster failure detection**: Functional failures caught in first review cycle
+- **Documentation reliability**: All documented examples remain functional
+- **User confidence**: Consistent plotting output across development cycles
+
+### Risk Assessment
+
+#### Technical Risks
+**Validation Overhead**: Additional testing and validation complexity
+- **Mitigation**: Integrate validation into existing TDD workflow incrementally
+- **Mitigation**: Automate validation utilities to minimize manual overhead
+
+**Visual Regression Complexity**: Cross-platform image comparison challenges  
+- **Mitigation**: Focus on functional validation first, visual comparison second
+- **Mitigation**: Use tolerance-based comparison for platform differences
+
+#### Implementation Risks
+**Agent Workflow Disruption**: Changes to established QADS process
+- **Mitigation**: Enhance existing roles rather than create new ones
+- **Mitigation**: Phase implementation starting with critical validation points
+
+**CI Pipeline Complexity**: Additional CI validation requirements
+- **Mitigation**: Leverage existing `make example` infrastructure
+- **Mitigation**: Clear failure reporting and error messages
+
+### Opportunity Analysis
+
+**Quality Improvement**:
+- **Systematic prevention**: Eliminate entire class of functional regression failures
+- **User confidence**: Reliable plotting output builds trust in library stability
+- **Documentation accuracy**: Ensure examples always reflect current functionality
+
+**Development Efficiency**:
+- **Early detection**: Catch functional failures in first review cycle, not after multiple PRs
+- **Reduced debugging**: Clear functional validation eliminates mysterious output failures
+- **Automated validation**: CI catches issues human reviewers might miss
+
+**Foundation Impact**:
+Mandatory functional validation provides maximum strategic impact by preventing the most critical failure mode - working code that produces no output. This infrastructure protects all plotting functionality and ensures user trust in library reliability.
+
 ## Next Steps
 
-1. **Immediate**: Create root CMakeLists.txt with minimal export configuration
-2. **Short-term**: Add ffmpeg detection and graceful degradation
-3. **Medium-term**: Comprehensive integration testing and documentation
+1. **CRITICAL PRIORITY**: Implement mandatory functional validation architecture (Issue #92)
+2. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+3. **Short-term**: Add ffmpeg detection and graceful degradation
+4. **Medium-term**: Comprehensive integration testing and documentation
