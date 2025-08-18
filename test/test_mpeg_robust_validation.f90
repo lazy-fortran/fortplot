@@ -1,5 +1,6 @@
 program test_mpeg_robust_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
