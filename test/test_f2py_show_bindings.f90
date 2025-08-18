@@ -185,18 +185,17 @@ contains
         !! Test if blocking parameter is properly handled in F2PY interface
         logical :: supported
         
-        ! Test both blocking values
-        test_both: block
-            call show(blocking=.true.)
+        ! Test non-blocking only to avoid interactive read() in CI
+        test_non_blocking: block
             call show(blocking=.false.)
-            call show_viewer(blocking=.true.)
             call show_viewer(blocking=.false.)
             supported = .true.
-        end block test_both
+        end block test_non_blocking
         
         ! This will work in Fortran but may not work through F2PY
         supported = .false.  ! Force failure until F2PY properly configured
         ! TODO: Verify blocking parameter works through F2PY interface
+        ! NOTE: blocking=.true. test skipped to avoid CI runtime errors with read(*,*)
     end function test_blocking_parameter_handling
 
     function test_python_signature_compatibility() result(compatible)
