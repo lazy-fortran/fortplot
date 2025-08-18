@@ -130,8 +130,8 @@ contains
         real(wp), parameter :: n = 20
         real(wp) :: x_data(20), y_data(20)
         character(len=200) :: test_file
-        character(len=2048) :: file_content
-        integer :: file_unit, ios, i
+        character(len=20000) :: file_content
+        integer :: file_unit, ios, i, file_size
         logical :: has_pdf_objects, has_xref_table, has_trailer, remove_success
         
         print *, "=== Testing PDF structure integrity ==="
@@ -152,13 +152,18 @@ contains
         call fig%savefig(test_file)
         
         ! Read file content to check internal structure
+        inquire(file=test_file, size=file_size)
         open(newunit=file_unit, file=test_file, access='stream', form='unformatted', iostat=ios)
         if (ios /= 0) then
             print *, "ERROR: Could not open PDF file for structure validation"
             return
         end if
         
-        read(file_unit, iostat=ios) file_content
+        if (file_size > len(file_content)) then
+            print *, "WARNING: PDF file too large for buffer, reading first ", len(file_content), " bytes"
+        end if
+        
+        read(file_unit, iostat=ios) file_content(1:min(file_size, len(file_content)))
         close(file_unit)
         
         if (ios /= 0) then
