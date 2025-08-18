@@ -96,7 +96,10 @@ contains
                 end if
     end block
         ! Clean up any generated frame files
+        block
+        logical :: remove_success
         call safe_remove_file("roundtrip_frame_1.png", remove_success)
+        end block
     end subroutine
 
     subroutine update_roundtrip_data(frame)
@@ -358,7 +361,10 @@ contains
                 end if
     end block
         ! Clean up temporary quality test files
+        block
+        logical :: remove_success
         call safe_remove_file("quality_temp_1.png", remove_success)
+        end block
     end subroutine
 
     subroutine update_quality_data(frame)
