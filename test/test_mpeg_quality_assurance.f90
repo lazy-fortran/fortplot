@@ -1,6 +1,6 @@
 program test_mpeg_quality_assurance
     use fortplot
-    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -59,9 +59,13 @@ contains
             print *, "Generated MPEG file does not meet quality standards"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_quality_data(frame)
@@ -119,12 +123,12 @@ contains
         character(len=500) :: command
         integer :: status
         
-        if (.not. secure_command_test('ffprobe')) then
+        if (.not. safe_check_program_available('ffprobe')) then
             playable = .true.  ! Can't test, assume playable
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', sanitize_filename(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         playable = (status == 0)
     end function
@@ -184,9 +188,13 @@ contains
             print *, "Visual quality not adequately preserved in MPEG encoding"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_visual_data(frame)
@@ -222,13 +230,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        if (.not. secure_command_test('ffprobe')) then
+        if (.not. safe_check_program_available('ffprobe')) then
             adequate = .true.  ! Can't test, assume adequate
             return
         end if
         
         write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height ', &
-                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
+                                  sanitize_filename(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         adequate = (status == 0)
     end function
@@ -239,13 +247,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        if (.not. secure_command_test('ffprobe')) then
+        if (.not. safe_check_program_available('ffprobe')) then
             good = .true.  ! Can't test, assume good
             return
         end if
         
         write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
-                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
+                                  sanitize_filename(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         good = (status == 0)
     end function
@@ -283,9 +291,13 @@ contains
             print *, "Encoding quality metrics do not meet standards"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_encoding_data(frame)
@@ -338,13 +350,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        if (.not. secure_command_test('ffprobe')) then
+        if (.not. safe_check_program_available('ffprobe')) then
             correct = .true.  ! Can't test, assume correct
             return
         end if
         
         write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate ', &
-                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
+                                  sanitize_filename(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         correct = (status == 0)
     end function
@@ -355,13 +367,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        if (.not. secure_command_test('ffprobe')) then
+        if (.not. safe_check_program_available('ffprobe')) then
             appropriate = .true.  ! Can't test, assume appropriate
             return
         end if
         
         write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
-                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
+                                  sanitize_filename(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         appropriate = (status == 0)
     end function

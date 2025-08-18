@@ -1,6 +1,6 @@
 program test_mpeg_media_player_compatibility
     use fortplot
-    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -37,7 +37,7 @@ contains
         print *, "TEST: VLC Media Player Compatibility"
         print *, "==================================="
 
-        vlc_available = secure_command_test('vlc')
+        vlc_available = safe_check_program_available('vlc')
 
         if (.not. vlc_available) then
             print *, "VLC not available - skipping VLC compatibility test"
@@ -64,9 +64,13 @@ contains
             print *, "Generated MP4 not compatible with VLC player"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_vlc_data(frame)
@@ -104,7 +108,7 @@ contains
         print *, "TEST: FFplay Compatibility"
         print *, "========================="
 
-        ffplay_available = secure_command_test('ffplay')
+        ffplay_available = safe_check_program_available('ffplay')
 
         if (.not. ffplay_available) then
             print *, "FFplay not available - skipping FFplay compatibility test"
@@ -131,9 +135,13 @@ contains
             print *, "Generated MP4 not compatible with FFplay"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_ffplay_data(frame)
@@ -170,7 +178,7 @@ contains
         print *, "TEST: MPlayer Compatibility"
         print *, "=========================="
 
-        mplayer_available = secure_command_test('mplayer')
+        mplayer_available = safe_check_program_available('mplayer')
 
         if (.not. mplayer_available) then
             print *, "MPlayer not available - skipping MPlayer compatibility test"
@@ -197,9 +205,13 @@ contains
             print *, "Generated MP4 not compatible with MPlayer"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_mplayer_data(frame)
@@ -260,9 +272,13 @@ contains
             print *, "File compatible with", compatible_count, "standard players"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+                end if
+    end block
     end subroutine
 
     subroutine update_standard_data(frame)
