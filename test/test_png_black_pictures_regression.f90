@@ -29,7 +29,6 @@ program test_png_black_pictures_regression
     else
         all_tests_passed = .false.
         print *, "❌ Test 1: Simple plot is all black (REGRESSION DETECTED)"
-        print *, "  DEBUG: This may be gfortran-14 environment-specific"
     end if
 
     if (test_scatter_plot_not_black()) then
@@ -168,7 +167,6 @@ contains
             ! First validate that raw image data contains non-white pixels
             raw_image_has_content = validate_raw_image_content(backend%raster%image_data, fig%width, fig%height)
             if (.not. raw_image_has_content) then
-                print *, "  DEBUG: Raw image validation failed - using PNG buffer validation instead"
                 ! For gfortran-14 compatibility: fallback to file-based validation
                 call fig%savefig('output/test/test_png_black_pictures_regression/buffer_test.png')
                 passed = png_file_has_visible_content('output/test/test_png_black_pictures_regression/buffer_test.png')
@@ -232,10 +230,6 @@ contains
             end if
         end do
         
-        ! DEBUG: Print info for CI troubleshooting
-        print *, "  DEBUG PNG validation: file_size=", file_size, ", non_white_pixels=", non_white_pixels, &
-                 ", has_png_signature=", has_content
-        
         ! If we found variation in pixel data, likely has content  
         ! Be more lenient for CI environments where compressed PNG may have minimal variation
         ! If PNG signature is valid, accept that as sufficient for regression test
@@ -268,10 +262,6 @@ contains
             end if
         end do
         
-        ! DEBUG: Print raw image validation info
-        print *, "  DEBUG RAW validation: expected_size=", expected_size, ", actual_size=", size(image_data), &
-                 ", non_white_pixels=", non_white_pixels
-                 
         ! Should have at least some non-white pixels for meaningful content
         ! Even simple plots should generate several non-white pixels
         ! Be more lenient for CI environments where rendering may vary
