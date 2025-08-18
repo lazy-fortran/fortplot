@@ -3,6 +3,7 @@ module fortplot_png
     use fortplot_context, only: setup_canvas
     use fortplot_raster, only: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
     use fortplot_zlib, only: zlib_compress, crc32_calculate
+    use fortplot_logging, only: log_error, log_info
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
 
@@ -57,7 +58,7 @@ contains
         compressed_data = zlib_compress(image_data, data_size, compressed_size)
         
         if (.not. allocated(compressed_data) .or. compressed_size <= 0) then
-            print *, "Compression failed"
+            call log_error("PNG compression failed")
             return
         end if
 
@@ -124,7 +125,7 @@ contains
         close(png_unit)
         
         deallocate(png_buffer)
-        print *, "PNG file '", trim(filename), "' created successfully!"
+        call log_info("PNG file '" // trim(filename) // "' created successfully!")
     end subroutine write_png_file
 
     ! Public wrapper for getting PNG data

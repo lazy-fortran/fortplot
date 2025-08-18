@@ -4,6 +4,7 @@ module fortplot_raster
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser
     use fortplot_unicode
+    use fortplot_logging, only: log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -600,7 +601,7 @@ contains
         character(len=*), intent(in) :: filename
         
         ! This is a dummy implementation - concrete backends like PNG will override this
-        print *, "Error: raster_context cannot save files directly. Use a concrete backend like PNG."
+        call log_error("raster_context cannot save files directly. Use a concrete backend like PNG.")
         stop
     end subroutine raster_save_dummy
 

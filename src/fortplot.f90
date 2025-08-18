@@ -18,6 +18,9 @@ module fortplot
     use fortplot_figure, only: figure_t
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
+    use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
+                                LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+                                LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     implicit none
 
@@ -37,6 +40,10 @@ module fortplot
     
     ! Animation interface
     public :: animation_t, FuncAnimation
+    
+    ! Logging interface
+    public :: set_log_level, LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+              LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
@@ -225,7 +232,7 @@ contains
         call ensure_global_figure_initialized()
         ! TODO: Implement hist method in figure_core
         ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+        call log_error("hist() not yet implemented - please use main branch for histogram support")
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -253,7 +260,7 @@ contains
         call ensure_global_figure_initialized()
         ! TODO: Implement hist method in figure_core
         ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+        call log_error("hist() not yet implemented - please use main branch for histogram support")
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -285,7 +292,7 @@ contains
         ! TODO: Implement boxplot method in figure_core
         ! call fig%boxplot(data, position=position, width=width, label=label, &
         !                show_outliers=show_outliers, horizontal=horizontal, color=color)
-        print *, "ERROR: boxplot() not yet implemented - please use main branch for boxplot support"
+        call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
     end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
@@ -666,13 +673,13 @@ contains
         call execute_command_line(command, wait=.false., exitstat=stat)
         
         if (stat /= 0) then
-            print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
-            print *, 'Please open the file manually with your preferred PDF viewer.'
+            call log_warning('Failed to open plot viewer. Plot saved to: ' // trim(temp_filename))
+            call log_info('Please open the file manually with your preferred PDF viewer.')
         else
-            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+            call log_info('Plot opened in default viewer. File: ' // trim(temp_filename))
             
             if (do_block) then
-                print *, 'Press Enter to continue and clean up temporary file...'
+                call log_info('Press Enter to continue and clean up temporary file...')
                 read(*,*)
                 
                 ! Clean up temporary file
@@ -688,7 +695,7 @@ contains
                 call execute_command_line(command)
             else
                 ! In non-blocking mode, just inform that file stays
-                print *, 'Note: Temporary file will remain at: ', trim(temp_filename)
+            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
             end if
         end if
     end subroutine show_viewer_implementation

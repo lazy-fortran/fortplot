@@ -4,6 +4,7 @@ module fortplot_animation
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
     use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
+    use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
 
@@ -63,11 +64,11 @@ contains
         integer :: i
 
         if (.not. associated(self%animate_func)) then
-            print *, "Error: Animation callback function not associated"
+            call log_error("Animation callback function not associated")
             return
         end if
 
-        print *, "Running animation with", self%frames, "frames..."
+        call log_info("Running animation with frames...")
 
         do i = 1, self%frames
             call self%animate_func(i)
@@ -78,7 +79,7 @@ contains
             end if
         end do
 
-        print *, "Animation completed."
+        call log_info("Animation completed.")
     end subroutine run
 
     subroutine set_save_frames(self, pattern)
@@ -119,13 +120,13 @@ contains
         
         if (.not. is_video_format(extension)) then
             if (present(status)) status = -3
-            print *, "Error: Unsupported file format. Use .mp4, .avi, or .mkv"
+            call log_error("Unsupported file format. Use .mp4, .avi, or .mkv")
             return
         end if
         
         if (.not. check_ffmpeg_available()) then
             if (present(status)) status = -1
-            print *, "Error: ffmpeg not found. Please install ffmpeg to save animations."
+            call log_error("ffmpeg not found. Please install ffmpeg to save animations.")
             return
         end if
         
@@ -230,7 +231,7 @@ contains
         if (should_use_native_encoder(anim, filename)) then
             call save_animation_with_native_mpeg1(anim, filename, fps, status)
             if (status == 0) return  ! Native encoder succeeded
-            print *, "Native MPEG-1 encoder failed, falling back to FFmpeg"
+            call log_warning("Native MPEG-1 encoder failed, falling back to FFmpeg")
         end if
         
         ! Fall back to FFmpeg pipeline
@@ -327,7 +328,7 @@ contains
         stat = open_ffmpeg_pipe(filename, fps)
         if (stat /= 0) then
             status = -4
-            print *, "Error: Could not open pipe to ffmpeg"
+            call log_error("Could not open pipe to ffmpeg")
             return
         end if
         
@@ -335,7 +336,7 @@ contains
             call generate_png_frame_data(anim, frame_idx, png_data, stat)
             if (stat /= 0) then
                 status = -5
-                print *, "Error: Failed to generate frame", frame_idx
+                call log_error("Failed to generate frame")
                 stat = close_ffmpeg_pipe()
                 return
             end if
@@ -343,7 +344,7 @@ contains
             stat = write_png_to_pipe(png_data)
             if (stat /= 0) then
                 status = -6
-                print *, "Error: Failed to write frame to pipe", frame_idx
+                call log_error("Failed to write frame to pipe")
                 stat = close_ffmpeg_pipe()
                 return
             end if
@@ -358,7 +359,7 @@ contains
             status = 0
         else
             status = -7
-            print *, "Error: Generated video failed validation"
+            call log_error("Generated video failed validation")
         end if
     end subroutine save_animation_with_ffmpeg_pipeline
 

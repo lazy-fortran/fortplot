@@ -8,6 +8,7 @@ module fortplot_ascii
     !! Author: fortplot contributors
     
     use fortplot_context
+    use fortplot_logging, only: log_info
     use fortplot_latex_parser
     use fortplot_unicode
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -251,7 +252,7 @@ contains
             open(newunit=unit, file=filename, status='replace')
             call output_to_file(this, unit)
             close(unit)
-            print *, "Unicode plot saved to '", trim(filename), "'"
+            call log_info("Unicode plot saved to '" // trim(filename) // "'")
         end if
     end subroutine ascii_finalize
     

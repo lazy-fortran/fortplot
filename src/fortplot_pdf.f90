@@ -3,6 +3,7 @@ module fortplot_pdf
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser
     use fortplot_unicode
+    use fortplot_logging, only: log_info
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -427,7 +428,7 @@ contains
         
         call finalize_pdf_stream(this)
         call create_pdf_document(unit, filename, this)
-        print *, "PDF file '", trim(filename), "' created successfully!"
+        call log_info("PDF file '" // trim(filename) // "' created successfully!")
     end subroutine write_pdf_file
 
     subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
