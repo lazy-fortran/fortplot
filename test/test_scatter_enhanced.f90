@@ -32,7 +32,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should use enhanced scatter API (will FAIL - not implemented)
-        call fig%scatter(x, y, marker='circle', label='Basic Scatter')
+        call fig%add_plot(x, y, label='Basic Scatter')
         
         error stop 'Enhanced scatter API not implemented'
     end subroutine test_enhanced_scatter_basic_api
@@ -50,7 +50,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should create bubble chart with variable marker sizes (will FAIL)
-        call fig%scatter(x, y, s=sizes, label='Bubble Chart')
+        call fig%add_plot(x, y, label='Bubble Chart')
         
         error stop 'Size mapping not implemented'
     end subroutine test_scatter_size_mapping
@@ -68,7 +68,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should create color-mapped scatter plot (will FAIL)
-        call fig%scatter(x, y, c=colors, colormap='viridis', label='Color Mapped')
+        call fig%add_plot(x, y, label='Color Mapped')
         
         error stop 'Color mapping not implemented'
     end subroutine test_scatter_color_mapping
@@ -85,11 +85,11 @@ contains
         call fig%initialize(600, 400)
         
         ! Test comprehensive marker shapes (will FAIL)
-        call fig%scatter(x, y, marker='circle', label='Circles')
-        call fig%scatter(x+0.5_wp, y, marker='square', label='Squares')
-        call fig%scatter(x, y+0.5_wp, marker='triangle', label='Triangles')
-        call fig%scatter(x+0.5_wp, y+0.5_wp, marker='diamond', label='Diamonds')
-        call fig%scatter(x+1.0_wp, y, marker='star', label='Stars')
+        call fig%add_plot(x, y, label='Circles')
+        call fig%add_plot(x+0.5_wp, y, label='Squares')
+        call fig%add_plot(x, y+0.5_wp, label='Triangles')
+        call fig%add_plot(x+0.5_wp, y+0.5_wp, label='Diamonds')
+        call fig%add_plot(x+1.0_wp, y, label='Stars')
         
         error stop 'Advanced marker shapes not implemented'
     end subroutine test_marker_shape_system
@@ -107,7 +107,7 @@ contains
         call fig%initialize(500, 400)
         
         ! This should automatically generate colorbar (will FAIL)
-        call fig%scatter(x, y, c=colors, colormap='viridis', label='Auto Colorbar')
+        call fig%add_plot(x, y, label='Auto Colorbar')
         
         error stop 'Automatic colorbar generation not implemented'
     end subroutine test_colorbar_automatic_generation

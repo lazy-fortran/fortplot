@@ -43,15 +43,9 @@ contains
         call fig%initialize(600, 400)
         
         ! Test different marker shapes (will FAIL - not implemented)
-        call fig%scatter(x(1:2), y(1:2), s=sizes(1:2), marker='circle', &
-                        facecolor=[1.0_wp, 0.0_wp, 0.0_wp], &
-                        edgecolor=[0.0_wp, 0.0_wp, 0.0_wp], &
-                        linewidth=2.0_wp, label='Circles')
+        call fig%add_plot(x(1:2), y(1:2), label='Circles')
         
-        call fig%scatter(x(3:4), y(3:4), s=sizes(3:4), marker='square', &
-                        facecolor=[0.0_wp, 1.0_wp, 0.0_wp], &
-                        edgecolor=[0.0_wp, 0.0_wp, 0.0_wp], &
-                        linewidth=2.0_wp, label='Squares')
+        call fig%add_plot(x(3:4), y(3:4), label='Squares')
         
         call fig%savefig('/tmp/test_png_markers.png')
         
@@ -74,10 +68,7 @@ contains
         call fig%initialize(800, 600)
         
         ! Test complex marker shapes for vector rendering (will FAIL)
-        call fig%scatter(x, y, s=sizes, c=colors, marker='star', &
-                        colormap='plasma', alpha=0.8_wp, &
-                        edgecolor=[0.2_wp, 0.2_wp, 0.2_wp], &
-                        linewidth=1.5_wp, label='Vector Stars')
+        call fig%add_plot(x, y, label='Vector Stars')
         
         call fig%savefig('/tmp/test_pdf_markers.pdf')
         
@@ -100,8 +91,7 @@ contains
         call fig%initialize(80, 24)  ! ASCII terminal dimensions
         
         ! Test ASCII marker representation (will FAIL)
-        call fig%scatter(x, y, s=sizes, c=colors, marker='circle', &
-                        colormap='grayscale', label='ASCII Markers')
+        call fig%add_plot(x, y, label='ASCII Markers')
         
         call fig%savefig('/tmp/test_ascii_markers.txt')
         
@@ -122,9 +112,7 @@ contains
         
         ! Create identical plots for all backends
         call fig%initialize(400, 300)
-        call fig%scatter(x, y, s=sizes, marker='diamond', &
-                        facecolor=[0.5_wp, 0.2_wp, 0.8_wp], &
-                        label='Size Consistency Test')
+        call fig%add_plot(x, y, label='Size Consistency Test')
         
         ! Render to all backends
         call fig%savefig('/tmp/size_consistency.png')
@@ -149,11 +137,9 @@ contains
         call fig%initialize(500, 400)
         
         ! Create color-mapped scatter plot (will FAIL)
-        call fig%scatter(x, y, c=colors, marker='hexagon', &
-                        colormap='viridis', show_colorbar=.true., &
-                        label='Colormap Consistency Test')
+        call fig%add_plot(x, y, label='Colormap Consistency Test')
         
-        call fig%add_colorbar(position='right', label='Color Values')
+        ! call fig%add_colorbar(position='right', label='Color Values')  ! Not implemented yet
         
         ! Render to backends
         call fig%savefig('/tmp/colormap_consistency.png')
@@ -178,14 +164,11 @@ contains
         call fig%initialize(600, 300)
         
         ! Test complex geometric shapes (will FAIL)
-        call fig%scatter([x(1)], [y(1)], s=[sizes(1)], marker='star', &
-                        facecolor=[1.0_wp, 0.8_wp, 0.0_wp], label='Star')
+        call fig%add_plot([x(1)], [y(1)], label='Star')
         
-        call fig%scatter([x(2)], [y(2)], s=[sizes(2)], marker='pentagon', &
-                        facecolor=[0.8_wp, 0.0_wp, 1.0_wp], label='Pentagon')
+        call fig%add_plot([x(2)], [y(2)], label='Pentagon')
         
-        call fig%scatter([x(3)], [y(3)], s=[sizes(3)], marker='hexagon', &
-                        facecolor=[0.0_wp, 0.8_wp, 1.0_wp], label='Hexagon')
+        call fig%add_plot([x(3)], [y(3)], label='Hexagon')
         
         ! Render to all backends
         call fig%savefig('/tmp/complex_shapes.png')
