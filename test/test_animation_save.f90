@@ -1,6 +1,7 @@
 program test_animation_save
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -46,7 +47,13 @@ contains
             error stop "test_save_animation_mp4: Failed to create MP4 file"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
     end subroutine
 
     subroutine update_test_data_mp4(frame)
@@ -79,7 +86,13 @@ contains
             error stop "test_save_animation_with_fps: Failed to create MP4 file with custom fps"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
     end subroutine
 
     subroutine update_linear_data(frame)

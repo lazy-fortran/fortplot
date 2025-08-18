@@ -13,6 +13,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
+    use fortplot_logging, only: log_warning, log_info
     use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_pcolormesh
@@ -28,16 +29,18 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR
-    public :: PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
+              PLOT_TYPE_SCATTER
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
     integer, parameter :: PLOT_TYPE_PCOLORMESH = 3
-    integer, parameter :: PLOT_TYPE_BAR = 4
-    integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
-    integer, parameter :: PLOT_TYPE_BOXPLOT = 6
-    integer, parameter :: PLOT_TYPE_SCATTER = 7
+    integer, parameter :: PLOT_TYPE_ERRORBAR = 4
+    integer, parameter :: PLOT_TYPE_BAR = 5
+    integer, parameter :: PLOT_TYPE_HISTOGRAM = 6
+    integer, parameter :: PLOT_TYPE_BOXPLOT = 7
+    integer, parameter :: PLOT_TYPE_SCATTER = 8
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -82,6 +85,23 @@ module fortplot_figure_core
         real(wp) :: q1, q2, q3  ! Quartiles
         real(wp) :: whisker_low, whisker_high
         real(wp), allocatable :: outliers(:)
+        ! Error bar data
+        real(wp), allocatable :: xerr(:), yerr(:)
+        real(wp), allocatable :: xerr_lower(:), xerr_upper(:)
+        real(wp), allocatable :: yerr_lower(:), yerr_upper(:)
+        real(wp) :: capsize = 5.0_wp
+        real(wp) :: elinewidth = 1.0_wp
+        logical :: has_xerr = .false., has_yerr = .false.
+        logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
+        ! Scatter plot data
+        real(wp), allocatable :: scatter_sizes(:)     ! Variable marker sizes
+        real(wp), allocatable :: scatter_colors(:)    ! Variable marker colors
+        real(wp) :: scatter_size_default = 20.0_wp    ! Default marker size
+        character(len=20) :: scatter_colormap = 'viridis'  ! Colormap for color mapping
+        logical :: scatter_colorbar = .false.         ! Show colorbar for color mapping
+        real(wp) :: scatter_vmin = 0.0_wp            ! Color scale minimum
+        real(wp) :: scatter_vmax = 1.0_wp            ! Color scale maximum
+        logical :: scatter_vrange_set = .false.      ! Whether vmin/vmax are manually set
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -169,15 +189,19 @@ module fortplot_figure_core
         procedure :: add_surface
         procedure :: add_scatter_2d
         procedure :: add_scatter_3d
+<<<<<<< HEAD
         procedure :: add_scatter
+=======
+        procedure :: add_scatter => add_scatter_2d  ! Default to 2D
+>>>>>>> origin/main
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
+        procedure :: errorbar
         procedure :: bar
         procedure :: barh
-        ! TODO: Add hist and boxplot implementations from main branch
-        ! procedure :: hist
-        ! procedure :: boxplot
+        procedure :: hist
+        procedure :: boxplot
         procedure :: streamplot
         procedure :: savefig
         procedure :: set_xlabel
@@ -287,6 +311,7 @@ contains
     
     subroutine add_scatter_2d(self, x, y, s, c, label, marker, markersize, color, &
                               colormap, vmin, vmax, show_colorbar)
+<<<<<<< HEAD
         !! Add enhanced 2D scatter plot with size and color mapping support
         !! Following KISS principle - delegates to add_plot with enhanced features
         class(figure_t), intent(inout) :: self
@@ -295,45 +320,67 @@ contains
         character(len=*), intent(in), optional :: label, marker, colormap
         real(wp), intent(in), optional :: markersize, vmin, vmax
         real(wp), intent(in), optional :: color(3)
-        logical, intent(in), optional :: show_colorbar
-        
-        character(len=10) :: linestyle
-        
-        ! Build linestyle string with marker only (no line)
-        if (present(marker)) then
-            linestyle = trim(marker)
-        else
-            linestyle = 'o'  ! Default to circles
-        end if
-        
-        ! For now, delegate to basic add_plot - enhanced features can be added later
-        ! TODO: Implement size mapping (s), color mapping (c), colormap, vmin/vmax, colorbar
-        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
-    end subroutine add_scatter_2d
-
-    
-    subroutine add_scatter_3d(self, x, y, z, label, marker, markersize, color)
-        !! Add 3D scatter plot - points only, no lines
-        !! Following KISS principle - delegates to add_3d_plot with no line
+=======
+        !! Add enhanced 2D scatter plot with size and color mapping
+        !! Supports variable marker sizes (s) and colors (c) for bubble charts
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+>>>>>>> origin/main
+        logical, intent(in), optional :: show_colorbar
         
-        character(len=10) :: linestyle
-        
-        ! Build linestyle string with marker only (no line)
-        if (present(marker)) then
-            linestyle = trim(marker)
-        else
-            linestyle = 'o'  ! Default to circles
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
         end if
         
-        ! Delegate to add_3d_plot with marker-only style
-        call self%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
-                              markersize=markersize)
+<<<<<<< HEAD
+        ! For now, delegate to basic add_plot - enhanced features can be added later
+        ! TODO: Implement size mapping (s), color mapping (c), colormap, vmin/vmax, colorbar
+        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+=======
+        call add_scatter_plot_data(self, x, y, s=s, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, colormap=colormap, &
+                                  vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        
+        call update_data_ranges(self)
+>>>>>>> origin/main
+    end subroutine add_scatter_2d
+
+    
+    subroutine add_scatter_3d(self, x, y, z, s, c, label, marker, markersize, color, &
+                              colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced 3D scatter plot with size and color mapping
+        !! Supports variable marker sizes (s) and colors (c) for 3D bubble charts
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:), z(:)   ! z is required for 3D
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
+        
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
+        end if
+        
+        call add_scatter_plot_data(self, x, y, z=z, s=s, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, colormap=colormap, &
+                                  vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        
+        call update_data_ranges(self)
     end subroutine add_scatter_3d
     
     subroutine add_surface(self, x, y, z, label)
@@ -493,6 +540,51 @@ contains
         call update_data_ranges(self)
     end subroutine barh
 
+    subroutine hist(self, data, bins, density, label, color)
+        !! Add histogram plot to figure with automatic or custom binning
+        !!
+        !! Arguments:
+        !!   data: Input data array to create histogram from
+        !!   bins: Optional - number of bins (integer, default: 10)
+        !!   density: Optional - normalize to probability density (default: false)
+        !!   label: Optional - histogram label for legend
+        !!   color: Optional - histogram color
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        if (.not. validate_histogram_input(self, data, bins)) return
+        
+        self%plot_count = self%plot_count + 1
+        
+        call add_histogram_plot_data(self, data, bins, density, label, color)
+        call update_data_ranges(self)
+    end subroutine hist
+
+    subroutine boxplot(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot to figure using statistical data
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        ! Basic input validation (following NO DEFENSIVE PROGRAMMING principle)
+        if (size(data) < 1) then
+            print *, "Warning: Box plot requires at least 1 data point"
+            return
+        end if
+        
+        call add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        call update_data_ranges_boxplot(self)
+    end subroutine boxplot
+
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         !! Add streamline plot to figure using matplotlib-compatible algorithm
         use fortplot_streamplot_matplotlib
@@ -627,11 +719,11 @@ contains
             call self%backend%save(filename)
         end select
         
-        write(*, '(A, A, A)') 'Saved figure: ', trim(filename)
+        call log_info('Saved figure: ' // trim(filename))
         
         ! If blocking requested, wait for user input
         if (do_block) then
-            print *, "Press Enter to continue..."
+            call log_info("Press Enter to continue...")
             read(*,*)
         end if
     end subroutine savefig
@@ -660,7 +752,7 @@ contains
         
         ! If blocking requested, wait for user input
         if (do_block) then
-            print *, "Press Enter to continue..."
+            call log_info("Press Enter to continue...")
             read(*,*)
         end if
     end subroutine show
@@ -2535,23 +2627,22 @@ contains
         real(wp), intent(in) :: y_new(:)
         
         if (plot_index < 1 .or. plot_index > self%plot_count) then
-            print *, "Warning: Invalid plot index", plot_index, "for set_ydata"
+            call log_warning("Invalid plot index for set_ydata")
             return
         end if
         
         if (self%plots(plot_index)%plot_type /= PLOT_TYPE_LINE) then
-            print *, "Warning: set_ydata only supported for line plots"
+            call log_warning("set_ydata only supported for line plots")
             return
         end if
         
         if (.not. allocated(self%plots(plot_index)%y)) then
-            print *, "Warning: Plot", plot_index, "has no y data to update"
+            call log_warning("Plot has no y data to update")
             return
         end if
         
         if (size(y_new) /= size(self%plots(plot_index)%y)) then
-            print *, "Warning: New y data size", size(y_new), &
-                     "does not match existing size", size(self%plots(plot_index)%y)
+            call log_warning("New y data size does not match existing size")
             return
         end if
         
@@ -2615,6 +2706,7 @@ contains
     
     subroutine ensure_directory_exists(filename)
         !! Create directory path for output file if it doesn't exist
+        use fortplot_security, only: safe_create_directory
         character(len=*), intent(in) :: filename
         character(len=:), allocatable :: dir_path
         integer :: last_slash
@@ -2626,13 +2718,19 @@ contains
             if (filename(last_slash:last_slash) == '/') exit
         end do
         
-        ! If there's a directory path, create it
+        ! If there's a directory path, create it safely
         if (last_slash > 1) then
             dir_path = filename(1:last_slash-1)
             ! Use secure directory creation
+<<<<<<< HEAD
             success = create_directory_secure(dir_path)
             if (.not. success) then
                 print *, "Warning: Could not create directory: ", trim(dir_path)
+=======
+            call safe_create_directory(dir_path, success)
+            if (.not. success) then
+                call log_warning("Could not create directory: " // trim(dir_path))
+>>>>>>> origin/main
             end if
         end if
     end subroutine ensure_directory_exists
@@ -2690,6 +2788,7 @@ contains
         y(point_idx) = y(1)
     end subroutine create_bar_xy_data
 
+<<<<<<< HEAD
     subroutine add_scatter(self, x, y, z, s, c, label, marker, markersize, color, &
                           colormap, vmin, vmax, show_colorbar)
         !! Add scatter plot - auto-detects 2D vs 3D based on z parameter presence
@@ -2711,5 +2810,431 @@ contains
                                     colormap, vmin, vmax, show_colorbar)
         end if
     end subroutine add_scatter
+=======
+    subroutine errorbar(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
+                       yerr_lower, yerr_upper, capsize, elinewidth, &
+                       label, linestyle, marker, color)
+        !! Add error bar plot to figure
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: xerr(:), yerr(:)
+        real(wp), intent(in), optional :: xerr_lower(:), xerr_upper(:)
+        real(wp), intent(in), optional :: yerr_lower(:), yerr_upper(:)
+        real(wp), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in), optional :: color(3)
+        
+        type(plot_data_t) :: plot_data
+        integer :: n_points
+        
+        n_points = size(x)
+        
+        ! Validate input sizes
+        if (size(y) /= n_points) then
+            write(*,*) 'Error: x and y arrays must have the same size'
+            return
+        end if
+        
+        ! Initialize plot data
+        plot_data%plot_type = PLOT_TYPE_ERRORBAR
+        allocate(plot_data%x(n_points), plot_data%y(n_points))
+        plot_data%x = x
+        plot_data%y = y
+        
+        ! Handle error bar parameters (minimal implementation)
+        if (present(yerr)) then
+            allocate(plot_data%yerr(n_points))
+            plot_data%yerr = yerr
+            plot_data%has_yerr = .true.
+        end if
+        
+        if (present(xerr)) then
+            allocate(plot_data%xerr(n_points))
+            plot_data%xerr = xerr
+            plot_data%has_xerr = .true.
+        end if
+        
+        ! Handle optional styling parameters
+        if (present(capsize)) plot_data%capsize = capsize
+        if (present(elinewidth)) plot_data%elinewidth = elinewidth
+        if (present(label)) plot_data%label = label
+        if (present(linestyle)) plot_data%linestyle = linestyle
+        if (present(marker)) plot_data%marker = marker
+        if (present(color)) plot_data%color = color
+        
+        ! Add to plots array
+        self%plot_count = self%plot_count + 1
+        if (self%plot_count > self%max_plots) then
+            write(*,*) 'Warning: Maximum number of plots exceeded'
+            return
+        end if
+        
+        self%plots(self%plot_count) = plot_data
+    end subroutine errorbar
+
+    ! Histogram helper functions - minimal implementations for compilation
+    function validate_histogram_input(self, data, bins) result(is_valid)
+        !! Validate histogram input parameters
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical :: is_valid
+        
+        is_valid = .true.
+        
+        if (self%plot_count >= self%max_plots) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (size(data) == 0) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (present(bins)) then
+            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
+                is_valid = .false.
+                return
+            end if
+        end if
+    end function validate_histogram_input
+
+    subroutine add_histogram_plot_data(self, data, bins, density, label, color)
+        !! Add histogram data to internal storage - minimal implementation
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx, n_bins
+        real(wp) :: data_min, data_max, bin_width
+        integer :: i
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        
+        ! Simple histogram implementation
+        n_bins = 10
+        if (present(bins)) n_bins = bins
+        
+        data_min = minval(data)
+        data_max = maxval(data)
+        
+        ! Handle case where all data points are identical
+        if (data_max == data_min) then
+            ! Add small padding to create valid bins
+            data_min = data_min - 0.5_wp
+            data_max = data_max + 0.5_wp
+        end if
+        
+        bin_width = (data_max - data_min) / real(n_bins, wp)
+        
+        ! Initialize histogram arrays (Fortran automatically reallocates)
+        self%plots(plot_idx)%hist_bin_edges = [(data_min + real(i-1, wp) * bin_width, i = 1, n_bins + 1)]
+        self%plots(plot_idx)%hist_counts = [(0.0_wp, i = 1, n_bins)]
+        do i = 1, size(data)
+            if (data(i) >= data_min .and. data(i) <= data_max) then
+                associate(bin_idx => min(n_bins, max(1, int((data(i) - data_min) / bin_width) + 1)))
+                    self%plots(plot_idx)%hist_counts(bin_idx) = self%plots(plot_idx)%hist_counts(bin_idx) + 1.0_wp
+                end associate
+            end if
+        end do
+        
+        ! Set density flag
+        if (present(density)) then
+            self%plots(plot_idx)%hist_density = density
+        end if
+        
+        ! Set plot properties
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            self%plots(plot_idx)%color = [0.0_wp, 0.5_wp, 1.0_wp]  ! Default blue
+        end if
+    end subroutine add_histogram_plot_data
+
+    subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot data - minimal implementation
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        
+        ! Copy data
+        if (allocated(self%plots(plot_idx)%box_data)) deallocate(self%plots(plot_idx)%box_data)
+        allocate(self%plots(plot_idx)%box_data(size(data)))
+        self%plots(plot_idx)%box_data = data
+        
+        ! Set optional parameters with defaults
+        if (present(position)) then
+            self%plots(plot_idx)%position = position
+        else
+            self%plots(plot_idx)%position = 1.0_wp
+        end if
+        
+        if (present(width)) then
+            self%plots(plot_idx)%width = width
+        else
+            self%plots(plot_idx)%width = 0.6_wp
+        end if
+        
+        if (present(show_outliers)) then
+            self%plots(plot_idx)%show_outliers = show_outliers
+        else
+            self%plots(plot_idx)%show_outliers = .true.
+        end if
+        
+        if (present(horizontal)) then
+            self%plots(plot_idx)%horizontal = horizontal
+        else
+            self%plots(plot_idx)%horizontal = .false.
+        end if
+        
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            self%plots(plot_idx)%color = [0.5_wp, 0.5_wp, 0.5_wp]  ! Default gray
+        end if
+        
+        ! Calculate basic statistics (simplified)
+        associate(sorted_data => data)  ! TODO: implement proper sorting
+            if (size(sorted_data) > 0) then
+                self%plots(plot_idx)%q1 = minval(sorted_data)
+                self%plots(plot_idx)%q2 = (minval(sorted_data) + maxval(sorted_data)) * 0.5_wp
+                self%plots(plot_idx)%q3 = maxval(sorted_data)
+                self%plots(plot_idx)%whisker_low = minval(sorted_data)
+                self%plots(plot_idx)%whisker_high = maxval(sorted_data)
+            end if
+        end associate
+    end subroutine add_boxplot_data
+
+    subroutine update_data_ranges_boxplot(self)
+        !! Update figure data ranges after adding box plot - minimal implementation
+        class(figure_t), intent(inout) :: self
+        
+        integer :: plot_idx
+        real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
+        
+        plot_idx = self%plot_count
+        
+        if (self%plots(plot_idx)%horizontal) then
+            ! Horizontal box plot
+            x_min_plot = self%plots(plot_idx)%whisker_low
+            x_max_plot = self%plots(plot_idx)%whisker_high
+            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
+            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+        else
+            ! Vertical box plot
+            y_min_plot = self%plots(plot_idx)%whisker_low
+            y_max_plot = self%plots(plot_idx)%whisker_high
+            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
+            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+        end if
+        
+        ! Update figure ranges
+        if (self%plot_count == 1) then
+            self%x_min = x_min_plot
+            self%x_max = x_max_plot
+            self%y_min = y_min_plot
+            self%y_max = y_max_plot
+        else
+            self%x_min = min(self%x_min, x_min_plot)
+            self%x_max = max(self%x_max, x_max_plot)
+            self%y_min = min(self%y_min, y_min_plot)
+            self%y_max = max(self%y_max, y_max_plot)
+        end if
+    end subroutine update_data_ranges_boxplot
+
+    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
+                                    colormap, vmin, vmax, show_colorbar)
+        !! Helper subroutine to add enhanced scatter plot data with size and color mapping
+        use fortplot_markers, only: get_default_marker, validate_marker_style
+        use fortplot_colormap, only: validate_colormap_name
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+        
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: z(:)
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
+        
+        type(plot_data_t) :: plot_data
+        integer :: i, n_points
+        real(wp) :: c_min, c_max
+        
+        ! Input validation
+        n_points = size(x)
+        if (size(y) /= n_points) then
+            write(*, '(A)') 'Error: x and y arrays must have same size'
+            return
+        end if
+        
+        if (present(z) .and. size(z) /= n_points) then
+            write(*, '(A)') 'Error: z array must have same size as x and y'
+            return
+        end if
+        
+        if (present(s) .and. size(s) /= n_points) then
+            write(*, '(A)') 'Error: size array must have same size as x and y'
+            return
+        end if
+        
+        if (present(c) .and. size(c) /= n_points) then
+            write(*, '(A)') 'Error: color array must have same size as x and y'
+            return
+        end if
+        
+        ! Initialize plot data
+        plot_data%plot_type = PLOT_TYPE_SCATTER
+        
+        ! Filter valid data points (remove NaN/Inf)
+        call filter_valid_scatter_data(x, y, z, s, c, plot_data)
+        
+        ! Set marker style with validation
+        if (present(marker)) then
+            if (validate_marker_style(marker)) then
+                plot_data%marker = marker
+            else
+                plot_data%marker = get_default_marker()
+                write(*, '(A,A,A)') 'Warning: Invalid marker "', trim(marker), &
+                                  '", using default'
+            end if
+        else
+            plot_data%marker = get_default_marker()
+        end if
+        
+        ! Handle size mapping
+        if (present(s)) then
+            allocate(plot_data%scatter_sizes(size(plot_data%x)))
+            ! Copy and clamp sizes to reasonable range
+            do i = 1, size(plot_data%x)
+                plot_data%scatter_sizes(i) = max(1.0_wp, min(200.0_wp, s(i)))
+            end do
+        else if (present(markersize)) then
+            plot_data%scatter_size_default = markersize
+        end if
+        
+        ! Handle color mapping
+        if (present(c)) then
+            allocate(plot_data%scatter_colors(size(plot_data%x)))
+            plot_data%scatter_colors = c
+            
+            ! Auto-scale color range if not manually set
+            if (present(vmin) .and. present(vmax)) then
+                plot_data%scatter_vmin = vmin
+                plot_data%scatter_vmax = vmax
+                plot_data%scatter_vrange_set = .true.
+            else
+                c_min = minval(c, mask=ieee_is_finite(c))
+                c_max = maxval(c, mask=ieee_is_finite(c))
+                plot_data%scatter_vmin = c_min
+                plot_data%scatter_vmax = c_max
+                plot_data%scatter_vrange_set = .false.
+            end if
+            
+            ! Set colormap
+            if (present(colormap)) then
+                if (validate_colormap_name(colormap)) then
+                    plot_data%scatter_colormap = colormap
+                else
+                    plot_data%scatter_colormap = 'viridis'
+                    write(*, '(A,A,A)') 'Warning: Invalid colormap "', trim(colormap), &
+                                      '", using viridis'
+                end if
+            end if
+            
+            ! Enable colorbar for color mapping by default
+            plot_data%scatter_colorbar = .true.
+            if (present(show_colorbar)) plot_data%scatter_colorbar = show_colorbar
+        end if
+        
+        ! Set common properties
+        if (present(label)) plot_data%label = label
+        if (present(color)) plot_data%color = color
+        
+        ! Add to plots array
+        self%plot_count = self%plot_count + 1
+        self%plots(self%plot_count) = plot_data
+    end subroutine add_scatter_plot_data
+    
+    subroutine filter_valid_scatter_data(x_in, y_in, z_in, s_in, c_in, plot_data)
+        !! Filter out NaN and infinite values from scatter data
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+        
+        real(wp), intent(in) :: x_in(:), y_in(:)
+        real(wp), intent(in), optional :: z_in(:)
+        real(wp), intent(in), optional :: s_in(:)
+        real(wp), intent(in), optional :: c_in(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        logical, allocatable :: valid_mask(:)
+        integer :: i, j, n_valid, n_total
+        
+        n_total = size(x_in)
+        allocate(valid_mask(n_total))
+        
+        ! Create mask for valid data points
+        do i = 1, n_total
+            valid_mask(i) = ieee_is_finite(x_in(i)) .and. ieee_is_finite(y_in(i))
+            if (present(z_in)) valid_mask(i) = valid_mask(i) .and. ieee_is_finite(z_in(i))
+        end do
+        
+        n_valid = count(valid_mask)
+        
+        if (n_valid == 0) then
+            write(*, '(A)') 'Warning: No valid data points for scatter plot'
+            return
+        end if
+        
+        ! Allocate arrays for valid data
+        allocate(plot_data%x(n_valid))
+        allocate(plot_data%y(n_valid))
+        if (present(z_in)) allocate(plot_data%z(n_valid))
+        
+        ! Copy valid data points
+        j = 1
+        do i = 1, n_total
+            if (valid_mask(i)) then
+                plot_data%x(j) = x_in(i)
+                plot_data%y(j) = y_in(i)
+                if (present(z_in)) plot_data%z(j) = z_in(i)
+                j = j + 1
+            end if
+        end do
+        
+        deallocate(valid_mask)
+    end subroutine filter_valid_scatter_data
+>>>>>>> origin/main
 
 end module fortplot_figure_core

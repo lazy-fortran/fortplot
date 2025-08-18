@@ -18,7 +18,9 @@ module fortplot
     use fortplot_figure, only: figure_t
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
-    use fortplot_system_secure, only: open_file_secure, check_command_available, delete_file_secure
+    use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
+                                LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+                                LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     implicit none
 
@@ -26,11 +28,11 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, boxplot, show, show_viewer
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
     public :: hist, histogram, scatter
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
-    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
+    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
     public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
@@ -38,6 +40,10 @@ module fortplot
     
     ! Animation interface
     public :: animation_t, FuncAnimation
+    
+    ! Logging interface
+    public :: set_log_level, LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+              LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
@@ -53,6 +59,10 @@ module fortplot
     character(len=*), parameter, public :: MARKER_DIAMOND = 'D'
     character(len=*), parameter, public :: MARKER_PLUS = '+'
     character(len=*), parameter, public :: MARKER_STAR = '*'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_UP = '^'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_DOWN = 'v'
+    character(len=*), parameter, public :: MARKER_PENTAGON = 'p'
+    character(len=*), parameter, public :: MARKER_HEXAGON = 'h'
 
 
     ! Interface for overloaded show routine
@@ -225,9 +235,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        ! TODO: Implement hist method in figure_core
-        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -253,9 +261,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        ! TODO: Implement hist method in figure_core
-        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        print *, "ERROR: hist() not yet implemented - please use main branch for histogram support"
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -287,7 +293,7 @@ contains
         ! TODO: Implement boxplot method in figure_core
         ! call fig%boxplot(data, position=position, width=width, label=label, &
         !                show_outliers=show_outliers, horizontal=horizontal, color=color)
-        print *, "ERROR: boxplot() not yet implemented - please use main branch for boxplot support"
+        call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
     end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
@@ -422,6 +428,52 @@ contains
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh
 
+    subroutine errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                       capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the error bar plot
+        !!   xerr, yerr: Optional symmetric error arrays
+        !!   xerr_lower, xerr_upper: Optional asymmetric X error arrays
+        !!   yerr_lower, yerr_upper: Optional asymmetric Y error arrays
+        !!   capsize: Optional cap size for error bars (default: 5.0)
+        !!   elinewidth: Optional error bar line width (default: 1.0)
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style
+        !!   marker: Optional marker style
+        !!   color: Optional RGB color array
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine errorbar
+
+    subroutine add_errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                           capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine add_errorbar
+
     subroutine add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)
         !! Add a 3D line plot to the global figure
         !! 
@@ -493,59 +545,57 @@ contains
 
     function is_gui_available() result(gui_available)
         !! Check if GUI environment is available for opening plots
-        !! Supports X11, Wayland, macOS, and Windows - uses runtime detection
+        !! Secure version that only checks environment variables
         logical :: gui_available
         character(len=256) :: display_var, wayland_var, session_type
-        character(len=512) :: test_command
-        integer :: status, exit_stat
+        integer :: status
         
         gui_available = .false.
         
-        ! First check for macOS 'open' command
-        test_command = 'which open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        if (exit_stat == 0) then
+#ifdef __linux__
+        ! Check for Wayland (modern Linux GUI) - secure environment variable check
+        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
+        if (status == 0 .and. len_trim(wayland_var) > 0) then
             gui_available = .true.
             return
         end if
         
-        ! Check for xdg-open (Linux/Unix systems)
-        if (check_command_available('xdg-open')) then
-            ! Check for Wayland (modern Linux GUI)
-            call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
-            if (status == 0 .and. len_trim(wayland_var) > 0) then
+        ! Check session type
+        call get_environment_variable('XDG_SESSION_TYPE', session_type, status=status)
+        if (status == 0) then
+            if (index(session_type, 'wayland') > 0 .or. index(session_type, 'x11') > 0) then
                 gui_available = .true.
                 return
-            end if
-            
-            ! Check session type
-            call get_environment_variable('XDG_SESSION_TYPE', session_type, status=status)
-            if (status == 0) then
-                if (index(session_type, 'wayland') > 0 .or. index(session_type, 'x11') > 0) then
-                    gui_available = .true.
-                    return
-                elseif (index(session_type, 'tty') > 0) then
-                    ! Explicitly no GUI for tty sessions
-                    return
-                end if
-            end if
-            
-            ! Check for X11 (traditional Linux GUI)  
-            call get_environment_variable('DISPLAY', display_var, status=status)
-            if (status == 0 .and. len_trim(display_var) > 0) then
-                ! Test if X11 display is actually accessible
-                test_command = 'xset q >/dev/null 2>&1'
-                call execute_command_line(test_command, exitstat=exit_stat)
-                gui_available = (exit_stat == 0)
-            end if
-        else
-            ! Check for Windows environment variables or commands
-            call get_environment_variable('WINDIR', display_var, status=status)
-            if (status == 0 .and. len_trim(display_var) > 0) then
-                ! Windows detected, assume GUI available
-                gui_available = .true.
+            elseif (index(session_type, 'tty') > 0) then
+                ! Explicitly no GUI for tty sessions
+                return
             end if
         end if
+        
+        ! Check for X11 (traditional Linux GUI) - only environment variable
+        call get_environment_variable('DISPLAY', display_var, status=status)
+        if (status == 0 .and. len_trim(display_var) > 0) then
+            gui_available = .true.
+        end if
+#elif defined(__APPLE__)
+        ! On macOS, assume GUI is available (secure assumption)
+        gui_available = .true.
+#elif defined(_WIN32) || defined(_WIN64)
+        ! Windows typically has GUI available  
+        gui_available = .true.
+#else
+        ! For other Unix-like systems, check environment variables only
+        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
+        if (status == 0 .and. len_trim(wayland_var) > 0) then
+            gui_available = .true.
+            return
+        end if
+        
+        call get_environment_variable('DISPLAY', display_var, status=status)
+        if (status == 0 .and. len_trim(display_var) > 0) then
+            gui_available = .true.
+        end if
+#endif
     end function is_gui_available
 
     subroutine show_viewer_implementation(blocking)
@@ -555,9 +605,10 @@ contains
         !! Arguments:
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         use iso_fortran_env, only: int64
+        use fortplot_security, only: safe_launch_viewer, safe_remove_file
         
         logical, intent(in), optional :: blocking
-        logical :: do_block
+        logical :: do_block, success
         character(len=256) :: temp_filename
         character(len=32) :: timestamp
         integer :: stat
@@ -586,39 +637,34 @@ contains
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
         
-        ! Check if we can safely open files (avoid segfault in headless environments)
-        call get_environment_variable('DISPLAY', status=stat)
-        if (stat == 0) then
-            ! Display available, try to open file
-            if (open_file_secure(temp_filename)) then
-                print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
-                stat = 0
-            else
-                print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
-                print *, 'Please open the file manually with your preferred PDF viewer.'
-                stat = 1
-            end if
+        ! Open with secure viewer launch
+        call safe_launch_viewer(temp_filename, success)
+        
+        if (success) then
+            stat = 0
         else
-            ! No display available - just save and inform user
-            print *, 'No display available. Plot saved to: ', trim(temp_filename)
-            print *, 'Please open the file manually with your preferred PDF viewer.'
-            stat = 0  ! Consider this success since file was saved
+            stat = 1
         end if
         
-        if (stat == 0) then
+        if (stat /= 0) then
+            call log_warning('Failed to open plot viewer. Plot saved to: ' // trim(temp_filename))
+            call log_info('Please open the file manually with your preferred PDF viewer.')
+        else
+            call log_info('Plot opened in default viewer. File: ' // trim(temp_filename))
+        end if
             
-            if (do_block) then
-                print *, 'Press Enter to continue and clean up temporary file...'
-                read(*,*)
-                
-                ! Clean up temporary file securely
-                if (.not. delete_file_secure(temp_filename)) then
-                    print *, 'Warning: Could not clean up temporary file: ', trim(temp_filename)
-                end if
-            else
-                ! In non-blocking mode, just inform that file stays
-                print *, 'Note: Temporary file will remain at: ', trim(temp_filename)
+        if (do_block) then
+            call log_info('Press Enter to continue and clean up temporary file...')
+            read(*,*)
+            
+            ! Clean up temporary file securely
+            call safe_remove_file(temp_filename, success)
+            if (.not. success) then
+                call log_warning('Could not remove temporary file: ' // trim(temp_filename))
             end if
+        else
+            ! In non-blocking mode, just inform that file stays
+            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
         end if
     end subroutine show_viewer_implementation
 
@@ -680,9 +726,9 @@ contains
         logical, intent(in), optional :: show_colorbar
 
         call ensure_global_figure_initialized()
-        call fig%add_scatter_2d(x, y, s=s, c=c, label=label, marker=marker, &
-                               markersize=markersize, color=color, colormap=colormap, &
-                               vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
     end subroutine scatter
 
     subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
@@ -695,9 +741,9 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         logical, intent(in), optional :: show_colorbar
 
-        call fig%add_scatter_2d(x, y, s=s, c=c, label=label, marker=marker, &
-                               markersize=markersize, color=color, colormap=colormap, &
-                               vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
     end subroutine add_scatter
 
     subroutine ensure_global_figure_initialized()

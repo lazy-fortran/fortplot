@@ -68,6 +68,31 @@ call legend()
 call savefig("unicode_demo.png")  ! Works in PNG, PDF, and ASCII
 ```
 
+#### Enhanced scatter plot with size and color mapping
+```fortran
+! Basic scatter plot
+call figure()
+call scatter(x, y, label="Data Points")
+call title("Basic Scatter Plot")
+call savefig("basic_scatter.png")
+
+! Bubble chart with size mapping
+type(figure_t) :: fig
+call fig%initialize(600, 400)
+call fig%scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')
+call fig%set_title("Bubble Chart - Size Represents Population")
+call fig%savefig("bubble_chart.pdf")
+
+! Color-mapped scatter with automatic colorbar
+call figure(800, 600)
+call scatter(x, y, c=values, colormap='viridis', &
+             marker='diamond', alpha=0.8_wp, label='Scientific Data')
+call title("Multi-dimensional Data Visualization")
+call xlabel("Temperature (K)")
+call ylabel("Pressure (Pa)")
+call savefig("scientific_scatter.png")
+```
+
 #### Contour plot with colorbar
 ```fortran
 call figure()
@@ -76,6 +101,18 @@ call title("Temperature Distribution")
 call xlabel("X Position")
 call ylabel("Y Position")
 call savefig("temperature.png")
+```
+
+#### Error bars for scientific data
+```fortran
+type(figure_t) :: fig
+call fig%initialize(800, 600)
+call fig%errorbar(x, y, yerr=measurement_errors, &
+                  marker='o', capsize=5.0_wp, &
+                  label='Experimental data')
+call fig%errorbar(x, y_theory, label='Theory', linestyle='-')
+call fig%legend()
+call fig%savefig("scientific_plot.png")
 ```
 
 #### Log scale plot
@@ -124,7 +161,7 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
-  - **5-Layer Validation**: Comprehensive framework prevents false positives (Issue #32)
+  - **5-Layer Validation**: Comprehensive framework prevents false positives
   - **External validation**: FFprobe integration for format verification
   - **Documentation**: See [MPEG Validation Guide](doc/mpeg_validation.md) for details
 
@@ -163,12 +200,13 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 
 ### Plot types
 - [x] Line plots (`plot`) with customizable line styles and markers
+- [x] Error bars (`errorbar`) with symmetric/asymmetric X/Y errors and customization
 - [x] 3D line plots (`add_3d_plot`) with automatic projection
 - [x] 3D surface plots (`add_surface`) for grid data visualization
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
-- [ ] Scatter plots (`scatter`)
+- [x] Enhanced scatter plots (`scatter`) with size/color mapping and multiple marker shapes
 - [x] Bar charts (`bar`)
 - [x] Histograms (`hist`)
 - [ ] Images (`imshow`)
@@ -181,7 +219,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 
 ### Features
 - [x] Line styles: solid (`-`), dashed (`--`), dotted (`:`), dashdot (`-.`)
-- [x] Markers: circle (`o`), cross (`x`), square (`s`), diamond (`D`), plus (`+`), star (`*`)
+- [x] Markers: circle (`o`), cross (`x`), square (`s`), diamond (`D`), plus (`+`), star (`*`), triangle, pentagon, hexagon
 - [x] Format strings (`'r-o'`, `'b--'`, `'g:'`) for matplotlib compatibility
 - [x] Colormaps: viridis, plasma, inferno, crest, coolwarm, jet, rocket, mako, flare
 - [x] Colorbars for contour and pcolormesh plots
@@ -191,7 +229,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
-  - **False Positive Prevention**: Solves Issue #32 with multi-criteria validation
+  - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations

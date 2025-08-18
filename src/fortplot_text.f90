@@ -2,6 +2,7 @@ module fortplot_text
     use iso_c_binding
     use fortplot_stb_truetype
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
+    use fortplot_logging, only: log_error
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -36,7 +37,7 @@ contains
         success = discover_and_init_font()
         
         if (.not. success) then
-            print *, "Error: Could not initialize STB TrueType - no fonts found"
+            call log_error("Could not initialize STB TrueType - no fonts found")
         end if
         
     end function init_text_system
@@ -253,7 +254,7 @@ contains
         ! Initialize text system if not already done
         if (.not. font_initialized) then
             if (.not. init_text_system()) then
-                print *, "ERROR: STB TrueType initialization failed in calculate_text_width"
+                call log_error("STB TrueType initialization failed in calculate_text_width")
                 width = len_trim(text) * 8  ! Fallback estimate
                 return
             end if

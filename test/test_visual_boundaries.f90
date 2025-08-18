@@ -1,6 +1,7 @@
 program test_visual_boundaries
     !! Test that actual rendered plots stay within canvas boundaries
     use fortplot
+    use fortplot_security, only: safe_remove_file
     implicit none
     
     integer :: test_count = 0
@@ -50,7 +51,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f test_linear_visual.txt')
+        block
+            logical :: remove_success
+            call safe_remove_file('test_linear_visual.txt', remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: test_linear_visual.txt"
+            end if
+        end block
     end subroutine test_linear_visual_boundaries
 
     subroutine test_log_visual_boundaries()
@@ -80,7 +87,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f test_log_visual.txt')
+        block
+            logical :: remove_success
+            call safe_remove_file('test_log_visual.txt', remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: test_log_visual.txt"
+            end if
+        end block
     end subroutine test_log_visual_boundaries
 
     subroutine test_symlog_visual_boundaries()
@@ -110,7 +123,13 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f test_symlog_visual.txt')
+        block
+            logical :: remove_success
+            call safe_remove_file('test_symlog_visual.txt', remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: test_symlog_visual.txt"
+            end if
+        end block
     end subroutine test_symlog_visual_boundaries
 
     logical function validate_ascii_boundaries(filename)

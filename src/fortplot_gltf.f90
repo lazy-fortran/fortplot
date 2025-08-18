@@ -6,6 +6,7 @@ module fortplot_gltf
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_gltf_base
     use fortplot_gltf_writer
+    use fortplot_logging, only: log_info, log_error
     use fortplot_gltf_geometry
     use fortplot_gltf_buffer
     use fortplot_glb_writer
@@ -76,9 +77,9 @@ contains
             ! Write GLB binary format
             if (allocated(this%buffer_data)) then
                 call write_glb_file(filename, json, this%buffer_data)
-                print *, "GLB file '" // trim(filename) // "' created successfully!"
+                call log_info("GLB file '" // trim(filename) // "' created successfully!")
             else
-                print *, "Error: No binary data for GLB file"
+                call log_error("No binary data for GLB file")
             end if
         else
             ! Write GLTF text format
@@ -87,9 +88,9 @@ contains
             if (iostat == 0) then
                 write(unit, '(A)') json
                 close(unit)
-                print *, "GLTF file '" // trim(filename) // "' created successfully!"
+                call log_info("GLTF file '" // trim(filename) // "' created successfully!")
             else
-                print *, "Error: Failed to create GLTF file"
+                call log_error("Failed to create GLTF file")
             end if
         end if
         
