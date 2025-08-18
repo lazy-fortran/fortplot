@@ -68,6 +68,31 @@ call legend()
 call savefig("unicode_demo.png")  ! Works in PNG, PDF, and ASCII
 ```
 
+#### Enhanced scatter plot with size and color mapping
+```fortran
+! Basic scatter plot
+call figure()
+call scatter(x, y, label="Data Points")
+call title("Basic Scatter Plot")
+call savefig("basic_scatter.png")
+
+! Bubble chart with size mapping
+type(figure_t) :: fig
+call fig%initialize(600, 400)
+call fig%scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')
+call fig%set_title("Bubble Chart - Size Represents Population")
+call fig%savefig("bubble_chart.pdf")
+
+! Color-mapped scatter with automatic colorbar
+call figure(800, 600)
+call scatter(x, y, c=values, colormap='viridis', &
+             marker='diamond', alpha=0.8_wp, label='Scientific Data')
+call title("Multi-dimensional Data Visualization")
+call xlabel("Temperature (K)")
+call ylabel("Pressure (Pa)")
+call savefig("scientific_scatter.png")
+```
+
 #### Contour plot with colorbar
 ```fortran
 call figure()
@@ -181,7 +206,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
-- [ ] Scatter plots (`scatter`)
+- [x] Enhanced scatter plots (`scatter`) with size/color mapping and multiple marker shapes
 - [x] Bar charts (`bar`)
 - [x] Histograms (`hist`)
 - [ ] Images (`imshow`)
@@ -194,7 +219,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 
 ### Features
 - [x] Line styles: solid (`-`), dashed (`--`), dotted (`:`), dashdot (`-.`)
-- [x] Markers: circle (`o`), cross (`x`), square (`s`), diamond (`D`), plus (`+`), star (`*`)
+- [x] Markers: circle (`o`), cross (`x`), square (`s`), diamond (`D`), plus (`+`), star (`*`), triangle, pentagon, hexagon
 - [x] Format strings (`'r-o'`, `'b--'`, `'g:'`) for matplotlib compatibility
 - [x] Colormaps: viridis, plasma, inferno, crest, coolwarm, jet, rocket, mako, flare
 - [x] Colorbars for contour and pcolormesh plots
