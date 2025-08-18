@@ -229,8 +229,14 @@ contains
         end do
         
         ! Set nice boundaries for axis limits
-        nice_min = tick_locations(1)
-        nice_max = tick_locations(actual_num_ticks)
+        if (actual_num_ticks > 0) then
+            nice_min = tick_locations(1)
+            nice_max = tick_locations(actual_num_ticks)
+        else
+            ! No ticks generated - use data bounds as fallback
+            nice_min = data_min
+            nice_max = data_max
+        end if
     end subroutine find_nice_tick_locations
 
     function determine_decimal_places_from_step(step) result(decimal_places)
