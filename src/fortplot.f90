@@ -432,6 +432,7 @@ contains
         real(8), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
         real(8), intent(in), optional :: linewidths
+        call ensure_global_figure_initialized()
         call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh

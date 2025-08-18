@@ -32,6 +32,14 @@ jobs:
       run: |
         make build ARGS="--flag '-fprofile-arcs -ftest-coverage'"
 
+    - name: Build required examples for tests
+      run: |
+        make example ARGS="basic_plots"
+        make example ARGS="legend_demo" 
+        make example ARGS="contour_demo"
+        make example ARGS="marker_demo"
+        make example ARGS="format_string_demo"
+
     - name: Run FPM tests with coverage
       run: |
         mkdir -p /tmp/test

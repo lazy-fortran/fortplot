@@ -110,25 +110,28 @@ test-functional: test validate-output test-docs
 
 # Create build directories for examples
 create_build_dirs:
-	@mkdir -p build/example/basic_plots
-	@mkdir -p build/example/line_styles
-	@mkdir -p build/example/marker_demo
-	@mkdir -p build/example/format_string_demo
-	@mkdir -p build/example/contour_demo
-	@mkdir -p build/example/colored_contours
-	@mkdir -p build/example/pcolormesh_demo
-	@mkdir -p build/example/streamplot_demo
-	@mkdir -p build/example/ascii_heatmap
-	@mkdir -p build/example/scale_examples
-	@mkdir -p build/example/legend_demo
-	@mkdir -p build/example/legend_box_demo
-	@mkdir -p build/example/unicode_demo
-	@mkdir -p build/example/show_viewer_demo
-	@mkdir -p build/example/smart_show_demo
-	@mkdir -p build/example/animation
-	@mkdir -p build/example/stateful_streamplot
-	@mkdir -p build/example/histogram_demo
-	@mkdir -p build/example/subplot_demo
+	@mkdir -p output/example/fortran/basic_plots
+	@mkdir -p output/example/fortran/line_styles
+	@mkdir -p output/example/fortran/marker_demo
+	@mkdir -p output/example/fortran/format_string_demo
+	@mkdir -p output/example/fortran/contour_demo
+	@mkdir -p output/example/fortran/colored_contours
+	@mkdir -p output/example/fortran/pcolormesh_demo
+	@mkdir -p output/example/fortran/streamplot_demo
+	@mkdir -p output/example/fortran/ascii_heatmap
+	@mkdir -p output/example/fortran/scale_examples
+	@mkdir -p output/example/fortran/legend_demo
+	@mkdir -p output/example/fortran/legend_box_demo
+	@mkdir -p output/example/fortran/unicode_demo
+	@mkdir -p output/example/fortran/show_viewer_demo
+	@mkdir -p output/example/fortran/smart_show_demo
+	@mkdir -p output/example/fortran/animation
+	@mkdir -p output/example/fortran/stateful_streamplot
+	@mkdir -p output/example/fortran/histogram_demo
+	@mkdir -p output/example/fortran/subplot_demo
+	@mkdir -p output/example/fortran/bar_chart_demo
+	@mkdir -p output/example/fortran/errorbar_demo
+	@mkdir -p output/example/fortran/disconnected_lines
 
 # Help target
 help:
