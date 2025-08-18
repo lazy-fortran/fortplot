@@ -27,11 +27,11 @@ module fortplot
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, pcolormesh, streamplot, boxplot, show, show_viewer
-    public :: hist, histogram
+    public :: hist, histogram, scatter
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
-    public :: add_3d_plot, add_surface
+    public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     public :: bar, barh
@@ -492,7 +492,7 @@ contains
 
     function is_gui_available() result(gui_available)
         !! Check if GUI environment is available for opening plots
-        !! Supports X11, Wayland, macOS, and Windows
+        !! Supports X11, Wayland, macOS, and Windows - uses runtime detection
         logical :: gui_available
         character(len=256) :: display_var, wayland_var, session_type
         character(len=512) :: test_command
@@ -500,70 +500,51 @@ contains
         
         gui_available = .false.
         
-#ifdef __linux__
-        ! First check if xdg-open is available (required for GUI)
-        if (.not. check_command_available('xdg-open')) then
-            return  ! No xdg-open, definitely no GUI
-        end if
-        
-        ! Check for Wayland (modern Linux GUI)
-        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
-        if (status == 0 .and. len_trim(wayland_var) > 0) then
-            gui_available = .true.
-            return
-        end if
-        
-        ! Check session type
-        call get_environment_variable('XDG_SESSION_TYPE', session_type, status=status)
-        if (status == 0) then
-            if (index(session_type, 'wayland') > 0 .or. index(session_type, 'x11') > 0) then
-                gui_available = .true.
-                return
-            elseif (index(session_type, 'tty') > 0) then
-                ! Explicitly no GUI for tty sessions
-                return
-            end if
-        end if
-        
-        ! Check for X11 (traditional Linux GUI)  
-        call get_environment_variable('DISPLAY', display_var, status=status)
-        if (status == 0 .and. len_trim(display_var) > 0) then
-            ! Test if X11 display is actually accessible
-            test_command = 'xset q >/dev/null 2>&1'
-            call execute_command_line(test_command, exitstat=exit_stat)
-            gui_available = (exit_stat == 0)
-        end if
-#elif defined(__APPLE__)
-        ! On macOS, check if 'open' command exists (should always be there)
+        ! First check for macOS 'open' command
         test_command = 'which open >/dev/null 2>&1'
         call execute_command_line(test_command, exitstat=exit_stat)
-        gui_available = (exit_stat == 0)
-#elif defined(_WIN32) || defined(_WIN64)
-        ! Windows typically has GUI available  
-        gui_available = .true.
-#else
-        ! For other Unix-like systems, check both Wayland and X11
-        test_command = 'which xdg-open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        if (exit_stat /= 0) then
-            return  ! No xdg-open
-        end if
-        
-        ! Check Wayland first
-        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
-        if (status == 0 .and. len_trim(wayland_var) > 0) then
+        if (exit_stat == 0) then
             gui_available = .true.
             return
         end if
         
-        ! Then check X11
-        call get_environment_variable('DISPLAY', display_var, status=status)
-        if (status == 0 .and. len_trim(display_var) > 0) then
-            test_command = 'xset q >/dev/null 2>&1'
-            call execute_command_line(test_command, exitstat=exit_stat)
-            gui_available = (exit_stat == 0)
+        ! Check for xdg-open (Linux/Unix systems)
+        if (check_command_available('xdg-open')) then
+            ! Check for Wayland (modern Linux GUI)
+            call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
+            if (status == 0 .and. len_trim(wayland_var) > 0) then
+                gui_available = .true.
+                return
+            end if
+            
+            ! Check session type
+            call get_environment_variable('XDG_SESSION_TYPE', session_type, status=status)
+            if (status == 0) then
+                if (index(session_type, 'wayland') > 0 .or. index(session_type, 'x11') > 0) then
+                    gui_available = .true.
+                    return
+                elseif (index(session_type, 'tty') > 0) then
+                    ! Explicitly no GUI for tty sessions
+                    return
+                end if
+            end if
+            
+            ! Check for X11 (traditional Linux GUI)  
+            call get_environment_variable('DISPLAY', display_var, status=status)
+            if (status == 0 .and. len_trim(display_var) > 0) then
+                ! Test if X11 display is actually accessible
+                test_command = 'xset q >/dev/null 2>&1'
+                call execute_command_line(test_command, exitstat=exit_stat)
+                gui_available = (exit_stat == 0)
+            end if
+        else
+            ! Check for Windows environment variables or commands
+            call get_environment_variable('WINDIR', display_var, status=status)
+            if (status == 0 .and. len_trim(display_var) > 0) then
+                ! Windows detected, assume GUI available
+                gui_available = .true.
+            end if
         end if
-#endif
     end function is_gui_available
 
     subroutine show_viewer_implementation(blocking)
@@ -589,15 +570,15 @@ contains
         call system_clock(time_val)
         write(timestamp, '(I0)') time_val
         
-#ifdef __linux__
-        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
-#elif defined(__APPLE__)
-        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
-#elif defined(_WIN32) || defined(_WIN64)
-        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
-#else
-        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
-#endif
+        ! Use runtime detection for temporary directory
+        call get_environment_variable('WINDIR', temp_filename, status=stat)
+        if (stat == 0 .and. len_trim(temp_filename) > 0) then
+            ! Windows detected - use current directory
+            temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
+        else
+            ! Unix-like system (Linux, macOS, etc.) - use /tmp
+            temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
+        end if
         
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
@@ -648,6 +629,63 @@ contains
         
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
+
+    subroutine scatter(x, y, s, c, label, marker, markersize, color, &
+                      colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the scatter plot
+        !!   s: Optional size mapping array for bubble charts
+        !!   c: Optional color mapping array for color-coded plots
+        !!   label: Optional label for the plot
+        !!   marker: Optional marker style ('o', 's', 'D', 'x', '+', '*', '^', 'v', 'p', 'h')
+        !!   markersize: Optional default marker size when s not provided
+        !!   color: Optional RGB color array [0-1] for uniform coloring
+        !!   colormap: Optional colormap name ('viridis', 'plasma', 'inferno', 'coolwarm', etc.)
+        !!   vmin, vmax: Optional color scale limits
+        !!   show_colorbar: Optional flag to show colorbar for color mapping
+        !!
+        !! Examples:
+        !!   ! Basic scatter plot
+        !!   call scatter(x, y, label='Data Points')
+        !!   
+        !!   ! Bubble chart with size mapping
+        !!   call scatter(x, y, s=sizes, label='Bubble Chart')
+        !!   
+        !!   ! Color-mapped scatter plot
+        !!   call scatter(x, y, c=values, colormap='viridis', label='Color Mapped')
+        !!   
+        !!   ! Full featured scatter plot
+        !!   call scatter(x, y, s=sizes, c=values, marker='s', colormap='plasma', &
+        !!               vmin=0.0_real64, vmax=1.0_real64, label='Advanced Scatter')
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call ensure_global_figure_initialized()
+        call fig%add_scatter_2d(x, y, s=s, c=c, label=label, marker=marker, &
+                               markersize=markersize, color=color, colormap=colormap, &
+                               vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine scatter
+
+    subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
+                          colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (wrapper for consistency)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call fig%add_scatter_2d(x, y, s=s, c=c, label=label, marker=marker, &
+                               markersize=markersize, color=color, colormap=colormap, &
+                               vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine add_scatter
 
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)

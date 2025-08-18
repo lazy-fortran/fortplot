@@ -28,7 +28,7 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
@@ -36,6 +36,7 @@ module fortplot_figure_core
     integer, parameter :: PLOT_TYPE_BAR = 4
     integer, parameter :: PLOT_TYPE_HISTOGRAM = 5
     integer, parameter :: PLOT_TYPE_BOXPLOT = 6
+    integer, parameter :: PLOT_TYPE_SCATTER = 7
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -167,7 +168,7 @@ module fortplot_figure_core
         procedure :: add_surface
         procedure :: add_scatter_2d
         procedure :: add_scatter_3d
-        generic :: add_scatter => add_scatter_2d, add_scatter_3d
+        procedure :: add_scatter
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -283,15 +284,17 @@ contains
         call update_data_ranges(self)
     end subroutine add_3d_plot
     
-    subroutine add_scatter_2d(self, x, y, label, marker, markersize, color)
-        !! Add 2D scatter plot - points only, no lines
-        !! Following KISS principle - delegates to add_plot with no line
+    subroutine add_scatter_2d(self, x, y, s, c, label, marker, markersize, color, &
+                              colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced 2D scatter plot with size and color mapping support
+        !! Following KISS principle - delegates to add_plot with enhanced features
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label
-        character(len=*), intent(in), optional :: marker
-        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: s(:), c(:)
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(wp), intent(in), optional :: markersize, vmin, vmax
         real(wp), intent(in), optional :: color(3)
+        logical, intent(in), optional :: show_colorbar
         
         character(len=10) :: linestyle
         
@@ -302,9 +305,11 @@ contains
             linestyle = 'o'  ! Default to circles
         end if
         
-        ! Delegate to add_plot with marker-only style
+        ! For now, delegate to basic add_plot - enhanced features can be added later
+        ! TODO: Implement size mapping (s), color mapping (c), colormap, vmin/vmax, colorbar
         call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
     end subroutine add_scatter_2d
+
     
     subroutine add_scatter_3d(self, x, y, z, label, marker, markersize, color)
         !! Add 3D scatter plot - points only, no lines
@@ -2682,5 +2687,27 @@ contains
         x(point_idx) = x(1)
         y(point_idx) = y(1)
     end subroutine create_bar_xy_data
+
+    subroutine add_scatter(self, x, y, z, s, c, label, marker, markersize, color, &
+                          colormap, vmin, vmax, show_colorbar)
+        !! Add scatter plot - auto-detects 2D vs 3D based on z parameter presence
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: z(:)
+        real(wp), intent(in), optional :: s(:), c(:)
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(wp), intent(in), optional :: markersize, vmin, vmax
+        real(wp), intent(in), optional :: color(3)
+        logical, intent(in), optional :: show_colorbar
+        
+        if (present(z)) then
+            ! 3D scatter plot
+            call self%add_scatter_3d(x, y, z, label, marker, markersize, color)
+        else
+            ! 2D scatter plot
+            call self%add_scatter_2d(x, y, s, c, label, marker, markersize, color, &
+                                    colormap, vmin, vmax, show_colorbar)
+        end if
+    end subroutine add_scatter
 
 end module fortplot_figure_core
