@@ -58,21 +58,44 @@ int is_safe_filename_c(const char* filename) {
 
 // Check if FFmpeg functionality should be enabled
 int is_ffmpeg_enabled(void) {
-    // Enable FFmpeg in CI environments or when explicitly allowed
+    // 1. Check for explicit user override
+    const char* enable_ffmpeg = getenv("FORTPLOT_ENABLE_FFMPEG");
+    if (enable_ffmpeg) {
+        if (strcmp(enable_ffmpeg, "1") == 0) {
+            return 1;  // Explicitly enabled
+        } else if (strcmp(enable_ffmpeg, "0") == 0) {
+            return 0;  // Explicitly disabled
+        }
+    }
+    
+    // 2. Enable in CI environments
     const char* ci_env = getenv("CI");
     const char* github_actions = getenv("GITHUB_ACTIONS");
-    const char* enable_ffmpeg = getenv("FORTPLOT_ENABLE_FFMPEG");
     const char* in_container = getenv("RUNNER_OS");
     
-    // Enable if any CI environment detected or explicitly enabled
     if ((ci_env && strcmp(ci_env, "true") == 0) ||
         (github_actions && strcmp(github_actions, "true") == 0) ||
-        (enable_ffmpeg && strcmp(enable_ffmpeg, "1") == 0) ||
         in_container != NULL) {
         return 1;
     }
     
-    // Disabled by default for security
+    // 3. Auto-detect development environments (Linux/macOS with FFmpeg available)
+    const char* home = getenv("HOME");
+    const char* user = getenv("USER");
+    
+    // Check if we're in a development environment (has HOME and USER, not root)
+    if (home && user && strcmp(user, "root") != 0) {
+        // Quick test if ffmpeg is actually available
+        int status = system("ffmpeg -version >/dev/null 2>&1");
+        if (status == 0) {
+            // FFmpeg is available and we're in a development environment
+            fprintf(stderr, "Info: Auto-enabling FFmpeg in development environment\n");
+            fprintf(stderr, "Info: Set FORTPLOT_ENABLE_FFMPEG=0 to disable, or =1 to suppress this message\n");
+            return 1;
+        }
+    }
+    
+    // 4. Disabled by default for security in other environments
     return 0;
 }
 
