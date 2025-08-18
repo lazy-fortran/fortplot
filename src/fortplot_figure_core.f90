@@ -2858,17 +2858,9 @@ contains
         
         bin_width = (data_max - data_min) / real(n_bins, wp)
         
-        ! Allocate histogram arrays (automatic deallocation when reassigned)
-        allocate(self%plots(plot_idx)%hist_bin_edges(n_bins + 1))
-        allocate(self%plots(plot_idx)%hist_counts(n_bins))
-        
-        ! Create bin edges
-        do i = 1, n_bins + 1
-            self%plots(plot_idx)%hist_bin_edges(i) = data_min + real(i-1, wp) * bin_width
-        end do
-        
-        ! Calculate histogram counts (simple binning)
-        self%plots(plot_idx)%hist_counts = 0.0_wp
+        ! Initialize histogram arrays (Fortran automatically reallocates)
+        self%plots(plot_idx)%hist_bin_edges = [(data_min + real(i-1, wp) * bin_width, i = 1, n_bins + 1)]
+        self%plots(plot_idx)%hist_counts = [(0.0_wp, i = 1, n_bins)]
         do i = 1, size(data)
             if (data(i) >= data_min .and. data(i) <= data_max) then
                 associate(bin_idx => min(n_bins, max(1, int((data(i) - data_min) / bin_width) + 1)))
