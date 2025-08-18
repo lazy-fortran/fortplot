@@ -2798,4 +2798,203 @@ contains
         self%plots(self%plot_count) = plot_data
     end subroutine errorbar
 
+    ! Histogram helper functions - minimal implementations for compilation
+    function validate_histogram_input(self, data, bins) result(is_valid)
+        !! Validate histogram input parameters
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical :: is_valid
+        
+        is_valid = .true.
+        
+        if (self%plot_count >= self%max_plots) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (size(data) == 0) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (present(bins)) then
+            if (bins <= 0 .or. bins > 1000) then
+                is_valid = .false.
+                return
+            end if
+        end if
+    end function validate_histogram_input
+
+    subroutine add_histogram_plot_data(self, data, bins, density, label, color)
+        !! Add histogram data to internal storage - minimal implementation
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx, n_bins
+        real(wp) :: data_min, data_max, bin_width
+        integer :: i
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        
+        ! Simple histogram implementation
+        n_bins = 10
+        if (present(bins)) n_bins = bins
+        
+        data_min = minval(data)
+        data_max = maxval(data)
+        bin_width = (data_max - data_min) / real(n_bins, wp)
+        
+        ! Allocate histogram arrays
+        if (allocated(self%plots(plot_idx)%hist_bin_edges)) deallocate(self%plots(plot_idx)%hist_bin_edges)
+        if (allocated(self%plots(plot_idx)%hist_counts)) deallocate(self%plots(plot_idx)%hist_counts)
+        allocate(self%plots(plot_idx)%hist_bin_edges(n_bins + 1))
+        allocate(self%plots(plot_idx)%hist_counts(n_bins))
+        
+        ! Create bin edges
+        do i = 1, n_bins + 1
+            self%plots(plot_idx)%hist_bin_edges(i) = data_min + real(i-1, wp) * bin_width
+        end do
+        
+        ! Calculate histogram counts (simple binning)
+        self%plots(plot_idx)%hist_counts = 0.0_wp
+        do i = 1, size(data)
+            if (data(i) >= data_min .and. data(i) <= data_max) then
+                associate(bin_idx => min(n_bins, max(1, int((data(i) - data_min) / bin_width) + 1)))
+                    self%plots(plot_idx)%hist_counts(bin_idx) = self%plots(plot_idx)%hist_counts(bin_idx) + 1.0_wp
+                end associate
+            end if
+        end do
+        
+        ! Set density flag
+        if (present(density)) then
+            self%plots(plot_idx)%hist_density = density
+        end if
+        
+        ! Set plot properties
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            self%plots(plot_idx)%color = [0.0_wp, 0.5_wp, 1.0_wp]  ! Default blue
+        end if
+    end subroutine add_histogram_plot_data
+
+    subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
+        !! Add box plot data - minimal implementation
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: plot_idx
+        
+        plot_idx = self%plot_count
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        
+        ! Copy data
+        if (allocated(self%plots(plot_idx)%box_data)) deallocate(self%plots(plot_idx)%box_data)
+        allocate(self%plots(plot_idx)%box_data(size(data)))
+        self%plots(plot_idx)%box_data = data
+        
+        ! Set optional parameters with defaults
+        if (present(position)) then
+            self%plots(plot_idx)%position = position
+        else
+            self%plots(plot_idx)%position = 1.0_wp
+        end if
+        
+        if (present(width)) then
+            self%plots(plot_idx)%width = width
+        else
+            self%plots(plot_idx)%width = 0.6_wp
+        end if
+        
+        if (present(show_outliers)) then
+            self%plots(plot_idx)%show_outliers = show_outliers
+        else
+            self%plots(plot_idx)%show_outliers = .true.
+        end if
+        
+        if (present(horizontal)) then
+            self%plots(plot_idx)%horizontal = horizontal
+        else
+            self%plots(plot_idx)%horizontal = .false.
+        end if
+        
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        else
+            self%plots(plot_idx)%label = ''
+        end if
+        
+        if (present(color)) then
+            self%plots(plot_idx)%color = color
+        else
+            self%plots(plot_idx)%color = [0.5_wp, 0.5_wp, 0.5_wp]  ! Default gray
+        end if
+        
+        ! Calculate basic statistics (simplified)
+        associate(sorted_data => data)  ! TODO: implement proper sorting
+            if (size(sorted_data) > 0) then
+                self%plots(plot_idx)%q1 = minval(sorted_data)
+                self%plots(plot_idx)%q2 = (minval(sorted_data) + maxval(sorted_data)) * 0.5_wp
+                self%plots(plot_idx)%q3 = maxval(sorted_data)
+                self%plots(plot_idx)%whisker_low = minval(sorted_data)
+                self%plots(plot_idx)%whisker_high = maxval(sorted_data)
+            end if
+        end associate
+    end subroutine add_boxplot_data
+
+    subroutine update_data_ranges_boxplot(self)
+        !! Update figure data ranges after adding box plot - minimal implementation
+        class(figure_t), intent(inout) :: self
+        
+        integer :: plot_idx
+        real(wp) :: x_min_plot, x_max_plot, y_min_plot, y_max_plot
+        
+        plot_idx = self%plot_count
+        
+        if (self%plots(plot_idx)%horizontal) then
+            ! Horizontal box plot
+            x_min_plot = self%plots(plot_idx)%whisker_low
+            x_max_plot = self%plots(plot_idx)%whisker_high
+            y_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
+            y_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+        else
+            ! Vertical box plot
+            y_min_plot = self%plots(plot_idx)%whisker_low
+            y_max_plot = self%plots(plot_idx)%whisker_high
+            x_min_plot = self%plots(plot_idx)%position - self%plots(plot_idx)%width * 0.5_wp
+            x_max_plot = self%plots(plot_idx)%position + self%plots(plot_idx)%width * 0.5_wp
+        end if
+        
+        ! Update figure ranges
+        if (self%plot_count == 1) then
+            self%x_min = x_min_plot
+            self%x_max = x_max_plot
+            self%y_min = y_min_plot
+            self%y_max = y_max_plot
+        else
+            self%x_min = min(self%x_min, x_min_plot)
+            self%x_max = max(self%x_max, x_max_plot)
+            self%y_min = min(self%y_min, y_min_plot)
+            self%y_max = max(self%y_max, y_max_plot)
+        end if
+    end subroutine update_data_ranges_boxplot
+
 end module fortplot_figure_core
