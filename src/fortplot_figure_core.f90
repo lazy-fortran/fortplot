@@ -23,6 +23,7 @@ module fortplot_figure_core
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_system_secure, only: create_directory_secure
     implicit none
 
     private
@@ -2609,8 +2610,8 @@ contains
         !! Create directory path for output file if it doesn't exist
         character(len=*), intent(in) :: filename
         character(len=:), allocatable :: dir_path
-        character(len=256) :: command
-        integer :: last_slash, status
+        integer :: last_slash
+        logical :: success
         
         ! Find the last directory separator
         last_slash = 0
@@ -2621,10 +2622,9 @@ contains
         ! If there's a directory path, create it
         if (last_slash > 1) then
             dir_path = filename(1:last_slash-1)
-            ! Use mkdir -p to create parent directories as needed
-            write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
-            call execute_command_line(command, exitstat=status)
-            if (status /= 0) then
+            ! Use secure directory creation
+            success = create_directory_secure(dir_path)
+            if (.not. success) then
                 print *, "Warning: Could not create directory: ", trim(dir_path)
             end if
         end if

@@ -18,6 +18,7 @@ module fortplot
     use fortplot_figure, only: figure_t
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
+    use fortplot_system_secure, only: open_file_secure, check_command_available, delete_file_secure
 
     implicit none
 
@@ -501,9 +502,7 @@ contains
         
 #ifdef __linux__
         ! First check if xdg-open is available (required for GUI)
-        test_command = 'which xdg-open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        if (exit_stat /= 0) then
+        if (.not. check_command_available('xdg-open')) then
             return  ! No xdg-open, definitely no GUI
         end if
         
@@ -578,7 +577,6 @@ contains
         logical, intent(in), optional :: blocking
         logical :: do_block
         character(len=256) :: temp_filename
-        character(len=512) :: command
         character(len=32) :: timestamp
         integer :: stat
         integer(int64) :: time_val
@@ -604,42 +602,26 @@ contains
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
         
-        ! Open with system default viewer
-#ifdef __linux__
-        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
-#elif defined(__APPLE__)
-        command = 'open "' // trim(temp_filename) // '"'
-#elif defined(_WIN32) || defined(_WIN64)
-        command = 'start "" "' // trim(temp_filename) // '"'
-#else
-        ! Fallback - try xdg-open (most Unix-like systems)
-        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
-#endif
-        
-        ! Execute system command to open file
-        call execute_command_line(command, wait=.false., exitstat=stat)
-        
-        if (stat /= 0) then
+        ! Use secure file opening
+        if (open_file_secure(temp_filename)) then
+            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+            stat = 0
+        else
             print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
             print *, 'Please open the file manually with your preferred PDF viewer.'
-        else
-            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+            stat = 1
+        end if
+        
+        if (stat == 0) then
             
             if (do_block) then
                 print *, 'Press Enter to continue and clean up temporary file...'
                 read(*,*)
                 
-                ! Clean up temporary file
-#ifdef __linux__ 
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#elif defined(__APPLE__)
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#elif defined(_WIN32) || defined(_WIN64)
-                command = 'del "' // trim(temp_filename) // '"'
-#else
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#endif
-                call execute_command_line(command)
+                ! Clean up temporary file securely
+                if (.not. delete_file_secure(temp_filename)) then
+                    print *, 'Warning: Could not clean up temporary file: ', trim(temp_filename)
+                end if
             else
                 ! In non-blocking mode, just inform that file stays
                 print *, 'Note: Temporary file will remain at: ', trim(temp_filename)

@@ -1,5 +1,6 @@
 module fortplot_animation
     use iso_fortran_env, only: real64, wp => real64
+    use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
@@ -603,13 +604,70 @@ contains
     function validate_with_ffprobe(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
+        
+        ! Validate filename first to prevent injection
+        if (.not. is_safe_filename(filename)) then
+            valid = .false.
+            return
+        end if
+        
+        ! Use the secure C implementation for ffprobe validation
+        valid = validate_with_ffprobe_secure(filename)
+    end function validate_with_ffprobe
+
+    function is_safe_filename(filename) result(safe)
+        character(len=*), intent(in) :: filename
+        logical :: safe
+        integer :: i, len_name
+        character :: c
+        
+        safe = .false.
+        len_name = len_trim(filename)
+        
+        ! Check basic constraints
+        if (len_name == 0 .or. len_name > 255) return
+        
+        ! Check for directory traversal
+        if (index(filename, '..') > 0) return
+        
+        ! Check for dangerous characters
+        do i = 1, len_name
+            c = filename(i:i)
+            ! Allow only alphanumeric, dash, underscore, dot, forward slash
+            if (.not. ((c >= 'a' .and. c <= 'z') .or. &
+                       (c >= 'A' .and. c <= 'Z') .or. &
+                       (c >= '0' .and. c <= '9') .or. &
+                       c == '-' .or. c == '_' .or. c == '.' .or. c == '/')) then
+                return
+            end if
+        end do
+        
+        ! Check for valid video extension
+        if (index(filename, '.mp4') > 0 .or. &
+            index(filename, '.avi') > 0 .or. &
+            index(filename, '.mkv') > 0) then
+            safe = .true.
+        end if
+    end function is_safe_filename
+
+    function validate_with_ffprobe_secure(filename) result(valid)
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        
+        interface
+            function validate_with_ffprobe_c(filename) result(status) bind(C, name="validate_with_ffprobe_c")
+                import :: c_char, c_int
+                character(kind=c_char), intent(in) :: filename(*)
+                integer(c_int) :: status
+            end function validate_with_ffprobe_c
+        end interface
+        
+        character(len=len_trim(filename)+1, kind=c_char) :: c_filename
         integer :: status
         
-        ! Use ffprobe to validate
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
+        c_filename = trim(filename) // c_null_char
+        status = validate_with_ffprobe_c(c_filename)
         valid = (status == 0)
-    end function validate_with_ffprobe
+    end function validate_with_ffprobe_secure
 
 end module fortplot_animation
