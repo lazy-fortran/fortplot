@@ -309,8 +309,7 @@ contains
             call safe_remove_file(fake_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(fake_file)
-                    end if
-    end block
+            end if
             call safe_remove_file(empty_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(empty_file)
