@@ -71,21 +71,18 @@ contains
     end subroutine test_add_surface_with_label
     
     subroutine test_surface_grid_validation()
-        !! Test that surface grid dimensions are validated
+        !! Given: Surface plot with mismatched and correct dimensions
+        !! When: add_surface is called with various dimension combinations  
+        !! Then: Validation should work correctly (Issue #99 - already implemented)
         type(figure_t) :: fig
         real(wp), dimension(3) :: x = [0.0_wp, 1.0_wp, 2.0_wp]
         real(wp), dimension(2) :: y = [0.0_wp, 1.0_wp]
         real(wp), dimension(2,2) :: z_wrong = reshape([0.0_wp, 1.0_wp, 1.0_wp, 2.0_wp], [2,2])
         real(wp), dimension(3,2) :: z_correct
         
-        ! XFAIL: Expected failure - Issue #99
-        print *, "XFAIL: Surface dimension validation not implemented - Issue #99"
-        print *, "Known issue: z(2,2) vs x(3), y(2) dimension mismatch should be caught"
-        return  ! Skip test instead of failing
-        
         call fig%initialize(640, 480)
         
-        ! This should fail validation (wrong dimensions)
+        ! This should fail validation (wrong dimensions: z(2,2) vs x(3), y(2))
         call fig%add_surface(x, y, z_wrong)
         
         ! Should not add plot due to dimension mismatch
@@ -93,7 +90,7 @@ contains
             error stop "Should not add surface with mismatched dimensions"
         end if
         
-        ! This should succeed
+        ! This should succeed (correct dimensions: z(3,2) matches x(3), y(2))
         z_correct = 0.0_wp
         call fig%add_surface(x, y, z_correct)
         

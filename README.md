@@ -93,6 +93,26 @@ call ylabel("Pressure (Pa)")
 call savefig("scientific_scatter.png")
 ```
 
+#### Surface plot with dimension validation
+```fortran
+! Create coordinate arrays and surface data
+real(wp), dimension(21) :: x = [(i*0.2_wp, i=0,20)]
+real(wp), dimension(21) :: y = [(i*0.2_wp, i=0,20)]
+real(wp), dimension(21,21) :: z  ! Must match: size(z,1)=size(x), size(z,2)=size(y)
+
+! Calculate surface values
+do i = 1, 21
+    do j = 1, 21  
+        z(i,j) = x(i)**2 + y(j)**2  ! Paraboloid
+    end do
+end do
+
+call figure(800, 600)
+call add_surface(x, y, z, label="Paraboloid")
+call title("3D Surface Plot")
+call savefig("surface.png")
+```
+
 #### Contour plot with colorbar
 ```fortran
 call figure()
@@ -202,7 +222,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Line plots (`plot`) with customizable line styles and markers
 - [x] Error bars (`errorbar`) with symmetric/asymmetric X/Y errors and customization
 - [x] 3D line plots (`add_3d_plot`) with automatic projection
-- [x] 3D surface plots (`add_surface`) for grid data visualization
+- [x] 3D surface plots (`add_surface`) with automatic dimension validation
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization
