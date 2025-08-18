@@ -45,10 +45,14 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
     }
     
     // Build ffmpeg command with escaped filename
+    // Enhanced parameters for proper MP4 container structure and adequate size
     int ret = snprintf(command, sizeof(command),
         "ffmpeg -f image2pipe -vcodec png -r %d -i - "
-        "-c:v libx264 -pix_fmt yuv420p -crf 18 -preset fast -y %s 2>/dev/null",
-        fps, escaped_filename);
+        "-c:v libx264 -pix_fmt yuv420p -crf 15 -preset medium "
+        "-movflags +faststart -profile:v baseline -level 3.0 "
+        "-g %d -keyint_min %d -sc_threshold 0 -minrate 64k -maxrate 512k "
+        "-bufsize 256k -y %s 2>/dev/null",
+        fps, fps * 2, fps, escaped_filename);
     
     free(escaped_filename);
     
