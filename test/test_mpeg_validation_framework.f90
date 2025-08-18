@@ -75,7 +75,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine create_and_save_test_animation(fig, filename, frames, save_status)
@@ -115,7 +114,6 @@ contains
                     print *, "Warning: Could not remove frame file: " // trim(frame_file)
                         end if
     end block
-            end block
         end do
     end subroutine create_and_save_test_animation
     
@@ -256,7 +254,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
         end do
     end subroutine
 

@@ -64,7 +64,6 @@ contains
                     print *, "Warning: Could not remove temporary file: " // trim(test_file)
                         end if
     end block
-            end block
         end if
     end subroutine
 

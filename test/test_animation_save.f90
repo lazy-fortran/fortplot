@@ -54,7 +54,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_test_data_mp4(frame)
@@ -94,7 +93,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_linear_data(frame)

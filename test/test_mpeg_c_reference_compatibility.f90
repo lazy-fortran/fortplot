@@ -79,7 +79,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(fortran_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_c_ref_data(frame)
@@ -168,7 +167,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_c_library_data(frame)
@@ -275,7 +273,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_spec_data(frame)
@@ -387,7 +384,6 @@ contains
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
                     end if
     end block
-        end block
     end subroutine
 
     subroutine update_standard_data(frame)
