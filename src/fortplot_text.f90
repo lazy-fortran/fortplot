@@ -389,6 +389,11 @@ contains
                     if (alpha_int > 0) then  ! Only render non-transparent pixels
                         pixel_idx = (img_y * width + img_x) * 3 + 1
                         
+                        ! Safety bounds check  
+                        if (pixel_idx < 1 .or. pixel_idx + 2 > width * height * 3) then
+                            cycle  ! Skip this pixel if out of bounds
+                        end if
+                        
                         alpha_f = real(alpha_int) / 255.0
                         bg_r = real(int(image_data(pixel_idx), &
                             kind=selected_int_kind(2)) + merge(256, 0, image_data(pixel_idx) < 0))

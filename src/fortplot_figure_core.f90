@@ -2442,11 +2442,12 @@ contains
         character(len=*), intent(in), optional :: location
         integer :: i
         
-        ! Initialize legend if not already done
-        if (.not. allocated(self%legend_data%entries)) then
-            allocate(self%legend_data%entries(0))
-            self%legend_data%num_entries = 0
+        ! Initialize or clear legend entries
+        if (allocated(self%legend_data%entries)) then
+            deallocate(self%legend_data%entries)
         end if
+        allocate(self%legend_data%entries(0))
+        self%legend_data%num_entries = 0
         
         ! Set legend position if specified  
         if (present(location)) then
