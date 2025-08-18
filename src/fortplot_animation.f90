@@ -4,10 +4,6 @@ module fortplot_animation
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
-    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1, &
-                                    initialize_streaming_mpeg1_encoder, &
-                                    encode_single_frame_to_mpeg1, &
-                                    finalize_streaming_mpeg1_encoder
     implicit none
     private
 
@@ -230,71 +226,10 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
-        ! Try native MPEG-1 encoder first for substantial file sizes
-        if (should_use_native_encoder(anim, filename)) then
-            call save_animation_with_native_mpeg1(anim, filename, fps, status)
-            if (status == 0) return  ! Native encoder succeeded
-            print *, "Native MPEG-1 encoder failed, falling back to FFmpeg"
-        end if
-        
-        ! Fall back to FFmpeg pipeline
+        ! Use FFmpeg pipeline for all animations
         call save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
     end subroutine save_animation_with_ffmpeg_pipe
 
-    function should_use_native_encoder(anim, filename) result(use_native)
-        class(animation_t), intent(in) :: anim
-        character(len=*), intent(in) :: filename
-        logical :: use_native
-        
-        ! Disable native encoder - use FFmpeg with optimized parameters for substantial files
-        ! The native encoder generates large files but not valid MPEG format
-        use_native = .false.
-    end function should_use_native_encoder
-
-    subroutine save_animation_with_native_mpeg1(anim, filename, fps, status)
-        class(animation_t), intent(inout) :: anim
-        character(len=*), intent(in) :: filename
-        integer, intent(in) :: fps
-        integer, intent(out) :: status
-        
-        real(real64), allocatable :: single_frame(:,:,:)
-        integer :: frame_idx, width, height
-        
-        status = 0
-        
-        if (.not. associated(anim%fig)) then
-            status = -1
-            return
-        end if
-        
-        width = anim%fig%width
-        height = anim%fig%height
-        
-        ! Use streaming approach - process one frame at a time to avoid memory overflow
-        allocate(single_frame(width, height, 3))
-        
-        ! Initialize streaming MPEG-1 encoder
-        call initialize_streaming_mpeg1_encoder(width, height, fps, filename, anim%frames, status)
-        if (status /= 0) then
-            if (allocated(single_frame)) deallocate(single_frame)
-            return
-        end if
-        
-        do frame_idx = 1, anim%frames
-            call update_frame_data(anim, frame_idx)
-            call extract_frame_rgb_data(anim%fig, single_frame, status)
-            if (status /= 0) exit
-            
-            ! Stream frame to encoder
-            call encode_single_frame_to_mpeg1(single_frame, frame_idx, status)
-            if (status /= 0) exit
-        end do
-        
-        ! Finalize encoder
-        call finalize_streaming_mpeg1_encoder(status)
-        
-        if (allocated(single_frame)) deallocate(single_frame)
-    end subroutine save_animation_with_native_mpeg1
 
     subroutine extract_frame_rgb_data(fig, rgb_data, status)
         type(figure_t), intent(inout) :: fig
