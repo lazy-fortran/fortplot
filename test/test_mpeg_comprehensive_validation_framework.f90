@@ -1,6 +1,7 @@
 program test_mpeg_comprehensive_validation_framework
     use fortplot
-    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe, sanitize_filename, safe_validate_mpeg_with_ffprobe
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, &
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
