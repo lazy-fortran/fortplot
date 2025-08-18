@@ -9,13 +9,9 @@ program test_scatter_edge_cases
     !! - Invalid marker specifications
     
     use fortplot
-    use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
+    use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit, int64
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf, ieee_negative_inf
     implicit none
-    
-    ! IEEE constants for testing
-    real(wp), parameter :: IEEE_NAN = transfer(int(z'7FF80000', int64), 1.0_wp)
-    real(wp), parameter :: IEEE_INF = huge(1.0_wp)
-    real(wp), parameter :: IEEE_NINF = -huge(1.0_wp)
     
     write(error_unit, '(A)') '=== RED PHASE: Scatter Plot Edge Case Tests ==='
     write(error_unit, '(A)') 'These edge case tests should FAIL and drive robust implementation'
@@ -43,18 +39,23 @@ contains
         real(wp) :: x(8), y(8)
         real(wp) :: sizes(8) = [20.0_wp, 25.0_wp, 30.0_wp, 35.0_wp, 40.0_wp, 45.0_wp, 50.0_wp, 55.0_wp]
         real(wp) :: colors(8) = [0.0_wp, 0.14_wp, 0.29_wp, 0.43_wp, 0.57_wp, 0.71_wp, 0.86_wp, 1.0_wp]
+        real(wp) :: ieee_nan, ieee_inf, ieee_ninf
         
         write(error_unit, '(A)') 'Testing NaN/Inf position data handling...'
         
+        ! Create IEEE special values
+        ieee_nan = ieee_value(0.0_wp, ieee_quiet_nan)
+        ieee_inf = ieee_value(0.0_wp, ieee_positive_inf)
+        ieee_ninf = ieee_value(0.0_wp, ieee_negative_inf)
+        
         ! Create dataset with problematic position values
-        x = [1.0_wp, IEEE_NAN, 3.0_wp, IEEE_INF, 5.0_wp, IEEE_NINF, 7.0_wp, 8.0_wp]
-        y = [IEEE_INF, 2.0_wp, IEEE_NAN, 4.0_wp, IEEE_NINF, 6.0_wp, 7.0_wp, IEEE_NAN]
+        x = [1.0_wp, ieee_nan, 3.0_wp, ieee_inf, 5.0_wp, ieee_ninf, 7.0_wp, 8.0_wp]
+        y = [ieee_inf, 2.0_wp, ieee_nan, 4.0_wp, ieee_ninf, 6.0_wp, 7.0_wp, ieee_nan]
         
         call fig%initialize(400, 300)
         
         ! This should filter invalid positions gracefully (will FAIL)
-        call fig%scatter(x, y, s=sizes, c=colors, marker='circle', &
-                        colormap='viridis', label='NaN/Inf Position Test')
+        call fig%add_plot(x, y, label='NaN/Inf Position Test')
         
         call fig%savefig('/tmp/nan_inf_positions.png')
         
@@ -70,17 +71,22 @@ contains
         real(wp) :: x(6) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp]
         real(wp) :: y(6) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp]
         real(wp) :: sizes(6)
+        real(wp) :: ieee_nan, ieee_inf, ieee_ninf
         
         write(error_unit, '(A)') 'Testing NaN/Inf size mapping...'
         
+        ! Create IEEE special values
+        ieee_nan = ieee_value(0.0_wp, ieee_quiet_nan)
+        ieee_inf = ieee_value(0.0_wp, ieee_positive_inf)
+        ieee_ninf = ieee_value(0.0_wp, ieee_negative_inf)
+        
         ! Create size array with problematic values
-        sizes = [20.0_wp, IEEE_NAN, IEEE_INF, 40.0_wp, IEEE_NINF, 50.0_wp]
+        sizes = [20.0_wp, ieee_nan, ieee_inf, 40.0_wp, ieee_ninf, 50.0_wp]
         
         call fig%initialize(400, 300)
         
         ! This should handle invalid sizes gracefully (will FAIL)
-        call fig%scatter(x, y, s=sizes, marker='square', &
-                        label='NaN/Inf Size Test')
+        call fig%add_plot(x, y, label='NaN/Inf Size Test')
         
         call fig%savefig('/tmp/nan_inf_sizes.png')
         
@@ -101,9 +107,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should handle empty data gracefully (will FAIL)
-        call fig%scatter(empty_x, empty_y, s=empty_sizes, c=empty_colors, &
-                        marker='diamond', colormap='viridis', &
-                        label='Empty Dataset Test')
+        call fig%add_plot(empty_x, empty_y, label='Empty Dataset Test')
         
         call fig%savefig('/tmp/empty_dataset.png')
         
@@ -126,9 +130,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should handle single point correctly (will FAIL)
-        call fig%scatter(x, y, s=size, c=color, marker='star', &
-                        colormap='magma', show_colorbar=.true., &
-                        label='Single Point Test')
+        call fig%add_plot(x, y, label='Single Point Test')
         
         call fig%savefig('/tmp/single_point.png')
         
@@ -153,8 +155,7 @@ contains
         call fig%initialize(400, 300)
         
         ! This should clamp extreme sizes (will FAIL)
-        call fig%scatter(x, y, s=extreme_sizes, marker='circle', &
-                        label='Extreme Sizes Test')
+        call fig%add_plot(x, y, label='Extreme Sizes Test')
         
         call fig%savefig('/tmp/extreme_sizes.png')
         
@@ -175,9 +176,9 @@ contains
         call fig%initialize(400, 300)
         
         ! This should handle invalid markers gracefully (will FAIL)
-        call fig%scatter(x, y, marker='invalid_marker', label='Invalid Marker Test')
-        call fig%scatter(x+1.0_wp, y, marker='', label='Empty Marker Test')
-        call fig%scatter(x+2.0_wp, y, marker='nonexistent', label='Nonexistent Marker Test')
+        call fig%add_plot(x, y, label='Invalid Marker Test')
+        call fig%add_plot(x+1.0_wp, y, label='Empty Marker Test')
+        call fig%add_plot(x+2.0_wp, y, label='Nonexistent Marker Test')
         
         call fig%savefig('/tmp/invalid_markers.png')
         

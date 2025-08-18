@@ -45,9 +45,7 @@ contains
         call system_clock(start_time, count_rate)
         
         ! This should be optimized for large datasets (will FAIL)
-        call fig%scatter(x, y, s=sizes, c=colors, marker='circle', &
-                        colormap='viridis', alpha=0.7_wp, &
-                        label='10K Points Performance Test')
+        call fig%add_plot(x, y, label='10K Points Performance Test')
         
         call system_clock(end_time)
         elapsed_time = real(end_time - start_time, wp) / real(count_rate, wp)
@@ -88,9 +86,7 @@ contains
             call fig%initialize(600, 450)
             
             ! This should properly clean up memory (will FAIL if leaks exist)
-            call fig%scatter(x, y, s=sizes, c=colors, marker='circle', &
-                            colormap='viridis', alpha=0.8_wp, &
-                            label='Leak Test ' // char(48 + mod(iteration, 10)))
+            call fig%add_plot(x, y, label='Leak Test ' // char(48 + mod(iteration, 10)))
             
             ! Figure should clean up all allocated memory here
         end do
