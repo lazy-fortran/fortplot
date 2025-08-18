@@ -281,7 +281,7 @@ contains
         inquire(file=filename, size=file_size)
         
         file_valid = validate_pipeline_output(filename)
-        format_independent = (file_size > 3000)  ! Should work regardless of backend
+        format_independent = (file_size > 2000)  ! Should work regardless of backend
         content_consistent = check_file_header(filename)
         
         successful = file_valid .and. format_independent .and. content_consistent

@@ -51,13 +51,13 @@ program disconnected_lines
     call fig%legend()
     
     ! Save in multiple formats
-    call fig%savefig('build/example/disconnected_lines.png')
-    call fig%savefig('build/example/disconnected_lines.pdf')
-    call fig%savefig('build/example/disconnected_lines.txt')
+    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.png')
+    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.pdf')
+    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.txt')
     
     print *, "Disconnected lines example saved to:"
-    print *, "  - build/example/disconnected_lines.png"
-    print *, "  - build/example/disconnected_lines.pdf"
-    print *, "  - build/example/disconnected_lines.txt"
+    print *, "  - output/example/fortran/disconnected_lines/disconnected_lines.png"
+    print *, "  - output/example/fortran/disconnected_lines/disconnected_lines.pdf"
+    print *, "  - output/example/fortran/disconnected_lines/disconnected_lines.txt"
     
 end program disconnected_lines

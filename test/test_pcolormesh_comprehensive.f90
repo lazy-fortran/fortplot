@@ -55,17 +55,17 @@ contains
         
         ! Test with irregular grid spacing
         block
-            real(wp) :: x_irreg(5), y_irreg(6), z_irreg(5, 4)
+            real(wp) :: x_irreg(5), y_irreg(5), z_irreg(4, 4)
             integer :: i, j
             
-            ! Non-uniform x spacing
+            ! Non-uniform x spacing (edges)
             x_irreg = [0.0_wp, 0.1_wp, 0.3_wp, 0.7_wp, 1.5_wp]
-            ! Non-uniform y spacing
-            y_irreg = [0.0_wp, 0.2_wp, 0.5_wp, 1.0_wp, 2.0_wp, 3.0_wp]
+            ! Non-uniform y spacing (edges)
+            y_irreg = [0.0_wp, 0.2_wp, 0.5_wp, 1.0_wp, 2.0_wp]
             
-            do i = 1, 5
+            do i = 1, 4
                 do j = 1, 4
-                    z_irreg(i, j) = x_irreg(i) + y_irreg(j)
+                    z_irreg(i, j) = (x_irreg(i) + x_irreg(i+1)) * 0.5_wp + (y_irreg(j) + y_irreg(j+1)) * 0.5_wp
                 end do
             end do
             
@@ -166,17 +166,17 @@ contains
         
         ! Test rectangular grid (non-square)
         block
-            real(wp) :: x_rect(6), y_rect(21), z_rect(20, 5)
+            real(wp) :: x_rect(6), y_rect(6), z_rect(5, 5)
             integer :: i, j
             
             do i = 1, 6
                 x_rect(i) = real(i-1, wp) * 0.1_wp
             end do
-            do i = 1, 21
+            do i = 1, 6
                 y_rect(i) = real(i-1, wp) * 0.4_wp
             end do
             
-            do i = 1, 20
+            do i = 1, 5
                 do j = 1, 5
                     z_rect(i, j) = sin(real(i-1, wp) * 0.1_wp * 3.0_wp) * cos(real(j-1, wp) * 0.4_wp * 2.0_wp)
                 end do
@@ -217,19 +217,19 @@ contains
     
     subroutine test_pcolormesh_with_labels()
         type(figure_t) :: fig
-        real(wp) :: x(11), y(16), z(15, 10)
+        real(wp) :: x(11), y(11), z(10, 10)
         integer :: i, j
         
         ! Create edges
         do i = 1, 11
             x(i) = real(i-1, wp) * 0.2_wp
         end do
-        do i = 1, 16
+        do i = 1, 11
             y(i) = real(i-1, wp) * 0.3_wp
         end do
         
         ! Create wave pattern
-        do i = 1, 15
+        do i = 1, 10
             do j = 1, 10
                 z(i, j) = sin(real(i-1, wp) * 0.2_wp * 2.0_wp) * sin(real(j-1, wp) * 0.3_wp * 2.0_wp)
             end do
