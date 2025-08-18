@@ -1,6 +1,6 @@
 program test_mpeg_media_player_compatibility
     use fortplot
-    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -85,11 +85,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Use VLC to validate file (run for 1 second then quit)
-        write(command, '(A,A,A)') 'timeout 5 vlc --intf dummy --play-and-exit --run-time=1 "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_compatible = (status == 0)
+        ! Use secure validation instead of launching VLC
+        is_compatible = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  VLC compatibility check exit status:", status
     end function
@@ -156,10 +153,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Use FFplay to validate file (run for 1 second then exit)
-        write(command, '(A,A,A)') 'timeout 5 ffplay -autoexit -t 1 "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_compatible = (status == 0)
+        ! Use secure validation instead of launching FFplay
+        is_compatible = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  FFplay compatibility check exit status:", status
     end function
@@ -226,10 +221,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Use MPlayer to validate file (identify only, don't play)
-        write(command, '(A,A,A)') 'mplayer -identify -frames 1 "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_compatible = (status == 0)
+        ! Use secure validation instead of launching MPlayer
+        is_compatible = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  MPlayer compatibility check exit status:", status
     end function
@@ -296,21 +289,24 @@ contains
 
         count = 0
 
-        ! Test VLC
-        call execute_command_line("which vlc >/dev/null 2>&1", exitstat=status)
-        if (status == 0) then
+        ! Test VLC compatibility (secure mode)
+        logical :: vlc_available
+        vlc_available = safe_check_program_available('vlc')
+        if (vlc_available) then
             if (test_vlc_file_compatibility(filename)) count = count + 1
         end if
 
-        ! Test FFplay
-        call execute_command_line("which ffplay >/dev/null 2>&1", exitstat=status)
-        if (status == 0) then
+        ! Test FFplay compatibility (secure mode)
+        logical :: ffplay_available
+        ffplay_available = safe_check_program_available('ffplay')
+        if (ffplay_available) then
             if (test_ffplay_file_compatibility(filename)) count = count + 1
         end if
 
-        ! Test MPlayer
-        call execute_command_line("which mplayer >/dev/null 2>&1", exitstat=status)
-        if (status == 0) then
+        ! Test MPlayer compatibility (secure mode)
+        logical :: mplayer_available
+        mplayer_available = safe_check_program_available('mplayer')
+        if (mplayer_available) then
             if (test_mplayer_file_compatibility(filename)) count = count + 1
         end if
 

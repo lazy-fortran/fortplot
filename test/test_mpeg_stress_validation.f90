@@ -1,5 +1,6 @@
 program test_mpeg_stress_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -61,7 +62,13 @@ contains
             print *, "Validation fails under high frame count stress"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_stress_frames_data(frame)
@@ -128,7 +135,13 @@ contains
             print *, "Validation fails under high resolution stress"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_stress_resolution_data(frame)
@@ -200,7 +213,13 @@ contains
         end if
 
         do i_rapid = 1, rapid_test_count
-            call execute_command_line("rm -f " // trim(test_files(i_rapid)))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_files(i_rapid), remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_files(i_rapid))
+            end if
+            end block
         end do
     end subroutine
 
@@ -259,7 +278,13 @@ contains
             print *, "Validation fails under memory usage stress"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_stress_memory_data(frame)
@@ -282,11 +307,10 @@ contains
         substantial_content = (file_size > 5000)
 
         ! Test external validation if available
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status == 0) then
-            write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-            call execute_command_line(command, exitstat=status)
-            external_valid = (status == 0)
+        logical :: ffprobe_available
+        ffprobe_available = safe_check_program_available('ffprobe')
+        if (ffprobe_available) then
+            external_valid = safe_validate_mpeg_with_ffprobe(filename)
         else
             external_valid = .true.  ! Can't test, assume valid
         end if

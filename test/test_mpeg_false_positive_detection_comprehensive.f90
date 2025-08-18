@@ -1,5 +1,6 @@
 program test_mpeg_false_positive_detection_comprehensive
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -64,7 +65,13 @@ contains
             print *, "Current logic insufficient - file exists but invalid"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_basic_data(frame)
@@ -115,7 +122,13 @@ contains
             print *, "File too small for", frame_count, "frames at 640x480"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_multi_frame_data(frame)
@@ -164,7 +177,13 @@ contains
             print *, "File size inadequate for high resolution content"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_high_res_data(frame)
@@ -211,7 +230,13 @@ contains
             print *, "File size suggests poor encoding of complex visual data"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_complex_data(frame)
@@ -303,9 +328,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
 end program test_mpeg_false_positive_detection_comprehensive
