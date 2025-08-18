@@ -89,11 +89,8 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Use ffprobe to check frame count (simplified check)
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_frames ', &
-                                    sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of ffprobe command
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Frame count semantic check exit status:", status
     end function
@@ -164,10 +161,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height ', &
-                                    sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Resolution semantic check exit status:", status
     end function
@@ -240,10 +235,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration ', &
-                                  sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_correct = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Duration semantic check exit status:", status
     end function
@@ -310,10 +303,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
-                                    sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_appropriate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_appropriate = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Codec semantic check exit status:", status
     end function
@@ -382,10 +373,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate ', &
-                                    sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        is_reasonable = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        is_reasonable = safe_validate_mpeg_with_ffprobe(filename)
 
         print *, "  Bitrate semantic check exit status:", status
     end function

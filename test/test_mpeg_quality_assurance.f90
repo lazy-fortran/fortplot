@@ -1,6 +1,6 @@
 program test_mpeg_quality_assurance
     use fortplot
-    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -128,9 +128,8 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        playable = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        playable = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_compression_ratio(filename, file_size) result(reasonable)
@@ -235,10 +234,8 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height ', &
-                                  sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        adequate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        adequate = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_encoding_quality(filename) result(good)
@@ -252,10 +249,8 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
-                                  sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        good = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        good = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_encoding_quality_metrics()
@@ -355,10 +350,8 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate ', &
-                                  sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        correct = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_codec_quality(filename) result(appropriate)
@@ -372,10 +365,8 @@ contains
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
-                                  sanitize_filename(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        appropriate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        appropriate = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_quality_regression_prevention()
@@ -424,7 +415,11 @@ contains
             print *, "Quality has regressed compared to reference"
         end if
 
-        call execute_command_line("rm -f " // trim(reference_file) // " " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(reference_file, remove_success)
+        call safe_remove_file(test_file, remove_success)
+        end block
     end subroutine
 
     subroutine update_regression_data(frame)

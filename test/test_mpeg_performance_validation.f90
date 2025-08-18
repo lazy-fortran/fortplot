@@ -1,5 +1,6 @@
 program test_mpeg_performance_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -63,7 +64,13 @@ contains
             print *, "Validation takes too long - performance regression"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_speed_data(frame)
@@ -126,18 +133,15 @@ contains
     function check_external_tool(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
-        integer :: status
+        logical :: ffprobe_available
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        ffprobe_available = safe_check_program_available('ffprobe')
+        if (.not. ffprobe_available) then
             valid = .true.  ! Tool not available, skip check
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_file_size_impact_on_performance()
@@ -194,7 +198,11 @@ contains
             print *, "Validation performance degrades too much with file size"
         end if
 
-        call execute_command_line("rm -f " // trim(small_file) // " " // trim(large_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(small_file, remove_success)
+        call safe_remove_file(large_file, remove_success)
+        end block
     end subroutine
 
     subroutine update_size_impact_data(frame)
@@ -254,7 +262,13 @@ contains
         end if
 
         do i_file = 1, 4
-            call execute_command_line("rm -f " // trim(test_files(i_file)))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_files(i_file), remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_files(i_file))
+            end if
+            end block
         end do
     end subroutine
 
@@ -302,7 +316,13 @@ contains
             print *, "Validation uses excessive memory resources"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_memory_data(frame)

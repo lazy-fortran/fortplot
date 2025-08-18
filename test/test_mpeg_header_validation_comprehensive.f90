@@ -1,5 +1,6 @@
 program test_mpeg_header_validation_comprehensive
     use fortplot
+    use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
 
@@ -59,7 +60,13 @@ contains
             print *, "File lacks proper MP4 container header structure"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_container_data(frame)
@@ -138,7 +145,13 @@ contains
             print *, "File missing required FTYP box for MP4 format"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_ftyp_data(frame)
@@ -205,7 +218,13 @@ contains
             print *, "File missing MDAT box for media data"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_mdat_data(frame)
@@ -272,7 +291,13 @@ contains
             print *, "File missing MOOV box for metadata"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_moov_data(frame)
@@ -339,7 +364,13 @@ contains
             print *, "File has improper MP4 box sequence"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_sequence_data(frame)

@@ -1,5 +1,6 @@
 program test_mpeg_final_validation_suite
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -65,7 +66,13 @@ contains
             print *, "Comprehensive validation suite PASSED"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_comprehensive_data(frame)
@@ -152,18 +159,15 @@ contains
     function validate_with_external_tools(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
-        integer :: status
+        logical :: ffprobe_available
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        ffprobe_available = safe_check_program_available('ffprobe')
+        if (.not. ffprobe_available) then
             valid = .true.  ! Tool not available, skip this layer
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function validate_quality_and_compliance(filename) result(valid)
@@ -226,7 +230,11 @@ contains
             print *, "False positive elimination SUCCESSFUL - Issue #32 addressed"
         end if
 
-        call execute_command_line("rm -f " // trim(problematic_file) // " " // trim(fake_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(problematic_file, remove_success)
+        call safe_remove_file(fake_file, remove_success)
+        end block
     end subroutine
 
     subroutine test_validation_suite_reliability()
@@ -271,7 +279,13 @@ contains
         end if
 
         do i_test = 1, 3
-            call execute_command_line("rm -f " // trim(test_files(i_test)))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_files(i_test), remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_files(i_test))
+            end if
+            end block
         end do
     end subroutine
 
@@ -333,7 +347,11 @@ contains
             print *, "Issue #32 scenarios RESOLVED - validation now works correctly"
         end if
 
-        call execute_command_line("rm -f " // trim(moving_dot_file) // " " // trim(simple_animation_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(moving_dot_file, remove_success)
+        call safe_remove_file(simple_animation_file, remove_success)
+        end block
     end subroutine
 
     subroutine update_moving_dot_issue32(frame)
