@@ -4,7 +4,6 @@ module fortplot_animation
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
-    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
@@ -228,14 +227,7 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
-        ! Try native MPEG-1 encoder first for substantial file sizes
-        if (should_use_native_encoder(anim, filename)) then
-            call save_animation_with_native_mpeg1(anim, filename, fps, status)
-            if (status == 0) return  ! Native encoder succeeded
-            call log_warning("Native MPEG-1 encoder failed, falling back to FFmpeg")
-        end if
-        
-        ! Fall back to FFmpeg pipeline
+        ! Use FFmpeg pipeline for animations
         call save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
     end subroutine save_animation_with_ffmpeg_pipe
 
@@ -647,25 +639,5 @@ contains
             safe = .true.
         end if
     end function is_safe_filename
-
-    function validate_with_ffprobe_secure(filename) result(valid)
-        character(len=*), intent(in) :: filename
-        logical :: valid
-        
-        interface
-            function validate_with_ffprobe_c(filename) result(status) bind(C, name="validate_with_ffprobe_c")
-                import :: c_char, c_int
-                character(kind=c_char), intent(in) :: filename(*)
-                integer(c_int) :: status
-            end function validate_with_ffprobe_c
-        end interface
-        
-        character(len=len_trim(filename)+1, kind=c_char) :: c_filename
-        integer :: status
-        
-        c_filename = trim(filename) // c_null_char
-        status = validate_with_ffprobe_c(c_filename)
-        valid = (status == 0)
-    end function validate_with_ffprobe_secure
 
 end module fortplot_animation

@@ -24,7 +24,6 @@ module fortplot_figure_core
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
-    use fortplot_system_secure, only: create_directory_secure
     implicit none
 
     private
@@ -189,11 +188,7 @@ module fortplot_figure_core
         procedure :: add_surface
         procedure :: add_scatter_2d
         procedure :: add_scatter_3d
-<<<<<<< HEAD
-        procedure :: add_scatter
-=======
         procedure :: add_scatter => add_scatter_2d  ! Default to 2D
->>>>>>> origin/main
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -311,16 +306,6 @@ contains
     
     subroutine add_scatter_2d(self, x, y, s, c, label, marker, markersize, color, &
                               colormap, vmin, vmax, show_colorbar)
-<<<<<<< HEAD
-        !! Add enhanced 2D scatter plot with size and color mapping support
-        !! Following KISS principle - delegates to add_plot with enhanced features
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:)
-        character(len=*), intent(in), optional :: label, marker, colormap
-        real(wp), intent(in), optional :: markersize, vmin, vmax
-        real(wp), intent(in), optional :: color(3)
-=======
         !! Add enhanced 2D scatter plot with size and color mapping
         !! Supports variable marker sizes (s) and colors (c) for bubble charts
         class(figure_t), intent(inout) :: self
@@ -333,7 +318,6 @@ contains
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: colormap
         real(wp), intent(in), optional :: vmin, vmax
->>>>>>> origin/main
         logical, intent(in), optional :: show_colorbar
         
         if (self%plot_count >= self%max_plots) then
@@ -341,19 +325,12 @@ contains
             return
         end if
         
-<<<<<<< HEAD
-        ! For now, delegate to basic add_plot - enhanced features can be added later
-        ! TODO: Implement size mapping (s), color mapping (c), colormap, vmin/vmax, colorbar
-        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
-=======
         call add_scatter_plot_data(self, x, y, s=s, c=c, label=label, marker=marker, &
                                   markersize=markersize, color=color, colormap=colormap, &
                                   vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
         
         call update_data_ranges(self)
->>>>>>> origin/main
     end subroutine add_scatter_2d
-
     
     subroutine add_scatter_3d(self, x, y, z, s, c, label, marker, markersize, color, &
                               colormap, vmin, vmax, show_colorbar)
@@ -1520,16 +1497,15 @@ contains
         ! Use matplotlib-style axes with margins for backends that support it
         select type (backend => self%backend)
         type is (png_context)
-            ! TODO: Fix parameter mismatch for animation merge - temporarily disable advanced axes
-            ! call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-            !                         self%x_min, self%x_max, self%y_min, self%y_max, &
-            !                         self%title, self%xlabel, self%ylabel, &
-            !                         self%z_min, self%z_max, self%has_3d_plots(), &
-            !                         .false.)
+            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
+                                    self%x_min, self%x_max, self%y_min, self%y_max, &
+                                    self%title, self%xlabel, self%ylabel, &
+                                    self%z_min, self%z_max, self%has_3d_plots())
         type is (pdf_context)
             call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
                                         self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel)
+                                        self%title, self%xlabel, self%ylabel, &
+                                        self%z_min, self%z_max, self%has_3d_plots())
         type is (ascii_context)
             ! ASCII backend: explicitly set title and draw simple axes
             if (allocated(self%title)) then
@@ -2535,12 +2511,11 @@ contains
         character(len=*), intent(in), optional :: location
         integer :: i
         
-        ! Initialize or clear legend entries
-        if (allocated(self%legend_data%entries)) then
-            deallocate(self%legend_data%entries)
+        ! Initialize legend if not already done
+        if (.not. allocated(self%legend_data%entries)) then
+            allocate(self%legend_data%entries(0))
+            self%legend_data%num_entries = 0
         end if
-        allocate(self%legend_data%entries(0))
-        self%legend_data%num_entries = 0
         
         ! Set legend position if specified  
         if (present(location)) then
@@ -2722,15 +2697,9 @@ contains
         if (last_slash > 1) then
             dir_path = filename(1:last_slash-1)
             ! Use secure directory creation
-<<<<<<< HEAD
-            success = create_directory_secure(dir_path)
-            if (.not. success) then
-                print *, "Warning: Could not create directory: ", trim(dir_path)
-=======
             call safe_create_directory(dir_path, success)
             if (.not. success) then
                 call log_warning("Could not create directory: " // trim(dir_path))
->>>>>>> origin/main
             end if
         end if
     end subroutine ensure_directory_exists
@@ -2788,29 +2757,6 @@ contains
         y(point_idx) = y(1)
     end subroutine create_bar_xy_data
 
-<<<<<<< HEAD
-    subroutine add_scatter(self, x, y, z, s, c, label, marker, markersize, color, &
-                          colormap, vmin, vmax, show_colorbar)
-        !! Add scatter plot - auto-detects 2D vs 3D based on z parameter presence
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: z(:)
-        real(wp), intent(in), optional :: s(:), c(:)
-        character(len=*), intent(in), optional :: label, marker, colormap
-        real(wp), intent(in), optional :: markersize, vmin, vmax
-        real(wp), intent(in), optional :: color(3)
-        logical, intent(in), optional :: show_colorbar
-        
-        if (present(z)) then
-            ! 3D scatter plot
-            call self%add_scatter_3d(x, y, z, label, marker, markersize, color)
-        else
-            ! 2D scatter plot
-            call self%add_scatter_2d(x, y, s, c, label, marker, markersize, color, &
-                                    colormap, vmin, vmax, show_colorbar)
-        end if
-    end subroutine add_scatter
-=======
     subroutine errorbar(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
                        yerr_lower, yerr_upper, capsize, elinewidth, &
                        label, linestyle, marker, color)
@@ -3235,6 +3181,5 @@ contains
         
         deallocate(valid_mask)
     end subroutine filter_valid_scatter_data
->>>>>>> origin/main
 
 end module fortplot_figure_core
