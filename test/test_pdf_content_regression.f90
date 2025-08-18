@@ -76,7 +76,7 @@ contains
         real(wp), parameter :: y_data(3) = [0.0_wp, 1.0_wp, 0.5_wp]
         character(len=200) :: test_file
         character(len=512) :: file_buffer
-        integer :: file_unit, ios, file_size
+        integer :: file_unit, ios, file_size, i
         logical :: contains_png_signature, remove_success
         
         print *, "=== Testing PDF does not contain PNG data ==="
@@ -107,8 +107,17 @@ contains
             return
         end if
         
-        ! Check for PNG signature: 89 50 4E 47 0D 0A 1A 0A (\211PNG\r\n\032\n)
-        contains_png_signature = check_png_signature_in_buffer(file_buffer)
+        ! Check for PNG signature: 89 50 4E 47 (decimal: 137 80 78 71) which is \211PNG
+        contains_png_signature = .false.
+        do i = 1, len(file_buffer) - 3
+            if (iachar(file_buffer(i:i)) == 137 .and. &     ! 89 hex = 137 decimal
+                iachar(file_buffer(i+1:i+1)) == 80 .and. &  ! 50 hex = 80 decimal  
+                iachar(file_buffer(i+2:i+2)) == 78 .and. &  ! 4E hex = 78 decimal
+                iachar(file_buffer(i+3:i+3)) == 71) then    ! 47 hex = 71 decimal
+                contains_png_signature = .true.
+                exit
+            end if
+        end do
         
         print *, "Contains PNG signature: ", contains_png_signature
         
@@ -196,7 +205,9 @@ contains
         !! Given: PDF content should be consistent across different plot types
         !! When: We create various PDF plots (scatter, line, contour)
         !! Then: All should have valid PDF format, not PNG content
+        use fortplot_validation, only: validation_result_t
         character(len=200) :: scatter_file, line_file, contour_file
+        type(validation_result_t) :: scatter_validation, line_validation, contour_validation
         logical :: all_valid_pdfs, remove_success
         
         print *, "=== Testing PDF format across various scenarios ==="
@@ -215,9 +226,13 @@ contains
         call create_test_contour_pdf(contour_file)
         
         ! Validate all files
-        all_valid_pdfs = validate_pdf_format(scatter_file) .and. &
-                        validate_pdf_format(line_file) .and. &
-                        validate_pdf_format(contour_file)
+        scatter_validation = validate_pdf_format(scatter_file)
+        line_validation = validate_pdf_format(line_file)
+        contour_validation = validate_pdf_format(contour_file)
+        
+        all_valid_pdfs = scatter_validation%passed .and. &
+                        line_validation%passed .and. &
+                        contour_validation%passed
         
         print *, "All PDFs have valid format: ", all_valid_pdfs
         
@@ -293,56 +308,5 @@ contains
         call fig%set_title("PDF Contour Test")
         call fig%savefig(filename)
     end subroutine create_test_contour_pdf
-    
-    function validate_pdf_format(filename) result(is_valid_pdf)
-        character(len=*), intent(in) :: filename
-        logical :: is_valid_pdf
-        character(len=128) :: file_buffer
-        integer :: file_unit, ios
-        logical :: has_pdf_header, no_png_content
-        
-        is_valid_pdf = .false.
-        
-        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
-        if (ios /= 0) return
-        
-        read(file_unit, iostat=ios) file_buffer
-        close(file_unit)
-        
-        if (ios /= 0) return
-        
-        ! Check PDF header and absence of PNG content
-        has_pdf_header = (file_buffer(1:5) == '%PDF-')
-        no_png_content = .not. check_png_signature_in_buffer(file_buffer)
-        
-        is_valid_pdf = has_pdf_header .and. no_png_content
-        
-        if (.not. is_valid_pdf) then
-            print *, "INVALID PDF: ", trim(filename)
-            if (.not. has_pdf_header) print *, "  - Missing PDF header"
-            if (.not. no_png_content) print *, "  - Contains PNG content"
-        end if
-    end function validate_pdf_format
-    
-    function check_png_signature_in_buffer(buffer) result(has_png_sig)
-        character(len=*), intent(in) :: buffer
-        logical :: has_png_sig
-        integer :: i, buffer_len
-        
-        has_png_sig = .false.
-        buffer_len = len(buffer)
-        
-        ! Look for PNG signature: 89 50 4E 47 (decimal: 137 80 78 71)
-        ! This represents the byte sequence \211PNG
-        do i = 1, buffer_len - 3
-            if (iachar(buffer(i:i)) == 137 .and. &    ! 89 hex = 137 decimal
-                iachar(buffer(i+1:i+1)) == 80 .and. & ! 50 hex = 80 decimal  
-                iachar(buffer(i+2:i+2)) == 78 .and. & ! 4E hex = 78 decimal
-                iachar(buffer(i+3:i+3)) == 71) then   ! 47 hex = 71 decimal
-                has_png_sig = .true.
-                exit
-            end if
-        end do
-    end function check_png_signature_in_buffer
 
 end program test_pdf_content_regression
