@@ -1,6 +1,6 @@
 program test_mpeg_stress_validation
     use fortplot
-    use fortplot_security, only: safe_remove_file
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -298,7 +298,7 @@ contains
     function validate_memory_stress(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        logical :: exists, substantial_content, external_valid
+        logical :: exists, substantial_content, external_valid, ffprobe_available
         integer :: file_size
         character(len=500) :: command
         integer :: status
@@ -307,7 +307,6 @@ contains
         substantial_content = (file_size > 5000)
 
         ! Test external validation if available
-        logical :: ffprobe_available
         ffprobe_available = safe_check_program_available('ffprobe')
         if (ffprobe_available) then
             external_valid = safe_validate_mpeg_with_ffprobe(filename)

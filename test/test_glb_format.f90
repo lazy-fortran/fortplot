@@ -2,9 +2,9 @@ program test_glb_format
     !! Test GLB binary format generation
     !! Following TDD: Write test first, then implementation
     
-    use iso_fortran_env, only: wp => real64, int8
     use fortplot
     use fortplot_security, only: safe_remove_file
+    use iso_fortran_env, only: wp => real64, int8
     implicit none
     
     call test_glb_file_created()
@@ -38,7 +38,13 @@ contains
         end if
         
         ! Clean up
-        call safe_remove_file(filename)
+        block
+            logical :: remove_success
+            call safe_remove_file(filename, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(filename)
+            end if
+        end block
         
     end subroutine test_glb_file_created
     
@@ -79,7 +85,13 @@ contains
         end if
         
         ! Clean up
-        call safe_remove_file(filename)
+        block
+            logical :: remove_success
+            call safe_remove_file(filename, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(filename)
+            end if
+        end block
         
     end subroutine test_glb_magic_header
     
@@ -123,7 +135,13 @@ contains
         close(unit)
         
         ! Clean up
-        call safe_remove_file(filename)
+        block
+            logical :: remove_success
+            call safe_remove_file(filename, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(filename)
+            end if
+        end block
         
     end subroutine test_glb_chunks_structure
     
@@ -153,7 +171,13 @@ contains
         end if
         
         ! Clean up
-        call safe_remove_file(filename)
+        block
+            logical :: remove_success
+            call safe_remove_file(filename, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(filename)
+            end if
+        end block
         
     end subroutine test_glb_binary_data
 
