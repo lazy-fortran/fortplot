@@ -13,7 +13,7 @@ program debug_marker_size
     z = [0.5_wp]
     
     call fig%initialize(800, 600)
-    call fig%add_scatter(x, y, z, label="Center point", marker='o')
+    call fig%add_scatter_3d(x, y, z, label="Center point", marker='o')
     call fig%set_title('Single center point')
     call fig%legend()
     call fig%savefig('output/debug_marker_size.png')

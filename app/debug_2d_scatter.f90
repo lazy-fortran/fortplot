@@ -12,7 +12,7 @@ program debug_2d_scatter
     y = [0.0_wp, 1.0_wp, 2.0_wp]
     
     call fig%initialize(800, 600)
-    call fig%add_scatter(x, y, label="2D points", marker='o')
+    call fig%add_scatter_2d(x, y, label="2D points", marker='o')
     call fig%set_title('2D Scatter Test')
     call fig%legend()
     call fig%savefig('output/debug_2d_scatter.png')

@@ -1,9 +1,9 @@
 module fortplot_animation
     use iso_fortran_env, only: real64, wp => real64
+    use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
-    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
@@ -227,60 +227,10 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
-        ! Try native MPEG-1 encoder first for substantial file sizes
-        if (should_use_native_encoder(anim, filename)) then
-            call save_animation_with_native_mpeg1(anim, filename, fps, status)
-            if (status == 0) return  ! Native encoder succeeded
-            call log_warning("Native MPEG-1 encoder failed, falling back to FFmpeg")
-        end if
-        
-        ! Fall back to FFmpeg pipeline
+        ! Use FFmpeg pipeline for animations
         call save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
     end subroutine save_animation_with_ffmpeg_pipe
 
-    function should_use_native_encoder(anim, filename) result(use_native)
-        class(animation_t), intent(in) :: anim
-        character(len=*), intent(in) :: filename
-        logical :: use_native
-        
-        ! Disable native encoder - use FFmpeg with optimized parameters for substantial files
-        ! The native encoder generates large files but not valid MPEG format
-        use_native = .false.
-    end function should_use_native_encoder
-
-    subroutine save_animation_with_native_mpeg1(anim, filename, fps, status)
-        class(animation_t), intent(inout) :: anim
-        character(len=*), intent(in) :: filename
-        integer, intent(in) :: fps
-        integer, intent(out) :: status
-        
-        real(real64), allocatable :: frame_data(:,:,:,:)
-        integer :: frame_idx, width, height
-        
-        status = 0
-        
-        if (.not. associated(anim%fig)) then
-            status = -1
-            return
-        end if
-        
-        width = anim%fig%width
-        height = anim%fig%height
-        
-        ! Collect frame data for native encoder
-        allocate(frame_data(width, height, 3, anim%frames))
-        
-        do frame_idx = 1, anim%frames
-            call update_frame_data(anim, frame_idx)
-            call extract_frame_rgb_data(anim%fig, frame_data(:,:,:,frame_idx), status)
-            if (status /= 0) return
-        end do
-        
-        ! Use native MPEG-1 encoder
-        call encode_animation_to_mpeg1(frame_data, anim%frames, width, height, fps, filename, status)
-        
-        if (allocated(frame_data)) deallocate(frame_data)
-    end subroutine save_animation_with_native_mpeg1
 
     subroutine extract_frame_rgb_data(fig, rgb_data, status)
         type(figure_t), intent(inout) :: fig
@@ -654,5 +604,40 @@ contains
         ! Use secure validation instead of shell command
         valid = safe_validate_mpeg_with_ffprobe(filename)
     end function validate_with_ffprobe
+
+    function is_safe_filename(filename) result(safe)
+        character(len=*), intent(in) :: filename
+        logical :: safe
+        integer :: i, len_name
+        character :: c
+        
+        safe = .false.
+        len_name = len_trim(filename)
+        
+        ! Check basic constraints
+        if (len_name == 0 .or. len_name > 255) return
+        
+        ! Check for directory traversal
+        if (index(filename, '..') > 0) return
+        
+        ! Check for dangerous characters
+        do i = 1, len_name
+            c = filename(i:i)
+            ! Allow only alphanumeric, dash, underscore, dot, forward slash
+            if (.not. ((c >= 'a' .and. c <= 'z') .or. &
+                       (c >= 'A' .and. c <= 'Z') .or. &
+                       (c >= '0' .and. c <= '9') .or. &
+                       c == '-' .or. c == '_' .or. c == '.' .or. c == '/')) then
+                return
+            end if
+        end do
+        
+        ! Check for valid video extension
+        if (index(filename, '.mp4') > 0 .or. &
+            index(filename, '.avi') > 0 .or. &
+            index(filename, '.mkv') > 0) then
+            safe = .true.
+        end if
+    end function is_safe_filename
 
 end module fortplot_animation

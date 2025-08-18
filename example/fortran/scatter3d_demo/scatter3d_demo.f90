@@ -43,7 +43,7 @@ program scatter3d_demo
     
     ! Add 3D scatter plot - fortplotlib automatically detects 3D data
     ! Clean API: label before style options, dedicated scatter method
-    call fig%add_scatter(x, y, z, label="3D Scatter")
+    call fig%add_scatter_3d(x, y, z, label="3D Scatter")
     
     ! Set labels and title
     call fig%set_xlabel('X Label')
@@ -69,7 +69,7 @@ program scatter3d_demo
         y(i) = sin(theta) * real(i-1, wp) / real(n-1, wp)
         z(i) = real(i-1, wp) / real(n-1, wp)
     end do
-    call fig%add_scatter(x, y, z, label="Spiral", marker='o')
+    call fig%add_scatter_3d(x, y, z, label="Spiral", marker='o')
     
     ! Second cloud - random cluster
     do i = 1, n
@@ -77,7 +77,7 @@ program scatter3d_demo
         y(i) = 0.5_wp + 0.3_wp * sin(real(i, wp) * 0.7_wp) 
         z(i) = 0.5_wp + 0.2_wp * sin(real(i, wp) * 0.3_wp)
     end do
-    call fig%add_scatter(x, y, z, label="Cluster", marker='s')
+    call fig%add_scatter_3d(x, y, z, label="Cluster", marker='s')
     
     ! Third cloud - grid pattern
     do i = 1, n
@@ -85,7 +85,7 @@ program scatter3d_demo
         y(i) = real((i-1)/7, wp) / 7.0_wp - 0.5_wp
         z(i) = 0.1_wp * sin(x(i) * 10.0_wp) * cos(y(i) * 10.0_wp)
     end do
-    call fig%add_scatter(x, y, z, label="Grid", marker='D')
+    call fig%add_scatter_3d(x, y, z, label="Grid", marker='D')
     
     call fig%set_title('Multiple 3D Scatter Plots')
     call fig%legend()
@@ -121,7 +121,7 @@ program scatter3d_demo
         z(i) = theta * 0.1_wp
     end do
     
-    call fig%add_scatter(x, y, z, label="Sample points", marker='o')
+    call fig%add_scatter_3d(x, y, z, label="Sample points", marker='o')
     
     call fig%set_title('3D Parametric Curve with Scatter Points')
     call fig%legend()

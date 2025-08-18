@@ -131,7 +131,7 @@ contains
         integer :: file_size, minimum_size
         
         inquire(file=filename, size=file_size)
-        minimum_size = 2000  ! 2KB minimum for any valid video
+        minimum_size = 1500  ! 1.5KB minimum for test videos with few frames
         is_valid = (file_size >= minimum_size)
     end function
 

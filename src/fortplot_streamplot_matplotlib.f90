@@ -102,7 +102,7 @@ contains
         integer, intent(out) :: n_points
         logical, intent(out) :: success
         
-        real :: forward_x(500), forward_y(500), backward_x(500), backward_y(500)
+        real, allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
         integer :: n_forward, n_backward, i
         real(wp) :: maxlength, backward_length, forward_length, total_length
         
@@ -110,6 +110,9 @@ contains
         ! For circular flows, streamlines need to be able to return to start
         ! but broken_streamlines=True prevents this
         success = .false.
+        
+        ! Allocate trajectory arrays (move from stack to heap for memory safety)
+        allocate(forward_x(500), forward_y(500), backward_x(500), backward_y(500))
         
         ! Start trajectory in mask (like matplotlib line 485)
         call start_trajectory_in_mask(dmap, mask, xg0, yg0, success)
@@ -159,6 +162,12 @@ contains
         end do
         
         success = .true.
+        
+        ! Clean up allocated arrays
+        if (allocated(forward_x)) deallocate(forward_x)
+        if (allocated(forward_y)) deallocate(forward_y)
+        if (allocated(backward_x)) deallocate(backward_x)
+        if (allocated(backward_y)) deallocate(backward_y)
         
     end subroutine integrate_matplotlib_style
 

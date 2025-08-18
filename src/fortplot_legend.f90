@@ -245,7 +245,7 @@ contains
             ! To visually center: baseline should be at line_y + descent_portion
             text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
             
-            line_center_y = text_y
+            line_center_y = line_y
             
             ! Set color and draw legend line (only if linestyle is not None)
             call backend%color(legend%entries(i)%color(1), &
