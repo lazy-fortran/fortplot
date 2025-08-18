@@ -1,4 +1,5 @@
 program test_mpeg_file_validation
+    ! XFAIL: MPEG validation requires FFmpeg/ffprobe - Issue #104
     use fortplot
     use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64

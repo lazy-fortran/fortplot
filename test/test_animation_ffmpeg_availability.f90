@@ -9,6 +9,7 @@ program test_animation_ffmpeg_availability
     call test_animation_graceful_degradation()
     call test_animation_fallback_png_sequence()
 
+    ! XFAIL: FFmpeg not available in CI environment - Issue #104
     print *, "All ffmpeg availability tests passed!"
 
 contains

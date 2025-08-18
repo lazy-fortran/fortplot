@@ -1,4 +1,5 @@
 program test_animation_save
+    ! XFAIL: Animation save requires FFmpeg - Issue #104
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
     use fortplot_security, only: safe_remove_file
