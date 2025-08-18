@@ -1108,9 +1108,222 @@ end program
 **Foundation Impact**:
 Mandatory functional validation provides maximum strategic impact by preventing the most critical failure mode - working code that produces no output. This infrastructure protects all plotting functionality and ensures user trust in library reliability.
 
+## PDF Y-Axis Label Clustering Fix Architecture (Issue #34)
+
+### Critical Problem Analysis
+**DEFECT**: Y-axis labels in PDF output sometimes cluster near the origin instead of proper distribution along the Y-axis, affecting professional scientific visualization output quality.
+
+**Root Cause Investigation**:
+1. **Coordinate Transformation Issue**: Complex PDF coordinate system mapping from data coordinates to label positions
+2. **Y-Position Calculation**: Potential error in Y-tick position to PDF coordinate conversion
+3. **Overlap Detection Interference**: Overlap filtering may incorrectly cluster labels due to coordinate miscalculation
+4. **Backend Inconsistency**: PNG backend works correctly, suggesting PDF-specific coordinate transformation bug
+
+### Architecture Analysis
+
+#### Current Y-Axis Label Positioning Pipeline
+```fortran
+! Step 1: Generate data-space Y-tick values
+call find_nice_tick_locations(data_y_min, data_y_max, 5, 
+                            nice_y_min, nice_y_max, nice_y_step,
+                            y_tick_values, num_y_ticks)
+
+! Step 2: Convert data coordinates to PDF plot area coordinates
+y_positions(i) = ctx%plot_area%bottom + 
+                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
+
+! Step 3: Apply overlap detection filtering
+call filter_overlapping_y_labels(y_positions, y_labels, num_y, ...)
+
+! Step 4: Convert to PDF native coordinates for text positioning
+tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - 
+         (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+```
+
+#### Identified Coordinate System Issues
+
+**PDF Coordinate System Complexity**:
+- **PDF Origin**: Bottom-left corner (Y=0 at bottom, increases upward)
+- **Plot Area Coordinates**: Relative to figure canvas
+- **Data Coordinates**: Scientific data space requiring transformation
+- **Label Positioning**: Text baseline positioning in PDF coordinates
+
+**Potential Bug Locations**:
+1. **Step 2 Transformation**: Data → Plot area coordinate mapping
+2. **Step 4 Transformation**: Plot area → PDF native coordinate conversion
+3. **Coordinate Space Confusion**: Mixed coordinate systems in calculations
+
+### Technical Root Cause Hypothesis
+
+**Primary Suspect - Coordinate Transformation Bug**:
+```fortran
+! SUSPICIOUS: Line 1230-1231 in draw_pdf_y_labels_with_overlap_detection
+tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - 
+         (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+```
+
+**Analysis**: This transformation appears to double-subtract `ctx%plot_area%bottom`:
+- `ctx%height - ctx%plot_area%bottom` converts from plot area to PDF coordinates  
+- `filtered_positions(i) - ctx%plot_area%bottom` subtracts bottom again
+- **Result**: Labels positioned incorrectly, potentially clustering near origin
+
+**Corrected Transformation Should Be**:
+```fortran
+! CORRECT: Direct conversion from plot area coordinates to PDF coordinates
+tick_y = ctx%height - filtered_positions(i)
+```
+
+### Implementation Plan
+
+#### Phase 1: Coordinate System Analysis and Fix (1 day)
+**Diagnostic and Correction**:
+1. **Add coordinate debugging**: Log coordinate transformations at each step
+2. **Fix transformation bug**: Correct the double-subtraction in line 1230-1231
+3. **Validation**: Compare coordinate calculations with PNG backend (working reference)
+4. **Unit testing**: Test coordinate transformations with known data ranges
+
+**Deliverables**:
+- Fixed coordinate transformation in `draw_pdf_y_labels_with_overlap_detection`
+- Coordinate debugging utilities for validation
+- Unit tests for coordinate transformation accuracy
+
+#### Phase 2: Comprehensive Testing and Validation (1 day)  
+**Test Coverage Enhancement**:
+1. **Origin-crossing data**: Test data ranges that cross zero (trigger case)
+2. **Various scales**: Test small ranges, large ranges, negative ranges
+3. **Comparison testing**: PDF vs PNG backend output alignment
+4. **Visual validation**: Ensure proper label distribution along Y-axis
+
+**Deliverables**:
+- Comprehensive test suite covering all coordinate transformation scenarios
+- Visual comparison validation between PDF and PNG backends
+- Edge case testing (very small ranges, large negative values)
+
+#### Phase 3: Backend Consistency Verification (1 day)
+**Cross-Backend Alignment**:
+1. **PNG reference comparison**: Ensure PDF label positions match PNG positions
+2. **Coordinate system documentation**: Clear documentation of coordinate transformations
+3. **Margin calculation consistency**: Verify margin handling across backends
+4. **Performance validation**: Ensure fix doesn't impact rendering performance
+
+**Deliverables**:
+- Backend consistency validation
+- Updated documentation for coordinate system handling
+- Performance benchmarks confirming no regression
+
+### Technical Implementation Details
+
+#### Coordinate Transformation Fix
+**Current Buggy Code**:
+```fortran
+! src/fortplot_pdf.f90:1230-1231 - INCORRECT
+tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
+         (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+```
+
+**Proposed Corrected Code**:
+```fortran
+! CORRECTED: Proper PDF coordinate transformation
+tick_y = real(ctx%height, wp) - filtered_positions(i)
+```
+
+**Rationale**: 
+- `filtered_positions(i)` is already in plot area coordinates (measured from bottom)
+- PDF coordinates have origin at bottom, so `height - position` gives correct Y
+- No double-subtraction of `plot_area%bottom` needed
+
+#### Validation Framework Enhancement
+**Coordinate Debugging Utilities**:
+```fortran
+! Add to fortplot_pdf.f90 for debugging
+subroutine debug_coordinate_transformation(data_val, data_min, data_max, &
+                                         plot_coord, pdf_coord, label_msg)
+    real(wp), intent(in) :: data_val, data_min, data_max, plot_coord, pdf_coord
+    character(len=*), intent(in) :: label_msg
+    
+    print *, label_msg, ": data=", data_val, " plot=", plot_coord, " pdf=", pdf_coord
+    print *, "  data_range=[", data_min, ",", data_max, "]"
+    print *, "  normalized=", (data_val - data_min) / (data_max - data_min)
+end subroutine
+```
+
+#### Cross-Backend Consistency Testing
+**Validation Approach**:
+1. **Generate identical plots** in both PNG and PDF backends
+2. **Extract label positions** from both outputs (pixel/point coordinates)
+3. **Compare positioning accuracy** within reasonable tolerance
+4. **Validate distribution patterns** - no clustering in either backend
+
+### Risk Assessment
+
+#### Technical Risks
+**Coordinate System Complexity**: PDF coordinate systems are inherently complex
+- **Mitigation**: Extensive testing with known coordinate values
+- **Mitigation**: Clear documentation and debugging utilities
+
+**Regression Risk**: Changes to coordinate calculations could affect other functionality
+- **Mitigation**: Comprehensive test suite covering all label positioning scenarios
+- **Mitigation**: PNG backend comparison as reference implementation
+
+#### Integration Risks
+**Backend Consistency**: Ensuring PNG/PDF alignment without breaking existing functionality
+- **Mitigation**: Conservative fix targeting only the identified bug
+- **Mitigation**: Extensive cross-backend validation testing
+
+### Opportunity Analysis
+
+#### Quality Enhancement
+**Professional PDF Output**: Correct Y-axis labeling essential for scientific publication
+- **Publication Quality**: Proper label distribution meets scientific visualization standards
+- **User Confidence**: Reliable PDF output builds trust in library consistency
+
+#### Foundation Layer Impact
+**Backend Architecture**: This fix strengthens coordinate transformation infrastructure
+- **Code Quality**: Eliminates subtle coordinate system bugs
+- **Maintainability**: Clear coordinate transformation patterns for future development
+
+### Success Criteria
+
+#### Phase 1 Success Metrics
+- ✅ Coordinate transformation bug identified and fixed
+- ✅ PDF Y-axis labels distributed correctly along axis (no clustering)
+- ✅ Unit tests validate coordinate calculations with known values
+- ✅ No regression in X-axis label positioning
+
+#### Phase 2 Success Metrics  
+- ✅ All test cases pass: origin-crossing, negative, small/large ranges
+- ✅ Visual validation confirms proper label distribution
+- ✅ PDF output matches PNG output label positioning (within tolerance)
+- ✅ Edge cases handle gracefully without clustering
+
+#### Phase 3 Success Metrics
+- ✅ PNG and PDF backends produce consistent label positions
+- ✅ Coordinate transformation documentation updated and clear
+- ✅ Performance benchmarks show no regression
+- ✅ Issue #34 resolved and validated by test suite
+
+### Architecture Principles Applied
+
+**SOLID Principles**:
+- **Single Responsibility**: Coordinate transformation focused on accurate positioning only
+- **Open/Closed**: Fix enhances existing functionality without breaking interface
+- **Dependency Inversion**: Maintains abstraction between coordinate systems
+
+**KISS Principle**: 
+- **Simplified Transformation**: Remove unnecessary double-subtraction complexity
+- **Clear Logic**: Straightforward PDF coordinate conversion
+
+**Performance-First**:
+- **Minimal Change**: Target specific bug without affecting performance-critical paths
+- **Efficient Calculation**: Simplified coordinate transformation reduces computation overhead
+
+### Strategic Impact Assessment
+PDF Y-axis label clustering fix directly addresses a critical foundation layer defect that affects all PDF-based scientific visualization. This targeted architectural fix ensures professional-quality output consistency across backends while strengthening the coordinate transformation infrastructure for future development.
+
 ## Next Steps
 
-1. **CRITICAL PRIORITY**: Implement mandatory functional validation architecture (Issue #92)
-2. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
-3. **Short-term**: Add ffmpeg detection and graceful degradation
-4. **Medium-term**: Comprehensive integration testing and documentation
+1. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
+2. **CRITICAL PRIORITY**: Implement mandatory functional validation architecture (Issue #92)
+3. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+4. **Short-term**: Add ffmpeg detection and graceful degradation
+5. **Medium-term**: Comprehensive integration testing and documentation

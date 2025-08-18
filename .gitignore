@@ -35,3 +35,9 @@ terminal
 *.flv
 
 doc/example
+
+# Coverage files
+*.gcno*
+*.gcda*
+*.gcov*
+coverage.txt
