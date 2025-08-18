@@ -2129,10 +2129,78 @@ This validation framework provides maximum strategic impact by:
 
 The Functional Output Validation Framework represents the most critical foundation layer enhancement for fortplot. By ensuring that every plotting feature actually produces usable output, this framework prevents the most serious failure mode - working code that generates no visual results. The comprehensive validation approach protects user workflows, maintains documentation accuracy, and builds trust in library reliability while establishing a quality culture that scales with library growth and complexity.
 
+## Example Output Directory Creation Fix Architecture (Issue #90)
+
+### Critical Problem Analysis
+**ROOT CAUSE CONFIRMED**: Example output directories (`output/example/fortran/*/`) are not created by default, causing example files to fail saving despite fully functional plotting code.
+
+**Evidence**:
+- `make example` successfully generates 60+ plot files in root directory
+- All plotting backends (PNG/PDF/ASCII/GLTF) working correctly 
+- Examples hardcoded to save to `output/example/fortran/*/` paths that don't exist
+- Only `gltf_glb_demo/` has files because GLTF backend creates directories automatically
+
+### Technical Root Cause
+**Directory Creation Gap**: Examples assume output directories exist but build system doesn't create them.
+
+**Current Behavior**:
+```fortran
+! example/fortran/basic_plots/basic_plots.f90:27
+call savefig('output/example/fortran/basic_plots/simple_plot.png')  ! FAILS: Directory doesn't exist
+```
+
+**Expected Structure After Fix**:
+```
+output/example/fortran/
+├── basic_plots/
+│   ├── simple_plot.png
+│   ├── simple_plot.pdf
+│   └── simple_plot.txt
+├── scatter_demo/
+│   ├── scatter_basic.png
+│   └── ...
+└── [all other examples]/
+```
+
+### Implementation Plan
+
+#### Phase 1: Immediate Directory Creation Fix (30 minutes)
+**Makefile Enhancement**:
+```makefile
+# Add to existing example target
+example: build create-output-dirs
+	create-output-dirs:
+	@mkdir -p output/example/fortran/{basic_plots,line_styles,marker_demo,format_string_demo,contour_demo,colored_contours,pcolormesh_demo,streamplot_demo,ascii_heatmap,scale_examples,legend_demo,legend_box_demo,unicode_demo,show_viewer_demo,smart_show_demo,animation,stateful_streamplot,basic_3d_demo,scatter3d_demo,scatter_demo,gltf_glb_demo}
+	@echo "Created example output directories"
+```
+
+#### Phase 2: Dynamic Directory Discovery (1 hour)
+**Enhanced Makefile with Auto-discovery**:
+```makefile
+create-output-dirs:
+	@find example/fortran -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | xargs -I {} mkdir -p output/example/fortran/{}
+	@echo "Created output directories for all examples"
+```
+
+### Risk Assessment
+**Technical Risks**: MINIMAL - Simple directory creation with no code changes required
+**Integration Risks**: NONE - Fix is purely infrastructure 
+**Regression Risk**: ZERO - Only adds missing directories
+
+### Success Criteria
+- ✅ All example output directories exist after `make example`
+- ✅ Examples generate files in correct `output/example/fortran/*/` locations
+- ✅ Issue #90 resolved with verified file generation
+- ✅ No impact on existing functionality
+
+### Strategic Impact Assessment
+**Foundation Layer Impact**: This trivial fix resolves critical user-facing issue and restores expected example output structure for documentation generation and user verification.
+
 ## Next Steps
 
-1. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
-2. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
-3. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
-4. **Short-term**: Add ffmpeg detection and graceful degradation
-5. **Medium-term**: Comprehensive integration testing and documentation
+1. **IMMEDIATE**: Fix Issue #90 directory creation (30 minutes) - restore example output functionality
+2. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
+3. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
+4. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+5. **Short-term**: Add ffmpeg detection and graceful degradation
+6. **Medium-term**: Comprehensive integration testing and documentation
