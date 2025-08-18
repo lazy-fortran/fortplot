@@ -1,23 +1,26 @@
 program test_animation_save
-    ! XFAIL: Animation save requires FFmpeg - Issue #104
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
     use fortplot_security, only: safe_remove_file
     use iso_fortran_env, only: real64
     implicit none
+    
+    logical :: ffmpeg_available
 
     ! Module variables for accessing from nested procedures
     type(figure_t) :: test_fig
     real(real64), dimension(10) :: test_x, test_y
     
     ! Check if ffmpeg is available before running video tests
-    if (check_ffmpeg_available()) then
+    ffmpeg_available = check_ffmpeg_available()
+    if (ffmpeg_available) then
         call test_save_animation_mp4()
         call test_save_animation_with_fps()
         print *, "All animation save tests passed!"
     else
-        print *, "SKIPPED: Animation save tests (ffmpeg not available)"
-        print *, "This is expected behavior in CI environments without ffmpeg"
+        print *, "XFAIL: Animation save tests require FFmpeg - Issue #104"
+        print *, "Expected failure - FFmpeg not available in CI environment"
+        stop 77  ! Standard exit code for skipped tests
     end if
     
     ! Always test invalid format handling (doesn't require ffmpeg)
