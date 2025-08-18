@@ -1,6 +1,7 @@
 program validation_complex_animation
     use fortplot
     use fortplot_animation
+    use fortplot_security, only: secure_file_remove
     implicit none
 
     integer, parameter :: NFRAMES = 120  ! More frames
@@ -60,7 +61,9 @@ program validation_complex_animation
     end if
     
     ! Cleanup
-    call execute_command_line("rm -f " // trim(filename))
+    if (.not. secure_file_remove(filename)) then
+        print *, "Warning: Could not remove temporary file: " // trim(filename)
+    end if
     
 contains
 

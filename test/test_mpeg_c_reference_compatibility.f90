@@ -1,5 +1,6 @@
 program test_mpeg_c_reference_compatibility
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
     use iso_fortran_env, only: real64
     implicit none
 
@@ -71,7 +72,9 @@ contains
             print *, "Generated file not compatible with C reference behavior"
         end if
 
-        call execute_command_line("rm -f " // trim(fortran_file))
+        if (.not. secure_file_remove(fortran_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(fortran_file)
+        end if
     end subroutine
 
     subroutine update_c_ref_data(frame)
@@ -153,7 +156,9 @@ contains
             print *, "File does not meet C library standards"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_c_library_data(frame)
@@ -213,13 +218,12 @@ contains
         integer :: status
 
         ! Check if C-based tools can read the file
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. secure_command_test('ffprobe')) then
             compatible = .true.  ! Can't test, assume compatible
             return
         end if
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         compatible = (status == 0)
     end function
@@ -257,7 +261,9 @@ contains
             print *, "File does not comply with MPEG/MP4 specifications"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_spec_data(frame)
@@ -328,7 +334,7 @@ contains
             return
         end if
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         valid = (status == 0)
     end function
@@ -366,7 +372,9 @@ contains
             print *, "File does not meet industry standard requirements"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_standard_data(frame)
@@ -438,7 +446,7 @@ contains
             return
         end if
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         standard = (status == 0)
     end function

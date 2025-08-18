@@ -4,6 +4,7 @@ program test_gltf_mesh_generation
     
     use iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_security, only: secure_file_remove
     implicit none
     
     call test_gltf_contains_mesh_data()
@@ -46,7 +47,9 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        if (.not. secure_file_remove(filename)) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
         
     end subroutine test_gltf_contains_mesh_data
     
@@ -84,7 +87,9 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        if (.not. secure_file_remove(filename)) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
         
     end subroutine test_gltf_contains_accessor_data
     
@@ -122,7 +127,9 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        if (.not. secure_file_remove(filename)) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
         
     end subroutine test_gltf_contains_buffer_data
     
@@ -160,7 +167,9 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        if (.not. secure_file_remove(filename)) then
+            print *, "Warning: Could not remove temporary file: " // trim(filename)
+        end if
         
     end subroutine test_gltf_scene_structure
 
