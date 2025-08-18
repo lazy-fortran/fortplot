@@ -64,7 +64,8 @@ contains
             call safe_remove_file(empty_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(empty_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -113,7 +114,8 @@ contains
             call safe_remove_file(corrupted_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(corrupted_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -164,7 +166,8 @@ contains
             call safe_remove_file(fake_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(fake_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -235,14 +238,16 @@ contains
             call safe_remove_file(complete_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(complete_file)
-            end if
+                    end if
+    end block
         end block
         block
             logical :: remove_success
             call safe_remove_file(truncated_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(truncated_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -291,7 +296,8 @@ contains
             call safe_remove_file(zero_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(zero_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -339,7 +345,8 @@ contains
             call safe_remove_file(garbage_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(garbage_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
