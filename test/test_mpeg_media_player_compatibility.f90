@@ -1,5 +1,6 @@
 program test_mpeg_media_player_compatibility
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
     use iso_fortran_env, only: real64
     implicit none
 
@@ -36,8 +37,7 @@ contains
         print *, "TEST: VLC Media Player Compatibility"
         print *, "==================================="
 
-        call execute_command_line("which vlc >/dev/null 2>&1", exitstat=status)
-        vlc_available = (status == 0)
+        vlc_available = secure_command_test('vlc')
 
         if (.not. vlc_available) then
             print *, "VLC not available - skipping VLC compatibility test"
@@ -64,7 +64,9 @@ contains
             print *, "Generated MP4 not compatible with VLC player"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_vlc_data(frame)
@@ -102,8 +104,7 @@ contains
         print *, "TEST: FFplay Compatibility"
         print *, "========================="
 
-        call execute_command_line("which ffplay >/dev/null 2>&1", exitstat=status)
-        ffplay_available = (status == 0)
+        ffplay_available = secure_command_test('ffplay')
 
         if (.not. ffplay_available) then
             print *, "FFplay not available - skipping FFplay compatibility test"
@@ -130,7 +131,9 @@ contains
             print *, "Generated MP4 not compatible with FFplay"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_ffplay_data(frame)
@@ -167,8 +170,7 @@ contains
         print *, "TEST: MPlayer Compatibility"
         print *, "=========================="
 
-        call execute_command_line("which mplayer >/dev/null 2>&1", exitstat=status)
-        mplayer_available = (status == 0)
+        mplayer_available = secure_command_test('mplayer')
 
         if (.not. mplayer_available) then
             print *, "MPlayer not available - skipping MPlayer compatibility test"
@@ -195,7 +197,9 @@ contains
             print *, "Generated MP4 not compatible with MPlayer"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_mplayer_data(frame)
@@ -256,7 +260,9 @@ contains
             print *, "File compatible with", compatible_count, "standard players"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_standard_data(frame)

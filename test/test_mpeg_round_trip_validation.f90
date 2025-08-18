@@ -1,5 +1,6 @@
 program test_mpeg_round_trip_validation
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument, secure_wildcard_remove, secure_file_exists
     use iso_fortran_env, only: real64
     implicit none
 
@@ -36,8 +37,7 @@ contains
         print *, "TEST: FFmpeg Round-Trip Decode"
         print *, "============================="
 
-        call execute_command_line("which ffmpeg >/dev/null 2>&1", exitstat=status)
-        ffmpeg_available = (status == 0)
+        ffmpeg_available = secure_command_test('ffmpeg')
 
         if (.not. ffmpeg_available) then
             print *, "FFmpeg not available - skipping round-trip test"
@@ -80,7 +80,13 @@ contains
             print *, "Round-trip validation successful"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file) // " " // trim(reencoded_file) // " roundtrip_frame_*.png")
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        if (.not. secure_file_remove(reencoded_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(reencoded_file)
+        end if
+        call secure_wildcard_remove("roundtrip_frame_*.png")
     end subroutine
 
     subroutine update_roundtrip_data(frame)
@@ -95,8 +101,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A,A)') 'ffmpeg -i "', trim(input_file), '" "', &
-                                      trim(frame_pattern), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A,A)') 'ffmpeg -i ', escape_shell_argument(input_file), ' ', &
+                                      escape_shell_argument(frame_pattern), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         success = (status == 0)
 
@@ -109,8 +115,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A,A)') 'ffmpeg -r 15 -i "', trim(frame_pattern), '" "', &
-                                      trim(output_file), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A,A)') 'ffmpeg -r 15 -i ', escape_shell_argument(frame_pattern), ' ', &
+                                      escape_shell_argument(output_file), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         success = (status == 0)
 
@@ -131,8 +137,7 @@ contains
         print *, "TEST: Frame Extraction Validation"
         print *, "================================"
 
-        call execute_command_line("which ffmpeg >/dev/null 2>&1", exitstat=status)
-        ffmpeg_available = (status == 0)
+        ffmpeg_available = secure_command_test('ffmpeg')
 
         if (.not. ffmpeg_available) then
             print *, "FFmpeg not available - skipping frame extraction test"
@@ -153,9 +158,8 @@ contains
         extraction_success = extract_single_frame(test_file, "extracted_frame.png")
         
         if (extraction_success) then
-            ! Count extracted frames to verify
-            call execute_command_line("ls extracted_frame.png >/dev/null 2>&1", exitstat=status)
-            frame_count = merge(1, 0, status == 0)
+            ! Count extracted frames to verify using secure file existence check
+            frame_count = merge(1, 0, secure_file_exists("extracted_frame.png"))
         else
             frame_count = 0
         end if
@@ -168,7 +172,12 @@ contains
             print *, "Cannot extract frames from generated MPEG"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file) // " extracted_frame.png")
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        if (.not. secure_file_remove("extracted_frame.png")) then
+            print *, "Warning: Could not remove temporary file: extracted_frame.png"
+        end if
     end subroutine
 
     subroutine update_extract_data(frame)
@@ -183,8 +192,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A,A)') 'ffmpeg -i "', trim(input_file), '" -vframes 1 "', &
-                                      trim(output_frame), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A,A)') 'ffmpeg -i ', escape_shell_argument(input_file), ' -vframes 1 ', &
+                                      escape_shell_argument(output_frame), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         success = (status == 0)
 
@@ -205,8 +214,7 @@ contains
         print *, "TEST: Metadata Preservation"
         print *, "=========================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "FFprobe not available - skipping metadata test"
@@ -233,7 +241,9 @@ contains
             print *, "Essential metadata not preserved in MPEG file"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_metadata_data(frame)
@@ -249,8 +259,8 @@ contains
         integer :: status
 
         ! Check if basic metadata can be read
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format -show_streams "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format -show_streams ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         preserved = (status == 0)
 
@@ -271,8 +281,7 @@ contains
         print *, "TEST: Quality Preservation"
         print *, "========================="
 
-        call execute_command_line("which ffmpeg >/dev/null 2>&1", exitstat=status)
-        ffmpeg_available = (status == 0)
+        ffmpeg_available = secure_command_test('ffmpeg')
 
         if (.not. ffmpeg_available) then
             print *, "FFmpeg not available - skipping quality test"
@@ -313,7 +322,13 @@ contains
             print *, "Quality not preserved through round-trip operation"
         end if
 
-        call execute_command_line("rm -f " // trim(original_file) // " " // trim(roundtrip_file) // " quality_temp_*.png")
+        if (.not. secure_file_remove(original_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(original_file)
+        end if
+        if (.not. secure_file_remove(roundtrip_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(roundtrip_file)
+        end if
+        call secure_wildcard_remove("quality_temp_*.png")
     end subroutine
 
     subroutine update_quality_data(frame)
@@ -329,8 +344,8 @@ contains
         integer :: status
 
         ! Simple round-trip: decode and re-encode
-        write(command, '(A,A,A,A,A)') 'ffmpeg -i "', trim(input_file), '" -c:v libx264 "', &
-                                      trim(output_file), '" >/dev/null 2>&1'
+        write(command, '(A,A,A,A,A)') 'ffmpeg -i ', escape_shell_argument(input_file), ' -c:v libx264 ', &
+                                      escape_shell_argument(output_file), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         success = (status == 0)
 

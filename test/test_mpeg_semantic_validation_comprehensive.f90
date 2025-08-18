@@ -1,5 +1,6 @@
 program test_mpeg_semantic_validation_comprehensive
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
     use iso_fortran_env, only: real64
     implicit none
 
@@ -37,8 +38,7 @@ contains
         print *, "TEST: Video Frame Count Validation"
         print *, "================================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping frame count test - ffprobe not available"
@@ -67,7 +67,9 @@ contains
             print *, "Video frame count doesn't match animation specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_frame_count_data(frame)
@@ -84,8 +86,8 @@ contains
         integer :: status
         
         ! Use ffprobe to check frame count (simplified check)
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames ', &
-                                    '-show_entries stream=nb_frames "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -count_frames -show_entries stream=nb_frames ', &
+                                    escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_correct = (status == 0)
 
@@ -106,8 +108,7 @@ contains
         print *, "TEST: Video Resolution Validation"
         print *, "================================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping resolution test - ffprobe not available"
@@ -137,7 +138,9 @@ contains
             print *, "Video resolution doesn't match figure specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_resolution_data(frame)
@@ -153,8 +156,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=width,height "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height ', &
+                                    escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_correct = (status == 0)
 
@@ -176,8 +179,7 @@ contains
         print *, "TEST: Video Duration Semantics"
         print *, "============================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping duration test - ffprobe not available"
@@ -208,7 +210,9 @@ contains
             print *, "Video duration doesn't match frame/FPS specification"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_duration_data(frame)
@@ -224,8 +228,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_correct = (status == 0)
 
@@ -246,8 +250,7 @@ contains
         print *, "TEST: Video Codec Semantics"
         print *, "=========================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping codec test - ffprobe not available"
@@ -274,7 +277,9 @@ contains
             print *, "Video codec not appropriate for content type"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_codec_data(frame)
@@ -289,8 +294,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=codec_name "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name ', &
+                                    escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_appropriate = (status == 0)
 
@@ -311,8 +316,7 @@ contains
         print *, "TEST: Video Bitrate Semantics"
         print *, "============================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping bitrate test - ffprobe not available"
@@ -339,7 +343,9 @@ contains
             print *, "Video bitrate not reasonable for content"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_bitrate_data(frame)
@@ -356,8 +362,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 ', &
-                                    '-show_entries stream=bit_rate "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate ', &
+                                    escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_reasonable = (status == 0)
 

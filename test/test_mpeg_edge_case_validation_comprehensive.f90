@@ -1,5 +1,6 @@
 program test_mpeg_edge_case_validation_comprehensive
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
     use iso_fortran_env, only: real64
     implicit none
 
@@ -58,7 +59,9 @@ contains
             print *, "GOOD: Empty file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(empty_file))
+        if (.not. secure_file_remove(empty_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(empty_file)
+        end if
     end subroutine
 
     subroutine test_corrupted_file_validation()
@@ -101,7 +104,9 @@ contains
             print *, "GOOD: Corrupted file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(corrupted_file))
+        if (.not. secure_file_remove(corrupted_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(corrupted_file)
+        end if
     end subroutine
 
     subroutine test_fake_mpeg_file_validation()
@@ -146,7 +151,9 @@ contains
             print *, "GOOD: Fake MPEG file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(fake_file))
+        if (.not. secure_file_remove(fake_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(fake_file)
+        end if
     end subroutine
 
     subroutine test_truncated_file_validation()
@@ -211,7 +218,12 @@ contains
             print *, "GOOD: Truncated file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(complete_file) // " " // trim(truncated_file))
+        if (.not. secure_file_remove(complete_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(complete_file)
+        end if
+        if (.not. secure_file_remove(truncated_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(truncated_file)
+        end if
     end subroutine
 
     subroutine update_truncated_data(frame)
@@ -227,7 +239,7 @@ contains
 
         character(len=200) :: zero_file
         logical :: validation_passes
-        integer :: file_size
+        integer :: file_size, file_unit, ios
 
         print *, ""
         print *, "TEST: Zero Size File Validation"
@@ -235,8 +247,11 @@ contains
 
         zero_file = "edge_case_zero.mp4"
 
-        ! Create zero-size file using touch equivalent
-        call execute_command_line("touch " // trim(zero_file))
+        ! Create zero-size file using Fortran file operations
+        open(newunit=file_unit, file=zero_file, iostat=ios)
+        if (ios == 0) then
+            close(file_unit)
+        end if
 
         inquire(file=zero_file, size=file_size)
         validation_passes = validate_mpeg_file_comprehensive(zero_file)
@@ -251,7 +266,9 @@ contains
             print *, "GOOD: Zero-size file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(zero_file))
+        if (.not. secure_file_remove(zero_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(zero_file)
+        end if
     end subroutine
 
     subroutine test_binary_garbage_file_validation()
@@ -293,7 +310,9 @@ contains
             print *, "GOOD: Binary garbage file correctly rejected"
         end if
 
-        call execute_command_line("rm -f " // trim(garbage_file))
+        if (.not. secure_file_remove(garbage_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(garbage_file)
+        end if
     end subroutine
 
     function validate_mpeg_file_comprehensive(filename) result(is_valid)
@@ -358,15 +377,14 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Check if ffprobe is available first
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        ! Check if ffprobe is available first using secure command test
+        if (.not. secure_command_test('ffprobe')) then
             ! If ffprobe not available, skip this check (don't fail validation)
             is_valid = .true.
             return
         end if
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show-format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
     end function

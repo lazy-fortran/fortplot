@@ -1,5 +1,6 @@
 program test_mpeg_ffprobe_validation_comprehensive
     use fortplot
+    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
     use iso_fortran_env, only: real64
     implicit none
 
@@ -36,8 +37,7 @@ contains
         print *, "TEST: FFprobe Availability"
         print *, "========================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         print *, "FFprobe available:", ffprobe_available
 
@@ -65,8 +65,7 @@ contains
         print *, "=============================="
 
         ! Check if ffprobe is available
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping FFprobe format test - tool not available"
@@ -93,7 +92,9 @@ contains
             print *, "FFprobe cannot validate file format"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_format_data(frame)
@@ -108,7 +109,7 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
 
@@ -129,8 +130,7 @@ contains
         print *, "TEST: FFprobe Stream Validation"
         print *, "=============================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping FFprobe stream test - tool not available"
@@ -157,7 +157,9 @@ contains
             print *, "FFprobe cannot detect valid video stream"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_stream_data(frame)
@@ -172,8 +174,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
 
@@ -194,8 +196,7 @@ contains
         print *, "TEST: FFprobe Duration Validation"
         print *, "================================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping FFprobe duration test - tool not available"
@@ -222,7 +223,9 @@ contains
             print *, "FFprobe cannot detect valid duration"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_duration_data(frame)
@@ -237,8 +240,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
 
@@ -259,8 +262,7 @@ contains
         print *, "TEST: FFprobe Codec Validation"
         print *, "============================="
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping FFprobe codec test - tool not available"
@@ -287,7 +289,9 @@ contains
             print *, "FFprobe cannot identify valid video codec"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_codec_data(frame)
@@ -302,8 +306,8 @@ contains
         character(len=500) :: command
         integer :: status
 
-        write(command, '(A,A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_entries stream=codec_name ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         is_valid = (status == 0)
 
@@ -324,8 +328,7 @@ contains
         print *, "TEST: FFprobe Comprehensive Validation"
         print *, "======================================"
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        ffprobe_available = (status == 0)
+        ffprobe_available = secure_command_test('ffprobe')
 
         if (.not. ffprobe_available) then
             print *, "Skipping FFprobe comprehensive test - tool not available"
@@ -352,7 +355,9 @@ contains
             print *, "File fails comprehensive FFprobe validation"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        if (.not. secure_file_remove(test_file)) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
     end subroutine
 
     subroutine update_comprehensive_data(frame)
@@ -371,25 +376,25 @@ contains
         integer :: status
 
         ! Check format
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         format_ok = (status == 0)
 
         ! Check stream
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         stream_ok = (status == 0)
 
         ! Check duration
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         duration_ok = (status == 0)
 
         ! Check codec
-        write(command, '(A,A,A,A)') 'ffprobe -v error -show_entries stream=codec_name "', &
-                                  trim(filename), '" >/dev/null 2>&1'
+        write(command, '(A,A,A)') 'ffprobe -v error -show_entries stream=codec_name ', &
+                                  escape_shell_argument(filename), ' >/dev/null 2>&1'
         call execute_command_line(command, exitstat=status)
         codec_ok = (status == 0)
 
