@@ -104,6 +104,10 @@ test-docs: create_build_dirs
 	fpm test $(FPM_FLAGS) --target test_documentation_examples
 	@echo "Documentation example validation completed successfully"
 
+# Run comprehensive functional tests
+test-functional: test validate-output test-docs
+	@echo "=== ALL FUNCTIONAL TESTS PASSED ==="
+
 # Create build directories for examples
 create_build_dirs:
 	@mkdir -p build/example/basic_plots
