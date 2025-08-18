@@ -1,10 +1,13 @@
-import os
-import tempfile
-import webbrowser
 import numpy as np
 import fortplot.fortplot_wrapper as _fortplot
 
 DEFAULT_DPI = 100
+
+def _ensure_array(obj):
+    """Convert input to numpy array if not already an array (DRY helper)."""
+    if not isinstance(obj, np.ndarray):
+        return np.array(obj)
+    return obj
 
 def figure(figsize=[6.4, 4.8]):
     width = int(figsize[0] * DEFAULT_DPI)
@@ -12,10 +15,8 @@ def figure(figsize=[6.4, 4.8]):
     _fortplot.fortplot.figure(width, height)
 
 def plot(x, y, linestyle="-", label=""):
-    if not isinstance(x, np.ndarray):
-        x = np.array(x)
-    if not isinstance(y, np.ndarray):
-        y = np.array(y)
+    x = _ensure_array(x)
+    y = _ensure_array(y)
     _fortplot.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
@@ -48,12 +49,9 @@ def contour(X, Y, Z, levels=None):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(Z, np.ndarray):
-        Z = np.array(Z)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    Z = _ensure_array(Z)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -71,8 +69,7 @@ def contour(X, Y, Z, levels=None):
     if levels is None:
         _fortplot.fortplot.contour(x, y, z)
     else:
-        if not isinstance(levels, np.ndarray):
-            levels = np.array(levels)
+        levels = _ensure_array(levels)
         _fortplot.fortplot.contour(x, y, z, levels)
 
 def contourf(X, Y, Z, levels=None, **kwargs):
@@ -87,12 +84,9 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(Z, np.ndarray):
-        Z = np.array(Z)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    Z = _ensure_array(Z)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -110,8 +104,7 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     if levels is None:
         _fortplot.fortplot.contour_filled(x, y, z)
     else:
-        if not isinstance(levels, np.ndarray):
-            levels = np.array(levels)
+        levels = _ensure_array(levels)
         _fortplot.fortplot.contour_filled(x, y, z, levels)
 
 def streamplot(X, Y, U, V, density=1.0, **kwargs):
@@ -127,14 +120,10 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
     density : float, optional
         Controls the closeness of streamlines. Default is 1.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(U, np.ndarray):
-        U = np.array(U)
-    if not isinstance(V, np.ndarray):
-        V = np.array(V)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    U = _ensure_array(U)
+    V = _ensure_array(V)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -193,12 +182,9 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     
     >>> pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(C, np.ndarray):
-        C = np.array(C)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    C = _ensure_array(C)
     
     # Handle 1D coordinate arrays (regular grid case)
     if X.ndim == 1 and Y.ndim == 1:
@@ -236,7 +222,15 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     
     # Return placeholder object for matplotlib compatibility
     class QuadMeshPlaceholder:
-        pass
+        """Minimal matplotlib QuadMesh compatibility placeholder."""
+        def __init__(self):
+            self.colorbar = None
+            self.figure = None
+        
+        def set_clim(self, vmin=None, vmax=None):
+            """Set color limits (matplotlib compatibility)."""
+            pass
+    
     return QuadMeshPlaceholder()
 
 def legend(**kwargs):
@@ -283,21 +277,58 @@ def ylim(ymin, ymax):
     """
     _fortplot.fortplot.ylim(ymin, ymax)
 
-def show():
-    """Display the current figure in the default system viewer."""
-    with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as tmp_file:
-        tmp_filename = tmp_file.name
+def show(blocking=None):
+    """
+    Display the current figure intelligently.
+    
+    This is the simplified Python show() API that directly calls Fortran
+    show_figure() instead of using complex file management and browser launching.
+    
+    The Fortran show_figure() function handles:
+    - GUI availability detection
+    - Automatic fallback to ASCII display when GUI unavailable
+    - System viewer launch when GUI is available
+    - Proper blocking behavior
+    
+    Parameters
+    ----------
+    blocking : bool, optional
+        If True, block until user closes the plot window or presses Enter.
+        If False, return immediately (non-blocking).
+        If None (default), use matplotlib-compatible behavior (non-blocking).
+    
+    Examples
+    --------
+    >>> import fortplot
+    >>> fortplot.plot([1, 2, 3], [1, 4, 9])
+    >>> fortplot.show()  # Non-blocking, GUI or ASCII fallback
+    >>> fortplot.show(blocking=True)  # Blocking, wait for user input
+    """
+    # Convert None to False for matplotlib compatibility
+    # matplotlib.pyplot.show() is non-blocking by default
+    if blocking is None:
+        blocking = False
     
     try:
-        _fortplot.fortplot.savefig(tmp_filename)
-        webbrowser.open(f'file://{tmp_filename}')
+        # Direct call to Fortran show_figure function
+        # This eliminates the complex file management and browser launching
+        success = _fortplot.fortplot.show_figure(blocking=blocking)
         
-        # Block like matplotlib.pyplot.show()
-        input("Press Enter to continue...")
+        if not success:
+            # Fallback is handled internally by Fortran, but we can provide
+            # additional Python-level error messaging if needed
+            print("Note: Plot display completed (fallback may have been used)")
+            
+    except Exception as e:
+        # Simplified error handling without complex file cleanup
+        print(f"Error displaying plot: {e}")
+        print("Attempting fallback display method...")
         
-    finally:
-        # Clean up temporary file
         try:
-            os.unlink(tmp_filename)
-        except OSError:
-            pass  # File might already be deleted
+            # Try the viewer method as fallback
+            _fortplot.fortplot.show_viewer(blocking=blocking)
+        except Exception as fallback_error:
+            print(f"Fallback also failed: {fallback_error}")
+            print("Plot could not be displayed. Try saving to file instead:")
+            print("  fortplot.savefig('plot.png')")
+            raise
