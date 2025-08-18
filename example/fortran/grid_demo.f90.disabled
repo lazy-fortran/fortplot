@@ -26,7 +26,7 @@ program grid_demo
     call fig%set_title('Basic Grid Lines')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_basic.png')
+    call fig%savefig('build/example/grid_demo/grid_basic.png')
     write(*,*) 'Created grid_basic.png'
     
     ! Basic plot with default grid (PDF)
@@ -38,7 +38,7 @@ program grid_demo
     call fig%set_title('Basic Grid Lines')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_basic.pdf')
+    call fig%savefig('build/example/grid_demo/grid_basic.pdf')
     write(*,*) 'Created grid_basic.pdf'
     
     ! Grid with custom transparency
@@ -50,7 +50,7 @@ program grid_demo
     call fig%set_title('Grid with Custom Transparency (alpha=0.6)')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_custom_alpha.png')
+    call fig%savefig('build/example/grid_demo/grid_custom_alpha.png')
     write(*,*) 'Created grid_custom_alpha.png'
     
     ! Grid with custom line style
@@ -62,7 +62,7 @@ program grid_demo
     call fig%set_title('Grid with Dashed Lines')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_dashed.png')
+    call fig%savefig('build/example/grid_demo/grid_dashed.png')
     write(*,*) 'Created grid_dashed.png'
     
     ! X-axis grid only
@@ -74,7 +74,7 @@ program grid_demo
     call fig%set_title('X-Axis Grid Lines Only')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_x_only.png')
+    call fig%savefig('build/example/grid_demo/grid_x_only.png')
     write(*,*) 'Created grid_x_only.png'
     
     ! Y-axis grid only
@@ -86,7 +86,7 @@ program grid_demo
     call fig%set_title('Y-Axis Grid Lines Only')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_y_only.png')
+    call fig%savefig('build/example/grid_demo/grid_y_only.png')
     write(*,*) 'Created grid_y_only.png'
     
     ! Minor grid lines
@@ -98,7 +98,7 @@ program grid_demo
     call fig%set_title('Minor Grid Lines')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Amplitude')
-    call fig%savefig('plots/grid_minor.png')
+    call fig%savefig('build/example/grid_demo/grid_minor.png')
     write(*,*) 'Created grid_minor.png'
     
     write(*,*) 'Grid lines demonstration completed!'

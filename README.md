@@ -136,7 +136,7 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
-  - **5-Layer Validation**: Comprehensive framework prevents false positives (Issue #32)
+  - **5-Layer Validation**: Comprehensive framework prevents false positives
   - **External validation**: FFprobe integration for format verification
   - **Documentation**: See [MPEG Validation Guide](doc/mpeg_validation.md) for details
 
@@ -204,7 +204,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
-  - **False Positive Prevention**: Solves Issue #32 with multi-criteria validation
+  - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [ ] Subplots
 - [ ] Annotations

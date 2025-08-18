@@ -230,9 +230,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        ! TODO: Implement hist method in figure_core
-        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        call log_error("hist() not yet implemented - please use main branch for histogram support")
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -258,9 +256,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        ! TODO: Implement hist method in figure_core
-        ! call fig%hist(data, bins=bins, density=density, label=label, color=color)
-        call log_error("hist() not yet implemented - please use main branch for histogram support")
+        call fig%hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)

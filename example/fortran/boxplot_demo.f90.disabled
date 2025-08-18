@@ -30,7 +30,7 @@ program boxplot_demo
     call fig%set_xlabel('Data Groups')
     call fig%set_ylabel('Values')
     call fig%boxplot(normal_data, label='Normal Distribution')
-    call fig%savefig('plots/boxplot_single.png')
+    call fig%savefig('build/example/boxplot_demo/boxplot_single.png')
     print *, 'Created boxplot_single.png'
     
     ! Box plot with outliers
@@ -39,7 +39,7 @@ program boxplot_demo
     call fig%set_xlabel('Data Groups')
     call fig%set_ylabel('Values')
     call fig%boxplot(outlier_data, label='Data with Outliers')
-    call fig%savefig('plots/boxplot_outliers.png')
+    call fig%savefig('build/example/boxplot_demo/boxplot_outliers.png')
     print *, 'Created boxplot_outliers.png'
     
     ! Multiple box plots for comparison
@@ -51,7 +51,7 @@ program boxplot_demo
     call fig%boxplot(group_b, position=2.0_wp, label='Group B')
     call fig%boxplot(group_c, position=3.0_wp, label='Group C')
     call fig%legend()
-    call fig%savefig('plots/boxplot_comparison.png')
+    call fig%savefig('build/example/boxplot_demo/boxplot_comparison.png')
     print *, 'Created boxplot_comparison.png'
     
     ! Horizontal box plot
@@ -60,7 +60,7 @@ program boxplot_demo
     call fig%set_xlabel('Values')
     call fig%set_ylabel('Data Groups')
     call fig%boxplot(normal_data, horizontal=.true., label='Horizontal')
-    call fig%savefig('plots/boxplot_horizontal.png')
+    call fig%savefig('build/example/boxplot_demo/boxplot_horizontal.png')
     print *, 'Created boxplot_horizontal.png'
     
     print *, 'Box plot demonstration completed!'
