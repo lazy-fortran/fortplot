@@ -148,20 +148,9 @@ contains
         call fig%initialize(300, 300)
         
         ! Act & Assert - Test dimension validation
-        error_caught = .false.
-        
-        ! This should fail with clear error message about dimension mismatch
-        ! Expected: "pcolormesh: x coordinate array size must be nx+1"
-        block
-            call fig%add_pcolormesh(x_wrong, y_correct, c_test)
-        end block
-        
-        ! If we reach here without error, the test failed
-        if (.not. error_caught) then
-            ! This test expects the implementation to catch the error
-            ! For now, we just verify the interface exists
-            print *, "WARNING: Dimension validation not yet implemented"
-        end if
+        ! NOTE: Dimension validation uses 'error stop' which cannot be caught in Fortran
+        ! Invalid dimensions will terminate the program, so we only test valid cases
+        ! Dimension validation is tested in separate error handling tests
         
         ! Test correct dimensions (should work)
         call fig%add_pcolormesh(x_correct, y_correct, c_test)

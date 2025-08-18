@@ -55,7 +55,7 @@ module fortplot_pcolormesh
      
 contains
 
-    subroutine initialize_regular_grid(self, x_coords, y_coords, c_data, colormap)
+    subroutine initialize_regular_grid(self, x_coords, y_coords, c_data, colormap, status_ok)
         !! Initialize pcolormesh with regular grid from 1D coordinate arrays
         !! 
         !! Arguments:
@@ -63,11 +63,13 @@ contains
         !!   y_coords: 1D array of y-coordinates (length ny+1)  
         !!   c_data: 2D color data array (ny, nx)
         !!   colormap: Optional colormap name
+        !!   status_ok: Returns .false. if validation fails
         class(pcolormesh_t), intent(inout) :: self
         real(wp), intent(in) :: x_coords(:)
         real(wp), intent(in) :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
         character(len=*), intent(in), optional :: colormap
+        logical, intent(out), optional :: status_ok
         
         integer :: i, j
         
@@ -76,10 +78,20 @@ contains
         self%ny = size(c_data, 1)
         
         if (size(x_coords) /= self%nx + 1) then
-            error stop "pcolormesh: x_coords size must be nx+1"
+            if (present(status_ok)) then
+                status_ok = .false.
+                return
+            else
+                error stop "pcolormesh: x_coords size must be nx+1"
+            end if
         end if
         if (size(y_coords) /= self%ny + 1) then
-            error stop "pcolormesh: y_coords size must be ny+1"
+            if (present(status_ok)) then
+                status_ok = .false.
+                return
+            else
+                error stop "pcolormesh: y_coords size must be ny+1"
+            end if
         end if
         
         ! Allocate arrays (deallocate first if already allocated)
@@ -109,6 +121,9 @@ contains
         
         ! Compute data range for auto-scaling
         call self%get_data_range()
+        
+        ! Set success status
+        if (present(status_ok)) status_ok = .true.
     end subroutine initialize_regular_grid
     
     subroutine initialize_irregular_grid(self, x_verts, y_verts, c_data, colormap)
