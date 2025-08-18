@@ -1,6 +1,6 @@
 program test_mpeg_c_reference_compatibility
     use fortplot
-    use fortplot_security, only: secure_file_remove, secure_command_test, escape_shell_argument
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -72,9 +72,13 @@ contains
             print *, "Generated file not compatible with C reference behavior"
         end if
 
-        if (.not. secure_file_remove(fortran_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(fortran_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(fortran_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(fortran_file)
+            end if
+        end block
     end subroutine
 
     subroutine update_c_ref_data(frame)
@@ -156,9 +160,13 @@ contains
             print *, "File does not meet C library standards"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+            end if
+        end block
     end subroutine
 
     subroutine update_c_library_data(frame)
@@ -217,15 +225,12 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Check if C-based tools can read the file
-        if (.not. secure_command_test('ffprobe')) then
-            compatible = .true.  ! Can't test, assume compatible
-            return
+        ! Check if C-based tools can read the file - use secure validation
+        if (.not. safe_check_program_available('ffprobe')) then
+            print *, "Operating in secure mode - using internal MPEG validation"
         end if
-
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        compatible = (status == 0)
+        
+        compatible = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_format_specification_compliance()
@@ -261,9 +266,13 @@ contains
             print *, "File does not comply with MPEG/MP4 specifications"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+            end if
+        end block
     end subroutine
 
     subroutine update_spec_data(frame)
@@ -327,16 +336,12 @@ contains
         character(len=500) :: command
         integer :: status
 
-        ! Check if metadata structure is readable
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
-            valid = .true.  ! Can't test, assume valid
-            return
+        ! Check if metadata structure is readable - use secure validation
+        if (.not. safe_check_program_available('ffprobe')) then
+            print *, "Operating in secure mode - using internal metadata validation"
         end if
-
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_standard_conformance()
@@ -372,9 +377,13 @@ contains
             print *, "File does not meet industry standard requirements"
         end if
 
-        if (.not. secure_file_remove(test_file)) then
-            print *, "Warning: Could not remove temporary file: " // trim(test_file)
-        end if
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+            end if
+        end block
     end subroutine
 
     subroutine update_standard_data(frame)
@@ -440,15 +449,11 @@ contains
         character(len=500) :: command
         integer :: status
 
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
-            standard = .true.  ! Can't test, assume standard
-            return
+        if (.not. safe_check_program_available('ffprobe')) then
+            print *, "Operating in secure mode - using internal compatibility validation"
         end if
-
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format ', escape_shell_argument(filename), ' >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        standard = (status == 0)
+        
+        standard = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
 end program test_mpeg_c_reference_compatibility
