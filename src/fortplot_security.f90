@@ -28,8 +28,9 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        integer :: unit, iostat
+        integer :: unit, iostat, stat_result
         logical :: exists
+        character(len=1024) :: mkdir_command
         
         success = .false.
         
@@ -46,20 +47,127 @@ contains
             return
         end if
         
-        ! Try to create directory using Fortran file operations
-        ! This is safer than shell commands but limited
-        open(newunit=unit, file=trim(dir_path) // '/temp_test_file', &
-             iostat=iostat, status='unknown')
+        ! Try multiple methods to create directory
+        call try_create_directory(dir_path, success)
         
-        if (iostat == 0) then
-            close(unit, status='delete')
-            success = .true.
+        if (success) then
             call log_info("Directory created: " // trim(dir_path))
         else
             call log_warning("Could not create directory: " // trim(dir_path))
             call log_info("Please create directory manually or ensure parent directories exist")
         end if
     end subroutine safe_create_directory
+
+    !> Try to create directory using safe platform-appropriate methods
+    subroutine try_create_directory(dir_path, success)
+        character(len=*), intent(in) :: dir_path
+        logical, intent(out) :: success
+        
+        integer :: stat_result
+        logical :: exists
+        character(len=1024) :: safe_command
+        
+        success = .false.
+        
+        ! Check if directory already exists
+        inquire(file=trim(dir_path), exist=exists)
+        if (exists) then
+            success = .true.
+            return
+        end if
+        
+        ! For CI environments and Unix systems, use mkdir -p
+        ! This is safe because dir_path has already been validated by is_safe_path
+        safe_command = 'mkdir -p "' // trim(dir_path) // '" 2>/dev/null'
+        
+        ! Try to execute mkdir command
+        call execute_command_line(safe_command, exitstat=stat_result)
+        
+        ! Verify if directory was created
+        inquire(file=trim(dir_path), exist=exists)
+        success = exists
+        
+        ! If that failed, try alternative approach
+        if (.not. success) then
+            ! Alternative: try creating parent directories step by step
+            call create_parent_directories(dir_path, success)
+        end if
+    end subroutine try_create_directory
+    
+    !> Create parent directories iteratively (no recursion)
+    subroutine create_parent_directories(dir_path, success)
+        character(len=*), intent(in) :: dir_path
+        logical, intent(out) :: success
+        
+        character(len=len(dir_path)) :: path_parts(32) ! Max 32 nested directories
+        character(len=len(dir_path)) :: current_path
+        integer :: num_parts, i, slash_pos, start_pos
+        logical :: exists
+        
+        success = .false.
+        num_parts = 0
+        start_pos = 1
+        
+        ! Split path into components
+        do
+            slash_pos = index(dir_path(start_pos:), '/')
+            if (slash_pos == 0) then
+                ! Last component
+                if (start_pos <= len_trim(dir_path)) then
+                    num_parts = num_parts + 1
+                    path_parts(num_parts) = dir_path(start_pos:)
+                end if
+                exit
+            else
+                num_parts = num_parts + 1
+                path_parts(num_parts) = dir_path(start_pos:start_pos+slash_pos-2)
+                start_pos = start_pos + slash_pos
+            end if
+        end do
+        
+        ! Create directories from root to target
+        current_path = ""
+        do i = 1, num_parts
+            if (i == 1 .and. path_parts(1) == "") then
+                current_path = "/"
+            else
+                if (len_trim(current_path) > 0 .and. current_path(len_trim(current_path):len_trim(current_path)) /= "/") then
+                    current_path = trim(current_path) // "/"
+                end if
+                current_path = trim(current_path) // trim(path_parts(i))
+                
+                ! Check if this level exists
+                inquire(file=trim(current_path), exist=exists)
+                if (.not. exists) then
+                    ! Try to create this level using a simple test
+                    call try_create_single_directory(current_path, exists)
+                    if (.not. exists) return
+                end if
+            end if
+        end do
+        
+        ! Final verification
+        inquire(file=trim(dir_path), exist=success)
+    end subroutine create_parent_directories
+    
+    !> Attempt to create a single directory level
+    subroutine try_create_single_directory(dir_path, success)
+        character(len=*), intent(in) :: dir_path
+        logical, intent(out) :: success
+        
+        character(len=512) :: cmd
+        integer :: stat
+        logical :: exists
+        
+        success = .false.
+        
+        ! Try using mkdir for this single directory
+        cmd = 'mkdir "' // trim(dir_path) // '" 2>/dev/null'
+        call execute_command_line(cmd, exitstat=stat)
+        
+        inquire(file=trim(dir_path), exist=exists)
+        success = exists
+    end subroutine try_create_single_directory
 
     !> Safely remove file without shell injection
     subroutine safe_remove_file(filename, success)
