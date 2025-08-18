@@ -5,6 +5,7 @@ module fortplot_mpeg1_format
     private
 
     public :: mpeg1_encoder_t, create_mpeg1_encoder, encode_animation_to_mpeg1
+    public :: initialize_streaming_mpeg1_encoder, encode_single_frame_to_mpeg1, finalize_streaming_mpeg1_encoder
 
     ! MPEG-1 video format constants
     integer, parameter :: MPEG1_SEQUENCE_HEADER_CODE = int(z'000001B3')
@@ -62,6 +63,10 @@ module fortplot_mpeg1_format
         procedure :: write_sequence_end => mpeg1_write_sequence_end
         procedure :: validate_output => mpeg1_validate_output
     end type mpeg1_encoder_t
+
+    ! Module-level encoder for streaming operations
+    type(mpeg1_encoder_t), save :: stream_encoder
+    logical, save :: stream_encoder_initialized = .false.
 
 contains
 
@@ -469,5 +474,69 @@ contains
             print *, "Warning: Generated file size", file_size, "bytes below expected minimum", expected_minimum
         end if
     end subroutine mpeg1_validate_output
+
+    ! Streaming encoder functions for memory-efficient animation processing
+    subroutine initialize_streaming_mpeg1_encoder(width, height, fps, filename, total_frames, status)
+        integer, intent(in) :: width, height, fps, total_frames
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
+        
+        status = 0
+        
+        if (stream_encoder_initialized) then
+            ! Clean up previous encoder first
+            call finalize_streaming_mpeg1_encoder(status)
+        end if
+        
+        stream_encoder = create_mpeg1_encoder(width, height, fps, filename)
+        
+        call stream_encoder%open_file(status)
+        if (status /= 0) return
+        
+        call stream_encoder%write_sequence_header(status)
+        if (status /= 0) return
+        
+        call stream_encoder%write_gop_header(status)
+        if (status /= 0) return
+        
+        stream_encoder_initialized = .true.
+    end subroutine initialize_streaming_mpeg1_encoder
+    
+    subroutine encode_single_frame_to_mpeg1(frame_data, frame_index, status)
+        real(real64), intent(in) :: frame_data(:,:,:)  ! (width, height, channels)
+        integer, intent(in) :: frame_index
+        integer, intent(out) :: status
+        
+        status = 0
+        
+        if (.not. stream_encoder_initialized) then
+            status = -1
+            return
+        end if
+        
+        call stream_encoder%write_picture_header(frame_index, status)
+        if (status /= 0) return
+        
+        call stream_encoder%encode_frame(frame_data, status)
+    end subroutine encode_single_frame_to_mpeg1
+    
+    subroutine finalize_streaming_mpeg1_encoder(status)
+        integer, intent(out) :: status
+        
+        status = 0
+        
+        if (.not. stream_encoder_initialized) return
+        
+        call stream_encoder%write_sequence_end(status)
+        if (status /= 0) return
+        
+        call stream_encoder%close_file(status)
+        if (status /= 0) return
+        
+        ! Validate the output meets size requirements
+        call stream_encoder%validate_output(status)
+        
+        stream_encoder_initialized = .false.
+    end subroutine finalize_streaming_mpeg1_encoder
 
 end module fortplot_mpeg1_format

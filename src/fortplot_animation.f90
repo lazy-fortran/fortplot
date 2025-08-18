@@ -4,7 +4,10 @@ module fortplot_animation
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
-    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
+    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1, &
+                                    initialize_streaming_mpeg1_encoder, &
+                                    encode_single_frame_to_mpeg1, &
+                                    finalize_streaming_mpeg1_encoder
     implicit none
     private
 
@@ -254,7 +257,7 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
-        real(real64), allocatable :: frame_data(:,:,:,:)
+        real(real64), allocatable :: single_frame(:,:,:)
         integer :: frame_idx, width, height
         
         status = 0
@@ -267,19 +270,30 @@ contains
         width = anim%fig%width
         height = anim%fig%height
         
-        ! Collect frame data for native encoder
-        allocate(frame_data(width, height, 3, anim%frames))
+        ! Use streaming approach - process one frame at a time to avoid memory overflow
+        allocate(single_frame(width, height, 3))
+        
+        ! Initialize streaming MPEG-1 encoder
+        call initialize_streaming_mpeg1_encoder(width, height, fps, filename, anim%frames, status)
+        if (status /= 0) then
+            if (allocated(single_frame)) deallocate(single_frame)
+            return
+        end if
         
         do frame_idx = 1, anim%frames
             call update_frame_data(anim, frame_idx)
-            call extract_frame_rgb_data(anim%fig, frame_data(:,:,:,frame_idx), status)
-            if (status /= 0) return
+            call extract_frame_rgb_data(anim%fig, single_frame, status)
+            if (status /= 0) exit
+            
+            ! Stream frame to encoder
+            call encode_single_frame_to_mpeg1(single_frame, frame_idx, status)
+            if (status /= 0) exit
         end do
         
-        ! Use native MPEG-1 encoder
-        call encode_animation_to_mpeg1(frame_data, anim%frames, width, height, fps, filename, status)
+        ! Finalize encoder
+        call finalize_streaming_mpeg1_encoder(status)
         
-        if (allocated(frame_data)) deallocate(frame_data)
+        if (allocated(single_frame)) deallocate(single_frame)
     end subroutine save_animation_with_native_mpeg1
 
     subroutine extract_frame_rgb_data(fig, rgb_data, status)
