@@ -23,6 +23,9 @@ module fortplot_validation
     integer, parameter :: MIN_PDF_SIZE = 200
     integer, parameter :: MIN_ASCII_SIZE = 50
     
+    ! Baseline comparison tolerance (10% size difference)
+    real(wp), parameter :: BASELINE_TOLERANCE = 0.1_wp
+    
 contains
     
     ! Given: A file path to validate
@@ -53,9 +56,9 @@ contains
         integer, intent(in) :: min_size
         type(validation_result_t) :: validation
         
-        integer :: file_size, ios
+        integer :: file_size, ios, file_unit
         
-        open(unit=99, file=file_path, access='stream', iostat=ios)
+        open(newunit=file_unit, file=file_path, access='stream', iostat=ios)
         if (ios /= 0) then
             validation%passed = .false.
             validation%message = "Cannot open file for size check: " // trim(file_path)
@@ -63,8 +66,8 @@ contains
             return
         end if
         
-        inquire(unit=99, size=file_size)
-        close(99)
+        inquire(unit=file_unit, size=file_size)
+        close(file_unit)
         
         validation%passed = file_size >= min_size
         validation%metric_value = real(file_size, wp)
@@ -89,9 +92,9 @@ contains
         character(len=1), dimension(PNG_SIGNATURE_SIZE) :: signature
         character(len=1), dimension(PNG_SIGNATURE_SIZE), parameter :: &
             PNG_SIGNATURE = [achar(137), 'P', 'N', 'G', achar(13), achar(10), achar(26), achar(10)]
-        integer :: i, ios
+        integer :: i, ios, file_unit
         
-        open(unit=98, file=file_path, access='stream', form='unformatted', iostat=ios)
+        open(newunit=file_unit, file=file_path, access='stream', form='unformatted', iostat=ios)
         if (ios /= 0) then
             validation%passed = .false.
             validation%message = "Cannot open PNG file: " // trim(file_path)
@@ -99,8 +102,8 @@ contains
             return
         end if
         
-        read(98, iostat=ios) signature
-        close(98)
+        read(file_unit, iostat=ios) signature
+        close(file_unit)
         
         if (ios /= 0) then
             validation%passed = .false.
@@ -133,9 +136,9 @@ contains
         type(validation_result_t) :: validation
         
         character(len=5) :: pdf_header
-        integer :: ios
+        integer :: ios, file_unit
         
-        open(unit=97, file=file_path, iostat=ios)
+        open(newunit=file_unit, file=file_path, iostat=ios)
         if (ios /= 0) then
             validation%passed = .false.
             validation%message = "Cannot open PDF file: " // trim(file_path)
@@ -143,8 +146,8 @@ contains
             return
         end if
         
-        read(97, '(a5)', iostat=ios) pdf_header
-        close(97)
+        read(file_unit, '(a5)', iostat=ios) pdf_header
+        close(file_unit)
         
         if (ios /= 0) then
             validation%passed = .false.
@@ -170,9 +173,9 @@ contains
         type(validation_result_t) :: validation
         
         character(len=256) :: line
-        integer :: ios, line_count
+        integer :: ios, line_count, file_unit
         
-        open(unit=96, file=file_path, iostat=ios)
+        open(newunit=file_unit, file=file_path, iostat=ios)
         if (ios /= 0) then
             validation%passed = .false.
             validation%message = "Cannot open ASCII file: " // trim(file_path)
@@ -182,11 +185,11 @@ contains
         
         line_count = 0
         do
-            read(96, '(a)', iostat=ios) line
+            read(file_unit, '(a)', iostat=ios) line
             if (ios /= 0) exit
             line_count = line_count + 1
         end do
-        close(96)
+        close(file_unit)
         
         validation%passed = line_count > 0
         validation%metric_value = real(line_count, wp)
@@ -225,7 +228,7 @@ contains
         
         ! Compare sizes (simple regression check)
         validation%metric_value = abs(real(current_size - baseline_size, wp) / real(baseline_size, wp))
-        validation%passed = validation%metric_value < 0.1_wp  ! 10% size difference threshold
+        validation%passed = validation%metric_value < BASELINE_TOLERANCE
         
         if (validation%passed) then
             write(validation%message, '(a,f6.2,a)') "Size difference within tolerance (", &
