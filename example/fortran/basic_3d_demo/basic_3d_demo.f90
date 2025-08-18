@@ -32,7 +32,8 @@ program basic_3d_demo
     print *, "Creating 3D surface plot..."
     call fig%initialize(800, 600)
     
-    ! Create grid
+    ! Create grid - CRITICAL: dimensions must match for validation
+    ! x_grid: 21 elements, y_grid: 21 elements -> z_grid must be (21, 21)
     allocate(x_grid(21), y_grid(21), z_grid(21, 21))
     
     do i = 1, 21
@@ -41,12 +42,14 @@ program basic_3d_demo
     end do
     
     ! Calculate z values - paraboloid
+    ! z_grid(i,j) = function value at (x_grid(i), y_grid(j))
     do i = 1, 21
         do j = 1, 21
             z_grid(i,j) = x_grid(i)**2 + y_grid(j)**2
         end do
     end do
     
+    ! add_surface validates: size(z_grid,1)==size(x_grid) AND size(z_grid,2)==size(y_grid)
     call fig%add_surface(x_grid, y_grid, z_grid, label="Paraboloid")
     call fig%set_title("3D Surface Plot Example")
     
