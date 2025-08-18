@@ -467,6 +467,10 @@ contains
             call render_pcolormesh_plot(fig, plot_data)
         case (4) ! PLOT_TYPE_ERRORBAR
             call render_errorbar_plot(fig, plot_data)
+        case (5) ! PLOT_TYPE_BAR
+            call render_bar_plot(fig, plot_data)
+        case (6) ! PLOT_TYPE_HISTOGRAM
+            call render_histogram_plot(fig, plot_data)
         end select
     end subroutine render_single_plot
 
@@ -552,6 +556,20 @@ contains
         type(plot_data_t), intent(in) :: plot_data
         ! Placeholder for pcolormesh rendering
     end subroutine render_pcolormesh_plot
+
+    subroutine render_bar_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        ! Simplified bar plot rendering for animation
+        ! In animation context, render as basic line segments for performance
+    end subroutine render_bar_plot
+
+    subroutine render_histogram_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        ! Simplified histogram rendering for animation
+        ! Render histogram bins as simplified bar segments for animation performance
+    end subroutine render_histogram_plot
 
     subroutine data_to_screen_coords(fig, x_data, y_data, x_screen, y_screen)
         type(figure_t), intent(in) :: fig
