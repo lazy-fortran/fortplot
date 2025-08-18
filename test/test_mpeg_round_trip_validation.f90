@@ -1,8 +1,7 @@
 program test_mpeg_round_trip_validation
     use fortplot
     use fortplot_security, only: safe_remove_file, safe_check_program_available, &
-                                  safe_validate_mpeg_with_ffprobe, sanitize_filename, &
-                                  secure_wildcard_remove, secure_file_exists
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -96,7 +95,8 @@ contains
             print *, "Warning: Could not remove temporary file: " // trim(reencoded_file)
                 end if
     end block
-        call secure_wildcard_remove("roundtrip_frame_*.png")
+        ! Clean up any generated frame files
+        call safe_remove_file("roundtrip_frame_1.png", remove_success)
     end subroutine
 
     subroutine update_roundtrip_data(frame)
@@ -140,7 +140,7 @@ contains
 
         type(animation_t) :: anim
         character(len=200) :: test_file
-        logical :: ffmpeg_available, extraction_success
+        logical :: ffmpeg_available, extraction_success, exists
         integer :: status, frame_count
 
         print *, ""
@@ -169,7 +169,9 @@ contains
         
         if (extraction_success) then
             ! Count extracted frames to verify using secure file existence check
-            frame_count = merge(1, 0, secure_file_exists("extracted_frame.png"))
+            ! Check if frame extraction succeeded
+            inquire(file="extracted_frame.png", exist=exists)
+            frame_count = merge(1, 0, exists)
         else
             frame_count = 0
         end if
@@ -355,7 +357,8 @@ contains
             print *, "Warning: Could not remove temporary file: " // trim(roundtrip_file)
                 end if
     end block
-        call secure_wildcard_remove("quality_temp_*.png")
+        ! Clean up temporary quality test files
+        call safe_remove_file("quality_temp_1.png", remove_success)
     end subroutine
 
     subroutine update_quality_data(frame)
