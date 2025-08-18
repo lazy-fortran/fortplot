@@ -2661,10 +2661,11 @@ contains
     
     subroutine ensure_directory_exists(filename)
         !! Create directory path for output file if it doesn't exist
+        use fortplot_security, only: safe_create_directory
         character(len=*), intent(in) :: filename
         character(len=:), allocatable :: dir_path
-        character(len=256) :: command
-        integer :: last_slash, status
+        integer :: last_slash
+        logical :: success
         
         ! Find the last directory separator
         last_slash = 0
@@ -2672,13 +2673,12 @@ contains
             if (filename(last_slash:last_slash) == '/') exit
         end do
         
-        ! If there's a directory path, create it
+        ! If there's a directory path, create it safely
         if (last_slash > 1) then
             dir_path = filename(1:last_slash-1)
-            ! Use mkdir -p to create parent directories as needed
-            write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
-            call execute_command_line(command, exitstat=status)
-            if (status /= 0) then
+            ! Use secure directory creation
+            call safe_create_directory(dir_path, success)
+            if (.not. success) then
                 call log_warning("Could not create directory: " // trim(dir_path))
             end if
         end if
