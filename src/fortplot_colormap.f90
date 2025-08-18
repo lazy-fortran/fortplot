@@ -6,7 +6,7 @@ module fortplot_colormap
     implicit none
     
     private
-    public :: get_colormap_color, colormap_value_to_color
+    public :: get_colormap_color, colormap_value_to_color, validate_colormap_name
     
 contains
 
@@ -167,5 +167,19 @@ contains
             color(3) = b_points(i) * (1.0_wp - weight) + b_points(i + 1) * weight
         end if
     end subroutine interpolate_colormap
+
+    pure function validate_colormap_name(colormap) result(is_valid)
+        !! Validate if colormap name is supported
+        character(len=*), intent(in) :: colormap
+        logical :: is_valid
+        
+        select case (trim(colormap))
+        case ('seaborn', 'colorblind', 'crest', 'viridis', 'plasma', 'inferno', &
+              'coolwarm', 'jet')
+            is_valid = .true.
+        case default
+            is_valid = .false.
+        end select
+    end function validate_colormap_name
 
 end module fortplot_colormap
