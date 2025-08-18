@@ -36,7 +36,7 @@ set_target_properties(fortplot PROPERTIES
 # Include module directory for dependent projects
 target_include_directories(fortplot
     PUBLIC 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
         $<INSTALL_INTERFACE:include>
 )
 

@@ -22,3 +22,6 @@ add_executable(fortplot_test main.f90)
 
 # Link against fortplot
 target_link_libraries(fortplot_test PRIVATE fortplot::fortplot)
+
+# Ensure fortplot library is built before the example
+add_dependencies(fortplot_test fortplot)
