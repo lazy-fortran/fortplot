@@ -15,7 +15,7 @@ program debug_3d_marker_visible
     call fig%initialize(800, 600)
     
     ! Add with large marker size
-    call fig%add_scatter(x, y, z, label="Test points", marker='o', markersize=20.0_wp)
+    call fig%add_scatter_3d(x, y, z, label="Test points", marker='o', markersize=20.0_wp)
     
     call fig%set_title('Debug 3D Scatter - Large Markers')
     call fig%legend()

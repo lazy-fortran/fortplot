@@ -29,13 +29,14 @@ add_library(fortplot ${FORTRAN_SOURCES} ${C_SOURCES})
 
 # Set Fortran module directory
 set_target_properties(fortplot PROPERTIES
-    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+    Fortran_MODULE_DIRECTORY "${CMAKE_BINARY_DIR}/modules"
+    POSITION_INDEPENDENT_CODE ON
 )
 
 # Include module directory for dependent projects
 target_include_directories(fortplot
     PUBLIC 
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>
+        $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/modules>
         $<INSTALL_INTERFACE:include>
 )
 

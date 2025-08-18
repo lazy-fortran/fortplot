@@ -22,7 +22,7 @@ program scatter_demo
     end do
     
     call fig%initialize(640, 480)
-    call fig%add_scatter(x, y, label="Data points")
+    call fig%add_scatter_2d(x, y, label="Data points")
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_title('Basic 2D Scatter Plot')
@@ -36,19 +36,19 @@ program scatter_demo
         x(i) = real(i-1, wp) / real(n-1, wp) * 4.0_wp * PI
         y(i) = sin(x(i)) + 0.1_wp * sin(10.0_wp * x(i))
     end do
-    call fig%add_scatter(x, y, label="Sine", marker='o')
+    call fig%add_scatter_2d(x, y, label="Sine", marker='o')
     
     ! Dataset 2 - cosine wave with noise
     do i = 1, n
         y(i) = cos(x(i)) + 0.1_wp * cos(15.0_wp * x(i))
     end do
-    call fig%add_scatter(x, y, label="Cosine", marker='s')
+    call fig%add_scatter_2d(x, y, label="Cosine", marker='s')
     
     ! Dataset 3 - exponential decay
     do i = 1, n
         y(i) = exp(-x(i) * 0.3_wp) * (1.0_wp + 0.1_wp * sin(8.0_wp * x(i)))
     end do
-    call fig%add_scatter(x, y, label="Exponential", marker='D')
+    call fig%add_scatter_2d(x, y, label="Exponential", marker='D')
     
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
@@ -70,7 +70,7 @@ program scatter_demo
         y(i) = exp(-x(i)**2) + 0.05_wp * sin(20.0_wp * x(i))
     end do
     
-    call fig%add_scatter(x, y, label="Gaussian distribution")
+    call fig%add_scatter_2d(x, y, label="Gaussian distribution")
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%set_title('2D Scatter Plot - Gaussian Distribution')

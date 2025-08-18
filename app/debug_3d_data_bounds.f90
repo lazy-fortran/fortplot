@@ -20,7 +20,7 @@ program debug_3d_data_bounds
     print *, "Z: min=", minval(z), " max=", maxval(z)
     
     call fig%initialize(width=800, height=600)
-    call fig%add_scatter(x, y, z, label="3D Scatter", marker='o')
+    call fig%add_scatter_3d(x, y, z, label="3D Scatter", marker='o')
     call fig%savefig('output/test/debug_3d_bounds.png')
     
 end program debug_3d_data_bounds

@@ -88,6 +88,7 @@ contains
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
 
+        call ensure_global_figure_initialized()
         call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
@@ -621,15 +622,17 @@ contains
         call system_clock(time_val)
         write(timestamp, '(I0)') time_val
         
-#ifdef __linux__
-        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
-#elif defined(__APPLE__)
-        temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
-#elif defined(_WIN32) || defined(_WIN64)
-        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
-#else
-        temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
-#endif
+        ! Use runtime detection for temporary directory
+        call get_environment_variable('WINDIR', temp_filename, status=stat)
+        if (stat == 0 .and. len_trim(temp_filename) > 0) then
+            ! Windows detected - use current directory
+            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
+            temp_filename = 'fortplot_' // trim(timestamp) // '.png'
+        else
+            ! Unix-like system (Linux, macOS, etc.) - use /tmp
+            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
+            temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.png'
+        end if
         
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
@@ -648,20 +651,20 @@ contains
             call log_info('Please open the file manually with your preferred PDF viewer.')
         else
             call log_info('Plot opened in default viewer. File: ' // trim(temp_filename))
+        end if
             
-            if (do_block) then
-                call log_info('Press Enter to continue and clean up temporary file...')
-                read(*,*)
-                
-                ! Clean up temporary file securely
-                call safe_remove_file(temp_filename, success)
-                if (.not. success) then
-                    call log_warning('Could not remove temporary file: ' // trim(temp_filename))
-                end if
-            else
-                ! In non-blocking mode, just inform that file stays
-                call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
+        if (do_block) then
+            call log_info('Press Enter to continue and clean up temporary file...')
+            read(*,*)
+            
+            ! Clean up temporary file securely
+            call safe_remove_file(temp_filename, success)
+            if (.not. success) then
+                call log_warning('Could not remove temporary file: ' // trim(temp_filename))
             end if
+        else
+            ! In non-blocking mode, just inform that file stays
+            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
         end if
     end subroutine show_viewer_implementation
 
@@ -682,6 +685,7 @@ contains
         !!   call show_viewer()  ! Opens plot in default PDF viewer
         logical, intent(in), optional :: blocking
         
+        call ensure_global_figure_initialized()
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
 

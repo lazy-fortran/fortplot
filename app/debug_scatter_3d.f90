@@ -13,7 +13,7 @@ program debug_scatter_3d
     z = [0.0_wp, 1.0_wp, 2.0_wp]
     
     call fig%initialize(800, 600)
-    call fig%add_scatter(x, y, z, label="Test points", marker='o')
+    call fig%add_scatter_3d(x, y, z, label="Test points", marker='o')
     call fig%set_title('Debug 3D Scatter')
     call fig%legend()
     call fig%savefig('output/debug_scatter_3d.png')
