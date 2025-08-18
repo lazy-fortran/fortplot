@@ -3,16 +3,20 @@ import fortplot.fortplot_wrapper as _fortplot
 
 DEFAULT_DPI = 100
 
+def _ensure_array(obj):
+    """Convert input to numpy array if not already an array (DRY helper)."""
+    if not isinstance(obj, np.ndarray):
+        return np.array(obj)
+    return obj
+
 def figure(figsize=[6.4, 4.8]):
     width = int(figsize[0] * DEFAULT_DPI)
     height = int(figsize[1] * DEFAULT_DPI)
     _fortplot.fortplot.figure(width, height)
 
 def plot(x, y, linestyle="-", label=""):
-    if not isinstance(x, np.ndarray):
-        x = np.array(x)
-    if not isinstance(y, np.ndarray):
-        y = np.array(y)
+    x = _ensure_array(x)
+    y = _ensure_array(y)
     _fortplot.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
@@ -45,12 +49,9 @@ def contour(X, Y, Z, levels=None):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(Z, np.ndarray):
-        Z = np.array(Z)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    Z = _ensure_array(Z)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -68,8 +69,7 @@ def contour(X, Y, Z, levels=None):
     if levels is None:
         _fortplot.fortplot.contour(x, y, z)
     else:
-        if not isinstance(levels, np.ndarray):
-            levels = np.array(levels)
+        levels = _ensure_array(levels)
         _fortplot.fortplot.contour(x, y, z, levels)
 
 def contourf(X, Y, Z, levels=None, **kwargs):
@@ -84,12 +84,9 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(Z, np.ndarray):
-        Z = np.array(Z)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    Z = _ensure_array(Z)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -107,8 +104,7 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     if levels is None:
         _fortplot.fortplot.contour_filled(x, y, z)
     else:
-        if not isinstance(levels, np.ndarray):
-            levels = np.array(levels)
+        levels = _ensure_array(levels)
         _fortplot.fortplot.contour_filled(x, y, z, levels)
 
 def streamplot(X, Y, U, V, density=1.0, **kwargs):
@@ -124,14 +120,10 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
     density : float, optional
         Controls the closeness of streamlines. Default is 1.
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(U, np.ndarray):
-        U = np.array(U)
-    if not isinstance(V, np.ndarray):
-        V = np.array(V)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    U = _ensure_array(U)
+    V = _ensure_array(V)
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -190,12 +182,9 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     
     >>> pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
     """
-    if not isinstance(X, np.ndarray):
-        X = np.array(X)
-    if not isinstance(Y, np.ndarray):
-        Y = np.array(Y)
-    if not isinstance(C, np.ndarray):
-        C = np.array(C)
+    X = _ensure_array(X)
+    Y = _ensure_array(Y)
+    C = _ensure_array(C)
     
     # Handle 1D coordinate arrays (regular grid case)
     if X.ndim == 1 and Y.ndim == 1:
@@ -233,7 +222,15 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     
     # Return placeholder object for matplotlib compatibility
     class QuadMeshPlaceholder:
-        pass
+        """Minimal matplotlib QuadMesh compatibility placeholder."""
+        def __init__(self):
+            self.colorbar = None
+            self.figure = None
+        
+        def set_clim(self, vmin=None, vmax=None):
+            """Set color limits (matplotlib compatibility)."""
+            pass
+    
     return QuadMeshPlaceholder()
 
 def legend(**kwargs):

@@ -9,7 +9,6 @@ In the final implementation, this will be replaced by the F2PY-generated
 _fortplot module with proper Fortran function bindings.
 """
 
-import subprocess
 import os
 import tempfile
 import time
