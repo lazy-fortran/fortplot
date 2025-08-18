@@ -152,6 +152,7 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(3), y(3)
         integer(1), allocatable :: png_buffer(:)
+        logical :: raw_image_has_content
         
         ! Create simple test data
         x = [1.0_wp, 2.0_wp, 3.0_wp]
@@ -163,6 +164,13 @@ contains
         ! Get PNG data directly without file I/O
         select type (backend => fig%backend)
         class is (png_context)
+            ! First validate that raw image data contains non-white pixels
+            raw_image_has_content = validate_raw_image_content(backend%raster%image_data, fig%width, fig%height)
+            if (.not. raw_image_has_content) then
+                passed = .false.
+                return
+            end if
+            
             call get_png_data(fig%width, fig%height, backend%raster%image_data, png_buffer)
         class default
             ! Fallback: save to file and read back for now
@@ -170,8 +178,8 @@ contains
             return
         end select
         
-        ! Validate PNG buffer structure and content
-        passed = validate_png_buffer_content(png_buffer, fig%width, fig%height)
+        ! Validate PNG buffer structure and basic content indicators
+        passed = validate_png_buffer_structure(png_buffer, fig%width, fig%height)
         
         deallocate(png_buffer)
     end function test_png_data_buffer_validation
@@ -228,20 +236,54 @@ contains
         deallocate(file_data)
     end function png_file_has_visible_content
 
-    function validate_png_buffer_content(png_buffer, width, height) result(valid)
-        !! Validate PNG buffer contains expected structure and non-uniform data
+    function validate_raw_image_content(image_data, width, height) result(has_content)
+        !! Validate raw RGB image data contains non-white pixels (actual content validation)
+        integer(1), intent(in) :: image_data(:)
+        integer, intent(in) :: width, height
+        logical :: has_content
+        integer :: i, non_white_pixels, expected_size
+        
+        expected_size = width * height * 3
+        has_content = .false.
+        
+        ! Basic size validation
+        if (size(image_data) < expected_size) return
+        
+        ! Count non-white pixels in image data
+        non_white_pixels = 0
+        do i = 1, expected_size, 3  ! Step by 3 (RGB)
+            ! Check if pixel is not white (R=255, G=255, B=255 = -1_1, -1_1, -1_1)
+            if (image_data(i) /= -1_1 .or. image_data(i+1) /= -1_1 .or. image_data(i+2) /= -1_1) then
+                non_white_pixels = non_white_pixels + 1
+            end if
+        end do
+        
+        ! Should have at least some non-white pixels for meaningful content
+        ! Even simple plots should generate several non-white pixels
+        if (non_white_pixels > 10) then
+            has_content = .true.
+        end if
+        
+    end function validate_raw_image_content
+    
+    function validate_png_buffer_structure(png_buffer, width, height) result(valid)
+        !! Validate PNG buffer has correct structure and reasonable size
         integer(1), intent(in) :: png_buffer(:)
         integer, intent(in) :: width, height
         logical :: valid
-        integer :: buffer_size, i, data_variations
+        integer :: buffer_size, min_expected_size
         
         buffer_size = size(png_buffer)
         valid = .false.
         
-        ! Basic size validation
-        if (buffer_size < 50) return
+        ! Calculate minimum expected PNG size: signature + IHDR + minimal IDAT + IEND
+        ! PNG signature (8) + IHDR chunk (4+4+13+4=25) + IDAT chunk (4+4+min_data+4) + IEND chunk (4+4+0+4=12)
+        min_expected_size = 8 + 25 + 12 + 20  ! ~65 bytes minimum for tiny PNG
         
-        ! Check PNG signature
+        ! Basic size validation - should be reasonable size for our image
+        if (buffer_size < min_expected_size) return
+        
+        ! Check PNG signature (most reliable indicator)
         if (buffer_size >= 8) then
             if (png_buffer(1) == int(-119,1) .and. png_buffer(2) == int(80,1) .and. &
                 png_buffer(3) == int(78,1) .and. png_buffer(4) == int(71,1)) then
@@ -249,22 +291,12 @@ contains
             end if
         end if
         
-        ! Check for data variation (indicates content, not all-black/white)
-        data_variations = 0
-        do i = 20, min(buffer_size-5, 200)  ! Sample portion of buffer
-            if (i > 1) then
-                if (png_buffer(i) /= png_buffer(i-1)) then
-                    data_variations = data_variations + 1
-                end if
-            end if
-        end do
-        
-        ! Should have some variation in data if plot content exists
-        ! Be more lenient for CI environments
-        if (data_variations < 1) then
-            valid = .false.  ! Too uniform - likely all black or corrupt
+        ! Additional sanity check: buffer shouldn't be unreasonably large
+        ! Max size should be roughly width * height * 3 * 2 (uncompressed worst case)
+        if (buffer_size > width * height * 3 * 4) then
+            valid = .false.  ! Unreasonably large, likely corrupt
         end if
         
-    end function validate_png_buffer_content
+    end function validate_png_buffer_structure
 
 end program test_png_black_pictures_regression
