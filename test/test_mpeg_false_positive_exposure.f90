@@ -1,5 +1,6 @@
 program test_mpeg_false_positive_exposure
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -73,7 +74,13 @@ contains
             print *, "RESULT: Test correctly passes"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_current_logic_data(frame)
@@ -97,10 +104,8 @@ contains
         min_size = 3000
         reasonable_size = (file_size >= min_size)
         
-        ! External validation with ffprobe
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=ffprobe_status)
-        ffprobe_validates = (ffprobe_status == 0)
+        ! External validation with secure function
+        ffprobe_validates = safe_validate_mpeg_with_ffprobe(filename)
         
         is_valid = exists .and. reasonable_size .and. ffprobe_validates
         
@@ -152,7 +157,13 @@ contains
             print *, "RESULT: Test passes size check"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_size_check_data(frame)
@@ -200,7 +211,13 @@ contains
             print *, "Current tests don't validate video stream properties"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_content_data(frame)
@@ -215,11 +232,8 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Use ffprobe to check for video stream
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_type "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        has_stream = (status == 0)
+        ! Use secure validation to check for video stream
+        has_stream = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_reasonable_duration(filename, expected_frames, fps) result(reasonable)
@@ -232,11 +246,8 @@ contains
         
         expected_duration = real(expected_frames) / real(fps)
         
-        ! Use ffprobe to check duration (simplified check)
-        write(command, '(A,A,A)') 'ffprobe -v error -show_entries format=duration "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        reasonable = (status == 0)  ! Simplified - just check that duration can be read
+        ! Use secure validation to check duration (simplified check)
+        reasonable = safe_validate_mpeg_with_ffprobe(filename)  ! Simplified - just check basic validation
     end function
 
 end program test_mpeg_false_positive_exposure

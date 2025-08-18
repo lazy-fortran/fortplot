@@ -29,7 +29,8 @@ module fortplot_figure_core
     private
     public :: figure_t, plot_data_t, subplot_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
+              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
+              PLOT_TYPE_SCATTER
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
@@ -38,6 +39,7 @@ module fortplot_figure_core
     integer, parameter :: PLOT_TYPE_BAR = 5
     integer, parameter :: PLOT_TYPE_HISTOGRAM = 6
     integer, parameter :: PLOT_TYPE_BOXPLOT = 7
+    integer, parameter :: PLOT_TYPE_SCATTER = 8
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -90,6 +92,15 @@ module fortplot_figure_core
         real(wp) :: elinewidth = 1.0_wp
         logical :: has_xerr = .false., has_yerr = .false.
         logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
+        ! Scatter plot data
+        real(wp), allocatable :: scatter_sizes(:)     ! Variable marker sizes
+        real(wp), allocatable :: scatter_colors(:)    ! Variable marker colors
+        real(wp) :: scatter_size_default = 20.0_wp    ! Default marker size
+        character(len=20) :: scatter_colormap = 'viridis'  ! Colormap for color mapping
+        logical :: scatter_colorbar = .false.         ! Show colorbar for color mapping
+        real(wp) :: scatter_vmin = 0.0_wp            ! Color scale minimum
+        real(wp) :: scatter_vmax = 1.0_wp            ! Color scale maximum
+        logical :: scatter_vrange_set = .false.      ! Whether vmin/vmax are manually set
         ! Common properties
         real(wp), dimension(3) :: color
         character(len=:), allocatable :: label
@@ -177,7 +188,7 @@ module fortplot_figure_core
         procedure :: add_surface
         procedure :: add_scatter_2d
         procedure :: add_scatter_3d
-        generic :: add_scatter => add_scatter_2d, add_scatter_3d
+        procedure :: add_scatter => add_scatter_2d  ! Default to 2D
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
@@ -293,51 +304,60 @@ contains
         call update_data_ranges(self)
     end subroutine add_3d_plot
     
-    subroutine add_scatter_2d(self, x, y, label, marker, markersize, color)
-        !! Add 2D scatter plot - points only, no lines
-        !! Following KISS principle - delegates to add_plot with no line
+    subroutine add_scatter_2d(self, x, y, s, c, label, marker, markersize, color, &
+                              colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced 2D scatter plot with size and color mapping
+        !! Supports variable marker sizes (s) and colors (c) for bubble charts
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
         
-        character(len=10) :: linestyle
-        
-        ! Build linestyle string with marker only (no line)
-        if (present(marker)) then
-            linestyle = trim(marker)
-        else
-            linestyle = 'o'  ! Default to circles
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
         end if
         
-        ! Delegate to add_plot with marker-only style
-        call self%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+        call add_scatter_plot_data(self, x, y, s=s, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, colormap=colormap, &
+                                  vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        
+        call update_data_ranges(self)
     end subroutine add_scatter_2d
     
-    subroutine add_scatter_3d(self, x, y, z, label, marker, markersize, color)
-        !! Add 3D scatter plot - points only, no lines
-        !! Following KISS principle - delegates to add_3d_plot with no line
+    subroutine add_scatter_3d(self, x, y, z, s, c, label, marker, markersize, color, &
+                              colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced 3D scatter plot with size and color mapping
+        !! Supports variable marker sizes (s) and colors (c) for 3D bubble charts
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:)
+        real(wp), intent(in) :: x(:), y(:), z(:)   ! z is required for 3D
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
         
-        character(len=10) :: linestyle
-        
-        ! Build linestyle string with marker only (no line)
-        if (present(marker)) then
-            linestyle = trim(marker)
-        else
-            linestyle = 'o'  ! Default to circles
+        if (self%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached'
+            return
         end if
         
-        ! Delegate to add_3d_plot with marker-only style
-        call self%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
-                              markersize=markersize)
+        call add_scatter_plot_data(self, x, y, z=z, s=s, c=c, label=label, marker=marker, &
+                                  markersize=markersize, color=color, colormap=colormap, &
+                                  vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+        
+        call update_data_ranges(self)
     end subroutine add_scatter_3d
     
     subroutine add_surface(self, x, y, z, label)
@@ -2661,10 +2681,11 @@ contains
     
     subroutine ensure_directory_exists(filename)
         !! Create directory path for output file if it doesn't exist
+        use fortplot_security, only: safe_create_directory
         character(len=*), intent(in) :: filename
         character(len=:), allocatable :: dir_path
-        character(len=256) :: command
-        integer :: last_slash, status
+        integer :: last_slash
+        logical :: success
         
         ! Find the last directory separator
         last_slash = 0
@@ -2672,13 +2693,12 @@ contains
             if (filename(last_slash:last_slash) == '/') exit
         end do
         
-        ! If there's a directory path, create it
+        ! If there's a directory path, create it safely
         if (last_slash > 1) then
             dir_path = filename(1:last_slash-1)
-            ! Use mkdir -p to create parent directories as needed
-            write(command, '(A,A,A)') 'mkdir -p "', trim(dir_path), '"'
-            call execute_command_line(command, exitstat=status)
-            if (status /= 0) then
+            ! Use secure directory creation
+            call safe_create_directory(dir_path, success)
+            if (.not. success) then
                 call log_warning("Could not create directory: " // trim(dir_path))
             end if
         end if
@@ -2994,5 +3014,172 @@ contains
             self%y_max = max(self%y_max, y_max_plot)
         end if
     end subroutine update_data_ranges_boxplot
+
+    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
+                                    colormap, vmin, vmax, show_colorbar)
+        !! Helper subroutine to add enhanced scatter plot data with size and color mapping
+        use fortplot_markers, only: get_default_marker, validate_marker_style
+        use fortplot_colormap, only: validate_colormap_name
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+        
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: z(:)
+        real(wp), intent(in), optional :: s(:)     ! Size mapping array
+        real(wp), intent(in), optional :: c(:)     ! Color mapping array
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
+        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
+        
+        type(plot_data_t) :: plot_data
+        integer :: i, n_points
+        real(wp) :: c_min, c_max
+        
+        ! Input validation
+        n_points = size(x)
+        if (size(y) /= n_points) then
+            write(*, '(A)') 'Error: x and y arrays must have same size'
+            return
+        end if
+        
+        if (present(z) .and. size(z) /= n_points) then
+            write(*, '(A)') 'Error: z array must have same size as x and y'
+            return
+        end if
+        
+        if (present(s) .and. size(s) /= n_points) then
+            write(*, '(A)') 'Error: size array must have same size as x and y'
+            return
+        end if
+        
+        if (present(c) .and. size(c) /= n_points) then
+            write(*, '(A)') 'Error: color array must have same size as x and y'
+            return
+        end if
+        
+        ! Initialize plot data
+        plot_data%plot_type = PLOT_TYPE_SCATTER
+        
+        ! Filter valid data points (remove NaN/Inf)
+        call filter_valid_scatter_data(x, y, z, s, c, plot_data)
+        
+        ! Set marker style with validation
+        if (present(marker)) then
+            if (validate_marker_style(marker)) then
+                plot_data%marker = marker
+            else
+                plot_data%marker = get_default_marker()
+                write(*, '(A,A,A)') 'Warning: Invalid marker "', trim(marker), &
+                                  '", using default'
+            end if
+        else
+            plot_data%marker = get_default_marker()
+        end if
+        
+        ! Handle size mapping
+        if (present(s)) then
+            allocate(plot_data%scatter_sizes(size(plot_data%x)))
+            ! Copy and clamp sizes to reasonable range
+            do i = 1, size(plot_data%x)
+                plot_data%scatter_sizes(i) = max(1.0_wp, min(200.0_wp, s(i)))
+            end do
+        else if (present(markersize)) then
+            plot_data%scatter_size_default = markersize
+        end if
+        
+        ! Handle color mapping
+        if (present(c)) then
+            allocate(plot_data%scatter_colors(size(plot_data%x)))
+            plot_data%scatter_colors = c
+            
+            ! Auto-scale color range if not manually set
+            if (present(vmin) .and. present(vmax)) then
+                plot_data%scatter_vmin = vmin
+                plot_data%scatter_vmax = vmax
+                plot_data%scatter_vrange_set = .true.
+            else
+                c_min = minval(c, mask=ieee_is_finite(c))
+                c_max = maxval(c, mask=ieee_is_finite(c))
+                plot_data%scatter_vmin = c_min
+                plot_data%scatter_vmax = c_max
+                plot_data%scatter_vrange_set = .false.
+            end if
+            
+            ! Set colormap
+            if (present(colormap)) then
+                if (validate_colormap_name(colormap)) then
+                    plot_data%scatter_colormap = colormap
+                else
+                    plot_data%scatter_colormap = 'viridis'
+                    write(*, '(A,A,A)') 'Warning: Invalid colormap "', trim(colormap), &
+                                      '", using viridis'
+                end if
+            end if
+            
+            ! Enable colorbar for color mapping by default
+            plot_data%scatter_colorbar = .true.
+            if (present(show_colorbar)) plot_data%scatter_colorbar = show_colorbar
+        end if
+        
+        ! Set common properties
+        if (present(label)) plot_data%label = label
+        if (present(color)) plot_data%color = color
+        
+        ! Add to plots array
+        self%plot_count = self%plot_count + 1
+        self%plots(self%plot_count) = plot_data
+    end subroutine add_scatter_plot_data
+    
+    subroutine filter_valid_scatter_data(x_in, y_in, z_in, s_in, c_in, plot_data)
+        !! Filter out NaN and infinite values from scatter data
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+        
+        real(wp), intent(in) :: x_in(:), y_in(:)
+        real(wp), intent(in), optional :: z_in(:)
+        real(wp), intent(in), optional :: s_in(:)
+        real(wp), intent(in), optional :: c_in(:)
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        logical, allocatable :: valid_mask(:)
+        integer :: i, j, n_valid, n_total
+        
+        n_total = size(x_in)
+        allocate(valid_mask(n_total))
+        
+        ! Create mask for valid data points
+        do i = 1, n_total
+            valid_mask(i) = ieee_is_finite(x_in(i)) .and. ieee_is_finite(y_in(i))
+            if (present(z_in)) valid_mask(i) = valid_mask(i) .and. ieee_is_finite(z_in(i))
+        end do
+        
+        n_valid = count(valid_mask)
+        
+        if (n_valid == 0) then
+            write(*, '(A)') 'Warning: No valid data points for scatter plot'
+            return
+        end if
+        
+        ! Allocate arrays for valid data
+        allocate(plot_data%x(n_valid))
+        allocate(plot_data%y(n_valid))
+        if (present(z_in)) allocate(plot_data%z(n_valid))
+        
+        ! Copy valid data points
+        j = 1
+        do i = 1, n_total
+            if (valid_mask(i)) then
+                plot_data%x(j) = x_in(i)
+                plot_data%y(j) = y_in(i)
+                if (present(z_in)) plot_data%z(j) = z_in(i)
+                j = j + 1
+            end if
+        end do
+        
+        deallocate(valid_mask)
+    end subroutine filter_valid_scatter_data
 
 end module fortplot_figure_core

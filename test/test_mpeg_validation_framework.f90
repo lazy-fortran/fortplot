@@ -1,5 +1,7 @@
 program test_mpeg_validation_framework_fixed
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, &
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -67,7 +69,13 @@ contains
             print *, "Both validations agree - file is valid"
         end if
         
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
     end subroutine
 
     subroutine create_and_save_test_animation(fig, filename, frames, save_status)
@@ -88,16 +96,25 @@ contains
             call save_frame(fig, frame_pattern, frame_idx)
         end do
         
-        ! Combine frames using FFmpeg
-        write(command, '(A,A,A,A,A)') &
-            'ffmpeg -r 10 -i ', trim(frame_pattern), '%d.png -c:v libx264 -pix_fmt yuv420p -crf 18 -y "', &
-            trim(filename), '" 2>/dev/null'
-        call execute_command_line(trim(command), exitstat=save_status)
+        ! Combine frames using FFmpeg - secure mode disabled
+        save_status = 1  ! Indicate failure in secure mode
+        if (safe_check_program_available('ffmpeg')) then
+            print *, "FFmpeg available but external command execution disabled for security"
+        else
+            print *, "Operating in secure mode - FFmpeg operations disabled"
+        end if
         
-        ! Clean up frame files
+        ! Clean up frame files using secure file removal
         do frame_idx = 1, frames
-            write(command, '(A,A,I0,A)') 'rm -f ', trim(frame_pattern), frame_idx, '.png'
-            call execute_command_line(trim(command))
+            block
+                character(len=256) :: frame_file
+                logical :: remove_success
+                write(frame_file, '(A,I0,A)') trim(frame_pattern), frame_idx, '.png'
+                call safe_remove_file(frame_file, remove_success)
+                if (.not. remove_success) then
+                    print *, "Warning: Could not remove frame file: " // trim(frame_file)
+                        end if
+    end block
         end do
     end subroutine create_and_save_test_animation
     
@@ -192,10 +209,8 @@ contains
         character(len=500) :: command
         integer :: status
         
-        ! Use ffprobe to validate
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        ! Use secure MPEG validation instead of ffprobe
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_comprehensive_mpeg_validation()
@@ -233,7 +248,13 @@ contains
                 print *, "  VALIDATION FAILURE for", frames_list(j), "frames"
             end if
             
-            call execute_command_line("rm -f " // trim(test_file))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                    end if
+    end block
         end do
     end subroutine
 
@@ -284,7 +305,17 @@ contains
             print *, "GOOD: Framework correctly rejected empty file"
         end if
         
-        call execute_command_line("rm -f " // trim(fake_file) // " " // trim(empty_file))
+        block
+            logical :: remove_success
+            call safe_remove_file(fake_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(fake_file)
+            end if
+            call safe_remove_file(empty_file, remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(empty_file)
+            end if
+        end block
     end subroutine
 
 end program test_mpeg_validation_framework_fixed

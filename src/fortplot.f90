@@ -29,11 +29,11 @@ module fortplot
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
-    public :: hist, histogram
+    public :: hist, histogram, scatter
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
-    public :: add_3d_plot, add_surface
+    public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     public :: bar, barh
@@ -59,6 +59,10 @@ module fortplot
     character(len=*), parameter, public :: MARKER_DIAMOND = 'D'
     character(len=*), parameter, public :: MARKER_PLUS = '+'
     character(len=*), parameter, public :: MARKER_STAR = '*'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_UP = '^'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_DOWN = 'v'
+    character(len=*), parameter, public :: MARKER_PENTAGON = 'p'
+    character(len=*), parameter, public :: MARKER_HEXAGON = 'h'
 
 
     ! Interface for overloaded show routine
@@ -540,23 +544,15 @@ contains
 
     function is_gui_available() result(gui_available)
         !! Check if GUI environment is available for opening plots
-        !! Supports X11, Wayland, macOS, and Windows
+        !! Secure version that only checks environment variables
         logical :: gui_available
         character(len=256) :: display_var, wayland_var, session_type
-        character(len=512) :: test_command
-        integer :: status, exit_stat
+        integer :: status
         
         gui_available = .false.
         
 #ifdef __linux__
-        ! First check if xdg-open is available (required for GUI)
-        test_command = 'which xdg-open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        if (exit_stat /= 0) then
-            return  ! No xdg-open, definitely no GUI
-        end if
-        
-        ! Check for Wayland (modern Linux GUI)
+        ! Check for Wayland (modern Linux GUI) - secure environment variable check
         call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
         if (status == 0 .and. len_trim(wayland_var) > 0) then
             gui_available = .true.
@@ -575,43 +571,28 @@ contains
             end if
         end if
         
-        ! Check for X11 (traditional Linux GUI)  
+        ! Check for X11 (traditional Linux GUI) - only environment variable
         call get_environment_variable('DISPLAY', display_var, status=status)
         if (status == 0 .and. len_trim(display_var) > 0) then
-            ! Test if X11 display is actually accessible
-            test_command = 'xset q >/dev/null 2>&1'
-            call execute_command_line(test_command, exitstat=exit_stat)
-            gui_available = (exit_stat == 0)
+            gui_available = .true.
         end if
 #elif defined(__APPLE__)
-        ! On macOS, check if 'open' command exists (should always be there)
-        test_command = 'which open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        gui_available = (exit_stat == 0)
+        ! On macOS, assume GUI is available (secure assumption)
+        gui_available = .true.
 #elif defined(_WIN32) || defined(_WIN64)
         ! Windows typically has GUI available  
         gui_available = .true.
 #else
-        ! For other Unix-like systems, check both Wayland and X11
-        test_command = 'which xdg-open >/dev/null 2>&1'
-        call execute_command_line(test_command, exitstat=exit_stat)
-        if (exit_stat /= 0) then
-            return  ! No xdg-open
-        end if
-        
-        ! Check Wayland first
+        ! For other Unix-like systems, check environment variables only
         call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
         if (status == 0 .and. len_trim(wayland_var) > 0) then
             gui_available = .true.
             return
         end if
         
-        ! Then check X11
         call get_environment_variable('DISPLAY', display_var, status=status)
         if (status == 0 .and. len_trim(display_var) > 0) then
-            test_command = 'xset q >/dev/null 2>&1'
-            call execute_command_line(test_command, exitstat=exit_stat)
-            gui_available = (exit_stat == 0)
+            gui_available = .true.
         end if
 #endif
     end function is_gui_available
@@ -623,11 +604,11 @@ contains
         !! Arguments:
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         use iso_fortran_env, only: int64
+        use fortplot_security, only: safe_launch_viewer, safe_remove_file
         
         logical, intent(in), optional :: blocking
-        logical :: do_block
+        logical :: do_block, success
         character(len=256) :: temp_filename
-        character(len=512) :: command
         character(len=32) :: timestamp
         integer :: stat
         integer(int64) :: time_val
@@ -653,20 +634,14 @@ contains
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
         
-        ! Open with system default viewer
-#ifdef __linux__
-        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
-#elif defined(__APPLE__)
-        command = 'open "' // trim(temp_filename) // '"'
-#elif defined(_WIN32) || defined(_WIN64)
-        command = 'start "" "' // trim(temp_filename) // '"'
-#else
-        ! Fallback - try xdg-open (most Unix-like systems)
-        command = 'xdg-open "' // trim(temp_filename) // '" 2>/dev/null'
-#endif
+        ! Open with secure viewer launch
+        call safe_launch_viewer(temp_filename, success)
         
-        ! Execute system command to open file
-        call execute_command_line(command, wait=.false., exitstat=stat)
+        if (success) then
+            stat = 0
+        else
+            stat = 1
+        end if
         
         if (stat /= 0) then
             call log_warning('Failed to open plot viewer. Plot saved to: ' // trim(temp_filename))
@@ -678,20 +653,14 @@ contains
                 call log_info('Press Enter to continue and clean up temporary file...')
                 read(*,*)
                 
-                ! Clean up temporary file
-#ifdef __linux__ 
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#elif defined(__APPLE__)
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#elif defined(_WIN32) || defined(_WIN64)
-                command = 'del "' // trim(temp_filename) // '"'
-#else
-                command = 'rm -f "' // trim(temp_filename) // '"'
-#endif
-                call execute_command_line(command)
+                ! Clean up temporary file securely
+                call safe_remove_file(temp_filename, success)
+                if (.not. success) then
+                    call log_warning('Could not remove temporary file: ' // trim(temp_filename))
+                end if
             else
                 ! In non-blocking mode, just inform that file stays
-            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
+                call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
             end if
         end if
     end subroutine show_viewer_implementation
@@ -715,6 +684,63 @@ contains
         
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
+
+    subroutine scatter(x, y, s, c, label, marker, markersize, color, &
+                      colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the scatter plot
+        !!   s: Optional size mapping array for bubble charts
+        !!   c: Optional color mapping array for color-coded plots
+        !!   label: Optional label for the plot
+        !!   marker: Optional marker style ('o', 's', 'D', 'x', '+', '*', '^', 'v', 'p', 'h')
+        !!   markersize: Optional default marker size when s not provided
+        !!   color: Optional RGB color array [0-1] for uniform coloring
+        !!   colormap: Optional colormap name ('viridis', 'plasma', 'inferno', 'coolwarm', etc.)
+        !!   vmin, vmax: Optional color scale limits
+        !!   show_colorbar: Optional flag to show colorbar for color mapping
+        !!
+        !! Examples:
+        !!   ! Basic scatter plot
+        !!   call scatter(x, y, label='Data Points')
+        !!   
+        !!   ! Bubble chart with size mapping
+        !!   call scatter(x, y, s=sizes, label='Bubble Chart')
+        !!   
+        !!   ! Color-mapped scatter plot
+        !!   call scatter(x, y, c=values, colormap='viridis', label='Color Mapped')
+        !!   
+        !!   ! Full featured scatter plot
+        !!   call scatter(x, y, s=sizes, c=values, marker='s', colormap='plasma', &
+        !!               vmin=0.0_real64, vmax=1.0_real64, label='Advanced Scatter')
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call ensure_global_figure_initialized()
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine scatter
+
+    subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
+                          colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (wrapper for consistency)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine add_scatter
 
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)

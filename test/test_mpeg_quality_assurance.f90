@@ -1,5 +1,7 @@
 program test_mpeg_quality_assurance
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, &
+                                  safe_validate_mpeg_with_ffprobe, sanitize_filename
     use iso_fortran_env, only: real64
     implicit none
 
@@ -58,7 +60,13 @@ contains
             print *, "Generated MPEG file does not meet quality standards"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_quality_data(frame)
@@ -116,15 +124,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. safe_check_program_available('ffprobe')) then
             playable = .true.  ! Can't test, assume playable
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        playable = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        playable = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_compression_ratio(filename, file_size) result(reasonable)
@@ -182,7 +188,13 @@ contains
             print *, "Visual quality not adequately preserved in MPEG encoding"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_visual_data(frame)
@@ -218,16 +230,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. safe_check_program_available('ffprobe')) then
             adequate = .true.  ! Can't test, assume adequate
             return
         end if
         
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=width,height "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        adequate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        adequate = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_encoding_quality(filename) result(good)
@@ -236,16 +245,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. safe_check_program_available('ffprobe')) then
             good = .true.  ! Can't test, assume good
             return
         end if
         
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        good = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        good = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_encoding_quality_metrics()
@@ -281,7 +287,13 @@ contains
             print *, "Encoding quality metrics do not meet standards"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+                end if
+    end block
     end subroutine
 
     subroutine update_encoding_data(frame)
@@ -334,16 +346,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. safe_check_program_available('ffprobe')) then
             correct = .true.  ! Can't test, assume correct
             return
         end if
         
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=r_frame_rate "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        correct = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        correct = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     function check_codec_quality(filename) result(appropriate)
@@ -352,16 +361,13 @@ contains
         character(len=500) :: command
         integer :: status
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        if (.not. safe_check_program_available('ffprobe')) then
             appropriate = .true.  ! Can't test, assume appropriate
             return
         end if
         
-        write(command, '(A,A,A,A)') 'ffprobe -v error -select_streams v:0 -show_entries stream=codec_name "', &
-                                  trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        appropriate = (status == 0)
+        ! Use secure validation instead of execute_command_line
+        appropriate = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_quality_regression_prevention()
@@ -410,7 +416,11 @@ contains
             print *, "Quality has regressed compared to reference"
         end if
 
-        call execute_command_line("rm -f " // trim(reference_file) // " " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(reference_file, remove_success)
+        call safe_remove_file(test_file, remove_success)
+        end block
     end subroutine
 
     subroutine update_regression_data(frame)

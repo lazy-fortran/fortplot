@@ -1,5 +1,6 @@
 program test_mpeg_regression_validation
     use fortplot
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
 
@@ -62,7 +63,13 @@ contains
             print *, "Moving dot regression test passed"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_moving_dot_data(frame)
@@ -142,18 +149,15 @@ contains
     function check_tool_regression(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        character(len=500) :: command
-        integer :: status
+        logical :: ffprobe_available
         
-        call execute_command_line("which ffprobe >/dev/null 2>&1", exitstat=status)
-        if (status /= 0) then
+        ffprobe_available = safe_check_program_available('ffprobe')
+        if (.not. ffprobe_available) then
             valid = .true.  ! Can't test, assume valid
             return
         end if
         
-        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
-        call execute_command_line(command, exitstat=status)
-        valid = (status == 0)
+        valid = safe_validate_mpeg_with_ffprobe(filename)
     end function
 
     subroutine test_size_624_bytes_regression()
@@ -195,7 +199,13 @@ contains
             print *, "624-byte size regression test passed"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_624_bytes_data(frame)
@@ -266,7 +276,13 @@ contains
             print *, "False positive pattern regression test passed"
         end if
 
-        call execute_command_line("rm -f " // trim(test_file))
+        block
+        logical :: remove_success
+        call safe_remove_file(test_file, remove_success)
+        if (.not. remove_success) then
+            print *, "Warning: Could not remove temporary file: " // trim(test_file)
+        end if
+        end block
     end subroutine
 
     subroutine update_false_positive_data(frame)
@@ -343,7 +359,13 @@ contains
         end if
 
         do i_test = 1, 3
-            call execute_command_line("rm -f " // trim(test_files(i_test)))
+            block
+            logical :: remove_success
+            call safe_remove_file(test_files(i_test), remove_success)
+            if (.not. remove_success) then
+                print *, "Warning: Could not remove temporary file: " // trim(test_files(i_test))
+            end if
+            end block
         end do
     end subroutine
 
