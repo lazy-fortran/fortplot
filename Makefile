@@ -70,8 +70,8 @@ run-release:
 doc:
 	ford doc.md
 	# Copy example media files to doc build directory for proper linking
-	mkdir -p build/doc/example
-	if [ -d build/example ]; then cp -r build/example/* build/doc/example/ 2>/dev/null || true; fi
+	mkdir -p build/doc/media/examples
+	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; fi
 
 # Generate coverage report
 coverage:
