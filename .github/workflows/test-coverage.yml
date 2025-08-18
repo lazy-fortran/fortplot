@@ -15,10 +15,10 @@ jobs:
         chmod +x fpm-0.12.0-linux-x86_64-gcc-12
         sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
 
-    - name: Install GFortran, CMake and gcov
+    - name: Install GFortran, CMake, gcov, and PIL
       run: |
         sudo apt-get update
-        sudo apt-get install -y gfortran gcovr cmake ffmpeg
+        sudo apt-get install -y gfortran gcovr cmake ffmpeg python3-pil
 
     - name: Set compiler
       run: |
@@ -41,6 +41,40 @@ jobs:
     - name: Test CMake example build
       run: |
         make test ARGS="--target test_system_cmake_example"
+
+    - name: Validate PNG output with PIL
+      run: |
+        python3 -c "
+        from PIL import Image
+        import glob
+        import os
+        
+        # Find PNG files generated during tests
+        png_files = glob.glob('output/**/*.png', recursive=True)
+        if not png_files:
+            print('⚠️  No PNG files found for validation')
+            exit(0)
+            
+        validated_count = 0
+        for png_file in png_files[:10]:  # Validate first 10 files
+            try:
+                # Test PIL compatibility
+                img = Image.open(png_file)
+                width, height = img.size
+                mode = img.mode
+                print(f'✅ {os.path.basename(png_file)}: {width}x{height} {mode}')
+                
+                # Test structure validation
+                img_verify = Image.open(png_file)
+                img_verify.verify()
+                validated_count += 1
+                
+            except Exception as e:
+                print(f'❌ {os.path.basename(png_file)}: {e}')
+                exit(1)
+                
+        print(f'✅ PIL validation passed for {validated_count} PNG files')
+        "
 
     - name: Generate coverage report
       if: always()
