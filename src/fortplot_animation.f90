@@ -1,7 +1,7 @@
 module fortplot_animation
     use iso_fortran_env, only: real64, wp => real64
     use iso_c_binding, only: c_char, c_int, c_null_char
-    use fortplot_figure_core, only: figure_t, plot_data_t
+    use fortplot_figure_core, only: figure_t, plot_data_t, ensure_directory_exists
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
     use fortplot_logging, only: log_error, log_info, log_warning
@@ -131,6 +131,9 @@ contains
         end if
         
         actual_fps = get_fps_or_default(fps)
+        
+        ! Ensure output directory exists
+        call ensure_directory_exists(filename)
         
         call save_animation_with_ffmpeg_pipe(self, filename, actual_fps, stat)
         

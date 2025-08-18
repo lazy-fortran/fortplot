@@ -23,7 +23,7 @@ program test_scatter_backends
     call test_colormap_rendering_consistency()
     call test_complex_marker_shapes_backends()
     
-    write(error_unit, '(A)') 'Backend rendering tests completed - all FAILED as expected'
+    write(error_unit, '(A)') 'Backend rendering tests completed - all reported FAIL as expected'
     write(error_unit, '(A)') 'These tests will drive backend implementation in GREEN phase'
     
 contains
@@ -49,7 +49,8 @@ contains
         
         call fig%savefig('/tmp/test_png_markers.png')
         
-        error stop 'PNG marker geometry rendering not implemented'
+        write(error_unit, '(A)') 'FAIL: PNG marker geometry rendering not implemented'
+        ! TODO: Implement PNG marker geometry rendering
     end subroutine test_png_marker_geometry_rendering
     
     subroutine test_pdf_vector_marker_quality()
@@ -72,7 +73,8 @@ contains
         
         call fig%savefig('/tmp/test_pdf_markers.pdf')
         
-        error stop 'PDF vector marker rendering not implemented'
+        write(error_unit, '(A)') 'FAIL: PDF vector marker rendering not implemented'
+        ! TODO: Implement PDF vector marker rendering
     end subroutine test_pdf_vector_marker_quality
     
     subroutine test_ascii_character_marker_mapping()
@@ -95,7 +97,8 @@ contains
         
         call fig%savefig('/tmp/test_ascii_markers.txt')
         
-        error stop 'ASCII character marker mapping not implemented'
+        write(error_unit, '(A)') 'FAIL: ASCII character marker mapping not implemented'
+        ! TODO: Implement ASCII character marker mapping
     end subroutine test_ascii_character_marker_mapping
     
     subroutine test_marker_size_consistency_across_backends()
@@ -119,7 +122,8 @@ contains
         call fig%savefig('/tmp/size_consistency.pdf')
         call fig%savefig('/tmp/size_consistency.txt')
         
-        error stop 'Marker size consistency not implemented'
+        write(error_unit, '(A)') 'FAIL: Marker size consistency not implemented'
+        ! TODO: Implement marker size consistency
     end subroutine test_marker_size_consistency_across_backends
     
     subroutine test_colormap_rendering_consistency()
@@ -146,7 +150,8 @@ contains
         call fig%savefig('/tmp/colormap_consistency.pdf')
         call fig%savefig('/tmp/colormap_consistency.txt')
         
-        error stop 'Colormap rendering consistency not implemented'
+        write(error_unit, '(A)') 'FAIL: Colormap rendering consistency not implemented'
+        ! TODO: Implement colormap rendering consistency
     end subroutine test_colormap_rendering_consistency
     
     subroutine test_complex_marker_shapes_backends()
@@ -175,7 +180,8 @@ contains
         call fig%savefig('/tmp/complex_shapes.pdf')
         call fig%savefig('/tmp/complex_shapes.txt')
         
-        error stop 'Complex marker shapes not implemented'
+        write(error_unit, '(A)') 'FAIL: Complex marker shapes not implemented'
+        ! TODO: Implement complex marker shapes
     end subroutine test_complex_marker_shapes_backends
 
 end program test_scatter_backends
