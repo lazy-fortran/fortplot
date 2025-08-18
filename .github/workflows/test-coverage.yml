@@ -18,7 +18,7 @@ jobs:
     - name: Install GFortran, CMake, gcov, and PIL
       run: |
         sudo apt-get update
-        sudo apt-get install -y gfortran gcovr cmake ffmpeg python3-pil
+        sudo apt-get install -y gfortran gcovr cmake ffmpeg python3-pil pngcheck
 
     - name: Set compiler
       run: |
