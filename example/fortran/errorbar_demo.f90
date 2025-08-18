@@ -32,7 +32,7 @@ program errorbar_demo
     call fig%set_title('Basic Symmetric Y Error Bars')
     call fig%set_xlabel('X values')
     call fig%set_ylabel('Y values')
-    call fig%savefig('errorbar_basic_y.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_basic_y.png')
     write(*,*) 'Created errorbar_basic_y.png'
     
     ! Symmetric X error bars
@@ -42,7 +42,7 @@ program errorbar_demo
     call fig%set_title('Symmetric X Error Bars')
     call fig%set_xlabel('X values')
     call fig%set_ylabel('Y values')
-    call fig%savefig('errorbar_basic_x.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_basic_x.png')
     write(*,*) 'Created errorbar_basic_x.png'
     
     ! Both X and Y error bars
@@ -52,7 +52,7 @@ program errorbar_demo
     call fig%set_title('Combined X and Y Error Bars')
     call fig%set_xlabel('X values')
     call fig%set_ylabel('Y values')
-    call fig%savefig('errorbar_combined.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_combined.png')
     write(*,*) 'Created errorbar_combined.png'
     
     ! Asymmetric Y error bars
@@ -63,7 +63,7 @@ program errorbar_demo
     call fig%set_title('Asymmetric Y Error Bars')
     call fig%set_xlabel('X values')
     call fig%set_ylabel('Y values')
-    call fig%savefig('errorbar_asymmetric.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_asymmetric.png')
     write(*,*) 'Created errorbar_asymmetric.png'
     
     ! Error bars with markers and customization
@@ -75,7 +75,7 @@ program errorbar_demo
     call fig%set_title('Customized Error Bars with Markers')
     call fig%set_xlabel('X values')
     call fig%set_ylabel('Y values')
-    call fig%savefig('errorbar_custom.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_custom.png')
     write(*,*) 'Created errorbar_custom.png'
     
     ! Scientific data example
@@ -93,7 +93,7 @@ program errorbar_demo
     call fig%set_title('Scientific Data with Error Bars')
     call fig%set_xlabel('Time (s)')
     call fig%set_ylabel('Signal amplitude')
-    call fig%savefig('errorbar_scientific.png')
+    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_scientific.png')
     write(*,*) 'Created errorbar_scientific.png'
     
     write(*,*) 'Error bar demonstration completed!'

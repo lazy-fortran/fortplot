@@ -46,6 +46,14 @@ jobs:
       run: |
         make build
 
+    - name: Build required examples for tests
+      run: |
+        make example ARGS="basic_plots"
+        make example ARGS="legend_demo"
+        make example ARGS="contour_demo"
+        make example ARGS="marker_demo"
+        make example ARGS="format_string_demo"
+
     - name: Run all tests
       run: |
         mkdir -p /tmp/test
@@ -58,10 +66,6 @@ jobs:
     - name: Test CMake example  
       run: |
         make test ARGS="--target test_system_cmake_example"
-
-    - name: Build examples
-      run: |
-        make example ARGS="basic_plots"
 
     # TODO: Enable after PNG encoder fix (Issue #96)
     # - name: PNG Validation Tests
