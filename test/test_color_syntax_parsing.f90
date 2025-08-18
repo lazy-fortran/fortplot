@@ -3,6 +3,7 @@ program test_color_syntax_parsing
     !! Tests hex colors, RGB tuples, named colors, and single letter colors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_colors, only: parse_color, parse_color_rgba, is_valid_color
     implicit none
     
     integer :: test_count = 0
@@ -321,37 +322,7 @@ contains
         call end_test()
     end subroutine test_edge_cases
 
-    ! Test infrastructure functions that must fail until implementation exists
-    subroutine parse_color(color_str, rgb, success)
-        character(len=*), intent(in) :: color_str
-        real(wp), intent(out) :: rgb(3)
-        logical, intent(out) :: success
-        
-        ! This will fail until the actual implementation is created
-        success = .false.
-        rgb = [0.0_wp, 0.0_wp, 0.0_wp]
-        error stop "parse_color not implemented - RED phase test"
-    end subroutine parse_color
-
-    subroutine parse_color_rgba(color_str, rgba, success)
-        character(len=*), intent(in) :: color_str
-        real(wp), intent(out) :: rgba(4)
-        logical, intent(out) :: success
-        
-        ! This will fail until the actual implementation is created
-        success = .false.
-        rgba = [0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp]
-        error stop "parse_color_rgba not implemented - RED phase test"
-    end subroutine parse_color_rgba
-
-    function is_valid_color(color_str) result(is_valid)
-        character(len=*), intent(in) :: color_str
-        logical :: is_valid
-        
-        ! This will fail until the actual implementation is created
-        is_valid = .false.
-        error stop "is_valid_color not implemented - RED phase test"
-    end function is_valid_color
+    ! Using real implementations from fortplot_colors module
 
     ! Testing utilities
     subroutine start_test(test_name)

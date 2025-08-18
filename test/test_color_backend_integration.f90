@@ -3,7 +3,7 @@ program test_color_backend_integration
     !! Tests unified color representation and backend-specific rendering
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_figure
+    use fortplot, only: figure_t, validate_color_for_backend
     implicit none
     
     integer :: test_count = 0
@@ -295,18 +295,11 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in) :: color_str, label
         
-        ! This will fail until color string support is implemented
-        error stop "add_plot with color_str not implemented - RED phase test"
+        ! Use real implementation
+        call fig%add_plot(x, y, color_str=color_str, label=label)
     end subroutine add_plot_with_color_str
 
-    function validate_color_for_backend(color_str, backend) result(is_valid)
-        character(len=*), intent(in) :: color_str, backend
-        logical :: is_valid
-        
-        ! This will fail until backend validation is implemented
-        is_valid = .false.
-        error stop "validate_color_for_backend not implemented - RED phase test"
-    end function validate_color_for_backend
+    ! Note: validate_color_for_backend is now imported from fortplot module
 
     ! File and content assertion functions that must fail until implementation
     subroutine assert_file_exists(filename, message)

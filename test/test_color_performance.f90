@@ -2,8 +2,8 @@ program test_color_performance
     !! Test suite for color parsing and rendering performance validation
     !! Tests performance benchmarks and caching mechanisms
     
-    use, intrinsic :: iso_fortran_env, only: wp => real64
-    use, intrinsic :: iso_fortran_env, only: int64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int64
+    use fortplot_colors, only: parse_color, parse_colors_bulk, clear_color_cache, get_cache_hit_rate
     implicit none
     
     integer :: test_count = 0
@@ -345,32 +345,11 @@ contains
     end subroutine test_large_dataset_color_mapping
 
     ! Performance test utility functions that must fail until implementation
-    subroutine parse_color(color_str, rgb, success)
-        character(len=*), intent(in) :: color_str
-        real(wp), intent(out) :: rgb(3)
-        logical, intent(out) :: success
-        
-        ! This will fail until color parsing is implemented
-        success = .false.
-        rgb = [0.0_wp, 0.0_wp, 0.0_wp]
-        error stop "parse_color not implemented - RED phase test"
-    end subroutine parse_color
+    ! parse_color now imported from fortplot_colors module
 
-    subroutine parse_colors_bulk(color_specs, rgb_results, success_flags)
-        character(len=*), intent(in) :: color_specs(:)
-        real(wp), intent(out) :: rgb_results(:,:)
-        logical, intent(out) :: success_flags(:)
-        
-        ! This will fail until bulk color parsing is implemented
-        success_flags = .false.
-        rgb_results = 0.0_wp
-        error stop "parse_colors_bulk not implemented - RED phase test"
-    end subroutine parse_colors_bulk
+    ! parse_colors_bulk now imported from fortplot_colors module
 
-    subroutine clear_color_cache()
-        ! This will fail until color caching is implemented
-        error stop "clear_color_cache not implemented - RED phase test"
-    end subroutine clear_color_cache
+    ! clear_color_cache now imported from fortplot_colors module
 
     function get_memory_usage() result(memory_kb)
         integer :: memory_kb

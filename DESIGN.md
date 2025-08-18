@@ -2129,10 +2129,900 @@ This validation framework provides maximum strategic impact by:
 
 The Functional Output Validation Framework represents the most critical foundation layer enhancement for fortplot. By ensuring that every plotting feature actually produces usable output, this framework prevents the most serious failure mode - working code that generates no visual results. The comprehensive validation approach protects user workflows, maintains documentation accuracy, and builds trust in library reliability while establishing a quality culture that scales with library growth and complexity.
 
+## Matplotlib-Compatible Color Syntax Architecture (Issue #7)
+
+### Critical Foundation Infrastructure Analysis
+**STRATEGIC IMPORTANCE**: Matplotlib-compatible color syntax represents core foundation infrastructure affecting ALL plotting functionality across fortplot. Color support is fundamental to professional scientific visualization and user adoption.
+
+**Root Problem Assessment**:
+- **Missing Color Infrastructure**: No standardized color parsing throughout fortplot library
+- **Inconsistent Color Handling**: Ad-hoc color approaches across different plot types
+- **Limited User Experience**: Users expect matplotlib's familiar color syntax ('red', '#FF0000', [1,0,0])
+- **Backend Fragmentation**: Different color handling approaches across PNG/PDF/ASCII backends
+- **API Completeness Gap**: Major matplotlib compatibility feature missing across all plotting functions
+
+### Foundation Layer Color Architecture
+
+#### Core Color System Infrastructure
+**Universal Color Representation** (`src/fortplot_colors.f90`):
+```fortran
+module fortplot_colors
+    use fortplot_kinds, only: wp
+    implicit none
+    private
+    
+    ! Public color interfaces
+    public :: color_t, parse_color, rgb_to_hex, hex_to_rgb
+    public :: get_named_color, validate_color_string
+    public :: DEFAULT_COLORS, TABLEAU_COLORS, CSS4_COLORS
+    
+    ! Core color data structure
+    type :: color_t
+        real(wp) :: r = 0.0_wp  ! Red component [0,1]
+        real(wp) :: g = 0.0_wp  ! Green component [0,1]
+        real(wp) :: b = 0.0_wp  ! Blue component [0,1] 
+        real(wp) :: a = 1.0_wp  ! Alpha channel [0,1]
+        logical :: is_valid = .false.
+    contains
+        procedure :: to_rgb => color_to_rgb_array
+        procedure :: to_hex => color_to_hex_string
+        procedure :: set_rgb => color_set_rgb
+        procedure :: set_alpha => color_set_alpha
+        procedure :: blend_with => color_blend_with
+    end type
+    
+    ! Standard color palettes
+    type(color_t), parameter :: DEFAULT_COLORS(10) = [&
+        color_t(0.12_wp, 0.47_wp, 0.71_wp, 1.0_wp, .true.), &  ! Blue
+        color_t(1.00_wp, 0.50_wp, 0.05_wp, 1.0_wp, .true.), &  ! Orange  
+        color_t(0.17_wp, 0.63_wp, 0.17_wp, 1.0_wp, .true.), &  ! Green
+        color_t(0.84_wp, 0.15_wp, 0.16_wp, 1.0_wp, .true.), &  ! Red
+        color_t(0.58_wp, 0.40_wp, 0.74_wp, 1.0_wp, .true.), &  ! Purple
+        color_t(0.55_wp, 0.34_wp, 0.29_wp, 1.0_wp, .true.), &  ! Brown
+        color_t(0.89_wp, 0.47_wp, 0.76_wp, 1.0_wp, .true.), &  ! Pink
+        color_t(0.50_wp, 0.50_wp, 0.50_wp, 1.0_wp, .true.), &  ! Gray
+        color_t(0.74_wp, 0.74_wp, 0.13_wp, 1.0_wp, .true.), &  ! Olive
+        color_t(0.09_wp, 0.75_wp, 0.81_wp, 1.0_wp, .true.)  ]  ! Cyan
+    
+contains
+    ! Universal color parsing function
+    function parse_color(color_spec, success, error_msg) result(color)
+        character(len=*), intent(in) :: color_spec
+        logical, intent(out), optional :: success
+        character(len=:), allocatable, intent(out), optional :: error_msg
+        type(color_t) :: color
+        
+        logical :: parse_success
+        character(len=200) :: parse_error
+        
+        ! Initialize
+        parse_success = .false.
+        parse_error = ''
+        color = color_t()
+        
+        ! Trim and process input
+        character(len=len_trim(color_spec)) :: spec
+        spec = trim(adjustl(color_spec))
+        
+        if (len(spec) == 0) then
+            parse_error = 'Empty color specification'
+        else if (spec(1:1) == '#') then
+            ! Hex color: #RGB, #RRGGBB, #RRGGBBAA
+            call parse_hex_color(spec, color, parse_success, parse_error)
+        else if (spec(1:1) == '[' .or. spec(1:1) == '(') then
+            ! RGB/RGBA tuple: [r,g,b], (r,g,b,a)
+            call parse_rgb_tuple(spec, color, parse_success, parse_error)
+        else if (len(spec) == 1) then
+            ! Single letter: 'r', 'g', 'b', 'c', 'm', 'y', 'k', 'w'
+            call parse_single_letter(spec, color, parse_success, parse_error)
+        else
+            ! Named color: 'red', 'blue', 'darkgreen'
+            call parse_named_color(spec, color, parse_success, parse_error)
+        end if
+        
+        ! Set output parameters
+        if (present(success)) success = parse_success
+        if (present(error_msg)) error_msg = trim(parse_error)
+        
+        color%is_valid = parse_success
+    end function
+    
+    ! Hex color parsing: #RGB, #RRGGBB, #RRGGBBAA
+    subroutine parse_hex_color(hex_spec, color, success, error_msg)
+        character(len=*), intent(in) :: hex_spec
+        type(color_t), intent(out) :: color
+        logical, intent(out) :: success
+        character(len=*), intent(out) :: error_msg
+        
+        integer :: hex_len, r_val, g_val, b_val, a_val
+        character(len=len(hex_spec)-1) :: hex_digits
+        
+        hex_digits = hex_spec(2:)  ! Remove '#'
+        hex_len = len(hex_digits)
+        
+        success = .false.
+        
+        select case (hex_len)
+        case (3)  ! #RGB -> #RRGGBB
+            if (parse_hex_digit_pair(hex_digits(1:1)//hex_digits(1:1), r_val) .and. &
+                parse_hex_digit_pair(hex_digits(2:2)//hex_digits(2:2), g_val) .and. &
+                parse_hex_digit_pair(hex_digits(3:3)//hex_digits(3:3), b_val)) then
+                color%r = real(r_val, wp) / 255.0_wp
+                color%g = real(g_val, wp) / 255.0_wp  
+                color%b = real(b_val, wp) / 255.0_wp
+                color%a = 1.0_wp
+                success = .true.
+            else
+                error_msg = 'Invalid hex digits in 3-digit color: ' // hex_spec
+            end if
+            
+        case (6)  ! #RRGGBB
+            if (parse_hex_digit_pair(hex_digits(1:2), r_val) .and. &
+                parse_hex_digit_pair(hex_digits(3:4), g_val) .and. &
+                parse_hex_digit_pair(hex_digits(5:6), b_val)) then
+                color%r = real(r_val, wp) / 255.0_wp
+                color%g = real(g_val, wp) / 255.0_wp
+                color%b = real(b_val, wp) / 255.0_wp
+                color%a = 1.0_wp
+                success = .true.
+            else
+                error_msg = 'Invalid hex digits in 6-digit color: ' // hex_spec
+            end if
+            
+        case (8)  ! #RRGGBBAA
+            if (parse_hex_digit_pair(hex_digits(1:2), r_val) .and. &
+                parse_hex_digit_pair(hex_digits(3:4), g_val) .and. &
+                parse_hex_digit_pair(hex_digits(5:6), b_val) .and. &
+                parse_hex_digit_pair(hex_digits(7:8), a_val)) then
+                color%r = real(r_val, wp) / 255.0_wp
+                color%g = real(g_val, wp) / 255.0_wp
+                color%b = real(b_val, wp) / 255.0_wp
+                color%a = real(a_val, wp) / 255.0_wp
+                success = .true.
+            else
+                error_msg = 'Invalid hex digits in 8-digit color: ' // hex_spec
+            end if
+            
+        case default
+            write(error_msg, '(A,I0,A)') 'Invalid hex color length: ', hex_len, ' (expected 3, 6, or 8)'
+        end select
+    end subroutine
+    
+    ! RGB tuple parsing: [0.1,0.2,0.3], (255,128,64), etc.
+    subroutine parse_rgb_tuple(tuple_spec, color, success, error_msg)
+        character(len=*), intent(in) :: tuple_spec
+        type(color_t), intent(out) :: color
+        logical, intent(out) :: success
+        character(len=*), intent(out) :: error_msg
+        
+        real(wp) :: values(4)
+        integer :: n_values, ios
+        character(len=len(tuple_spec)) :: clean_spec
+        
+        ! Remove brackets/parentheses and clean up
+        clean_spec = tuple_spec
+        clean_spec = replace_char(clean_spec, '[', ' ')
+        clean_spec = replace_char(clean_spec, ']', ' ')
+        clean_spec = replace_char(clean_spec, '(', ' ')
+        clean_spec = replace_char(clean_spec, ')', ' ')
+        clean_spec = replace_char(clean_spec, ',', ' ')
+        
+        ! Parse numeric values
+        call parse_numeric_list(clean_spec, values, n_values, success, error_msg)
+        
+        if (.not. success) return
+        
+        if (n_values < 3 .or. n_values > 4) then
+            success = .false.
+            write(error_msg, '(A,I0,A)') 'RGB tuple must have 3 or 4 values, got ', n_values
+            return
+        end if
+        
+        ! Determine if values are [0,1] or [0,255] range
+        logical :: is_int_range
+        is_int_range = any(values(1:n_values) > 1.0_wp)
+        
+        if (is_int_range) then
+            ! Integer range [0,255]
+            color%r = values(1) / 255.0_wp
+            color%g = values(2) / 255.0_wp
+            color%b = values(3) / 255.0_wp
+        else
+            ! Float range [0,1]
+            color%r = values(1)
+            color%g = values(2) 
+            color%b = values(3)
+        end if
+        
+        ! Alpha channel
+        if (n_values == 4) then
+            if (is_int_range) then
+                color%a = values(4) / 255.0_wp
+            else
+                color%a = values(4)
+            end if
+        else
+            color%a = 1.0_wp
+        end if
+        
+        ! Validate ranges
+        if (color%r < 0.0_wp .or. color%r > 1.0_wp .or. &
+            color%g < 0.0_wp .or. color%g > 1.0_wp .or. &
+            color%b < 0.0_wp .or. color%b > 1.0_wp .or. &
+            color%a < 0.0_wp .or. color%a > 1.0_wp) then
+            success = .false.
+            error_msg = 'RGB values must be in range [0,1] or [0,255]: ' // tuple_spec
+        end if
+    end subroutine
+    
+    ! Single letter color mapping
+    subroutine parse_single_letter(letter, color, success, error_msg)
+        character(len=1), intent(in) :: letter
+        type(color_t), intent(out) :: color
+        logical, intent(out) :: success
+        character(len=*), intent(out) :: error_msg
+        
+        success = .true.
+        
+        select case (letter)
+        case ('r')  ! Red
+            color = color_t(1.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, .true.)
+        case ('g')  ! Green  
+            color = color_t(0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, .true.)
+        case ('b')  ! Blue
+            color = color_t(0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, .true.)
+        case ('c')  ! Cyan
+            color = color_t(0.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, .true.)
+        case ('m')  ! Magenta
+            color = color_t(1.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, .true.)
+        case ('y')  ! Yellow
+            color = color_t(1.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, .true.)
+        case ('k')  ! Black
+            color = color_t(0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, .true.)
+        case ('w')  ! White
+            color = color_t(1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, .true.)
+        case default
+            success = .false.
+            error_msg = 'Unknown single letter color: ' // letter
+        end select
+    end subroutine
+    
+    ! Named color lookup (CSS4/X11 color names)
+    subroutine parse_named_color(name, color, success, error_msg)
+        character(len=*), intent(in) :: name
+        type(color_t), intent(out) :: color
+        logical, intent(out) :: success
+        character(len=*), intent(out) :: error_msg
+        
+        character(len=len_trim(name)) :: clean_name
+        integer :: i
+        
+        ! Normalize name (lowercase, no spaces)
+        clean_name = trim(adjustl(name))
+        call to_lowercase(clean_name)
+        
+        success = .false.
+        
+        ! Core CSS4/X11 colors (subset for initial implementation)
+        do i = 1, size(NAMED_COLORS)
+            if (clean_name == NAMED_COLORS(i)%name) then
+                color = NAMED_COLORS(i)%color
+                success = .true.
+                return
+            end if
+        end do
+        
+        error_msg = 'Unknown color name: ' // name
+    end subroutine
+    
+    ! Helper type for named color storage
+    type :: named_color_entry_t
+        character(len=20) :: name
+        type(color_t) :: color
+    end type
+    
+    ! Essential named colors (matplotlib-compatible subset)
+    type(named_color_entry_t), parameter :: NAMED_COLORS(*) = [&
+        named_color_entry_t('red',       color_t(1.00_wp, 0.00_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('green',     color_t(0.00_wp, 0.50_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('blue',      color_t(0.00_wp, 0.00_wp, 1.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('cyan',      color_t(0.00_wp, 1.00_wp, 1.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('magenta',   color_t(1.00_wp, 0.00_wp, 1.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('yellow',    color_t(1.00_wp, 1.00_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('black',     color_t(0.00_wp, 0.00_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('white',     color_t(1.00_wp, 1.00_wp, 1.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('orange',    color_t(1.00_wp, 0.65_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('purple',    color_t(0.50_wp, 0.00_wp, 0.50_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('brown',     color_t(0.65_wp, 0.16_wp, 0.16_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('pink',      color_t(1.00_wp, 0.75_wp, 0.80_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('gray',      color_t(0.50_wp, 0.50_wp, 0.50_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('grey',      color_t(0.50_wp, 0.50_wp, 0.50_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('olive',     color_t(0.50_wp, 0.50_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('navy',      color_t(0.00_wp, 0.00_wp, 0.50_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('darkred',   color_t(0.55_wp, 0.00_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('darkgreen', color_t(0.00_wp, 0.39_wp, 0.00_wp, 1.0_wp, .true.)), &
+        named_color_entry_t('darkblue',  color_t(0.00_wp, 0.00_wp, 0.55_wp, 1.0_wp, .true.)) ]
+    
+    ! Additional utility functions...
+    logical function parse_hex_digit_pair(hex_pair, value) result(success)
+        character(len=2), intent(in) :: hex_pair
+        integer, intent(out) :: value
+        integer :: ios
+        read(hex_pair, '(Z2)', iostat=ios) value
+        success = (ios == 0)
+    end function
+    
+    character(len=len(str)) function replace_char(str, old_char, new_char) result(new_str)
+        character(len=*), intent(in) :: str
+        character(len=1), intent(in) :: old_char, new_char
+        integer :: i
+        new_str = str
+        do i = 1, len(new_str)
+            if (new_str(i:i) == old_char) new_str(i:i) = new_char
+        end do
+    end function
+    
+    subroutine to_lowercase(str)
+        character(len=*), intent(inout) :: str
+        integer :: i, ascii_val
+        do i = 1, len(str)
+            ascii_val = iachar(str(i:i))
+            if (ascii_val >= 65 .and. ascii_val <= 90) then  ! A-Z
+                str(i:i) = achar(ascii_val + 32)  ! Convert to lowercase
+            end if
+        end do
+    end subroutine
+    
+    subroutine parse_numeric_list(str, values, n_values, success, error_msg)
+        character(len=*), intent(in) :: str
+        real(wp), intent(out) :: values(:)
+        integer, intent(out) :: n_values
+        logical, intent(out) :: success
+        character(len=*), intent(out) :: error_msg
+        
+        integer :: ios, pos, start_pos
+        character(len=len(str)) :: remaining
+        character(len=50) :: token
+        
+        n_values = 0
+        success = .true.
+        remaining = adjustl(str)
+        
+        do while (len_trim(remaining) > 0 .and. n_values < size(values))
+            ! Find next token
+            pos = index(remaining, ' ')
+            if (pos == 0) then
+                token = trim(remaining)
+                remaining = ''
+            else
+                token = remaining(1:pos-1)
+                remaining = adjustl(remaining(pos+1:))
+            end if
+            
+            if (len_trim(token) > 0) then
+                n_values = n_values + 1
+                read(token, *, iostat=ios) values(n_values)
+                if (ios /= 0) then
+                    success = .false.
+                    error_msg = 'Cannot parse numeric value: ' // trim(token)
+                    return
+                end if
+            end if
+        end do
+    end subroutine
+end module
+```
+
+#### Backend Color Integration Architecture
+
+**PNG/PDF Backend Enhancement**:
+```fortran
+! Enhanced color support in fortplot_png.f90 and fortplot_pdf.f90
+subroutine set_backend_color(ctx, color_spec, success)
+    type(backend_context_t), intent(inout) :: ctx
+    character(len=*), intent(in) :: color_spec
+    logical, intent(out), optional :: success
+    
+    type(color_t) :: parsed_color
+    logical :: parse_success
+    character(len=200) :: error_msg
+    
+    ! Parse color using universal color system
+    parsed_color = parse_color(color_spec, parse_success, error_msg)
+    
+    if (parse_success) then
+        ! Convert to backend-specific format
+        call apply_backend_color(ctx, parsed_color)
+        if (present(success)) success = .true.
+    else
+        ! Fallback to default color
+        call apply_backend_color(ctx, DEFAULT_COLORS(1))  ! Default blue
+        if (present(success)) success = .false.
+        print *, 'Color parsing warning: ', trim(error_msg)
+    end if
+end subroutine
+
+! Backend-specific color application
+subroutine apply_backend_color(ctx, color)
+    type(backend_context_t), intent(inout) :: ctx
+    type(color_t), intent(in) :: color
+    
+    select case (ctx%backend_type)
+    case ('png')
+        ! PNG backend: Convert to RGB integers
+        ctx%current_color_r = nint(color%r * 255.0_wp)
+        ctx%current_color_g = nint(color%g * 255.0_wp)
+        ctx%current_color_b = nint(color%b * 255.0_wp)
+        ctx%current_alpha = color%a
+        
+    case ('pdf')
+        ! PDF backend: Use normalized RGB [0,1]
+        ctx%pdf_color_r = color%r
+        ctx%pdf_color_g = color%g
+        ctx%pdf_color_b = color%b
+        ctx%pdf_alpha = color%a
+        
+    case ('ascii')
+        ! ASCII backend: Map to closest ANSI color
+        call map_to_ansi_color(color, ctx%ansi_color_code)
+    end select
+end subroutine
+```
+
+**ASCII Backend Color Strategy**:
+```fortran
+! ASCII color mapping for terminal display
+subroutine map_to_ansi_color(color, ansi_code)
+    type(color_t), intent(in) :: color
+    integer, intent(out) :: ansi_code
+    
+    ! Map RGB to closest ANSI color (16-color mode)
+    real(wp) :: total_intensity
+    integer :: red_level, green_level, blue_level
+    
+    total_intensity = color%r + color%g + color%b
+    
+    ! Determine primary color components
+    red_level = nint(color%r * 2.0_wp)    ! 0, 1, 2
+    green_level = nint(color%g * 2.0_wp)
+    blue_level = nint(color%b * 2.0_wp)
+    
+    ! Map to ANSI codes (30-37 for foreground, 90-97 for bright)
+    if (total_intensity < 0.5_wp) then
+        ! Dark colors (30-37)
+        if (red_level >= green_level .and. red_level >= blue_level) then
+            ansi_code = 31  ! Red
+        else if (green_level >= blue_level) then
+            ansi_code = 32  ! Green
+        else
+            ansi_code = 34  ! Blue
+        end if
+    else
+        ! Bright colors (90-97)
+        if (red_level >= green_level .and. red_level >= blue_level) then
+            ansi_code = 91  ! Bright Red
+        else if (green_level >= blue_level) then
+            ansi_code = 92  ! Bright Green
+        else
+            ansi_code = 94  ! Bright Blue
+        end if
+    end if
+    
+    ! Special cases
+    if (total_intensity < 0.2_wp) ansi_code = 30  ! Black
+    if (total_intensity > 2.8_wp) ansi_code = 97  ! Bright White
+end subroutine
+```
+
+#### API Integration Architecture
+
+**Enhanced Plot Function Signatures**:
+```fortran
+! Updated plot functions with color support
+subroutine add_plot(self, x, y, label, linestyle, marker, color, linewidth, markersize)
+    class(figure_t), intent(inout) :: self
+    real(wp), intent(in) :: x(:), y(:)
+    character(len=*), intent(in), optional :: label
+    character(len=*), intent(in), optional :: linestyle
+    character(len=*), intent(in), optional :: marker
+    character(len=*), intent(in), optional :: color        ! NEW: Color specification
+    real(wp), intent(in), optional :: linewidth
+    real(wp), intent(in), optional :: markersize
+    
+    type(plot_data_t) :: plot_data
+    type(color_t) :: parsed_color
+    logical :: color_success
+    
+    ! Parse color if provided
+    if (present(color)) then
+        parsed_color = parse_color(color, color_success)
+        if (color_success) then
+            plot_data%line_color = parsed_color
+            plot_data%has_custom_color = .true.
+        else
+            ! Fall back to automatic color cycling
+            plot_data%line_color = DEFAULT_COLORS(mod(self%n_plots, size(DEFAULT_COLORS)) + 1)
+            plot_data%has_custom_color = .false.
+        end if
+    else
+        ! Automatic color cycling
+        plot_data%line_color = DEFAULT_COLORS(mod(self%n_plots, size(DEFAULT_COLORS)) + 1)
+        plot_data%has_custom_color = .false.
+    end if
+    
+    ! Process other parameters and add plot...
+end subroutine
+
+! Enhanced scatter plot with color mapping
+subroutine scatter(self, x, y, s, c, marker, cmap, alpha, edgecolor, facecolor)
+    class(figure_t), intent(inout) :: self
+    real(wp), intent(in) :: x(:), y(:)
+    real(wp), intent(in), optional :: s(:)               ! Size data
+    real(wp), intent(in), optional :: c(:)               ! Color mapping data  
+    character(len=*), intent(in), optional :: marker
+    character(len=*), intent(in), optional :: cmap       ! Colormap name
+    real(wp), intent(in), optional :: alpha
+    character(len=*), intent(in), optional :: edgecolor  ! Edge color spec
+    character(len=*), intent(in), optional :: facecolor  ! Face color spec
+    
+    type(plot_data_t) :: scatter_data
+    type(color_t) :: edge_color, face_color
+    logical :: color_success
+    
+    ! Parse edge and face colors
+    if (present(edgecolor)) then
+        edge_color = parse_color(edgecolor, color_success)
+        if (color_success) then
+            scatter_data%edge_color = edge_color
+            scatter_data%has_edge_color = .true.
+        end if
+    end if
+    
+    if (present(facecolor)) then
+        face_color = parse_color(facecolor, color_success)
+        if (color_success) then
+            scatter_data%face_color = face_color
+            scatter_data%has_face_color = .true.
+        end if
+    end if
+    
+    ! Handle color mapping data if provided
+    if (present(c)) then
+        call setup_color_mapping(scatter_data, c, cmap)
+    end if
+    
+    ! Process scatter plot...
+end subroutine
+```
+
+#### Data Structure Integration
+
+**Enhanced plot_data_t Structure**:
+```fortran
+! Extensions to plot_data_t in src/fortplot_figure_core.f90
+type :: plot_data_t
+    ! Existing fields...
+    
+    ! Color system integration
+    type(color_t) :: line_color                  ! Line/marker color
+    type(color_t) :: edge_color                  ! Edge color (scatter, bars)
+    type(color_t) :: face_color                  ! Fill color (scatter, bars)
+    logical :: has_custom_color = .false.        ! User specified color
+    logical :: has_edge_color = .false.          ! Custom edge color
+    logical :: has_face_color = .false.          ! Custom face color
+    
+    ! Color mapping for scatter plots
+    real(wp), allocatable :: color_data(:)       ! Color mapping values
+    character(len=32) :: colormap = 'viridis'    ! Colormap name
+    logical :: has_color_mapping = .false.       ! Variable colors
+    real(wp) :: color_min, color_max             ! Color data range
+    
+    ! Alpha blending
+    real(wp) :: alpha = 1.0_wp                   ! Transparency [0,1]
+    logical :: has_alpha = .false.               ! Custom alpha
+end type
+```
+
+### Performance Optimization Architecture
+
+#### Color Caching System
+**Efficient Color Parsing**:
+```fortran
+! Color cache for performance optimization
+module fortplot_color_cache
+    use fortplot_colors, only: color_t, parse_color
+    implicit none
+    private
+    
+    public :: get_cached_color, clear_color_cache
+    
+    ! Cache entry type
+    type :: cache_entry_t
+        character(len=64) :: color_spec
+        type(color_t) :: color
+        logical :: is_valid
+    end type
+    
+    ! Color cache storage
+    integer, parameter :: CACHE_SIZE = 100
+    type(cache_entry_t) :: color_cache(CACHE_SIZE)
+    integer :: cache_next_slot = 1
+    logical :: cache_initialized = .false.
+    
+contains
+    function get_cached_color(color_spec) result(color)
+        character(len=*), intent(in) :: color_spec
+        type(color_t) :: color
+        
+        integer :: i, hash_slot
+        logical :: found, success
+        
+        ! Initialize cache if needed
+        if (.not. cache_initialized) call init_color_cache()
+        
+        ! Search cache first
+        found = .false.
+        do i = 1, CACHE_SIZE
+            if (color_cache(i)%is_valid .and. &
+                trim(color_cache(i)%color_spec) == trim(color_spec)) then
+                color = color_cache(i)%color
+                found = .true.
+                exit
+            end if
+        end do
+        
+        if (.not. found) then
+            ! Parse and cache new color
+            color = parse_color(color_spec, success)
+            if (success) then
+                call add_to_cache(color_spec, color)
+            end if
+        end if
+    end function
+    
+    subroutine add_to_cache(color_spec, color)
+        character(len=*), intent(in) :: color_spec
+        type(color_t), intent(in) :: color
+        
+        ! Simple round-robin cache replacement
+        color_cache(cache_next_slot)%color_spec = color_spec
+        color_cache(cache_next_slot)%color = color
+        color_cache(cache_next_slot)%is_valid = .true.
+        
+        cache_next_slot = mod(cache_next_slot, CACHE_SIZE) + 1
+    end subroutine
+end module
+```
+
+#### Batch Color Processing
+**Optimized Color Application**:
+```fortran
+! Batch color processing for large datasets
+subroutine apply_colors_batch(backend_ctx, colors, n_colors)
+    type(backend_context_t), intent(inout) :: backend_ctx
+    type(color_t), intent(in) :: colors(:)
+    integer, intent(in) :: n_colors
+    
+    integer :: i, batch_size
+    
+    ! Optimize for different backends
+    select case (backend_ctx%backend_type)
+    case ('png')
+        ! PNG: Pre-convert all colors to RGB integers
+        call batch_convert_png_colors(backend_ctx, colors, n_colors)
+        
+    case ('pdf')
+        ! PDF: Group by color to minimize state changes
+        call batch_optimize_pdf_colors(backend_ctx, colors, n_colors)
+        
+    case ('ascii')
+        ! ASCII: Pre-compute ANSI codes
+        call batch_convert_ansi_colors(backend_ctx, colors, n_colors)
+    end select
+end subroutine
+```
+
+### Implementation Plan
+
+#### Phase 1: Core Color Infrastructure (2-3 days)
+**Foundation Layer Implementation**:
+1. **Create `fortplot_colors.f90`**: Universal color parsing module with comprehensive format support
+2. **Implement color_t type**: Core color data structure with utility methods
+3. **Color parsing functions**: Hex, RGB tuple, named color, single letter support
+4. **Input validation**: Robust error handling and fallback mechanisms
+5. **Basic color cache**: Performance optimization for repeated color parsing
+
+**Deliverables**:
+- Complete `fortplot_colors` module with all parsing functionality
+- Comprehensive color validation and error handling
+- Performance-optimized color caching system
+- Unit tests for all color parsing scenarios
+
+#### Phase 2: Backend Integration (2-3 days)
+**Multi-Backend Color Support**:
+1. **PNG backend enhancement**: RGB integer conversion with alpha support
+2. **PDF backend enhancement**: Normalized RGB float conversion
+3. **ASCII backend enhancement**: ANSI color code mapping
+4. **Backend abstraction**: Unified color application interface
+5. **Color space consistency**: Ensure consistent colors across backends
+
+**Deliverables**:
+- Enhanced PNG/PDF backends with full color support
+- ASCII backend with ANSI color mapping
+- Consistent color rendering across all backends
+- Backend-specific color optimization utilities
+
+#### Phase 3: API Integration (3-4 days)
+**Matplotlib-Compatible API**:
+1. **Enhanced plot functions**: Add color parameters to all plotting functions
+2. **Color mapping support**: Scatter plot color mapping with colormaps
+3. **Automatic color cycling**: Default color palette cycling
+4. **Alpha blending**: Transparency support across plot types
+5. **Error bar colors**: Color support for error bar elements
+
+**Deliverables**:
+- Complete API enhancement with color parameters
+- Color mapping system for scatter plots and other visualizations
+- Automatic color cycling with matplotlib-compatible defaults
+- Comprehensive alpha blending support
+
+#### Phase 4: Advanced Color Features (2-3 days)
+**Professional Visualization Features**:
+1. **Colormap implementation**: Standard scientific colormaps (viridis, plasma, etc.)
+2. **Color interpolation**: Smooth color gradients for data mapping
+3. **Color accessibility**: Color-blind friendly palettes and validation
+4. **Performance optimization**: Batch color processing for large datasets
+5. **Memory management**: Efficient color data storage and cleanup
+
+**Deliverables**:
+- Complete colormap system with scientific palettes
+- Color interpolation algorithms for smooth gradients
+- Accessibility features for color-blind users
+- Optimized performance for large datasets
+
+#### Phase 5: Testing and Documentation (2-3 days)
+**Quality Assurance and User Experience**:
+1. **Comprehensive test suite**: All color formats and edge cases
+2. **Visual validation**: Color accuracy testing across backends
+3. **Performance benchmarks**: Color parsing and rendering performance
+4. **Example implementation**: Color demonstration programs
+5. **Documentation updates**: API documentation and color guide
+
+**Deliverables**:
+- Complete test coverage (>95%) for all color functionality
+- Visual validation suite for color accuracy
+- Performance benchmarks and optimization validation
+- Working examples demonstrating all color features
+
+### Risk Assessment
+
+#### Technical Risks
+**Color Space Complexity**: RGB color spaces and platform-specific rendering differences
+- **Mitigation**: Use standard sRGB color space with platform-specific testing
+- **Mitigation**: Implement color validation and range checking throughout
+- **Mitigation**: Cross-backend consistency testing and validation
+
+**Performance Impact**: Color parsing overhead in performance-critical rendering loops
+- **Mitigation**: Implement comprehensive color caching system
+- **Mitigation**: Batch color processing for large datasets
+- **Mitigation**: Optimize parsing algorithms for common color formats
+
+**Memory Management**: Color data storage and caching memory requirements
+- **Mitigation**: Implement efficient color cache with size limits
+- **Mitigation**: Use RAII patterns for automatic color data cleanup
+- **Mitigation**: Memory profiling and optimization for large color datasets
+
+#### Integration Risks
+**API Compatibility**: Extensive API changes affecting existing user code
+- **Mitigation**: Maintain backward compatibility with optional color parameters
+- **Mitigation**: Provide clear migration guide for enhanced color features
+- **Mitigation**: Gradual rollout with deprecation warnings for old patterns
+
+**Backend Consistency**: Ensuring identical color rendering across PNG/PDF/ASCII
+- **Mitigation**: Comprehensive cross-backend validation testing
+- **Mitigation**: Color difference tolerance testing and validation
+- **Mitigation**: Platform-specific color rendering optimization
+
+#### Schedule Risks
+**Feature Scope**: Comprehensive color system is substantial implementation
+- **Mitigation**: Phase-based development with incremental deliverables
+- **Mitigation**: MVP focus on essential matplotlib compatibility first
+- **Mitigation**: Advanced features (colormaps, accessibility) in later phases
+
+### Opportunity Analysis
+
+#### Scientific Visualization Enhancement
+**Professional Color Standards**:
+- **Publication Quality**: Scientific colormap support (viridis, plasma) for research publications
+- **Data Analysis**: Color mapping enables multi-dimensional data visualization
+- **Accessibility**: Color-blind friendly palettes improve scientific communication inclusivity
+
+**User Experience Improvement**:
+- **Matplotlib Familiarity**: Users can apply existing matplotlib color knowledge directly
+- **Intuitive Interface**: Natural color specification reduces learning curve
+- **Visual Appeal**: Professional color palettes improve plot aesthetics
+
+#### Performance Advantages
+**Native Implementation**:
+- **No External Dependencies**: Pure Fortran color processing eliminates external library requirements
+- **Optimized Performance**: Backend-specific color optimization for maximum rendering speed
+- **Memory Efficiency**: Direct integration with plot data structures minimizes memory overhead
+
+#### Strategic Foundation Impact
+**Universal Color Infrastructure**: 
+- **All Plot Types**: Color support enhances line plots, scatter plots, error bars, surfaces
+- **Cross-Backend Consistency**: Unified color handling across PNG/PDF/ASCII outputs
+- **Extensibility Foundation**: Color system enables future features (gradients, patterns, animations)
+- **User Adoption**: Matplotlib compatibility removes barrier to fortplot adoption
+
+### Success Criteria
+
+#### Phase 1 Success Metrics
+- ✅ Universal color parsing handles all matplotlib-compatible formats (hex, RGB, named, letters)
+- ✅ Color validation catches all common user errors with clear error messages
+- ✅ Color caching provides >10x performance improvement for repeated color parsing
+- ✅ Unit tests achieve >95% coverage for all color parsing scenarios
+
+#### Phase 2 Success Metrics
+- ✅ PNG/PDF backends render identical colors (within RGB tolerance of 1/255)
+- ✅ ASCII backend provides usable color representation in terminal environments
+- ✅ Backend color application optimized for performance-critical rendering loops
+- ✅ Cross-backend consistency validation passes for all standard color formats
+
+#### Phase 3 Success Metrics  
+- ✅ All plotting functions accept matplotlib-compatible color specifications
+- ✅ Automatic color cycling matches matplotlib default color sequence
+- ✅ Color mapping system enables multi-dimensional scatter plot visualization
+- ✅ Alpha blending works correctly across all backends and plot types
+
+#### Phase 4 Success Metrics
+- ✅ Scientific colormaps (viridis, plasma, inferno, magma) implemented and validated
+- ✅ Color interpolation produces smooth gradients for data visualization
+- ✅ Performance benchmarks show <5% overhead for color processing in large datasets
+- ✅ Color accessibility features validated with color-blind simulation testing
+
+#### Phase 5 Success Metrics
+- ✅ Comprehensive test suite validates all color functionality and edge cases
+- ✅ Visual validation confirms color accuracy across all supported platforms
+- ✅ Example programs demonstrate all color features with clear documentation
+- ✅ Performance benchmarks meet or exceed targets for color processing speed
+
+### Architecture Principles Applied
+
+**SOLID Principles**:
+- **Single Responsibility**: Color module focused solely on color parsing and management
+- **Open/Closed**: Extensible for new color formats and backend color spaces
+- **Liskov Substitution**: Color objects work consistently across all plot types and backends
+- **Interface Segregation**: Clear separation between color parsing, validation, and application
+- **Dependency Inversion**: Plot functions depend on color abstractions, not specific implementations
+
+**KISS Principle**: 
+- **Simple Color API**: Intuitive color specification matching user expectations
+- **Clear Implementation**: Straightforward parsing algorithms without unnecessary complexity
+- **Minimal Dependencies**: Self-contained color system without external library requirements
+
+**Performance-First Design**:
+- **Optimized Parsing**: Efficient algorithms for common color formats
+- **Caching Strategy**: Performance optimization for repeated color operations
+- **Backend Specialization**: Color processing optimized for each output format
+- **Memory Efficiency**: Minimal memory overhead for color data storage
+
+**Foundation Layer Focus**: 
+This color infrastructure provides maximum strategic impact by:
+- **Universal Enhancement**: All plotting functionality benefits from professional color support
+- **User Experience**: Familiar matplotlib color syntax reduces learning barrier
+- **Scientific Standards**: Professional colormaps enable publication-quality visualization
+- **Extensibility**: Foundation for advanced visualization features and animation support
+
+### Strategic Impact Assessment
+
+Matplotlib-compatible color syntax implementation represents critical foundation infrastructure that enhances every aspect of fortplot's visualization capabilities. By providing familiar, professional color specification throughout the library, this system eliminates a major barrier to user adoption while establishing the foundation for advanced scientific visualization features. The comprehensive color architecture ensures consistent, high-quality output across all backends while maintaining the performance characteristics essential for computational scientific workflows.
+
 ## Next Steps
 
-1. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
-2. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
-3. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
-4. **Short-term**: Add ffmpeg detection and graceful degradation
-5. **Medium-term**: Comprehensive integration testing and documentation
+1. **HIGH PRIORITY**: Implement matplotlib-compatible color syntax (Issue #7) - foundation infrastructure for all plotting functionality  
+2. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
+3. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
+4. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+5. **Short-term**: Add ffmpeg detection and graceful degradation
+6. **Medium-term**: Comprehensive integration testing and documentation
