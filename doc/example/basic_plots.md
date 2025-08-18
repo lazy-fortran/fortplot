@@ -86,9 +86,3 @@ end program basic_plots
 
 ## Output
 
-### Simple Plot
-![Simple Plot](../../media/examples/simple_plot.png)
-
-### Multi-line Plot  
-![Multi-line Plot](../../media/examples/multi_line.png)
-
