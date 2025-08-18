@@ -21,6 +21,9 @@ module fortplot
     use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
                                 LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
                                 LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
+    use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size, &
+                                   validate_png_format, validate_pdf_format, validate_ascii_format, &
+                                   compare_with_baseline
 
     implicit none
 
@@ -44,6 +47,11 @@ module fortplot
     ! Logging interface
     public :: set_log_level, LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
               LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
+    
+    ! Validation interface for functional output testing
+    public :: validation_result_t, validate_file_exists, validate_file_size, &
+              validate_png_format, validate_pdf_format, validate_ascii_format, &
+              compare_with_baseline
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'

@@ -4,7 +4,7 @@ ARGS ?=
 # FPM flags for C compilation compatibility
 FPM_FLAGS = --flag -fPIC
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs
 
 # Default target
 all: build
@@ -90,6 +90,24 @@ coverage:
 	 echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt)
 	@echo "Coverage analysis completed: coverage.txt"
 
+# Validate functional output generation
+validate-output: create_build_dirs
+	@echo "Running functional output validation tests..."
+	@mkdir -p output/test
+	fpm test $(FPM_FLAGS) --target test_output_validation
+	@echo "Functional output validation completed successfully"
+
+# Test documentation examples
+test-docs: create_build_dirs
+	@echo "Running documentation example validation..."
+	@mkdir -p output/test
+	fpm test $(FPM_FLAGS) --target test_documentation_examples
+	@echo "Documentation example validation completed successfully"
+
+# Run comprehensive functional tests
+test-functional: test validate-output test-docs
+	@echo "=== ALL FUNCTIONAL TESTS PASSED ==="
+
 # Create build directories for examples
 create_build_dirs:
 	@mkdir -p build/example/basic_plots
@@ -121,6 +139,8 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
+	@echo "  validate-output  - Run functional output validation tests"
+	@echo "  test-docs        - Test documentation examples"
 	@echo "  coverage         - Generate coverage report"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
@@ -128,7 +148,7 @@ help:
 	@echo "  run-release - Run optimized build"
 	@echo "  help        - Show this help message"
 	@echo ""
-	@echo "Pass additional fpm arguments using ARGS variable:"
+	@echo "Pass additional fmp arguments using ARGS variable:"
 	@echo "  make example ARGS=\"basic_plots\""
 	@echo "  make test ARGS=\"--target test_specific\""
 	@echo "  make debug ARGS=\"--target debug_feature\""
