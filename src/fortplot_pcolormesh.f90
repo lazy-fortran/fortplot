@@ -10,7 +10,6 @@ module fortplot_pcolormesh
     !! - Interface Segregation: Minimal, focused interface
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_colormap, only: get_colormap_color, colormap_value_to_color
     implicit none
     
     private
