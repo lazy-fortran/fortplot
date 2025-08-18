@@ -18,6 +18,9 @@ module fortplot
     use fortplot_figure, only: figure_t
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
+    use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
+                                LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+                                LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     implicit none
 
@@ -25,16 +28,22 @@ module fortplot
 
     ! Re-export public interface
     public :: figure_t, wp
-    public :: plot, contour, contour_filled, pcolormesh, streamplot, boxplot, show, show_viewer
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
     public :: hist, histogram
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
-    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh
+    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
+    public :: add_3d_plot, add_surface
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
+    public :: bar, barh
     
     ! Animation interface
     public :: animation_t, FuncAnimation
+    
+    ! Logging interface
+    public :: set_log_level, LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+              LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
@@ -165,6 +174,40 @@ contains
         call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
 
+    subroutine bar(x, heights, width, label, color)
+        !! Add a vertical bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x: X-axis positions for bars
+        !!   heights: Heights of bars
+        !!   width: Optional - width of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: x, heights
+        real(8), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%bar(x, heights, width=width, label=label, color=color)
+    end subroutine bar
+
+    subroutine barh(y, widths, height, label, color)
+        !! Add a horizontal bar chart to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   y: Y-axis positions for bars
+        !!   widths: Widths of bars
+        !!   height: Optional - height of bars (default: 0.8)
+        !!   label: Optional - bar chart label for legend
+        !!   color: Optional - bar color
+        real(8), dimension(:), intent(in) :: y, widths
+        real(8), intent(in), optional :: height
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%barh(y, widths, height=height, label=label, color=color)
+    end subroutine barh
+
     subroutine hist(data, bins, density, label, color)
         !! Add histogram plot to the global figure (pyplot-style)
         !!
@@ -242,8 +285,10 @@ contains
         logical, intent(in), optional :: horizontal
         real(wp), intent(in), optional :: color(3)
 
-        call fig%boxplot(data, position=position, width=width, label=label, &
-                        show_outliers=show_outliers, horizontal=horizontal, color=color)
+        ! TODO: Implement boxplot method in figure_core
+        ! call fig%boxplot(data, position=position, width=width, label=label, &
+        !                show_outliers=show_outliers, horizontal=horizontal, color=color)
+        call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
     end subroutine boxplot
 
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
@@ -377,6 +422,81 @@ contains
         call fig%add_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh
+
+    subroutine errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                       capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the error bar plot
+        !!   xerr, yerr: Optional symmetric error arrays
+        !!   xerr_lower, xerr_upper: Optional asymmetric X error arrays
+        !!   yerr_lower, yerr_upper: Optional asymmetric Y error arrays
+        !!   capsize: Optional cap size for error bars (default: 5.0)
+        !!   elinewidth: Optional error bar line width (default: 1.0)
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style
+        !!   marker: Optional marker style
+        !!   color: Optional RGB color array
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine errorbar
+
+    subroutine add_errorbar(x, y, xerr, yerr, xerr_lower, xerr_upper, yerr_lower, yerr_upper, &
+                           capsize, elinewidth, label, linestyle, marker, color)
+        !! Add error bar plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        real(8), dimension(:), intent(in), optional :: xerr_lower, xerr_upper
+        real(8), dimension(:), intent(in), optional :: yerr_lower, yerr_upper
+        real(8), intent(in), optional :: capsize, elinewidth
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+
+        call fig%errorbar(x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+                         yerr_lower=yerr_lower, yerr_upper=yerr_upper, capsize=capsize, &
+                         elinewidth=elinewidth, label=label, linestyle=linestyle, &
+                         marker=marker, color=color)
+    end subroutine add_errorbar
+
+    subroutine add_3d_plot(x, y, z, label, linestyle, markersize, linewidth)
+        !! Add a 3D line plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y, z: Data arrays for the 3D line plot
+        !!   label: Optional label for the plot
+        !!   linestyle: Optional line style and markers
+        !!   markersize: Optional marker size
+        !!   linewidth: Optional line width
+        real(8), dimension(:), intent(in) :: x, y, z
+        character(len=*), intent(in), optional :: label, linestyle
+        real(8), intent(in), optional :: markersize, linewidth
+        call fig%add_3d_plot(x, y, z, label=label, linestyle=linestyle, &
+                            markersize=markersize, linewidth=linewidth)
+    end subroutine add_3d_plot
+
+    subroutine add_surface(x, y, z, label)
+        !! Add a surface plot to the global figure
+        !! 
+        !! Arguments:
+        !!   x, y: Grid coordinate arrays (1D)
+        !!   z: 2D data array defining surface heights
+        !!   label: Optional label for the plot
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: label
+        call fig%add_surface(x, y, z, label=label)
+    end subroutine add_surface
 
     subroutine set_xscale(scale, threshold)
         !! Set x-axis scale for the global figure
@@ -549,13 +669,13 @@ contains
         call execute_command_line(command, wait=.false., exitstat=stat)
         
         if (stat /= 0) then
-            print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
-            print *, 'Please open the file manually with your preferred PDF viewer.'
+            call log_warning('Failed to open plot viewer. Plot saved to: ' // trim(temp_filename))
+            call log_info('Please open the file manually with your preferred PDF viewer.')
         else
-            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+            call log_info('Plot opened in default viewer. File: ' // trim(temp_filename))
             
             if (do_block) then
-                print *, 'Press Enter to continue and clean up temporary file...'
+                call log_info('Press Enter to continue and clean up temporary file...')
                 read(*,*)
                 
                 ! Clean up temporary file
@@ -571,7 +691,7 @@ contains
                 call execute_command_line(command)
             else
                 ! In non-blocking mode, just inform that file stays
-                print *, 'Note: Temporary file will remain at: ', trim(temp_filename)
+            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
             end if
         end if
     end subroutine show_viewer_implementation

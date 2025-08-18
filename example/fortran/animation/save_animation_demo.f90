@@ -31,9 +31,7 @@ program save_animation_demo
     
     ! Save as MP4 video with 24 fps
     print *, "Saving animation as MP4..."
-    call anim%save("build/example/animation/wave_animation.mp4", fps=24)
-    
-    print *, "Animation saved successfully!"
+    call save_animation_with_error_handling(anim, "animation.mp4", 24)
     
 contains
 
@@ -50,5 +48,35 @@ contains
         ! Update plot data
         call fig%set_ydata(1, y)
     end subroutine update_wave
+    
+    subroutine save_animation_with_error_handling(anim, filename, fps)
+        type(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer :: status
+        
+        call anim%save(filename, fps, status)
+        
+        select case (status)
+        case (0)
+            print *, "Animation saved successfully to '", trim(filename), "'"
+        case (-1)
+            print *, "ERROR: ffmpeg not found. Please install ffmpeg to save animations."
+            print *, "Install with: sudo pacman -S ffmpeg (Arch Linux)"
+            print *, "Or visit: https://ffmpeg.org/download.html"
+        case (-3)
+            print *, "ERROR: Unsupported file format. Use .mp4, .avi, or .mkv"
+        case (-4)
+            print *, "ERROR: Could not open pipe to ffmpeg. Check ffmpeg installation."
+        case (-5)
+            print *, "ERROR: Failed to generate animation frames."
+        case (-6)
+            print *, "ERROR: Failed to write frame data to ffmpeg."
+        case (-7)
+            print *, "ERROR: Generated video failed validation. Check ffmpeg version."
+        case default
+            print *, "ERROR: Unknown error occurred while saving animation. Status:", status
+        end select
+    end subroutine save_animation_with_error_handling
     
 end program save_animation_demo

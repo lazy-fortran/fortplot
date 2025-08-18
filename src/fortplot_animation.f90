@@ -3,6 +3,8 @@ module fortplot_animation
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_png, only: png_context, create_png_canvas, get_png_data
+    use fortplot_mpeg1_format, only: encode_animation_to_mpeg1
+    use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
 
@@ -62,11 +64,11 @@ contains
         integer :: i
 
         if (.not. associated(self%animate_func)) then
-            print *, "Error: Animation callback function not associated"
+            call log_error("Animation callback function not associated")
             return
         end if
 
-        print *, "Running animation with", self%frames, "frames..."
+        call log_info("Running animation with frames...")
 
         do i = 1, self%frames
             call self%animate_func(i)
@@ -77,7 +79,7 @@ contains
             end if
         end do
 
-        print *, "Animation completed."
+        call log_info("Animation completed.")
     end subroutine run
 
     subroutine set_save_frames(self, pattern)
@@ -118,13 +120,13 @@ contains
         
         if (.not. is_video_format(extension)) then
             if (present(status)) status = -3
-            print *, "Error: Unsupported file format. Use .mp4, .avi, or .mkv"
+            call log_error("Unsupported file format. Use .mp4, .avi, or .mkv")
             return
         end if
         
         if (.not. check_ffmpeg_available()) then
             if (present(status)) status = -1
-            print *, "Error: ffmpeg not found. Please install ffmpeg to save animations."
+            call log_error("ffmpeg not found. Please install ffmpeg to save animations.")
             return
         end if
         
@@ -225,13 +227,108 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
+        ! Try native MPEG-1 encoder first for substantial file sizes
+        if (should_use_native_encoder(anim, filename)) then
+            call save_animation_with_native_mpeg1(anim, filename, fps, status)
+            if (status == 0) return  ! Native encoder succeeded
+            call log_warning("Native MPEG-1 encoder failed, falling back to FFmpeg")
+        end if
+        
+        ! Fall back to FFmpeg pipeline
+        call save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
+    end subroutine save_animation_with_ffmpeg_pipe
+
+    function should_use_native_encoder(anim, filename) result(use_native)
+        class(animation_t), intent(in) :: anim
+        character(len=*), intent(in) :: filename
+        logical :: use_native
+        
+        ! Disable native encoder - use FFmpeg with optimized parameters for substantial files
+        ! The native encoder generates large files but not valid MPEG format
+        use_native = .false.
+    end function should_use_native_encoder
+
+    subroutine save_animation_with_native_mpeg1(anim, filename, fps, status)
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer, intent(out) :: status
+        
+        real(real64), allocatable :: frame_data(:,:,:,:)
+        integer :: frame_idx, width, height
+        
+        status = 0
+        
+        if (.not. associated(anim%fig)) then
+            status = -1
+            return
+        end if
+        
+        width = anim%fig%width
+        height = anim%fig%height
+        
+        ! Collect frame data for native encoder
+        allocate(frame_data(width, height, 3, anim%frames))
+        
+        do frame_idx = 1, anim%frames
+            call update_frame_data(anim, frame_idx)
+            call extract_frame_rgb_data(anim%fig, frame_data(:,:,:,frame_idx), status)
+            if (status /= 0) return
+        end do
+        
+        ! Use native MPEG-1 encoder
+        call encode_animation_to_mpeg1(frame_data, anim%frames, width, height, fps, filename, status)
+        
+        if (allocated(frame_data)) deallocate(frame_data)
+    end subroutine save_animation_with_native_mpeg1
+
+    subroutine extract_frame_rgb_data(fig, rgb_data, status)
+        type(figure_t), intent(inout) :: fig
+        real(real64), intent(out) :: rgb_data(:,:,:)
+        integer, intent(out) :: status
+        
+        type(png_context) :: png_ctx
+        integer :: x, y, idx_base
+        
+        status = 0
+        
+        ! Setup PNG backend to render frame
+        call setup_png_backend(fig, png_ctx)
+        call render_to_backend(fig)
+        
+        ! Extract RGB data from rendered frame
+        select type (backend => fig%backend)
+        type is (png_context)
+            do y = 1, fig%height
+                do x = 1, fig%width
+                    ! Calculate 1D index for packed RGB data (width * height * 3 array)
+                    ! Format: [R1, G1, B1, R2, G2, B2, ...]
+                    idx_base = ((y-1) * fig%width + (x-1)) * 3
+                    
+                    ! Extract RGB values (normalized to 0-1)
+                    rgb_data(x, y, 1) = real(backend%raster%image_data(idx_base + 1), real64) / 255.0_real64
+                    rgb_data(x, y, 2) = real(backend%raster%image_data(idx_base + 2), real64) / 255.0_real64
+                    rgb_data(x, y, 3) = real(backend%raster%image_data(idx_base + 3), real64) / 255.0_real64
+                end do
+            end do
+        class default
+            status = -1
+        end select
+    end subroutine extract_frame_rgb_data
+
+    subroutine save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
+        class(animation_t), intent(inout) :: anim
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: fps
+        integer, intent(out) :: status
+        
         integer :: frame_idx, stat
         integer(1), allocatable :: png_data(:)
         
         stat = open_ffmpeg_pipe(filename, fps)
         if (stat /= 0) then
             status = -4
-            print *, "Error: Could not open pipe to ffmpeg"
+            call log_error("Could not open pipe to ffmpeg")
             return
         end if
         
@@ -239,7 +336,7 @@ contains
             call generate_png_frame_data(anim, frame_idx, png_data, stat)
             if (stat /= 0) then
                 status = -5
-                print *, "Error: Failed to generate frame", frame_idx
+                call log_error("Failed to generate frame")
                 stat = close_ffmpeg_pipe()
                 return
             end if
@@ -247,7 +344,7 @@ contains
             stat = write_png_to_pipe(png_data)
             if (stat /= 0) then
                 status = -6
-                print *, "Error: Failed to write frame to pipe", frame_idx
+                call log_error("Failed to write frame to pipe")
                 stat = close_ffmpeg_pipe()
                 return
             end if
@@ -256,8 +353,15 @@ contains
         end do
         
         stat = close_ffmpeg_pipe()
-        status = 0
-    end subroutine save_animation_with_ffmpeg_pipe
+        
+        ! Validate the generated video file
+        if (validate_generated_video(filename)) then
+            status = 0
+        else
+            status = -7
+            call log_error("Generated video failed validation")
+        end if
+    end subroutine save_animation_with_ffmpeg_pipeline
 
     subroutine generate_png_frame_data(anim, frame_idx, png_data, status)
         class(animation_t), intent(inout) :: anim
@@ -361,6 +465,8 @@ contains
             call render_contour_plot(fig, plot_data)
         case (3) ! PLOT_TYPE_PCOLORMESH
             call render_pcolormesh_plot(fig, plot_data)
+        case (4) ! PLOT_TYPE_ERRORBAR
+            call render_errorbar_plot(fig, plot_data)
         end select
     end subroutine render_single_plot
 
@@ -379,6 +485,31 @@ contains
         call set_plot_color(fig, plot_data)
         call draw_line_segments(fig, plot_data)
     end subroutine render_line_plot
+
+    subroutine render_errorbar_plot(fig, plot_data)
+        type(figure_t), intent(inout) :: fig
+        type(plot_data_t), intent(in) :: plot_data
+        
+        if (.not. is_valid_errorbar_data(plot_data)) return
+        
+        ! Placeholder - errorbar rendering in animation is simplified
+        ! Just draw the base line
+        call set_plot_color(fig, plot_data)
+        call draw_line_segments(fig, plot_data)
+    end subroutine render_errorbar_plot
+
+    function is_valid_errorbar_data(plot_data) result(valid)
+        type(plot_data_t), intent(in) :: plot_data
+        logical :: valid
+        
+        valid = allocated(plot_data%x) .and. allocated(plot_data%y)
+        if (.not. valid) return
+        
+        valid = size(plot_data%x) > 0 .and. size(plot_data%y) > 0
+        if (.not. valid) return
+        
+        valid = size(plot_data%x) == size(plot_data%y)
+    end function is_valid_errorbar_data
 
     function is_valid_line_data(plot_data) result(valid)
         type(plot_data_t), intent(in) :: plot_data
@@ -441,5 +572,72 @@ contains
         call date_and_time(values=values)
         ts = values(5) * 10000 + values(6) * 100 + values(7)
     end function get_current_timestamp
+
+    function validate_generated_video(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        logical :: exists, has_content, has_video_header, passes_ffprobe, adequate_size
+        integer :: file_size
+        
+        ! Comprehensive validation for generated video files
+        inquire(file=filename, exist=exists, size=file_size)
+        
+        has_content = (file_size > 100)  ! Minimum reasonable size
+        adequate_size = validate_size_for_video_content(filename, file_size)
+        has_video_header = validate_video_header_format(filename)
+        passes_ffprobe = validate_with_ffprobe(filename)
+        
+        is_valid = exists .and. has_content .and. adequate_size .and. &
+                  has_video_header .and. passes_ffprobe
+    end function validate_generated_video
+
+    function validate_size_for_video_content(filename, file_size) result(adequate)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: file_size
+        logical :: adequate
+        integer :: min_expected
+        
+        ! Calculate minimum expected size based on content
+        ! For simple animations: ~200-500 bytes per frame minimum
+        ! Even heavily compressed H.264 should produce some data per frame
+        min_expected = 1000  ! Conservative minimum 1KB for any valid video
+        
+        adequate = (file_size >= min_expected)
+    end function validate_size_for_video_content
+
+    function validate_video_header_format(filename) result(valid_header)
+        character(len=*), intent(in) :: filename
+        logical :: valid_header
+        character(len=12) :: header
+        integer :: file_unit, ios
+        
+        valid_header = .false.
+        
+        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
+        if (ios /= 0) return
+        
+        read(file_unit, iostat=ios) header
+        close(file_unit)
+        
+        if (ios /= 0) return
+        
+        ! Look for MP4 box signatures
+        valid_header = (index(header, 'ftyp') > 0 .or. &
+                       index(header, 'mdat') > 0 .or. &
+                       index(header, 'moov') > 0 .or. &
+                       index(header, 'mp4') > 0)
+    end function validate_video_header_format
+
+    function validate_with_ffprobe(filename) result(valid)
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        character(len=500) :: command
+        integer :: status
+        
+        ! Use ffprobe to validate
+        write(command, '(A,A,A)') 'ffprobe -v error -show_format "', trim(filename), '" >/dev/null 2>&1'
+        call execute_command_line(command, exitstat=status)
+        valid = (status == 0)
+    end function validate_with_ffprobe
 
 end module fortplot_animation

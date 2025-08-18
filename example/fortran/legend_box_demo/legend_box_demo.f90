@@ -31,22 +31,25 @@ program legend_box_demo
     
     ! Save with default legend position
     call fig%legend()
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_default.png')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_default.pdf')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_default.txt')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_default.png')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_default.pdf')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_default.txt')
     print *, 'Created legend_box_demo_default.png/pdf/txt'
     
     ! Test different legend positions
     call fig%legend('upper left')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_upper_left.png')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_upper_left.pdf')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_upper_left.txt')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_upper_left.png')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_upper_left.pdf')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_upper_left.txt')
     print *, 'Created legend_box_demo_upper_left.png/pdf/txt'
     
     call fig%legend('lower right')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_lower_right.png')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_lower_right.pdf')
-    call fig%savefig('build/example/legend_box_demo/legend_box_demo_lower_right.txt')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.png')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.pdf')
+    call fig%savefig('output/example/fortran/legend_box_demo/legend_box_demo_lower_right.txt')
+    print *, 'Created legend_box_demo_upper_left.png/pdf/txt'
+    
+    call fig%legend('lower right')
     print *, 'Created legend_box_demo_lower_right.png/pdf/txt'
     
     deallocate(x, y)
