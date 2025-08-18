@@ -70,8 +70,7 @@ contains
         case ('png')
             allocate(backend, source=create_png_canvas(width, height))
         case ('pdf')
-            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
-            allocate(backend, source=create_png_canvas(width, height))
+            allocate(backend, source=create_pdf_canvas(width, height))
         case ('ascii')
             allocate(backend, source=create_ascii_canvas(width, height))
         case ('gltf', 'glb')
