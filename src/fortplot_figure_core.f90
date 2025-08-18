@@ -2819,7 +2819,7 @@ contains
         end if
         
         if (present(bins)) then
-            if (bins <= 0 .or. bins > 1000) then
+            if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
                 is_valid = .false.
                 return
             end if
@@ -2848,11 +2848,17 @@ contains
         
         data_min = minval(data)
         data_max = maxval(data)
+        
+        ! Handle case where all data points are identical
+        if (data_max == data_min) then
+            ! Add small padding to create valid bins
+            data_min = data_min - 0.5_wp
+            data_max = data_max + 0.5_wp
+        end if
+        
         bin_width = (data_max - data_min) / real(n_bins, wp)
         
-        ! Allocate histogram arrays
-        if (allocated(self%plots(plot_idx)%hist_bin_edges)) deallocate(self%plots(plot_idx)%hist_bin_edges)
-        if (allocated(self%plots(plot_idx)%hist_counts)) deallocate(self%plots(plot_idx)%hist_counts)
+        ! Allocate histogram arrays (automatic deallocation when reassigned)
         allocate(self%plots(plot_idx)%hist_bin_edges(n_bins + 1))
         allocate(self%plots(plot_idx)%hist_counts(n_bins))
         
