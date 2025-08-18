@@ -82,8 +82,9 @@ contains
         allocate(initial_pixel(9))  ! 3x3 pixel area around test point
         call extract_pixel_area(ctx%raster%image_data, width, height, test_x, test_y, initial_pixel)
 
-        ! Render simple character at test coordinates  
-        call ctx%text(real(test_x, wp), real(test_y, wp), "X")
+        ! Render simple character at test coordinates using direct pixel rendering
+        ! This tests render_stb_glyph() directly without coordinate transformation
+        call render_text_to_image(ctx%raster%image_data, width, height, test_x, test_y, "X", 0_1, 0_1, 0_1)
 
         ! Check that pixels changed at expected location
         allocate(rendered_pixel(9))
@@ -126,10 +127,10 @@ contains
             return
         end if
 
-        ! Render multiple characters that would show cumulative drift
-        call ctx%text(real(base_x, wp), real(base_y, wp), "ABC")
-        call ctx%text(real(base_x + 50, wp), real(base_y, wp), "DEF")
-        call ctx%text(real(base_x + 100, wp), real(base_y, wp), "GHI")
+        ! Render multiple characters that would show cumulative drift using direct pixel rendering
+        call render_text_to_image(ctx%raster%image_data, width, height, base_x, base_y, "ABC", 0_1, 0_1, 0_1)
+        call render_text_to_image(ctx%raster%image_data, width, height, base_x + 50, base_y, "DEF", 0_1, 0_1, 0_1)
+        call render_text_to_image(ctx%raster%image_data, width, height, base_x + 100, base_y, "GHI", 0_1, 0_1, 0_1)
 
         ! Test passes if rendering completes without bounds violations
         ! The actual drift would be caught by visual inspection of output
