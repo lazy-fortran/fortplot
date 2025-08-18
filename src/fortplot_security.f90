@@ -104,14 +104,30 @@ contains
         character(len=*), intent(in) :: program_name
         logical :: available
         
-        ! For security, we cannot safely check program availability 
-        ! without potential shell injection. Instead, we'll assume 
-        ! programs are not available by default and let operations fail gracefully.
-        available = .false.
-        
-        ! Log that we're operating in secure mode
-        call log_info("Operating in secure mode - external program check disabled for: " // trim(program_name))
-        call log_info("If " // trim(program_name) // " is needed, operations will fail gracefully")
+        ! Check if external program checking is enabled (CI environments, etc)
+        if (is_ffmpeg_environment_enabled()) then
+            ! In enabled environments, test if program is actually available
+            if (trim(program_name) == 'ffmpeg' .or. trim(program_name) == 'ffprobe') then
+                available = test_program_availability(program_name)
+                if (available) then
+                    call log_info("External program " // trim(program_name) // " is available")
+                else
+                    call log_info("External program " // trim(program_name) // " not found")
+                end if
+            else
+                available = .false.
+                call log_info("Only ffmpeg/ffprobe checking enabled - " // trim(program_name) // " assumed unavailable")
+            end if
+        else
+            ! For security, we cannot safely check program availability 
+            ! without potential shell injection. Instead, we'll assume 
+            ! programs are not available by default and let operations fail gracefully.
+            available = .false.
+            
+            ! Log that we're operating in secure mode
+            call log_info("Operating in secure mode - external program check disabled for: " // trim(program_name))
+            call log_info("If " // trim(program_name) // " is needed, operations will fail gracefully")
+        end if
     end function safe_check_program_available
 
     !> Safely validate MPEG files without shell injection
@@ -138,7 +154,13 @@ contains
             return
         end if
         
-        ! Perform basic file validation by checking magic bytes
+        ! If in enabled environment, use actual ffprobe for validation
+        if (is_ffmpeg_environment_enabled()) then
+            valid = validate_with_actual_ffprobe(filename)
+            return
+        end if
+        
+        ! Fallback: Perform basic file validation by checking magic bytes
         open(newunit=unit, file=trim(filename), form='unformatted', &
              access='stream', iostat=iostat)
         
@@ -281,5 +303,85 @@ contains
             return
         end if
     end function is_safe_path
+
+    !> Check if FFmpeg environment is enabled (similar to C implementation)
+    function is_ffmpeg_environment_enabled() result(enabled)
+        logical :: enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        enabled = .false.
+        
+        ! Check CI environment variable
+        call get_environment_variable("CI", env_value, status)
+        if (status == 0 .and. trim(env_value) == "true") then
+            enabled = .true.
+            return
+        end if
+        
+        ! Check GitHub Actions environment
+        call get_environment_variable("GITHUB_ACTIONS", env_value, status)
+        if (status == 0 .and. trim(env_value) == "true") then
+            enabled = .true.
+            return
+        end if
+        
+        ! Check explicit enable flag
+        call get_environment_variable("FORTPLOT_ENABLE_FFMPEG", env_value, status)
+        if (status == 0 .and. trim(env_value) == "1") then
+            enabled = .true.
+            return
+        end if
+        
+        ! Check RUNNER_OS (GitHub Actions runner)
+        call get_environment_variable("RUNNER_OS", env_value, status)
+        if (status == 0) then
+            enabled = .true.
+            return
+        end if
+    end function is_ffmpeg_environment_enabled
+    
+    !> Test if a program is actually available
+    function test_program_availability(program_name) result(available)
+        character(len=*), intent(in) :: program_name
+        logical :: available
+        integer :: exit_code
+        character(len=100) :: command
+        
+        available = .false.
+        
+        ! Build safe command to test program availability
+        write(command, '(A,A,A)') trim(program_name), " -version >/dev/null 2>&1"
+        
+        ! Execute command and check exit code
+        call execute_command_line(command, exitstat=exit_code)
+        
+        available = (exit_code == 0)
+    end function test_program_availability
+    
+    !> Validate video file with actual ffprobe
+    function validate_with_actual_ffprobe(filename) result(valid)
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        integer :: exit_code
+        character(len=200) :: command
+        
+        valid = .false.
+        
+        ! Build safe ffprobe command for validation
+        write(command, '(A,A,A)') "ffprobe -v quiet -select_streams v:0 -show_entries stream=codec_name '", &
+                                  trim(filename), "' >/dev/null 2>&1"
+        
+        ! Execute ffprobe and check if it can read the video
+        call execute_command_line(command, exitstat=exit_code)
+        
+        valid = (exit_code == 0)
+        
+        if (valid) then
+            call log_info("FFprobe validation passed: " // trim(filename))
+        else
+            call log_warning("FFprobe validation failed: " // trim(filename))
+        end if
+    end function validate_with_actual_ffprobe
 
 end module fortplot_security
