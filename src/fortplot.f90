@@ -29,11 +29,11 @@ module fortplot
     ! Re-export public interface
     public :: figure_t, wp
     public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
-    public :: hist, histogram
+    public :: hist, histogram, scatter
     public :: xlabel, ylabel, title, legend
     public :: savefig, figure
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
-    public :: add_3d_plot, add_surface
+    public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     public :: bar, barh
@@ -59,6 +59,10 @@ module fortplot
     character(len=*), parameter, public :: MARKER_DIAMOND = 'D'
     character(len=*), parameter, public :: MARKER_PLUS = '+'
     character(len=*), parameter, public :: MARKER_STAR = '*'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_UP = '^'
+    character(len=*), parameter, public :: MARKER_TRIANGLE_DOWN = 'v'
+    character(len=*), parameter, public :: MARKER_PENTAGON = 'p'
+    character(len=*), parameter, public :: MARKER_HEXAGON = 'h'
 
 
     ! Interface for overloaded show routine
@@ -680,6 +684,63 @@ contains
         
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
+
+    subroutine scatter(x, y, s, c, label, marker, markersize, color, &
+                      colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (pyplot-style)
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for the scatter plot
+        !!   s: Optional size mapping array for bubble charts
+        !!   c: Optional color mapping array for color-coded plots
+        !!   label: Optional label for the plot
+        !!   marker: Optional marker style ('o', 's', 'D', 'x', '+', '*', '^', 'v', 'p', 'h')
+        !!   markersize: Optional default marker size when s not provided
+        !!   color: Optional RGB color array [0-1] for uniform coloring
+        !!   colormap: Optional colormap name ('viridis', 'plasma', 'inferno', 'coolwarm', etc.)
+        !!   vmin, vmax: Optional color scale limits
+        !!   show_colorbar: Optional flag to show colorbar for color mapping
+        !!
+        !! Examples:
+        !!   ! Basic scatter plot
+        !!   call scatter(x, y, label='Data Points')
+        !!   
+        !!   ! Bubble chart with size mapping
+        !!   call scatter(x, y, s=sizes, label='Bubble Chart')
+        !!   
+        !!   ! Color-mapped scatter plot
+        !!   call scatter(x, y, c=values, colormap='viridis', label='Color Mapped')
+        !!   
+        !!   ! Full featured scatter plot
+        !!   call scatter(x, y, s=sizes, c=values, marker='s', colormap='plasma', &
+        !!               vmin=0.0_real64, vmax=1.0_real64, label='Advanced Scatter')
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call ensure_global_figure_initialized()
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine scatter
+
+    subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
+                          colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (wrapper for consistency)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+
+        call fig%add_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
+    end subroutine add_scatter
 
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)
