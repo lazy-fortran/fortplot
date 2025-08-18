@@ -287,25 +287,23 @@ contains
         character(len=*), intent(in) :: filename
         integer :: count
         integer :: status
+        logical :: vlc_available, ffplay_available, mplayer_available
 
         count = 0
 
         ! Test VLC compatibility (secure mode)
-        logical :: vlc_available
         vlc_available = safe_check_program_available('vlc')
         if (vlc_available) then
             if (test_vlc_file_compatibility(filename)) count = count + 1
         end if
 
         ! Test FFplay compatibility (secure mode)
-        logical :: ffplay_available
         ffplay_available = safe_check_program_available('ffplay')
         if (ffplay_available) then
             if (test_ffplay_file_compatibility(filename)) count = count + 1
         end if
 
         ! Test MPlayer compatibility (secure mode)
-        logical :: mplayer_available
         mplayer_available = safe_check_program_available('mplayer')
         if (mplayer_available) then
             if (test_mplayer_file_compatibility(filename)) count = count + 1
