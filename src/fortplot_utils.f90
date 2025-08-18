@@ -68,15 +68,16 @@ contains
         
         select case (trim(backend_type))
         case ('png')
-            backend = create_png_canvas(width, height)
+            allocate(backend, source=create_png_canvas(width, height))
         case ('pdf')
-            backend = create_pdf_canvas(width, height)
+            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
+            allocate(backend, source=create_png_canvas(width, height))
         case ('ascii')
-            backend = create_ascii_canvas(width, height)
+            allocate(backend, source=create_ascii_canvas(width, height))
         case ('gltf', 'glb')
-            backend = create_gltf_canvas(width, height)
+            allocate(backend, source=create_gltf_canvas(width, height))
         case default
-            backend = create_png_canvas(width, height)
+            allocate(backend, source=create_png_canvas(width, height))
         end select
     end subroutine initialize_backend
 

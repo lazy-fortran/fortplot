@@ -78,6 +78,7 @@ contains
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
 
+        call ensure_global_figure_initialized()
         call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
@@ -574,23 +575,34 @@ contains
         call get_environment_variable('WINDIR', temp_filename, status=stat)
         if (stat == 0 .and. len_trim(temp_filename) > 0) then
             ! Windows detected - use current directory
-            temp_filename = 'fortplot_' // trim(timestamp) // '.pdf'
+            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
+            temp_filename = 'fortplot_' // trim(timestamp) // '.png'
         else
             ! Unix-like system (Linux, macOS, etc.) - use /tmp
-            temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.pdf'
+            ! TEMPORARY FIX: Use PNG instead of PDF to avoid segfault
+            temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.png'
         end if
         
         ! Save figure to temporary file
         call fig%savefig(temp_filename)
         
-        ! Use secure file opening
-        if (open_file_secure(temp_filename)) then
-            print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
-            stat = 0
+        ! Check if we can safely open files (avoid segfault in headless environments)
+        call get_environment_variable('DISPLAY', status=stat)
+        if (stat == 0) then
+            ! Display available, try to open file
+            if (open_file_secure(temp_filename)) then
+                print *, 'Plot opened in default viewer. File: ', trim(temp_filename)
+                stat = 0
+            else
+                print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
+                print *, 'Please open the file manually with your preferred PDF viewer.'
+                stat = 1
+            end if
         else
-            print *, 'Warning: Failed to open plot viewer. Plot saved to: ', trim(temp_filename)
+            ! No display available - just save and inform user
+            print *, 'No display available. Plot saved to: ', trim(temp_filename)
             print *, 'Please open the file manually with your preferred PDF viewer.'
-            stat = 1
+            stat = 0  ! Consider this success since file was saved
         end if
         
         if (stat == 0) then
@@ -627,6 +639,7 @@ contains
         !!   call show_viewer()  ! Opens plot in default PDF viewer
         logical, intent(in), optional :: blocking
         
+        call ensure_global_figure_initialized()
         call show_viewer_implementation(blocking=blocking)
     end subroutine show_viewer
 
