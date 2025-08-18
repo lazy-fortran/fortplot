@@ -28,7 +28,8 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t, subplot_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
