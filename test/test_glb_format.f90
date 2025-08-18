@@ -37,7 +37,8 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        use fortplot_security, only: secure_file_remove
+        call secure_file_remove(filename)
         
     end subroutine test_glb_file_created
     
@@ -78,7 +79,8 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        use fortplot_security, only: secure_file_remove
+        call secure_file_remove(filename)
         
     end subroutine test_glb_magic_header
     
@@ -122,7 +124,8 @@ contains
         close(unit)
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        use fortplot_security, only: secure_file_remove
+        call secure_file_remove(filename)
         
     end subroutine test_glb_chunks_structure
     
@@ -152,7 +155,8 @@ contains
         end if
         
         ! Clean up
-        call execute_command_line('rm -f ' // trim(filename))
+        use fortplot_security, only: secure_file_remove
+        call secure_file_remove(filename)
         
     end subroutine test_glb_binary_data
 
