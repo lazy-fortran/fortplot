@@ -73,7 +73,8 @@ contains
             call safe_remove_file(test_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -112,7 +113,8 @@ contains
                 call safe_remove_file(frame_file, remove_success)
                 if (.not. remove_success) then
                     print *, "Warning: Could not remove frame file: " // trim(frame_file)
-                end if
+                        end if
+    end block
             end block
         end do
     end subroutine create_and_save_test_animation
@@ -252,7 +254,8 @@ contains
             call safe_remove_file(test_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
-            end if
+                    end if
+    end block
         end block
         end do
     end subroutine
@@ -309,7 +312,8 @@ contains
             call safe_remove_file(fake_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(fake_file)
-            end if
+                    end if
+    end block
             call safe_remove_file(empty_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(empty_file)

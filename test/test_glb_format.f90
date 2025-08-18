@@ -4,7 +4,7 @@ program test_glb_format
     
     use iso_fortran_env, only: wp => real64, int8
     use fortplot
-    use fortplot_security, only: secure_file_remove
+    use fortplot_security, only: safe_remove_file
     implicit none
     
     call test_glb_file_created()
@@ -38,7 +38,7 @@ contains
         end if
         
         ! Clean up
-        call secure_file_remove(filename)
+        call safe_remove_file(filename)
         
     end subroutine test_glb_file_created
     
@@ -79,7 +79,7 @@ contains
         end if
         
         ! Clean up
-        call secure_file_remove(filename)
+        call safe_remove_file(filename)
         
     end subroutine test_glb_magic_header
     
@@ -123,7 +123,7 @@ contains
         close(unit)
         
         ! Clean up
-        call secure_file_remove(filename)
+        call safe_remove_file(filename)
         
     end subroutine test_glb_chunks_structure
     
@@ -153,7 +153,7 @@ contains
         end if
         
         ! Clean up
-        call secure_file_remove(filename)
+        call safe_remove_file(filename)
         
     end subroutine test_glb_binary_data
 
