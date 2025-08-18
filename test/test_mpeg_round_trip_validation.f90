@@ -1,6 +1,6 @@
 program test_mpeg_round_trip_validation
     use fortplot
-    use fortplot_security, only: safe_remove_file, safe_check_program_available, sanitize_filename, secure_wildcard_remove, secure_file_exists
+    use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe, sanitize_filename, secure_wildcard_remove, secure_file_exists
     use iso_fortran_env, only: real64
     implicit none
 
