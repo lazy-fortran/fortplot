@@ -55,10 +55,10 @@ jobs:
           make example
           
           # Copy generated outputs to media directory
-          find example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
-          find example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \;
-          find example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \;
-          find example/fortran -name "*.mp4" -exec cp {} doc/media/examples/ \;
+          find output/example/fortran -name "*.png" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
+          find output/example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
+          find output/example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
+          find output/example/fortran -name "*.mp4" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
           
           # Generate example documentation from README files
           make example ARGS="generate_example_docs"
