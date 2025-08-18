@@ -1226,9 +1226,8 @@ contains
         
         ! Draw only the filtered (non-overlapping) labels
         do i = 1, filtered_count
-            ! Convert Y position to PDF coordinates for positioning calculation
-            tick_y = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                     (filtered_positions(i) - real(ctx%plot_area%bottom, wp))
+            ! filtered_positions(i) is already in PDF coordinates (Y=0 at bottom)
+            tick_y = filtered_positions(i)
             
             ! Use PDF-specific tick label positioning (native PDF coordinates)
             call calculate_y_tick_label_position_pdf(tick_y, plot_left, &
