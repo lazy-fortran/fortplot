@@ -210,7 +210,7 @@ contains
         if (x < 1 .or. x > img_w .or. y < 1 .or. y > img_h) return
         if (alpha <= 0.0_wp) return
 
-        k = (y - 1) * (1 + img_w * 3) + 1 + (x - 1) * 3 + 1
+        k = (y - 1) * img_w * 3 + (x - 1) * 3 + 1
 
         if (alpha >= 1.0_wp) then
             image_data(k) = new_r
