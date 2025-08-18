@@ -30,7 +30,7 @@ program bar_chart_demo
     call fig%set_title('Basic Vertical Bar Chart')
     call fig%set_xlabel('Categories')
     call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('plots/bar_chart_basic.png')
+    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_basic.png')
     write(*,*) 'Created bar_chart_basic.png'
     
     ! Horizontal bar chart
@@ -39,7 +39,7 @@ program bar_chart_demo
     call fig%set_title('Horizontal Bar Chart')
     call fig%set_xlabel('Revenue ($k)')
     call fig%set_ylabel('Products')
-    call fig%savefig('plots/bar_chart_horizontal.png')
+    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_horizontal.png')
     write(*,*) 'Created bar_chart_horizontal.png'
     
     ! Custom width bar chart
@@ -48,7 +48,7 @@ program bar_chart_demo
     call fig%set_title('Bar Chart with Custom Width (0.5)')
     call fig%set_xlabel('Categories')
     call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('plots/bar_chart_custom_width.png')
+    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_custom_width.png')
     write(*,*) 'Created bar_chart_custom_width.png'
     
     ! Grouped bar charts
@@ -61,7 +61,7 @@ program bar_chart_demo
     call fig%set_title('Grouped Bar Chart - Quarterly Sales')
     call fig%set_xlabel('Categories')
     call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('plots/bar_chart_grouped.png')
+    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_grouped.png')
     write(*,*) 'Created bar_chart_grouped.png'
     
     ! Mixed positive and negative values
@@ -71,7 +71,7 @@ program bar_chart_demo
     call fig%set_title('Bar Chart with Positive and Negative Values')
     call fig%set_xlabel('Categories')
     call fig%set_ylabel('Profit/Loss ($k)')
-    call fig%savefig('plots/bar_chart_mixed_values.png')
+    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_mixed_values.png')
     write(*,*) 'Created bar_chart_mixed_values.png'
     
     write(*,*) 'Bar chart demonstration completed!'
