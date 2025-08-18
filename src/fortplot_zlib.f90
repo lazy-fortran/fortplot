@@ -173,89 +173,69 @@ contains
     end function calculate_adler32
     
     subroutine deflate_compress(input_data, input_len, output_data, output_len)
-        !! Full deflate compression implementation with LZ77 and Huffman coding
+        !! Simple deflate compression using stored blocks (no compression)
+        !! This avoids complex Huffman/LZ77 bugs that corrupt filter bytes
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
         integer(int8), allocatable, intent(out) :: output_data(:)
         integer, intent(out) :: output_len
         
-        ! Hash table for LZ77
-        integer :: hash_table(0:HASH_SIZE-1)
-        integer :: hash_chain(WINDOW_SIZE)
+        integer :: pos, remaining, block_len, i
+        integer(int8), allocatable :: temp_buffer(:)
+        integer :: temp_pos
         
-        ! Huffman tables (fixed Huffman for simplicity)
-        integer :: literal_codes(0:285)
-        integer :: literal_lengths(0:285)
-        integer :: distance_codes(0:29)
-        integer :: distance_lengths(0:29)
+        ! Use stored blocks (BTYPE=00) for maximum compatibility
+        ! Each stored block: 3 bits header + 4 bytes length info + data
+        ! For large data, we may need multiple blocks (max 65535 bytes per block)
         
-        ! Output bit buffer
-        integer(int8), allocatable :: bit_buffer(:)
-        integer :: bit_pos, byte_pos
-        integer :: i, pos, match_len, match_dist
-        integer :: hash_val
-        
-        ! Initialize fixed Huffman tables
-        call init_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)
-        
-        ! Initialize hash table
-        hash_table = -1
-        hash_chain = -1
-        
-        ! Allocate bit buffer (worst case: no compression, plus some overhead)
-        allocate(bit_buffer(max(64, input_len * 2)))
-        bit_pos = 0
-        byte_pos = 1
-        
-        ! Write deflate block header: BFINAL=1 (last block), BTYPE=01 (fixed Huffman)
-        call write_bits(bit_buffer, bit_pos, byte_pos, 1, 1)
-        call write_bits(bit_buffer, bit_pos, byte_pos, 1, 2)  ! BTYPE=01
+        allocate(temp_buffer(input_len * 2))  ! Generous allocation
+        temp_pos = 1
         
         pos = 1
-        do while (pos <= input_len)
-            ! Find longest match
-            call find_longest_match(input_data, pos, input_len, hash_table, hash_chain, match_len, match_dist)
+        remaining = input_len
+        
+        do while (remaining > 0)
+            ! Determine block size (max 65535 bytes for stored blocks)
+            block_len = min(remaining, 65535)
             
-            if (match_len >= MIN_MATCH) then
-                ! Encode length-distance pair
-                call encode_length_distance(bit_buffer, bit_pos, byte_pos, match_len, match_dist, &
-                                            literal_codes, literal_lengths, distance_codes, distance_lengths)
-                
-                ! Update hash table for the matched string
-                do i = 0, match_len - 1
-                    if (pos + i <= input_len) then
-                        hash_val = calculate_hash(input_data, pos + i, input_len)
-                        call update_hash_table(hash_table, hash_chain, hash_val, pos + i)
-                    end if
-                end do
-                pos = pos + match_len
+            ! Write block header: BFINAL, BTYPE=00 (stored)
+            if (remaining <= 65535) then
+                ! Last block: BFINAL=1, BTYPE=00 
+                temp_buffer(temp_pos) = int(1, int8)  ! BFINAL=1, BTYPE=00 (bits 0-2)
             else
-                ! Encode literal
-                call encode_literal(bit_buffer, bit_pos, byte_pos, input_data(pos), literal_codes, literal_lengths)
-                
-                ! Update hash table
-                if (pos <= input_len) then
-                    hash_val = calculate_hash(input_data, pos, input_len)
-                    call update_hash_table(hash_table, hash_chain, hash_val, pos)
-                end if
-                pos = pos + 1
+                ! Not last block: BFINAL=0, BTYPE=00
+                temp_buffer(temp_pos) = int(0, int8)  ! BFINAL=0, BTYPE=00 (bits 0-2) 
             end if
+            temp_pos = temp_pos + 1
+            
+            ! Write LEN (2 bytes, little endian)
+            temp_buffer(temp_pos) = int(iand(block_len, 255), int8)
+            temp_pos = temp_pos + 1
+            temp_buffer(temp_pos) = int(iand(ishft(block_len, -8), 255), int8)
+            temp_pos = temp_pos + 1
+            
+            ! Write NLEN (2 bytes, little endian, one's complement of LEN)
+            temp_buffer(temp_pos) = int(iand(ieor(block_len, 65535), 255), int8)
+            temp_pos = temp_pos + 1
+            temp_buffer(temp_pos) = int(iand(ishft(ieor(block_len, 65535), -8), 255), int8) 
+            temp_pos = temp_pos + 1
+            
+            ! Copy block data directly (no compression, preserves all bytes exactly)
+            do i = 1, block_len
+                temp_buffer(temp_pos) = input_data(pos)
+                temp_pos = temp_pos + 1
+                pos = pos + 1
+            end do
+            
+            remaining = remaining - block_len
         end do
         
-        ! Encode end-of-block marker (code 256)
-        call write_bits(bit_buffer, bit_pos, byte_pos, bit_reverse(literal_codes(256), literal_lengths(256)), literal_lengths(256))
-        
-        ! Align to byte boundary
-        if (bit_pos > 0) then
-            byte_pos = byte_pos + 1
-        end if
-        
-        ! Copy result
-        output_len = byte_pos - 1
+        ! Copy result to output
+        output_len = temp_pos - 1
         allocate(output_data(output_len))
-        output_data(1:output_len) = bit_buffer(1:output_len)
+        output_data(1:output_len) = temp_buffer(1:output_len)
         
-        deallocate(bit_buffer)
+        deallocate(temp_buffer)
     end subroutine deflate_compress
     
     subroutine init_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)

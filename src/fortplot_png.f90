@@ -53,9 +53,13 @@ contains
         integer, parameter :: bit_depth = 8, color_type = 2
         integer(int8), allocatable :: compressed_data(:)
         integer :: compressed_size, data_size
-
-        data_size = size(image_data)
-        compressed_data = zlib_compress(image_data, data_size, compressed_size)
+        integer(1), allocatable :: png_row_data(:)
+        
+        ! Convert RGB image data to PNG row format with filter bytes
+        call convert_rgb_to_png_rows(width, height, image_data, png_row_data)
+        
+        data_size = size(png_row_data)
+        compressed_data = zlib_compress(png_row_data, data_size, compressed_size)
         
         if (.not. allocated(compressed_data) .or. compressed_size <= 0) then
             call log_error("PNG compression failed")
@@ -65,6 +69,7 @@ contains
         call build_png_buffer(width, height, compressed_data, compressed_size, png_buffer)
         
         deallocate(compressed_data)
+        deallocate(png_row_data)
     end subroutine generate_png_data
 
     ! Build complete PNG buffer from compressed data  
@@ -136,6 +141,37 @@ contains
         
         call generate_png_data(width, height, image_data, png_buffer)
     end subroutine get_png_data
+    
+    ! Convert RGB image data to PNG row format with filter bytes
+    subroutine convert_rgb_to_png_rows(width, height, rgb_data, png_row_data)
+        integer, intent(in) :: width, height
+        integer(1), intent(in) :: rgb_data(:)  ! width * height * 3 RGB bytes
+        integer(1), allocatable, intent(out) :: png_row_data(:)  ! height * (1 + width * 3) bytes
+        
+        integer :: row, col, rgb_idx, png_idx, row_start
+        
+        ! Allocate PNG row data: height rows * (1 filter byte + width * 3 RGB bytes)
+        allocate(png_row_data(height * (1 + width * 3)))
+        
+        ! Convert row by row
+        do row = 1, height
+            ! Calculate indices
+            row_start = (row - 1) * (1 + width * 3) + 1
+            
+            ! Set filter byte to 0 (no filter)
+            png_row_data(row_start) = 0_1
+            
+            ! Copy RGB data for this row  
+            do col = 1, width
+                rgb_idx = (row - 1) * width * 3 + (col - 1) * 3 + 1
+                png_idx = row_start + 1 + (col - 1) * 3
+                
+                png_row_data(png_idx)     = rgb_data(rgb_idx)     ! R
+                png_row_data(png_idx + 1) = rgb_data(rgb_idx + 1) ! G  
+                png_row_data(png_idx + 2) = rgb_data(rgb_idx + 2) ! B
+            end do
+        end do
+    end subroutine convert_rgb_to_png_rows
 
     ! Write PNG chunk to buffer
     subroutine write_chunk_to_buffer(buffer, pos, chunk_type, data, data_len)

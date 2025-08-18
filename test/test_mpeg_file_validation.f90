@@ -1,8 +1,11 @@
 program test_mpeg_file_validation
     use fortplot
+    use fortplot_pipe, only: check_ffmpeg_available
     use fortplot_security, only: safe_remove_file, safe_check_program_available, safe_validate_mpeg_with_ffprobe
     use iso_fortran_env, only: real64
     implicit none
+    
+    logical :: ffmpeg_available
 
     ! Given: We need to validate that MPEG files are actually playable video files
     ! When: We create animations and validate file integrity
@@ -11,6 +14,14 @@ program test_mpeg_file_validation
     type(figure_t) :: test_fig
     real(real64), dimension(10) :: test_x, test_y
     integer :: i
+    
+    ! Check FFmpeg availability before running MPEG validation tests
+    ffmpeg_available = check_ffmpeg_available()
+    if (.not. ffmpeg_available) then
+        print *, "XFAIL: MPEG validation requires FFmpeg/ffprobe - Issue #104"
+        print *, "Expected failure - FFmpeg not available in CI environment"
+        stop 77  ! Standard exit code for skipped tests
+    end if
 
     call test_mpeg_file_integrity_validation()
     call test_mpeg_file_header_validation()

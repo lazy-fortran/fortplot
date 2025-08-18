@@ -1,5 +1,6 @@
 program test_pdf_yaxis_label_overlap
-    !! Test for Issue #39 - Y-axis tick labels overlap near origin in PDF backend
+    !! Test for Issue #34 - Y-axis tick labels overlap near origin in PDF backend
+    !! (Updated from closed Issue #39)
     !! 
     !! Given: A plot with Y-axis ticks near origin using PDF backend
     !! When: Multiple tick labels are positioned close together
