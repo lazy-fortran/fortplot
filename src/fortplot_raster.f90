@@ -112,7 +112,14 @@ contains
         integer(1) :: byte_val
         integer :: int_val
 
-        int_val = int(color_val * 255.0_wp)
+        ! Clamp color_val to [0,1] range to prevent overflow
+        int_val = int(max(0.0_wp, min(1.0_wp, color_val)) * 255.0_wp)
+        
+        ! Ensure int_val is in valid range [0, 255] and prevent signed byte overflow
+        ! Clamp to [0, 255] but also avoid exactly 128 which causes signed byte overflow
+        int_val = max(0, min(255, int_val))
+        if (int_val == 128) int_val = 127  ! Avoid signed byte overflow
+        
         if (int_val > 127) then
             byte_val = int(int_val - 256, 1)
         else
@@ -230,6 +237,16 @@ contains
             bg_g = int(inv_alpha * real(bg_g) + alpha * real(fg_g))
             bg_b = int(inv_alpha * real(bg_b) + alpha * real(fg_b))
 
+            ! Clamp to [0, 255] range and handle signed byte conversion properly
+            bg_r = max(0, min(255, bg_r))
+            bg_g = max(0, min(255, bg_g))
+            bg_b = max(0, min(255, bg_b))
+            
+            ! Prevent exactly 128 which causes signed byte overflow
+            if (bg_r == 128) bg_r = 127
+            if (bg_g == 128) bg_g = 127
+            if (bg_b == 128) bg_b = 127
+            
             if (bg_r > 127) bg_r = bg_r - 256
             if (bg_g > 127) bg_g = bg_g - 256
             if (bg_b > 127) bg_b = bg_b - 256
@@ -720,13 +737,13 @@ contains
         real(wp), parameter :: EDGE_WIDTH = 1.0_wp
         real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
 
-        ! Convert colors to bytes
-        edge_r_byte = int(edge_r * 255.0_wp, 1)
-        edge_g_byte = int(edge_g * 255.0_wp, 1)
-        edge_b_byte = int(edge_b * 255.0_wp, 1)
-        face_r_byte = int(face_r * 255.0_wp, 1)
-        face_g_byte = int(face_g * 255.0_wp, 1)
-        face_b_byte = int(face_b * 255.0_wp, 1)
+        ! Convert colors to bytes using safe conversion
+        edge_r_byte = color_to_byte(edge_r)
+        edge_g_byte = color_to_byte(edge_g)
+        edge_b_byte = color_to_byte(edge_b)
+        face_r_byte = color_to_byte(face_r)
+        face_g_byte = color_to_byte(face_g)
+        face_b_byte = color_to_byte(face_b)
 
         x_min = max(1, int(cx - radius - EDGE_SMOOTHING))
         x_max = min(img_w, int(cx + radius + EDGE_SMOOTHING))
@@ -840,13 +857,13 @@ contains
         real(wp), parameter :: EDGE_WIDTH = 1.0_wp
         real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
 
-        ! Convert colors to bytes
-        edge_r_byte = int(edge_r * 255.0_wp, 1)
-        edge_g_byte = int(edge_g * 255.0_wp, 1)
-        edge_b_byte = int(edge_b * 255.0_wp, 1)
-        face_r_byte = int(face_r * 255.0_wp, 1)
-        face_g_byte = int(face_g * 255.0_wp, 1)
-        face_b_byte = int(face_b * 255.0_wp, 1)
+        ! Convert colors to bytes using safe conversion
+        edge_r_byte = color_to_byte(edge_r)
+        edge_g_byte = color_to_byte(edge_g)
+        edge_b_byte = color_to_byte(edge_b)
+        face_r_byte = color_to_byte(face_r)
+        face_g_byte = color_to_byte(face_g)
+        face_b_byte = color_to_byte(face_b)
 
         half_size = size * 0.5_wp
         x_min = max(1, int(cx - half_size - EDGE_SMOOTHING))
@@ -921,13 +938,13 @@ contains
         real(wp), parameter :: EDGE_WIDTH = 1.0_wp
         real(wp), parameter :: EDGE_SMOOTHING = 1.0_wp
 
-        ! Convert colors to bytes
-        edge_r_byte = int(edge_r * 255.0_wp, 1)
-        edge_g_byte = int(edge_g * 255.0_wp, 1)
-        edge_b_byte = int(edge_b * 255.0_wp, 1)
-        face_r_byte = int(face_r * 255.0_wp, 1)
-        face_g_byte = int(face_g * 255.0_wp, 1)
-        face_b_byte = int(face_b * 255.0_wp, 1)
+        ! Convert colors to bytes using safe conversion
+        edge_r_byte = color_to_byte(edge_r)
+        edge_g_byte = color_to_byte(edge_g)
+        edge_b_byte = color_to_byte(edge_b)
+        face_r_byte = color_to_byte(face_r)
+        face_g_byte = color_to_byte(face_g)
+        face_b_byte = color_to_byte(face_b)
 
         half_size = size * 0.5_wp
         x_min = max(1, int(cx - half_size - EDGE_SMOOTHING))
@@ -996,10 +1013,10 @@ contains
         integer(1) :: edge_r_byte, edge_g_byte, edge_b_byte
         real(wp) :: half_size, line_width
         
-        ! Convert colors to bytes
-        edge_r_byte = int(edge_r * 255.0_wp, 1)
-        edge_g_byte = int(edge_g * 255.0_wp, 1)
-        edge_b_byte = int(edge_b * 255.0_wp, 1)
+        ! Convert colors to bytes using safe conversion
+        edge_r_byte = color_to_byte(edge_r)
+        edge_g_byte = color_to_byte(edge_g)
+        edge_b_byte = color_to_byte(edge_b)
 
         half_size = size * 0.5_wp
         line_width = 1.0_wp
@@ -1226,9 +1243,9 @@ contains
                 call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                           x_positions(i), grid_y_bottom, &
                                           x_positions(i), grid_y_top, &
-                                          int(line_color(1) * 255, 1), &
-                                          int(line_color(2) * 255, 1), &
-                                          int(line_color(3) * 255, 1), &
+                                          color_to_byte(line_color(1)), &
+                                          color_to_byte(line_color(2)), &
+                                          color_to_byte(line_color(3)), &
                                           alpha_value)
             end do
         end if
@@ -1239,9 +1256,9 @@ contains
                 call draw_line_distance_aa(ctx%raster%image_data, ctx%width, ctx%height, &
                                           grid_x_left, y_positions(i), &
                                           grid_x_right, y_positions(i), &
-                                          int(line_color(1) * 255, 1), &
-                                          int(line_color(2) * 255, 1), &
-                                          int(line_color(3) * 255, 1), &
+                                          color_to_byte(line_color(1)), &
+                                          color_to_byte(line_color(2)), &
+                                          color_to_byte(line_color(3)), &
                                           alpha_value)
             end do
         end if
@@ -1453,10 +1470,10 @@ contains
         integer :: i, num_lines
         real(wp) :: t, x1, y1, x2, y2
         
-        ! Convert colors to bytes
-        r_byte = int(r * 255.0_wp, 1)
-        g_byte = int(g * 255.0_wp, 1)
-        b_byte = int(b * 255.0_wp, 1)
+        ! Convert colors to bytes using safe conversion
+        r_byte = color_to_byte(r)
+        g_byte = color_to_byte(g)
+        b_byte = color_to_byte(b)
         
         ! Simple approach: draw many horizontal lines across the quad
         ! This is robust and handles any quad shape
