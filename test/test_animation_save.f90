@@ -52,7 +52,8 @@ contains
             call safe_remove_file(test_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 
@@ -91,7 +92,8 @@ contains
             call safe_remove_file(test_file, remove_success)
             if (.not. remove_success) then
                 print *, "Warning: Could not remove temporary file: " // trim(test_file)
-            end if
+                    end if
+    end block
         end block
     end subroutine
 

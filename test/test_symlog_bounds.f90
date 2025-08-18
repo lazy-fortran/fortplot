@@ -82,7 +82,8 @@ program test_symlog_bounds
         call safe_remove_file('test_symlog_bounds_check.png', remove_success)
         if (.not. remove_success) then
             print *, "Warning: Could not remove temporary file: test_symlog_bounds_check.png"
-        end if
+                end if
+    end block
     end block
     
     if (.not. test_passed) then
