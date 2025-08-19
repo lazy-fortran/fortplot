@@ -1108,6 +1108,245 @@ end program
 **Foundation Impact**:
 Mandatory functional validation provides maximum strategic impact by preventing the most critical failure mode - working code that produces no output. This infrastructure protects all plotting functionality and ensures user trust in library reliability.
 
+## GitHub Pages Deployment Regression Fix Architecture (Issue #117)
+
+**SYSTEMIC FAILURE IDENTIFIED**: GitHub Pages documentation deployment not showing example plot outputs despite CI appearing to work correctly and examples generating successfully locally.
+
+**Current State Assessment** (2025-08-19):
+- ✅ **Local Example Generation**: `make example` produces 55+ PNG files in `output/example/fortran/`
+- ✅ **CI Pipeline Status**: GitHub Actions `.github/workflows/docs.yml` runs without errors
+- ❌ **Pages Deployment**: https://lazy-fortran.github.io/fortplot/page/example/basic_plots.html shows no images
+- ❌ **Documentation Integration**: Generated plots not embedded in deployed documentation
+
+**Root Cause Analysis**:
+
+**CRITICAL DISCOVERY**: Documentation files contain source code but no image embedding. Example: `doc/example/basic_plots.md` ends with empty "## Output" section, indicating **FUNDAMENTAL DOCUMENTATION INTEGRATION FAILURE**.
+
+**Primary Issues Identified**:
+1. **Documentation Content Gap**: Markdown files don't include image references or embedding syntax
+2. **CI Media Transfer Ineffective**: While CI copies files to `doc/media/examples/`, documentation doesn't reference them
+3. **FORD Integration Incomplete**: Static documentation generator not configured to display generated media
+4. **File Path Disconnect**: Generated outputs in `output/example/fortran/` not linked to documentation structure
+
+### Technical Root Cause Analysis
+
+**CI Pipeline Status Analysis**:
+```yaml
+# Current CI workflow (docs.yml) - ANALYSIS
+- name: Generate example outputs
+  run: |
+    mkdir -p doc/media/examples
+    make example  # ✅ WORKS - Generates 55+ PNG files
+    find output/example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
+    # ^^^ Files copied but documentation never references them
+```
+
+**Documentation Architecture Flaw**:
+```markdown
+# Current pattern in doc/example/basic_plots.md
+## Output
+# ^^^ EMPTY SECTION - No image embedding whatsoever
+```
+
+**Required Documentation Pattern**:
+```markdown
+## Output
+
+### Simple Sine Wave
+![Simple Plot](../../media/examples/simple_plot.png)
+
+### Multi-line Plot  
+![Multi-line Plot](../../media/examples/multi_line.png)
+```
+
+**FORD Configuration Gap**: 
+- FORD documentation generator not configured to process and include media files
+- Media directory structure not integrated with FORD build process
+- Documentation markdown files lack image references for FORD to process
+
+### Solution Architecture
+
+#### Phase 1: Documentation Content Integration (CRITICAL PATH)
+
+**Automated Documentation Generation Enhancement**:
+1. **Documentation Generator**: Create script to automatically embed generated images in markdown files
+2. **Path Resolution**: Establish correct relative paths from documentation to media files
+3. **Content Validation**: Ensure all examples have corresponding visual outputs documented
+4. **Markdown Template**: Standardize image embedding syntax across all example documentation
+
+**Implementation Strategy**:
+```bash
+# Enhanced CI workflow addition
+- name: Generate and embed documentation
+  run: |
+    # Generate examples (existing)
+    make example
+    
+    # Copy to media directory (existing)
+    mkdir -p doc/media/examples
+    find output/example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
+    
+    # NEW: Update documentation with image references
+    ./scripts/embed_example_images.sh doc/example/ doc/media/examples/
+```
+
+#### Phase 2: FORD Configuration Enhancement
+
+**FORD Media Integration Requirements**:
+1. **Media Directory Configuration**: Configure FORD to include `doc/media/` in build output
+2. **Relative Path Resolution**: Ensure FORD correctly resolves image paths in markdown
+3. **Build Process Integration**: Guarantee media files present before FORD documentation build
+4. **Output Validation**: Verify `build/doc/media/examples/` contains all generated plots
+
+**FORD Configuration Updates**:
+```yaml
+# FORD project file enhancement needed
+project_dir: .
+output_dir: build/doc
+media_dir: doc/media
+exclude_dir: output
+```
+
+#### Phase 3: CI Pipeline Validation Enhancement
+
+**CI Workflow Robustness**:
+```yaml
+- name: Validate documentation integration
+  run: |
+    # Verify media files copied successfully
+    ls -la doc/media/examples/
+    
+    # Verify documentation references images
+    grep -r "media/examples" doc/example/
+    
+    # Verify FORD build includes media
+    ls -la build/doc/media/examples/
+    
+    # Validate image count consistency
+    ORIGINAL_COUNT=$(find output/example/fortran -name "*.png" | wc -l)
+    COPIED_COUNT=$(find doc/media/examples -name "*.png" | wc -l)
+    BUILD_COUNT=$(find build/doc/media/examples -name "*.png" | wc -l)
+    [ "$ORIGINAL_COUNT" -eq "$COPIED_COUNT" ] && [ "$COPIED_COUNT" -eq "$BUILD_COUNT" ]
+```
+
+**Post-Deployment Validation**:
+1. **Image Link Testing**: Automated verification that deployed images load correctly
+2. **Content Validation**: Check that documentation shows visual outputs, not empty sections
+3. **User Experience Testing**: Manual verification of complete documentation experience
+4. **Performance Testing**: Ensure image loading doesn't impact page performance
+
+#### Phase 4: Documentation Content Strategy
+
+**Comprehensive Image Embedding**:
+1. **All Example Types**: PNG, PDF, ASCII, and animation outputs where applicable
+2. **Descriptive Context**: Images accompanied by explanatory text
+3. **Professional Presentation**: Consistent styling and layout for visual outputs
+4. **Accessibility**: Alt text and fallback content for screen readers
+
+**Documentation Structure**:
+```markdown
+## Output
+
+### Simple Sine Wave
+Demonstrates basic line plotting with clean axis labeling:
+![Simple sine wave plot showing one complete cycle](../../media/examples/simple_plot.png)
+
+### Multi-line Plot  
+Shows multiple data series with automatic legend generation:
+![Combined sine and cosine functions with legend](../../media/examples/multi_line.png)
+
+### ASCII Output
+Terminal-friendly plot output for systems without graphics:
+```
+[ASCII plot content]
+```
+```
+
+### Risk Assessment
+
+#### Technical Risks
+**Documentation Generation Complexity**: Automated image embedding may break existing workflows
+- **Mitigation**: Incremental implementation with fallback to manual editing
+- **Mitigation**: Extensive testing of documentation generation script
+
+**FORD Configuration Changes**: Unknown side effects of FORD media directory changes
+- **Mitigation**: Local testing of FORD configuration before CI deployment
+- **Mitigation**: Version control of FORD configuration for easy rollback
+
+**Path Resolution Issues**: Relative paths may not work across different documentation contexts
+- **Mitigation**: Test path resolution in both local and deployed contexts
+- **Mitigation**: Use absolute paths from documentation root if relative paths fail
+
+#### Quality Risks
+**Documentation Accuracy**: Automated embedding may reference wrong or outdated images
+- **Mitigation**: Validation script ensures documentation images match current example outputs
+- **Mitigation**: Version control tracking of both code and documentation changes
+
+**User Experience Degradation**: Poor image loading or layout issues
+- **Mitigation**: Responsive image sizing and optimized file formats
+- **Mitigation**: Fallback content for cases where images fail to load
+
+### Opportunity Analysis
+
+#### Foundation Enhancement Opportunities
+**Automated Documentation Pipeline**: Complete automation eliminates manual documentation maintenance
+- **Strategic Value**: Guarantees documentation accuracy and currency with code changes
+- **Quality Improvement**: Prevents documentation drift and outdated examples
+
+**Visual Documentation Excellence**: Professional image presentation showcases library capabilities
+- **Adoption Impact**: High-quality visual documentation significantly improves user confidence
+- **Competitive Advantage**: Superior documentation quality differentiates from alternatives
+
+#### Process Improvement Opportunities
+**CI/CD Maturity**: Enhanced deployment process serves as template for documentation-heavy projects
+- **Knowledge Transfer**: Lessons learned improve deployment practices across scientific computing projects
+- **Automation Excellence**: Reduced manual intervention in documentation maintenance
+
+**Quality Assurance Integration**: Comprehensive validation prevents future documentation regressions
+- **Reliability Improvement**: Systematic testing ensures consistent deployment quality
+- **Early Detection**: Automated validation catches documentation issues in CI, not after deployment
+
+### Success Criteria
+
+#### Phase 1 Success Metrics
+- ✅ Documentation markdown files contain image embedding syntax
+- ✅ All example files reference corresponding generated plots
+- ✅ Image paths resolve correctly from documentation context
+- ✅ Documentation generation script handles all example types
+
+#### Phase 2 Success Metrics  
+- ✅ FORD configuration includes media directory in build output
+- ✅ `build/doc/media/examples/` contains all generated plots (55+ PNG files)
+- ✅ FORD documentation build processes image references correctly
+- ✅ Relative paths work in FORD-generated HTML context
+
+#### Phase 3 Success Metrics
+- ✅ CI validation confirms image count consistency across pipeline stages
+- ✅ Build artifact includes complete media directory structure
+- ✅ Automated validation catches missing or broken image references
+- ✅ Documentation build process robust and reliable
+
+#### Phase 4 Success Metrics
+- ✅ Deployed GitHub Pages show all example plot outputs
+- ✅ **Critical User Test**: https://lazy-fortran.github.io/fortplot/page/example/basic_plots.html displays actual images
+- ✅ All image links functional and loading quickly
+- ✅ Documentation provides complete visual demonstration of library capabilities
+- ✅ Zero placeholder text or empty "Output" sections
+
+#### Overall Success Validation
+**Critical Acceptance Test**: 
+1. **Navigate** to https://lazy-fortran.github.io/fortplot/page/example/basic_plots.html
+2. **Verify Visual Output**: Page displays actual plot images (not empty "Output" section)
+3. **Validate Image Quality**: Images are clear, properly sized, and professionally presented
+4. **Test All Examples**: Every example page shows corresponding visual outputs
+5. **Performance Check**: Images load quickly without broken link indicators
+
+**Foundation Layer Success**: 
+- Robust documentation pipeline prevents future regressions
+- Automated image embedding ensures documentation stays current with code
+- Professional visual presentation enhances library credibility and adoption
+- Template process applicable to other scientific computing documentation projects
+
 ## PDF Y-Axis Label Clustering Fix Architecture (Issue #34)
 
 ### Critical Problem Analysis

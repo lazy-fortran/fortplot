@@ -80,7 +80,7 @@ contains
     integer function utf8_to_codepoint(str, pos)
         character(len=*), intent(in) :: str
         integer, intent(in) :: pos
-        integer :: seq_len, i, byte_val
+        integer :: seq_len
         
         utf8_to_codepoint = 0
         seq_len = utf8_char_length(str(pos:pos))
