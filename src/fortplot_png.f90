@@ -114,22 +114,44 @@ contains
         call write_chunk_to_buffer(png_buffer, pos, "IEND", [integer(1)::], 0)
     end subroutine build_png_buffer
 
-    ! Write PNG data to file
+    ! Write PNG data to file with error handling
     subroutine write_png_file(filename, width, height, image_data)
         character(len=*), intent(in) :: filename
         integer, intent(in) :: width, height
         integer(1), intent(in) :: image_data(:)
         
         integer(1), allocatable :: png_buffer(:)
-        integer :: png_unit
+        integer :: png_unit, ios
+        character(len=512) :: error_msg
         
         call generate_png_data(width, height, image_data, png_buffer)
         
-        open(newunit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
-        write(png_unit) png_buffer
+        if (.not. allocated(png_buffer)) then
+            call log_error("Failed to generate PNG data for '" // trim(filename) // "'")
+            return
+        end if
+        
+        open(newunit=png_unit, file=filename, access='stream', form='unformatted', &
+             status='replace', iostat=ios, iomsg=error_msg)
+        
+        if (ios /= 0) then
+            call log_error("Cannot save PNG file '" // trim(filename) // "': " // trim(error_msg))
+            if (allocated(png_buffer)) deallocate(png_buffer)
+            return
+        end if
+        
+        write(png_unit, iostat=ios) png_buffer
+        
+        if (ios /= 0) then
+            call log_error("Failed to write PNG data to '" // trim(filename) // "'")
+            close(png_unit, status='delete')  ! Remove incomplete file
+            if (allocated(png_buffer)) deallocate(png_buffer)
+            return
+        end if
+        
         close(png_unit)
         
-        deallocate(png_buffer)
+        if (allocated(png_buffer)) deallocate(png_buffer)
         call log_info("PNG file '" // trim(filename) // "' created successfully!")
     end subroutine write_png_file
 
