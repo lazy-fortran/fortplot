@@ -66,11 +66,13 @@ def check_image_references_in_page(page_content: str, page_url: str) -> List[str
     """
     missing_images = []
     
-    # Look for image references in the HTML content
-    # This is a simplified check - in reality would need proper HTML parsing
+    # Look for image references in the HTML content with proper src attribute matching
     for image_file in EXAMPLE_IMAGE_FILES:
         image_name = os.path.basename(image_file)
-        if image_name not in page_content:
+        # Check for img tag with src containing the image name
+        # Matches patterns like: src="../media/examples/simple_plot.png"
+        expected_src_pattern = f'src="../media/examples/{image_name}"'
+        if expected_src_pattern not in page_content:
             missing_images.append(f"Image {image_name} not found in {page_url}")
     
     return missing_images

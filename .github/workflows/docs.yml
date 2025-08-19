@@ -67,9 +67,8 @@ jobs:
         run: |
           make doc
           
-          # Copy media files to build directory after FORD runs
-          mkdir -p build/doc/media/examples
-          cp doc/media/examples/* build/doc/media/examples/ || true
+          # Run GitHub Pages media integration script
+          python scripts/integrate_example_media.py
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
