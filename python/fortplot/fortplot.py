@@ -10,31 +10,97 @@ def _ensure_array(obj):
     return obj
 
 def figure(figsize=[6.4, 4.8]):
+    """Create a new figure.
+    
+    Parameters
+    ----------
+    figsize : list or tuple, optional
+        Width and height in inches. Default is [6.4, 4.8].
+    
+    Examples
+    --------
+    >>> import fortplot
+    >>> fortplot.figure()  # Default size
+    >>> fortplot.figure(figsize=[8, 6])  # Custom size
+    """
     width = int(figsize[0] * DEFAULT_DPI)
     height = int(figsize[1] * DEFAULT_DPI)
     _fortplot.fortplot.figure(width, height)
 
 def plot(x, y, linestyle="-", label=""):
+    """Plot y versus x as lines and/or markers.
+    
+    Parameters
+    ----------
+    x : array-like
+        x coordinates of the data points.
+    y : array-like
+        y coordinates of the data points.
+    linestyle : str, optional
+        Line style specifier. Default is '-' (solid line).
+        Supported values: '-' (solid), '--' (dashed), ':' (dotted), 
+        '-.' (dashdot), '' or 'none' (no line).
+    label : str, optional
+        Label for the line, used in legend. Default is empty string.
+    
+    Examples
+    --------
+    >>> import fortplot
+    >>> import numpy as np
+    >>> x = np.linspace(0, 2*np.pi, 100)
+    >>> y = np.sin(x)
+    >>> fortplot.plot(x, y)  # Basic plot
+    >>> fortplot.plot(x, y, linestyle='--', label='sin(x)')  # With style and label
+    """
     x = _ensure_array(x)
     y = _ensure_array(y)
     _fortplot.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
+    """Set the title of the current axes.
+    
+    Parameters
+    ----------
+    label : str or None
+        Text to use for the title. If None, an empty title is set.
+    """
     if label is None:
         label = ""
     _fortplot.fortplot.title(label)
 
 def xlabel(xlabel):
+    """Set the label for the x-axis.
+    
+    Parameters
+    ----------
+    xlabel : str or None
+        Text to use for the x-axis label. If None, an empty label is set.
+    """
     if xlabel is None:
         xlabel = ""
     _fortplot.fortplot.xlabel(xlabel)
 
 def ylabel(ylabel):
+    """Set the label for the y-axis.
+    
+    Parameters
+    ----------
+    ylabel : str or None
+        Text to use for the y-axis label. If None, an empty label is set.
+    """
     if ylabel is None:
         ylabel = ""
     _fortplot.fortplot.ylabel(ylabel)
 
 def savefig(filename):
+    """Save the current figure to a file.
+    
+    Parameters
+    ----------
+    filename : str
+        Path to save the figure. The output format is inferred from the 
+        file extension. Supported formats: PNG, PDF, ASCII.
+    """
     _fortplot.fortplot.savefig(filename)
 
 def contour(X, Y, Z, levels=None):
@@ -234,7 +300,14 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     return QuadMeshPlaceholder()
 
 def legend(**kwargs):
-    """Add a legend to the current axes."""
+    """Add a legend to the current axes.
+    
+    Parameters
+    ----------
+    **kwargs : dict, optional
+        Additional keyword arguments for matplotlib compatibility.
+        Currently not used in the Fortran backend.
+    """
     _fortplot.fortplot.legend()
 
 def xscale(scale):
