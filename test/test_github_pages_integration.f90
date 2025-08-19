@@ -172,7 +172,7 @@ contains
         ! Check that fmp.toml contains media_dir configuration
         inquire(file='fpm.toml', exist=fpm_config_exists)
         if (.not. fpm_config_exists) then
-            write(stderr, '(A)') 'FAIL: FMP configuration file missing'
+            write(stderr, '(A)') 'FAIL: fpm configuration file missing'
             failures = failures + 1
             return
         end if
