@@ -2498,6 +2498,429 @@ end subroutine
 3. **User workflow validation**: End-to-end testing of user documentation workflows
 4. **Error message improvement**: User-friendly error messages for common validation failures
 
+## Python Interface Documentation (Issue #18)
+
+### Problem Statement
+The Python interface in `python/fortplot/fortplot.py` lacks proper docstrings, making the API less discoverable and harder to use. Users cannot access function documentation through Python's help() system or IDE tooltips.
+
+### Solution Architecture
+
+#### Documentation Style Guide
+**Google/NumPy Hybrid Style**: Combining clarity and comprehensiveness
+- **One-line summary**: Concise description of what the function does
+- **Extended description**: Additional context when needed
+- **Parameters section**: Type, description, and constraints for each parameter
+- **Returns section**: Type and description of return values
+- **Examples section**: Practical usage demonstrations
+- **Notes section**: Implementation details, compatibility notes
+
+#### Module-Level Documentation
+
+```python
+"""
+fortplot - Modern Fortran plotting library Python interface.
+
+This module provides a matplotlib-compatible plotting interface powered by
+a high-performance Fortran backend. It offers scientific visualization with
+support for multiple output formats (PNG, PDF, ASCII) and backends.
+
+The API closely follows matplotlib.pyplot conventions for ease of adoption
+while leveraging Fortran's computational efficiency for large datasets.
+
+Basic Usage
+-----------
+>>> import fortplot
+>>> fortplot.plot([1, 2, 3], [1, 4, 9])
+>>> fortplot.xlabel('x')
+>>> fortplot.ylabel('y²')
+>>> fortplot.title('Simple Plot')
+>>> fortplot.savefig('output.png')
+
+Supported Features
+-----------------
+- Line plots with multiple series
+- Contour and filled contour plots
+- Pseudocolor mesh plots
+- Stream plots for vector fields
+- Logarithmic and symmetric log scales
+- Legend generation
+- Multiple output formats: PNG, PDF, ASCII
+
+Notes
+-----
+This interface wraps the Fortran fortplot library through F2PY bindings.
+Array data is automatically converted to Fortran column-major order when
+necessary for optimal performance.
+"""
+```
+
+#### Function Documentation Templates
+
+**Simple Parameter Functions**:
+```python
+def figure(figsize=[6.4, 4.8]):
+    """
+    Create a new figure with specified dimensions.
+    
+    Parameters
+    ----------
+    figsize : list of float, optional
+        Figure dimension (width, height) in inches. Default is [6.4, 4.8].
+        The actual pixel dimensions are calculated as figsize * DPI (100).
+    
+    Examples
+    --------
+    Create a square figure:
+    
+    >>> fortplot.figure(figsize=[5, 5])
+    
+    Create a wide figure for time series:
+    
+    >>> fortplot.figure(figsize=[10, 4])
+    
+    Notes
+    -----
+    Unlike matplotlib, fortplot uses a fixed DPI of 100 for simplicity.
+    The figure size directly translates to pixel dimensions.
+    """
+```
+
+**Data Plotting Functions**:
+```python
+def plot(x, y, linestyle="-", label=""):
+    """
+    Plot y versus x as lines and/or markers.
+    
+    Parameters
+    ----------
+    x, y : array-like
+        The horizontal and vertical coordinates of the data points.
+        Must be the same length. Will be converted to numpy arrays
+        if not already.
+    linestyle : str, optional
+        The line style specification. Default is '-' (solid line).
+        Supported styles: '-' (solid), '--' (dashed), ':' (dotted),
+        '-.' (dash-dot), 'none' (no line).
+    label : str, optional
+        Label for the line, used in legend generation. Default is
+        empty string (no label).
+    
+    Returns
+    -------
+    None
+    
+    Examples
+    --------
+    Simple line plot:
+    
+    >>> x = np.linspace(0, 2*np.pi, 100)
+    >>> fortplot.plot(x, np.sin(x), label='sin(x)')
+    
+    Multiple lines with different styles:
+    
+    >>> fortplot.plot(x, np.sin(x), '-', label='sin')
+    >>> fortplot.plot(x, np.cos(x), '--', label='cos')
+    >>> fortplot.legend()
+    
+    Notes
+    -----
+    Data is automatically converted to numpy arrays for consistency.
+    The Fortran backend handles the actual rendering through F2PY bindings.
+    """
+```
+
+**Complex Visualization Functions**:
+```python
+def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, 
+               edgecolors='none', linewidths=None, **kwargs):
+    """
+    Create a pseudocolor plot with a non-regular rectangular grid.
+    
+    This function is similar to matplotlib's pcolormesh, creating a
+    colored quadrilateral mesh. The color of each quadrilateral is
+    determined by the corresponding value in C.
+    
+    Parameters
+    ----------
+    X, Y : array-like
+        The coordinates of the quadrilateral corners. Can be:
+        
+        - 1D arrays of length N+1 and M+1 respectively for a regular
+          rectangular grid, where C has shape (M, N).
+        - 2D arrays of shape (M+1, N+1) for an irregular quadrilateral
+          mesh (currently converts to regular grid internally).
+          
+    C : array-like of shape (M, N)
+        The color values for each quadrilateral. The value C[i,j]
+        determines the color of the quadrilateral with corners at
+        (X[j], Y[i]), (X[j+1], Y[i]), (X[j+1], Y[i+1]), (X[j], Y[i+1]).
+        
+    cmap : str or Colormap, optional
+        The colormap used to map scalar data to colors. Supported
+        colormaps: 'viridis' (default), 'plasma', 'inferno', 'magma',
+        'coolwarm', 'jet', 'crest'. String names are case-insensitive.
+        
+    vmin, vmax : float, optional
+        The data range that the colormap covers. By default, the
+        colormap covers the complete value range of the supplied data.
+        Values outside this range are clipped.
+        
+    edgecolors : color spec or 'none', optional
+        The color of the edges. Default is 'none' (no edges drawn).
+        Can be a color name ('black', 'white') or 'face' to match
+        the face color.
+        
+    linewidths : float, optional
+        The width of the edges in points. Only used if edgecolors
+        is not 'none'. Default is 1.0.
+        
+    **kwargs : optional
+        Additional keyword arguments for matplotlib compatibility.
+        Currently ignored but accepted to maintain API compatibility.
+    
+    Returns
+    -------
+    QuadMeshPlaceholder
+        A placeholder object for matplotlib compatibility. Provides
+        minimal QuadMesh interface but does not store actual mesh data.
+    
+    Examples
+    --------
+    Basic usage with regular grid:
+    
+    >>> x = np.linspace(0, 1, 11)  # 11 points for 10 cells
+    >>> y = np.linspace(0, 1, 8)   # 8 points for 7 cells
+    >>> C = np.random.random((7, 10))
+    >>> fortplot.pcolormesh(x, y, C, cmap='viridis')
+    
+    Custom color limits:
+    
+    >>> fortplot.pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
+    
+    With edge colors:
+    
+    >>> fortplot.pcolormesh(x, y, C, edgecolors='black', linewidths=0.5)
+    
+    Using meshgrid for irregular spacing:
+    
+    >>> x = np.array([0, 0.5, 1.5, 3, 5])
+    >>> y = np.array([0, 1, 2])
+    >>> X, Y = np.meshgrid(x, y)
+    >>> C = np.random.random((2, 4))
+    >>> fortplot.pcolormesh(X, Y, C)
+    
+    See Also
+    --------
+    contour : Draw contour lines
+    contourf : Draw filled contours
+    
+    Notes
+    -----
+    The data array C is automatically transposed to Fortran column-major
+    order for efficient processing in the Fortran backend.
+    
+    Currently, irregular grids (2D X, Y arrays) are internally converted
+    to regular grids using the first row/column. Full irregular grid
+    support is planned for a future release.
+    
+    The returned QuadMeshPlaceholder provides basic matplotlib compatibility
+    but does not store the actual mesh data or support all QuadMesh methods.
+    """
+```
+
+**Interactive Display Function**:
+```python
+def show(blocking=None):
+    """
+    Display the current figure in a viewer or terminal.
+    
+    This function intelligently displays the current plot using the most
+    appropriate method available on the system. It automatically detects
+    GUI availability and falls back to ASCII display when necessary.
+    
+    Parameters
+    ----------
+    blocking : bool, optional
+        Controls the blocking behavior of the display:
+        
+        - True: Block execution until the user closes the plot window
+          or presses Enter (for terminal display).
+        - False: Return immediately after launching the viewer
+          (non-blocking mode).
+        - None (default): Use matplotlib-compatible behavior
+          (non-blocking).
+    
+    Raises
+    ------
+    RuntimeError
+        If the plot cannot be displayed and all fallback methods fail.
+    
+    Examples
+    --------
+    Non-blocking display (default):
+    
+    >>> fortplot.plot([1, 2, 3], [1, 4, 9])
+    >>> fortplot.show()  # Returns immediately
+    
+    Blocking display:
+    
+    >>> fortplot.plot(x, y)
+    >>> fortplot.show(blocking=True)  # Waits for user to close
+    
+    Display multiple plots:
+    
+    >>> fortplot.figure()
+    >>> fortplot.plot(x1, y1)
+    >>> fortplot.show()
+    >>> 
+    >>> fortplot.figure()  # New figure
+    >>> fortplot.plot(x2, y2)
+    >>> fortplot.show()
+    
+    Notes
+    -----
+    The display method is automatically selected based on the environment:
+    
+    1. **GUI Available**: Opens the plot in the system's default image
+       viewer (e.g., Eye of GNOME, Preview, Windows Photo Viewer).
+       
+    2. **No GUI (SSH/Terminal)**: Falls back to ASCII art representation
+       in the terminal, providing a text-based visualization.
+       
+    3. **Error Fallback**: If the primary method fails, attempts
+       alternative display methods before raising an error.
+    
+    The underlying Fortran show_figure() function handles all platform-
+    specific display logic, including temporary file management and
+    viewer launching.
+    
+    Implementation Details
+    ----------------------
+    Unlike the original complex implementation with manual file management,
+    this simplified version delegates all display logic to the Fortran
+    backend through the show_figure() function, which provides:
+    
+    - Automatic GUI detection
+    - Platform-specific viewer selection
+    - Graceful fallback to ASCII display
+    - Proper resource cleanup
+    
+    See Also
+    --------
+    savefig : Save the figure to a file
+    figure : Create a new figure
+    """
+```
+
+### Implementation Plan
+
+#### Phase 1: Core Function Documentation
+**Priority**: High - User-facing API functions
+
+1. **Basic plotting functions**:
+   - `figure()` - Figure creation and sizing
+   - `plot()` - Line plotting with styles
+   - `savefig()` - File output functionality
+   - `show()` - Interactive display
+
+2. **Axis and labeling functions**:
+   - `xlabel()`, `ylabel()` - Axis labels
+   - `title()` - Plot titles
+   - `xlim()`, `ylim()` - Axis limits
+   - `xscale()`, `yscale()` - Axis scales
+   - `legend()` - Legend generation
+
+#### Phase 2: Advanced Visualization Documentation
+**Priority**: Medium - Complex plotting functions
+
+1. **Contour functions**:
+   - `contour()` - Contour lines with levels
+   - `contourf()` - Filled contours
+
+2. **Grid-based functions**:
+   - `pcolormesh()` - Pseudocolor plots
+   - `streamplot()` - Vector field visualization
+
+#### Phase 3: Helper Function Documentation
+**Priority**: Low - Internal utilities
+
+1. **Private helper functions**:
+   - `_ensure_array()` - Array conversion utility
+   - Document as private implementation detail
+
+2. **Placeholder classes**:
+   - `QuadMeshPlaceholder` - Compatibility class documentation
+
+### Testing Requirements
+
+#### Docstring Validation Tests
+```python
+# test/test_python_docstrings.py
+import fortplot
+import inspect
+
+def test_all_functions_have_docstrings():
+    """Verify all public functions have docstrings."""
+    for name, obj in inspect.getmembers(fortplot):
+        if callable(obj) and not name.startswith('_'):
+            assert obj.__doc__ is not None, f"{name} missing docstring"
+            assert len(obj.__doc__) > 50, f"{name} docstring too short"
+
+def test_docstring_sections():
+    """Verify docstrings have required sections."""
+    required_sections = ['Parameters', 'Examples']
+    for name, obj in inspect.getmembers(fortplot):
+        if callable(obj) and not name.startswith('_'):
+            doc = obj.__doc__ or ""
+            for section in required_sections:
+                assert section in doc, f"{name} missing {section} section"
+
+def test_help_system():
+    """Verify help() works for all functions."""
+    import io
+    import contextlib
+    
+    for name in ['plot', 'figure', 'savefig', 'show']:
+        func = getattr(fortplot, name)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            help(func)
+        output = buffer.getvalue()
+        assert len(output) > 100, f"help({name}) output too short"
+```
+
+### Risk Assessment
+
+**Technical Risks**:
+1. **Docstring Format Compatibility**: 
+   - **Risk**: IDE/tool incompatibility with chosen format
+   - **Mitigation**: Use widely-supported Google/NumPy style
+   - **Impact**: Low - Standard format works everywhere
+
+2. **Maintenance Burden**:
+   - **Risk**: Docstrings becoming outdated with API changes
+   - **Mitigation**: Include docstring updates in PR checklist
+   - **Impact**: Medium - Requires ongoing vigilance
+
+**Quality Risks**:
+1. **Incomplete Examples**:
+   - **Risk**: Examples that don't actually work
+   - **Mitigation**: Test all examples in CI
+   - **Impact**: High - Broken examples frustrate users
+
+2. **Misleading Documentation**:
+   - **Risk**: Documentation doesn't match implementation
+   - **Mitigation**: Docstring validation tests
+   - **Impact**: High - Causes user confusion
+
+### Success Metrics
+
+1. **Coverage**: 100% of public functions have comprehensive docstrings
+2. **Quality**: All docstrings include parameters, examples, and notes
+3. **Usability**: help() system works for all functions
+4. **IDE Support**: Tooltips and autocomplete work in major IDEs
+5. **User Feedback**: Reduced questions about API usage
+
 **Deliverables**:
 - All examples validated with output generation verification
 - `make test-docs` target with comprehensive documentation testing
