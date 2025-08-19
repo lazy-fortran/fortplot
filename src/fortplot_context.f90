@@ -15,6 +15,10 @@ module fortplot_context
     type, abstract :: plot_context
         integer :: width, height
         real(wp) :: x_min, x_max, y_min, y_max
+        ! Arrow rendering properties
+        logical :: has_rendered_arrows = .false.
+        logical :: uses_vector_arrows = .false.
+        logical :: has_triangular_arrows = .false.
     contains
         procedure(line_interface), deferred :: line
         procedure(color_interface), deferred :: color
@@ -24,6 +28,8 @@ module fortplot_context
         procedure(marker_interface), deferred :: draw_marker
         procedure(marker_colors_interface), deferred :: set_marker_colors
         procedure(marker_colors_alpha_interface), deferred :: set_marker_colors_with_alpha
+        procedure(arrow_interface), deferred :: draw_arrow
+        procedure(ascii_output_interface), deferred :: get_ascii_output
     end type plot_context
     
     abstract interface
@@ -78,6 +84,19 @@ module fortplot_context
             real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
             real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         end subroutine marker_colors_alpha_interface
+
+        subroutine arrow_interface(this, x, y, dx, dy, size, style)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x, y, dx, dy, size
+            character(len=*), intent(in) :: style
+        end subroutine arrow_interface
+
+        function ascii_output_interface(this) result(output)
+            import :: plot_context
+            class(plot_context), intent(in) :: this
+            character(len=:), allocatable :: output
+        end function ascii_output_interface
     end interface
 
 contains

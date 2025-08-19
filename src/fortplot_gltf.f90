@@ -34,6 +34,8 @@ module fortplot_gltf
         procedure :: draw_marker => gltf_draw_marker
         procedure :: set_marker_colors => gltf_set_marker_colors
         procedure :: set_marker_colors_with_alpha => gltf_set_marker_colors_with_alpha
+        procedure :: draw_arrow => gltf_draw_arrow
+        procedure :: get_ascii_output => gltf_get_ascii_output
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
     end type gltf_context
@@ -424,5 +426,26 @@ contains
         bytes(4) = int(iand(ishft(int_val, -24), 255), int8)
         
     end subroutine pack_float_to_bytes
+
+    subroutine gltf_draw_arrow(this, x, y, dx, dy, size, style)
+        !! Draw arrow for GLTF backend (not implemented for 3D export)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        
+        ! GLTF backend doesn't support 2D arrow rendering
+        ! Mark arrows as not rendered for this backend
+        this%has_rendered_arrows = .false.
+        this%uses_vector_arrows = .false.
+        this%has_triangular_arrows = .false.
+    end subroutine gltf_draw_arrow
+
+    function gltf_get_ascii_output(this) result(output)
+        !! Get ASCII output (not applicable for GLTF backend)
+        class(gltf_context), intent(in) :: this
+        character(len=:), allocatable :: output
+        
+        output = ""  ! GLTF backend doesn't produce ASCII output
+    end function gltf_get_ascii_output
 
 end module fortplot_gltf
