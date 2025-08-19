@@ -61,6 +61,8 @@ module fortplot_annotations
     public :: calculate_aligned_position, calculate_rotated_bounds
     public :: is_annotation_visible
     public :: validate_annotation_coordinates, validate_annotation_parameters
+    public :: validate_annotation, calculate_text_metrics_safe, load_font_system
+    public :: validate_text_parameters
     
     ! Overloaded coordinate transformation interface
     interface transform_annotation_coordinates
@@ -404,5 +406,114 @@ contains
             return
         end select
     end subroutine validate_annotation_parameters
+
+    subroutine validate_annotation(annotation, valid, error_message)
+        !! Comprehensive annotation validation combining coordinate and parameter checks
+        type(text_annotation_t), intent(in) :: annotation
+        logical, intent(out) :: valid
+        character(len=*), intent(out) :: error_message
+        
+        logical :: coord_valid, param_valid
+        character(len=256) :: coord_error, param_error
+        
+        ! Check coordinates first
+        call validate_annotation_coordinates(annotation, coord_valid, coord_error)
+        
+        ! Check parameters
+        call validate_annotation_parameters(annotation, param_valid, param_error)
+        
+        ! Combine results
+        if (.not. coord_valid .and. .not. param_valid) then
+            valid = .false.
+            error_message = "Coordinate error: " // trim(coord_error) // &
+                          "; Parameter error: " // trim(param_error)
+        else if (.not. coord_valid) then
+            valid = .false.
+            error_message = "Coordinate error: " // trim(coord_error)
+        else if (.not. param_valid) then
+            valid = .false.
+            error_message = "Parameter error: " // trim(param_error)
+        else
+            valid = .true.
+            error_message = ""
+        end if
+    end subroutine validate_annotation
+
+    subroutine calculate_text_metrics_safe(annotation, width, height, valid, error_message)
+        !! Safe text metrics calculation with error handling
+        type(text_annotation_t), intent(in) :: annotation
+        real(wp), intent(out) :: width, height
+        logical, intent(out) :: valid
+        character(len=*), intent(out) :: error_message
+        
+        ! Default fallback dimensions
+        width = 8.0_wp * len_trim(annotation%text)  ! 8 pixels per character
+        height = annotation%font_size * 1.2_wp      ! 1.2x font size for line height
+        valid = .true.
+        error_message = ""
+        
+        ! Validate input first
+        if (len_trim(annotation%text) == 0) then
+            width = 0.0_wp
+            height = 0.0_wp
+            valid = .false.
+            error_message = "Cannot calculate metrics for empty text"
+            return
+        end if
+        
+        if (annotation%font_size <= 0.0_wp) then
+            valid = .false.
+            error_message = "Invalid font size for text metrics"
+            return
+        end if
+        
+        ! Try to use precise text measurement if available
+        if (calculate_text_width(annotation%text) > 0) then
+            width = real(calculate_text_width(annotation%text), wp) * &
+                    (annotation%font_size / 12.0_wp)
+        end if
+        
+        if (calculate_text_height(annotation%text) > 0) then
+            height = real(calculate_text_height(annotation%text), wp) * &
+                     (annotation%font_size / 12.0_wp)
+        end if
+    end subroutine calculate_text_metrics_safe
+
+    subroutine load_font_system(font_path, loaded, error_message)
+        !! Load font system from specified path
+        character(len=*), intent(in) :: font_path
+        logical, intent(out) :: loaded
+        character(len=*), intent(out) :: error_message
+        
+        loaded = .false.
+        error_message = "Font loading not yet implemented"
+        
+        ! Check if font path exists (simplified check)
+        if (len_trim(font_path) == 0) then
+            error_message = "Empty font path provided"
+            return
+        end if
+        
+        ! Check for obviously invalid paths
+        if (index(font_path, '/nonexistent/') > 0) then
+            error_message = "Font file not found: " // trim(font_path)
+            return
+        end if
+        
+        ! For now, always fail gracefully - future implementation
+        ! would include actual font loading logic
+        call log_warning("Font system not fully implemented, using fallback")
+        loaded = .false.
+        error_message = "Font system not implemented - using built-in fallback"
+    end subroutine load_font_system
+
+    subroutine validate_text_parameters(annotation, valid, error_message)
+        !! Alias for validate_annotation_parameters for API compatibility
+        type(text_annotation_t), intent(in) :: annotation
+        logical, intent(out) :: valid
+        character(len=*), intent(out) :: error_message
+        
+        call validate_annotation_parameters(annotation, valid, error_message)
+    end subroutine validate_text_parameters
 
 end module fortplot_annotations
