@@ -79,14 +79,13 @@ call savefig("basic_scatter.png")
 ! Bubble chart with size mapping
 type(figure_t) :: fig
 call fig%initialize(600, 400)
-call fig%add_scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')
+call fig%add_scatter(x, y, s=sizes, label='Bubble Chart')
 call fig%set_title("Bubble Chart - Size Represents Population")
 call fig%savefig("bubble_chart.pdf")
 
 ! Color-mapped scatter with automatic colorbar
 call figure(800, 600)
-call scatter(x, y, c=values, colormap='viridis', &
-             marker='diamond', alpha=0.8_wp, label='Scientific Data')
+call scatter(x, y, c=values, colormap='viridis', label='Scientific Data')
 call title("Multi-dimensional Data Visualization")
 call xlabel("Temperature (K)")
 call ylabel("Pressure (Pa)")
