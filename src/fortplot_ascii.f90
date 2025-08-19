@@ -7,10 +7,10 @@ module fortplot_ascii
     !!
     !! Author: fortplot contributors
     
-    use fortplot_context
+    use fortplot_context, only: plot_context, setup_canvas
     use fortplot_logging, only: log_info
-    use fortplot_latex_parser
-    use fortplot_unicode
+    use fortplot_latex_parser, only: process_latex_in_text
+    ! use fortplot_unicode, only: unicode_to_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -95,7 +95,6 @@ contains
         integer :: steps, i, px, py
         character(len=1) :: line_char
         
-        ! print *, "ASCII DRAW: Called with", x1, y1, "to", x2, y2
         
         if (this%current_r > 0.8_wp .and. this%current_g > 0.8_wp .and. this%current_b > 0.8_wp) then
             return
@@ -137,7 +136,6 @@ contains
             
             ! Debug first few points
             ! if (i < 3) then
-            !     print *, "ASCII DEBUG: px,py=", px, py, "canvas:", this%plot_width, "x", this%plot_height
             ! end if
             
             if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
@@ -293,7 +291,6 @@ contains
             call write_centered_title(unit, this%title_text, this%plot_width)
         end if
         
-        ! print *, "ASCII OUTPUT: Using width=", this%plot_width, "height=", this%plot_height
         write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
         do i = 1, this%plot_height
             write(unit, '(A)', advance='no') '|'
