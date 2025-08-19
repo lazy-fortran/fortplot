@@ -34,7 +34,7 @@ terminal
 *.mov
 *.flv
 
-doc/example
+# doc/example - removed to allow documentation files to be tracked
 
 # Coverage files
 *.gcno*

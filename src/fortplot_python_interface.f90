@@ -10,9 +10,14 @@ module fortplot_python_interface
     !! - All other plotting functions for complete API coverage
 
     use iso_fortran_env, only: wp => real64
-    use fortplot, only: show, show_viewer, figure, plot, savefig, title, xlabel, ylabel, &
-                        contour, contour_filled, pcolormesh, streamplot, legend, &
-                        set_xscale, set_yscale, xlim, ylim
+    use fortplot, only: fortplot_show => show, fortplot_show_viewer => show_viewer, &
+                        fortplot_figure => figure, fortplot_plot => plot, &
+                        fortplot_savefig => savefig, fortplot_title => title, &
+                        fortplot_xlabel => xlabel, fortplot_ylabel => ylabel, &
+                        fortplot_contour => contour, fortplot_contour_filled => contour_filled, &
+                        fortplot_pcolormesh => pcolormesh, fortplot_streamplot => streamplot, &
+                        fortplot_legend => legend, fortplot_set_xscale => set_xscale, &
+                        fortplot_set_yscale => set_yscale, fortplot_xlim => xlim, fortplot_ylim => ylim
     implicit none
 
     private
@@ -33,7 +38,7 @@ contains
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         logical, intent(in), optional :: blocking
         
-        call show(blocking=blocking)
+        call fortplot_show(blocking=blocking)
     end subroutine show_figure
 
     subroutine show_viewer(blocking)
@@ -44,7 +49,7 @@ contains
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         logical, intent(in), optional :: blocking
         
-        call show_viewer(blocking=blocking)
+        call fortplot_show_viewer(blocking=blocking)
     end subroutine show_viewer
 
     subroutine figure(width, height)
@@ -54,7 +59,7 @@ contains
         !!   width, height: Optional figure dimensions (default: 640x480)
         integer, intent(in), optional :: width, height
         
-        call figure(width, height)
+        call fortplot_figure(width, height)
     end subroutine figure
 
     subroutine plot(x, y, n, label, linestyle)
@@ -69,7 +74,7 @@ contains
         real(wp), dimension(n), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
         
-        call plot(x, y, label=label, linestyle=linestyle)
+        call fortplot_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
     subroutine savefig(filename)
@@ -79,25 +84,25 @@ contains
         !!   filename: Output filename (extension determines format)
         character(len=*), intent(in) :: filename
         
-        call savefig(filename)
+        call fortplot_savefig(filename)
     end subroutine savefig
 
     subroutine title(text)
         !! Python-accessible title function
         character(len=*), intent(in) :: text
-        call title(text)
+        call fortplot_title(text)
     end subroutine title
 
     subroutine xlabel(text)
         !! Python-accessible xlabel function
         character(len=*), intent(in) :: text
-        call xlabel(text)
+        call fortplot_xlabel(text)
     end subroutine xlabel
 
     subroutine ylabel(text)
         !! Python-accessible ylabel function
         character(len=*), intent(in) :: text
-        call ylabel(text)
+        call fortplot_ylabel(text)
     end subroutine ylabel
 
     subroutine contour(x, y, z, nx, ny, levels, nlevels)
@@ -117,9 +122,9 @@ contains
         real(wp), dimension(:), intent(in), optional :: levels
         
         if (present(levels) .and. present(nlevels)) then
-            call contour(x, y, z, levels=levels(1:nlevels))
+            call fortplot_contour(x, y, z, levels=levels(1:nlevels))
         else
-            call contour(x, y, z)
+            call fortplot_contour(x, y, z)
         end if
     end subroutine contour
 
@@ -134,9 +139,9 @@ contains
         character(len=*), intent(in), optional :: colormap
         
         if (present(levels) .and. present(nlevels)) then
-            call contour_filled(x, y, z, levels=levels(1:nlevels), colormap=colormap)
+            call fortplot_contour_filled(x, y, z, levels=levels(1:nlevels), colormap=colormap)
         else
-            call contour_filled(x, y, z, colormap=colormap)
+            call fortplot_contour_filled(x, y, z, colormap=colormap)
         end if
     end subroutine contour_filled
 
@@ -149,7 +154,7 @@ contains
         character(len=*), intent(in), optional :: colormap, edgecolors
         real(wp), intent(in), optional :: vmin, vmax, linewidths
         
-        call pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
+        call fortplot_pcolormesh(x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                        edgecolors=edgecolors, linewidths=linewidths)
     end subroutine pcolormesh
 
@@ -161,36 +166,36 @@ contains
         real(wp), dimension(nx, ny), intent(in) :: u, v
         real(wp), intent(in), optional :: density
         
-        call streamplot(x, y, u, v, density=density)
+        call fortplot_streamplot(x, y, u, v, density=density)
     end subroutine streamplot
 
     subroutine legend()
         !! Python-accessible legend function
-        call legend()
+        call fortplot_legend()
     end subroutine legend
 
     subroutine set_xscale(scale)
         !! Python-accessible x-axis scale function
         character(len=*), intent(in) :: scale
-        call set_xscale(scale)
+        call fortplot_set_xscale(scale)
     end subroutine set_xscale
 
     subroutine set_yscale(scale)
         !! Python-accessible y-axis scale function
         character(len=*), intent(in) :: scale
-        call set_yscale(scale)
+        call fortplot_set_yscale(scale)
     end subroutine set_yscale
 
     subroutine xlim(xmin, xmax)
         !! Python-accessible x-axis limits function
         real(wp), intent(in) :: xmin, xmax
-        call xlim(xmin, xmax)
+        call fortplot_xlim(xmin, xmax)
     end subroutine xlim
 
     subroutine ylim(ymin, ymax)
         !! Python-accessible y-axis limits function
         real(wp), intent(in) :: ymin, ymax
-        call ylim(ymin, ymax)
+        call fortplot_ylim(ymin, ymax)
     end subroutine ylim
 
 end module fortplot_python_interface

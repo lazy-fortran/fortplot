@@ -61,7 +61,7 @@ contains
         type(gltf_mesh_t), intent(in) :: meshes(:)
         character(len=:), allocatable :: json
         character(len=32) :: num_str
-        integer :: i, j
+        integer :: i
         
         json = "["
         
