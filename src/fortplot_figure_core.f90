@@ -1561,6 +1561,8 @@ contains
                 call render_pcolormesh_plot(self, i)
             else if (self%plots(i)%plot_type == PLOT_TYPE_BAR) then
                 call render_bar_plot(self, i)
+            else if (self%plots(i)%plot_type == PLOT_TYPE_SCATTER) then
+                call render_scatter_plot(self, i)
             end if
         end do
         
@@ -2090,6 +2092,96 @@ contains
             call self%backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
         end do
     end subroutine render_bar_plot
+
+    subroutine render_scatter_plot(self, plot_idx)
+        !! Render scatter plot with enhanced size and color mapping
+        use fortplot_colormap, only: colormap_value_to_color
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        integer :: i
+        real(wp) :: x_screen, y_screen, marker_size
+        real(wp) :: color_value
+        real(wp), dimension(3) :: rgb_color
+        logical :: has_color_mapping, has_size_mapping
+        
+        type(plot_data_t) :: plot
+        plot = self%plots(plot_idx)
+        
+        ! Validate scatter plot data
+        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
+        if (size(plot%x) == 0 .or. size(plot%y) == 0) return
+        
+        ! Check for enhanced mapping features
+        has_size_mapping = allocated(plot%scatter_sizes)
+        has_color_mapping = allocated(plot%scatter_colors)
+        
+        ! Render each scatter point
+        do i = 1, size(plot%x)
+            ! Transform coordinates to screen space
+            x_screen = transform_x_coordinate(plot%x(i), self%x_min, self%x_max, self%width)
+            y_screen = transform_y_coordinate(plot%y(i), self%y_min, self%y_max, self%height)
+            
+            ! Determine marker size
+            if (has_size_mapping) then
+                marker_size = plot%scatter_sizes(i)
+            else
+                marker_size = plot%scatter_size_default
+            end if
+            
+            ! Set marker color
+            if (has_color_mapping) then
+                ! Map color value to RGB using colormap
+                color_value = plot%scatter_colors(i)
+                call colormap_value_to_color(color_value, plot%scatter_vmin, plot%scatter_vmax, &
+                                            plot%scatter_colormap, rgb_color)
+                call self%backend%color(rgb_color(1), rgb_color(2), rgb_color(3))
+            end if
+            
+            ! Draw marker with appropriate size
+            call draw_enhanced_scatter_marker(self, x_screen, y_screen, &
+                                             plot%marker, marker_size)
+        end do
+        
+        ! Render colorbar if requested
+        if (has_color_mapping .and. plot%scatter_colorbar) then
+            call render_scatter_colorbar(self, plot_idx)
+        end if
+    end subroutine render_scatter_plot
+
+    subroutine draw_enhanced_scatter_marker(self, x, y, style, size)
+        !! Draw scatter marker with enhanced size handling
+        use fortplot_markers, only: get_default_marker
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x, y, size
+        character(len=*), intent(in) :: style
+        
+        character(len=10) :: marker_style
+        
+        ! Validate marker style
+        if (len_trim(style) == 0 .or. trim(style) == 'None') then
+            marker_style = get_default_marker()
+        else
+            marker_style = style
+        end if
+        
+        ! TODO: Backend-specific size handling will be implemented later
+        ! For now, use the standard marker interface which handles basic drawing
+        ! The size parameter will be used for future enhancement of the marker interface
+        
+        ! Draw marker using backend's marker interface
+        call self%backend%draw_marker(x, y, marker_style)
+    end subroutine draw_enhanced_scatter_marker
+
+    subroutine render_scatter_colorbar(self, plot_idx)
+        !! Render colorbar for scatter plot color mapping
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_idx
+        
+        ! TODO: Implement colorbar rendering
+        ! This is a placeholder for colorbar integration
+        ! Colorbar rendering will be enhanced in a separate task
+    end subroutine render_scatter_colorbar
 
     subroutine render_default_contour_levels(self, plot_idx, z_min, z_max)
         !! Render default contour levels with optional coloring

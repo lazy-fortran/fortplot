@@ -8,7 +8,7 @@ module fortplot_ascii
     !! Author: fortplot contributors
     
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_logging, only: log_info
+    use fortplot_logging, only: log_info, log_error
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -242,12 +242,22 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: unit
+        integer :: unit, ios
+        character(len=512) :: error_msg
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(this)
         else
-            open(newunit=unit, file=filename, status='replace')
+            open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
+            
+            if (ios /= 0) then
+                call log_error("Cannot save ASCII file '" // trim(filename) // "': " // trim(error_msg))
+                ! Fall back to terminal output
+                call log_info("Falling back to terminal output due to file error")
+                call output_to_terminal(this)
+                return
+            end if
+            
             call output_to_file(this, unit)
             close(unit)
             call log_info("Unicode plot saved to '" // trim(filename) // "'")
