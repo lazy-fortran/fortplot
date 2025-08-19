@@ -174,12 +174,12 @@ contains
         real(wp) :: data_bounds(4) = [1.0_wp, 1000.0_wp, 0.1_wp, 100.0_wp]  ! Log scale ranges
         
         annotation%x = 10.0_wp  ! One decade from minimum
-        annotation%y = 1.0_wp   # One decade from minimum
+        annotation%y = 1.0_wp   ! One decade from minimum
         annotation%coord_type = COORD_DATA
         
         call transform_annotation_coordinates_log(annotation, plot_area, data_bounds, &
                                                  log_scale_x=.true., log_scale_y=.true., &
-                                                 pixel_x, pixel_y)
+                                                 pixel_x=pixel_x, pixel_y=pixel_y)
         
         ! Log scale should place this at 1/3 of the way across plot
         ! log10(10) - log10(1) = 1, log10(1000) - log10(1) = 3, so 1/3 position
@@ -199,20 +199,20 @@ contains
         type(text_annotation_t) :: annotation
         real(wp) :: pixel_x, pixel_y
         real(wp) :: plot_area(4) = [100.0_wp, 100.0_wp, 400.0_wp, 300.0_wp]
-        real(wp) :: data_bounds(4) = [-10.0_wp, 10.0_wp, -5.0_wp, 5.0_wp]  # Symmetric around zero
+        real(wp) :: data_bounds(4) = [-10.0_wp, 10.0_wp, -5.0_wp, 5.0_wp]  ! Symmetric around zero
         
-        annotation%x = -5.0_wp  # Negative coordinate
-        annotation%y = 0.0_wp   # Zero coordinate
+        annotation%x = -5.0_wp  ! Negative coordinate
+        annotation%y = 0.0_wp   ! Zero coordinate
         annotation%coord_type = COORD_DATA
         
         call transform_annotation_coordinates(annotation, plot_area, data_bounds, pixel_x, pixel_y)
         
-        # -5 in range [-10, 10] should be at 1/4 position
+        ! -5 in range [-10, 10] should be at 1/4 position
         if (abs(pixel_x - (100.0_wp + 400.0_wp * 0.25_wp)) > 1.0_wp) then
             error stop "FAIL: Negative X coordinate transformation incorrect"
         end if
         
-        # 0 in range [-5, 5] should be at 1/2 position
+        ! 0 in range [-5, 5] should be at 1/2 position
         if (abs(pixel_y - (100.0_wp + 300.0_wp * 0.5_wp)) > 1.0_wp) then
             error stop "FAIL: Zero Y coordinate transformation incorrect"
         end if
@@ -231,14 +231,14 @@ contains
         real(wp) :: plot_area(4) = [0.0_wp, 0.0_wp, 1000.0_wp, 1000.0_wp]
         real(wp) :: data_bounds(4) = [0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp]
         
-        # High precision coordinate
+        ! High precision coordinate
         annotation%x = 0.123456789012345_wp
         annotation%y = 0.987654321098765_wp
         annotation%coord_type = COORD_DATA
         
         call transform_annotation_coordinates(annotation, plot_area, data_bounds, pixel_x, pixel_y)
         
-        # Verify precision is maintained
+        ! Verify precision is maintained
         if (abs(pixel_x - 123.456789012345_wp) > 1.0e-10_wp) then
             error stop "FAIL: High precision X coordinate transformation loses precision"
         end if
