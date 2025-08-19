@@ -68,28 +68,23 @@ call legend()
 call savefig("unicode_demo.png")  ! Works in PNG, PDF, and ASCII
 ```
 
-#### Enhanced scatter plot with size and color mapping
+#### Enhanced scatter plots with size/color mapping
 ```fortran
 ! Basic scatter plot
 call figure()
 call scatter(x, y, label="Data Points")
-call title("Basic Scatter Plot")
 call savefig("basic_scatter.png")
 
-! Bubble chart with size mapping
+! Bubble chart with variable marker sizes  
 type(figure_t) :: fig
 call fig%initialize(600, 400)
-call fig%add_scatter(x, y, s=sizes, label='Bubble Chart')
-call fig%set_title("Bubble Chart - Size Represents Population")
+call fig%add_scatter_2d(x, y, s=sizes, label='Bubble Chart')
 call fig%savefig("bubble_chart.pdf")
 
 ! Color-mapped scatter with automatic colorbar
-call figure(800, 600)
-call scatter(x, y, c=values, colormap='viridis', label='Scientific Data')
-call title("Multi-dimensional Data Visualization")
-call xlabel("Temperature (K)")
-call ylabel("Pressure (Pa)")
-call savefig("scientific_scatter.png")
+call fig%add_scatter_2d(x, y, c=values, colormap='viridis', &
+                       show_colorbar=.true., label='Scientific Data')
+call fig%savefig("scientific_scatter.png")
 ```
 
 #### Surface plot with dimension validation
