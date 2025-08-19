@@ -1514,7 +1514,6 @@ contains
     subroutine render_figure_axes(self)
         class(figure_t), intent(inout) :: self
         
-        ! print *, "DEBUG: Rendering axes with ranges X:", self%x_min, "to", self%x_max, "Y:", self%y_min, "to", self%y_max
         
         ! Set axis color to black
         call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)

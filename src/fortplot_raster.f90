@@ -1,9 +1,9 @@
 module fortplot_raster
     use iso_c_binding
-    use fortplot_context
+    use fortplot_context, only: plot_context
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
-    use fortplot_latex_parser
-    use fortplot_unicode
+    use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_unicode, only: unicode_to_ascii
     use fortplot_logging, only: log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
