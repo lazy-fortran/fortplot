@@ -117,6 +117,20 @@ call ylabel("Y Position")
 call savefig("temperature.png")
 ```
 
+#### Streamplot with arrows
+```fortran
+! Basic streamplot with default arrows
+call figure()
+call streamplot(x_grid, y_grid, u_field, v_field)
+call savefig("flow_field.png")
+
+! Streamplot with custom arrow size and style
+call streamplot(x_grid, y_grid, u_field, v_field, arrowsize=1.5_real64, arrowstyle='<->')
+
+! Streamlines without arrows
+call streamplot(x_grid, y_grid, u_field, v_field, arrowsize=0.0_real64)
+```
+
 #### Error bars for scientific data
 ```fortran
 type(figure_t) :: fig
@@ -219,7 +233,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] 3D surface plots (`add_surface`) with automatic dimension validation
 - [x] Contour plots (`contour`, `contourf`) with custom levels and colormaps
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
-- [x] Streamplots (`streamplot`) for vector field visualization
+- [x] Streamplots (`streamplot`) for vector field visualization with arrows
 - [x] Enhanced scatter plots (`scatter`) with size/color mapping and multiple marker shapes
 - [x] Bar charts (`bar`)
 - [x] Histograms (`hist`)

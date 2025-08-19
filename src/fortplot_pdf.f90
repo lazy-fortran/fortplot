@@ -45,6 +45,8 @@ module fortplot_pdf
         procedure :: draw_marker => draw_pdf_marker
         procedure :: set_marker_colors => pdf_set_marker_colors
         procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
+        procedure :: draw_arrow => draw_pdf_arrow
+        procedure :: get_ascii_output => pdf_get_ascii_output
     end type pdf_context
     
 contains
@@ -1661,5 +1663,61 @@ contains
         call this%stream_writer%add_to_stream("S")
         call this%stream_writer%add_to_stream("Q")
     end subroutine draw_pdf_x_marker
+
+    subroutine draw_pdf_arrow(this, x, y, dx, dy, size, style)
+        !! Draw arrow head for streamplot arrows in PDF backend
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        
+        real(wp) :: arrow_length, arrow_width, angle, tip_x, tip_y
+        real(wp) :: left_x, left_y, right_x, right_y
+        character(len=100) :: cmd
+        
+        ! Set arrow properties
+        arrow_length = size * 10.0_wp  ! Scale arrow size
+        arrow_width = arrow_length * 0.4_wp
+        
+        ! Calculate arrow tip position
+        tip_x = x + dx * arrow_length
+        tip_y = y + dy * arrow_length
+        
+        ! Calculate angle perpendicular to direction
+        angle = atan2(dy, dx)
+        
+        ! Calculate arrow head corners
+        left_x = tip_x - arrow_length * 0.7_wp * cos(angle) - arrow_width * sin(angle)
+        left_y = tip_y - arrow_length * 0.7_wp * sin(angle) + arrow_width * cos(angle)
+        right_x = tip_x - arrow_length * 0.7_wp * cos(angle) + arrow_width * sin(angle)
+        right_y = tip_y - arrow_length * 0.7_wp * sin(angle) - arrow_width * cos(angle)
+        
+        ! Draw triangular arrow head
+        call this%stream_writer%add_to_stream("q")
+        
+        ! Move to tip and draw triangle
+        write(cmd, '(F8.2, 1X, F8.2, 1X, "m")') tip_x, tip_y
+        call this%stream_writer%add_to_stream(cmd)
+        write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') left_x, left_y
+        call this%stream_writer%add_to_stream(cmd)
+        write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') right_x, right_y
+        call this%stream_writer%add_to_stream(cmd)
+        call this%stream_writer%add_to_stream("h")  ! Close path
+        call this%stream_writer%add_to_stream("f")  ! Fill
+        
+        call this%stream_writer%add_to_stream("Q")
+        
+        ! Mark that arrows have been rendered
+        this%has_rendered_arrows = .true.
+        this%uses_vector_arrows = .true.
+        this%has_triangular_arrows = .true.
+    end subroutine draw_pdf_arrow
+
+    function pdf_get_ascii_output(this) result(output)
+        !! Get ASCII output (not applicable for PDF backend)
+        class(pdf_context), intent(in) :: this
+        character(len=:), allocatable :: output
+        
+        output = ""  ! PDF backend doesn't produce ASCII output
+    end function pdf_get_ascii_output
 
 end module fortplot_pdf

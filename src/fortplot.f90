@@ -74,6 +74,7 @@ module fortplot
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     public :: bar, barh
+    public :: get_global_figure
     
     ! Animation interface
     public :: animation_t, FuncAnimation
@@ -197,7 +198,7 @@ module fortplot
     ! Note: plot and add_plot now handle both separate args and format strings in single routines
 
     ! Global figure for simple API
-    type(figure_t), save :: fig
+    type(figure_t), save, target :: fig
 
 contains
 
@@ -371,8 +372,8 @@ contains
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine pcolormesh
 
-    subroutine streamplot(x, y, u, v, density)
-        !! Add a streamplot (vector field visualization) to the global figure
+    subroutine streamplot(x, y, u, v, density, arrowsize, arrowstyle)
+        !! Add a streamplot (vector field visualization) to the global figure with arrow support
         !!
         !! Creates streamlines that follow the direction of a 2D vector field,
         !! providing intuitive visualization of flow patterns, magnetic fields,
@@ -400,20 +401,35 @@ contains
         !!     Valid range: 0.1 to 5.0 (higher = more streamlines)
         !!     Controls spacing between streamline seeds
         !!
+        !! arrowsize : real(8), intent(in), optional
+        !!     Arrow size scaling factor (default: 1.0_real64)
+        !!     Controls the size of arrow heads along streamlines
+        !!     Set to 0.0 to disable arrow rendering
+        !!
+        !! arrowstyle : character(len=*), intent(in), optional
+        !!     Arrow style specification (default: '->')
+        !!     Valid options: '->', '-', '<-', '<->'
+        !!     Controls arrow head appearance
+        !!
         !! = Usage Examples =
-        !!   ! Circular flow field around origin
-        !!   call streamplot(x_grid, y_grid, -y_field, x_field, density=1.5_real64)
+        !!   ! Basic streamplot with arrows
+        !!   call streamplot(x_grid, y_grid, u_field, v_field, arrowsize=1.5_wp)
         !!   
-        !!   ! Low-density streamlines for complex fields
-        !!   call streamplot(x_coord, y_coord, u_velocity, v_velocity, density=0.5_real64)
+        !!   ! Streamplot with custom arrow style
+        !!   call streamplot(x, y, u, v, density=2.0_wp, arrowstyle='<->')
+        !!   
+        !!   ! Streamlines without arrows
+        !!   call streamplot(x, y, u, v, arrowsize=0.0_wp)
         !!
         !! = Cross-references =
         !! See also: pcolormesh() for scalar field visualization, add_plot() for trajectory data
-        real(8), dimension(:), intent(in) :: x, y
-        real(8), dimension(:,:), intent(in) :: u, v
-        real(8), intent(in), optional :: density
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: u, v
+        real(wp), intent(in), optional :: density
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
 
-        call fig%streamplot(x, y, u, v, density=density)
+        call fig%streamplot(x, y, u, v, density=density, arrowsize=arrowsize, arrowstyle=arrowstyle)
     end subroutine streamplot
 
     subroutine bar(x, heights, width, label, color)
@@ -1003,5 +1019,12 @@ contains
             call fig%initialize()
         end if
     end subroutine ensure_global_figure_initialized
+
+    function get_global_figure() result(global_fig)
+        !! Get reference to the global figure for testing access to arrow data
+        !! This allows tests to access fig%arrow_data without making fig public
+        type(figure_t), pointer :: global_fig
+        global_fig => fig
+    end function get_global_figure
 
 end module fortplot
