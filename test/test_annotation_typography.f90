@@ -31,15 +31,15 @@ contains
         
         annotation%text = "Test Text"
         
-        # Test 16pt font
+        ! Test 16pt font
         annotation%font_size = 16.0_wp
         call calculate_text_metrics(annotation, width_16, height_16)
         
-        # Test 32pt font (double size)
+        ! Test 32pt font (double size)
         annotation%font_size = 32.0_wp
         call calculate_text_metrics(annotation, width_32, height_32)
         
-        # Double font size should approximately double dimensions
+        ! Double font size should approximately double dimensions
         if (abs(width_32 / width_16 - 2.0_wp) > 0.2_wp) then
             error stop "FAIL: Font size doubling should approximately double text width"
         end if
@@ -65,21 +65,21 @@ contains
         annotation%x = base_x
         annotation%y = base_y
         
-        # Test left alignment
+        ! Test left alignment
         annotation%alignment = 'left'
         call calculate_text_anchor(annotation, text_width, text_height, anchor_x, anchor_y)
         if (abs(anchor_x - base_x) > 1.0_wp) then
             error stop "FAIL: Left alignment should position text at base X coordinate"
         end if
         
-        # Test center alignment
+        ! Test center alignment
         annotation%alignment = 'center'
         call calculate_text_anchor(annotation, text_width, text_height, anchor_x, anchor_y)
         if (abs(anchor_x - (base_x - text_width/2)) > 1.0_wp) then
             error stop "FAIL: Center alignment should offset by half text width"
         end if
         
-        # Test right alignment
+        ! Test right alignment
         annotation%alignment = 'right'
         call calculate_text_anchor(annotation, text_width, text_height, anchor_x, anchor_y)
         if (abs(anchor_x - (base_x - text_width)) > 1.0_wp) then
@@ -104,22 +104,22 @@ contains
         annotation%x = 100.0_wp
         annotation%y = 100.0_wp
         
-        # Test 90 degree rotation
+        ! Test 90 degree rotation
         annotation%rotation = 90.0_wp
         call calculate_rotated_text_bounds(annotation, bounds)
         
-        # 90 degree rotation should swap width and height dimensions
-        # Original text width becomes rotated height, original height becomes rotated width
+        ! 90 degree rotation should swap width and height dimensions
+        ! Original text width becomes rotated height, original height becomes rotated width
         if (bounds(2) - bounds(1) > bounds(4) - bounds(3)) then
             error stop "FAIL: 90 degree rotation should make text taller than wide"
         end if
         
-        # Test 180 degree rotation
+        ! Test 180 degree rotation
         annotation%rotation = 180.0_wp
         call calculate_rotated_text_bounds(annotation, bounds)
         
-        # 180 degree rotation should maintain same bounding box size as 0 degrees
-        # (but position may be different)
+        ! 180 degree rotation should maintain same bounding box size as 0 degrees
+        ! (but position may be different)
         
         print *, "PASS: Rotation mathematics test"
     end subroutine test_rotation_mathematics
@@ -136,18 +136,18 @@ contains
         
         annotation%text = "Font test"
         
-        # Test with common system font
+        ! Test with common system font
         annotation%font_family = 'Arial'
         call select_font_family(annotation, selected_font, font_found)
         
         if (.not. font_found) then
-            # Should fall back to default font
+            ! Should fall back to default font
             if (len_trim(selected_font) == 0) then
                 error stop "FAIL: Font selection should provide fallback font"
             end if
         end if
         
-        # Test with non-existent font
+        ! Test with non-existent font
         annotation%font_family = 'NonExistentFont123'
         call select_font_family(annotation, selected_font, font_found)
         
@@ -170,17 +170,17 @@ contains
         
         call fig%initialize(400, 300)
         
-        # Test basic colors
+        ! Test basic colors
         call fig%text(0.1_wp, 0.8_wp, "Red text", color='red')
         call fig%text(0.1_wp, 0.6_wp, "Blue text", color='blue')
         call fig%text(0.1_wp, 0.4_wp, "Green text", color='green')
         
-        # Test RGB color specification
+        ! Test RGB color specification
         call fig%text(0.1_wp, 0.2_wp, "RGB text", color=[1.0_wp, 0.5_wp, 0.0_wp])
         
         call fig%savefig("test_text_colors.png")
         
-        # Verify text colors
+        ! Verify text colors
         call verify_text_color_rendering("test_text_colors.png")
         
         print *, "PASS: Text color specification test"
@@ -194,24 +194,24 @@ contains
         
         call fig%initialize(500, 400)
         
-        # Test basic background box
+        ! Test basic background box
         call fig%text(0.1_wp, 0.8_wp, "Basic box", has_bbox=.true.)
         
-        # Test colored background box
+        ! Test colored background box
         call fig%text(0.1_wp, 0.6_wp, "Colored box", has_bbox=.true., &
                      bbox_color=[0.9_wp, 0.9_wp, 0.8_wp])
         
-        # Test box with padding
+        ! Test box with padding
         call fig%text(0.1_wp, 0.4_wp, "Padded box", has_bbox=.true., &
                      bbox_padding=5.0_wp)
         
-        # Test box with border
+        ! Test box with border
         call fig%text(0.1_wp, 0.2_wp, "Border box", has_bbox=.true., &
                      bbox_border_width=2.0_wp, bbox_border_color=[0.0_wp, 0.0_wp, 0.0_wp])
         
         call fig%savefig("test_background_boxes.png")
         
-        # Verify background box rendering
+        ! Verify background box rendering
         call verify_background_box_styling("test_background_boxes.png")
         
         print *, "PASS: Background box styling test"
@@ -228,21 +228,21 @@ contains
         
         annotation%font_size = 16.0_wp
         
-        # Test empty string
+        ! Test empty string
         annotation%text = ""
         call calculate_text_metrics(annotation, width, height)
         if (width /= 0.0_wp) then
             error stop "FAIL: Empty string should have zero width"
         end if
         
-        # Test single character
+        ! Test single character
         annotation%text = "A"
         call calculate_text_metrics(annotation, width, height)
         if (width <= 0.0_wp .or. height <= 0.0_wp) then
             error stop "FAIL: Single character should have positive dimensions"
         end if
         
-        # Test proportional width for different characters
+        ! Test proportional width for different characters
         annotation%text = "i"  # Narrow character
         call calculate_text_metrics(annotation, width, height)
         real(wp) :: narrow_width = width
@@ -264,18 +264,18 @@ contains
         
         call fig%initialize(500, 400)
         
-        # Test multi-line text with newlines
+        ! Test multi-line text with newlines
         call fig%text(0.1_wp, 0.8_wp, "Line 1" // char(10) // "Line 2" // char(10) // "Line 3")
         
-        # Test multi-line text with explicit line spacing
+        ! Test multi-line text with explicit line spacing
         call fig%text(0.1_wp, 0.5_wp, "Spaced" // char(10) // "Lines", line_spacing=1.5_wp)
         
-        # Test multi-line alignment
+        ! Test multi-line alignment
         call fig%text(0.5_wp, 0.3_wp, "Center" // char(10) // "Aligned", alignment='center')
         
         call fig%savefig("test_multiline_text.png")
         
-        # Verify multi-line text rendering
+        ! Verify multi-line text rendering
         call verify_multiline_text_rendering("test_multiline_text.png")
         
         print *, "PASS: Multi-line text handling test"
@@ -289,15 +289,15 @@ contains
         
         call fig%initialize(200, 100)  # Small figure
         
-        # Test text extending beyond right edge
+        ! Test text extending beyond right edge
         call fig%text(0.8_wp, 0.5_wp, "This is very long text that extends beyond boundaries")
         
-        # Test text extending beyond bottom edge
+        ! Test text extending beyond bottom edge
         call fig%text(0.1_wp, 0.1_wp, "Bottom" // char(10) // "Edge" // char(10) // "Text")
         
         call fig%savefig("test_text_overflow.png")
         
-        # Verify overflow handling
+        ! Verify overflow handling
         call verify_text_overflow_handling("test_text_overflow.png")
         
         print *, "PASS: Text overflow handling test"
@@ -311,21 +311,21 @@ contains
         
         call fig%initialize(500, 400)
         
-        # Test basic Unicode characters
+        ! Test basic Unicode characters
         call fig%text(0.1_wp, 0.8_wp, "Unicode: αβγδε ñçü")
         
-        # Test mathematical symbols
+        ! Test mathematical symbols
         call fig%text(0.1_wp, 0.6_wp, "Math: ∑∫∏√∞ ±×÷")
         
-        # Test special symbols
+        ! Test special symbols
         call fig%text(0.1_wp, 0.4_wp, "Symbols: ♠♣♥♦ ★☆")
         
-        # Test emoji (if supported)
+        ! Test emoji (if supported)
         call fig%text(0.1_wp, 0.2_wp, "Emoji: 😀🎯📊")
         
         call fig%savefig("test_unicode_text.png")
         
-        # Verify Unicode rendering
+        ! Verify Unicode rendering
         call verify_unicode_text_rendering("test_unicode_text.png")
         
         print *, "PASS: Unicode text support test"
@@ -339,7 +339,7 @@ contains
         
         call fig%initialize(600, 400)
         
-        # Test basic mathematical expressions
+        ! Test basic mathematical expressions
         call fig%text(0.1_wp, 0.8_wp, "$x^2 + y^2 = z^2$")
         call fig%text(0.1_wp, 0.6_wp, r"$\frac{1}{2}\pi r^2$")
         call fig%text(0.1_wp, 0.4_wp, r"$\int_0^\infty e^{-x} dx$")
@@ -347,7 +347,7 @@ contains
         
         call fig%savefig("test_math_symbols.png")
         
-        # Verify mathematical symbol rendering
+        ! Verify mathematical symbol rendering
         call verify_mathematical_symbol_rendering("test_math_symbols.png")
         
         print *, "PASS: Mathematical symbols test"
@@ -363,19 +363,19 @@ contains
         logical :: valid
         character(len=256) :: error_message
         
-        # Test zero font size
+        ! Test zero font size
         annotation%font_size = 0.0_wp
         call validate_typography_parameters(annotation, valid, error_message)
         if (valid) then
             error stop "FAIL: Zero font size should be invalid"
         end if
         
-        # Test very large font size
+        ! Test very large font size
         annotation%font_size = 1000.0_wp
         call validate_typography_parameters(annotation, valid, error_message)
-        # Should be valid but may generate warning
+        ! Should be valid but may generate warning
         
-        # Test invalid rotation angle
+        ! Test invalid rotation angle
         annotation%font_size = 16.0_wp
         annotation%rotation = 1000.0_wp  # Should be normalized to 0-360 range
         call validate_typography_parameters(annotation, valid, error_message)
@@ -383,7 +383,7 @@ contains
             error stop "FAIL: Large rotation angle should be normalized, not rejected"
         end if
         
-        # Test invalid alignment
+        ! Test invalid alignment
         annotation%alignment = 'invalid_alignment'
         call validate_typography_parameters(annotation, valid, error_message)
         if (valid) then
@@ -393,7 +393,7 @@ contains
         print *, "PASS: Typography edge cases test"
     end subroutine test_typography_edge_cases
 
-    # Helper subroutines (these would fail initially as they require implementation)
+    ! Helper subroutines (these would fail initially as they require implementation)
     
     subroutine verify_text_color_rendering(filename)
         character(len=*), intent(in) :: filename
