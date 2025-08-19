@@ -28,7 +28,7 @@ contains
         
         call fig%initialize(600, 400)
         
-        # Test various font sizes
+        ! Test various font sizes
         call fig%text(0.1_wp, 0.8_wp, "Small text", font_size=8.0_wp)
         call fig%text(0.1_wp, 0.6_wp, "Medium text", font_size=16.0_wp)
         call fig%text(0.1_wp, 0.4_wp, "Large text", font_size=24.0_wp)
@@ -36,7 +36,7 @@ contains
         
         call fig%savefig("test_png_text_quality.png")
         
-        # Verify PNG text quality
+        ! Verify PNG text quality
         call verify_png_text_clarity("test_png_text_quality.png")
         call verify_png_text_sizing("test_png_text_quality.png")
         
@@ -51,7 +51,7 @@ contains
         
         call fig%initialize(500, 500)
         
-        # Test various rotation angles
+        ! Test various rotation angles
         call fig%text(0.5_wp, 0.5_wp, "0 degrees", rotation=0.0_wp, alignment='center')
         call fig%text(0.3_wp, 0.7_wp, "45 degrees", rotation=45.0_wp, alignment='center')
         call fig%text(0.2_wp, 0.5_wp, "90 degrees", rotation=90.0_wp, alignment='center')
@@ -60,7 +60,7 @@ contains
         
         call fig%savefig("test_png_rotation.png")
         
-        # Verify rotation accuracy
+        ! Verify rotation accuracy
         call verify_png_rotation_accuracy("test_png_rotation.png")
         
         print *, "PASS: PNG backend rotation rendering test"
@@ -83,7 +83,7 @@ contains
         
         call fig%savefig("test_png_font_sizing.png")
         
-        # Verify progressive font sizing
+        ! Verify progressive font sizing
         call verify_png_font_progression("test_png_font_sizing.png", sizes)
         
         print *, "PASS: PNG backend font sizing test"
@@ -103,7 +103,7 @@ contains
         
         call fig%savefig("test_pdf_text_quality.pdf")
         
-        # Verify PDF text is vector-based
+        ! Verify PDF text is vector-based
         call verify_pdf_vector_text("test_pdf_text_quality.pdf")
         
         print *, "PASS: PDF backend text quality test"
@@ -123,7 +123,7 @@ contains
         
         call fig%savefig("test_pdf_fonts.pdf")
         
-        # Verify font handling
+        ! Verify font handling
         call verify_pdf_font_embedding("test_pdf_fonts.pdf")
         
         print *, "PASS: PDF backend font embedding test"
@@ -140,11 +140,11 @@ contains
         call fig%text(0.1_wp, 0.8_wp, "Unicode: αβγδε")
         call fig%text(0.1_wp, 0.6_wp, "Math: ∫∑∏√∞")
         call fig%text(0.1_wp, 0.4_wp, "Symbols: ±×÷≠≤≥")
-        call fig%text(0.1_wp, 0.2_wp, "Special: „"''—–")
+        call fig%text(0.1_wp, 0.2_wp, "Special: quotes-dashes")
         
         call fig%savefig("test_pdf_unicode.pdf")
         
-        # Verify Unicode support
+        ! Verify Unicode support
         call verify_pdf_unicode_support("test_pdf_unicode.pdf")
         
         print *, "PASS: PDF backend special characters test"
@@ -156,7 +156,7 @@ contains
         !! THEN: Text maps correctly to ASCII characters
         type(figure_t) :: fig
         
-        call fig%initialize(40, 20)  # Small ASCII grid
+        call fig%initialize(40, 20)  ! Small ASCII grid
         
         call fig%text(0.2_wp, 0.8_wp, "ASCII")
         call fig%text(0.2_wp, 0.6_wp, "TEXT")
@@ -164,7 +164,7 @@ contains
         
         call fig%savefig("test_ascii_mapping.txt")
         
-        # Verify ASCII character mapping
+        ! Verify ASCII character mapping
         call verify_ascii_character_placement("test_ascii_mapping.txt")
         
         print *, "PASS: ASCII backend character mapping test"
@@ -184,7 +184,7 @@ contains
         
         call fig%savefig("test_ascii_alignment.txt")
         
-        # Verify ASCII alignment approximation
+        ! Verify ASCII alignment approximation
         call verify_ascii_alignment("test_ascii_alignment.txt")
         
         print *, "PASS: ASCII backend alignment approximation test"
@@ -202,7 +202,7 @@ contains
         
         call fig%savefig("test_ascii_boxes.txt")
         
-        # Verify ASCII box drawing
+        ! Verify ASCII box drawing
         call verify_ascii_box_characters("test_ascii_boxes.txt")
         
         print *, "PASS: ASCII backend box drawing test"
@@ -223,7 +223,7 @@ contains
         call fig%savefig("test_backend_consistency.pdf")
         call fig%savefig("test_backend_consistency.txt")
         
-        # Verify coordinate consistency across backends
+        ! Verify coordinate consistency across backends
         call verify_cross_backend_positioning("test_backend_consistency")
         
         print *, "PASS: Backend coordinate consistency test"
@@ -237,7 +237,7 @@ contains
         real(wp) :: start_time, end_time, png_time, pdf_time, ascii_time
         integer :: i
         
-        # PNG performance test
+        ! PNG performance test
         call fig%initialize(600, 400)
         do i = 1, 100
             call fig%text(real(i, wp) * 0.005_wp, 0.5_wp, "Performance test")
@@ -248,7 +248,7 @@ contains
         call cpu_time(end_time)
         png_time = end_time - start_time
         
-        # PDF performance test
+        ! PDF performance test
         call fig%initialize(600, 400)
         do i = 1, 100
             call fig%text(real(i, wp) * 0.005_wp, 0.5_wp, "Performance test")
@@ -259,7 +259,7 @@ contains
         call cpu_time(end_time)
         pdf_time = end_time - start_time
         
-        # ASCII performance test
+        ! ASCII performance test
         call fig%initialize(80, 25)
         do i = 1, 100
             call fig%text(real(i, wp) * 0.01_wp, 0.5_wp, "Perf")
@@ -270,7 +270,7 @@ contains
         call cpu_time(end_time)
         ascii_time = end_time - start_time
         
-        # Verify reasonable performance differences
+        ! Verify reasonable performance differences
         if (png_time > 10.0_wp .or. pdf_time > 10.0_wp .or. ascii_time > 10.0_wp) then
             error stop "FAIL: Backend performance exceeds 10 second limit"
         end if
@@ -285,20 +285,20 @@ contains
         type(figure_t) :: fig
         integer :: i
         
-        # Test memory stability with repeated operations
+        ! Test memory stability with repeated operations
         do i = 1, 50
             call fig%initialize(400, 300)
             call fig%text(0.5_wp, 0.5_wp, "Memory test")
             call fig%savefig("test_memory_png.png")
             call fig%savefig("test_memory_pdf.pdf")
             call fig%savefig("test_memory_ascii.txt")
-            # Figure should be automatically cleaned up
+            ! Figure should be automatically cleaned up
         end do
         
         print *, "PASS: Backend memory usage test"
     end subroutine test_backend_memory_usage
 
-    # Helper subroutines (these would fail initially as they require implementation)
+    ! Helper subroutines (these would fail initially as they require implementation)
     
     subroutine verify_png_text_clarity(filename)
         character(len=*), intent(in) :: filename
