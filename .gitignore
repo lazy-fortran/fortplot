@@ -41,3 +41,4 @@ doc/example
 *.gcda*
 *.gcov*
 coverage.txt
+# Force CI rebuild

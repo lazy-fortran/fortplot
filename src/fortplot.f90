@@ -24,6 +24,8 @@ module fortplot
     use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size, &
                                    validate_png_format, validate_pdf_format, validate_ascii_format, &
                                    compare_with_baseline
+    use fortplot_colors, only: color_t, parse_color, parse_color_rgba, is_valid_color, &
+                               validate_color_for_backend, clear_color_cache
 
     implicit none
 
@@ -52,6 +54,10 @@ module fortplot
     public :: validation_result_t, validate_file_exists, validate_file_size, &
               validate_png_format, validate_pdf_format, validate_ascii_format, &
               compare_with_baseline
+              
+    ! Color interface for matplotlib-compatible color syntax
+    public :: color_t, parse_color, parse_color_rgba, is_valid_color, &
+              validate_color_for_backend, clear_color_cache
 
     ! Line style constants (pyplot-style)
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'

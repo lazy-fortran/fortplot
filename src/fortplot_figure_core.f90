@@ -25,6 +25,7 @@ module fortplot_figure_core
     use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
     use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_colors, only: parse_color, color_t
     implicit none
 
     private
@@ -33,6 +34,8 @@ module fortplot_figure_core
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
     public :: ensure_directory_exists
+    
+    ! Note: add_plot supports both RGB arrays and color strings via different parameter names
 
     integer, parameter :: PLOT_TYPE_LINE = 1
     integer, parameter :: PLOT_TYPE_CONTOUR = 2
@@ -243,12 +246,13 @@ contains
         end if
     end subroutine initialize
 
-    subroutine add_plot(self, x, y, label, linestyle, color)
-        !! Add line plot data to figure with matplotlib/pyplot-fortran format string support
+    subroutine add_plot(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
+        !! Add line plot data with matplotlib/pyplot-fortran format string support
+        !! Supports both RGB color arrays (color_rgb) and color strings (color_str)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle
-        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: label, linestyle, color_str, marker, markercolor
+        real(wp), intent(in), optional :: color_rgb(3)
         
         character(len=20) :: parsed_marker, parsed_linestyle
         
@@ -262,10 +266,10 @@ contains
         if (present(linestyle) .and. contains_format_chars(linestyle)) then
             ! Parse format string and use those values
             call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
-            call add_line_plot_data(self, x, y, label, parsed_linestyle, color, parsed_marker)
+            call add_line_plot_data(self, x, y, label, parsed_linestyle, color_rgb, color_str, parsed_marker, markercolor)
         else
-            ! Use traditional linestyle with no marker
-            call add_line_plot_data(self, x, y, label, linestyle, color, '')
+            ! Use traditional linestyle with optional marker
+            call add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
         end if
         call update_data_ranges(self)
     end subroutine add_plot
@@ -648,7 +652,7 @@ contains
                     end do
                     
                     ! Add as regular plot
-                    call fig%add_plot(traj_x, traj_y, color=line_color, linestyle='-')
+                    call fig%add_plot(traj_x, traj_y, color_rgb=line_color, linestyle='-')
                     
                     deallocate(traj_x, traj_y)
                 end if
@@ -810,14 +814,16 @@ contains
 
     ! Private helper routines (implementation details)
     
-    subroutine add_line_plot_data(self, x, y, label, linestyle, color, marker)
-        !! Add line plot data to internal storage
+    subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
+        !! Add line plot data to internal storage with support for both RGB arrays and color strings
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label, linestyle, marker
-        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: label, linestyle, color_str, marker, markercolor
+        real(wp), intent(in), optional :: color_rgb(3)
         
         integer :: plot_idx, color_idx
+        real(wp) :: rgb(3)
+        logical :: success
         
         plot_idx = self%plot_count
         self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
@@ -849,11 +855,26 @@ contains
             self%plots(plot_idx)%marker = 'None'
         end if
         
-        if (present(color)) then
-            self%plots(plot_idx)%color = color
+        ! Handle color specification - color string takes precedence over RGB array
+        if (present(color_str)) then
+            call parse_color(color_str, rgb, success)
+            if (success) then
+                self%plots(plot_idx)%color = rgb
+            else
+                call log_warning('Invalid color specification: ' // color_str // '. Using default color.')
+                color_idx = mod(plot_idx - 1, 6) + 1
+                self%plots(plot_idx)%color = self%colors(:, color_idx)
+            end if
+        else if (present(color_rgb)) then
+            self%plots(plot_idx)%color = color_rgb
         else
             color_idx = mod(plot_idx - 1, 6) + 1
             self%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! TODO: Handle markercolor separately when marker colors are implemented
+        if (present(markercolor)) then
+            call log_warning('Separate marker colors not yet implemented. Using line color for markers.')
         end if
     end subroutine add_line_plot_data
     
