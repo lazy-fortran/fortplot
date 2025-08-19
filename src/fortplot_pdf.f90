@@ -3,7 +3,7 @@ module fortplot_pdf
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint ! unicode_to_latex_pdf
-    use fortplot_logging, only: log_info
+    use fortplot_logging, only: log_info, log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -428,7 +428,11 @@ contains
         
         call finalize_pdf_stream(this)
         call create_pdf_document(unit, filename, this)
-        call log_info("PDF file '" // trim(filename) // "' created successfully!")
+        
+        ! Only log success if file was actually created
+        if (unit /= -1) then
+            call log_info("PDF file '" // trim(filename) // "' created successfully!")
+        end if
     end subroutine write_pdf_file
 
     subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
@@ -466,8 +470,18 @@ contains
         integer, intent(out) :: unit
         character(len=*), intent(in) :: filename
         type(pdf_context), intent(in) :: ctx
+        integer :: ios
+        character(len=512) :: error_msg
         
-        open(newunit=unit, file=filename, access='stream', form='unformatted', status='replace')
+        open(newunit=unit, file=filename, access='stream', form='unformatted', &
+             status='replace', iostat=ios, iomsg=error_msg)
+        
+        if (ios /= 0) then
+            call log_error("Cannot save PDF file '" // trim(filename) // "': " // trim(error_msg))
+            unit = -1  ! Signal error to caller
+            return
+        end if
+        
         call write_pdf_structure(unit, ctx)
         close(unit)
     end subroutine create_pdf_document
