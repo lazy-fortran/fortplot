@@ -70,12 +70,15 @@ program unicode_demo
     ! Save to all three backends to demonstrate Unicode support
 
     ! 1. PNG - High quality with antialiased Unicode
+    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.png')
     print *, "  (High-quality antialiased Greek letters via STB TrueType)"
 
     ! 2. PDF - Vector graphics with Unicode
+    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.pdf')
     print *, "  (Vector Unicode characters, scalable and professional)"
 
     ! 3. ASCII - Terminal output with Unicode
+    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.txt')
     print *, "  (Terminal-friendly Unicode display)"
 
     print *, ""
@@ -120,6 +123,10 @@ program unicode_demo
     call fig%add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
     call fig%legend("upper right")
 
+    ! Save mathematical examples figure
+    call fig%savefig('output/example/fortran/unicode_demo/math_examples.png')
+    call fig%savefig('output/example/fortran/unicode_demo/math_examples.pdf')
+    call fig%savefig('output/example/fortran/unicode_demo/math_examples.txt')
 
     print *, ""
     print *, "Demo completed! Check the generated files to see Unicode rendering."

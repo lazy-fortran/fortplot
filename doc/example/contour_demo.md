@@ -105,15 +105,3 @@ end program contour_demo
 
 ## Output
 
-### 2D Gaussian Contour Plot
-
-![Gaussian Contour](media/examples/contour_gaussian.png)
-
-*Basic contour plot of a 2D Gaussian function with automatic level selection.*
-
-### Mixed Contour and Line Plot
-
-![Mixed Plot](media/examples/mixed_plot.png)
-
-*Advanced example combining contour levels with line plots, demonstrating saddle function (x²-y²) contours with a cross-section line.*
-

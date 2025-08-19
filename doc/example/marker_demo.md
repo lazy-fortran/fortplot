@@ -155,21 +155,3 @@ end program marker_demo
 
 ## Output
 
-### Scatter Plot with Reference Line
-
-![Scatter Plot](media/examples/scatter_plot.png)
-
-*Scatter plot showing random data points with circle markers overlaid on a sine wave reference line.*
-
-### All Marker Types
-
-![All Marker Types](media/examples/all_marker_types.png)
-
-*Comprehensive demonstration of all available marker types including circles, squares, diamonds, and crosses.*
-
-### Colored Markers
-
-![Marker Colors](media/examples/marker_colors.png)
-
-*Multiple datasets with different colored markers showing various marker shapes in distinct colors.*
-
