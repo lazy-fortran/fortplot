@@ -4,6 +4,205 @@
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
+## Streamplot Arrow Enhancement (Issue #22)
+
+### Architectural Overview
+
+Adding matplotlib-compatible arrow support to streamplot requires enhancing the existing streamplot implementation with arrow placement, sizing, and rendering capabilities while maintaining backend polymorphism and SOLID principles.
+
+### Current Architecture Analysis
+
+**Existing Implementation**:
+- `fortplot_streamplot_matplotlib.f90`: Core streamplot algorithm following matplotlib exactly
+- `figure_t%streamplot()`: API layer in `fortplot_figure_core.f90`
+- Backend-agnostic trajectory generation with downstream rendering
+
+**Architecture Strengths**:
+- Clean separation between trajectory generation and rendering
+- Matplotlib-compatible algorithm implementation
+- Polymorphic backend support through figure rendering
+
+**Enhancement Requirements**:
+- Add arrow placement algorithm to trajectory generation
+- Extend rendering backends for arrow visualization
+- Maintain API compatibility while adding arrow parameters
+
+### Implementation Architecture
+
+#### 1. Arrow Data Structure Design
+
+**Arrow Type Definition** (New):
+```fortran
+type :: streamplot_arrow_t
+    real(wp) :: x, y              ! Arrow position
+    real(wp) :: dx, dy            ! Arrow direction vector
+    real(wp) :: size              ! Scaled arrow size
+    integer :: style              ! Arrow style identifier
+end type
+```
+
+**Extended Streamplot Interface**:
+```fortran
+type :: streamplot_result_t
+    real, allocatable :: trajectories(:,:,:)     ! Existing streamlines
+    integer :: n_trajectories
+    integer, allocatable :: trajectory_lengths(:)
+    type(streamplot_arrow_t), allocatable :: arrows(:)  ! New arrow data
+    integer :: n_arrows
+end type
+```
+
+#### 2. Arrow Placement Algorithm
+
+**Matplotlib Compatibility Strategy**:
+- Follow matplotlib's distance-based arrow placement using `np.searchsorted(s, s[-1] * (x/(num_arrows+1)))`
+- Calculate arrow positions along trajectory path length
+- Extract flow direction from velocity field at arrow positions
+
+**Algorithm Implementation**:
+```fortran
+subroutine place_arrows_on_trajectory(trajectory_x, trajectory_y, n_points, &
+                                    u_grid, v_grid, num_arrows, arrowsize, &
+                                    arrows, n_arrows)
+    ! 1. Calculate cumulative path length along trajectory
+    ! 2. Place arrows at evenly spaced distances
+    ! 3. Interpolate velocity field for arrow direction
+    ! 4. Scale arrow size based on local velocity magnitude
+end subroutine
+```
+
+#### 3. Backend Integration Strategy
+
+**Polymorphic Arrow Rendering**:
+Each backend implements arrow rendering following single responsibility principle:
+
+**PNG/PDF Backends**:
+- Use existing polygon drawing primitives
+- Render arrow head as filled triangle
+- Scale triangle size based on arrowsize parameter
+
+**ASCII Backend**: 
+- Use Unicode arrow characters: →, ↑, ↓, ←, ↗, ↖, ↘, ↙
+- Select character based on quantized direction
+- Position at calculated arrow locations
+
+#### 4. API Enhancement Design
+
+**Extended Streamplot Signature**:
+```fortran
+subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
+                     arrowsize, arrowstyle, num_arrows)
+    real(wp), intent(in), optional :: arrowsize     ! Default: 1.0
+    character(*), intent(in), optional :: arrowstyle ! Default: '->'
+    integer, intent(in), optional :: num_arrows     ! Arrows per streamline
+```
+
+**Backward Compatibility Guarantee**:
+- All new parameters are optional with sensible defaults
+- Existing streamplot calls continue working unchanged
+- Arrow rendering disabled when arrowsize <= 0
+
+#### 5. Performance Considerations
+
+**Memory Management**:
+- Arrow data structures use stack allocation for small arrays
+- Heap allocation only for large arrow collections
+- Immediate deallocation after rendering
+
+**Computational Efficiency**:
+- Arrow placement integrated into existing trajectory loop
+- Minimal additional velocity field interpolations
+- Cache-friendly arrow data layout
+
+### Risk Assessment
+
+#### Technical Risks
+
+**HIGH RISK - Backend Arrow Rendering Complexity**:
+- Risk: Arrow rendering requires new geometric primitives in each backend
+- Impact: Significant implementation complexity across PNG, PDF, ASCII backends
+- Mitigation: Start with simple arrow head design, use existing polygon primitives
+
+**MEDIUM RISK - Performance Impact**:
+- Risk: Arrow calculations may slow streamplot rendering
+- Impact: User experience degradation for large vector fields
+- Mitigation: Profile arrow placement algorithm, optimize for minimal overhead
+
+**MEDIUM RISK - Matplotlib Compatibility**:
+- Risk: Arrow placement algorithm may not exactly match matplotlib behavior
+- Impact: Visual differences between fortplot and matplotlib outputs
+- Mitigation: Extensive visual testing against matplotlib reference plots
+
+#### Integration Risks
+
+**LOW RISK - API Breaking Changes**:
+- Risk: New parameters might conflict with existing usage
+- Impact: Breaking changes in streamplot interface
+- Mitigation: All new parameters optional, comprehensive backward compatibility testing
+
+**LOW RISK - Backend Specialization**:
+- Risk: Different backends may render arrows inconsistently
+- Impact: Output format differences for same input
+- Mitigation: Establish arrow rendering specification, cross-backend testing
+
+### Implementation Roadmap
+
+#### Phase 1: Core Arrow Infrastructure (Priority: HIGH)
+1. **Define arrow data structures** in `fortplot_streamplot_matplotlib.f90`
+2. **Implement arrow placement algorithm** following matplotlib approach
+3. **Extend streamplot_matplotlib() to generate arrow data**
+4. **Add comprehensive unit tests** for arrow placement logic
+
+#### Phase 2: PNG Backend Arrow Rendering (Priority: HIGH)
+1. **Implement arrow rendering** in PNG backend using existing polygon primitives
+2. **Add arrow size scaling** based on arrowsize parameter
+3. **Integrate arrow rendering** into figure rendering pipeline
+4. **Create visual test cases** comparing with matplotlib output
+
+#### Phase 3: API Integration (Priority: MEDIUM)
+1. **Extend figure_t%streamplot() signature** with arrow parameters
+2. **Add parameter validation and defaults**
+3. **Update Python interface** to expose arrow parameters
+4. **Create user examples** demonstrating arrow functionality
+
+#### Phase 4: Multi-Backend Support (Priority: MEDIUM)
+1. **Implement arrow rendering** in PDF backend
+2. **Add ASCII arrow character support** for text output
+3. **Ensure consistent behavior** across all backends
+4. **Performance optimization** and profiling
+
+#### Phase 5: Advanced Arrow Features (Priority: LOW)
+1. **Support multiple arrow styles** (not just '->')
+2. **Add adaptive arrow density** based on flow field characteristics
+3. **Implement arrow color mapping** based on velocity magnitude
+4. **Optimize for large vector field performance**
+
+### Quality Assurance Strategy
+
+#### Test Coverage Requirements
+- **Unit Tests**: Arrow placement algorithm accuracy
+- **Integration Tests**: Backend arrow rendering correctness
+- **Visual Tests**: Matplotlib compatibility verification
+- **Performance Tests**: Rendering speed benchmarks
+
+#### Validation Criteria
+- **Matplotlib Parity**: Visual output matches matplotlib streamplot with arrows
+- **Performance Standard**: Arrow rendering overhead < 20% of baseline streamplot
+- **API Compatibility**: All existing streamplot code continues working
+- **Cross-Backend Consistency**: Arrow appearance consistent across PNG, PDF, ASCII
+
+### Documentation Plan
+
+#### User Documentation
+- **API Reference**: Document new arrow parameters with examples
+- **Tutorial**: Arrow usage examples with visual outputs
+- **Migration Guide**: How to enable arrows in existing streamplot code
+
+#### Developer Documentation  
+- **Architecture Guide**: Arrow implementation design and rationale
+- **Backend Integration**: How to add arrow support to new backends
+- **Performance Guide**: Optimization techniques for arrow rendering
+
 ## Build System Architecture
 
 ### Primary Build System: FPM

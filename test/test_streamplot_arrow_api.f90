@@ -49,22 +49,24 @@ contains
         real(real64), dimension(3) :: x = [0.0, 1.0, 2.0]
         real(real64), dimension(3) :: y = [0.0, 1.0, 2.0]
         real(real64), dimension(3,3) :: u, v
+        type(figure_t), pointer :: global_fig
         
         u = 1.0_real64
         v = 0.0_real64
         
         ! Initialize global figure
         call figure(800, 600)
+        global_fig => get_global_figure()
         
         ! Test will fail until global streamplot signature is extended
         call streamplot(x, y, u, v, arrowsize=2.0_real64, arrowstyle='->')
         
         ! Check that global figure received arrow parameters
-        if (.not. allocated(fig%arrow_data)) then
+        if (.not. allocated(global_fig%arrow_data)) then
             error stop "Global streamplot with arrow parameters did not generate arrows"
         end if
         
-        if (fig%arrow_data(1)%size /= 2.0_real64) then
+        if (global_fig%arrow_data(1)%size /= 2.0_real64) then
             error stop "Global streamplot arrow parameters not properly passed"
         end if
     end subroutine
@@ -73,24 +75,38 @@ contains
         !! Given: Python interface streamplot function
         !! When: Called with arrowsize and arrowstyle parameters
         !! Then: Should accept parameters via C interface
-        real(real64), dimension(9) :: x_flat = [0.0, 1.0, 2.0, 0.0, 1.0, 2.0, 0.0, 1.0, 2.0]
-        real(real64), dimension(9) :: y_flat = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0]
-        real(real64), dimension(9) :: u_flat = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-        real(real64), dimension(9) :: v_flat = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        use fortplot_python_interface, only: python_streamplot => streamplot
+        real(real64), dimension(3) :: x_grid = [0.0, 1.0, 2.0]
+        real(real64), dimension(3) :: y_grid = [0.0, 1.0, 2.0]
+        real(real64), dimension(3,3) :: u_grid, v_grid
         real(real64) :: test_arrowsize, test_density
+        integer :: i, j
+        type(figure_t), pointer :: global_fig
+        
+        ! Create uniform flow field
+        do j = 1, 3
+            do i = 1, 3
+                u_grid(i,j) = 1.0_real64
+                v_grid(i,j) = 0.0_real64
+            end do
+        end do
         
         test_density = 1.0_real64
         test_arrowsize = 1.2_real64
         
+        ! Initialize global figure
+        call figure(800, 600)
+        global_fig => get_global_figure()
+        
         ! Test will fail until Python interface accepts arrow parameters
-        call streamplot(x_flat, y_flat, u_flat, v_flat, 3, 3, test_density, test_arrowsize)
+        call python_streamplot(x_grid, y_grid, u_grid, v_grid, 3, 3, test_density, test_arrowsize)
         
         ! Should have created arrows in global figure
-        if (.not. allocated(fig%arrow_data)) then
+        if (.not. allocated(global_fig%arrow_data)) then
             error stop "Python interface streamplot did not generate arrows"
         end if
         
-        if (abs(fig%arrow_data(1)%size - test_arrowsize) > 1e-10) then
+        if (abs(global_fig%arrow_data(1)%size - test_arrowsize) > 1e-10) then
             error stop "Python interface arrow parameters not properly handled"
         end if
     end subroutine

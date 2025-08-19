@@ -158,15 +158,17 @@ contains
                        edgecolors=edgecolors, linewidths=linewidths)
     end subroutine pcolormesh
 
-    subroutine streamplot(x, y, u, v, nx, ny, density)
-        !! Python-accessible streamplot function
+    subroutine streamplot(x, y, u, v, nx, ny, density, arrowsize, arrowstyle)
+        !! Python-accessible streamplot function with arrow support
         integer, intent(in) :: nx, ny
         real(wp), dimension(nx), intent(in) :: x
         real(wp), dimension(ny), intent(in) :: y
         real(wp), dimension(nx, ny), intent(in) :: u, v
         real(wp), intent(in), optional :: density
+        real(wp), intent(in), optional :: arrowsize
+        character(len=*), intent(in), optional :: arrowstyle
         
-        call fortplot_streamplot(x, y, u, v, density=density)
+        call fortplot_streamplot(x, y, u, v, density=density, arrowsize=arrowsize, arrowstyle=arrowstyle)
     end subroutine streamplot
 
     subroutine legend()
