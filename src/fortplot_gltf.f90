@@ -101,14 +101,12 @@ contains
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         ! Unused parameters
-        if (.false.) print *, this%width, x1, y1, x2, y2
     end subroutine gltf_line
     
     subroutine gltf_color(this, r, g, b)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
         ! Unused parameters
-        if (.false.) print *, this%width, r, g, b
     end subroutine gltf_color
     
     subroutine gltf_text(this, x, y, text)
@@ -116,14 +114,12 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         ! Unused parameters
-        if (.false.) print *, this%width, x, y, text
     end subroutine gltf_text
     
     subroutine gltf_set_line_width(this, width)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: width
         ! Unused parameters
-        if (.false.) print *, this%width, width
     end subroutine gltf_set_line_width
     
     subroutine gltf_draw_marker(this, x, y, style)
@@ -131,7 +127,6 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
         ! Unused parameters
-        if (.false.) print *, this%width, x, y, style
     end subroutine gltf_draw_marker
     
     subroutine gltf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
@@ -139,7 +134,6 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         ! Unused parameters
-        if (.false.) print *, this%width, edge_r, edge_g, edge_b, face_r, face_g, face_b
     end subroutine gltf_set_marker_colors
     
     subroutine gltf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
@@ -148,7 +142,6 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         ! Unused parameters
-        if (.false.) print *, this%width, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha
     end subroutine gltf_set_marker_colors_with_alpha
     
     subroutine add_3d_line_data(this, x, y, z)
