@@ -86,3 +86,19 @@ end program basic_plots
 
 ## Output
 
+### Simple Sine Wave Plot
+
+![Simple Plot](media/examples/simple_plot.png)
+
+*Functional API example showing a simple sine wave with proper axis labels and title.*
+
+### Multi-line Plot with Legend
+
+![Multi-line Plot](media/examples/multi_line.png)
+
+*Object-oriented API example demonstrating multiple datasets (sine and cosine) with automatic legend generation.*
+
+The plots are also available in other formats:
+- **PDF**: Vector format for high-quality printing and scaling
+- **ASCII**: Terminal-friendly text output for console viewing
+
