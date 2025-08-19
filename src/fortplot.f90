@@ -1,16 +1,48 @@
 module fortplot
-    !! Top-level public interface for fortplot
+    !! Top-level public interface for fortplot - Modern Fortran plotting library
     !!
-    !! This module provides a clean, user-friendly API for creating scientific plots
-    !! with support for line plots, contour plots, and multiple output formats.
+    !! This module provides a comprehensive, matplotlib-compatible API for creating 
+    !! professional scientific visualizations with support for multiple plot types
+    !! and output formats (PNG, PDF, ASCII).
     !!
-    !! Quick Start:
+    !! = Key Types =
+    !! - figure_t: Main plotting canvas for creating and managing plots
+    !! - animation_t: Animation framework for dynamic visualizations  
+    !! - color_t: Advanced color handling with matplotlib syntax support
+    !! - validation_result_t: Testing utilities for plot output validation
+    !!
+    !! = Core Plot Types =
+    !! - Line plots: plot(), add_plot() - Basic line and scatter plotting
+    !! - Contour plots: contour(), contour_filled() - 2D field visualization
+    !! - Heat maps: pcolormesh() - Pseudocolor mesh plots
+    !! - Vector fields: streamplot() - Flow visualization with streamlines
+    !! - Statistical: hist(), boxplot(), errorbar() - Data distribution plots
+    !! - 3D plots: add_3d_plot(), add_surface() - Three-dimensional visualization
+    !!
+    !! = Output Backends =
+    !! - PNG: High-quality raster graphics for publications
+    !! - PDF: Vector graphics for scalable documents
+    !! - ASCII: Terminal-based plots for remote/headless environments
+    !!
+    !! = Related Modules =
+    !! - fortplot_figure: Core figure implementation and backend management
+    !! - fortplot_colors: Advanced color parsing and matplotlib compatibility
+    !! - fortplot_animation: Animation framework for dynamic plots
+    !! - fortplot_validation: Automated testing utilities for plot output
+    !!
+    !! = Quick Start Examples =
+    !!   ! Simple line plot
     !!   use fortplot
-    !!   type(figure_t) :: fig
+    !!   call plot(x_data, y_data, label="measurements")
+    !!   call show()
     !!
-    !!   call fig%initialize(640, 480)
-    !!   call fig%add_plot(x, y, label="data")
-    !!   call fig%savefig('output.png')
+    !!   ! Advanced figure with multiple plots
+    !!   type(figure_t) :: fig
+    !!   call fig%initialize(800, 600)
+    !!   call fig%add_plot(x, y, label="data", linestyle='b-o')
+    !!   call fig%add_contour(x_grid, y_grid, z_field)
+    !!   call fig%legend()
+    !!   call fig%savefig('results.pdf')
     !!
     !! Author: fortplot contributors
 
@@ -59,27 +91,105 @@ module fortplot
     public :: color_t, parse_color, parse_color_rgba, is_valid_color, &
               validate_color_for_backend, clear_color_cache
 
-    ! Line style constants (pyplot-style)
+    ! Line style constants (matplotlib-compatible)
+    
+    !! Solid line style for continuous data visualization
+    !! Usage: call plot(x, y, linestyle=LINESTYLE_SOLID)
+    !! Visual: ————————————————————
     character(len=*), parameter, public :: LINESTYLE_SOLID = '-'
+    
+    !! Dashed line style for highlighting trends or secondary data
+    !! Usage: call plot(x, y, linestyle=LINESTYLE_DASHED)
+    !! Visual: ---- ---- ---- ----
     character(len=*), parameter, public :: LINESTYLE_DASHED = '--'
+    
+    !! Dotted line style for reference lines or uncertainty bounds
+    !! Usage: call plot(x, y, linestyle=LINESTYLE_DOTTED)
+    !! Visual: ••••••••••••••••••••
     character(len=*), parameter, public :: LINESTYLE_DOTTED = ':'
+    
+    !! Dash-dot line style for mixed emphasis visualization
+    !! Usage: call plot(x, y, linestyle=LINESTYLE_DASHDOT)
+    !! Visual: ——•——•——•——•
     character(len=*), parameter, public :: LINESTYLE_DASHDOT = '-.'
+    
+    !! No line style - displays only markers without connecting lines
+    !! Usage: call plot(x, y, linestyle=LINESTYLE_NONE)
+    !! Visual: • • • • (markers only)
     character(len=*), parameter, public :: LINESTYLE_NONE = 'None'
 
-    ! Marker style constants (pyplot-style)
+    ! Marker style constants (matplotlib-compatible)
+    
+    !! Circular markers for standard data point visualization
+    !! Usage: call scatter(x, y, marker=MARKER_CIRCLE)
+    !! Visual: ● (filled circle)
     character(len=*), parameter, public :: MARKER_CIRCLE = 'o'
+    
+    !! Cross-shaped markers for outliers or special data points
+    !! Usage: call scatter(x, y, marker=MARKER_CROSS)  
+    !! Visual: ✕ (diagonal cross)
     character(len=*), parameter, public :: MARKER_CROSS = 'x'
+    
+    !! Square markers for categorical or discrete data visualization
+    !! Usage: call scatter(x, y, marker=MARKER_SQUARE)
+    !! Visual: ■ (filled square)
     character(len=*), parameter, public :: MARKER_SQUARE = 's'
+    
+    !! Diamond-shaped markers for highlighting key data points
+    !! Usage: call scatter(x, y, marker=MARKER_DIAMOND)
+    !! Visual: ♦ (filled diamond)
     character(len=*), parameter, public :: MARKER_DIAMOND = 'D'
+    
+    !! Plus-sign markers for positive values or additive data
+    !! Usage: call scatter(x, y, marker=MARKER_PLUS)
+    !! Visual: ＋ (orthogonal plus)
     character(len=*), parameter, public :: MARKER_PLUS = '+'
+    
+    !! Star-shaped markers for exceptional or peak values
+    !! Usage: call scatter(x, y, marker=MARKER_STAR)
+    !! Visual: ★ (filled star)
     character(len=*), parameter, public :: MARKER_STAR = '*'
+    
+    !! Upward triangle markers for increasing trends or maxima
+    !! Usage: call scatter(x, y, marker=MARKER_TRIANGLE_UP)
+    !! Visual: ▲ (filled upward triangle)
     character(len=*), parameter, public :: MARKER_TRIANGLE_UP = '^'
+    
+    !! Downward triangle markers for decreasing trends or minima
+    !! Usage: call scatter(x, y, marker=MARKER_TRIANGLE_DOWN)
+    !! Visual: ▼ (filled downward triangle)
     character(len=*), parameter, public :: MARKER_TRIANGLE_DOWN = 'v'
+    
+    !! Pentagon-shaped markers for specialized scientific data
+    !! Usage: call scatter(x, y, marker=MARKER_PENTAGON)
+    !! Visual: ⬟ (filled pentagon)
     character(len=*), parameter, public :: MARKER_PENTAGON = 'p'
+    
+    !! Hexagon-shaped markers for crystallographic or geometric data
+    !! Usage: call scatter(x, y, marker=MARKER_HEXAGON)
+    !! Visual: ⬢ (filled hexagon)
     character(len=*), parameter, public :: MARKER_HEXAGON = 'h'
 
 
-    ! Interface for overloaded show routine
+    !! Overloaded show interface for flexible plot display
+    !! 
+    !! Provides two distinct approaches for displaying plots:
+    !! 
+    !! = show_data =
+    !! Direct data visualization - creates and displays a plot in one call
+    !! Usage: call show(x_data, y_data, label="data", title_text="Results")
+    !! Purpose: Quick visualization without explicit figure management
+    !! 
+    !! = show_figure = 
+    !! Display current global figure - like matplotlib.pyplot.show()
+    !! Usage: call show() ! Displays current figure contents
+    !! Purpose: Display plots added via plot(), contour(), etc.
+    !!
+    !! Auto-selection: Interface automatically chooses the appropriate procedure
+    !! based on the provided arguments - data arrays trigger show_data,
+    !! no arguments or options-only trigger show_figure
+    !!
+    !! Cross-references: Used with plot(), add_plot(), savefig(), show_viewer()
     interface show
         module procedure show_data, show_figure
     end interface show
@@ -94,11 +204,17 @@ contains
     subroutine plot(x, y, label, linestyle)
         !! Add a line plot to the global figure (pyplot-fortran compatible)
         !!
+        !! Creates line plots with optional markers for data visualization.
+        !! This is the primary interface for 2D line plotting.
+        !!
         !! Arguments:
         !!   x, y: Data arrays for the line plot
         !!   label: Optional label for the plot
         !!   linestyle: Line style and markers ('b-o', 'r--', 'g:', 'ko', etc.)
         !!              Supports both pyplot-fortran and matplotlib format strings
+        !!
+        !! Cross-references: See add_plot() for explicit add operation, scatter() for point-only plots,
+        !!                  show() for display, savefig() for output, errorbar() for uncertainty plots
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
 
@@ -109,11 +225,17 @@ contains
     subroutine contour(x, y, z, levels, label)
         !! Add a contour plot to the global figure (pyplot-style)
         !!
+        !! Creates line contour plots for 2D scalar field visualization.
+        !! Shows level curves (isolines) of constant values.
+        !!
         !! Arguments:
         !!   x, y: Grid coordinate arrays
         !!   z: 2D data array for contouring
         !!   levels: Optional array of contour levels
         !!   label: Optional label for the plot
+        !!
+        !! Cross-references: See add_contour() for explicit add operation, contour_filled() for filled contours,
+        !!                  pcolormesh() for grid visualization, streamplot() for vector fields
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         real(8), dimension(:), intent(in), optional :: levels
@@ -125,13 +247,50 @@ contains
     subroutine contour_filled(x, y, z, levels, colormap, show_colorbar, label)
         !! Add a filled contour plot with color levels to the global figure
         !!
-        !! Arguments:
-        !!   x, y: Grid coordinate arrays
-        !!   z: 2D data array for contouring
-        !!   levels: Optional array of contour levels
-        !!   colormap: Optional colormap name ('crest' (default), 'viridis', 'plasma', 'rocket', 'mako', 'flare', etc.)
-        !!   show_colorbar: Optional flag to show colorbar
-        !!   label: Optional label for the plot
+        !! Creates filled contour plots for 2D scalar field visualization with smooth
+        !! color transitions between levels. Compatible with matplotlib contourf function.
+        !!
+        !! = Parameters =
+        !! x : real(8), dimension(:), intent(in)
+        !!     1D coordinate array for x-axis grid points (size: nx)
+        !!     Must be monotonically increasing
+        !!     
+        !! y : real(8), dimension(:), intent(in)
+        !!     1D coordinate array for y-axis grid points (size: ny) 
+        !!     Must be monotonically increasing
+        !!     
+        !! z : real(8), dimension(:,:), intent(in)
+        !!     2D scalar field data array (shape: ny × nx)
+        !!     Contains the field values to be contoured
+        !!     
+        !! levels : real(8), dimension(:), intent(in), optional
+        !!     Contour level values array (default: auto-generated 10 levels)
+        !!     Must be monotonically increasing for proper rendering
+        !!     
+        !! colormap : character(len=*), intent(in), optional
+        !!     Colormap name for color mapping (default: 'crest')
+        !!     Valid options: 'viridis', 'plasma', 'inferno', 'magma', 'coolwarm',
+        !!                   'RdYlBu', 'seismic', 'jet', 'hsv', 'rainbow',
+        !!                   'crest', 'rocket', 'mako', 'flare', 'icefire'
+        !!                   
+        !! show_colorbar : logical, intent(in), optional
+        !!     Display colorbar legend (default: .true.)
+        !!     Set to .false. for overlay plots or custom legends
+        !!     
+        !! label : character(len=*), intent(in), optional
+        !!     Plot label for legends (default: none)
+        !!     Used when combining with other plot types
+        !!
+        !! = Usage Examples =
+        !!   ! Basic filled contour with default settings
+        !!   call contour_filled(x_grid, y_grid, temperature_field)
+        !!   
+        !!   ! Custom levels and colormap
+        !!   real(8) :: custom_levels(5) = [0.0, 0.25, 0.5, 0.75, 1.0]
+        !!   call contour_filled(x, y, data, levels=custom_levels, colormap='coolwarm')
+        !!
+        !! = Cross-references =
+        !! See also: contour() for line contours, pcolormesh() for pixelated visualization
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         real(8), dimension(:), intent(in), optional :: levels
@@ -145,20 +304,62 @@ contains
     subroutine pcolormesh(x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         !! Add a pcolormesh (pseudocolor mesh) plot to the global figure
         !!
-        !! Creates a pseudocolor plot with a non-regular rectangular grid.
-        !! Compatible with matplotlib pcolormesh function.
+        !! Creates a pseudocolor plot with rectangular grid cells, where each cell
+        !! is colored according to a scalar value. Compatible with matplotlib pcolormesh.
         !!
-        !! Arguments:
-        !!   x, y: Grid coordinate arrays (1D for regular grid)
-        !!   c: Color data array (2D)
-        !!   colormap: Optional colormap name ('viridis', 'plasma', 'coolwarm', etc.)
-        !!   vmin, vmax: Optional color scale limits
-        !!   edgecolors: Optional edge color ('none', 'black', etc.)
-        !!   linewidths: Optional edge line width
+        !! = Parameters =
+        !! x : real(8), dimension(:), intent(in)
+        !!     1D grid coordinate array for x-axis (size: nx or nx+1)
+        !!     For regular grids: can be same size as c columns (nx) or cell edges (nx+1)
+        !!     Must be monotonically increasing
+        !!     
+        !! y : real(8), dimension(:), intent(in)
+        !!     1D grid coordinate array for y-axis (size: ny or ny+1)  
+        !!     For regular grids: can be same size as c rows (ny) or cell edges (ny+1)
+        !!     Must be monotonically increasing
+        !!     
+        !! c : real(8), dimension(:,:), intent(in)
+        !!     2D color data array (shape: ny × nx)
+        !!     Each element represents the scalar value for one grid cell
+        !!     Values are mapped to colors using the specified colormap
+        !!     
+        !! colormap : character(len=*), intent(in), optional
+        !!     Colormap name for color mapping (default: 'viridis')
+        !!     Valid options: 'viridis', 'plasma', 'inferno', 'magma', 'coolwarm',
+        !!                   'RdYlBu', 'seismic', 'jet', 'hot', 'bone', 'gray'
+        !!                   
+        !! vmin : real(8), intent(in), optional
+        !!     Minimum value for color scale (default: min(c))
+        !!     Values below vmin are clamped to the colormap minimum
+        !!     
+        !! vmax : real(8), intent(in), optional  
+        !!     Maximum value for color scale (default: max(c))
+        !!     Values above vmax are clamped to the colormap maximum
+        !!     
+        !! edgecolors : character(len=*), intent(in), optional
+        !!     Cell edge color specification (default: 'none')
+        !!     Valid options: 'none', 'black', 'white', 'gray', or any valid color
+        !!     
+        !! linewidths : real(8), intent(in), optional
+        !!     Width of cell edge lines (default: 0.0, ignored if edgecolors='none')
+        !!     Typical range: 0.1 to 2.0 for visible edges
         !!
-        !! Example:
-        !!   ! Simple heatmap
-        !!   call pcolormesh(x, y, temperature_data, colormap='viridis')
+        !! = Grid Requirements =
+        !! - x and y must define a rectangular grid structure
+        !! - For cell-centered data: size(x)=nx, size(y)=ny, size(c)=[ny,nx]
+        !! - For edge-defined data: size(x)=nx+1, size(y)=ny+1, size(c)=[ny,nx]
+        !! - Grid spacing can be non-uniform (stretched grids supported)
+        !!
+        !! = Usage Examples =
+        !!   ! Simple heatmap with default settings
+        !!   call pcolormesh(x_coords, y_coords, temperature_data)
+        !!   
+        !!   ! Custom color scale and edges
+        !!   call pcolormesh(x, y, data, colormap='coolwarm', vmin=-1.0, vmax=1.0, &
+        !!                  edgecolors='black', linewidths=0.5)
+        !!
+        !! = Cross-references =
+        !! See also: contour_filled() for smooth contours, scatter() for point data
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: c
         character(len=*), intent(in), optional :: colormap
@@ -175,17 +376,39 @@ contains
         !!
         !! Creates streamlines that follow the direction of a 2D vector field,
         !! providing intuitive visualization of flow patterns, magnetic fields,
-        !! or any other vector data.
+        !! or any other vector data. Compatible with matplotlib streamplot function.
         !!
-        !! Arguments:
-        !!   x, y: 1D coordinate arrays defining the grid
-        !!   u, v: 2D velocity/vector field components (u=x-component, v=y-component)
-        !!   density: Optional streamline density parameter (default=1.0)
-        !!            Higher values = more streamlines, lower values = fewer streamlines
+        !! = Parameters =
+        !! x : real(8), dimension(:), intent(in)
+        !!     1D coordinate array for x-axis grid points (size: nx)
+        !!     Must be monotonically increasing for proper interpolation
+        !!     
+        !! y : real(8), dimension(:), intent(in) 
+        !!     1D coordinate array for y-axis grid points (size: ny)
+        !!     Must be monotonically increasing for proper interpolation
+        !!     
+        !! u : real(8), dimension(:,:), intent(in)
+        !!     2D velocity field x-component array (shape: ny × nx)
+        !!     Represents horizontal velocity/vector component at each grid point
+        !!     
+        !! v : real(8), dimension(:,:), intent(in)
+        !!     2D velocity field y-component array (shape: ny × nx) 
+        !!     Represents vertical velocity/vector component at each grid point
+        !!     
+        !! density : real(8), intent(in), optional
+        !!     Streamline density control parameter (default: 1.0_real64)
+        !!     Valid range: 0.1 to 5.0 (higher = more streamlines)
+        !!     Controls spacing between streamline seeds
         !!
-        !! Example:
-        !!   ! Circular flow field
-        !!   call streamplot(x, y, -y_grid, x_grid, density=1.5_real64)
+        !! = Usage Examples =
+        !!   ! Circular flow field around origin
+        !!   call streamplot(x_grid, y_grid, -y_field, x_field, density=1.5_real64)
+        !!   
+        !!   ! Low-density streamlines for complex fields
+        !!   call streamplot(x_coord, y_coord, u_velocity, v_velocity, density=0.5_real64)
+        !!
+        !! = Cross-references =
+        !! See also: pcolormesh() for scalar field visualization, add_plot() for trajectory data
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: u, v
         real(8), intent(in), optional :: density
@@ -404,6 +627,12 @@ contains
 
     subroutine add_plot(x, y, label, linestyle)
         !! Add a line plot to the global figure (pyplot-fortran compatible)
+        !!
+        !! Explicit interface for adding line plots to existing figures.
+        !! Provides the same functionality as plot() with clearer intent.
+        !!
+        !! Cross-references: See plot() for primary interface, scatter() for point plots,
+        !!                  add_3d_plot() for three-dimensional lines
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
 
@@ -412,6 +641,12 @@ contains
 
     subroutine add_contour(x, y, z, levels, label)
         !! Add a contour plot to the global figure
+        !!
+        !! Explicit interface for adding contour plots to existing figures.
+        !! Provides the same functionality as contour() with clearer intent.
+        !!
+        !! Cross-references: See contour() for primary interface, add_contour_filled() for filled contours,
+        !!                  add_pcolormesh() for grid plots
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         real(8), dimension(:), intent(in), optional :: levels
