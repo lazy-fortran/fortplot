@@ -100,40 +100,46 @@ contains
     subroutine gltf_line(this, x1, y1, x2, y2)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
-        ! Not used for GLTF
+        ! Unused parameters
+        if (.false.) print *, this%width, x1, y1, x2, y2
     end subroutine gltf_line
     
     subroutine gltf_color(this, r, g, b)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
-        ! Store for material generation
+        ! Unused parameters
+        if (.false.) print *, this%width, r, g, b
     end subroutine gltf_color
     
     subroutine gltf_text(this, x, y, text)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        ! Not used for GLTF
+        ! Unused parameters
+        if (.false.) print *, this%width, x, y, text
     end subroutine gltf_text
     
     subroutine gltf_set_line_width(this, width)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: width
-        ! Not used for GLTF
+        ! Unused parameters
+        if (.false.) print *, this%width, width
     end subroutine gltf_set_line_width
     
     subroutine gltf_draw_marker(this, x, y, style)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        ! Not used for GLTF
+        ! Unused parameters
+        if (.false.) print *, this%width, x, y, style
     end subroutine gltf_draw_marker
     
     subroutine gltf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
-        ! Store for material generation
+        ! Unused parameters
+        if (.false.) print *, this%width, edge_r, edge_g, edge_b, face_r, face_g, face_b
     end subroutine gltf_set_marker_colors
     
     subroutine gltf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
@@ -141,7 +147,8 @@ contains
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
-        ! Store for material generation
+        ! Unused parameters
+        if (.false.) print *, this%width, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha
     end subroutine gltf_set_marker_colors_with_alpha
     
     subroutine add_3d_line_data(this, x, y, z)
@@ -150,7 +157,7 @@ contains
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x(:), y(:), z(:)
         
-        integer :: n, idx
+        integer :: idx
         
         ! Allocate space for new mesh
         this%mesh_count = this%mesh_count + 1
@@ -194,7 +201,6 @@ contains
         character(len=:), allocatable :: base64_data
         character(len=64) :: num_str
         integer :: i, total_bytes
-        integer(1), allocatable :: buffer(:)
         
         ! Create buffer and accessors for all meshes
         call create_gltf_buffers(this)
@@ -285,8 +291,6 @@ contains
         class(gltf_context), intent(inout) :: this
         
         integer :: i, offset, n_vertices, buffer_size
-        integer(1), allocatable :: temp_buffer(:)
-        real(wp), allocatable :: vertex_data(:,:)
         
         if (this%mesh_count > 0) then
             ! Calculate total buffer size needed
