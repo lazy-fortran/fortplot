@@ -175,6 +175,391 @@ This infrastructure work provides maximum strategic impact by:
 - ✅ No regression in existing FPM functionality
 - ✅ Documentation updated for both build systems
 
+## Text Annotation Architecture (Issue #55)
+
+### Overview
+**Issue #55**: Add comprehensive text annotation support for scientific data visualization
+- **Status**: ARCHITECTURE DESIGN PHASE - Foundation layer enhancement
+- **Context**: Text annotation with matplotlib-compatible positioning and rendering
+- **Scope**: Foundation layer affecting all backends (PNG, PDF, ASCII) with coordinate transformation integration
+
+### Text Annotation System Architecture
+
+#### Core Requirements Analysis
+**Text Positioning Flexibility**:
+- **Data Coordinates**: Default positioning using plot data coordinate system
+- **Figure Coordinates**: Alternative positioning using normalized figure coordinates (0-1)
+- **Axis Coordinates**: Optional positioning relative to axis boundaries
+- **Pixel Coordinates**: Direct pixel positioning for precise control
+
+**Annotation Features**:
+- **Basic Text**: Simple text placement at specified coordinates
+- **Annotated Text**: Text with arrow pointing to specific data points
+- **Typography Control**: Font size, color, rotation, alignment options
+- **Background Styling**: Optional text boxes with customizable backgrounds
+- **Multi-Backend Support**: Consistent rendering across PNG, PDF, ASCII backends
+
+#### Architecture Design Principles
+
+**Coordinate System Integration**:
+- **Leverage Existing Infrastructure**: Utilize `fortplot_scales` coordinate transformation functions
+- **Coordinate Type Abstraction**: Polymorphic coordinate handling for different coordinate systems
+- **Transform Pipeline**: Unified transformation from any coordinate type to backend-specific coordinates
+
+**Backend Abstraction**:
+- **Polymorphic Text Rendering**: Abstract text rendering interface implemented by each backend
+- **Backend-Specific Optimization**: Each backend handles text rendering using optimal native methods
+- **Consistent API**: Uniform text annotation API across all backends
+
+**Typography Foundation**:
+- **Font System Integration**: Leverage existing `fortplot_text` module with STB TrueType integration
+- **Text Metrics Calculation**: Precise text width/height calculation for positioning and layout
+- **Rotation and Alignment**: Mathematical text positioning with rotation and alignment support
+
+#### Module Architecture
+
+**New Module: `fortplot_annotations`**
+```fortran
+module fortplot_annotations
+    use fortplot_text, only: calculate_text_width, calculate_text_height
+    use fortplot_scales, only: transform_x_coordinate, transform_y_coordinate
+    use fortplot_colors, only: color_t
+    
+    type :: text_annotation_t
+        character(len=:), allocatable :: text
+        real(wp) :: x, y                    ! Position coordinates
+        integer :: coord_type               ! COORD_DATA, COORD_FIGURE, COORD_AXIS
+        real(wp) :: fontsize = 12.0_wp
+        type(color_t) :: color
+        real(wp) :: rotation = 0.0_wp       ! Degrees
+        character(len=10) :: alignment = 'left'
+        logical :: has_bbox = .false.
+        type(color_t) :: bbox_color
+        ! Arrow annotation fields
+        logical :: has_arrow = .false.
+        real(wp) :: xytext_x, xytext_y      ! Arrow tail position
+        integer :: xytext_coord_type
+    end type text_annotation_t
+end module
+```
+
+**Enhanced Figure Interface**:
+```fortran
+! figure_t methods for text annotation
+procedure :: text        ! Basic text placement
+procedure :: annotate    ! Text with arrow annotation
+```
+
+**Backend Integration Pattern**:
+```fortran
+! Each backend implements text rendering interface
+procedure :: render_text_annotation  ! Backend-specific text rendering
+procedure :: render_arrow            ! Backend-specific arrow drawing
+```
+
+#### Coordinate System Design
+
+**Coordinate Type Constants**:
+```fortran
+integer, parameter :: COORD_DATA = 1     ! Data coordinates (default)
+integer, parameter :: COORD_FIGURE = 2   ! Figure coordinates (0-1 normalized)
+integer, parameter :: COORD_AXIS = 3     ! Axis coordinates (0-1 within plot area)
+integer, parameter :: COORD_PIXEL = 4    ! Direct pixel coordinates
+```
+
+**Coordinate Transformation Pipeline**:
+1. **Input Validation**: Validate coordinate values and types
+2. **Scale Transformation**: Apply data scale transformations (log, symlog)
+3. **Coordinate Mapping**: Transform to backend pixel coordinates
+4. **Bounds Checking**: Ensure text placement within renderable area
+
+**Transformation Functions**:
+```fortran
+function transform_annotation_coordinates(annotation, plot_area, data_bounds) result(pixel_coords)
+    ! Transform annotation coordinates to pixel coordinates
+    ! Handles all coordinate types with unified interface
+end function
+```
+
+#### Backend-Specific Implementation
+
+**PNG Backend Integration**:
+- **STB TrueType Rendering**: Leverage existing `fortplot_text` infrastructure
+- **Rotation Implementation**: Mathematical rotation of text glyphs
+- **Arrow Drawing**: Vector graphics arrow drawing on raster canvas
+- **Alpha Blending**: Proper text anti-aliasing and background boxes
+
+**PDF Backend Integration**:
+- **PDF Text Operators**: Native PDF text positioning and rendering
+- **Font Embedding**: Efficient font resource management
+- **Vector Arrow Graphics**: Scalable arrow graphics using PDF drawing operators
+- **Coordinate System**: Direct PDF coordinate system mapping
+
+**ASCII Backend Integration**:
+- **Character Grid Positioning**: Map text to character grid coordinates
+- **Simplified Arrows**: ASCII arrow characters and simple line drawing
+- **Text Overflow Handling**: Intelligent text wrapping and clipping
+- **Alignment Approximation**: Best-effort alignment using character positioning
+
+#### Performance Architecture
+
+**Text Metrics Caching**:
+- **Font Metrics Cache**: Cache frequently used font metrics calculations
+- **Text Width Cache**: Cache text width calculations for repeated text
+- **Coordinate Transform Cache**: Cache coordinate transformations for multiple annotations
+
+**Memory Management**:
+- **Efficient String Handling**: Minimize string allocation/deallocation overhead
+- **Backend Buffer Management**: Optimize backend-specific rendering buffers
+- **Annotation Collection**: Efficient storage and iteration of multiple annotations
+
+**Rendering Optimization**:
+- **Batch Rendering**: Group annotations for efficient backend rendering
+- **Clipping Optimization**: Skip rendering of annotations outside plot area
+- **Font Loading Optimization**: Minimize font system initialization overhead
+
+#### Error Handling Strategy
+
+**Input Validation**:
+- **Coordinate Range Validation**: Ensure coordinates are within reasonable bounds
+- **Text Content Validation**: Handle empty strings and special characters
+- **Parameter Range Validation**: Validate font sizes, colors, rotation angles
+
+**Graceful Degradation**:
+- **Font System Fallback**: Graceful handling of font system initialization failures
+- **Backend Limitation Handling**: Adapt features based on backend capabilities
+- **Coordinate System Fallback**: Default to data coordinates when others fail
+
+**Error Recovery**:
+- **Position Correction**: Automatically adjust text positions for better visibility
+- **Rendering Fallback**: Simple placeholder rendering when advanced features fail
+- **Logging Integration**: Comprehensive error logging for debugging
+
+### Implementation Plan
+
+#### Phase 1: Core Infrastructure (High Priority)
+**Foundation Module Development**:
+1. **Create `fortplot_annotations` module**
+   - Define `text_annotation_t` data structure
+   - Implement coordinate type constants and validation
+   - Create coordinate transformation pipeline
+   - Add basic text annotation creation functions
+
+2. **Coordinate System Integration**
+   - Extend `fortplot_scales` with annotation-specific transforms
+   - Implement unified coordinate transformation interface
+   - Add bounds checking and validation functions
+   - Test coordinate transformation accuracy
+
+3. **Figure Interface Enhancement** 
+   - Add `text()` method to `figure_t` for basic text placement
+   - Add `annotate()` method for arrow annotations
+   - Integrate annotation storage with existing plot data structures
+   - Ensure API consistency with matplotlib patterns
+
+#### Phase 2: Backend Implementation (High Priority)
+**PNG Backend Enhancement**:
+1. **Text Rendering Integration**
+   - Extend PNG backend with text annotation rendering
+   - Implement text rotation using mathematical transformation
+   - Add background box rendering with alpha blending
+   - Integrate with existing STB TrueType infrastructure
+
+2. **Arrow Drawing Implementation**
+   - Develop vector arrow drawing algorithms for raster canvas
+   - Implement arrow head styles and customization
+   - Add line styling options (width, color, dashing)
+   - Ensure arrow positioning accuracy
+
+**PDF Backend Enhancement**:
+1. **PDF Text Operators**
+   - Implement native PDF text positioning and rendering
+   - Add font embedding and resource management
+   - Support text rotation using PDF transformation matrices
+   - Implement vector arrow graphics using PDF drawing operators
+
+**ASCII Backend Enhancement**:
+1. **Character Grid Implementation**
+   - Map text annotations to character grid coordinates
+   - Implement simplified ASCII arrow representations
+   - Add text overflow handling and intelligent clipping
+   - Develop best-effort text alignment algorithms
+
+#### Phase 3: Advanced Features (Medium Priority)
+**Typography Enhancements**:
+1. **Advanced Text Styling**
+   - Implement font family selection beyond default fonts
+   - Add text weight and style options (bold, italic)
+   - Support multi-line text with line spacing control
+   - Implement text baseline and ascent alignment
+
+2. **Background Box Styling**
+   - Add border customization (width, color, style)
+   - Implement padding control around text
+   - Support rounded rectangle backgrounds
+   - Add shadow and transparency effects
+
+**Performance Optimization**:
+1. **Caching Implementation**
+   - Implement font metrics caching system
+   - Add text width calculation caching
+   - Develop coordinate transformation caching
+   - Optimize memory allocation patterns
+
+2. **Batch Rendering**
+   - Group annotations for efficient backend rendering
+   - Implement rendering order optimization
+   - Add clipping-based rendering optimization
+   - Minimize font system initialization overhead
+
+#### Phase 4: Integration and Testing (Medium Priority)
+**Comprehensive Testing**:
+1. **Unit Testing**
+   - Test coordinate transformation accuracy across all types
+   - Validate text positioning and alignment algorithms
+   - Test arrow drawing accuracy and positioning
+   - Verify backend-specific rendering consistency
+
+2. **Integration Testing**
+   - Test annotation rendering across all backends
+   - Validate matplotlib API compatibility
+   - Test performance with multiple annotations
+   - Ensure memory leak prevention
+
+**Documentation and Examples**:
+1. **Example Development**
+   - Create `annotation_demo.f90` demonstrating all features
+   - Add scientific figure examples with professional annotations
+   - Include performance benchmarking examples
+   - Generate output samples for all backends
+
+### Risk Assessment
+
+#### Technical Risks
+**Coordinate Transformation Complexity**: Multiple coordinate systems increase complexity
+- *Mitigation*: Leverage existing `fortplot_scales` infrastructure extensively
+- *Mitigation*: Implement comprehensive unit tests for transformation accuracy
+- *Mitigation*: Use proven matplotlib coordinate transformation patterns
+
+**Backend Rendering Inconsistency**: Different capabilities across PNG/PDF/ASCII backends
+- *Mitigation*: Define minimum common feature set for all backends
+- *Mitigation*: Implement graceful degradation for advanced features
+- *Mitigation*: Document backend-specific limitations clearly
+
+**Text Positioning Accuracy**: Precise text positioning requires accurate font metrics
+- *Mitigation*: Leverage existing STB TrueType integration for accurate metrics
+- *Mitigation*: Implement fallback text sizing for font system failures
+- *Mitigation*: Add position correction algorithms for edge cases
+
+**Memory Management Complexity**: String handling and caching can introduce memory leaks
+- *Mitigation*: Follow Fortran allocatable best practices consistently
+- *Mitigation*: Implement comprehensive memory leak testing
+- *Mitigation*: Use RAII patterns for automatic resource cleanup
+
+#### Schedule Risks
+**Backend Feature Parity**: Achieving consistent feature support across all backends
+- *Mitigation*: Prioritize PNG backend as reference implementation
+- *Mitigation*: Implement incremental feature rollout across backends
+- *Mitigation*: Define clear MVP feature set for initial implementation
+
+**Font System Integration Complexity**: STB TrueType integration may have edge cases
+- *Mitigation*: Extensive testing with various font configurations
+- *Mitigation*: Implement robust fallback mechanisms
+- *Mitigation*: Research existing font integration patterns
+
+#### Quality Risks
+**API Usability**: Complex coordinate systems may confuse users
+- *Mitigation*: Default to data coordinates for simplest user experience
+- *Mitigation*: Provide clear documentation and examples for all coordinate types
+- *Mitigation*: Implement helpful error messages for common mistakes
+
+**Performance Impact**: Multiple annotations may impact rendering performance
+- *Mitigation*: Implement efficient caching and batch rendering strategies
+- *Mitigation*: Add performance benchmarking and optimization targets
+- *Mitigation*: Profile memory usage patterns and optimize allocation
+
+### Opportunity Analysis
+
+#### Performance Opportunities
+**Foundation Layer Optimization**: Text annotation infrastructure benefits all plotting functionality
+- **Text Rendering Cache**: Shared font metrics improve performance across all text elements
+- **Coordinate Transform Pipeline**: Unified transformation benefits axis labels, legends, titles
+- **Backend Text Infrastructure**: Enhanced text capabilities enable future typography features
+
+**Rendering Pipeline Enhancement**: Optimized text rendering improves overall plotting performance
+- **Batch Text Operations**: Group text rendering for improved backend efficiency
+- **Smart Clipping**: Skip rendering of off-screen annotations to improve performance
+- **Memory Pool Management**: Efficient string handling reduces allocation overhead
+
+#### Innovation Opportunities
+**Scientific Publishing Integration**: Professional annotation support enables publication-quality figures
+- **LaTeX Mathematical Expressions**: Future integration with mathematical typesetting
+- **Citation and Reference Annotations**: Support for academic figure referencing
+- **Multi-Language Text Support**: International scientific collaboration support
+
+**Interactive Annotation System**: Foundation for future interactive plotting features
+- **Dynamic Annotation Updates**: Real-time annotation modification capabilities
+- **User-Driven Annotation Placement**: Interactive positioning and styling
+- **Annotation Templates**: Predefined annotation styles for common scientific applications
+
+#### Efficiency Opportunities
+**Development Workflow Enhancement**: Comprehensive annotation support accelerates scientific figure creation
+- **Rapid Prototyping**: Quick annotation placement for exploratory data analysis
+- **Figure Template System**: Reusable annotation patterns for consistent figure styling
+- **Automated Annotation**: Data-driven annotation placement algorithms
+
+**Multi-Backend Consistency**: Unified annotation API simplifies cross-format figure generation
+- **Format-Agnostic Workflow**: Single code path generates PNG, PDF, ASCII outputs
+- **Backend-Specific Optimization**: Each backend leverages optimal rendering techniques
+- **Consistent Visual Output**: Reliable annotation appearance across all formats
+
+### Architecture Principles Applied
+
+#### SOLID Principles
+**Single Responsibility**: Each component has focused responsibility
+- **`fortplot_annotations`**: Text annotation data structures and core logic only
+- **Backend Extensions**: Each backend handles only its specific rendering implementation
+- **Coordinate Transform**: Separate module handles only coordinate system transformations
+
+**Open/Closed**: Architecture extends existing system without modification
+- **Figure Interface**: New annotation methods extend existing figure API
+- **Backend Extensions**: Each backend adds annotation support without modifying core
+- **Coordinate System**: New coordinate types extend existing transformation pipeline
+
+**Liskov Substitution**: All coordinate types work interchangeably in transformation pipeline
+- **Coordinate Polymorphism**: Any coordinate type can be transformed to pixel coordinates
+- **Backend Substitution**: Any backend can render annotations using common interface
+- **Text Rendering**: Different text rendering approaches maintain consistent API
+
+**Interface Segregation**: Focused interfaces for specific annotation capabilities
+- **Text Annotation Interface**: Minimal interface for basic text placement
+- **Arrow Annotation Interface**: Separate interface for arrow-specific functionality
+- **Backend Rendering Interface**: Backend-specific interfaces avoid feature bloat
+
+**Dependency Inversion**: High-level annotation logic depends on abstractions
+- **Coordinate Abstractions**: Annotation logic depends on coordinate transformation interface
+- **Backend Abstractions**: Core logic depends on abstract rendering interface, not concrete backends
+- **Font System Abstraction**: Annotation positioning depends on abstract text metrics interface
+
+#### KISS Principle
+**Minimal Core Implementation**: Start with essential features and build incrementally
+- **Simple Text Placement**: Basic text annotation without advanced styling initially
+- **Data Coordinate Default**: Simplest coordinate system as default choice
+- **Clear API Design**: Intuitive method names and parameter structure
+
+**Incremental Feature Addition**: Add complexity only when needed
+- **Basic→Advanced**: Start with simple text, add styling and arrows incrementally
+- **Backend Progression**: Implement PNG thoroughly, then extend to PDF and ASCII
+- **Performance Later**: Focus on correctness first, optimize performance in later phases
+
+#### Foundation Layer Focus
+Text annotation infrastructure provides maximum strategic impact by:
+- **Universal Text Enhancement**: Improves all text rendering across figure components
+- **Coordinate System Unification**: Provides consistent positioning framework for future features
+- **Backend Text Standardization**: Establishes text rendering patterns for consistent implementation
+- **Typography Foundation**: Enables future advanced typography features like mathematical expressions
+- **Scientific Workflow Acceleration**: Comprehensive annotation support significantly improves scientific figure creation efficiency
+
 ## Error Bar Plotting Architecture (Issue #52)
 
 ### Overview
