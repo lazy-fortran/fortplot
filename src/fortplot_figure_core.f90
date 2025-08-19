@@ -29,7 +29,7 @@ module fortplot_figure_core
     implicit none
 
     private
-    public :: figure_t, plot_data_t, subplot_t
+    public :: figure_t, plot_data_t, subplot_t, arrow_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
@@ -56,6 +56,17 @@ module fortplot_figure_core
     real(wp), parameter :: BOX_PLOT_LINE_WIDTH = 2.0_wp
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
     real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
+
+    type :: arrow_data_t
+        !! Data container for streamplot arrows
+        !! Stores position, direction, size and style for arrow rendering
+        real(wp) :: x = 0.0_wp          ! Arrow position x-coordinate
+        real(wp) :: y = 0.0_wp          ! Arrow position y-coordinate  
+        real(wp) :: dx = 0.0_wp         ! Arrow direction x-component (normalized)
+        real(wp) :: dy = 0.0_wp         ! Arrow direction y-component (normalized)
+        real(wp) :: size = 1.0_wp       ! Arrow size scaling factor
+        character(len=10) :: style = '->' ! Arrow style (matplotlib compatible)
+    end type arrow_data_t
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -184,6 +195,10 @@ module fortplot_figure_core
         
         ! Streamline data (temporary placeholder)
         type(plot_data_t), allocatable :: streamlines(:)
+        
+        ! Arrow data for streamplot arrows
+        type(arrow_data_t), allocatable :: arrow_data(:)
+        
         logical :: has_error = .false.
 
     contains
@@ -236,6 +251,7 @@ contains
         end if
         self%plot_count = 0
         self%rendered = .false.
+        self%has_error = .false.
         
         ! Initialize legend following SOLID principles  
         self%show_legend = .false.
@@ -568,8 +584,8 @@ contains
         call update_data_ranges_boxplot(self)
     end subroutine boxplot
 
-    subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
-        !! Add streamline plot to figure using matplotlib-compatible algorithm
+    subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time, arrowsize, arrowstyle)
+        !! Add streamline plot to figure using matplotlib-compatible algorithm with arrow support
         use fortplot_streamplot_matplotlib
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
@@ -579,8 +595,11 @@ contains
         real(wp), intent(in), optional :: rtol        !! Relative tolerance for DOPRI5
         real(wp), intent(in), optional :: atol        !! Absolute tolerance for DOPRI5
         real(wp), intent(in), optional :: max_time    !! Maximum integration time
+        real(wp), intent(in), optional :: arrowsize   !! Arrow size scaling factor (default: 1.0)
+        character(len=*), intent(in), optional :: arrowstyle !! Arrow style (default: '->')
         
-        real(wp) :: plot_density
+        real(wp) :: plot_density, arrow_size_val
+        character(len=10) :: arrow_style_val
         real, allocatable :: trajectories(:,:,:)
         integer :: n_trajectories
         integer, allocatable :: trajectory_lengths(:)
@@ -598,6 +617,26 @@ contains
         plot_density = 1.0_wp
         if (present(density)) plot_density = density
         
+        ! Handle arrow parameters with validation
+        arrow_size_val = 1.0_wp  ! Default matplotlib-compatible arrow size
+        if (present(arrowsize)) then
+            if (arrowsize < 0.0_wp) then
+                self%has_error = .true.
+                return
+            end if
+            arrow_size_val = arrowsize
+        end if
+        
+        arrow_style_val = '->'  ! Default matplotlib-compatible arrow style
+        if (present(arrowstyle)) then
+            if (trim(arrowstyle) /= '->' .and. trim(arrowstyle) /= '-' .and. &
+                trim(arrowstyle) /= '<-' .and. trim(arrowstyle) /= '<->') then
+                self%has_error = .true.
+                return
+            end if
+            arrow_style_val = trim(arrowstyle)
+        end if
+        
         ! Update data ranges
         if (.not. self%xlim_set) then
             self%x_min = minval(x)
@@ -611,6 +650,11 @@ contains
         ! Use matplotlib-compatible streamplot implementation
         call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, n_trajectories, trajectory_lengths)
         
+        ! Generate arrows along streamlines if arrow size > 0
+        if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
+            call generate_streamplot_arrows(self, trajectories, n_trajectories, trajectory_lengths, &
+                                          x, y, u, v, arrow_size_val, arrow_style_val)
+        end if
         
         ! Add trajectories to figure
         call add_trajectories_to_figure(self, trajectories, n_trajectories, trajectory_lengths, color, x, y)
@@ -658,6 +702,139 @@ contains
                 end if
             end do
         end subroutine add_trajectories_to_figure
+        
+        subroutine generate_streamplot_arrows(fig, trajectories, n_trajectories, trajectory_lengths, &
+                                            x_grid, y_grid, u_field, v_field, arrow_size, arrow_style)
+            !! Generate arrows along streamlines using matplotlib-compatible placement algorithm
+            class(figure_t), intent(inout) :: fig
+            real, intent(in) :: trajectories(:,:,:)
+            integer, intent(in) :: n_trajectories
+            integer, intent(in) :: trajectory_lengths(:)
+            real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
+            real(wp), intent(in) :: arrow_size
+            character(len=*), intent(in) :: arrow_style
+            
+            integer :: max_arrows, arrow_count, traj_idx, arrow_interval, point_idx
+            real(wp) :: arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag
+            
+            ! Calculate maximum possible arrows based on density and trajectory count
+            max_arrows = max(1, min(500, n_trajectories * 3))  ! Limit to prevent memory issues
+            
+            ! Allocate arrow data array
+            if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
+            allocate(fig%arrow_data(max_arrows))
+            
+            arrow_count = 0
+            
+            ! Place arrows along each trajectory at regular intervals
+            do traj_idx = 1, n_trajectories
+                if (trajectory_lengths(traj_idx) < 5) cycle  ! Skip very short trajectories
+                
+                ! Calculate arrow interval based on trajectory length (matplotlib-style)
+                arrow_interval = max(1, trajectory_lengths(traj_idx) / 3)  ! ~3 arrows per trajectory
+                
+                ! Place arrows at intervals along the trajectory
+                do point_idx = arrow_interval, trajectory_lengths(traj_idx) - 1, arrow_interval
+                    if (arrow_count >= max_arrows) exit
+                    
+                    ! Get arrow position from trajectory
+                    arrow_x = real(trajectories(traj_idx, point_idx, 1), wp)
+                    arrow_y = real(trajectories(traj_idx, point_idx, 2), wp)
+                    
+                    ! Calculate arrow direction from velocity field at this position
+                    call interpolate_velocity_at_point(arrow_x, arrow_y, x_grid, y_grid, &
+                                                      u_field, v_field, arrow_dx, arrow_dy, speed_mag)
+                    
+                    ! Skip if velocity is too small
+                    if (speed_mag < 1e-10_wp) cycle
+                    
+                    ! Normalize direction vector
+                    arrow_dx = arrow_dx / speed_mag
+                    arrow_dy = arrow_dy / speed_mag
+                    
+                    ! Store arrow data
+                    arrow_count = arrow_count + 1
+                    fig%arrow_data(arrow_count)%x = arrow_x
+                    fig%arrow_data(arrow_count)%y = arrow_y
+                    fig%arrow_data(arrow_count)%dx = arrow_dx
+                    fig%arrow_data(arrow_count)%dy = arrow_dy
+                    fig%arrow_data(arrow_count)%size = arrow_size
+                    fig%arrow_data(arrow_count)%style = arrow_style
+                end do
+            end do
+            
+            ! Resize arrow array to actual count
+            if (arrow_count > 0) then
+                fig%arrow_data = fig%arrow_data(1:arrow_count)
+            else
+                deallocate(fig%arrow_data)
+            end if
+        end subroutine generate_streamplot_arrows
+        
+        subroutine interpolate_velocity_at_point(x_pos, y_pos, x_grid, y_grid, u_field, v_field, &
+                                               u_interp, v_interp, speed_mag)
+            !! Bilinear interpolation of velocity field at given position
+            real(wp), intent(in) :: x_pos, y_pos
+            real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
+            real(wp), intent(out) :: u_interp, v_interp, speed_mag
+            
+            integer :: i, j, i_next, j_next
+            real(wp) :: x_frac, y_frac, w00, w01, w10, w11
+            real(wp) :: u00, u01, u10, u11, v00, v01, v10, v11
+            
+            ! Find grid indices
+            i = 1
+            do while (i < size(x_grid) .and. x_grid(i) < x_pos)
+                i = i + 1
+            end do
+            i = max(1, min(size(x_grid) - 1, i - 1))
+            
+            j = 1
+            do while (j < size(y_grid) .and. y_grid(j) < y_pos)
+                j = j + 1
+            end do
+            j = max(1, min(size(y_grid) - 1, j - 1))
+            
+            i_next = min(size(x_grid), i + 1)
+            j_next = min(size(y_grid), j + 1)
+            
+            ! Calculate interpolation weights
+            if (i_next > i) then
+                x_frac = (x_pos - x_grid(i)) / (x_grid(i_next) - x_grid(i))
+            else
+                x_frac = 0.0_wp
+            end if
+            
+            if (j_next > j) then
+                y_frac = (y_pos - y_grid(j)) / (y_grid(j_next) - y_grid(j))
+            else
+                y_frac = 0.0_wp
+            end if
+            
+            ! Bilinear interpolation weights
+            w00 = (1.0_wp - x_frac) * (1.0_wp - y_frac)
+            w01 = x_frac * (1.0_wp - y_frac)
+            w10 = (1.0_wp - x_frac) * y_frac
+            w11 = x_frac * y_frac
+            
+            ! Get velocity values at grid corners
+            u00 = u_field(i, j)
+            u01 = u_field(i_next, j)
+            u10 = u_field(i, j_next)
+            u11 = u_field(i_next, j_next)
+            
+            v00 = v_field(i, j)
+            v01 = v_field(i_next, j)
+            v10 = v_field(i, j_next)
+            v11 = v_field(i_next, j_next)
+            
+            ! Interpolate velocity components
+            u_interp = w00 * u00 + w01 * u01 + w10 * u10 + w11 * u11
+            v_interp = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11
+            
+            ! Calculate speed magnitude
+            speed_mag = sqrt(u_interp**2 + v_interp**2)
+        end subroutine interpolate_velocity_at_point
         
     end subroutine streamplot
 
@@ -1566,7 +1743,37 @@ contains
             end if
         end do
         
+        ! Render arrows if they exist
+        call render_arrows(self)
+        
     end subroutine render_all_plots
+
+    subroutine render_arrows(self)
+        !! Render streamplot arrows to the backend
+        class(figure_t), intent(inout) :: self
+        integer :: i
+        real(wp) :: screen_x, screen_y
+        
+        if (.not. allocated(self%arrow_data)) return
+        if (size(self%arrow_data) == 0) return
+        
+        ! Set arrow color (black)
+        call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Render each arrow using the backend
+        do i = 1, size(self%arrow_data)
+            ! Transform world coordinates to screen coordinates
+            screen_x = transform_x_coordinate(self%arrow_data(i)%x, self%x_min, self%x_max, &
+                                            self%width)
+            screen_y = transform_y_coordinate(self%arrow_data(i)%y, self%y_min, self%y_max, &
+                                            self%height)
+            
+            ! Call backend-specific arrow rendering
+            call self%backend%draw_arrow(screen_x, screen_y, &
+                                       self%arrow_data(i)%dx, self%arrow_data(i)%dy, &
+                                       self%arrow_data(i)%size, self%arrow_data(i)%style)
+        end do
+    end subroutine render_arrows
 
     subroutine render_streamlines(self)
         !! Render all streamlines in the streamlines array
