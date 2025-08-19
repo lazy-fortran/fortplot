@@ -8,11 +8,13 @@ module fortplot_markers
     public :: get_marker_size, validate_marker_style, get_default_marker
     public :: MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS, MARKER_PLUS, MARKER_STAR
     public :: MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, MARKER_PENTAGON, MARKER_HEXAGON
+    public :: MARKER_DIAMOND_SMALL
     
     ! Marker style constants - pyplot compatible
     character(len=*), parameter :: MARKER_CIRCLE = 'o'
     character(len=*), parameter :: MARKER_SQUARE = 's' 
     character(len=*), parameter :: MARKER_DIAMOND = 'D'
+    character(len=*), parameter :: MARKER_DIAMOND_SMALL = 'd'
     character(len=*), parameter :: MARKER_CROSS = 'x'
     character(len=*), parameter :: MARKER_PLUS = '+'
     character(len=*), parameter :: MARKER_STAR = '*'
@@ -45,7 +47,7 @@ contains
             size = SIZE_CIRCLE
         case (MARKER_SQUARE)
             size = SIZE_SQUARE
-        case (MARKER_DIAMOND)
+        case (MARKER_DIAMOND, MARKER_DIAMOND_SMALL)
             size = SIZE_DIAMOND
         case (MARKER_CROSS)
             size = SIZE_CROSS
@@ -70,7 +72,7 @@ contains
         logical :: is_valid
         
         select case (trim(style))
-        case (MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS, &
+        case (MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_DIAMOND_SMALL, MARKER_CROSS, &
               MARKER_PLUS, MARKER_STAR, MARKER_TRIANGLE_UP, MARKER_TRIANGLE_DOWN, &
               MARKER_PENTAGON, MARKER_HEXAGON)
             is_valid = .true.
