@@ -78,4 +78,4 @@ end program streamplot_demo
 
 ## Output Example
 
-![Streamplot Demo](media/examples/streamplot_demo.png)
+![Streamplot Demo](../../example/streamplot_demo/streamplot_demo.png)

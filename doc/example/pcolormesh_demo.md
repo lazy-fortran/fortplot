@@ -149,21 +149,3 @@ end program pcolormesh_demo
 
 ## Output
 
-### Basic Linear Gradient
-
-![Basic Pcolormesh](media/examples/pcolormesh_basic.png)
-
-*Basic pcolormesh example showing a linear gradient with the Viridis colormap.*
-
-### Sinusoidal Pattern
-
-![Sinusoidal Pattern](media/examples/pcolormesh_sinusoidal.png)
-
-*Complex sinusoidal pattern visualization using the Coolwarm colormap to highlight both positive and negative values.*
-
-### Radial Pattern with Plasma Colormap
-
-![Plasma Colormap](media/examples/pcolormesh_plasma.png)
-
-*Radial distance pattern showcasing the Plasma colormap for high-contrast visualization.*
-

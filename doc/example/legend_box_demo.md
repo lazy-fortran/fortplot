@@ -89,7 +89,7 @@ end program legend_box_demo
 ## Output
 
 ### Default Legend Box
-![Default Legend Box](media/examples/legend_box_demo_default.png)
+![Default Legend Box](../../example/legend_box_demo/legend_box_demo_default.png)
 
 ### Upper Left Position
-![Upper Left](media/examples/legend_box_demo_upper_left.png)
+![Upper Left](../../example/legend_box_demo/legend_box_demo_upper_left.png)
