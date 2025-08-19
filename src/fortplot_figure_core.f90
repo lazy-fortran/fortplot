@@ -1667,88 +1667,105 @@ contains
         
         real(wp), allocatable :: x2d(:), y2d(:)
         real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
-        real(wp) :: azim, elev, dist
-        real(wp) :: x1_screen, y1_screen, x2_screen, y2_screen
-        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
-        real(wp) :: plot_width, plot_height
-        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: x_scale, y_scale
         real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
-        integer :: i, n
+        integer :: n
         
         n = size(self%plots(plot_idx)%x)
         allocate(x2d(n), y2d(n))
         allocate(x_norm(n), y_norm(n), z_norm(n))
         
-        ! Normalize 3D data to unit cube [0,1]
-        ! This ensures data fits within the 3D box
-        ! Handle case where data range is zero (single point or all points same)
+        call normalize_3d_data_for_projection(self, plot_idx, x_norm, y_norm, z_norm)
+        call project_normalized_3d_data(x_norm, y_norm, z_norm, x2d, y2d)
+        call setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
+                                       orig_y_min, orig_y_max)
+        call draw_projected_3d_lines(self, x2d, y2d)
+        call restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
+                                               orig_y_min, orig_y_max)
+    end subroutine draw_3d_line_with_style
+    
+    subroutine normalize_3d_data_for_projection(self, plot_idx, x_norm, y_norm, z_norm)
+        !! Normalize 3D data to unit cube for consistent projection
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx
+        real(wp), intent(out) :: x_norm(:), y_norm(:), z_norm(:)
+        
+        integer :: i, n
+        
+        n = size(self%plots(plot_idx)%x)
+        
         do i = 1, n
-            if (self%x_max - self%x_min > 0.0_wp) then
-                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
-            else
-                x_norm(i) = 0.5_wp  ! Center if no range
-            end if
-            
-            if (self%y_max - self%y_min > 0.0_wp) then
-                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
-            else
-                y_norm(i) = 0.5_wp  ! Center if no range
-            end if
-            
-            if (self%z_max - self%z_min > 0.0_wp) then
-                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
-            else
-                z_norm(i) = 0.5_wp  ! Center if no range
-            end if
+            call normalize_coordinate_value(self%plots(plot_idx)%x(i), self%x_min, &
+                                          self%x_max, x_norm(i))
+            call normalize_coordinate_value(self%plots(plot_idx)%y(i), self%y_min, &
+                                          self%y_max, y_norm(i))
+            call normalize_coordinate_value(self%plots(plot_idx)%z(i), self%z_min, &
+                                          self%z_max, z_norm(i))
         end do
+    end subroutine normalize_3d_data_for_projection
+    
+    subroutine normalize_coordinate_value(value, min_val, max_val, normalized_value)
+        !! Normalize single coordinate value to [0,1] range
+        real(wp), intent(in) :: value, min_val, max_val
+        real(wp), intent(out) :: normalized_value
         
-        ! Get default viewing angles
+        if (max_val - min_val > 0.0_wp) then
+            normalized_value = (value - min_val) / (max_val - min_val)
+        else
+            normalized_value = 0.5_wp  ! Center if no range
+        end if
+    end subroutine normalize_coordinate_value
+    
+    subroutine project_normalized_3d_data(x_norm, y_norm, z_norm, x2d, y2d)
+        !! Project normalized 3D data to 2D coordinates
+        real(wp), intent(in) :: x_norm(:), y_norm(:), z_norm(:)
+        real(wp), intent(out) :: x2d(:), y2d(:)
+        
+        real(wp) :: azim, elev, dist
+        
         call get_default_view_angles(azim, elev, dist)
-        
-        ! Project normalized 3D data to 2D
         call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
+    end subroutine project_normalized_3d_data
+    
+    subroutine setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
+                                         orig_y_min, orig_y_max)
+        !! Setup coordinate system for 3D projection rendering
+        use fortplot_raster, only: raster_context
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x2d(:), y2d(:)
+        real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        ! Get matplotlib-style margins
-        margin_left = 80.0_wp
-        margin_right = 40.0_wp
-        margin_bottom = 60.0_wp
-        margin_top = 60.0_wp
+        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
         
-        ! Calculate plot area dimensions
-        select type (ctx => self%backend)
-        type is (raster_context)
-            plot_width = real(ctx%width, wp) - margin_left - margin_right
-            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
-        type is (png_context)
-            plot_width = real(ctx%width, wp) - margin_left - margin_right
-            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
-        class default
-            ! Default fallback
-            plot_width = 640.0_wp
-            plot_height = 480.0_wp
-        end select
+        call calculate_projection_bounds(x2d, y2d, proj_x_min, proj_x_max, &
+                                        proj_y_min, proj_y_max)
+        call save_and_set_backend_coordinates(self, proj_x_min, proj_x_max, &
+                                             proj_y_min, proj_y_max, &
+                                             orig_x_min, orig_x_max, &
+                                             orig_y_min, orig_y_max)
+    end subroutine setup_3d_coordinate_system
+    
+    subroutine calculate_projection_bounds(x2d, y2d, proj_x_min, proj_x_max, &
+                                          proj_y_min, proj_y_max)
+        !! Calculate bounds of projected 2D data
+        real(wp), intent(in) :: x2d(:), y2d(:)
+        real(wp), intent(out) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
         
-        ! Find bounds of projected data (should be roughly in [-1,1] range)
         proj_x_min = minval(x2d)
         proj_x_max = maxval(x2d)
         proj_y_min = minval(y2d)
         proj_y_max = maxval(y2d)
+    end subroutine calculate_projection_bounds
+    
+    subroutine save_and_set_backend_coordinates(self, proj_x_min, proj_x_max, &
+                                               proj_y_min, proj_y_max, &
+                                               orig_x_min, orig_x_max, &
+                                               orig_y_min, orig_y_max)
+        !! Save original backend coordinates and set to projection bounds
+        use fortplot_raster, only: raster_context
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
+        real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        ! Calculate scaling to fit in plot area with some padding
-        if (proj_x_max > proj_x_min) then
-            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
-        else
-            x_scale = 1.0_wp
-        end if
-        
-        if (proj_y_max > proj_y_min) then
-            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
-        else
-            y_scale = 1.0_wp
-        end if
-        
-        ! Save original coordinate system and set to projected data for 3D plots
         select type (ctx => self%backend)
         class is (raster_context)
             orig_x_min = ctx%x_min
@@ -1761,14 +1778,28 @@ contains
             ctx%y_min = proj_y_min
             ctx%y_max = proj_y_max
         end select
+    end subroutine save_and_set_backend_coordinates
+    
+    subroutine draw_projected_3d_lines(self, x2d, y2d)
+        !! Draw lines using projected 2D coordinates
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x2d(:), y2d(:)
         
-        ! Draw lines using projected coordinates
+        integer :: i, n
+        
+        n = size(x2d)
         do i = 1, n-1
-            ! Use projected coordinates directly - backend will transform to screen
             call self%backend%line(x2d(i), y2d(i), x2d(i+1), y2d(i+1))
         end do
+    end subroutine draw_projected_3d_lines
+    
+    subroutine restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
+                                                 orig_y_min, orig_y_max)
+        !! Restore original backend coordinate system
+        use fortplot_raster, only: raster_context
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        ! Restore original coordinate system
         select type (ctx => self%backend)
         class is (raster_context)
             ctx%x_min = orig_x_min
@@ -1776,127 +1807,64 @@ contains
             ctx%y_min = orig_y_min
             ctx%y_max = orig_y_max
         end select
-    end subroutine draw_3d_line_with_style
+    end subroutine restore_original_coordinate_system
 
     subroutine render_3d_markers(self, plot_idx)
         !! Render markers for 3D plot points
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         
         real(wp), allocatable :: x2d(:), y2d(:)
         real(wp), allocatable :: x_norm(:), y_norm(:), z_norm(:)
-        real(wp) :: azim, elev, dist
-        real(wp) :: x_screen, y_screen
-        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
-        real(wp) :: plot_width, plot_height
-        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: x_scale, y_scale
         real(wp) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
-        integer :: i, n
         character(len=:), allocatable :: marker
+        integer :: n
         
-        if (.not. allocated(self%plots(plot_idx)%marker)) return
-        marker = self%plots(plot_idx)%marker
-        if (marker == 'None' .or. marker == '') return
+        if (.not. validate_marker_requirements(self, plot_idx, marker)) return
         
         n = size(self%plots(plot_idx)%x)
         allocate(x2d(n), y2d(n))
         allocate(x_norm(n), y_norm(n), z_norm(n))
         
-        ! Normalize 3D data to unit cube [0,1]
-        ! Handle case where data range is zero (single point or all points same)
+        call normalize_3d_data_for_projection(self, plot_idx, x_norm, y_norm, z_norm)
+        call project_normalized_3d_data(x_norm, y_norm, z_norm, x2d, y2d)
+        call setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
+                                       orig_y_min, orig_y_max)
+        call draw_projected_3d_markers(self, x2d, y2d, marker)
+        call restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
+                                               orig_y_min, orig_y_max)
+    end subroutine render_3d_markers
+    
+    function validate_marker_requirements(self, plot_idx, marker) result(is_valid)
+        !! Validate that markers should be rendered for this plot
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: plot_idx
+        character(len=:), allocatable, intent(out) :: marker
+        logical :: is_valid
+        
+        is_valid = .false.
+        
+        if (.not. allocated(self%plots(plot_idx)%marker)) return
+        
+        marker = self%plots(plot_idx)%marker
+        if (marker == 'None' .or. marker == '') return
+        
+        is_valid = .true.
+    end function validate_marker_requirements
+    
+    subroutine draw_projected_3d_markers(self, x2d, y2d, marker)
+        !! Draw markers at projected 2D positions
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x2d(:), y2d(:)
+        character(len=*), intent(in) :: marker
+        
+        integer :: i, n
+        
+        n = size(x2d)
         do i = 1, n
-            if (self%x_max - self%x_min > 0.0_wp) then
-                x_norm(i) = (self%plots(plot_idx)%x(i) - self%x_min) / (self%x_max - self%x_min)
-            else
-                x_norm(i) = 0.5_wp  ! Center if no range
-            end if
-            
-            if (self%y_max - self%y_min > 0.0_wp) then
-                y_norm(i) = (self%plots(plot_idx)%y(i) - self%y_min) / (self%y_max - self%y_min)
-            else
-                y_norm(i) = 0.5_wp  ! Center if no range
-            end if
-            
-            if (self%z_max - self%z_min > 0.0_wp) then
-                z_norm(i) = (self%plots(plot_idx)%z(i) - self%z_min) / (self%z_max - self%z_min)
-            else
-                z_norm(i) = 0.5_wp  ! Center if no range
-            end if
-        end do
-        
-        ! Get default viewing angles
-        call get_default_view_angles(azim, elev, dist)
-        
-        ! Project normalized 3D data to 2D
-        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
-        
-        ! Get matplotlib-style margins
-        margin_left = 80.0_wp
-        margin_right = 40.0_wp
-        margin_bottom = 60.0_wp
-        margin_top = 60.0_wp
-        
-        ! Calculate plot area dimensions
-        select type (ctx => self%backend)
-        class is (raster_context)
-            plot_width = real(ctx%width, wp) - margin_left - margin_right
-            plot_height = real(ctx%height, wp) - margin_bottom - margin_top
-        class default
-            ! Default fallback
-            plot_width = 640.0_wp
-            plot_height = 480.0_wp
-        end select
-        
-        ! Find bounds of projected data
-        proj_x_min = minval(x2d)
-        proj_x_max = maxval(x2d)
-        proj_y_min = minval(y2d)
-        proj_y_max = maxval(y2d)
-        
-        ! Calculate scaling to fit in plot area with some padding
-        if (proj_x_max > proj_x_min) then
-            x_scale = plot_width * 0.8_wp / (proj_x_max - proj_x_min)
-        else
-            x_scale = 1.0_wp
-        end if
-        
-        if (proj_y_max > proj_y_min) then
-            y_scale = plot_height * 0.8_wp / (proj_y_max - proj_y_min)
-        else
-            y_scale = 1.0_wp
-        end if
-        
-        ! Save original coordinate system and set to projected data for 3D plots
-        select type (ctx => self%backend)
-        class is (raster_context)
-            orig_x_min = ctx%x_min
-            orig_x_max = ctx%x_max
-            orig_y_min = ctx%y_min
-            orig_y_max = ctx%y_max
-            
-            ctx%x_min = proj_x_min
-            ctx%x_max = proj_x_max
-            ctx%y_min = proj_y_min
-            ctx%y_max = proj_y_max
-        end select
-        
-        ! Draw markers at projected positions
-        do i = 1, n
-            ! Use projected coordinates directly - backend will transform to screen
             call self%backend%draw_marker(x2d(i), y2d(i), marker)
         end do
-        
-        ! Restore original coordinate system
-        select type (ctx => self%backend)
-        class is (raster_context)
-            ctx%x_min = orig_x_min
-            ctx%x_max = orig_x_max
-            ctx%y_min = orig_y_min
-            ctx%y_max = orig_y_max
-        end select
-    end subroutine render_3d_markers
+    end subroutine draw_projected_3d_markers
 
     subroutine calculate_3d_plot_ranges(self, plot_idx, x_min, x_max, y_min, y_max, first_plot)
         !! Calculate data ranges for 3D plot by projecting to 2D
@@ -3060,11 +3028,28 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         type(plot_data_t) :: plot_data
-        integer :: i, n_points
-        real(wp) :: c_min, c_max
         
-        ! Input validation
+        if (.not. validate_scatter_input_arrays(x, y, z, s, c)) return
+        
+        call initialize_scatter_plot_data(plot_data)
+        call filter_valid_scatter_data(x, y, z, s, c, plot_data)
+        call configure_scatter_marker(plot_data, marker, markersize)
+        call configure_scatter_color_mapping(plot_data, c, colormap, vmin, vmax, show_colorbar)
+        call set_scatter_common_properties(plot_data, label, color)
+        call add_plot_to_figure(self, plot_data)
+    end subroutine add_scatter_plot_data
+    
+    function validate_scatter_input_arrays(x, y, z, s, c) result(is_valid)
+        !! Validate scatter plot input arrays for size consistency
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: z(:), s(:), c(:)
+        logical :: is_valid
+        
+        integer :: n_points
+        
+        is_valid = .false.
         n_points = size(x)
+        
         if (size(y) /= n_points) then
             write(*, '(A)') 'Error: x and y arrays must have same size'
             return
@@ -3085,71 +3070,140 @@ contains
             return
         end if
         
-        ! Initialize plot data
+        is_valid = .true.
+    end function validate_scatter_input_arrays
+    
+    subroutine initialize_scatter_plot_data(plot_data)
+        !! Initialize scatter plot data structure
+        type(plot_data_t), intent(out) :: plot_data
+        
         plot_data%plot_type = PLOT_TYPE_SCATTER
+    end subroutine initialize_scatter_plot_data
+    
+    subroutine configure_scatter_marker(plot_data, marker, markersize)
+        !! Configure marker style and size for scatter plot
+        use fortplot_markers, only: get_default_marker, validate_marker_style
+        type(plot_data_t), intent(inout) :: plot_data
+        character(len=*), intent(in), optional :: marker
+        real(wp), intent(in), optional :: markersize
         
-        ! Filter valid data points (remove NaN/Inf) and handle size/color arrays
-        call filter_valid_scatter_data(x, y, z, s, c, plot_data)
-        
-        ! Set marker style with validation
         if (present(marker)) then
-            if (validate_marker_style(marker)) then
-                plot_data%marker = marker
-            else
-                plot_data%marker = get_default_marker()
-                write(*, '(A,A,A)') 'Warning: Invalid marker "', trim(marker), &
-                                  '", using default'
-            end if
+            call set_validated_marker_style(plot_data, marker)
         else
             plot_data%marker = get_default_marker()
         end if
         
-        ! Handle default marker size
         if (present(markersize)) then
             plot_data%scatter_size_default = markersize
         end if
+    end subroutine configure_scatter_marker
+    
+    subroutine set_validated_marker_style(plot_data, marker)
+        !! Set marker style with validation
+        use fortplot_markers, only: get_default_marker, validate_marker_style
+        type(plot_data_t), intent(inout) :: plot_data
+        character(len=*), intent(in) :: marker
         
-        ! Handle color mapping if present
-        if (present(c)) then
-            ! Auto-scale color range if not manually set
-            if (present(vmin) .and. present(vmax)) then
-                plot_data%scatter_vmin = vmin
-                plot_data%scatter_vmax = vmax
-                plot_data%scatter_vrange_set = .true.
-            else
-                if (allocated(plot_data%scatter_colors) .and. size(plot_data%scatter_colors) > 0) then
-                    c_min = minval(plot_data%scatter_colors)
-                    c_max = maxval(plot_data%scatter_colors)
-                    plot_data%scatter_vmin = c_min
-                    plot_data%scatter_vmax = c_max
-                    plot_data%scatter_vrange_set = .false.
-                end if
-            end if
-            
-            ! Set colormap
-            if (present(colormap)) then
-                if (validate_colormap_name(colormap)) then
-                    plot_data%scatter_colormap = colormap
-                else
-                    plot_data%scatter_colormap = 'viridis'
-                    write(*, '(A,A,A)') 'Warning: Invalid colormap "', trim(colormap), &
-                                      '", using viridis'
-                end if
-            end if
-            
-            ! Enable colorbar for color mapping by default
-            plot_data%scatter_colorbar = .true.
-            if (present(show_colorbar)) plot_data%scatter_colorbar = show_colorbar
+        if (validate_marker_style(marker)) then
+            plot_data%marker = marker
+        else
+            plot_data%marker = get_default_marker()
+            write(*, '(A,A,A)') 'Warning: Invalid marker "', trim(marker), &
+                              '", using default'
         end if
+    end subroutine set_validated_marker_style
+    
+    subroutine configure_scatter_color_mapping(plot_data, c, colormap, vmin, vmax, show_colorbar)
+        !! Configure color mapping for scatter plot
+        use fortplot_colormap, only: validate_colormap_name
+        type(plot_data_t), intent(inout) :: plot_data
+        real(wp), intent(in), optional :: c(:)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        logical, intent(in), optional :: show_colorbar
         
-        ! Set common properties
+        if (.not. present(c)) return
+        
+        call configure_color_range(plot_data, vmin, vmax)
+        call configure_colormap_name(plot_data, colormap)
+        call configure_colorbar_display(plot_data, show_colorbar)
+    end subroutine configure_scatter_color_mapping
+    
+    subroutine configure_color_range(plot_data, vmin, vmax)
+        !! Configure color range for scatter plot
+        type(plot_data_t), intent(inout) :: plot_data
+        real(wp), intent(in), optional :: vmin, vmax
+        
+        real(wp) :: c_min, c_max
+        
+        if (present(vmin) .and. present(vmax)) then
+            plot_data%scatter_vmin = vmin
+            plot_data%scatter_vmax = vmax
+            plot_data%scatter_vrange_set = .true.
+        else
+            call auto_scale_color_range(plot_data)
+        end if
+    end subroutine configure_color_range
+    
+    subroutine auto_scale_color_range(plot_data)
+        !! Auto-scale color range from data
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp) :: c_min, c_max
+        
+        if (allocated(plot_data%scatter_colors) .and. size(plot_data%scatter_colors) > 0) then
+            c_min = minval(plot_data%scatter_colors)
+            c_max = maxval(plot_data%scatter_colors)
+            plot_data%scatter_vmin = c_min
+            plot_data%scatter_vmax = c_max
+            plot_data%scatter_vrange_set = .false.
+        end if
+    end subroutine auto_scale_color_range
+    
+    subroutine configure_colormap_name(plot_data, colormap)
+        !! Configure colormap name with validation
+        use fortplot_colormap, only: validate_colormap_name
+        type(plot_data_t), intent(inout) :: plot_data
+        character(len=*), intent(in), optional :: colormap
+        
+        if (.not. present(colormap)) return
+        
+        if (validate_colormap_name(colormap)) then
+            plot_data%scatter_colormap = colormap
+        else
+            plot_data%scatter_colormap = 'viridis'
+            write(*, '(A,A,A)') 'Warning: Invalid colormap "', trim(colormap), &
+                              '", using viridis'
+        end if
+    end subroutine configure_colormap_name
+    
+    subroutine configure_colorbar_display(plot_data, show_colorbar)
+        !! Configure colorbar display options
+        type(plot_data_t), intent(inout) :: plot_data
+        logical, intent(in), optional :: show_colorbar
+        
+        plot_data%scatter_colorbar = .true.
+        if (present(show_colorbar)) plot_data%scatter_colorbar = show_colorbar
+    end subroutine configure_colorbar_display
+    
+    subroutine set_scatter_common_properties(plot_data, label, color)
+        !! Set common scatter plot properties
+        type(plot_data_t), intent(inout) :: plot_data
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
         if (present(label)) plot_data%label = label
         if (present(color)) plot_data%color = color
+    end subroutine set_scatter_common_properties
+    
+    subroutine add_plot_to_figure(self, plot_data)
+        !! Add plot data to figure's plot collection
+        class(figure_t), intent(inout) :: self
+        type(plot_data_t), intent(in) :: plot_data
         
-        ! Add to plots array
         self%plot_count = self%plot_count + 1
         self%plots(self%plot_count) = plot_data
-    end subroutine add_scatter_plot_data
+    end subroutine add_plot_to_figure
     
     subroutine safe_minmax_arrays(arr, min_val, max_val)
         !! Safely calculate min/max values ignoring NaN and infinite values
@@ -3249,5 +3303,13 @@ contains
         
         deallocate(valid_mask)
     end subroutine filter_valid_scatter_data
+    
+    ! Helper methods for calculate_figure_data_ranges refactoring
+    subroutine initialize_range_calculation(first_plot)
+        !! Initialize range calculation state
+        logical, intent(out) :: first_plot
+        
+        first_plot = .true.
+    end subroutine initialize_range_calculation
 
 end module fortplot_figure_core

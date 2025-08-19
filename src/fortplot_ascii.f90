@@ -7,10 +7,10 @@ module fortplot_ascii
     !!
     !! Author: fortplot contributors
     
-    use fortplot_context, only: plot_context
+    use fortplot_context, only: plot_context, setup_canvas
     use fortplot_logging, only: log_info
     use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: unicode_to_ascii
+    ! use fortplot_unicode, only: unicode_to_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     

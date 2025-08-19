@@ -1,8 +1,8 @@
 module fortplot_pdf
-    use fortplot_context, only: plot_context
+    use fortplot_context, only: plot_context, setup_canvas
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: unicode_to_latex_pdf
+    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint ! unicode_to_latex_pdf
     use fortplot_logging, only: log_info
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
