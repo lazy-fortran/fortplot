@@ -121,11 +121,16 @@ contains
         integer(1), intent(in) :: image_data(:)
         
         integer(1), allocatable :: png_buffer(:)
-        integer :: png_unit
+        integer :: png_unit, iostat
         
         call generate_png_data(width, height, image_data, png_buffer)
         
-        open(newunit=png_unit, file=filename, access='stream', form='unformatted', status='replace')
+        open(newunit=png_unit, file=filename, access='stream', form='unformatted', status='replace', iostat=iostat)
+        if (iostat /= 0) then
+            call log_info("WARNING: Could not create PNG file '" // trim(filename) // "' - invalid path or permissions")
+            deallocate(png_buffer)
+            return
+        end if
         write(png_unit) png_buffer
         close(png_unit)
         

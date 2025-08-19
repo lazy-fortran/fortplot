@@ -385,13 +385,13 @@ contains
         ! Check font size
         if (annotation%font_size <= 0.0_wp) then
             valid = .false.
-            error_message = "Font size must be positive"
+            error_message = "Font size must be positive (font parameter invalid)"
             return
         end if
         
         if (annotation%font_size > 200.0_wp) then
             valid = .false.
-            error_message = "Font size too large (>200)"
+            error_message = "Font size too large (>200, font parameter invalid)"
             return
         end if
         
