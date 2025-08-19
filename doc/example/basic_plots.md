@@ -86,3 +86,9 @@ end program basic_plots
 
 ## Output
 
+### Simple Plot
+![Simple sine wave plot](../media/examples/simple_plot.png)
+
+### Multi-line Plot  
+![Sine and cosine functions](../media/examples/multi_line.png)
+
