@@ -79,7 +79,7 @@ call savefig("basic_scatter.png")
 ! Bubble chart with size mapping
 type(figure_t) :: fig
 call fig%initialize(600, 400)
-call fig%scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')
+call fig%add_scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')
 call fig%set_title("Bubble Chart - Size Represents Population")
 call fig%savefig("bubble_chart.pdf")
 

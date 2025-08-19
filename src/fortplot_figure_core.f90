@@ -3089,7 +3089,7 @@ contains
         ! Initialize plot data
         plot_data%plot_type = PLOT_TYPE_SCATTER
         
-        ! Filter valid data points (remove NaN/Inf)
+        ! Filter valid data points (remove NaN/Inf) and handle size/color arrays
         call filter_valid_scatter_data(x, y, z, s, c, plot_data)
         
         ! Set marker style with validation
@@ -3105,33 +3105,26 @@ contains
             plot_data%marker = get_default_marker()
         end if
         
-        ! Handle size mapping
-        if (present(s)) then
-            allocate(plot_data%scatter_sizes(size(plot_data%x)))
-            ! Copy and clamp sizes to reasonable range
-            do i = 1, size(plot_data%x)
-                plot_data%scatter_sizes(i) = max(1.0_wp, min(200.0_wp, s(i)))
-            end do
-        else if (present(markersize)) then
+        ! Handle default marker size
+        if (present(markersize)) then
             plot_data%scatter_size_default = markersize
         end if
         
-        ! Handle color mapping
+        ! Handle color mapping if present
         if (present(c)) then
-            allocate(plot_data%scatter_colors(size(plot_data%x)))
-            plot_data%scatter_colors = c
-            
             ! Auto-scale color range if not manually set
             if (present(vmin) .and. present(vmax)) then
                 plot_data%scatter_vmin = vmin
                 plot_data%scatter_vmax = vmax
                 plot_data%scatter_vrange_set = .true.
             else
-                c_min = minval(c, mask=ieee_is_finite(c))
-                c_max = maxval(c, mask=ieee_is_finite(c))
-                plot_data%scatter_vmin = c_min
-                plot_data%scatter_vmax = c_max
-                plot_data%scatter_vrange_set = .false.
+                if (allocated(plot_data%scatter_colors) .and. size(plot_data%scatter_colors) > 0) then
+                    c_min = minval(plot_data%scatter_colors)
+                    c_max = maxval(plot_data%scatter_colors)
+                    plot_data%scatter_vmin = c_min
+                    plot_data%scatter_vmax = c_max
+                    plot_data%scatter_vrange_set = .false.
+                end if
             end if
             
             ! Set colormap
@@ -3230,6 +3223,8 @@ contains
         allocate(plot_data%x(n_valid))
         allocate(plot_data%y(n_valid))
         if (present(z_in)) allocate(plot_data%z(n_valid))
+        if (present(s_in)) allocate(plot_data%scatter_sizes(n_valid))
+        if (present(c_in)) allocate(plot_data%scatter_colors(n_valid))
         
         ! Copy valid data points
         j = 1
@@ -3238,6 +3233,17 @@ contains
                 plot_data%x(j) = x_in(i)
                 plot_data%y(j) = y_in(i)
                 if (present(z_in)) plot_data%z(j) = z_in(i)
+                
+                ! Handle size mapping with validation and clamping
+                if (present(s_in)) then
+                    plot_data%scatter_sizes(j) = max(1.0_wp, min(200.0_wp, s_in(i)))
+                end if
+                
+                ! Handle color mapping
+                if (present(c_in)) then
+                    plot_data%scatter_colors(j) = c_in(i)
+                end if
+                
                 j = j + 1
             end if
         end do
