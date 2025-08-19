@@ -296,18 +296,26 @@ contains
         logical :: visible
         
         real(wp) :: pixel_x, pixel_y
+        real(wp) :: data_bounds(4) = [0.0_wp, 10.0_wp, 0.0_wp, 10.0_wp]  ! Default bounds
+        real(wp) :: figure_size(2) = [800.0_wp, 600.0_wp]  ! Default figure size
         
         ! For simplicity, check if center point is within reasonable bounds
         ! More sophisticated implementation would check full text bounds
         
+        ! Transform coordinates to pixel space for all coordinate types
         if (annotation%coord_type == COORD_AXIS) then
             call transform_axis_coordinates(annotation, plot_area, pixel_x, pixel_y)
+        else if (annotation%coord_type == COORD_FIGURE) then
+            call transform_figure_coordinates(annotation, figure_size, pixel_x, pixel_y)
+        else if (annotation%coord_type == COORD_DATA) then
+            call transform_data_coordinates(annotation, plot_area, data_bounds, pixel_x, pixel_y)
         else
-            ! For other coordinate types, assume visible for now
-            visible = .true.
+            ! Unknown coordinate type, assume not visible
+            visible = .false.
             return
         end if
         
+        ! Check if pixel coordinates are within extended plot area (with 50px margin)
         visible = (pixel_x >= plot_area(1) - 50.0_wp .and. &
                   pixel_x <= plot_area(1) + plot_area(3) + 50.0_wp .and. &
                   pixel_y >= plot_area(2) - 50.0_wp .and. &
