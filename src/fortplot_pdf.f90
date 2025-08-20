@@ -47,6 +47,23 @@ module fortplot_pdf
         procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
         procedure :: draw_arrow => draw_pdf_arrow
         procedure :: get_ascii_output => pdf_get_ascii_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => pdf_get_width_scale
+        procedure :: get_height_scale => pdf_get_height_scale
+        procedure :: fill_quad => pdf_fill_quad
+        procedure :: fill_heatmap => pdf_fill_heatmap
+        procedure :: render_legend_specialized => pdf_render_legend_specialized
+        procedure :: calculate_legend_dimensions => pdf_calculate_legend_dimensions
+        procedure :: set_legend_border_width => pdf_set_legend_border_width
+        procedure :: calculate_legend_position_backend => pdf_calculate_legend_position
+        procedure :: extract_rgb_data => pdf_extract_rgb_data
+        procedure :: get_png_data_backend => pdf_get_png_data
+        procedure :: prepare_3d_data => pdf_prepare_3d_data
+        procedure :: render_ylabel => pdf_render_ylabel
+        procedure :: draw_axes_and_labels_backend => pdf_draw_axes_and_labels
+        procedure :: save_coordinates => pdf_save_coordinates
+        procedure :: set_coordinates => pdf_set_coordinates
     end type pdf_context
     
 contains
@@ -1719,5 +1736,210 @@ contains
         
         output = ""  ! PDF backend doesn't produce ASCII output
     end function pdf_get_ascii_output
+
+    function pdf_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(pdf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to PDF coordinates
+        if (this%width > 0 .and. this%x_max > this%x_min) then
+            scale = real(this%width, wp) / (this%x_max - this%x_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function pdf_get_width_scale
+
+    function pdf_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(pdf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to PDF coordinates
+        if (this%height > 0 .and. this%y_max > this%y_min) then
+            scale = real(this%height, wp) / (this%y_max - this%y_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function pdf_get_height_scale
+
+    subroutine pdf_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral using polymorphic interface
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        character(len=100) :: cmd
+        real(wp) :: pdf_x(4), pdf_y(4)
+        integer :: i
+        
+        ! Convert coordinates to PDF space
+        do i = 1, 4
+            call normalize_to_pdf_coords(this, x_quad(i), y_quad(i), pdf_x(i), pdf_y(i))
+        end do
+        
+        call this%stream_writer%add_to_stream("q")
+        
+        ! Move to first point
+        write(cmd, '(F8.2, 1X, F8.2, 1X, "m")') pdf_x(1), pdf_y(1)
+        call this%stream_writer%add_to_stream(cmd)
+        
+        ! Draw lines to remaining points
+        do i = 2, 4
+            write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') pdf_x(i), pdf_y(i)
+            call this%stream_writer%add_to_stream(cmd)
+        end do
+        
+        call this%stream_writer%add_to_stream("h")  ! Close path
+        call this%stream_writer%add_to_stream("f")  ! Fill
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine pdf_fill_quad
+
+    subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill heatmap (not supported for PDF backend - no-op)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        ! PDF backend doesn't support ASCII-style heatmap rendering
+        ! This is a no-op to satisfy polymorphic interface
+    end subroutine pdf_fill_heatmap
+
+    subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
+        !! Render legend using standard algorithm for PDF
+        use fortplot_legend, only: legend_t, render_standard_legend
+        class(pdf_context), intent(inout) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(in) :: legend_x, legend_y
+        
+        ! Use standard legend rendering for PNG/PDF backends
+        call render_standard_legend(legend, this, legend_x, legend_y)
+    end subroutine pdf_render_legend_specialized
+
+    subroutine pdf_calculate_legend_dimensions(this, legend, legend_width, legend_height)
+        !! Calculate standard legend dimensions for PDF
+        use fortplot_legend, only: legend_t
+        class(pdf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: legend_width, legend_height
+        
+        ! Use standard dimension calculation for PDF backend
+        legend_width = 80.0_wp   ! Standard legend width
+        legend_height = real(legend%num_entries * 20 + 10, wp)  ! 20 pixels per entry + margins
+    end subroutine pdf_calculate_legend_dimensions
+
+    subroutine pdf_set_legend_border_width(this)
+        !! Set standard border width for PDF legend
+        class(pdf_context), intent(inout) :: this
+        
+        call this%set_line_width(1.0_wp)  ! Standard border for PDF like axes
+    end subroutine pdf_set_legend_border_width
+
+    subroutine pdf_calculate_legend_position(this, legend, x, y)
+        !! Calculate standard legend position for PDF using plot coordinates
+        use fortplot_legend, only: legend_t
+        class(pdf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: x, y
+        real(wp) :: legend_width, legend_height
+        
+        ! Get standard dimensions
+        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
+        
+        ! For PNG/PDF backends, use standard matplotlib positioning
+        if (legend%num_entries > 0) then
+            ! Position in upper right with margin from edges
+            x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
+            y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
+        else
+            ! Fallback for empty legend
+            x = this%x_max - this%x_max * 0.2_wp
+            y = this%y_max - this%y_max * 0.05_wp
+        end if
+    end subroutine pdf_calculate_legend_position
+
+    subroutine pdf_extract_rgb_data(this, width, height, rgb_data)
+        !! Extract RGB data from PDF backend (not supported - dummy data)
+        use, intrinsic :: iso_fortran_env, only: real64
+        class(pdf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        real(real64), intent(out) :: rgb_data(width, height, 3)
+        
+        ! PDF backend doesn't store RGB data for animation - fill with dummy data
+        rgb_data = 1.0_real64  ! White background
+    end subroutine pdf_extract_rgb_data
+
+    subroutine pdf_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from PDF backend (not supported)
+        class(pdf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        ! PDF backend doesn't provide PNG data
+        allocate(png_data(0))
+        status = -1
+    end subroutine pdf_get_png_data
+
+    subroutine pdf_prepare_3d_data(this, plots)
+        !! Prepare 3D data for PDF backend (no-op - PDF doesn't use 3D data)
+        use fortplot_plot_data, only: plot_data_t
+        class(pdf_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        ! PDF backend doesn't need 3D data preparation - no-op
+    end subroutine pdf_prepare_3d_data
+
+    subroutine pdf_render_ylabel(this, ylabel)
+        !! Render Y-axis label for PDF backend (no-op - handled elsewhere)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        
+        ! PDF handles this differently - already done in draw_pdf_axes_and_labels
+        ! This is a no-op to satisfy polymorphic interface
+    end subroutine pdf_render_ylabel
+
+    subroutine pdf_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                       x_min, x_max, y_min, y_max, &
+                                       title, xlabel, ylabel, &
+                                       z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for PDF backend
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! For PDF backend, draw professional axes with labels
+        ! This would typically call the PDF-specific axes drawing routine
+        ! For now, just draw simple axes as a placeholder
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+        
+        ! TODO: Add full PDF axes implementation with ticks, labels, etc.
+    end subroutine pdf_draw_axes_and_labels
+
+    subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(pdf_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine pdf_save_coordinates
+
+    subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine pdf_set_coordinates
 
 end module fortplot_pdf

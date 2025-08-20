@@ -20,6 +20,10 @@ implicit-typing = false
 implicit-external = false
 source-form = "free"
 
+# Security: Enable trampoline detection and error on trampolines
+# NOTE: To enable trampoline detection, compile manually with:
+# fpm build --profile debug --flag "-Wtrampolines -Werror=trampolines"
+
 [extra.ford]
 project = "fortplot"
 src_dir = "src"

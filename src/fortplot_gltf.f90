@@ -36,6 +36,24 @@ module fortplot_gltf
         procedure :: set_marker_colors_with_alpha => gltf_set_marker_colors_with_alpha
         procedure :: draw_arrow => gltf_draw_arrow
         procedure :: get_ascii_output => gltf_get_ascii_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => gltf_get_width_scale
+        procedure :: get_height_scale => gltf_get_height_scale
+        procedure :: fill_quad => gltf_fill_quad
+        procedure :: fill_heatmap => gltf_fill_heatmap
+        procedure :: render_legend_specialized => gltf_render_legend_specialized
+        procedure :: calculate_legend_dimensions => gltf_calculate_legend_dimensions
+        procedure :: set_legend_border_width => gltf_set_legend_border_width
+        procedure :: calculate_legend_position_backend => gltf_calculate_legend_position
+        procedure :: extract_rgb_data => gltf_extract_rgb_data
+        procedure :: get_png_data_backend => gltf_get_png_data
+        procedure :: prepare_3d_data => gltf_prepare_3d_data
+        procedure :: render_ylabel => gltf_render_ylabel
+        procedure :: draw_axes_and_labels_backend => gltf_draw_axes_and_labels
+        procedure :: save_coordinates => gltf_save_coordinates
+        procedure :: set_coordinates => gltf_set_coordinates
+        
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
     end type gltf_context
@@ -447,5 +465,165 @@ contains
         
         output = ""  ! GLTF backend doesn't produce ASCII output
     end function gltf_get_ascii_output
+
+    function gltf_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(gltf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! For 3D GLTF export, no 2D coordinate scaling needed
+        scale = 1.0_wp
+    end function gltf_get_width_scale
+
+    function gltf_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(gltf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! For 3D GLTF export, no 2D coordinate scaling needed
+        scale = 1.0_wp
+    end function gltf_get_height_scale
+
+    subroutine gltf_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral using polymorphic interface (not supported in 3D)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        ! GLTF backend is for 3D export - 2D filled quads not supported
+        ! Could potentially be implemented as 3D quad meshes in the future
+    end subroutine gltf_fill_quad
+
+    subroutine gltf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill heatmap (not supported for 3D GLTF backend - no-op)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        ! GLTF backend is for 3D export - 2D heatmaps not supported
+        ! Could potentially be implemented as 3D surface meshes in the future
+    end subroutine gltf_fill_heatmap
+
+    subroutine gltf_render_legend_specialized(this, legend, legend_x, legend_y)
+        !! Render legend (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(inout) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(in) :: legend_x, legend_y
+        
+        ! GLTF backend is for 3D export - 2D legends not supported
+    end subroutine gltf_render_legend_specialized
+
+    subroutine gltf_calculate_legend_dimensions(this, legend, legend_width, legend_height)
+        !! Calculate legend dimensions (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: legend_width, legend_height
+        
+        ! GLTF backend is for 3D export - return minimal dimensions
+        legend_width = 0.0_wp
+        legend_height = 0.0_wp
+    end subroutine gltf_calculate_legend_dimensions
+
+    subroutine gltf_set_legend_border_width(this)
+        !! Set legend border width (not supported for 3D GLTF backend - no-op)
+        class(gltf_context), intent(inout) :: this
+        
+        ! GLTF backend is for 3D export - no 2D line widths
+    end subroutine gltf_set_legend_border_width
+
+    subroutine gltf_calculate_legend_position(this, legend, x, y)
+        !! Calculate legend position (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: x, y
+        
+        ! GLTF backend is for 3D export - return default position
+        x = 0.0_wp
+        y = 0.0_wp
+    end subroutine gltf_calculate_legend_position
+
+    subroutine gltf_extract_rgb_data(this, width, height, rgb_data)
+        !! Extract RGB data from GLTF backend (not supported - dummy data)
+        use, intrinsic :: iso_fortran_env, only: real64
+        class(gltf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        real(real64), intent(out) :: rgb_data(width, height, 3)
+        
+        ! GLTF backend is for 3D export - no RGB data for animation
+        rgb_data = 0.5_real64  ! Gray background
+    end subroutine gltf_extract_rgb_data
+
+    subroutine gltf_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from GLTF backend (not supported)
+        class(gltf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        ! GLTF backend doesn't provide PNG data
+        allocate(png_data(0))
+        status = -1
+    end subroutine gltf_get_png_data
+
+    subroutine gltf_prepare_3d_data(this, plots)
+        !! Prepare 3D data for GLTF backend - actual implementation
+        use fortplot_plot_data, only: plot_data_t
+        class(gltf_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        ! GLTF backend stores 3D data internally for export
+        ! This is a no-op for now - data is processed during add_3d_line_data/add_3d_surface_data
+    end subroutine gltf_prepare_3d_data
+
+    subroutine gltf_render_ylabel(this, ylabel)
+        !! Render Y-axis label for GLTF backend (no-op - 3D doesn't use 2D labels)
+        class(gltf_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        
+        ! GLTF backend is for 3D export - doesn't use 2D axis labels
+    end subroutine gltf_render_ylabel
+
+    subroutine gltf_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                        x_min, x_max, y_min, y_max, &
+                                        title, xlabel, ylabel, &
+                                        z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for GLTF backend (no-op - 3D export)
+        class(gltf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! GLTF backend is for 3D export - doesn't draw 2D axes/labels
+        ! Just draw simple axes for reference
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+    end subroutine gltf_draw_axes_and_labels
+
+    subroutine gltf_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(gltf_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine gltf_save_coordinates
+
+    subroutine gltf_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine gltf_set_coordinates
 
 end module fortplot_gltf
