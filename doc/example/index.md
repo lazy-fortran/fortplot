@@ -3,71 +3,82 @@ title: Examples Gallery
 
 # fortplot Examples Gallery
 
-This gallery showcases the capabilities of fortplot through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
+This gallery showcases various features of the fortplot library with working examples. Each example includes source code, generated plots, and explanations.
 
-## Basic Plotting
+## Basic Features
 
-### [Basic Plots](./basic_plots.html)
-Simple line plots demonstrating the fundamental plotting API.
+### [Basic Plots](basic_plots.html)
+Simple line plots demonstrating the fundamental plotting capabilities of fortplot.
 
-### [Line Styles](./line_styles.html)
-Different line styles and customization options.
+### [Line Styles](line_styles.html)
+Demonstration of different line styles, widths, and colors available in fortplot.
 
-### [Marker Demo](./marker_demo.html)
-Various marker types and scatter plot capabilities.
+### [Marker Demo](marker_demo.html)
+Scatter plots with various marker types, sizes, and colors.
 
-### [Format String Demo](./format_string_demo.html)
+### [Format String Demo](format_string_demo.html)
 Using matplotlib-style format strings for quick plot styling.
 
-## Advanced Features
+## Advanced Plots
 
-### [Contour Demo](./contour_demo.html)
-Contour plots with customizable levels and colors.
+### [Contour Demo](contour_demo.html)
+Creating contour plots from 2D data with customizable levels.
 
-### [Colored Contours](./colored_contours.html)
-Filled contour plots with colormaps.
+### [Colored Contours](colored_contours.html)
+Contour plots with different colormaps including viridis, jet, coolwarm, inferno, and plasma.
 
-### [Pcolormesh Demo](./pcolormesh_demo.html)
-Pseudocolor plots for 2D data visualization.
+### [Pcolormesh Demo](pcolormesh_demo.html)
+2D heatmaps using the pcolormesh function with various colormaps.
 
-### [Streamplot Demo](./streamplot_demo.html)
-Vector field visualization with streamlines.
+### [Streamplot Demo](streamplot_demo.html)
+Vector field visualization using streamlines.
 
-### [ASCII Heatmap](./ascii_heatmap.html)
-Terminal-based heatmap visualization.
+### [Stateful Streamplot](stateful_streamplot.html)
+Advanced streamplot with state management.
 
-## Scaling and Axes
+## Scales and Transformations
 
-### [Scale Examples](./scale_examples.html)
-Linear, logarithmic, and symmetric log scaling demonstrations.
+### [Scale Examples](scale_examples.html)
+Demonstration of logarithmic and symmetric logarithmic scales.
 
-## Styling and Customization
+## Styling and Annotations
 
-### [Legend Demo](./legend_demo.html)
-Legend placement and customization options.
+### [Legend Demo](legend_demo.html)
+Legend positioning and styling options.
 
-### [Legend Box Demo](./legend_box_demo.html)
-Advanced legend styling with boxes and frames.
+### [Legend Box Demo](legend_box_demo.html)
+Advanced legend box customization.
 
-### [Unicode Demo](./unicode_demo.html)
-Mathematical symbols and Unicode support in plots.
+### [Unicode Demo](unicode_demo.html)
+Mathematical symbols and Unicode support in labels and titles.
 
-## Interactive Features
+## Special Features
 
-### [Show Viewer Demo](./show_viewer_demo.html)
-Using the built-in viewer for interactive display.
+### [ASCII Heatmap](ascii_heatmap.html)
+Terminal-based heatmap visualization using ASCII characters.
 
-### [Smart Show Demo](./smart_show_demo.html)
+### [Animation](animation.html)
+Creating animated plots and saving them as video files.
+
+### [Show Viewer Demo](show_viewer_demo.html)
+Interactive plot viewing using external image viewers.
+
+### [Smart Show Demo](smart_show_demo.html)
 Intelligent display mode selection based on environment.
 
-## Animation
+## Running the Examples
 
-### [Save Animation Demo](./save_animation.html)
-Creating animated plots and saving to video files.
+All examples can be run using:
 
-### [Stateful Streamplot](./stateful_streamplot.html)
-Time-evolving vector field animations.
+```bash
+make example ARGS="example_name"
+```
 
----
+For example:
+```bash
+make example ARGS="basic_plots"
+```
 
-All examples are available in the [example/fortran/](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran) directory.
+## Source Code
+
+The complete source code for all examples is available in the [GitHub repository](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran).

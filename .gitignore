@@ -36,9 +36,27 @@ terminal
 
 # doc/example - removed to allow documentation files to be tracked
 
-# Coverage files
+# Coverage files - comprehensive patterns
 *.gcno*
 *.gcda*
 *.gcov*
+*.gcov.json*
 coverage.txt
+coverage.*
+*.coverage
+
+# Compressed files and archives
+*.gz
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+.#*
 # Force CI rebuild
