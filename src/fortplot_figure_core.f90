@@ -21,10 +21,7 @@ module fortplot_figure_core
     use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_legend
-    use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_raster, only: draw_rotated_ylabel_raster
-    use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
-    use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_colors, only: parse_color, color_t
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
@@ -1629,30 +1626,14 @@ contains
         ! Set axis color to black
         call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
         
-        ! Use matplotlib-style axes with margins for backends that support it
-        select type (backend => self%backend)
-        type is (png_context)
-            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                    self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel, &
-                                    self%z_min, self%z_max, self%has_3d_plots())
-        type is (pdf_context)
-            call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                        self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel, &
-                                        self%z_min, self%z_max, self%has_3d_plots())
-        type is (ascii_context)
-            ! ASCII backend: explicitly set title and draw simple axes
-            if (allocated(self%title)) then
-                call backend%set_title(self%title)
-            end if
-            call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
-            call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
-        class default
-            ! For other backends, use simple axes
-            call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
-            call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
-        end select
+        ! Use polymorphic method to draw axes and labels - eliminates SELECT TYPE
+        call self%backend%draw_axes_and_labels_backend(self%xscale, self%yscale, &
+                                                      self%symlog_threshold, &
+                                                      self%x_min, self%x_max, &
+                                                      self%y_min, self%y_max, &
+                                                      self%title, self%xlabel, self%ylabel, &
+                                                      self%z_min, self%z_max, &
+                                                      self%has_3d_plots())
     end subroutine render_figure_axes
     
     subroutine render_all_plots(self)
@@ -1803,7 +1784,6 @@ contains
 
     subroutine draw_3d_line_with_style(self, plot_idx, linestyle)
         !! Draw 3D line plot with projection to 2D
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
@@ -1872,7 +1852,6 @@ contains
     subroutine setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
                                          orig_y_min, orig_y_max)
         !! Setup coordinate system for 3D projection rendering
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x2d(:), y2d(:)
         real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
@@ -1904,23 +1883,13 @@ contains
                                                orig_x_min, orig_x_max, &
                                                orig_y_min, orig_y_max)
         !! Save original backend coordinates and set to projection bounds
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
         real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        select type (ctx => self%backend)
-        class is (raster_context)
-            orig_x_min = ctx%x_min
-            orig_x_max = ctx%x_max
-            orig_y_min = ctx%y_min
-            orig_y_max = ctx%y_max
-            
-            ctx%x_min = proj_x_min
-            ctx%x_max = proj_x_max
-            ctx%y_min = proj_y_min
-            ctx%y_max = proj_y_max
-        end select
+        ! Use polymorphic methods to save and set coordinates - eliminates SELECT TYPE
+        call self%backend%save_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
+        call self%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max)
     end subroutine save_and_set_backend_coordinates
     
     subroutine draw_projected_3d_lines(self, x2d, y2d)
@@ -1939,17 +1908,11 @@ contains
     subroutine restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
                                                  orig_y_min, orig_y_max)
         !! Restore original backend coordinate system
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        select type (ctx => self%backend)
-        class is (raster_context)
-            ctx%x_min = orig_x_min
-            ctx%x_max = orig_x_max
-            ctx%y_min = orig_y_min
-            ctx%y_max = orig_y_max
-        end select
+        ! Use polymorphic method to restore coordinates - eliminates SELECT TYPE
+        call self%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
     end subroutine restore_original_coordinate_system
 
     subroutine render_3d_markers(self, plot_idx)
@@ -2781,8 +2744,6 @@ contains
 
     subroutine draw_filled_quad(backend, x_screen, y_screen)
         !! Draw filled quadrilateral
-        use fortplot_raster, only: raster_context
-        use fortplot_png, only: png_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_screen(4), y_screen(4)
         

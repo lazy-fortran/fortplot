@@ -57,6 +57,9 @@ module fortplot_ascii
         procedure :: get_png_data_backend => ascii_get_png_data
         procedure :: prepare_3d_data => ascii_prepare_3d_data
         procedure :: render_ylabel => ascii_render_ylabel
+        procedure :: draw_axes_and_labels_backend => ascii_draw_axes_and_labels
+        procedure :: save_coordinates => ascii_save_coordinates
+        procedure :: set_coordinates => ascii_set_coordinates
     end type ascii_context
     
     ! ASCII plotting constants
@@ -825,5 +828,50 @@ contains
         
         ! ASCII backend handles Y-axis labels differently - no-op
     end subroutine ascii_render_ylabel
+
+    subroutine ascii_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                         x_min, x_max, y_min, y_max, &
+                                         title, xlabel, ylabel, &
+                                         z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for ASCII backend
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! ASCII backend: explicitly set title and draw simple axes
+        if (present(title)) then
+            if (allocated(title)) then
+                call this%set_title(title)
+            end if
+        end if
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+    end subroutine ascii_draw_axes_and_labels
+
+    subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(ascii_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine ascii_save_coordinates
+
+    subroutine ascii_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine ascii_set_coordinates
 
 end module fortplot_ascii

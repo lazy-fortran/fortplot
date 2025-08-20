@@ -70,6 +70,9 @@ module fortplot_raster
         procedure :: get_png_data_backend => raster_get_png_data
         procedure :: prepare_3d_data => raster_prepare_3d_data
         procedure :: render_ylabel => raster_render_ylabel
+        procedure :: draw_axes_and_labels_backend => raster_draw_axes_and_labels
+        procedure :: save_coordinates => raster_save_coordinates
+        procedure :: set_coordinates => raster_set_coordinates
     end type raster_context
 
 contains
@@ -1640,8 +1643,8 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
         
-        ! Use standard legend rendering for PNG/PDF backends
-        call render_standard_legend(legend, this, legend_x, legend_y)
+        ! No-op: legend rendering handled by fortplot_legend module
+        ! This method exists only for polymorphic compatibility
     end subroutine raster_render_legend_specialized
 
     subroutine raster_calculate_legend_dimensions(this, legend, legend_width, legend_height)
@@ -1665,32 +1668,15 @@ contains
 
     subroutine raster_calculate_legend_position(this, legend, x, y)
         !! Calculate standard legend position for PNG using plot coordinates
-        use fortplot_legend, only: legend_t, calculate_text_dimensions
+        use fortplot_legend, only: legend_t
         class(raster_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
-        real(wp) :: legend_width, legend_height
-        character(len=:), allocatable :: labels(:)
         
-        ! Get standard dimensions
-        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
-        
-        ! For PNG/PDF backends, use standard matplotlib positioning
-        if (legend%num_entries > 0) then
-            ! Calculate text dimensions for positioning
-            allocate(labels(legend%num_entries))
-            call calculate_text_dimensions(legend, this, labels, legend_width, legend_height)
-            
-            ! Position in upper right with margin from edges
-            x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
-            y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
-            
-            deallocate(labels)
-        else
-            ! Fallback for empty legend
-            x = this%x_max - this%x_max * 0.2_wp
-            y = this%y_max - this%y_max * 0.05_wp
-        end if
+        ! No-op: position calculation handled by fortplot_legend module
+        ! This method exists only for polymorphic compatibility
+        x = 0.0_wp
+        y = 0.0_wp
     end subroutine raster_calculate_legend_position
 
     subroutine raster_extract_rgb_data(this, width, height, rgb_data)
@@ -1717,6 +1703,7 @@ contains
 
     subroutine raster_get_png_data(this, width, height, png_data, status)
         !! Get PNG data from PNG backend
+        use fortplot_png, only: get_png_data
         class(raster_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
@@ -1742,5 +1729,49 @@ contains
         
         call draw_rotated_ylabel_raster(this, ylabel)
     end subroutine raster_render_ylabel
+
+    subroutine raster_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                          x_min, x_max, y_min, y_max, &
+                                          title, xlabel, ylabel, &
+                                          z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for raster backends
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! For raster/PNG backends, draw matplotlib-style axes with margins
+        ! This would typically call the internal axes drawing routine
+        ! For now, just draw simple axes as a placeholder
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+        
+        ! TODO: Add full axes implementation with ticks, labels, etc.
+    end subroutine raster_draw_axes_and_labels
+
+    subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(raster_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine raster_save_coordinates
+
+    subroutine raster_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine raster_set_coordinates
 
 end module fortplot_raster

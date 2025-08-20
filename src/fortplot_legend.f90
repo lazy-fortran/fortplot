@@ -114,7 +114,6 @@ contains
     subroutine legend_render(this, backend)
         !! Render legend following Liskov Substitution
         !! Works with any backend that implements plot_context interface
-        use fortplot_ascii, only: ascii_context
         class(legend_t), intent(in) :: this
         class(plot_context), intent(inout) :: backend
         real(wp) :: legend_x, legend_y, line_x1, line_x2, line_y
@@ -126,8 +125,15 @@ contains
         ! Calculate legend position based on backend dimensions
         call calculate_legend_position(this, backend, legend_x, legend_y)
         
-        ! Polymorphic legend rendering - eliminates SELECT TYPE
-        call backend%render_legend_specialized(this, legend_x, legend_y)
+        ! Render legend based on backend type  
+        ! ASCII backends use compact layout, others use standard
+        if (backend%width <= 80 .and. backend%height <= 24) then
+            ! ASCII-like dimensions, use compact layout
+            call render_ascii_legend(this, backend, legend_x, legend_y)
+        else
+            ! Standard legend rendering for other backends
+            call render_standard_legend(this, backend, legend_x, legend_y)
+        end if
     end subroutine legend_render
     
     subroutine render_ascii_legend(legend, backend, legend_x, legend_y)
@@ -273,19 +279,58 @@ contains
     subroutine calculate_legend_position(legend, backend, x, y)
         !! Calculate legend position based on backend and position setting
         !! Interface Segregation: Only depends on backend dimensions
-        use fortplot_ascii, only: ascii_context
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
-        real(wp) :: total_height, legend_width, margin_x, margin_y
+        real(wp) :: total_height, legend_width, legend_height, margin_x, margin_y
         real(wp) :: data_width, data_height, legend_width_data, margin_x_data, margin_y_data
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
         
-        ! Polymorphic position calculation - eliminates SELECT TYPE
-        call backend%calculate_legend_position_backend(legend, x, y)
+        ! Calculate position based on backend dimensions
+        ! ASCII backends have different positioning logic
+        if (backend%width <= 80 .and. backend%height <= 24) then
+            ! ASCII-like dimensions, position at top-right corner
+            x = 0.8_wp
+            y = 0.95_wp
+        else
+            ! Standard backends with margin support
+            allocate(character(len=20) :: labels(legend%num_entries))
+            do i = 1, legend%num_entries
+                labels(i) = legend%entries(i)%label
+            end do
+            
+            box = calculate_legend_box(labels, real(backend%width, wp), &
+                                     real(backend%height, wp), &
+                                     legend%num_entries, legend%position)
+            
+            ! Convert box dimensions to normalized coordinates
+            legend_width = box%width / real(backend%width, wp)
+            legend_height = box%height / real(backend%height, wp)
+            
+            ! Position based on legend setting
+            select case(legend%position)
+            case (LEGEND_UPPER_RIGHT)
+                x = 0.98_wp - legend_width
+                y = 0.98_wp
+            case (LEGEND_UPPER_LEFT)
+                x = 0.02_wp
+                y = 0.98_wp
+            case (LEGEND_LOWER_RIGHT)
+                x = 0.98_wp - legend_width
+                y = 0.02_wp + legend_height
+            case (LEGEND_LOWER_LEFT)
+                x = 0.02_wp
+                y = 0.02_wp + legend_height
+            case default
+                x = 0.98_wp - legend_width
+                y = 0.98_wp
+            end select
+            
+            deallocate(labels)
+        end if
     end subroutine calculate_legend_position
 
     subroutine draw_legend_box(backend, x1, y1, x2, y2)
@@ -308,13 +353,13 @@ contains
 
     subroutine draw_legend_border(backend, x1, y1, x2, y2)
         !! Draw thin border around legend box matching axes frame style
-        use fortplot_png, only: png_context
-        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
         
-        ! Polymorphic line width setting - eliminates SELECT TYPE
-        call backend%set_legend_border_width()
+        ! Set border width based on backend type (thinner for high-res backends)
+        if (backend%width > 80 .or. backend%height > 24) then
+            call backend%set_line_width(0.5_wp)  ! Thin border for PNG/PDF
+        end if
         
         ! Draw rectangle border
         call backend%line(x1, y1, x2, y1)  ! Top

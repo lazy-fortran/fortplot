@@ -8,6 +8,7 @@ module fortplot_context
     !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_plot_data, only: plot_data_t
     implicit none
     
     private
@@ -41,6 +42,8 @@ module fortplot_context
         procedure(prepare_3d_data_interface), deferred :: prepare_3d_data
         procedure(render_ylabel_interface), deferred :: render_ylabel
         procedure(draw_axes_and_labels_interface), deferred :: draw_axes_and_labels_backend
+        procedure(save_coordinates_interface), deferred :: save_coordinates
+        procedure(set_coordinates_interface), deferred :: set_coordinates
     end type plot_context
     
     abstract interface
@@ -136,10 +139,10 @@ module fortplot_context
 
 
         subroutine extract_rgb_data_interface(this, width, height, rgb_data)
-            import :: plot_context, real64
+            import :: plot_context, wp
             class(plot_context), intent(in) :: this
             integer, intent(in) :: width, height
-            real(real64), intent(out) :: rgb_data(width, height, 3)
+            real(wp), intent(out) :: rgb_data(width, height, 3)
         end subroutine extract_rgb_data_interface
 
         subroutine get_png_data_interface(this, width, height, png_data, status)
@@ -151,8 +154,7 @@ module fortplot_context
         end subroutine get_png_data_interface
 
         subroutine prepare_3d_data_interface(this, plots)
-            import :: plot_context
-            use fortplot_plot_data, only: plot_data_t
+            import :: plot_context, plot_data_t
             class(plot_context), intent(inout) :: this
             type(plot_data_t), intent(in) :: plots(:)
         end subroutine prepare_3d_data_interface
@@ -176,6 +178,18 @@ module fortplot_context
             real(wp), intent(in), optional :: z_min, z_max
             logical, intent(in) :: has_3d_plots
         end subroutine draw_axes_and_labels_interface
+
+        subroutine save_coordinates_interface(this, x_min, x_max, y_min, y_max)
+            import :: plot_context, wp
+            class(plot_context), intent(in) :: this
+            real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        end subroutine save_coordinates_interface
+
+        subroutine set_coordinates_interface(this, x_min, x_max, y_min, y_max)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        end subroutine set_coordinates_interface
     end interface
 
 contains

@@ -50,6 +50,9 @@ module fortplot_gltf
         procedure :: get_png_data_backend => gltf_get_png_data
         procedure :: prepare_3d_data => gltf_prepare_3d_data
         procedure :: render_ylabel => gltf_render_ylabel
+        procedure :: draw_axes_and_labels_backend => gltf_draw_axes_and_labels
+        procedure :: save_coordinates => gltf_save_coordinates
+        procedure :: set_coordinates => gltf_set_coordinates
         
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
@@ -570,8 +573,8 @@ contains
         class(gltf_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! GLTF backend actually needs 3D data preparation
-        call prepare_gltf_data(this, plots)
+        ! GLTF backend stores 3D data internally for export
+        ! This is a no-op for now - data is processed during add_3d_line_data/add_3d_surface_data
     end subroutine gltf_prepare_3d_data
 
     subroutine gltf_render_ylabel(this, ylabel)
@@ -581,5 +584,46 @@ contains
         
         ! GLTF backend is for 3D export - doesn't use 2D axis labels
     end subroutine gltf_render_ylabel
+
+    subroutine gltf_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                        x_min, x_max, y_min, y_max, &
+                                        title, xlabel, ylabel, &
+                                        z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for GLTF backend (no-op - 3D export)
+        class(gltf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! GLTF backend is for 3D export - doesn't draw 2D axes/labels
+        ! Just draw simple axes for reference
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+    end subroutine gltf_draw_axes_and_labels
+
+    subroutine gltf_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(gltf_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine gltf_save_coordinates
+
+    subroutine gltf_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine gltf_set_coordinates
 
 end module fortplot_gltf

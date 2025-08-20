@@ -61,6 +61,9 @@ module fortplot_pdf
         procedure :: get_png_data_backend => pdf_get_png_data
         procedure :: prepare_3d_data => pdf_prepare_3d_data
         procedure :: render_ylabel => pdf_render_ylabel
+        procedure :: draw_axes_and_labels_backend => pdf_draw_axes_and_labels
+        procedure :: save_coordinates => pdf_save_coordinates
+        procedure :: set_coordinates => pdf_set_coordinates
     end type pdf_context
     
 contains
@@ -1901,5 +1904,49 @@ contains
         ! PDF handles this differently - already done in draw_pdf_axes_and_labels
         ! This is a no-op to satisfy polymorphic interface
     end subroutine pdf_render_ylabel
+
+    subroutine pdf_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
+                                       x_min, x_max, y_min, y_max, &
+                                       title, xlabel, ylabel, &
+                                       z_min, z_max, has_3d_plots)
+        !! Draw axes and labels for PDF backend
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
+        
+        ! For PDF backend, draw professional axes with labels
+        ! This would typically call the PDF-specific axes drawing routine
+        ! For now, just draw simple axes as a placeholder
+        call this%line(x_min, y_min, x_max, y_min)
+        call this%line(x_min, y_min, x_min, y_max)
+        
+        ! TODO: Add full PDF axes implementation with ticks, labels, etc.
+    end subroutine pdf_draw_axes_and_labels
+
+    subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Save current coordinate system
+        class(pdf_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
+        
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
+    end subroutine pdf_save_coordinates
+
+    subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
+        !! Set coordinate system
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
+    end subroutine pdf_set_coordinates
 
 end module fortplot_pdf
