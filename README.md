@@ -93,6 +93,7 @@ use iso_fortran_env, only: wp => real64
 use fortplot
 implicit none
 
+type(figure_t) :: fig
 integer :: i, j
 real(wp), dimension(21) :: x, y
 real(wp), dimension(21,21) :: z  ! Must match: size(z,1)=size(x), size(z,2)=size(y)
@@ -110,10 +111,9 @@ do i = 1, 21
     end do
 end do
 
-call figure(800, 600)
-call add_surface(x, y, z, label="Paraboloid")
-call title("3D Surface Plot")
-call savefig("surface.png")
+call fig%initialize(800, 600)
+call fig%add_surface(x, y, z, label="Paraboloid")
+call fig%savefig("surface.png")
 ```
 
 #### Contour plot with colorbar
