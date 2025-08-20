@@ -155,3 +155,135 @@ end program marker_demo
 
 ## Output
 
+### Scatter Plot
+
+![scatter_plot.png](../../media/examples/marker_demo/scatter_plot.png)
+
+ASCII output:
+```
+
+                     Scatter Plot with Antialiased Markers
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .               *                                                              |
+|             * # o # *                             o Data Points                |
+|           # o         # *                         -- Sin(x) Reference          |
+|         *               o                                                      |
+| .       o                 #                                                    |
+|       #                     *                                                  |
+|     *                                                                          |
+| .   o                         #                                                |
+|   #                             *                                              |
+|                                                                                |
+| *                                 #                                            |
+| o                                                                              |
+|                                     *                                          |
+|                                                                                |
+| .                                     #                                        |
+|                                                                                |
+|                                         *                                    o |
+| .                                                                              |
+|                                           #                                  * |
+|                                                                                |
+|                                             *                           o #    |
+| .                                                                       *      |
+|                                               #                                |
+|                                                 *                   o #        |
+| .                                                                   *          |
+|                                                   # o                          |
+|                                                     *           o #            |
+| .  .  .   .  .  .   .  .  .   .  .  .   .  .  .   .  .# * # * #.* .   .  .   . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/marker_demo/scatter_plot.pdf)
+
+### All Marker Types
+
+![all_marker_types.png](../../media/examples/marker_demo/all_marker_types.png)
+
+ASCII output:
+```
+
+                                All Marker Types
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                o                                                             |
+|         o                o                              o Circle               |
+| .                                                       # Square               |
+| o                                 o                     % Diamond              |
+|                                                         x Cross                |
+| .                                         o                                    |
+| .                                                                              |
+| #                                                                              |
+|         #                                          o                           |
+| .                                                                              |
+| .                                                          o                 # |
+| .                #                                         %        o        o |
+| %       %                                                           #          |
+| .                                                  %                           |
+| .                        #                                          %          |
+| .                                                          #                   |
+|                  %                #                #                           |
+| .                                         #                x        x          |
+| x                                         %                                    |
+| .                                                  x                           |
+|                                                                              x |
+| .                        %                                                     |
+| .       x                         %                                            |
+| .                                         x                                    |
+|                                                                                |
+| .                                                                              |
+| .                x                                                             |
+| .   .   .   .   .   .   .x  .   . x .   .   .   .   .   .   .   .   .   .   .  |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/marker_demo/all_marker_types.pdf)
+
+### Marker Colors
+
+![marker_colors.png](../../media/examples/marker_demo/marker_colors.png)
+
+ASCII output:
+```
+
+                            Marker Colors and Styles
++--------------------------------------------------------------------------------+
+|                                                                                |
+| o                                                                              |
+|                                                    o Blue circles              |
+|                                                    # Green squares             |
+| .                                                  % Orange diamonds           |
+|            o                                                                   |
+| .                                                                              |
+|                                                                                |
+| .                                                                            o |
+|                      o                                            o            |
+| .          #                                          o                        |
+|                      #          o           o                                  |
+| #                                                                              |
+| .                               #                                              |
+|                                                                                |
+| .                                                                              |
+|                                             #                                  |
+| .                                                                              |
+|                                                                                |
+| .                                                     #                        |
+| %          %                                                      #          # |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+| .                    %                                                         |
+|                                                                              % |
+| .                                                                 %            |
+|                                 %                     %                        |
+| .   .    .   .    .   .    .   .    .   .   %.   .    .   .    .   .    .    . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/marker_demo/marker_colors.pdf)
+
