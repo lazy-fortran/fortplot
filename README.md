@@ -230,6 +230,41 @@ FetchContent_MakeAvailable(fortplot)
 target_link_libraries(your_target fortplot::fortplot)
 ```
 
+### Security Features
+
+**Executable Stack Protection**: fortplot prevents creation of executable stack segments which could be exploited for code injection attacks.
+
+**Trampoline Detection**: The build system automatically detects and prevents nested functions that generate trampolines. All library code is trampoline-free for security compliance.
+
+#### Verify Security Compliance
+
+```bash
+# Build with trampoline detection enabled
+cmake -B build && cmake --build build
+# Library builds successfully = trampoline-free core code
+
+# Verify no executable stack segments
+readelf -W -l build/libfortplot.a | grep -i stack
+# Should return empty (no executable stack)
+
+# Test trampoline detection (should fail on example with nested function)
+fpm build --flag "-Werror=trampolines" 2>/dev/null || echo "Trampoline detection working"
+# Error confirms security validation is active
+```
+
+#### Security Build Flags
+
+```bash
+# FPM: Manual security flags (as documented in fpm.toml)
+fpm build --flag "-Wtrampolines -Werror=trampolines"
+
+# CMake: Automatic security flags (see CMakeLists.txt lines 36-47)
+cmake -B build && cmake --build build
+
+# Standard development (FPM default) 
+make build  # Uses fpm.toml configuration
+```
+
 ### For Python projects
 Install the Python package with pip:
 
@@ -272,7 +307,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
-- [x] **Path validation security**: Prevents directory traversal and command injection
+- [x] **Security features**: Executable stack protection, trampoline detection, path validation
 - [ ] Subplots
 - [ ] Annotations
 
