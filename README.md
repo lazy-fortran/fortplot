@@ -89,10 +89,19 @@ call fig%savefig("scientific_scatter.png")
 
 #### Surface plot with dimension validation
 ```fortran
-! Create coordinate arrays and surface data
-real(wp), dimension(21) :: x = [(i*0.2_wp, i=0,20)]
-real(wp), dimension(21) :: y = [(i*0.2_wp, i=0,20)]
+use iso_fortran_env, only: wp => real64
+use fortplot
+implicit none
+
+integer :: i, j
+real(wp), dimension(21) :: x, y
 real(wp), dimension(21,21) :: z  ! Must match: size(z,1)=size(x), size(z,2)=size(y)
+
+! Create coordinate arrays
+do i = 1, 21
+    x(i) = (i-1) * 0.2_wp
+    y(i) = (i-1) * 0.2_wp
+end do
 
 ! Calculate surface values
 do i = 1, 21
@@ -133,6 +142,10 @@ call streamplot(x_grid, y_grid, u_field, v_field, arrowsize=0.0_real64)
 
 #### Error bars for scientific data
 ```fortran
+use iso_fortran_env, only: wp => real64
+use fortplot
+implicit none
+
 type(figure_t) :: fig
 call fig%initialize(800, 600)
 call fig%errorbar(x, y, yerr=measurement_errors, &
