@@ -167,6 +167,52 @@ call ylim(-100.0d0, 100.0d0)
 call savefig("log_plot.pdf")
 ```
 
+#### Multi-subplot figures
+```fortran
+! Create 2x1 subplot layout (Issue #150 example)
+call figure()
+
+! First subplot
+call subplot(2, 1, 1)
+call plot(x, sin(x), label="sin(x)")
+call xlabel("X")
+call ylabel("Y1")
+call title("First subplot")
+
+! Second subplot  
+call subplot(2, 1, 2)
+call plot(x, cos(x), label="cos(x)")
+call xlabel("X")
+call ylabel("Y2")
+call title("Second subplot")
+
+call savefig("combined_plots.pdf")
+```
+
+#### Complex subplot layouts
+```fortran
+! Create 2x2 subplot grid for comparative analysis
+call figure(800, 600)
+
+call subplot(2, 2, 1)
+call plot(x, y1, label="Linear")
+call title("Linear Function")
+
+call subplot(2, 2, 2)
+call plot(x, y2, label="Quadratic") 
+call title("Quadratic Function")
+
+call subplot(2, 2, 3)
+call scatter(x, y3, label="Data Points")
+call title("Scatter Plot")
+
+call subplot(2, 2, 4)
+call bar(x(1:5), y4(1:5), label="Bar Chart")
+call title("Bar Chart")
+
+call savefig("multi_analysis.png")
+```
+
 #### Animation example
 ```fortran
 type(animation_t) :: anim
@@ -308,7 +354,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [x] **Security features**: Executable stack protection, trampoline detection, path validation
-- [ ] Subplots
+- [x] **Subplots**: Multi-subplot figures with `subplot(rows, cols, index)` for comparative visualization
 - [ ] Annotations
 
 
