@@ -5,6 +5,7 @@ module fortplot_raster
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
     use fortplot_logging, only: log_error
+    use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
@@ -621,7 +622,8 @@ contains
         
         ! This is a dummy implementation - concrete backends like PNG will override this
         call log_error("raster_context cannot save files directly. Use a concrete backend like PNG.")
-        stop
+        ! Return instead of stopping - this allows graceful error handling
+        return
     end subroutine raster_save_dummy
 
     subroutine raster_draw_marker(this, x, y, style)

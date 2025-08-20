@@ -15,6 +15,7 @@ module fortplot_figure_core
     use fortplot_utils
     use fortplot_axes
     use fortplot_logging, only: log_warning, log_info
+    use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT, log_error
     use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_pcolormesh
@@ -1292,7 +1293,7 @@ contains
         end if
     end subroutine add_colored_contour_plot_data
 
-    subroutine add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+    subroutine add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths, error)
         !! Add pcolormesh data to plot array
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), c(:,:)
@@ -1300,11 +1301,18 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         character(len=*), intent(in), optional :: edgecolors
         real(wp), intent(in), optional :: linewidths
+        type(fortplot_error_t), intent(out), optional :: error
         
         integer :: plot_idx
         
         if (self%plot_count >= self%max_plots) then
-            error stop "Maximum number of plots exceeded"
+            if (present(error)) then
+                call error%set_error(ERROR_RESOURCE_LIMIT, &
+                    "Maximum number of plots exceeded")
+            else
+                call log_error(ERROR_RESOURCE_LIMIT, "add_pcolormesh_plot_data")
+            end if
+            return
         end if
         
         plot_idx = self%plot_count + 1
