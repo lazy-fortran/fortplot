@@ -272,6 +272,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
+- [x] **Path validation security**: Prevents directory traversal and command injection
 - [ ] Subplots
 - [ ] Annotations
 
