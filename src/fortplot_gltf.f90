@@ -41,6 +41,7 @@ module fortplot_gltf
         procedure :: get_width_scale => gltf_get_width_scale
         procedure :: get_height_scale => gltf_get_height_scale
         procedure :: fill_quad => gltf_fill_quad
+        procedure :: fill_heatmap => gltf_fill_heatmap
         
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
@@ -480,5 +481,15 @@ contains
         ! GLTF backend is for 3D export - 2D filled quads not supported
         ! Could potentially be implemented as 3D quad meshes in the future
     end subroutine gltf_fill_quad
+
+    subroutine gltf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill heatmap (not supported for 3D GLTF backend - no-op)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        ! GLTF backend is for 3D export - 2D heatmaps not supported
+        ! Could potentially be implemented as 3D surface meshes in the future
+    end subroutine gltf_fill_heatmap
 
 end module fortplot_gltf

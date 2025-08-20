@@ -52,6 +52,7 @@ module fortplot_pdf
         procedure :: get_width_scale => pdf_get_width_scale
         procedure :: get_height_scale => pdf_get_height_scale
         procedure :: fill_quad => pdf_fill_quad
+        procedure :: fill_heatmap => pdf_fill_heatmap
     end type pdf_context
     
 contains
@@ -1781,5 +1782,15 @@ contains
         call this%stream_writer%add_to_stream("f")  ! Fill
         call this%stream_writer%add_to_stream("Q")
     end subroutine pdf_fill_quad
+
+    subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill heatmap (not supported for PDF backend - no-op)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        ! PDF backend doesn't support ASCII-style heatmap rendering
+        ! This is a no-op to satisfy polymorphic interface
+    end subroutine pdf_fill_heatmap
 
 end module fortplot_pdf

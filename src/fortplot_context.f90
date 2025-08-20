@@ -35,6 +35,7 @@ module fortplot_context
         procedure(get_width_scale_interface), deferred :: get_width_scale
         procedure(get_height_scale_interface), deferred :: get_height_scale
         procedure(fill_quad_interface), deferred :: fill_quad
+        procedure(fill_heatmap_interface), deferred :: fill_heatmap
     end type plot_context
     
     abstract interface
@@ -120,6 +121,13 @@ module fortplot_context
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: x_quad(4), y_quad(4)
         end subroutine fill_quad_interface
+
+        subroutine fill_heatmap_interface(this, x_grid, y_grid, z_grid, z_min, z_max)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+            real(wp), intent(in) :: z_min, z_max
+        end subroutine fill_heatmap_interface
     end interface
 
 contains

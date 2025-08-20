@@ -61,6 +61,7 @@ module fortplot_raster
         !! New polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => raster_get_width_scale
         procedure :: get_height_scale => raster_get_height_scale
+        procedure :: fill_heatmap => raster_fill_heatmap
     end type raster_context
 
 contains
@@ -1613,5 +1614,15 @@ contains
             scale = 1.0_wp
         end if
     end function raster_get_height_scale
+
+    subroutine raster_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+        !! Fill heatmap (not supported for raster backend - no-op)
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
+        
+        ! Raster backend doesn't support heatmap rendering like ASCII
+        ! This is a no-op to satisfy polymorphic interface
+    end subroutine raster_fill_heatmap
 
 end module fortplot_raster

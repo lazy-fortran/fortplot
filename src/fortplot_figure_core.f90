@@ -2072,17 +2072,14 @@ contains
         z_max = maxval(self%plots(plot_idx)%z_grid)
         
         ! For ASCII backend with colored contours, render as heatmap
-        select type (backend => self%backend)
-        type is (ascii_context)
-            if (self%plots(plot_idx)%use_color_levels) then
-                ! Render as heatmap for filled contours
-                call backend%fill_heatmap(self%plots(plot_idx)%x_grid, &
-                                        self%plots(plot_idx)%y_grid, &
-                                        self%plots(plot_idx)%z_grid, &
-                                        z_min, z_max)
-                return
-            end if
-        end select
+        ! Polymorphic call - only ASCII backend implements this meaningfully
+        if (self%plots(plot_idx)%use_color_levels) then
+            call self%backend%fill_heatmap(self%plots(plot_idx)%x_grid, &
+                                         self%plots(plot_idx)%y_grid, &
+                                         self%plots(plot_idx)%z_grid, &
+                                         z_min, z_max)
+            return
+        end if
         
         ! Render each contour level that falls within data range
         if (allocated(self%plots(plot_idx)%contour_levels)) then
@@ -2121,36 +2118,32 @@ contains
         c_min = self%plots(plot_idx)%pcolormesh_data%vmin
         c_max = self%plots(plot_idx)%pcolormesh_data%vmax
         
-        ! For ASCII backend, render as heatmap
-        select type (backend => self%backend)
-        type is (ascii_context)
-            block
-                real(wp), allocatable :: x_centers(:), y_centers(:)
-                integer :: nx, ny, i, j
-                
-                nx = self%plots(plot_idx)%pcolormesh_data%nx
-                ny = self%plots(plot_idx)%pcolormesh_data%ny
-                
-                allocate(x_centers(nx), y_centers(ny))
-                
-                ! Calculate cell centers from vertices
-                do i = 1, nx
-                    x_centers(i) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i) + &
-                                           self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i+1))
-                end do
-                
-                do j = 1, ny
-                    y_centers(j) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%y_vertices(j, 1) + &
-                                           self%plots(plot_idx)%pcolormesh_data%y_vertices(j+1, 1))
-                end do
-                
-                ! Render as heatmap using cell centers
-                call backend%fill_heatmap(x_centers, y_centers, &
-                                        self%plots(plot_idx)%pcolormesh_data%c_values, &
-                                        c_min, c_max)
-            end block
-            return
-        end select
+        ! Try polymorphic heatmap rendering - ASCII implements this, others ignore
+        block
+            real(wp), allocatable :: x_centers(:), y_centers(:)
+            integer :: nx, ny, i, j
+            
+            nx = self%plots(plot_idx)%pcolormesh_data%nx
+            ny = self%plots(plot_idx)%pcolormesh_data%ny
+            
+            allocate(x_centers(nx), y_centers(ny))
+            
+            ! Calculate cell centers from vertices
+            do i = 1, nx
+                x_centers(i) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i) + &
+                                       self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i+1))
+            end do
+            
+            do j = 1, ny
+                y_centers(j) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%y_vertices(j, 1) + &
+                                       self%plots(plot_idx)%pcolormesh_data%y_vertices(j+1, 1))
+            end do
+            
+            ! Polymorphic heatmap call - only ASCII implements meaningfully
+            call self%backend%fill_heatmap(x_centers, y_centers, &
+                                         self%plots(plot_idx)%pcolormesh_data%c_values, &
+                                         c_min, c_max)
+        end block
         
         ! Render each quadrilateral
         do i = 1, self%plots(plot_idx)%pcolormesh_data%ny
