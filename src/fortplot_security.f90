@@ -45,10 +45,6 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        integer :: unit, iostat, stat_result
-        logical :: exists
-        character(len=MAX_COMMAND_LENGTH) :: mkdir_command
-        
         success = .false.
         
         ! Validate path safety
@@ -65,6 +61,13 @@ contains
         
         ! Try multiple methods to create directory
         call try_create_directory(dir_path, success)
+        call log_directory_creation_result(dir_path, success)
+    end subroutine safe_create_directory
+
+    !> Log directory creation result
+    subroutine log_directory_creation_result(dir_path, success)
+        character(len=*), intent(in) :: dir_path
+        logical, intent(in) :: success
         
         if (success) then
             call log_info("Directory created: " // trim(dir_path))
@@ -72,16 +75,12 @@ contains
             call log_warning("Could not create directory: " // trim(dir_path))
             call log_info("Please create directory manually or ensure parent directories exist")
         end if
-    end subroutine safe_create_directory
+    end subroutine log_directory_creation_result
 
     !> Try to create directory using safe platform-appropriate methods
     subroutine try_create_directory(dir_path, success)
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
-        
-        integer :: stat_result
-        logical :: exists
-        character(len=MAX_COMMAND_LENGTH) :: safe_command
         
         success = .false.
         
@@ -90,6 +89,24 @@ contains
             success = .true.
             return
         end if
+        
+        ! Try mkdir command first
+        call try_mkdir_command(dir_path, success)
+        
+        ! If that failed, try alternative approach
+        if (.not. success) then
+            ! Alternative: try creating parent directories step by step
+            call create_parent_directories(dir_path, success)
+        end if
+    end subroutine try_create_directory
+    
+    !> Try mkdir command for directory creation
+    subroutine try_mkdir_command(dir_path, success)
+        character(len=*), intent(in) :: dir_path
+        logical, intent(out) :: success
+        
+        integer :: stat_result
+        character(len=MAX_COMMAND_LENGTH) :: safe_command
         
         ! For CI environments and Unix systems, use mkdir -p
         ! This is safe because dir_path has already been validated by is_safe_path
@@ -100,13 +117,7 @@ contains
         
         ! Verify if directory was created
         success = check_path_exists(dir_path)
-        
-        ! If that failed, try alternative approach
-        if (.not. success) then
-            ! Alternative: try creating parent directories step by step
-            call create_parent_directories(dir_path, success)
-        end if
-    end subroutine try_create_directory
+    end subroutine try_mkdir_command
     
     !> Create parent directories iteratively (no recursion)
     subroutine create_parent_directories(dir_path, success)
@@ -114,15 +125,31 @@ contains
         logical, intent(out) :: success
         
         character(len=len(dir_path)) :: path_parts(MAX_NESTED_DIRS)
-        character(len=len(dir_path)) :: current_path
-        integer :: num_parts, i, slash_pos, start_pos
-        logical :: exists
+        integer :: num_parts
         
         success = .false.
+        
+        ! Split path into components
+        call split_path_into_parts(dir_path, path_parts, num_parts)
+        
+        ! Create directories from root to target
+        call create_directories_from_parts(path_parts, num_parts, success)
+        
+        ! Final verification
+        if (success) success = check_path_exists(dir_path)
+    end subroutine create_parent_directories
+    
+    !> Split path into directory components
+    subroutine split_path_into_parts(dir_path, path_parts, num_parts)
+        character(len=*), intent(in) :: dir_path
+        character(len=*), intent(out) :: path_parts(MAX_NESTED_DIRS)
+        integer, intent(out) :: num_parts
+        
+        integer :: slash_pos, start_pos
+        
         num_parts = 0
         start_pos = 1
         
-        ! Split path into components
         do
             slash_pos = index(dir_path(start_pos:), '/')
             if (slash_pos == 0) then
@@ -138,30 +165,52 @@ contains
                 start_pos = start_pos + slash_pos
             end if
         end do
+    end subroutine split_path_into_parts
+    
+    !> Create directories from parsed path parts
+    subroutine create_directories_from_parts(path_parts, num_parts, success)
+        character(len=*), intent(in) :: path_parts(MAX_NESTED_DIRS)
+        integer, intent(in) :: num_parts
+        logical, intent(out) :: success
         
-        ! Create directories from root to target
+        character(len=MAX_PATH_LENGTH) :: current_path
+        integer :: i
+        logical :: exists
+        
+        success = .true.
         current_path = ""
+        
         do i = 1, num_parts
-            if (i == 1 .and. path_parts(1) == "") then
-                current_path = "/"
-            else
-                if (len_trim(current_path) > 0 .and. current_path(len_trim(current_path):len_trim(current_path)) /= "/") then
-                    current_path = trim(current_path) // "/"
-                end if
-                current_path = trim(current_path) // trim(path_parts(i))
-                
-                ! Check if this level exists
-                if (.not. check_path_exists(current_path)) then
-                    ! Try to create this level using a simple test
-                    call try_create_single_directory(current_path, exists)
-                    if (.not. exists) return
+            call build_next_path_level(current_path, path_parts(i), i)
+            
+            ! Check if this level exists
+            if (.not. check_path_exists(current_path)) then
+                ! Try to create this level using a simple test
+                call try_create_single_directory(current_path, exists)
+                if (.not. exists) then
+                    success = .false.
+                    return
                 end if
             end if
         end do
+    end subroutine create_directories_from_parts
+    
+    !> Build next level of path
+    subroutine build_next_path_level(current_path, next_part, level)
+        character(len=*), intent(inout) :: current_path
+        character(len=*), intent(in) :: next_part
+        integer, intent(in) :: level
         
-        ! Final verification
-        success = check_path_exists(dir_path)
-    end subroutine create_parent_directories
+        if (level == 1 .and. next_part == "") then
+            current_path = "/"
+        else
+            if (len_trim(current_path) > 0 .and. &
+                current_path(len_trim(current_path):len_trim(current_path)) /= "/") then
+                current_path = trim(current_path) // "/"
+            end if
+            current_path = trim(current_path) // trim(next_part)
+        end if
+    end subroutine build_next_path_level
     
     !> Attempt to create a single directory level
     subroutine try_create_single_directory(dir_path, success)
@@ -186,9 +235,6 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(out) :: success
         
-        integer :: unit, iostat
-        logical :: exists
-        
         success = .false.
         
         ! Validate filename safety
@@ -204,6 +250,16 @@ contains
         end if
         
         ! Remove file using Fortran operations
+        call perform_file_removal(filename, success)
+    end subroutine safe_remove_file
+    
+    !> Perform actual file removal operation
+    subroutine perform_file_removal(filename, success)
+        character(len=*), intent(in) :: filename
+        logical, intent(out) :: success
+        
+        integer :: unit, iostat
+        
         open(newunit=unit, file=trim(filename), iostat=iostat)
         if (iostat == 0) then
             close(unit, status='delete', iostat=iostat)
@@ -216,7 +272,7 @@ contains
         else
             call log_warning("Could not access file for removal: " // trim(filename))
         end if
-    end subroutine safe_remove_file
+    end subroutine perform_file_removal
 
     !> Safely check if external program is available
     function safe_check_program_available(program_name) result(available)
@@ -225,38 +281,44 @@ contains
         
         ! Check if external program checking is enabled (CI environments, etc)
         if (is_ffmpeg_environment_enabled()) then
-            ! In enabled environments, test if program is actually available
-            if (trim(program_name) == 'ffmpeg' .or. trim(program_name) == 'ffprobe') then
-                available = test_program_availability(program_name)
-                if (available) then
-                    call log_info("External program " // trim(program_name) // " is available")
-                else
-                    call log_info("External program " // trim(program_name) // " not found")
-                end if
-            else
-                available = .false.
-                call log_info("Only ffmpeg/ffprobe checking enabled - " // trim(program_name) // " assumed unavailable")
-            end if
+            available = check_program_in_enabled_env(program_name)
         else
-            ! For security, we cannot safely check program availability 
-            ! without potential shell injection. Instead, we'll assume 
-            ! programs are not available by default and let operations fail gracefully.
             available = .false.
-            
-            ! Log that we're operating in secure mode
-            call log_info("Operating in secure mode - external program check disabled for: " // trim(program_name))
-            call log_info("If " // trim(program_name) // " is needed, operations will fail gracefully")
+            call log_secure_mode_message(program_name)
         end if
     end function safe_check_program_available
+    
+    !> Check program availability in enabled environment
+    function check_program_in_enabled_env(program_name) result(available)
+        character(len=*), intent(in) :: program_name
+        logical :: available
+        
+        ! In enabled environments, test if program is actually available
+        if (trim(program_name) == 'ffmpeg' .or. trim(program_name) == 'ffprobe') then
+            available = test_program_availability(program_name)
+            if (available) then
+                call log_info("External program " // trim(program_name) // " is available")
+            else
+                call log_info("External program " // trim(program_name) // " not found")
+            end if
+        else
+            available = .false.
+            call log_info("Only ffmpeg/ffprobe checking enabled - " // trim(program_name) // " assumed unavailable")
+        end if
+    end function check_program_in_enabled_env
+    
+    !> Log secure mode message for program check
+    subroutine log_secure_mode_message(program_name)
+        character(len=*), intent(in) :: program_name
+        
+        call log_info("Operating in secure mode - external program check disabled for: " // trim(program_name))
+        call log_info("If " // trim(program_name) // " is needed, operations will fail gracefully")
+    end subroutine log_secure_mode_message
 
     !> Safely validate MPEG files without shell injection
     function safe_validate_mpeg_with_ffprobe(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        
-        logical :: exists
-        integer :: unit, iostat
-        character(len=8) :: magic_bytes
         
         valid = .false.
         
@@ -279,6 +341,20 @@ contains
         end if
         
         ! Fallback: Perform basic file validation by checking magic bytes
+        valid = validate_mpeg_magic_bytes(filename)
+    end function safe_validate_mpeg_with_ffprobe
+    
+    !> Validate MPEG file by checking magic bytes
+    function validate_mpeg_magic_bytes(filename) result(valid)
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        
+        integer :: unit, iostat
+        character(len=8) :: magic_bytes
+        
+        valid = .false.
+        
+        ! Open file and read magic bytes
         open(newunit=unit, file=trim(filename), form='unformatted', &
              access='stream', iostat=iostat)
         
@@ -287,24 +363,33 @@ contains
             close(unit)
             
             if (iostat == 0) then
-                ! Check for MP4 magic bytes (more comprehensive)
-                ! MP4 files start with: 4 bytes size, 4 bytes 'ftyp', then brand
-                if (magic_bytes(5:8) == 'ftyp') then
-                    ! Common MP4 brands: mp41, mp42, isom, M4V , etc.
-                    valid = .true.
-                    call log_info("MP4 magic bytes validation passed: " // trim(filename))
-                else
-                    call log_warning("File may not be valid MP4: " // trim(filename))
-                    call log_info("Magic bytes: " // magic_bytes(1:8))
-                    call log_info("For thorough validation, use external ffprobe manually")
-                    ! Still consider it valid for testing purposes to avoid false failures
-                    valid = .true.
-                end if
+                valid = check_mp4_magic_bytes(magic_bytes, filename)
             end if
         else
             call log_warning("Could not open file for MPEG validation: " // trim(filename))
         end if
-    end function safe_validate_mpeg_with_ffprobe
+    end function validate_mpeg_magic_bytes
+    
+    !> Check if magic bytes indicate MP4 file
+    function check_mp4_magic_bytes(magic_bytes, filename) result(valid)
+        character(len=8), intent(in) :: magic_bytes
+        character(len=*), intent(in) :: filename
+        logical :: valid
+        
+        ! Check for MP4 magic bytes (more comprehensive)
+        ! MP4 files start with: 4 bytes size, 4 bytes 'ftyp', then brand
+        if (magic_bytes(5:8) == 'ftyp') then
+            ! Common MP4 brands: mp41, mp42, isom, M4V , etc.
+            valid = .true.
+            call log_info("MP4 magic bytes validation passed: " // trim(filename))
+        else
+            call log_warning("File may not be valid MP4: " // trim(filename))
+            call log_info("Magic bytes: " // magic_bytes(1:8))
+            call log_info("For thorough validation, use external ffprobe manually")
+            ! Still consider it valid for testing purposes to avoid false failures
+            valid = .true.
+        end if
+    end function check_mp4_magic_bytes
 
     !> Safely launch file viewer without shell injection
     subroutine safe_launch_viewer(filename, success)
@@ -507,39 +592,60 @@ contains
     !> Check if FFmpeg environment is enabled (similar to C implementation)
     function is_ffmpeg_environment_enabled() result(enabled)
         logical :: enabled
-        character(len=50) :: env_value
-        integer :: status
         
         enabled = .false.
         
-        ! Check CI environment variable
-        call get_environment_variable("CI", env_value, status)
-        if (status == 0 .and. trim(env_value) == "true") then
+        ! Check various environment variables
+        if (check_ci_environment()) then
             enabled = .true.
-            return
-        end if
-        
-        ! Check GitHub Actions environment
-        call get_environment_variable("GITHUB_ACTIONS", env_value, status)
-        if (status == 0 .and. trim(env_value) == "true") then
+        else if (check_github_actions_environment()) then
             enabled = .true.
-            return
-        end if
-        
-        ! Check explicit enable flag
-        call get_environment_variable("FORTPLOT_ENABLE_FFMPEG", env_value, status)
-        if (status == 0 .and. trim(env_value) == "1") then
+        else if (check_ffmpeg_explicit_flag()) then
             enabled = .true.
-            return
-        end if
-        
-        ! Check RUNNER_OS (GitHub Actions runner)
-        call get_environment_variable("RUNNER_OS", env_value, status)
-        if (status == 0) then
+        else if (check_runner_os_environment()) then
             enabled = .true.
-            return
         end if
     end function is_ffmpeg_environment_enabled
+    
+    !> Check CI environment variable
+    function check_ci_environment() result(is_ci)
+        logical :: is_ci
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("CI", env_value, status)
+        is_ci = (status == 0 .and. trim(env_value) == "true")
+    end function check_ci_environment
+    
+    !> Check GitHub Actions environment
+    function check_github_actions_environment() result(is_github)
+        logical :: is_github
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("GITHUB_ACTIONS", env_value, status)
+        is_github = (status == 0 .and. trim(env_value) == "true")
+    end function check_github_actions_environment
+    
+    !> Check explicit FFmpeg enable flag
+    function check_ffmpeg_explicit_flag() result(is_enabled)
+        logical :: is_enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("FORTPLOT_ENABLE_FFMPEG", env_value, status)
+        is_enabled = (status == 0 .and. trim(env_value) == "1")
+    end function check_ffmpeg_explicit_flag
+    
+    !> Check RUNNER_OS environment
+    function check_runner_os_environment() result(has_runner)
+        logical :: has_runner
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("RUNNER_OS", env_value, status)
+        has_runner = (status == 0)
+    end function check_runner_os_environment
     
     !> Test if a program is actually available
     function test_program_availability(program_name) result(available)
