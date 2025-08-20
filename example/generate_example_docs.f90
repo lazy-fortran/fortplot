@@ -19,6 +19,5 @@ program generate_example_docs
     end do
     
     print *, "Documentation generation complete!"
-    
 
 end program generate_example_docs
