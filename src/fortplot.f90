@@ -58,6 +58,7 @@ module fortplot
                                    compare_with_baseline
     use fortplot_colors, only: color_t, parse_color, parse_color_rgba, is_valid_color, &
                                validate_color_for_backend, clear_color_cache
+    use fortplot_figure_core, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
 
     implicit none
 
@@ -74,6 +75,8 @@ module fortplot
     public :: set_xscale, set_yscale, xlim, ylim
     public :: set_line_width, set_ydata
     public :: bar, barh
+    public :: text, annotate
+    public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
     public :: get_global_figure
     
     ! Animation interface
@@ -1011,6 +1014,55 @@ contains
                             markersize=markersize, color=color, colormap=colormap, &
                             vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
     end subroutine add_scatter
+
+    subroutine text(x, y, text_content, coord_type, font_size, rotation, alignment, has_bbox)
+        !! Add text annotation to the global figure (matplotlib-style)
+        !!
+        !! Arguments:
+        !!   x, y: Position coordinates
+        !!   text_content: Text content to display
+        !!   coord_type: Optional coordinate system (COORD_DATA, COORD_FIGURE, COORD_AXIS)
+        !!   font_size: Optional font size in points
+        !!   rotation: Optional rotation angle in degrees
+        !!   alignment: Optional text alignment ('left', 'center', 'right')
+        !!   has_bbox: Optional background box flag
+        real(8), intent(in) :: x, y
+        character(len=*), intent(in) :: text_content
+        integer, intent(in), optional :: coord_type
+        real(8), intent(in), optional :: font_size, rotation
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        
+        call ensure_global_figure_initialized()
+        call fig%text(x, y, text_content, coord_type=coord_type, font_size=font_size, &
+                     rotation=rotation, alignment=alignment, has_bbox=has_bbox)
+    end subroutine text
+
+    subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
+                       font_size, alignment, has_bbox)
+        !! Add arrow annotation to the global figure (matplotlib-style)
+        !!
+        !! Arguments:
+        !!   text_content: Text content to display
+        !!   xy: Position coordinates of arrow tip [x, y]
+        !!   xytext: Position coordinates of text [x, y]
+        !!   xy_coord_type: Optional coordinate system for arrow tip
+        !!   xytext_coord_type: Optional coordinate system for text
+        !!   font_size: Optional font size in points
+        !!   alignment: Optional text alignment
+        !!   has_bbox: Optional background box flag
+        character(len=*), intent(in) :: text_content
+        real(8), intent(in) :: xy(2), xytext(2)
+        integer, intent(in), optional :: xy_coord_type, xytext_coord_type
+        real(8), intent(in), optional :: font_size
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        
+        call ensure_global_figure_initialized()
+        call fig%annotate(text_content, xy, xytext, xy_coord_type=xy_coord_type, &
+                         xytext_coord_type=xytext_coord_type, font_size=font_size, &
+                         alignment=alignment, has_bbox=has_bbox)
+    end subroutine annotate
 
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)

@@ -148,7 +148,6 @@ contains
             if (allocated(png_buffer)) deallocate(png_buffer)
             return
         end if
-        
         close(png_unit)
         
         if (allocated(png_buffer)) deallocate(png_buffer)
