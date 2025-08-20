@@ -124,5 +124,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/line_styles/line_styles.pdf)
+[Download PDF](../../media/examples/line_styles/line_styles.pdf                                                                                                                                                                                                                                                 )
 

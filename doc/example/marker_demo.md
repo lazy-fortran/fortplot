@@ -197,7 +197,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/marker_demo/scatter_plot.pdf)
+[Download PDF](../../media/examples/marker_demo/scatter_plot.pdf                                                                                                                                                                                                                                                )
 
 ### All Marker Types
 
@@ -241,7 +241,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/marker_demo/all_marker_types.pdf)
+[Download PDF](../../media/examples/marker_demo/all_marker_types.pdf                                                                                                                                                                                                                                            )
 
 ### Marker Colors
 
@@ -285,5 +285,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/marker_demo/marker_colors.pdf)
+[Download PDF](../../media/examples/marker_demo/marker_colors.pdf                                                                                                                                                                                                                                               )
 

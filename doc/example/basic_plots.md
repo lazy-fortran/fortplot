@@ -128,7 +128,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)
+[Download PDF](../../media/examples/basic_plots/simple_plot.pdf                                                                                                                                                                                                                                                 )
 
 ### Multi Line
 
@@ -172,5 +172,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/basic_plots/multi_line.pdf)
+[Download PDF](../../media/examples/basic_plots/multi_line.pdf                                                                                                                                                                                                                                                  )
 
