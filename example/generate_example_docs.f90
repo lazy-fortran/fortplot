@@ -281,7 +281,8 @@ contains
                 write(unit_out, '(A)') '  Your browser does not support the video tag.'
                 write(unit_out, '(A)') '</video>'
                 write(unit_out, '(A)') ''
-                write(unit_out, '(A)') '[Download MP4](../../media/examples/' // trim(example_name) // '/' // trim(media_files(j)) // ')'
+                write(unit_out, '(A)') '[Download MP4](../../media/examples/' // &
+                                       trim(example_name) // '/' // trim(media_files(j)) // ')'
             else
                 ! Regular image
                 write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../../media/examples/' // &
