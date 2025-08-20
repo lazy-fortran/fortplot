@@ -1,3 +1,63 @@
+"""
+fortplot - Modern Scientific Plotting for Python
+=================================================
+
+A Python interface to the fortplot library providing matplotlib-compatible
+plotting functionality optimized for scientific computing and research applications.
+
+This module provides a high-level interface for creating publication-quality
+plots with support for multiple output formats (PNG, PDF, ASCII) and excellent
+performance for large datasets.
+
+Key Features
+------------
+- Matplotlib-compatible API for easy migration
+- Multiple backends: PNG (raster), PDF (vector), ASCII (terminal)
+- High performance with large datasets
+- No external GUI dependencies required
+- Unicode support for mathematical expressions
+- Optimized for scientific and engineering applications
+
+Basic Usage
+-----------
+>>> import fortplot
+>>> import numpy as np
+>>> x = np.linspace(0, 10, 100)
+>>> y = np.sin(x)
+>>> fortplot.figure()
+>>> fortplot.plot(x, y, label='sin(x)')
+>>> fortplot.xlabel('x')
+>>> fortplot.ylabel('sin(x)')
+>>> fortplot.title('Sine Wave Example')
+>>> fortplot.legend()
+>>> fortplot.savefig('sine_wave.png')
+>>> fortplot.show()
+
+Supported Plot Types
+-------------------
+- Line plots with various styles and markers
+- Contour plots (line and filled)
+- Pseudocolor plots (pcolormesh)
+- Streamline plots for vector fields
+- Multiple coordinate systems and scaling options
+
+Output Formats
+--------------
+- PNG: High-quality raster graphics with antialiasing
+- PDF: Vector graphics for publications and presentations
+- ASCII: Terminal-friendly text plots for console output
+
+Performance
+-----------
+Optimized for scientific computing with efficient handling of:
+- Large datasets (millions of points)
+- Complex mathematical functions
+- Real-time plotting applications
+- Memory-efficient rendering
+
+For more examples and documentation, see the fortplot GitHub repository.
+"""
+
 import numpy as np
 import fortplot.fortplot_wrapper as _fortplot
 
@@ -10,31 +70,158 @@ def _ensure_array(obj):
     return obj
 
 def figure(figsize=[6.4, 4.8]):
+    """Create a new figure with specified dimensions.
+    
+    Parameters
+    ----------
+    figsize : array-like of length 2, optional
+        Figure dimension (width, height) in inches. Default is [6.4, 4.8].
+        
+    Examples
+    --------
+    Create figure with default size:
+    
+    >>> import fortplot
+    >>> fortplot.figure()
+    
+    Create figure with custom size:
+    
+    >>> fortplot.figure(figsize=[10, 6])
+    """
     width = int(figsize[0] * DEFAULT_DPI)
     height = int(figsize[1] * DEFAULT_DPI)
     _fortplot.fortplot.figure(width, height)
 
 def plot(x, y, linestyle="-", label=""):
+    """Plot y versus x as lines and/or markers.
+    
+    Parameters
+    ----------
+    x, y : array-like
+        The horizontal and vertical coordinates of the data points.
+        x and y must be the same size.
+    linestyle : str, optional
+        Line style specification. Default is '-' (solid line).
+        Supported styles: '-' (solid), '--' (dashed), ':' (dotted), 
+        '-.' (dash-dot), 'o' (circles), 's' (squares), etc.
+    label : str, optional
+        Label for the plot, used in legend. Default is empty string.
+        
+    Examples
+    --------
+    Simple line plot:
+    
+    >>> import numpy as np
+    >>> x = np.linspace(0, 10, 100)
+    >>> y = np.sin(x)
+    >>> fortplot.plot(x, y)
+    
+    Plot with custom style and label:
+    
+    >>> fortplot.plot(x, y, linestyle='--', label='sin(x)')
+    
+    Multiple plots with different styles:
+    
+    >>> fortplot.plot(x, np.sin(x), label='sin(x)')
+    >>> fortplot.plot(x, np.cos(x), linestyle='--', label='cos(x)')
+    """
     x = _ensure_array(x)
     y = _ensure_array(y)
     _fortplot.fortplot.plot(x, y, label, linestyle)
 
 def title(label):
+    """Set the title of the current axes.
+    
+    Parameters
+    ----------
+    label : str
+        The title text. If None, title is set to empty string.
+        
+    Examples
+    --------
+    Set a simple title:
+    
+    >>> import fortplot
+    >>> fortplot.title('My Plot Title')
+    
+    Clear the title:
+    
+    >>> fortplot.title('')
+    """
     if label is None:
         label = ""
     _fortplot.fortplot.title(label)
 
 def xlabel(xlabel):
+    """Set the label for the x-axis.
+    
+    Parameters
+    ----------
+    xlabel : str
+        The label text for the x-axis. If None, label is set to empty string.
+        
+    Examples
+    --------
+    Set x-axis label:
+    
+    >>> import fortplot
+    >>> fortplot.xlabel('Time (seconds)')
+    
+    Set x-axis label with units:
+    
+    >>> fortplot.xlabel('Temperature (°C)')
+    """
     if xlabel is None:
         xlabel = ""
     _fortplot.fortplot.xlabel(xlabel)
 
 def ylabel(ylabel):
+    """Set the label for the y-axis.
+    
+    Parameters
+    ----------
+    ylabel : str
+        The label text for the y-axis. If None, label is set to empty string.
+        
+    Examples
+    --------
+    Set y-axis label:
+    
+    >>> import fortplot
+    >>> fortplot.ylabel('Amplitude')
+    
+    Set y-axis label with units:
+    
+    >>> fortplot.ylabel('Velocity (m/s)')
+    """
     if ylabel is None:
         ylabel = ""
     _fortplot.fortplot.ylabel(ylabel)
 
 def savefig(filename):
+    """Save the current figure to a file.
+    
+    Parameters
+    ----------
+    filename : str
+        The filename to save to. The format is inferred from the extension.
+        Supported formats: '.png', '.pdf', '.txt' (ASCII output).
+        
+    Examples
+    --------
+    Save as PNG (high-quality raster):
+    
+    >>> import fortplot
+    >>> fortplot.savefig('my_plot.png')
+    
+    Save as PDF (vector graphics):
+    
+    >>> fortplot.savefig('my_plot.pdf')
+    
+    Save as ASCII text (terminal-friendly):
+    
+    >>> fortplot.savefig('my_plot.txt')
+    """
     _fortplot.fortplot.savefig(filename)
 
 def contour(X, Y, Z, levels=None):
@@ -234,7 +421,26 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     return QuadMeshPlaceholder()
 
 def legend(**kwargs):
-    """Add a legend to the current axes."""
+    """Add a legend to the current axes.
+    
+    Displays a legend showing labels for all plotted data series
+    that have been given labels.
+    
+    Parameters
+    ----------
+    **kwargs
+        Keyword arguments for matplotlib compatibility (currently ignored).
+        
+    Examples
+    --------
+    Plot multiple series and show legend:
+    
+    >>> import numpy as np
+    >>> x = np.linspace(0, 10, 100)
+    >>> fortplot.plot(x, np.sin(x), label='sin(x)')
+    >>> fortplot.plot(x, np.cos(x), label='cos(x)')
+    >>> fortplot.legend()
+    """
     _fortplot.fortplot.legend()
 
 def xscale(scale):
