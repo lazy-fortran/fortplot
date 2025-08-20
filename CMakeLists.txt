@@ -33,6 +33,19 @@ set_target_properties(fortplot PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
 
+# Security: Add trampoline detection and executable stack protection
+if(CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    # Make trampolines a hard error - they would create executable stack
+    target_compile_options(fortplot PRIVATE 
+        $<$<COMPILE_LANGUAGE:Fortran>:-Wtrampolines>
+        $<$<COMPILE_LANGUAGE:Fortran>:-Werror=trampolines>
+    )
+    # Disable executable stack for security
+    if(NOT APPLE)
+        target_link_options(fortplot PRIVATE -Wl,-z,noexecstack)
+    endif()
+endif()
+
 # Include module directory for dependent projects
 target_include_directories(fortplot
     PUBLIC 

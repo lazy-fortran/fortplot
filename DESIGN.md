@@ -4810,6 +4810,206 @@ end subroutine
 
 This refactoring provides the **critical foundation** for all future SOLID compliance work while maintaining full backward compatibility and test coverage.
 
+## SELECT TYPE Elimination Architecture (Issue #140)
+
+### Critical Problem Analysis
+
+The codebase contains 14 instances of SELECT TYPE dispatch logic scattered throughout business logic modules, creating severe SOLID principle violations:
+
+**Violation Evidence**:
+- **fortplot_figure_core.f90**: 8 instances of backend-specific type checking
+- **fortplot_legend.f90**: 4 instances of conditional rendering logic  
+- **fortplot_animation.f90**: 2 instances of backend-dependent operations
+
+**SOLID Principle Violations**:
+- **Open/Closed Principle**: Adding new backends requires modifying existing business logic
+- **Dependency Inversion**: High-level modules directly depend on concrete backend implementations
+- **Single Responsibility**: Figure orchestration mixed with backend-specific rendering concerns
+
+**Architectural Impact**: This scattered dispatch logic prevents clean separation of concerns and violates the foundational principle: "NO SELECT TYPE IN BUSINESS LOGIC".
+
+### Polymorphic Interface Architecture
+
+**Core Design Strategy**: Replace all SELECT TYPE dispatch with polymorphic method calls through abstract interfaces.
+
+**Abstract Backend Interface Design**:
+```fortran
+! src/fortplot_backend_interface.f90
+module fortplot_backend_interface
+    implicit none
+    private
+    public :: backend_t
+
+    type, abstract :: backend_t
+    contains
+        procedure(draw_line_interface), deferred :: draw_line
+        procedure(draw_text_interface), deferred :: draw_text
+        procedure(draw_symbol_interface), deferred :: draw_symbol
+        procedure(set_viewport_interface), deferred :: set_viewport
+        procedure(finalize_interface), deferred :: finalize_output
+        ! Backend-specific scaling and coordinate transformation
+        procedure(scale_coordinates_interface), deferred :: scale_coordinates
+        procedure(scale_values_interface), deferred :: scale_values
+    end type backend_t
+
+    abstract interface
+        subroutine draw_line_interface(this, x1, y1, x2, y2, style)
+            import :: backend_t
+            class(backend_t), intent(inout) :: this
+            real, intent(in) :: x1, y1, x2, y2
+            character(*), intent(in) :: style
+        end subroutine
+        
+        subroutine draw_text_interface(this, x, y, text, alignment)
+            import :: backend_t
+            class(backend_t), intent(inout) :: this
+            real, intent(in) :: x, y
+            character(*), intent(in) :: text, alignment
+        end subroutine
+        
+        ! Additional interface definitions...
+    end interface
+end module fortplot_backend_interface
+```
+
+**Concrete Backend Implementation Pattern**:
+```fortran
+! src/fortplot_png_backend.f90
+type, extends(backend_t) :: png_backend_t
+    ! PNG-specific state and configuration
+contains
+    procedure :: draw_line => png_draw_line
+    procedure :: draw_text => png_draw_text
+    procedure :: scale_coordinates => png_scale_coordinates
+    ! All interface methods implemented with PNG-specific logic
+end type png_backend_t
+```
+
+### Backend Specialization Strategy
+
+**Initialization-Time Configuration**: All backend-specific behavior configured when backend is created, eliminating runtime type checking.
+
+**Encapsulated Scaling**: Each backend handles coordinate and value scaling internally:
+```fortran
+! Before: Scattered SELECT TYPE in business logic
+select type(ctx)
+type is (png_context)
+    scaled_x = x * ctx%width_scale
+type is (pdf_context)  
+    scaled_x = x * ctx%pdf_scale
+end select
+
+! After: Polymorphic method call
+call backend%scale_coordinates(x, y, scaled_x, scaled_y)
+```
+
+**Specialized Rendering Contexts**: Backend-specific rendering state encapsulated within concrete implementations:
+```fortran
+type :: png_backend_t
+    type(png_context) :: context  ! PNG-specific rendering state
+    real :: width_scale, height_scale
+    logical :: antialiasing_enabled
+contains
+    procedure :: configure_rendering => png_configure_rendering
+end type png_backend_t
+```
+
+### Business Logic Decoupling Architecture
+
+**Pure Orchestration Layer**: Business logic modules become pure orchestration, delegating all rendering to polymorphic backend methods:
+
+```fortran
+! src/fortplot_figure_core.f90 - After refactoring
+subroutine render_plot_data(fig, plot_data)
+    type(figure_t), intent(inout) :: fig
+    type(plot_data_t), intent(in) :: plot_data
+    
+    ! Pure orchestration - no backend-specific logic
+    call fig%backend%set_viewport(plot_data%bounds)
+    call fig%backend%draw_line(plot_data%x, plot_data%y, plot_data%style)
+    call fig%backend%draw_symbols(plot_data%x, plot_data%y, plot_data%symbol)
+end subroutine render_plot_data
+```
+
+**Legend Rendering Abstraction**:
+```fortran
+! src/fortplot_legend.f90 - After refactoring  
+subroutine render_legend_entry(backend, entry, x, y)
+    class(backend_t), intent(inout) :: backend
+    type(legend_entry_t), intent(in) :: entry
+    real, intent(in) :: x, y
+    
+    ! Polymorphic rendering - no SELECT TYPE needed
+    call backend%draw_text(x, y, entry%label, 'left')
+    call backend%draw_line(x-10, y, x-5, y, entry%line_style)
+end subroutine render_legend_entry
+```
+
+### Implementation Plan
+
+**Phase 1: Abstract Interface Foundation (2-3 hours)**
+1. Create `fortplot_backend_interface.f90` with complete abstract interface
+2. Define all required polymorphic methods for rendering operations
+3. Establish coordinate/value scaling interfaces
+4. Create comprehensive test coverage for interface contracts
+
+**Phase 2: Backend Implementation Migration (4-5 hours)**  
+1. Refactor PNG backend to extend abstract interface
+2. Refactor PDF backend to extend abstract interface
+3. Refactor ASCII backend to extend abstract interface
+4. Move all backend-specific logic into concrete implementations
+5. Encapsulate scaling and coordinate transformation within backends
+
+**Phase 3: Business Logic Cleanup (3-4 hours)**
+1. Remove all SELECT TYPE from `fortplot_figure_core.f90`
+2. Remove all SELECT TYPE from `fortplot_legend.f90` 
+3. Remove all SELECT TYPE from `fortplot_animation.f90`
+4. Replace with polymorphic method calls through backend interface
+5. Ensure pure orchestration pattern throughout business logic
+
+**Phase 4: Integration and Validation (2-3 hours)**
+1. Comprehensive test coverage for all polymorphic operations
+2. Functional validation across all backends
+3. Performance regression testing
+4. Clean up any remaining type-specific dependencies
+
+### Risk Assessment
+
+**Technical Risks**:
+- **Interface Design Completeness**: Risk of missing required methods in abstract interface
+  - **Mitigation**: Analyze all current SELECT TYPE usage patterns before interface design
+  - **Validation**: Comprehensive test coverage for each polymorphic method
+
+- **Performance Impact**: Risk of virtual method call overhead
+  - **Mitigation**: Modern Fortran compiler optimization handles polymorphic calls efficiently
+  - **Validation**: Performance benchmarks before/after refactoring
+
+**Implementation Risks**:
+- **Incomplete Migration**: Risk of missing SELECT TYPE instances during cleanup
+  - **Mitigation**: Systematic grep-based search and elimination process
+  - **Validation**: Compiler errors will catch any missed instances
+
+### Success Criteria
+
+**Architectural Compliance**:
+- ✅ Zero SELECT TYPE statements in business logic modules
+- ✅ All backend-specific logic encapsulated in concrete implementations  
+- ✅ Pure polymorphic interfaces for all rendering operations
+- ✅ Backend specialization occurs only at initialization time
+
+**Quality Metrics**:
+- ✅ 100% test coverage for polymorphic interface operations
+- ✅ No performance regression in rendering operations
+- ✅ All existing functionality preserved across all backends
+- ✅ Clean separation of concerns validated through code review
+
+**SOLID Principle Compliance**:
+- ✅ **Open/Closed**: New backends can be added without modifying business logic
+- ✅ **Dependency Inversion**: Business logic depends only on abstract interfaces
+- ✅ **Single Responsibility**: Business logic handles orchestration only
+
+This refactoring provides the **architectural foundation** for clean backend extensibility and maintains strict adherence to SOLID principles throughout the rendering system.
+
 ## Next Steps
 
 1. ✅ **COMPLETED**: fortplot_figure_core refactoring (Issue #141) - architectural foundation established

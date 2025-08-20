@@ -3,7 +3,7 @@ module fortplot_animation
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_figure_core, only: figure_t, plot_data_t, ensure_directory_exists
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
-    use fortplot_png, only: png_context, create_png_canvas, get_png_data
+    use fortplot_utils, only: initialize_backend
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
@@ -113,12 +113,9 @@ contains
         integer, intent(in), optional :: fps
         integer, intent(out), optional :: status
         
-        character(len=:), allocatable :: extension
         integer :: actual_fps, stat
         
-        extension = get_file_extension(filename)
-        
-        if (.not. is_video_format(extension)) then
+        if (.not. is_supported_video_format(filename)) then
             if (present(status)) status = -3
             call log_error("Unsupported file format. Use .mp4, .avi, or .mkv")
             return
@@ -131,14 +128,10 @@ contains
         end if
         
         actual_fps = get_fps_or_default(fps)
-        
-        ! Ensure output directory exists
         call ensure_directory_exists(filename)
-        
         call save_animation_with_ffmpeg_pipe(self, filename, actual_fps, stat)
         
         if (present(status)) status = stat
-        
     end subroutine save
 
     subroutine save_frame_sequence(self, pattern)
@@ -177,34 +170,17 @@ contains
         end if
     end function get_file_extension
 
-    function get_timestamp() result(ts)
-        character(len=:), allocatable :: ts
-        integer :: values(8)
-        character(len=20) :: temp
-        
-        call date_and_time(values=values)
-        write(temp, '(I0,I0,I0,I0,I0,I0)') &
-            values(1), values(2), values(3), values(5), values(6), values(7)
-        ts = trim(temp)
-    end function get_timestamp
 
-    function int_to_str(num) result(str)
-        integer, intent(in) :: num
-        character(len=:), allocatable :: str
-        character(len=20) :: temp
-        
-        write(temp, '(I0)') num
-        str = trim(temp)
-    end function int_to_str
-
-    function is_video_format(extension) result(is_video)
-        character(len=*), intent(in) :: extension
+    function is_supported_video_format(filename) result(is_video)
+        character(len=*), intent(in) :: filename
         logical :: is_video
+        character(len=:), allocatable :: extension
         
+        extension = get_file_extension(filename)
         is_video = (extension == "mp4" .or. &
                    extension == "avi" .or. &
                    extension == "mkv")
-    end function is_video_format
+    end function is_supported_video_format
 
     function check_ffmpeg_available() result(available)
         use fortplot_pipe, only: check_ffmpeg_available_pipe => check_ffmpeg_available
@@ -240,33 +216,14 @@ contains
         real(real64), intent(out) :: rgb_data(:,:,:)
         integer, intent(out) :: status
         
-        type(png_context) :: png_ctx
-        integer :: x, y, idx_base
-        
         status = 0
         
         ! Setup PNG backend to render frame
-        call setup_png_backend(fig, png_ctx)
+        call setup_png_backend(fig)
         call render_to_backend(fig)
         
-        ! Extract RGB data from rendered frame
-        select type (backend => fig%backend)
-        type is (png_context)
-            do y = 1, fig%height
-                do x = 1, fig%width
-                    ! Calculate 1D index for packed RGB data (width * height * 3 array)
-                    ! Format: [R1, G1, B1, R2, G2, B2, ...]
-                    idx_base = ((y-1) * fig%width + (x-1)) * 3
-                    
-                    ! Extract RGB values (normalized to 0-1)
-                    rgb_data(x, y, 1) = real(backend%raster%image_data(idx_base + 1), real64) / 255.0_real64
-                    rgb_data(x, y, 2) = real(backend%raster%image_data(idx_base + 2), real64) / 255.0_real64
-                    rgb_data(x, y, 3) = real(backend%raster%image_data(idx_base + 3), real64) / 255.0_real64
-                end do
-            end do
-        class default
-            status = -1
-        end select
+        ! Extract RGB data from rendered frame using polymorphic method
+        call fig%backend%extract_rgb_data(fig%width, fig%height, rgb_data)
     end subroutine extract_frame_rgb_data
 
     subroutine save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
@@ -275,8 +232,7 @@ contains
         integer, intent(in) :: fps
         integer, intent(out) :: status
         
-        integer :: frame_idx, stat
-        integer(1), allocatable :: png_data(:)
+        integer :: stat
         
         stat = open_ffmpeg_pipe(filename, fps)
         if (stat /= 0) then
@@ -285,12 +241,28 @@ contains
             return
         end if
         
+        call write_all_frames_to_pipe(anim, status)
+        if (status /= 0) then
+            stat = close_ffmpeg_pipe()
+            return
+        end if
+        
+        stat = close_ffmpeg_pipe()
+        call validate_output_video(filename, status)
+    end subroutine save_animation_with_ffmpeg_pipeline
+
+    subroutine write_all_frames_to_pipe(anim, status)
+        class(animation_t), intent(inout) :: anim
+        integer, intent(out) :: status
+        
+        integer :: frame_idx, stat
+        integer(1), allocatable :: png_data(:)
+        
         do frame_idx = 1, anim%frames
             call generate_png_frame_data(anim, frame_idx, png_data, stat)
             if (stat /= 0) then
                 status = -5
                 call log_error("Failed to generate frame")
-                stat = close_ffmpeg_pipe()
                 return
             end if
             
@@ -298,23 +270,26 @@ contains
             if (stat /= 0) then
                 status = -6
                 call log_error("Failed to write frame to pipe")
-                stat = close_ffmpeg_pipe()
                 return
             end if
             
             if (allocated(png_data)) deallocate(png_data)
         end do
         
-        stat = close_ffmpeg_pipe()
+        status = 0
+    end subroutine write_all_frames_to_pipe
+
+    subroutine validate_output_video(filename, status)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
         
-        ! Validate the generated video file
         if (validate_generated_video(filename)) then
             status = 0
         else
             status = -7
             call log_error("Generated video failed validation")
         end if
-    end subroutine save_animation_with_ffmpeg_pipeline
+    end subroutine validate_output_video
 
     subroutine generate_png_frame_data(anim, frame_idx, png_data, status)
         class(animation_t), intent(inout) :: anim
@@ -343,22 +318,16 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        type(png_context) :: png_ctx
-        
-        call setup_png_backend(fig, png_ctx)
+        call setup_png_backend(fig)
         call render_to_backend(fig)
         call extract_png_data(fig, png_data, status)
     end subroutine render_frame_to_png
 
-    subroutine setup_png_backend(fig, png_ctx)
+    subroutine setup_png_backend(fig)
         type(figure_t), intent(inout) :: fig
-        type(png_context), intent(out) :: png_ctx
-        
-        png_ctx = create_png_canvas(fig%width, fig%height)
         
         if (allocated(fig%backend)) deallocate(fig%backend)
-        allocate(png_context :: fig%backend)
-        fig%backend = png_ctx
+        call initialize_backend(fig%backend, 'png', fig%width, fig%height)
         fig%rendered = .false.
     end subroutine setup_png_backend
 
@@ -373,13 +342,8 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        select type (backend => fig%backend)
-        type is (png_context)
-            call get_png_data(fig%width, fig%height, backend%raster%image_data, png_data)
-            status = 0
-        class default
-            status = -1
-        end select
+        ! Use polymorphic method to get PNG data - eliminates SELECT TYPE
+        call fig%backend%get_png_data_backend(fig%width, fig%height, png_data, status)
     end subroutine extract_png_data
 
     subroutine render_figure_components(fig)
@@ -536,13 +500,6 @@ contains
         y_screen = real(fig%height, wp) * (1.0_wp - (y_data - fig%y_min) / (fig%y_max - fig%y_min))
     end subroutine data_to_screen_coords
 
-    function get_current_timestamp() result(ts)
-        integer :: ts
-        integer :: values(8)
-        
-        call date_and_time(values=values)
-        ts = values(5) * 10000 + values(6) * 100 + values(7)
-    end function get_current_timestamp
 
     function validate_generated_video(filename) result(is_valid)
         character(len=*), intent(in) :: filename
@@ -611,36 +568,70 @@ contains
     function is_safe_filename(filename) result(safe)
         character(len=*), intent(in) :: filename
         logical :: safe
-        integer :: i, len_name
-        character :: c
+        integer :: len_name
         
-        safe = .false.
         len_name = len_trim(filename)
         
-        ! Check basic constraints
-        if (len_name == 0 .or. len_name > 255) return
+        if (.not. has_valid_length(len_name)) then
+            safe = .false.
+            return
+        end if
         
-        ! Check for directory traversal
-        if (index(filename, '..') > 0) return
+        if (has_directory_traversal(filename)) then
+            safe = .false.
+            return
+        end if
         
-        ! Check for dangerous characters
+        if (.not. has_safe_characters(filename, len_name)) then
+            safe = .false.
+            return
+        end if
+        
+        safe = has_video_extension(filename)
+    end function is_safe_filename
+
+    function has_valid_length(len_name) result(valid)
+        integer, intent(in) :: len_name
+        logical :: valid
+        
+        valid = (len_name > 0 .and. len_name <= 255)
+    end function has_valid_length
+
+    function has_directory_traversal(filename) result(has_traversal)
+        character(len=*), intent(in) :: filename
+        logical :: has_traversal
+        
+        has_traversal = (index(filename, '..') > 0)
+    end function has_directory_traversal
+
+    function has_safe_characters(filename, len_name) result(safe_chars)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: len_name
+        logical :: safe_chars
+        integer :: i
+        character :: c
+        
         do i = 1, len_name
             c = filename(i:i)
-            ! Allow only alphanumeric, dash, underscore, dot, forward slash
             if (.not. ((c >= 'a' .and. c <= 'z') .or. &
                        (c >= 'A' .and. c <= 'Z') .or. &
                        (c >= '0' .and. c <= '9') .or. &
                        c == '-' .or. c == '_' .or. c == '.' .or. c == '/')) then
+                safe_chars = .false.
                 return
             end if
         end do
         
-        ! Check for valid video extension
-        if (index(filename, '.mp4') > 0 .or. &
-            index(filename, '.avi') > 0 .or. &
-            index(filename, '.mkv') > 0) then
-            safe = .true.
-        end if
-    end function is_safe_filename
+        safe_chars = .true.
+    end function has_safe_characters
+
+    function has_video_extension(filename) result(has_ext)
+        character(len=*), intent(in) :: filename
+        logical :: has_ext
+        
+        has_ext = (index(filename, '.mp4') > 0 .or. &
+                   index(filename, '.avi') > 0 .or. &
+                   index(filename, '.mkv') > 0)
+    end function has_video_extension
 
 end module fortplot_animation

@@ -21,10 +21,7 @@ module fortplot_figure_core
     use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_legend
-    use fortplot_png, only: png_context, draw_axes_and_labels
     use fortplot_raster, only: draw_rotated_ylabel_raster
-    use fortplot_pdf, only: pdf_context, draw_pdf_axes_and_labels
-    use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_colors, only: parse_color, color_t
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
@@ -801,11 +798,8 @@ contains
         ! Handle GLTF differently - needs 3D data not 2D rendering
         select case (trim(backend_type))
         case ('gltf', 'glb')
-            ! Pass 3D plot data directly to GLTF backend
-            select type (backend => self%backend)
-            type is (gltf_context)
-                call prepare_gltf_data(backend, self%plots(1:self%plot_count))
-            end select
+            ! Pass 3D plot data directly to GLTF backend using polymorphic method
+            call self%backend%prepare_3d_data(self%plots(1:self%plot_count))
             call self%backend%save(filename)
         case default
             ! Reset rendered flag to force re-rendering for new backend
@@ -1372,15 +1366,10 @@ contains
         ! Render individual plots
         call render_all_plots(self)
         
-        ! Render Y-axis label ABSOLUTELY LAST (after everything else)
-        select type (backend => self%backend)
-        type is (png_context)
-            if (allocated(self%ylabel)) then
-                call draw_rotated_ylabel_raster(backend, self%ylabel)
-            end if
-        type is (pdf_context)
-            ! PDF handles this differently - already done in draw_pdf_axes_and_labels
-        end select
+        ! Render Y-axis label ABSOLUTELY LAST using polymorphic method
+        if (allocated(self%ylabel)) then
+            call self%backend%render_ylabel(self%ylabel)
+        end if
         
         ! Render legend if requested (following SOLID principles)
         if (self%show_legend) then
@@ -1637,30 +1626,14 @@ contains
         ! Set axis color to black
         call self%backend%color(0.0_wp, 0.0_wp, 0.0_wp)
         
-        ! Use matplotlib-style axes with margins for backends that support it
-        select type (backend => self%backend)
-        type is (png_context)
-            call draw_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                    self%x_min, self%x_max, self%y_min, self%y_max, &
-                                    self%title, self%xlabel, self%ylabel, &
-                                    self%z_min, self%z_max, self%has_3d_plots())
-        type is (pdf_context)
-            call draw_pdf_axes_and_labels(backend, self%xscale, self%yscale, self%symlog_threshold, &
-                                        self%x_min, self%x_max, self%y_min, self%y_max, &
-                                        self%title, self%xlabel, self%ylabel, &
-                                        self%z_min, self%z_max, self%has_3d_plots())
-        type is (ascii_context)
-            ! ASCII backend: explicitly set title and draw simple axes
-            if (allocated(self%title)) then
-                call backend%set_title(self%title)
-            end if
-            call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
-            call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
-        class default
-            ! For other backends, use simple axes
-            call self%backend%line(self%x_min, self%y_min, self%x_max, self%y_min)
-            call self%backend%line(self%x_min, self%y_min, self%x_min, self%y_max)
-        end select
+        ! Use polymorphic method to draw axes and labels - eliminates SELECT TYPE
+        call self%backend%draw_axes_and_labels_backend(self%xscale, self%yscale, &
+                                                      self%symlog_threshold, &
+                                                      self%x_min, self%x_max, &
+                                                      self%y_min, self%y_max, &
+                                                      self%title, self%xlabel, self%ylabel, &
+                                                      self%z_min, self%z_max, &
+                                                      self%has_3d_plots())
     end subroutine render_figure_axes
     
     subroutine render_all_plots(self)
@@ -1811,7 +1784,6 @@ contains
 
     subroutine draw_3d_line_with_style(self, plot_idx, linestyle)
         !! Draw 3D line plot with projection to 2D
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
@@ -1880,7 +1852,6 @@ contains
     subroutine setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
                                          orig_y_min, orig_y_max)
         !! Setup coordinate system for 3D projection rendering
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x2d(:), y2d(:)
         real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
@@ -1912,23 +1883,13 @@ contains
                                                orig_x_min, orig_x_max, &
                                                orig_y_min, orig_y_max)
         !! Save original backend coordinates and set to projection bounds
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
         real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        select type (ctx => self%backend)
-        class is (raster_context)
-            orig_x_min = ctx%x_min
-            orig_x_max = ctx%x_max
-            orig_y_min = ctx%y_min
-            orig_y_max = ctx%y_max
-            
-            ctx%x_min = proj_x_min
-            ctx%x_max = proj_x_max
-            ctx%y_min = proj_y_min
-            ctx%y_max = proj_y_max
-        end select
+        ! Use polymorphic methods to save and set coordinates - eliminates SELECT TYPE
+        call self%backend%save_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
+        call self%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max)
     end subroutine save_and_set_backend_coordinates
     
     subroutine draw_projected_3d_lines(self, x2d, y2d)
@@ -1947,17 +1908,11 @@ contains
     subroutine restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
                                                  orig_y_min, orig_y_max)
         !! Restore original backend coordinate system
-        use fortplot_raster, only: raster_context
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        select type (ctx => self%backend)
-        class is (raster_context)
-            ctx%x_min = orig_x_min
-            ctx%x_max = orig_x_max
-            ctx%y_min = orig_y_min
-            ctx%y_max = orig_y_max
-        end select
+        ! Use polymorphic method to restore coordinates - eliminates SELECT TYPE
+        call self%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
     end subroutine restore_original_coordinate_system
 
     subroutine render_3d_markers(self, plot_idx)
@@ -2072,17 +2027,14 @@ contains
         z_max = maxval(self%plots(plot_idx)%z_grid)
         
         ! For ASCII backend with colored contours, render as heatmap
-        select type (backend => self%backend)
-        type is (ascii_context)
-            if (self%plots(plot_idx)%use_color_levels) then
-                ! Render as heatmap for filled contours
-                call backend%fill_heatmap(self%plots(plot_idx)%x_grid, &
-                                        self%plots(plot_idx)%y_grid, &
-                                        self%plots(plot_idx)%z_grid, &
-                                        z_min, z_max)
-                return
-            end if
-        end select
+        ! Polymorphic call - only ASCII backend implements this meaningfully
+        if (self%plots(plot_idx)%use_color_levels) then
+            call self%backend%fill_heatmap(self%plots(plot_idx)%x_grid, &
+                                         self%plots(plot_idx)%y_grid, &
+                                         self%plots(plot_idx)%z_grid, &
+                                         z_min, z_max)
+            return
+        end if
         
         ! Render each contour level that falls within data range
         if (allocated(self%plots(plot_idx)%contour_levels)) then
@@ -2121,36 +2073,32 @@ contains
         c_min = self%plots(plot_idx)%pcolormesh_data%vmin
         c_max = self%plots(plot_idx)%pcolormesh_data%vmax
         
-        ! For ASCII backend, render as heatmap
-        select type (backend => self%backend)
-        type is (ascii_context)
-            block
-                real(wp), allocatable :: x_centers(:), y_centers(:)
-                integer :: nx, ny, i, j
-                
-                nx = self%plots(plot_idx)%pcolormesh_data%nx
-                ny = self%plots(plot_idx)%pcolormesh_data%ny
-                
-                allocate(x_centers(nx), y_centers(ny))
-                
-                ! Calculate cell centers from vertices
-                do i = 1, nx
-                    x_centers(i) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i) + &
-                                           self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i+1))
-                end do
-                
-                do j = 1, ny
-                    y_centers(j) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%y_vertices(j, 1) + &
-                                           self%plots(plot_idx)%pcolormesh_data%y_vertices(j+1, 1))
-                end do
-                
-                ! Render as heatmap using cell centers
-                call backend%fill_heatmap(x_centers, y_centers, &
-                                        self%plots(plot_idx)%pcolormesh_data%c_values, &
-                                        c_min, c_max)
-            end block
-            return
-        end select
+        ! Try polymorphic heatmap rendering - ASCII implements this, others ignore
+        block
+            real(wp), allocatable :: x_centers(:), y_centers(:)
+            integer :: nx, ny, i, j
+            
+            nx = self%plots(plot_idx)%pcolormesh_data%nx
+            ny = self%plots(plot_idx)%pcolormesh_data%ny
+            
+            allocate(x_centers(nx), y_centers(ny))
+            
+            ! Calculate cell centers from vertices
+            do i = 1, nx
+                x_centers(i) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i) + &
+                                       self%plots(plot_idx)%pcolormesh_data%x_vertices(1, i+1))
+            end do
+            
+            do j = 1, ny
+                y_centers(j) = 0.5_wp * (self%plots(plot_idx)%pcolormesh_data%y_vertices(j, 1) + &
+                                       self%plots(plot_idx)%pcolormesh_data%y_vertices(j+1, 1))
+            end do
+            
+            ! Polymorphic heatmap call - only ASCII implements meaningfully
+            call self%backend%fill_heatmap(x_centers, y_centers, &
+                                         self%plots(plot_idx)%pcolormesh_data%c_values, &
+                                         c_min, c_max)
+        end block
         
         ! Render each quadrilateral
         do i = 1, self%plots(plot_idx)%pcolormesh_data%ny
@@ -2796,24 +2744,11 @@ contains
 
     subroutine draw_filled_quad(backend, x_screen, y_screen)
         !! Draw filled quadrilateral
-        use fortplot_raster, only: raster_context
-        use fortplot_png, only: png_context
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_screen(4), y_screen(4)
         
-        ! Use backend-specific filled quad rendering
-        select type (backend)
-        type is (raster_context)
-            call backend%fill_quad(x_screen, y_screen)
-        type is (png_context)
-            call backend%fill_quad(x_screen, y_screen)
-        class default
-            ! Fallback: draw wireframe for unsupported backends
-            call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
-            call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
-            call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
-            call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
-        end select
+        ! Use polymorphic filled quad rendering - eliminates SELECT TYPE
+        call backend%fill_quad(x_screen, y_screen)
     end subroutine draw_filled_quad
 
     subroutine draw_quad_edges(backend, x_screen, y_screen, line_width)
