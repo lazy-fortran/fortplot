@@ -400,6 +400,17 @@ contains
             return
         end if
         
+        ! Check for single dot patterns (Issue #135)
+        if (index(path, './') > 0) then  ! Current directory reference
+            safe = .false.
+            return
+        end if
+        
+        if (index(path, '/.') > 0) then  ! Hidden dot patterns including /.bashrc
+            safe = .false.
+            return
+        end if
+        
         if (index(path, '//') > 0) then  ! Double slashes
             safe = .false.
             return
