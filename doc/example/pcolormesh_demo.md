@@ -191,7 +191,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf                                                                                                                                                                                                                                            )
 
 ### Pcolormesh Plasma
 
@@ -235,7 +235,7 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf                                                                                                                                                                                                                                           )
 
 ### Pcolormesh Sinusoidal
 
@@ -279,5 +279,5 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf                                                                                                                                                                                                                                       )
 

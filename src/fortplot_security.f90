@@ -14,14 +14,31 @@ module fortplot_security
     public :: sanitize_filename
     public :: is_safe_path
 
-    ! Maximum path length for security validation
+    ! Security-related constants
     integer, parameter :: MAX_PATH_LENGTH = 4096
+    integer, parameter :: MAX_NESTED_DIRS = 32  ! Maximum nested directory depth
+    integer, parameter :: MAX_COMMAND_LENGTH = 1024  ! Maximum command line length
+    integer, parameter :: SMALL_COMMAND_LENGTH = 512  ! Small command buffer size
+    integer, parameter :: MAX_RETRIES = 99  ! Maximum file open retry attempts
+    
+    ! Control character boundaries
+    integer, parameter :: CHAR_NULL = 0      ! NULL character
+    integer, parameter :: CHAR_CTRL_END = 31 ! End of control characters
+    integer, parameter :: CHAR_DEL = 127     ! DEL character
     
     ! Allowed characters in filenames (alphanumeric, dash, underscore, dot, slash)
     character(len=*), parameter :: SAFE_FILENAME_CHARS = &
         'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./'
 
 contains
+
+    !> Check if a file or directory exists
+    function check_path_exists(path) result(exists)
+        character(len=*), intent(in) :: path
+        logical :: exists
+        
+        inquire(file=trim(path), exist=exists)
+    end function check_path_exists
 
     !> Safely create directory without shell injection
     subroutine safe_create_directory(dir_path, success)
@@ -30,7 +47,7 @@ contains
         
         integer :: unit, iostat, stat_result
         logical :: exists
-        character(len=1024) :: mkdir_command
+        character(len=MAX_COMMAND_LENGTH) :: mkdir_command
         
         success = .false.
         
@@ -41,8 +58,7 @@ contains
         end if
         
         ! Check if directory already exists
-        inquire(file=trim(dir_path), exist=exists)
-        if (exists) then
+        if (check_path_exists(dir_path)) then
             success = .true.
             return
         end if
@@ -65,13 +81,12 @@ contains
         
         integer :: stat_result
         logical :: exists
-        character(len=1024) :: safe_command
+        character(len=MAX_COMMAND_LENGTH) :: safe_command
         
         success = .false.
         
         ! Check if directory already exists
-        inquire(file=trim(dir_path), exist=exists)
-        if (exists) then
+        if (check_path_exists(dir_path)) then
             success = .true.
             return
         end if
@@ -84,8 +99,7 @@ contains
         call execute_command_line(safe_command, exitstat=stat_result)
         
         ! Verify if directory was created
-        inquire(file=trim(dir_path), exist=exists)
-        success = exists
+        success = check_path_exists(dir_path)
         
         ! If that failed, try alternative approach
         if (.not. success) then
@@ -99,7 +113,7 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        character(len=len(dir_path)) :: path_parts(32) ! Max 32 nested directories
+        character(len=len(dir_path)) :: path_parts(MAX_NESTED_DIRS)
         character(len=len(dir_path)) :: current_path
         integer :: num_parts, i, slash_pos, start_pos
         logical :: exists
@@ -137,8 +151,7 @@ contains
                 current_path = trim(current_path) // trim(path_parts(i))
                 
                 ! Check if this level exists
-                inquire(file=trim(current_path), exist=exists)
-                if (.not. exists) then
+                if (.not. check_path_exists(current_path)) then
                     ! Try to create this level using a simple test
                     call try_create_single_directory(current_path, exists)
                     if (.not. exists) return
@@ -147,7 +160,7 @@ contains
         end do
         
         ! Final verification
-        inquire(file=trim(dir_path), exist=success)
+        success = check_path_exists(dir_path)
     end subroutine create_parent_directories
     
     !> Attempt to create a single directory level
@@ -155,7 +168,7 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        character(len=512) :: cmd
+        character(len=SMALL_COMMAND_LENGTH) :: cmd
         integer :: stat
         logical :: exists
         
@@ -165,8 +178,7 @@ contains
         cmd = 'mkdir "' // trim(dir_path) // '" 2>/dev/null'
         call execute_command_line(cmd, exitstat=stat)
         
-        inquire(file=trim(dir_path), exist=exists)
-        success = exists
+        success = check_path_exists(dir_path)
     end subroutine try_create_single_directory
 
     !> Safely remove file without shell injection
@@ -186,8 +198,7 @@ contains
         end if
         
         ! Check if file exists
-        inquire(file=trim(filename), exist=exists)
-        if (.not. exists) then
+        if (.not. check_path_exists(filename)) then
             success = .true.  ! File doesn't exist, consider success
             return
         end if
@@ -256,8 +267,7 @@ contains
         end if
         
         ! Check if file exists
-        inquire(file=trim(filename), exist=exists)
-        if (.not. exists) then
+        if (.not. check_path_exists(filename)) then
             call log_warning("MPEG file does not exist: " // trim(filename))
             return
         end if
@@ -312,8 +322,7 @@ contains
         end if
         
         ! Check if file exists
-        inquire(file=trim(filename), exist=exists)
-        if (.not. exists) then
+        if (.not. check_path_exists(filename)) then
             call log_error("Cannot launch viewer - file does not exist: " // trim(filename))
             return
         end if
@@ -356,74 +365,144 @@ contains
         character(len=*), intent(in) :: path
         logical :: safe
         
-        integer :: i
-        character(len=1) :: current_char
+        ! Validate path length
+        safe = validate_path_length(path)
+        if (.not. safe) return
         
-        safe = .true.
+        ! Validate each character in path
+        safe = validate_path_characters(path)
+        if (.not. safe) return
+        
+        ! Check for dangerous patterns
+        safe = validate_path_patterns(path)
+        if (.not. safe) return
+        
+        ! Check for suspicious system paths
+        safe = validate_system_paths(path)
+    end function is_safe_path
+    
+    !> Validate path length constraints
+    function validate_path_length(path) result(valid)
+        character(len=*), intent(in) :: path
+        logical :: valid
+        
+        valid = .true.
         
         ! Check path length
         if (len_trim(path) > MAX_PATH_LENGTH) then
-            safe = .false.
+            valid = .false.
             return
         end if
         
         ! Check for empty path
         if (len_trim(path) == 0) then
-            safe = .false.
-            return
+            valid = .false.
         end if
+    end function validate_path_length
+    
+    !> Validate individual characters in path
+    function validate_path_characters(path) result(valid)
+        character(len=*), intent(in) :: path
+        logical :: valid
         
-        ! Check each character
+        integer :: i
+        character(len=1) :: current_char
+        
+        valid = .true.
+        
         do i = 1, len_trim(path)
             current_char = path(i:i)
             
-            ! Reject characters that could be used for injection
-            select case (current_char)
-            case (';', '|', '&', '$', '`', '(', ')', '{', '}', '<', '>', '*', '?', '[', ']', '!', '#')
-                safe = .false.
+            ! Check for shell injection characters
+            if (is_shell_injection_char(current_char)) then
+                valid = .false.
                 return
-            case ('"', "'")  ! Quotes can be problematic
-                safe = .false.
+            end if
+            
+            ! Check for control characters
+            if (is_control_character(current_char)) then
+                valid = .false.
                 return
-            case (char(0):char(31))  ! Control characters
-                safe = .false.
-                return
-            case (char(127))  ! DEL character
-                safe = .false.
-                return
-            end select
+            end if
         end do
+    end function validate_path_characters
+    
+    !> Check if character could be used for shell injection
+    function is_shell_injection_char(char) result(dangerous)
+        character(len=1), intent(in) :: char
+        logical :: dangerous
         
-        ! Check for dangerous sequences
-        if (index(path, '..') > 0) then  ! Directory traversal
-            safe = .false.
+        select case (char)
+        case (';', '|', '&', '$', '`', '(', ')', '{', '}', '<', '>', '*', '?', '[', ']', '!', '#')
+            dangerous = .true.
+        case ('"', "'")  ! Quotes can be problematic
+            dangerous = .true.
+        case default
+            dangerous = .false.
+        end select
+    end function is_shell_injection_char
+    
+    !> Check if character is a control character
+    function is_control_character(c) result(control)
+        character(len=1), intent(in) :: c
+        logical :: control
+        
+        integer :: char_code
+        
+        control = .false.
+        char_code = iachar(c)
+        
+        ! Check for control characters
+        if (char_code >= CHAR_NULL .and. char_code <= CHAR_CTRL_END) then
+            control = .true.
+        else if (char_code == CHAR_DEL) then
+            control = .true.
+        end if
+    end function is_control_character
+    
+    !> Validate path patterns for security issues
+    function validate_path_patterns(path) result(valid)
+        character(len=*), intent(in) :: path
+        logical :: valid
+        
+        valid = .true.
+        
+        ! Check for directory traversal
+        if (index(path, '..') > 0) then
+            valid = .false.
             return
         end if
         
         ! Check for single dot patterns (Issue #135)
         if (index(path, './') > 0) then  ! Current directory reference
-            safe = .false.
+            valid = .false.
             return
         end if
         
         if (index(path, '/.') > 0) then  ! Hidden dot patterns including /.bashrc
-            safe = .false.
+            valid = .false.
             return
         end if
         
         if (index(path, '//') > 0) then  ! Double slashes
-            safe = .false.
-            return
+            valid = .false.
         end if
+    end function validate_path_patterns
+    
+    !> Validate against suspicious system paths
+    function validate_system_paths(path) result(valid)
+        character(len=*), intent(in) :: path
+        logical :: valid
+        
+        valid = .true.
         
         ! Check for suspicious patterns
         if (index(path, '/dev/') == 1 .or. &
             index(path, '/proc/') == 1 .or. &
             index(path, '/sys/') == 1) then
-            safe = .false.
-            return
+            valid = .false.
         end if
-    end function is_safe_path
+    end function validate_system_paths
 
     !> Check if FFmpeg environment is enabled (similar to C implementation)
     function is_ffmpeg_environment_enabled() result(enabled)
