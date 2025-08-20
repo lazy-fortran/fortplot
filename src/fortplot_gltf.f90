@@ -569,12 +569,26 @@ contains
 
     subroutine gltf_prepare_3d_data(this, plots)
         !! Prepare 3D data for GLTF backend - actual implementation
-        use fortplot_plot_data, only: plot_data_t
+        use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR
         class(gltf_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! GLTF backend stores 3D data internally for export
-        ! This is a no-op for now - data is processed during add_3d_line_data/add_3d_surface_data
+        integer :: i
+        
+        ! Process each plot and convert to GLTF mesh data
+        do i = 1, size(plots)
+            if (allocated(plots(i)%z)) then
+                ! 3D line plot
+                if (plots(i)%plot_type == PLOT_TYPE_LINE) then
+                    call this%add_3d_line_data(plots(i)%x, plots(i)%y, plots(i)%z)
+                end if
+            else if (allocated(plots(i)%z_grid)) then
+                ! 3D surface plot
+                if (plots(i)%plot_type == PLOT_TYPE_CONTOUR) then
+                    call this%add_3d_surface_data(plots(i)%x_grid, plots(i)%y_grid, plots(i)%z_grid)
+                end if
+            end if
+        end do
     end subroutine gltf_prepare_3d_data
 
     subroutine gltf_render_ylabel(this, ylabel)
