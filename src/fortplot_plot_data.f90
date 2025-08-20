@@ -16,6 +16,7 @@ module fortplot_plot_data
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
+    public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
     integer, parameter :: PLOT_TYPE_LINE = 1
