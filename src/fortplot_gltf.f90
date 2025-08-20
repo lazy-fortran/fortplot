@@ -34,6 +34,8 @@ module fortplot_gltf
         procedure :: draw_marker => gltf_draw_marker
         procedure :: set_marker_colors => gltf_set_marker_colors
         procedure :: set_marker_colors_with_alpha => gltf_set_marker_colors_with_alpha
+        procedure :: draw_arrow => gltf_draw_arrow
+        procedure :: get_ascii_output => gltf_get_ascii_output
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
     end type gltf_context
@@ -101,14 +103,12 @@ contains
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         ! Unused parameters
-        if (.false.) print *, this%width, x1, y1, x2, y2
     end subroutine gltf_line
     
     subroutine gltf_color(this, r, g, b)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
         ! Unused parameters
-        if (.false.) print *, this%width, r, g, b
     end subroutine gltf_color
     
     subroutine gltf_text(this, x, y, text)
@@ -116,14 +116,12 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         ! Unused parameters
-        if (.false.) print *, this%width, x, y, text
     end subroutine gltf_text
     
     subroutine gltf_set_line_width(this, width)
         class(gltf_context), intent(inout) :: this
         real(wp), intent(in) :: width
         ! Unused parameters
-        if (.false.) print *, this%width, width
     end subroutine gltf_set_line_width
     
     subroutine gltf_draw_marker(this, x, y, style)
@@ -131,7 +129,6 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
         ! Unused parameters
-        if (.false.) print *, this%width, x, y, style
     end subroutine gltf_draw_marker
     
     subroutine gltf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
@@ -139,7 +136,6 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         ! Unused parameters
-        if (.false.) print *, this%width, edge_r, edge_g, edge_b, face_r, face_g, face_b
     end subroutine gltf_set_marker_colors
     
     subroutine gltf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
@@ -148,7 +144,6 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         ! Unused parameters
-        if (.false.) print *, this%width, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha
     end subroutine gltf_set_marker_colors_with_alpha
     
     subroutine add_3d_line_data(this, x, y, z)
@@ -431,5 +426,26 @@ contains
         bytes(4) = int(iand(ishft(int_val, -24), 255), int8)
         
     end subroutine pack_float_to_bytes
+
+    subroutine gltf_draw_arrow(this, x, y, dx, dy, size, style)
+        !! Draw arrow for GLTF backend (not implemented for 3D export)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        
+        ! GLTF backend doesn't support 2D arrow rendering
+        ! Mark arrows as not rendered for this backend
+        this%has_rendered_arrows = .false.
+        this%uses_vector_arrows = .false.
+        this%has_triangular_arrows = .false.
+    end subroutine gltf_draw_arrow
+
+    function gltf_get_ascii_output(this) result(output)
+        !! Get ASCII output (not applicable for GLTF backend)
+        class(gltf_context), intent(in) :: this
+        character(len=:), allocatable :: output
+        
+        output = ""  ! GLTF backend doesn't produce ASCII output
+    end function gltf_get_ascii_output
 
 end module fortplot_gltf

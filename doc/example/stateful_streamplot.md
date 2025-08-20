@@ -80,4 +80,4 @@ end program stateful_streamplot
 
 ## Output Example
 
-![Stateful Streamplot](media/examples/stateful_streamplot.png)
+![Stateful Streamplot](../../media/examples/stateful_streamplot/stateful_streamplot.png)

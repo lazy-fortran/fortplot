@@ -4,6 +4,205 @@
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
+## Streamplot Arrow Enhancement (Issue #22)
+
+### Architectural Overview
+
+Adding matplotlib-compatible arrow support to streamplot requires enhancing the existing streamplot implementation with arrow placement, sizing, and rendering capabilities while maintaining backend polymorphism and SOLID principles.
+
+### Current Architecture Analysis
+
+**Existing Implementation**:
+- `fortplot_streamplot_matplotlib.f90`: Core streamplot algorithm following matplotlib exactly
+- `figure_t%streamplot()`: API layer in `fortplot_figure_core.f90`
+- Backend-agnostic trajectory generation with downstream rendering
+
+**Architecture Strengths**:
+- Clean separation between trajectory generation and rendering
+- Matplotlib-compatible algorithm implementation
+- Polymorphic backend support through figure rendering
+
+**Enhancement Requirements**:
+- Add arrow placement algorithm to trajectory generation
+- Extend rendering backends for arrow visualization
+- Maintain API compatibility while adding arrow parameters
+
+### Implementation Architecture
+
+#### 1. Arrow Data Structure Design
+
+**Arrow Type Definition** (New):
+```fortran
+type :: streamplot_arrow_t
+    real(wp) :: x, y              ! Arrow position
+    real(wp) :: dx, dy            ! Arrow direction vector
+    real(wp) :: size              ! Scaled arrow size
+    integer :: style              ! Arrow style identifier
+end type
+```
+
+**Extended Streamplot Interface**:
+```fortran
+type :: streamplot_result_t
+    real, allocatable :: trajectories(:,:,:)     ! Existing streamlines
+    integer :: n_trajectories
+    integer, allocatable :: trajectory_lengths(:)
+    type(streamplot_arrow_t), allocatable :: arrows(:)  ! New arrow data
+    integer :: n_arrows
+end type
+```
+
+#### 2. Arrow Placement Algorithm
+
+**Matplotlib Compatibility Strategy**:
+- Follow matplotlib's distance-based arrow placement using `np.searchsorted(s, s[-1] * (x/(num_arrows+1)))`
+- Calculate arrow positions along trajectory path length
+- Extract flow direction from velocity field at arrow positions
+
+**Algorithm Implementation**:
+```fortran
+subroutine place_arrows_on_trajectory(trajectory_x, trajectory_y, n_points, &
+                                    u_grid, v_grid, num_arrows, arrowsize, &
+                                    arrows, n_arrows)
+    ! 1. Calculate cumulative path length along trajectory
+    ! 2. Place arrows at evenly spaced distances
+    ! 3. Interpolate velocity field for arrow direction
+    ! 4. Scale arrow size based on local velocity magnitude
+end subroutine
+```
+
+#### 3. Backend Integration Strategy
+
+**Polymorphic Arrow Rendering**:
+Each backend implements arrow rendering following single responsibility principle:
+
+**PNG/PDF Backends**:
+- Use existing polygon drawing primitives
+- Render arrow head as filled triangle
+- Scale triangle size based on arrowsize parameter
+
+**ASCII Backend**: 
+- Use Unicode arrow characters: →, ↑, ↓, ←, ↗, ↖, ↘, ↙
+- Select character based on quantized direction
+- Position at calculated arrow locations
+
+#### 4. API Enhancement Design
+
+**Extended Streamplot Signature**:
+```fortran
+subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
+                     arrowsize, arrowstyle, num_arrows)
+    real(wp), intent(in), optional :: arrowsize     ! Default: 1.0
+    character(*), intent(in), optional :: arrowstyle ! Default: '->'
+    integer, intent(in), optional :: num_arrows     ! Arrows per streamline
+```
+
+**Backward Compatibility Guarantee**:
+- All new parameters are optional with sensible defaults
+- Existing streamplot calls continue working unchanged
+- Arrow rendering disabled when arrowsize <= 0
+
+#### 5. Performance Considerations
+
+**Memory Management**:
+- Arrow data structures use stack allocation for small arrays
+- Heap allocation only for large arrow collections
+- Immediate deallocation after rendering
+
+**Computational Efficiency**:
+- Arrow placement integrated into existing trajectory loop
+- Minimal additional velocity field interpolations
+- Cache-friendly arrow data layout
+
+### Risk Assessment
+
+#### Technical Risks
+
+**HIGH RISK - Backend Arrow Rendering Complexity**:
+- Risk: Arrow rendering requires new geometric primitives in each backend
+- Impact: Significant implementation complexity across PNG, PDF, ASCII backends
+- Mitigation: Start with simple arrow head design, use existing polygon primitives
+
+**MEDIUM RISK - Performance Impact**:
+- Risk: Arrow calculations may slow streamplot rendering
+- Impact: User experience degradation for large vector fields
+- Mitigation: Profile arrow placement algorithm, optimize for minimal overhead
+
+**MEDIUM RISK - Matplotlib Compatibility**:
+- Risk: Arrow placement algorithm may not exactly match matplotlib behavior
+- Impact: Visual differences between fortplot and matplotlib outputs
+- Mitigation: Extensive visual testing against matplotlib reference plots
+
+#### Integration Risks
+
+**LOW RISK - API Breaking Changes**:
+- Risk: New parameters might conflict with existing usage
+- Impact: Breaking changes in streamplot interface
+- Mitigation: All new parameters optional, comprehensive backward compatibility testing
+
+**LOW RISK - Backend Specialization**:
+- Risk: Different backends may render arrows inconsistently
+- Impact: Output format differences for same input
+- Mitigation: Establish arrow rendering specification, cross-backend testing
+
+### Implementation Roadmap
+
+#### Phase 1: Core Arrow Infrastructure (Priority: HIGH)
+1. **Define arrow data structures** in `fortplot_streamplot_matplotlib.f90`
+2. **Implement arrow placement algorithm** following matplotlib approach
+3. **Extend streamplot_matplotlib() to generate arrow data**
+4. **Add comprehensive unit tests** for arrow placement logic
+
+#### Phase 2: PNG Backend Arrow Rendering (Priority: HIGH)
+1. **Implement arrow rendering** in PNG backend using existing polygon primitives
+2. **Add arrow size scaling** based on arrowsize parameter
+3. **Integrate arrow rendering** into figure rendering pipeline
+4. **Create visual test cases** comparing with matplotlib output
+
+#### Phase 3: API Integration (Priority: MEDIUM)
+1. **Extend figure_t%streamplot() signature** with arrow parameters
+2. **Add parameter validation and defaults**
+3. **Update Python interface** to expose arrow parameters
+4. **Create user examples** demonstrating arrow functionality
+
+#### Phase 4: Multi-Backend Support (Priority: MEDIUM)
+1. **Implement arrow rendering** in PDF backend
+2. **Add ASCII arrow character support** for text output
+3. **Ensure consistent behavior** across all backends
+4. **Performance optimization** and profiling
+
+#### Phase 5: Advanced Arrow Features (Priority: LOW)
+1. **Support multiple arrow styles** (not just '->')
+2. **Add adaptive arrow density** based on flow field characteristics
+3. **Implement arrow color mapping** based on velocity magnitude
+4. **Optimize for large vector field performance**
+
+### Quality Assurance Strategy
+
+#### Test Coverage Requirements
+- **Unit Tests**: Arrow placement algorithm accuracy
+- **Integration Tests**: Backend arrow rendering correctness
+- **Visual Tests**: Matplotlib compatibility verification
+- **Performance Tests**: Rendering speed benchmarks
+
+#### Validation Criteria
+- **Matplotlib Parity**: Visual output matches matplotlib streamplot with arrows
+- **Performance Standard**: Arrow rendering overhead < 20% of baseline streamplot
+- **API Compatibility**: All existing streamplot code continues working
+- **Cross-Backend Consistency**: Arrow appearance consistent across PNG, PDF, ASCII
+
+### Documentation Plan
+
+#### User Documentation
+- **API Reference**: Document new arrow parameters with examples
+- **Tutorial**: Arrow usage examples with visual outputs
+- **Migration Guide**: How to enable arrows in existing streamplot code
+
+#### Developer Documentation  
+- **Architecture Guide**: Arrow implementation design and rationale
+- **Backend Integration**: How to add arrow support to new backends
+- **Performance Guide**: Optimization techniques for arrow rendering
+
 ## Build System Architecture
 
 ### Primary Build System: FPM
@@ -751,9 +950,21 @@ Error bar implementation provides critical scientific visualization capabilities
 
 ### Overview
 **Issue #56**: Enhanced scatter plot with comprehensive marker symbols, size/color mapping for multi-dimensional data visualization
-- **Status**: ACTIVE DEVELOPMENT - Architecture documentation for batch mode execution
+- **Status**: IMPLEMENTATION READY - Complete architecture documentation and risk assessment completed
 - **Context**: Comprehensive scatter plot functionality with bubble charts and color mapping
 - **Scope**: Full matplotlib-compatible scatter plot API with all backends support
+
+### Implementation Plan Overview
+
+**Phase Structure**: 5-phase incremental implementation with MVP-first approach
+- **Phase 1**: Core infrastructure (plot_data_t enhancement, basic API)
+- **Phase 2**: Size/color mapping engine integration  
+- **Phase 3**: Multi-backend rendering (PNG/PDF/ASCII/Animation)
+- **Phase 4**: Advanced features (colorbar, edge/face control, layout)
+- **Phase 5**: Testing, documentation, performance validation
+
+**Implementation Timeframe**: 10-15 days total with parallel development opportunities
+**Risk Level**: MEDIUM - Well-defined scope with proven infrastructure foundation
 
 ### Strategic Foundation Assessment
 **Infrastructure Readiness** ✅:
@@ -761,6 +972,56 @@ Error bar implementation provides critical scientific visualization capabilities
 - **Plotting Framework**: Mature fortplot architecture ready for scatter enhancement
 - **Backend Pipeline**: Established rendering system supports new visual elements
 - **Quality Framework**: Comprehensive testing and CI/CD infrastructure in place
+
+### Risk Assessment and Mitigation
+
+**MEDIUM RISK - Well-Scoped Implementation**
+
+**Technical Risks**:
+- **API Complexity**: Comprehensive scatter API with many optional parameters
+  - *Mitigation*: Incremental API development, extensive parameter validation, clear defaults
+  - *Foundation*: Existing plot_data_t structure already supports scatter fields
+- **Backend Consistency**: Ensuring visual consistency across PNG/PDF/ASCII backends
+  - *Mitigation*: Reference implementation patterns from matplotlib, early visual testing
+  - *Foundation*: Proven multi-backend architecture with established rendering pipeline
+
+**Performance Risks**:
+- **Large Dataset Handling**: 10^4+ scatter points may impact render performance
+  - *Mitigation*: Early performance benchmarking, point culling algorithms, LOD optimization
+  - *Foundation*: Existing performance-conscious codebase with proven scaling patterns
+- **Memory Management**: Variable size/color arrays for large datasets
+  - *Mitigation*: RAII patterns, efficient memory allocation, streaming approaches
+  - *Foundation*: Proven allocatable array management in existing codebase
+
+**Integration Risks**:
+- **Colormap Integration**: Complex interaction between scatter colors and colorbar systems
+  - *Mitigation*: Leverage existing fortplot_colormap.f90 infrastructure, incremental integration
+  - *Foundation*: Complete colormap engine already implemented and tested
+- **Legend Integration**: Scatter marker representation in plot legends
+  - *Mitigation*: Extend existing legend system, maintain backward compatibility
+  - *Foundation*: Established legend architecture with marker support
+
+**Schedule Risks**:
+- **Feature Scope**: Comprehensive scatter plot implementation is substantial
+  - *Mitigation*: MVP-first approach, phased delivery, clear success criteria per phase
+  - *Foundation*: Well-defined phases with independent deliverable milestones
+
+### Opportunity Analysis
+
+**Performance Advantages**:
+- **Native Fortran Performance**: Direct numerical computation without Python overhead
+- **Memory Efficiency**: Contiguous array processing, minimal data copying
+- **Scientific Workflow Integration**: Native integration with computational physics codes
+
+**Architectural Advantages**:
+- **Foundation Layer Impact**: Scatter plot enhancement provides maximum strategic impact across all visualization components
+- **Backend Extensibility**: Architecture supports future 3D scatter, animated scatter, interactive features
+- **API Consistency**: Matplotlib-compatible interface reduces user learning curve
+
+**Strategic Impact**:
+- **Scientific Visualization Leadership**: Positions fortplot as serious matplotlib alternative for computational science
+- **Performance Differentiation**: Native performance advantages for large scientific datasets
+- **Ecosystem Integration**: Enhanced capability for Fortran-based scientific applications
 
 ### Core Scatter Plot System Architecture
 
@@ -1045,40 +1306,140 @@ integer, parameter :: PLOT_TYPE_SCATTER = 5    ! New scatter plot type
 - **Resource management**: Proper handling of colormap and geometry data
 - **Copy semantics**: Safe deep copying of scatter plot data
 
-### Implementation Plan
+### Detailed Implementation Plan
 
-#### Phase 1: Core Scatter Infrastructure (1-2 days)
-**Foundation Layer**:
-1. **Data structure enhancement**: Extend `plot_data_t` with scatter fields
+#### Phase 1: Core Scatter Infrastructure (1-2 days) - FOUNDATION LAYER
+**Strategic Priority**: HIGHEST - Foundation layer optimizations provide maximum impact
+
+**TDD Development Approach**:
+```fortran
+! RED Phase: Failing tests first
+program test_scatter_enhanced
+    call test_basic_scatter_api()           ! XFAIL: API not implemented
+    call test_marker_shape_enumeration()    ! XFAIL: Marker system incomplete
+    call test_input_validation()            ! XFAIL: Validation missing
+end program
+```
+
+**Implementation Tasks**:
+1. **Data structure enhancement**: Extend `plot_data_t` with scatter-specific fields
+   - Add scatter_sizes(:), scatter_colors(:) allocatable arrays 
+   - Add scatter configuration parameters (colormap, colorbar, vmin/vmax)
+   - Maintain backward compatibility with existing plot_data_t usage
+   
 2. **Basic API implementation**: Core `scatter()` subroutine in `fortplot_figure_core.f90`
-3. **Marker shape enumeration**: Define marker types and conversion utilities
-4. **Input validation**: Comprehensive parameter checking and error handling
+   - Implement `add_scatter_2d()` and `add_scatter_3d()` procedures
+   - Provide matplotlib-compatible parameter signature
+   - Establish clear separation between 2D and 3D scatter functionality
+   
+3. **Marker shape enumeration**: Define comprehensive marker type system
+   - Support 10 marker types: circle, square, triangle, diamond, star, plus, cross, pentagon, hexagon, octagon
+   - Create marker_name_to_id() conversion utilities
+   - Reference matplotlib marker API for consistency
+   
+4. **Input validation framework**: Robust parameter checking and error handling
+   - Array size consistency validation between x, y, s, c parameters
+   - Range validation for marker sizes and color values
+   - NaN/infinite value filtering with user warnings
+
+**Success Criteria**:
+- ✅ Basic scatter API compiles and executes
+- ✅ All 10 marker types correctly identified
+- ✅ Input validation catches common error cases
+- ✅ plot_data_t extensions maintain backward compatibility
 
 **Deliverables**:
 - Enhanced plot data structures
 - Basic scatter plot API (no size/color mapping yet)
-- Marker shape identification system
+- Marker shape identification system  
 - Input validation framework
 
-#### Phase 2: Size and Color Mapping (2-3 days)  
-**Mapping Systems**:
-1. **Size mapping engine**: Size scaling algorithms and configuration
-2. **Colormap implementation**: Standard colormap definitions and interpolation
-3. **Color mapping engine**: Value-to-color conversion with range handling
-4. **API enhancement**: Full scatter API with size/color support
+#### Phase 2: Size and Color Mapping Engine (2-3 days) - MAPPING SYSTEMS
+**Strategic Priority**: HIGH - Core visualization functionality
+
+**TDD Development Approach**:
+```fortran
+! RED Phase: Size/color mapping tests
+program test_scatter_mapping
+    call test_size_scaling_algorithms()     ! XFAIL: Size mapping not implemented
+    call test_colormap_integration()        ! XFAIL: Color mapping missing
+    call test_range_handling()              ! XFAIL: vmin/vmax logic incomplete
+end program
+```
+
+**Implementation Tasks**:
+1. **Size mapping engine**: Linear and area-based size scaling
+   - Implement size normalization algorithms (linear, sqrt, log scaling)
+   - Support both point-based and area-based size mapping
+   - Provide reasonable defaults and bounds (1-200 points)
+   
+2. **Colormap integration**: Leverage existing fortplot_colormap.f90 infrastructure
+   - Integrate scatter color arrays with existing colormap system
+   - Support viridis, plasma, inferno, magma colormaps
+   - Implement efficient color value interpolation
+   
+3. **Color mapping engine**: Value-to-color conversion with automatic/manual range handling
+   - Automatic vmin/vmax detection from color data
+   - Manual range override capability for consistent scaling
+   - NaN value handling in color mapping
+   
+4. **API enhancement**: Complete scatter API with all mapping features
+   - Full parameter support: s=sizes, c=colors, colormap, vmin, vmax, show_colorbar
+   - Optional parameter handling with sensible defaults
+   - Comprehensive documentation strings
+
+**Success Criteria**:
+- ✅ Size mapping handles arrays of 10^4+ points efficiently
+- ✅ Color mapping produces visually consistent results across backends
+- ✅ API parameters match matplotlib scatter() signature
+- ✅ Memory usage remains reasonable for large datasets
 
 **Deliverables**:
 - Complete size mapping system
-- Comprehensive colormap engine
-- Full scatter plot API implementation
+- Comprehensive colormap engine integration
+- Full scatter plot API implementation  
 - Size and color validation systems
 
-#### Phase 3: Backend Rendering Implementation (3-4 days)
-**Multi-Backend Support**:
-1. **PNG/PDF rendering**: High-quality marker geometry rendering
-2. **ASCII backend**: Creative character-based marker representation
-3. **Animation support**: Basic scatter plot animation capabilities
-4. **Performance optimization**: Large dataset handling optimization
+#### Phase 3: Multi-Backend Rendering (3-4 days) - BACKEND SYSTEMS
+**Strategic Priority**: HIGH - Cross-platform visualization support
+
+**TDD Development Approach**:
+```fortran
+! RED Phase: Backend rendering tests
+program test_scatter_backends
+    call test_png_marker_rendering()        ! XFAIL: PNG backend incomplete
+    call test_pdf_marker_geometry()         ! XFAIL: PDF markers missing
+    call test_ascii_representation()        ! XFAIL: ASCII markers not implemented
+end program
+```
+
+**Implementation Tasks**:
+1. **PNG/PDF marker rendering**: High-quality geometric marker implementation
+   - Implement precise marker geometry for all 10 shapes
+   - Support edge/face color differentiation
+   - Handle alpha transparency and marker scaling
+   - Optimize rendering performance for dense scatter plots
+   
+2. **ASCII backend enhancement**: Creative character-based marker representation
+   - Map marker shapes to ASCII characters (●○■□▲△♦◇★+×⬟⬢⬡)
+   - Implement density-based character selection for overlapping points
+   - Provide color approximation using ANSI escape codes where supported
+   
+3. **Animation support**: Basic scatter plot animation capabilities  
+   - Extend animation framework to handle scatter plot updates
+   - Support marker position, size, and color changes over time
+   - Maintain performance with efficient data structure updates
+   
+4. **Performance optimization**: Large dataset handling (10^4+ points)
+   - Implement point culling for markers outside plot bounds
+   - Level-of-detail (LOD) rendering for high-density scatter plots
+   - Memory-efficient streaming approaches for massive datasets
+
+**Success Criteria**:
+- ✅ PNG/PDF backends render all marker types accurately
+- ✅ ASCII backend provides recognizable marker representation
+- ✅ 10^4 points render in <2 seconds across all backends
+- ✅ Visual consistency maintained across backends
 
 **Deliverables**:
 - Complete PNG/PDF marker rendering
@@ -1086,18 +1447,130 @@ integer, parameter :: PLOT_TYPE_SCATTER = 5    ! New scatter plot type
 - Animation backend integration
 - Performance benchmarks for 10^4+ points
 
-#### Phase 4: Colorbar and Advanced Features (2-3 days)
-**Enhanced Visualization**:
-1. **Colorbar implementation**: Automatic colorbar generation and layout
-2. **Advanced marker features**: Edge/face color control, transparency
+#### Phase 4: Advanced Visualization Features (2-3 days) - ENHANCEMENT LAYER
+**Strategic Priority**: MEDIUM - User experience and publication quality
+
+**Implementation Tasks**:
+1. **Colorbar system**: Automatic colorbar generation and layout management
+   - Integrate with existing layout system for colorbar positioning
+   - Automatic colorbar scaling based on color data range
+   - Custom colorbar labels and tick formatting
+   
+   - Implement edge_color and face_color parameter support
+   - Advanced transparency control with alpha parameter
+   - Publication-quality marker rendering options
+   
 3. **Layout integration**: Colorbar space management and positioning
+   - Automatic layout adjustment for colorbar inclusion
+   - Configurable colorbar position (right, left, top, bottom)
+   - Maintain plot aspect ratios with colorbar present
+   
 4. **User experience polish**: Intuitive defaults and error messages
+   - Sensible parameter defaults for common use cases
+   - Clear, actionable error messages for invalid inputs
+   - Performance warnings for very large datasets
+
+**Success Criteria**:
+- ✅ Automatic colorbar generation with proper scaling
+- ✅ Edge/face colors render correctly across backends
+- ✅ Layout system accommodates colorbar without distortion
+- ✅ Error messages guide users to correct usage patterns
 
 **Deliverables**:
-- Complete colorbar system
-- Advanced marker customization
-- Integrated layout management
-- Polished user experience
+- Complete colorbar system with automatic layout
+- Advanced marker appearance control
+- Layout management enhancements
+- User experience improvements
+
+#### Phase 5: Testing, Documentation, Performance (2-3 days) - QUALITY ASSURANCE
+**Strategic Priority**: HIGH - Production readiness and maintainability
+
+**TDD Validation Approach**:
+```fortran
+! Comprehensive test coverage validation
+program test_scatter_comprehensive
+    call test_performance_10k_points()     ! Performance benchmarks
+    call test_edge_cases_validation()      ! Boundary conditions
+    call test_backend_consistency()        ! Cross-backend validation
+    call test_memory_leak_prevention()     ! Resource management
+end program
+```
+
+**Implementation Tasks**:
+1. **Comprehensive test suite**: Achieve >90% code coverage
+   - Unit tests for all API parameters and combinations
+   - Integration tests across all backend combinations  
+   - Edge case testing (empty arrays, NaN values, extreme ranges)
+   - Performance regression testing
+   
+2. **Performance validation**: Optimize for large scientific datasets
+   - Benchmark scatter plots with 10^4, 10^5, 10^6 points
+   - Memory usage profiling and optimization
+   - Render time optimization across all backends
+   - Stress testing for memory leaks
+   
+3. **Example implementation**: Complete demonstration (scatter_demo.f90)
+   - Scientific data visualization example
+   - All scatter plot features demonstration
+   - Performance benchmarking example
+   - Integration with other plot types
+   
+4. **Documentation completion**: API reference and user guide updates
+   - Complete parameter documentation with examples
+   - Performance guidelines and best practices
+   - Integration examples with existing fortplot features
+   - Migration guide from basic to enhanced scatter plots
+
+**Success Criteria**:
+- ✅ >90% test coverage across all scatter functionality
+- ✅ 10^4+ points render in <2 seconds (all backends)
+- ✅ Complete working example demonstrates all features
+- ✅ Documentation enables immediate user productivity
+
+**Deliverables**:
+- Comprehensive test suite (>90% coverage)
+- Performance benchmarks and optimization
+- Complete working example (scatter_demo.f90)
+- Updated documentation and user guides
+
+### Implementation Success Metrics
+
+**Functional Requirements**:
+- ✅ Full matplotlib API compatibility (scatter signature matching)
+- ✅ 10 marker types supported across all backends
+- ✅ Size and color mapping with automatic/manual scaling
+- ✅ Colorbar generation and layout integration
+- ✅ NaN/infinite value handling with user warnings
+
+**Performance Requirements**:
+- ✅ 10^4 points render in <2 seconds (all backends)
+- ✅ Memory usage scales linearly with dataset size
+- ✅ No memory leaks during repeated scatter plot generation
+- ✅ Backend rendering consistency within 1% visual difference
+
+**Quality Requirements**:
+- ✅ >90% test coverage across all scatter functionality
+- ✅ Clear error messages guide users to correct usage
+- ✅ Publication-quality output with proper DPI scaling
+- ✅ Backward compatibility with existing fortplot API
+
+### Architecture Impact Assessment
+
+**Foundation Layer Enhancement**:
+Enhanced scatter plot implementation provides **maximum strategic impact** by:
+- **Expanding core visualization capabilities**: Positions fortplot as comprehensive scientific plotting solution
+- **Leveraging existing infrastructure**: Builds upon proven colormap, marker, and backend systems
+- **Enabling advanced features**: Creates foundation for 3D scatter, animated scatter, interactive features
+
+**System-wide Benefits**:
+- **API Consistency**: Matplotlib-compatible interface reduces learning curve
+- **Performance Leadership**: Native Fortran performance advantages for scientific datasets
+- **Ecosystem Integration**: Enhanced capability for computational physics workflows
+
+**Technical Debt Impact**:
+- **Positive Impact**: Comprehensive test coverage improves overall system reliability
+- **Infrastructure Reuse**: Leverages existing components rather than creating new dependencies
+- **Maintainability**: Clear phase structure and documentation improve long-term maintenance
 
 #### Phase 5: Testing and Documentation (2-3 days)
 **Quality Assurance**:
@@ -2608,6 +3081,429 @@ end subroutine
 2. **Documentation testing**: Implement `make test-docs` with comprehensive output verification
 3. **User workflow validation**: End-to-end testing of user documentation workflows
 4. **Error message improvement**: User-friendly error messages for common validation failures
+
+## Python Interface Documentation (Issue #18)
+
+### Problem Statement
+The Python interface in `python/fortplot/fortplot.py` lacks proper docstrings, making the API less discoverable and harder to use. Users cannot access function documentation through Python's help() system or IDE tooltips.
+
+### Solution Architecture
+
+#### Documentation Style Guide
+**Google/NumPy Hybrid Style**: Combining clarity and comprehensiveness
+- **One-line summary**: Concise description of what the function does
+- **Extended description**: Additional context when needed
+- **Parameters section**: Type, description, and constraints for each parameter
+- **Returns section**: Type and description of return values
+- **Examples section**: Practical usage demonstrations
+- **Notes section**: Implementation details, compatibility notes
+
+#### Module-Level Documentation
+
+```python
+"""
+fortplot - Modern Fortran plotting library Python interface.
+
+This module provides a matplotlib-compatible plotting interface powered by
+a high-performance Fortran backend. It offers scientific visualization with
+support for multiple output formats (PNG, PDF, ASCII) and backends.
+
+The API closely follows matplotlib.pyplot conventions for ease of adoption
+while leveraging Fortran's computational efficiency for large datasets.
+
+Basic Usage
+-----------
+>>> import fortplot
+>>> fortplot.plot([1, 2, 3], [1, 4, 9])
+>>> fortplot.xlabel('x')
+>>> fortplot.ylabel('y²')
+>>> fortplot.title('Simple Plot')
+>>> fortplot.savefig('output.png')
+
+Supported Features
+-----------------
+- Line plots with multiple series
+- Contour and filled contour plots
+- Pseudocolor mesh plots
+- Stream plots for vector fields
+- Logarithmic and symmetric log scales
+- Legend generation
+- Multiple output formats: PNG, PDF, ASCII
+
+Notes
+-----
+This interface wraps the Fortran fortplot library through F2PY bindings.
+Array data is automatically converted to Fortran column-major order when
+necessary for optimal performance.
+"""
+```
+
+#### Function Documentation Templates
+
+**Simple Parameter Functions**:
+```python
+def figure(figsize=[6.4, 4.8]):
+    """
+    Create a new figure with specified dimensions.
+    
+    Parameters
+    ----------
+    figsize : list of float, optional
+        Figure dimension (width, height) in inches. Default is [6.4, 4.8].
+        The actual pixel dimensions are calculated as figsize * DPI (100).
+    
+    Examples
+    --------
+    Create a square figure:
+    
+    >>> fortplot.figure(figsize=[5, 5])
+    
+    Create a wide figure for time series:
+    
+    >>> fortplot.figure(figsize=[10, 4])
+    
+    Notes
+    -----
+    Unlike matplotlib, fortplot uses a fixed DPI of 100 for simplicity.
+    The figure size directly translates to pixel dimensions.
+    """
+```
+
+**Data Plotting Functions**:
+```python
+def plot(x, y, linestyle="-", label=""):
+    """
+    Plot y versus x as lines and/or markers.
+    
+    Parameters
+    ----------
+    x, y : array-like
+        The horizontal and vertical coordinates of the data points.
+        Must be the same length. Will be converted to numpy arrays
+        if not already.
+    linestyle : str, optional
+        The line style specification. Default is '-' (solid line).
+        Supported styles: '-' (solid), '--' (dashed), ':' (dotted),
+        '-.' (dash-dot), 'none' (no line).
+    label : str, optional
+        Label for the line, used in legend generation. Default is
+        empty string (no label).
+    
+    Returns
+    -------
+    None
+    
+    Examples
+    --------
+    Simple line plot:
+    
+    >>> x = np.linspace(0, 2*np.pi, 100)
+    >>> fortplot.plot(x, np.sin(x), label='sin(x)')
+    
+    Multiple lines with different styles:
+    
+    >>> fortplot.plot(x, np.sin(x), '-', label='sin')
+    >>> fortplot.plot(x, np.cos(x), '--', label='cos')
+    >>> fortplot.legend()
+    
+    Notes
+    -----
+    Data is automatically converted to numpy arrays for consistency.
+    The Fortran backend handles the actual rendering through F2PY bindings.
+    """
+```
+
+**Complex Visualization Functions**:
+```python
+def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, 
+               edgecolors='none', linewidths=None, **kwargs):
+    """
+    Create a pseudocolor plot with a non-regular rectangular grid.
+    
+    This function is similar to matplotlib's pcolormesh, creating a
+    colored quadrilateral mesh. The color of each quadrilateral is
+    determined by the corresponding value in C.
+    
+    Parameters
+    ----------
+    X, Y : array-like
+        The coordinates of the quadrilateral corners. Can be:
+        
+        - 1D arrays of length N+1 and M+1 respectively for a regular
+          rectangular grid, where C has shape (M, N).
+        - 2D arrays of shape (M+1, N+1) for an irregular quadrilateral
+          mesh (currently converts to regular grid internally).
+          
+    C : array-like of shape (M, N)
+        The color values for each quadrilateral. The value C[i,j]
+        determines the color of the quadrilateral with corners at
+        (X[j], Y[i]), (X[j+1], Y[i]), (X[j+1], Y[i+1]), (X[j], Y[i+1]).
+        
+    cmap : str or Colormap, optional
+        The colormap used to map scalar data to colors. Supported
+        colormaps: 'viridis' (default), 'plasma', 'inferno', 'magma',
+        'coolwarm', 'jet', 'crest'. String names are case-insensitive.
+        
+    vmin, vmax : float, optional
+        The data range that the colormap covers. By default, the
+        colormap covers the complete value range of the supplied data.
+        Values outside this range are clipped.
+        
+    edgecolors : color spec or 'none', optional
+        The color of the edges. Default is 'none' (no edges drawn).
+        Can be a color name ('black', 'white') or 'face' to match
+        the face color.
+        
+    linewidths : float, optional
+        The width of the edges in points. Only used if edgecolors
+        is not 'none'. Default is 1.0.
+        
+    **kwargs : optional
+        Additional keyword arguments for matplotlib compatibility.
+        Currently ignored but accepted to maintain API compatibility.
+    
+    Returns
+    -------
+    QuadMeshPlaceholder
+        A placeholder object for matplotlib compatibility. Provides
+        minimal QuadMesh interface but does not store actual mesh data.
+    
+    Examples
+    --------
+    Basic usage with regular grid:
+    
+    >>> x = np.linspace(0, 1, 11)  # 11 points for 10 cells
+    >>> y = np.linspace(0, 1, 8)   # 8 points for 7 cells
+    >>> C = np.random.random((7, 10))
+    >>> fortplot.pcolormesh(x, y, C, cmap='viridis')
+    
+    Custom color limits:
+    
+    >>> fortplot.pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
+    
+    With edge colors:
+    
+    >>> fortplot.pcolormesh(x, y, C, edgecolors='black', linewidths=0.5)
+    
+    Using meshgrid for irregular spacing:
+    
+    >>> x = np.array([0, 0.5, 1.5, 3, 5])
+    >>> y = np.array([0, 1, 2])
+    >>> X, Y = np.meshgrid(x, y)
+    >>> C = np.random.random((2, 4))
+    >>> fortplot.pcolormesh(X, Y, C)
+    
+    See Also
+    --------
+    contour : Draw contour lines
+    contourf : Draw filled contours
+    
+    Notes
+    -----
+    The data array C is automatically transposed to Fortran column-major
+    order for efficient processing in the Fortran backend.
+    
+    Currently, irregular grids (2D X, Y arrays) are internally converted
+    to regular grids using the first row/column. Full irregular grid
+    support is planned for a future release.
+    
+    The returned QuadMeshPlaceholder provides basic matplotlib compatibility
+    but does not store the actual mesh data or support all QuadMesh methods.
+    """
+```
+
+**Interactive Display Function**:
+```python
+def show(blocking=None):
+    """
+    Display the current figure in a viewer or terminal.
+    
+    This function intelligently displays the current plot using the most
+    appropriate method available on the system. It automatically detects
+    GUI availability and falls back to ASCII display when necessary.
+    
+    Parameters
+    ----------
+    blocking : bool, optional
+        Controls the blocking behavior of the display:
+        
+        - True: Block execution until the user closes the plot window
+          or presses Enter (for terminal display).
+        - False: Return immediately after launching the viewer
+          (non-blocking mode).
+        - None (default): Use matplotlib-compatible behavior
+          (non-blocking).
+    
+    Raises
+    ------
+    RuntimeError
+        If the plot cannot be displayed and all fallback methods fail.
+    
+    Examples
+    --------
+    Non-blocking display (default):
+    
+    >>> fortplot.plot([1, 2, 3], [1, 4, 9])
+    >>> fortplot.show()  # Returns immediately
+    
+    Blocking display:
+    
+    >>> fortplot.plot(x, y)
+    >>> fortplot.show(blocking=True)  # Waits for user to close
+    
+    Display multiple plots:
+    
+    >>> fortplot.figure()
+    >>> fortplot.plot(x1, y1)
+    >>> fortplot.show()
+    >>> 
+    >>> fortplot.figure()  # New figure
+    >>> fortplot.plot(x2, y2)
+    >>> fortplot.show()
+    
+    Notes
+    -----
+    The display method is automatically selected based on the environment:
+    
+    1. **GUI Available**: Opens the plot in the system's default image
+       viewer (e.g., Eye of GNOME, Preview, Windows Photo Viewer).
+       
+    2. **No GUI (SSH/Terminal)**: Falls back to ASCII art representation
+       in the terminal, providing a text-based visualization.
+       
+    3. **Error Fallback**: If the primary method fails, attempts
+       alternative display methods before raising an error.
+    
+    The underlying Fortran show_figure() function handles all platform-
+    specific display logic, including temporary file management and
+    viewer launching.
+    
+    Implementation Details
+    ----------------------
+    Unlike the original complex implementation with manual file management,
+    this simplified version delegates all display logic to the Fortran
+    backend through the show_figure() function, which provides:
+    
+    - Automatic GUI detection
+    - Platform-specific viewer selection
+    - Graceful fallback to ASCII display
+    - Proper resource cleanup
+    
+    See Also
+    --------
+    savefig : Save the figure to a file
+    figure : Create a new figure
+    """
+```
+
+### Implementation Plan
+
+#### Phase 1: Core Function Documentation
+**Priority**: High - User-facing API functions
+
+1. **Basic plotting functions**:
+   - `figure()` - Figure creation and sizing
+   - `plot()` - Line plotting with styles
+   - `savefig()` - File output functionality
+   - `show()` - Interactive display
+
+2. **Axis and labeling functions**:
+   - `xlabel()`, `ylabel()` - Axis labels
+   - `title()` - Plot titles
+   - `xlim()`, `ylim()` - Axis limits
+   - `xscale()`, `yscale()` - Axis scales
+   - `legend()` - Legend generation
+
+#### Phase 2: Advanced Visualization Documentation
+**Priority**: Medium - Complex plotting functions
+
+1. **Contour functions**:
+   - `contour()` - Contour lines with levels
+   - `contourf()` - Filled contours
+
+2. **Grid-based functions**:
+   - `pcolormesh()` - Pseudocolor plots
+   - `streamplot()` - Vector field visualization
+
+#### Phase 3: Helper Function Documentation
+**Priority**: Low - Internal utilities
+
+1. **Private helper functions**:
+   - `_ensure_array()` - Array conversion utility
+   - Document as private implementation detail
+
+2. **Placeholder classes**:
+   - `QuadMeshPlaceholder` - Compatibility class documentation
+
+### Testing Requirements
+
+#### Docstring Validation Tests
+```python
+# test/test_python_docstrings.py
+import fortplot
+import inspect
+
+def test_all_functions_have_docstrings():
+    """Verify all public functions have docstrings."""
+    for name, obj in inspect.getmembers(fortplot):
+        if callable(obj) and not name.startswith('_'):
+            assert obj.__doc__ is not None, f"{name} missing docstring"
+            assert len(obj.__doc__) > 50, f"{name} docstring too short"
+
+def test_docstring_sections():
+    """Verify docstrings have required sections."""
+    required_sections = ['Parameters', 'Examples']
+    for name, obj in inspect.getmembers(fortplot):
+        if callable(obj) and not name.startswith('_'):
+            doc = obj.__doc__ or ""
+            for section in required_sections:
+                assert section in doc, f"{name} missing {section} section"
+
+def test_help_system():
+    """Verify help() works for all functions."""
+    import io
+    import contextlib
+    
+    for name in ['plot', 'figure', 'savefig', 'show']:
+        func = getattr(fortplot, name)
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            help(func)
+        output = buffer.getvalue()
+        assert len(output) > 100, f"help({name}) output too short"
+```
+
+### Risk Assessment
+
+**Technical Risks**:
+1. **Docstring Format Compatibility**: 
+   - **Risk**: IDE/tool incompatibility with chosen format
+   - **Mitigation**: Use widely-supported Google/NumPy style
+   - **Impact**: Low - Standard format works everywhere
+
+2. **Maintenance Burden**:
+   - **Risk**: Docstrings becoming outdated with API changes
+   - **Mitigation**: Include docstring updates in PR checklist
+   - **Impact**: Medium - Requires ongoing vigilance
+
+**Quality Risks**:
+1. **Incomplete Examples**:
+   - **Risk**: Examples that don't actually work
+   - **Mitigation**: Test all examples in CI
+   - **Impact**: High - Broken examples frustrate users
+
+2. **Misleading Documentation**:
+   - **Risk**: Documentation doesn't match implementation
+   - **Mitigation**: Docstring validation tests
+   - **Impact**: High - Causes user confusion
+
+### Success Metrics
+
+1. **Coverage**: 100% of public functions have comprehensive docstrings
+2. **Quality**: All docstrings include parameters, examples, and notes
+3. **Usability**: help() system works for all functions
+4. **IDE Support**: Tooltips and autocomplete work in major IDEs
+5. **User Feedback**: Reduced questions about API usage
 
 **Deliverables**:
 - All examples validated with output generation verification

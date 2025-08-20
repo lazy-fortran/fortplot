@@ -7,10 +7,10 @@ module fortplot_ascii
     !!
     !! Author: fortplot contributors
     
-    use fortplot_context
-    use fortplot_logging, only: log_info
-    use fortplot_latex_parser
-    use fortplot_unicode
+    use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_logging, only: log_info, log_error
+    use fortplot_latex_parser, only: process_latex_in_text
+    ! use fortplot_unicode, only: unicode_to_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -42,6 +42,8 @@ module fortplot_ascii
         procedure :: set_marker_colors => ascii_set_marker_colors
         procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
         procedure :: fill_heatmap => ascii_fill_heatmap
+        procedure :: draw_arrow => ascii_draw_arrow
+        procedure :: get_ascii_output => ascii_get_output
     end type ascii_context
     
     ! ASCII plotting constants
@@ -95,7 +97,6 @@ contains
         integer :: steps, i, px, py
         character(len=1) :: line_char
         
-        ! print *, "ASCII DRAW: Called with", x1, y1, "to", x2, y2
         
         if (this%current_r > 0.8_wp .and. this%current_g > 0.8_wp .and. this%current_b > 0.8_wp) then
             return
@@ -137,7 +138,6 @@ contains
             
             ! Debug first few points
             ! if (i < 3) then
-            !     print *, "ASCII DEBUG: px,py=", px, py, "canvas:", this%plot_width, "x", this%plot_height
             ! end if
             
             if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
@@ -244,12 +244,22 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: unit
+        integer :: unit, ios
+        character(len=512) :: error_msg
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(this)
         else
-            open(newunit=unit, file=filename, status='replace')
+            open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
+            
+            if (ios /= 0) then
+                call log_error("Cannot save ASCII file '" // trim(filename) // "': " // trim(error_msg))
+                ! Fall back to terminal output
+                call log_info("Falling back to terminal output due to file error")
+                call output_to_terminal(this)
+                return
+            end if
+            
             call output_to_file(this, unit)
             close(unit)
             call log_info("Unicode plot saved to '" // trim(filename) // "'")
@@ -293,7 +303,6 @@ contains
             call write_centered_title(unit, this%title_text, this%plot_width)
         end if
         
-        ! print *, "ASCII OUTPUT: Using width=", this%plot_width, "height=", this%plot_height
         write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
         do i = 1, this%plot_height
             write(unit, '(A)', advance='no') '|'
@@ -566,5 +575,76 @@ contains
             end do
         end do
     end subroutine ascii_fill_heatmap
+
+    subroutine ascii_draw_arrow(this, x, y, dx, dy, size, style)
+        !! Draw arrow using Unicode directional characters for ASCII backend
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        
+        integer :: px, py
+        character(len=1) :: arrow_char
+        real(wp) :: angle
+        
+        ! Convert world coordinates to pixel coordinates
+        px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp))
+        py = int((y - this%y_min) / (this%y_max - this%y_min) * real(this%height, wp))
+        
+        ! Ensure coordinates are within bounds
+        if (px < 1 .or. px > this%width .or. py < 1 .or. py > this%height) return
+        
+        ! Calculate angle for direction
+        angle = atan2(dy, dx)
+        
+        ! Choose arrow character based on direction
+        if (abs(angle) < 0.393_wp) then          ! 0 ± 22.5 degrees (right)
+            arrow_char = '→'
+        else if (angle >= 0.393_wp .and. angle < 1.178_wp) then  ! 22.5-67.5 degrees (up-right)
+            arrow_char = '↗'
+        else if (angle >= 1.178_wp .and. angle < 1.963_wp) then  ! 67.5-112.5 degrees (up)
+            arrow_char = '↑'
+        else if (angle >= 1.963_wp .and. angle < 2.749_wp) then  ! 112.5-157.5 degrees (up-left)
+            arrow_char = '↖'
+        else if (abs(angle) >= 2.749_wp) then    ! 157.5-180 degrees (left)
+            arrow_char = '←'
+        else if (angle <= -0.393_wp .and. angle > -1.178_wp) then  ! -22.5 to -67.5 degrees (down-right)
+            arrow_char = '↘'
+        else if (angle <= -1.178_wp .and. angle > -1.963_wp) then  ! -67.5 to -112.5 degrees (down)
+            arrow_char = '↓'
+        else  ! -112.5 to -157.5 degrees (down-left)
+            arrow_char = '↙'
+        end if
+        
+        ! Place arrow character on canvas
+        this%canvas(py, px) = arrow_char
+        
+        ! Mark that arrows have been rendered
+        this%has_rendered_arrows = .true.
+        this%uses_vector_arrows = .false.
+        this%has_triangular_arrows = .false.
+    end subroutine ascii_draw_arrow
+
+    function ascii_get_output(this) result(output)
+        !! Get the complete ASCII canvas as a string
+        class(ascii_context), intent(in) :: this
+        character(len=:), allocatable :: output
+        character(len=1000) :: line_buffer
+        integer :: i, j, total_len, line_len
+        
+        ! Calculate total length needed
+        total_len = this%height * (this%width + 1)  ! +1 for newline per row
+        allocate(character(len=total_len) :: output)
+        
+        output = ""
+        do i = 1, this%height
+            line_buffer = ""
+            do j = 1, this%width
+                line_buffer(j:j) = this%canvas(i, j)
+            end do
+            line_len = len_trim(line_buffer(:this%width))
+            if (line_len == 0) line_len = 1  ! Ensure at least one character
+            output = output // line_buffer(1:line_len) // new_line('a')
+        end do
+    end function ascii_get_output
 
 end module fortplot_ascii

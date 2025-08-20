@@ -149,21 +149,135 @@ end program pcolormesh_demo
 
 ## Output
 
-### Basic Linear Gradient
+### Pcolormesh Basic
 
-![Basic Pcolormesh](media/examples/pcolormesh_basic.png)
+![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
 
-*Basic pcolormesh example showing a linear gradient with the Viridis colormap.*
+ASCII output:
+```
 
-### Sinusoidal Pattern
+                       Basic Pcolormesh - Linear Gradient
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .       .        .       .        .       .        .       .        .        . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
 
-![Sinusoidal Pattern](media/examples/pcolormesh_sinusoidal.png)
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
 
-*Complex sinusoidal pattern visualization using the Coolwarm colormap to highlight both positive and negative values.*
+### Pcolormesh Plasma
 
-### Radial Pattern with Plasma Colormap
+![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
 
-![Plasma Colormap](media/examples/pcolormesh_plasma.png)
+ASCII output:
+```
 
-*Radial distance pattern showcasing the Plasma colormap for high-contrast visualization.*
+                      Pcolormesh - Radial Pattern (Plasma)
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                        :              =              +               +         |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                      :              +              %               #         |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                      :              +              @               #         |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                        :              =              *               +         |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|                        .              :              -               -         |
+|                                                                                |
+| .          .          .          .          .          .          .         .  |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
+
+### Pcolormesh Sinusoidal
+
+![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
+
+ASCII output:
+```
+
+                        Pcolormesh - Sinusoidal Pattern
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|     -         :         =        *         +        -         :         =      |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .   .                   =        %         #        .                   =      |
+|                                                                                |
+|                                                                                |
+|     =         =         =        =         =        =         =         =      |
+|                                                                                |
+| .                                                                              |
+|     #         @         =                  .        #         %         =      |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|     +         +         =        -         -        +         +         =      |
+| .                                                                              |
+|                                                                                |
+|     .                   =        %         #        .                   =      |
+|                                                                                |
+|                                                                                |
+| .   -         :         =        *         +        -         :         =      |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|     *         #         =        .         :        *         #         =      |
+| .          .          .          .          .          .          .          . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
 

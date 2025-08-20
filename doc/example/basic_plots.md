@@ -86,19 +86,91 @@ end program basic_plots
 
 ## Output
 
-### Simple Sine Wave Plot
+### Simple Plot
 
-![Simple Plot](media/examples/simple_plot.png)
+![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)
 
-*Functional API example showing a simple sine wave with proper axis labels and title.*
+ASCII output:
+```
 
-### Multi-line Plot with Legend
+                                Simple Sine Wave
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .        #                                                                     |
+|        ## ##                                  #####                            |
+|       ##    #                                #     #                           |
+|              #                              #      #                           |
+| .    #        #                                     #                          |
+|     #         #                            #         #                         |
+|    #                                      #                                    |
+| .  #           #                         #            #                        |
+|                 #                                      #                       |
+|   #                                     #                                      |
+|                  #                                     #                       |
+| .#                #                     #               #                      |
+| #                                      #                                       |
+|                   #                                      #                     |
+| #                                     #                                      # |
+|                    #                                      #                    |
+|                                      #                                      #  |
+| .                   #               #                     #                #   |
+|                      #                                     #                   |
+|                                     #                                     #    |
+|                       #                                     #                  |
+| .                     #            #                         #           #     |
+|                                   #                                      #     |
+|                        #         #                            #         #      |
+| .                       #                                     #        #       |
+|                          #      ##                             #               |
+|                          #     #                                #    ##        |
+| .. .. .. .. .. .. .. .. ..#####. .. .. .. .. .. .. .. .. .. .. ..#####. .. ..  |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
 
-![Multi-line Plot](media/examples/multi_line.png)
+[Download PDF](../../media/examples/basic_plots/simple_plot.pdf                                                                                                                                                                                                                                                 )
 
-*Object-oriented API example demonstrating multiple datasets (sine and cosine) with automatic legend generation.*
+### Multi Line
 
-The plots are also available in other formats:
-- **PDF**: Vector format for high-quality printing and scaling
-- **ASCII**: Terminal-friendly text output for console viewing
+![multi_line.png](../../media/examples/basic_plots/multi_line.png)
+
+ASCII output:
+```
+
+                           Sine and Cosine Functions
++--------------------------------------------------------------------------------+
+|                                                                                |
+| #                                                                              |
+| #   ####               ###   ###               ###   ####- sin(x)       ###    |
+|  #     #              #   # #   #                 # #   #- cos(x)      #   #   |
+|   ##    #                   #                 #    #     #            #      # |
+| .  #                 #     #     #           #      #                       #  |
+|   ##     #           #     #                 #      #     #           #     #  |
+|   ##     #                # #     #          #     ##     #          #     # # |
+| .  #      #         #     # #     #               # #      #         #     #   |
+|  #  #     #         #       #      #        #     #  #                     #   |
+|  #  #     #        #      #  #              #              #        #     #    |
+|  #   #             #     #         #       #      #  #     #        #          |
+| #          #       #     #   #     #       #     #    #     #       #     #    |
+|      #     #            #    #      #            #    #            #     #     |
+| #    #      #     #           #            #                #            #     |
+| #     #           #     #           #     #      #    #      #     #           |
+|             #           #     #     #     #     #      #     #    #      #     |
+|       #     #    #     #       #     #          #      #          #     #      |
+| .      #     #   #             #          #                  #          #      |
+|        #         #     #             #   #     #        #     #   #            |
+|              #  #     #        #      #  #     #        #     #  #     #       |
+|        #      #       #         #     # #      #        #     ## #     #       |
+| .       #     # #     #         #     #       #          #     ##      #       |
+|         #     ##                 #     ##     #          #      #     #        |
+|                #     #           #     ##    #                 #               |
+| .        #     #     #                 #                  #    #      #        |
+|               #                   #   # #    #                  #              |
+|           #   # #   #              #     #  #              #  #  #   #         |
+| ..........####...###...............####...##...............####...###........  |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/basic_plots/multi_line.pdf                                                                                                                                                                                                                                                  )
 

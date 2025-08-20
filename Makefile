@@ -88,6 +88,10 @@ coverage:
 	 echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" && \
 	 echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" && \
 	 echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt)
+	@echo "Cleaning up intermediate coverage files..."
+	find . -name '*.gcov.json.gz' -delete
+	find . -name '*.gcda' -delete
+	find . -name '*.gcno' -delete
 	@echo "Coverage analysis completed: coverage.txt"
 
 # Validate functional output generation

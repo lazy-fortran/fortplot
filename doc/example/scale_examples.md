@@ -82,15 +82,91 @@ end program scale_examples
 
 ## Output
 
-### Logarithmic Scale Example
+### Log Scale
 
-![Log Scale](media/examples/log_scale.png)
+![log_scale.png](../../media/examples/scale_examples/log_scale.png)
 
-*Exponential growth data plotted with logarithmic Y-axis scaling, showing how exponential trends become linear on log scale.*
+ASCII output:
+```
 
-### Symmetric Logarithmic Scale Example
+                               Log Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                              |
+| .                                                                         #### |
+|                                                                        ###     |
+| .                                                                   ####       |
+| .                                                                ####          |
+|                                                               ####             |
+| .                                                           ###                |
+|                                                          ###                   |
+| .                                                     ###                      |
+| .                                                  ####                        |
+|                                                 ####                           |
+| .                                            ####                              |
+| .                                          ###                                 |
+|                                         ###                                    |
+| .                                    ###                                       |
+|                                   ###                                          |
+| .                              ###                                             |
+| .                           ####                                               |
+|                          ####                                                  |
+| .                     ####                                                     |
+| ....................###....................................................... |
+|                  ###                                                           |
+|               ###                                                              |
+|            ####                                                                |
+|         ####                                                                   |
+|      ####                                                                      |
+|    ###                                                                         |
+| ###                                                                            |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
 
-![Symlog Scale](media/examples/symlog_scale.png)
+[Download PDF](../../media/examples/scale_examples/log_scale.pdf)
 
-*Cubic polynomial (x³ - 50x) plotted with symmetric logarithmic Y-axis scaling, handling both positive and negative values with smooth transition through zero.*
+### Symlog Scale
+
+![symlog_scale.png](../../media/examples/scale_examples/symlog_scale.png)
+
+ASCII output:
+```
+
+                              Symlog Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                                                                              |
+| .                                    ######################################### |
+| .                  ###################                                         |
+| .          #########                                                           |
+| .         ##                                                                   |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .         #                                                                    |
+| .        ##                                                                    |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .        #                                                                     |
+| .       ##                                                                     |
+| .       #                                                                      |
+| .       #                                                                      |
+| #########                                                                      |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/scale_examples/symlog_scale.pdf)
 

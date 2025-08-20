@@ -82,3 +82,47 @@ end program line_styles
 
 ## Output
 
+### Line Styles
+
+![line_styles.png](../../media/examples/line_styles/line_styles.png)
+
+ASCII output:
+```
+
+                         Complete Line Style Reference
++--------------------------------------------------------------------------------+
+|                                                                                |
+| o                                                                              |
+| .o oo                                                 o Markers only           |
+|       oo                                                                       |
+|          o                                                                     |
+| .          o                                                                   |
+|             o                                                                  |
+|               o                                                                |
+| .              o                                                               |
+|                  o                                                             |
+|                   o                                                            |
+|                     o                                                          |
+| .                                                                            o |
+|                       o                                                        |
+|                        o                                                   o   |
+| .                        o                                               o     |
+|                                                                                |
+|                           o                                             o      |
+| .                           o                                         o        |
+|                              o                                       o         |
+|                                                                    o           |
+|                                o                                               |
+| .                                o                                o            |
+|                                   o                             o              |
+|                                     o                         o                |
+| .                                    o                       o                 |
+|                                        o                  oo                   |
+|                                         o o             o                      |
+| .. . . . . . . . . . . . .. . . . . . . . . oo.oo oo oo. . . . . . . . . . ..  |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/line_styles/line_styles.pdf                                                                                                                                                                                                                                                 )
+
