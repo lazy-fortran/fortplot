@@ -7,7 +7,25 @@ module fortplot_streamline
     
     public :: calculate_seed_points, calculate_seed_points_matplotlib, integrate_streamline, &
               integrate_streamline_dopri5, integrate_streamline_bidirectional, rk4_step, &
-              calculate_arrow_positions, check_termination, bilinear_interpolate, integration_params_t
+              calculate_arrow_positions, check_termination, bilinear_interpolate, integration_params_t, &
+              velocity_function_context_t
+
+    !! Context type to hold velocity function pointers (eliminates trampoline need)
+    type :: velocity_function_context_t
+        procedure(velocity_function_interface), pointer, nopass :: u_func => null()
+        procedure(velocity_function_interface), pointer, nopass :: v_func => null()
+        logical :: negate_functions = .false.  !! For backward integration
+    end type velocity_function_context_t
+
+    !! Abstract interface for velocity functions
+    abstract interface
+        real function velocity_function_interface(x, y)
+            real, intent(in) :: x, y
+        end function velocity_function_interface
+    end interface
+
+    !! Module-level context for current velocity functions (thread-unsafe but trampoline-free)
+    type(velocity_function_context_t) :: current_velocity_context
     
 contains
     
@@ -129,9 +147,14 @@ contains
             t_final = 10.0_wp  ! Default time limit
         end if
         
-        ! Call DOPRI5 integrator with wrapper functions
+        ! Set up velocity context for module-level wrappers (eliminates trampolines)
+        current_velocity_context%u_func => u_func
+        current_velocity_context%v_func => v_func
+        current_velocity_context%negate_functions = .false.
+        
+        ! Call DOPRI5 integrator with module-level wrapper functions (no trampolines)
         call dopri5_integrate(real(x0, wp), real(y0, wp), 0.0_wp, t_final, &
-                             u_func_wrapper, v_func_wrapper, &
+                             module_u_func_wrapper, module_v_func_wrapper, &
                              local_params, path_x_wp, path_y_wp, times, &
                              n_points, n_accepted, n_rejected, success)
         
@@ -150,19 +173,6 @@ contains
         path_y = real(path_y_wp)
         
         deallocate(path_x_wp, path_y_wp, times)
-        
-    contains
-        
-        real(wp) function u_func_wrapper(x, y) result(u_vel)
-            real(wp), intent(in) :: x, y
-            u_vel = real(u_func(real(x), real(y)), wp)
-        end function u_func_wrapper
-        
-        real(wp) function v_func_wrapper(x, y) result(v_vel)
-            real(wp), intent(in) :: x, y
-            v_vel = real(v_func(real(x), real(y)), wp)
-        end function v_func_wrapper
-        
     end subroutine integrate_streamline_dopri5
 
     subroutine calculate_seed_points_matplotlib(x, y, density, seed_x, seed_y, n_seeds, mask)
@@ -260,12 +270,20 @@ contains
             half_time = 5.0  ! Default half time
         end if
         
+        ! Set up velocity context for forward integration
+        current_velocity_context%u_func => u_func
+        current_velocity_context%v_func => v_func
+        current_velocity_context%negate_functions = .false.
+        
         ! Integrate forward direction
         call integrate_streamline_dopri5(x0, y0, u_func, v_func, params, half_time, &
                                         forward_x, forward_y, n_forward)
         
-        ! Integrate backward direction (negate velocity field)
-        call integrate_streamline_dopri5(x0, y0, u_func_neg, v_func_neg, params, half_time, &
+        ! Set up velocity context for backward integration (negate velocity field)
+        current_velocity_context%negate_functions = .true.
+        
+        ! Integrate backward direction (module wrappers will negate functions automatically)
+        call integrate_streamline_dopri5(x0, y0, u_func, v_func, params, half_time, &
                                         backward_x, backward_y, n_backward)
         
         ! Combine backward (reversed) + forward trajectories
@@ -285,19 +303,6 @@ contains
         end do
         
         deallocate(forward_x, forward_y, backward_x, backward_y)
-        
-    contains
-        
-        real function u_func_neg(x, y) result(u_neg)
-            real, intent(in) :: x, y
-            u_neg = -u_func(x, y)  ! Negate for backward integration
-        end function u_func_neg
-        
-        real function v_func_neg(x, y) result(v_neg)
-            real, intent(in) :: x, y
-            v_neg = -v_func(x, y)  ! Negate for backward integration
-        end function v_func_neg
-        
     end subroutine integrate_streamline_bidirectional
     
     subroutine rk4_step(x, y, u_func, v_func, dt, x_new, y_new)
@@ -440,5 +445,36 @@ contains
                  values(i1,j2) * (1-fx) * fy + &
                  values(i2,j2) * fx * fy
     end subroutine bilinear_interpolate
+
+    !! Module-level wrapper functions to eliminate trampolines
+    real(wp) function module_u_func_wrapper(x, y) result(u_vel)
+        !! Wrapper for U velocity function - no trampoline since module-level
+        real(wp), intent(in) :: x, y
+        
+        if (.not. associated(current_velocity_context%u_func)) then
+            error stop 'ERROR: u_func not set in velocity context'
+        end if
+        
+        u_vel = real(current_velocity_context%u_func(real(x), real(y)), wp)
+        
+        if (current_velocity_context%negate_functions) then
+            u_vel = -u_vel
+        end if
+    end function module_u_func_wrapper
+
+    real(wp) function module_v_func_wrapper(x, y) result(v_vel)
+        !! Wrapper for V velocity function - no trampoline since module-level  
+        real(wp), intent(in) :: x, y
+        
+        if (.not. associated(current_velocity_context%v_func)) then
+            error stop 'ERROR: v_func not set in velocity context'
+        end if
+        
+        v_vel = real(current_velocity_context%v_func(real(x), real(y)), wp)
+        
+        if (current_velocity_context%negate_functions) then
+            v_vel = -v_vel
+        end if
+    end function module_v_func_wrapper
     
 end module fortplot_streamline
