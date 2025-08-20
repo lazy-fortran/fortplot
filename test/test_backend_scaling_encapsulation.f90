@@ -181,11 +181,12 @@ contains
         !! THEN: Each backend should implement scaling methods
         !! AND: Scaling should be encapsulated within backend code
         
-        logical :: png_has_scaling, pdf_has_scaling, ascii_has_scaling
+        logical :: png_has_scaling, pdf_has_scaling, ascii_has_scaling, gltf_has_scaling
         
-        call check_backend_scaling_implementation('src/fortplot_png.f90', png_has_scaling)
+        call check_backend_scaling_implementation('src/fortplot_raster.f90', png_has_scaling)
         call check_backend_scaling_implementation('src/fortplot_pdf.f90', pdf_has_scaling)
         call check_backend_scaling_implementation('src/fortplot_ascii.f90', ascii_has_scaling)
+        call check_backend_scaling_implementation('src/fortplot_gltf.f90', gltf_has_scaling)
         
         if (.not. png_has_scaling) then
             error stop 'FAILED: PNG backend does not implement scaling methods'
@@ -197,6 +198,10 @@ contains
         
         if (.not. ascii_has_scaling) then
             error stop 'FAILED: ASCII backend does not implement scaling methods'
+        end if
+        
+        if (.not. gltf_has_scaling) then
+            error stop 'FAILED: GLTF backend does not implement scaling methods'
         end if
         
         print *, 'PASSED: All backends implement scaling methods'
