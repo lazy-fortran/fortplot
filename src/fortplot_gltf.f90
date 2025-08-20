@@ -42,6 +42,14 @@ module fortplot_gltf
         procedure :: get_height_scale => gltf_get_height_scale
         procedure :: fill_quad => gltf_fill_quad
         procedure :: fill_heatmap => gltf_fill_heatmap
+        procedure :: render_legend_specialized => gltf_render_legend_specialized
+        procedure :: calculate_legend_dimensions => gltf_calculate_legend_dimensions
+        procedure :: set_legend_border_width => gltf_set_legend_border_width
+        procedure :: calculate_legend_position_backend => gltf_calculate_legend_position
+        procedure :: extract_rgb_data => gltf_extract_rgb_data
+        procedure :: get_png_data_backend => gltf_get_png_data
+        procedure :: prepare_3d_data => gltf_prepare_3d_data
+        procedure :: render_ylabel => gltf_render_ylabel
         
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
@@ -491,5 +499,87 @@ contains
         ! GLTF backend is for 3D export - 2D heatmaps not supported
         ! Could potentially be implemented as 3D surface meshes in the future
     end subroutine gltf_fill_heatmap
+
+    subroutine gltf_render_legend_specialized(this, legend, legend_x, legend_y)
+        !! Render legend (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(inout) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(in) :: legend_x, legend_y
+        
+        ! GLTF backend is for 3D export - 2D legends not supported
+    end subroutine gltf_render_legend_specialized
+
+    subroutine gltf_calculate_legend_dimensions(this, legend, legend_width, legend_height)
+        !! Calculate legend dimensions (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: legend_width, legend_height
+        
+        ! GLTF backend is for 3D export - return minimal dimensions
+        legend_width = 0.0_wp
+        legend_height = 0.0_wp
+    end subroutine gltf_calculate_legend_dimensions
+
+    subroutine gltf_set_legend_border_width(this)
+        !! Set legend border width (not supported for 3D GLTF backend - no-op)
+        class(gltf_context), intent(inout) :: this
+        
+        ! GLTF backend is for 3D export - no 2D line widths
+    end subroutine gltf_set_legend_border_width
+
+    subroutine gltf_calculate_legend_position(this, legend, x, y)
+        !! Calculate legend position (not supported for 3D GLTF backend - no-op)
+        use fortplot_legend, only: legend_t
+        class(gltf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: x, y
+        
+        ! GLTF backend is for 3D export - return default position
+        x = 0.0_wp
+        y = 0.0_wp
+    end subroutine gltf_calculate_legend_position
+
+    subroutine gltf_extract_rgb_data(this, width, height, rgb_data)
+        !! Extract RGB data from GLTF backend (not supported - dummy data)
+        use, intrinsic :: iso_fortran_env, only: real64
+        class(gltf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        real(real64), intent(out) :: rgb_data(width, height, 3)
+        
+        ! GLTF backend is for 3D export - no RGB data for animation
+        rgb_data = 0.5_real64  ! Gray background
+    end subroutine gltf_extract_rgb_data
+
+    subroutine gltf_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from GLTF backend (not supported)
+        class(gltf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        ! GLTF backend doesn't provide PNG data
+        allocate(png_data(0))
+        status = -1
+    end subroutine gltf_get_png_data
+
+    subroutine gltf_prepare_3d_data(this, plots)
+        !! Prepare 3D data for GLTF backend - actual implementation
+        use fortplot_plot_data, only: plot_data_t
+        class(gltf_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        ! GLTF backend actually needs 3D data preparation
+        call prepare_gltf_data(this, plots)
+    end subroutine gltf_prepare_3d_data
+
+    subroutine gltf_render_ylabel(this, ylabel)
+        !! Render Y-axis label for GLTF backend (no-op - 3D doesn't use 2D labels)
+        class(gltf_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        
+        ! GLTF backend is for 3D export - doesn't use 2D axis labels
+    end subroutine gltf_render_ylabel
 
 end module fortplot_gltf

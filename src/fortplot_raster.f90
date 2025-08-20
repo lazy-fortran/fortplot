@@ -62,6 +62,14 @@ module fortplot_raster
         procedure :: get_width_scale => raster_get_width_scale
         procedure :: get_height_scale => raster_get_height_scale
         procedure :: fill_heatmap => raster_fill_heatmap
+        procedure :: render_legend_specialized => raster_render_legend_specialized
+        procedure :: calculate_legend_dimensions => raster_calculate_legend_dimensions
+        procedure :: set_legend_border_width => raster_set_legend_border_width
+        procedure :: calculate_legend_position_backend => raster_calculate_legend_position
+        procedure :: extract_rgb_data => raster_extract_rgb_data
+        procedure :: get_png_data_backend => raster_get_png_data
+        procedure :: prepare_3d_data => raster_prepare_3d_data
+        procedure :: render_ylabel => raster_render_ylabel
     end type raster_context
 
 contains
@@ -1624,5 +1632,115 @@ contains
         ! Raster backend doesn't support heatmap rendering like ASCII
         ! This is a no-op to satisfy polymorphic interface
     end subroutine raster_fill_heatmap
+
+    subroutine raster_render_legend_specialized(this, legend, legend_x, legend_y)
+        !! Render legend using standard algorithm for PNG
+        use fortplot_legend, only: legend_t
+        class(raster_context), intent(inout) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(in) :: legend_x, legend_y
+        
+        ! Use standard legend rendering for PNG/PDF backends
+        call render_standard_legend(legend, this, legend_x, legend_y)
+    end subroutine raster_render_legend_specialized
+
+    subroutine raster_calculate_legend_dimensions(this, legend, legend_width, legend_height)
+        !! Calculate standard legend dimensions for PNG
+        use fortplot_legend, only: legend_t
+        class(raster_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: legend_width, legend_height
+        
+        ! Use standard dimension calculation for PNG backend
+        legend_width = 80.0_wp   ! Standard legend width
+        legend_height = real(legend%num_entries * 20 + 10, wp)  ! 20 pixels per entry + margins
+    end subroutine raster_calculate_legend_dimensions
+
+    subroutine raster_set_legend_border_width(this)
+        !! Set thin border width for PNG legend
+        class(raster_context), intent(inout) :: this
+        
+        call this%set_line_width(0.1_wp)  ! Thin border for PNG like axes
+    end subroutine raster_set_legend_border_width
+
+    subroutine raster_calculate_legend_position(this, legend, x, y)
+        !! Calculate standard legend position for PNG using plot coordinates
+        use fortplot_legend, only: legend_t, calculate_text_dimensions
+        class(raster_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: x, y
+        real(wp) :: legend_width, legend_height
+        character(len=:), allocatable :: labels(:)
+        
+        ! Get standard dimensions
+        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
+        
+        ! For PNG/PDF backends, use standard matplotlib positioning
+        if (legend%num_entries > 0) then
+            ! Calculate text dimensions for positioning
+            allocate(labels(legend%num_entries))
+            call calculate_text_dimensions(legend, this, labels, legend_width, legend_height)
+            
+            ! Position in upper right with margin from edges
+            x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
+            y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
+            
+            deallocate(labels)
+        else
+            ! Fallback for empty legend
+            x = this%x_max - this%x_max * 0.2_wp
+            y = this%y_max - this%y_max * 0.05_wp
+        end if
+    end subroutine raster_calculate_legend_position
+
+    subroutine raster_extract_rgb_data(this, width, height, rgb_data)
+        !! Extract RGB data from PNG backend
+        use, intrinsic :: iso_fortran_env, only: real64
+        class(raster_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        real(real64), intent(out) :: rgb_data(width, height, 3)
+        integer :: x, y, idx_base
+        
+        do y = 1, height
+            do x = 1, width
+                ! Calculate 1D index for packed RGB data (width * height * 3 array)
+                ! Format: [R1, G1, B1, R2, G2, B2, ...]
+                idx_base = ((y-1) * width + (x-1)) * 3
+                
+                ! Extract RGB values (normalized to 0-1)
+                rgb_data(x, y, 1) = real(this%raster%image_data(idx_base + 1), real64) / 255.0_real64
+                rgb_data(x, y, 2) = real(this%raster%image_data(idx_base + 2), real64) / 255.0_real64
+                rgb_data(x, y, 3) = real(this%raster%image_data(idx_base + 3), real64) / 255.0_real64
+            end do
+        end do
+    end subroutine raster_extract_rgb_data
+
+    subroutine raster_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from PNG backend
+        class(raster_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        call get_png_data(width, height, this%raster%image_data, png_data)
+        status = 0
+    end subroutine raster_get_png_data
+
+    subroutine raster_prepare_3d_data(this, plots)
+        !! Prepare 3D data for PNG backend (no-op - PNG doesn't use 3D data)
+        use fortplot_plot_data, only: plot_data_t
+        class(raster_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        ! PNG backend doesn't need 3D data preparation - no-op
+    end subroutine raster_prepare_3d_data
+
+    subroutine raster_render_ylabel(this, ylabel)
+        !! Render rotated Y-axis label for PNG backend
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        
+        call draw_rotated_ylabel_raster(this, ylabel)
+    end subroutine raster_render_ylabel
 
 end module fortplot_raster

@@ -36,6 +36,11 @@ module fortplot_context
         procedure(get_height_scale_interface), deferred :: get_height_scale
         procedure(fill_quad_interface), deferred :: fill_quad
         procedure(fill_heatmap_interface), deferred :: fill_heatmap
+        procedure(extract_rgb_data_interface), deferred :: extract_rgb_data
+        procedure(get_png_data_interface), deferred :: get_png_data_backend
+        procedure(prepare_3d_data_interface), deferred :: prepare_3d_data
+        procedure(render_ylabel_interface), deferred :: render_ylabel
+        procedure(draw_axes_and_labels_interface), deferred :: draw_axes_and_labels_backend
     end type plot_context
     
     abstract interface
@@ -128,6 +133,49 @@ module fortplot_context
             real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
             real(wp), intent(in) :: z_min, z_max
         end subroutine fill_heatmap_interface
+
+
+        subroutine extract_rgb_data_interface(this, width, height, rgb_data)
+            import :: plot_context, real64
+            class(plot_context), intent(in) :: this
+            integer, intent(in) :: width, height
+            real(real64), intent(out) :: rgb_data(width, height, 3)
+        end subroutine extract_rgb_data_interface
+
+        subroutine get_png_data_interface(this, width, height, png_data, status)
+            import :: plot_context
+            class(plot_context), intent(in) :: this
+            integer, intent(in) :: width, height
+            integer(1), allocatable, intent(out) :: png_data(:)
+            integer, intent(out) :: status
+        end subroutine get_png_data_interface
+
+        subroutine prepare_3d_data_interface(this, plots)
+            import :: plot_context
+            use fortplot_plot_data, only: plot_data_t
+            class(plot_context), intent(inout) :: this
+            type(plot_data_t), intent(in) :: plots(:)
+        end subroutine prepare_3d_data_interface
+
+        subroutine render_ylabel_interface(this, ylabel)
+            import :: plot_context
+            class(plot_context), intent(inout) :: this
+            character(len=*), intent(in) :: ylabel
+        end subroutine render_ylabel_interface
+
+        subroutine draw_axes_and_labels_interface(this, xscale, yscale, symlog_threshold, &
+                                                x_min, x_max, y_min, y_max, &
+                                                title, xlabel, ylabel, &
+                                                z_min, z_max, has_3d_plots)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            character(len=*), intent(in) :: xscale, yscale
+            real(wp), intent(in) :: symlog_threshold
+            real(wp), intent(in) :: x_min, x_max, y_min, y_max
+            character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+            real(wp), intent(in), optional :: z_min, z_max
+            logical, intent(in) :: has_3d_plots
+        end subroutine draw_axes_and_labels_interface
     end interface
 
 contains

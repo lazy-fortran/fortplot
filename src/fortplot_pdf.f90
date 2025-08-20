@@ -53,6 +53,14 @@ module fortplot_pdf
         procedure :: get_height_scale => pdf_get_height_scale
         procedure :: fill_quad => pdf_fill_quad
         procedure :: fill_heatmap => pdf_fill_heatmap
+        procedure :: render_legend_specialized => pdf_render_legend_specialized
+        procedure :: calculate_legend_dimensions => pdf_calculate_legend_dimensions
+        procedure :: set_legend_border_width => pdf_set_legend_border_width
+        procedure :: calculate_legend_position_backend => pdf_calculate_legend_position
+        procedure :: extract_rgb_data => pdf_extract_rgb_data
+        procedure :: get_png_data_backend => pdf_get_png_data
+        procedure :: prepare_3d_data => pdf_prepare_3d_data
+        procedure :: render_ylabel => pdf_render_ylabel
     end type pdf_context
     
 contains
@@ -1792,5 +1800,106 @@ contains
         ! PDF backend doesn't support ASCII-style heatmap rendering
         ! This is a no-op to satisfy polymorphic interface
     end subroutine pdf_fill_heatmap
+
+    subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
+        !! Render legend using standard algorithm for PDF
+        use fortplot_legend, only: legend_t
+        class(pdf_context), intent(inout) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(in) :: legend_x, legend_y
+        
+        ! Use standard legend rendering for PNG/PDF backends
+        call render_standard_legend(legend, this, legend_x, legend_y)
+    end subroutine pdf_render_legend_specialized
+
+    subroutine pdf_calculate_legend_dimensions(this, legend, legend_width, legend_height)
+        !! Calculate standard legend dimensions for PDF
+        use fortplot_legend, only: legend_t
+        class(pdf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: legend_width, legend_height
+        
+        ! Use standard dimension calculation for PDF backend
+        legend_width = 80.0_wp   ! Standard legend width
+        legend_height = real(legend%num_entries * 20 + 10, wp)  ! 20 pixels per entry + margins
+    end subroutine pdf_calculate_legend_dimensions
+
+    subroutine pdf_set_legend_border_width(this)
+        !! Set standard border width for PDF legend
+        class(pdf_context), intent(inout) :: this
+        
+        call this%set_line_width(1.0_wp)  ! Standard border for PDF like axes
+    end subroutine pdf_set_legend_border_width
+
+    subroutine pdf_calculate_legend_position(this, legend, x, y)
+        !! Calculate standard legend position for PDF using plot coordinates
+        use fortplot_legend, only: legend_t, calculate_text_dimensions
+        class(pdf_context), intent(in) :: this
+        type(legend_t), intent(in) :: legend
+        real(wp), intent(out) :: x, y
+        real(wp) :: legend_width, legend_height
+        character(len=:), allocatable :: labels(:)
+        
+        ! Get standard dimensions
+        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
+        
+        ! For PNG/PDF backends, use standard matplotlib positioning
+        if (legend%num_entries > 0) then
+            ! Calculate text dimensions for positioning
+            allocate(labels(legend%num_entries))
+            call calculate_text_dimensions(legend, this, labels, legend_width, legend_height)
+            
+            ! Position in upper right with margin from edges
+            x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
+            y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
+            
+            deallocate(labels)
+        else
+            ! Fallback for empty legend
+            x = this%x_max - this%x_max * 0.2_wp
+            y = this%y_max - this%y_max * 0.05_wp
+        end if
+    end subroutine pdf_calculate_legend_position
+
+    subroutine pdf_extract_rgb_data(this, width, height, rgb_data)
+        !! Extract RGB data from PDF backend (not supported - dummy data)
+        use, intrinsic :: iso_fortran_env, only: real64
+        class(pdf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        real(real64), intent(out) :: rgb_data(width, height, 3)
+        
+        ! PDF backend doesn't store RGB data for animation - fill with dummy data
+        rgb_data = 1.0_real64  ! White background
+    end subroutine pdf_extract_rgb_data
+
+    subroutine pdf_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from PDF backend (not supported)
+        class(pdf_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        ! PDF backend doesn't provide PNG data
+        allocate(png_data(0))
+        status = -1
+    end subroutine pdf_get_png_data
+
+    subroutine pdf_prepare_3d_data(this, plots)
+        !! Prepare 3D data for PDF backend (no-op - PDF doesn't use 3D data)
+        use fortplot_plot_data, only: plot_data_t
+        class(pdf_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
+        
+        ! PDF backend doesn't need 3D data preparation - no-op
+    end subroutine pdf_prepare_3d_data
+
+    subroutine pdf_render_ylabel(this, ylabel)
+        !! Render Y-axis label for PDF backend (no-op - handled elsewhere)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        
+        ! PDF handles this differently - already done in draw_pdf_axes_and_labels
+        ! This is a no-op to satisfy polymorphic interface
+    end subroutine pdf_render_ylabel
 
 end module fortplot_pdf

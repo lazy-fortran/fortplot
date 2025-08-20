@@ -126,15 +126,8 @@ contains
         ! Calculate legend position based on backend dimensions
         call calculate_legend_position(this, backend, legend_x, legend_y)
         
-        ! Backend-specific legend rendering
-        select type (backend)
-        type is (ascii_context)
-            ! ASCII-specific legend rendering with compact layout
-            call render_ascii_legend(this, backend, legend_x, legend_y)
-        class default
-            ! Standard legend rendering for PNG/PDF
-            call render_standard_legend(this, backend, legend_x, legend_y)
-        end select
+        ! Polymorphic legend rendering - eliminates SELECT TYPE
+        call backend%render_legend_specialized(this, legend_x, legend_y)
     end subroutine legend_render
     
     subroutine render_ascii_legend(legend, backend, legend_x, legend_y)
@@ -291,77 +284,8 @@ contains
         character(len=:), allocatable :: labels(:)
         integer :: i
         
-        ! Backend-specific positioning
-        select type (backend)
-        type is (ascii_context)
-            ! ASCII backend - use character coordinates
-            ! Calculate actual legend width based on longest entry
-            legend_width = 15.0_wp  ! Default minimum width
-            do i = 1, legend%num_entries
-                legend_width = max(legend_width, real(len_trim(legend%entries(i)%label) + 5, wp))  ! +5 for "-- " prefix and margin
-            end do
-            
-            ! For ASCII backend, limit legend width to prevent overflow
-            ! Reserve space for plot border and margins
-            legend_width = min(legend_width, real(backend%width - 10, wp))
-            
-            margin_x = 2.0_wp      ! 2 character margin
-            margin_y = 1.0_wp      ! 1 line margin
-            total_height = real(legend%num_entries, wp) * 1.0_wp  ! 1 line per entry
-            
-            select case (legend%position)
-            case (LEGEND_UPPER_LEFT)
-                x = margin_x
-                y = margin_y
-            case (LEGEND_UPPER_RIGHT)
-                ! Position legend so its text fits within the canvas
-                ! For ASCII, be more conservative to avoid clipping
-                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
-                x = max(margin_x, x)  ! But not too far left
-                y = margin_y + 2.0_wp  ! Start lower to leave room for multiple entries
-            case (LEGEND_LOWER_LEFT)
-                x = margin_x
-                y = real(backend%height, wp) - total_height - margin_y
-            case (LEGEND_LOWER_RIGHT)
-                ! Position legend so its text fits within the canvas
-                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
-                x = max(margin_x, x)  ! But not too far left
-                y = real(backend%height, wp) - total_height - margin_y
-            case default
-                ! Position legend so its text fits within the canvas
-                x = real(backend%width, wp) - legend_width - margin_x - 5.0_wp
-                x = max(margin_x, x)  ! But not too far left
-                y = margin_y
-            end select
-            
-        class default
-            ! PNG/PDF backends - use improved layout calculations
-            
-            ! Extract labels for box calculation
-            if (legend%num_entries > 0) then
-                allocate(character(len=50) :: labels(legend%num_entries))
-                do i = 1, legend%num_entries
-                    labels(i) = legend%entries(i)%label
-                end do
-                
-                data_width = backend%x_max - backend%x_min
-                data_height = backend%y_max - backend%y_min
-                
-                ! Use improved layout calculation
-                box = calculate_legend_box(labels, data_width, data_height, &
-                                          legend%num_entries, legend%position)
-                
-                ! Convert box position to backend coordinates
-                x = backend%x_min + box%x
-                y = backend%y_min + box%y
-                
-                deallocate(labels)
-            else
-                ! Fallback for empty legend
-                x = backend%x_max - backend%x_max * 0.2_wp
-                y = backend%y_max - backend%y_max * 0.05_wp
-            end if
-        end select
+        ! Polymorphic position calculation - eliminates SELECT TYPE
+        call backend%calculate_legend_position_backend(legend, x, y)
     end subroutine calculate_legend_position
 
     subroutine draw_legend_box(backend, x1, y1, x2, y2)
@@ -389,13 +313,8 @@ contains
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x1, y1, x2, y2
         
-        ! Set thin line width to match axes frame style 
-        select type (backend)
-        type is (png_context)
-            call backend%set_line_width(0.1_wp)  ! Thin border for PNG like axes
-        type is (pdf_context)
-            call backend%set_line_width(1.0_wp)  ! Standard border for PDF like axes
-        end select
+        ! Polymorphic line width setting - eliminates SELECT TYPE
+        call backend%set_legend_border_width()
         
         ! Draw rectangle border
         call backend%line(x1, y1, x2, y1)  ! Top

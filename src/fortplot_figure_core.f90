@@ -801,11 +801,8 @@ contains
         ! Handle GLTF differently - needs 3D data not 2D rendering
         select case (trim(backend_type))
         case ('gltf', 'glb')
-            ! Pass 3D plot data directly to GLTF backend
-            select type (backend => self%backend)
-            type is (gltf_context)
-                call prepare_gltf_data(backend, self%plots(1:self%plot_count))
-            end select
+            ! Pass 3D plot data directly to GLTF backend using polymorphic method
+            call self%backend%prepare_3d_data(self%plots(1:self%plot_count))
             call self%backend%save(filename)
         case default
             ! Reset rendered flag to force re-rendering for new backend
@@ -1372,15 +1369,10 @@ contains
         ! Render individual plots
         call render_all_plots(self)
         
-        ! Render Y-axis label ABSOLUTELY LAST (after everything else)
-        select type (backend => self%backend)
-        type is (png_context)
-            if (allocated(self%ylabel)) then
-                call draw_rotated_ylabel_raster(backend, self%ylabel)
-            end if
-        type is (pdf_context)
-            ! PDF handles this differently - already done in draw_pdf_axes_and_labels
-        end select
+        ! Render Y-axis label ABSOLUTELY LAST using polymorphic method
+        if (allocated(self%ylabel)) then
+            call self%backend%render_ylabel(self%ylabel)
+        end if
         
         ! Render legend if requested (following SOLID principles)
         if (self%show_legend) then

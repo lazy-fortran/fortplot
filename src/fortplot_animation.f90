@@ -249,24 +249,8 @@ contains
         call setup_png_backend(fig, png_ctx)
         call render_to_backend(fig)
         
-        ! Extract RGB data from rendered frame
-        select type (backend => fig%backend)
-        type is (png_context)
-            do y = 1, fig%height
-                do x = 1, fig%width
-                    ! Calculate 1D index for packed RGB data (width * height * 3 array)
-                    ! Format: [R1, G1, B1, R2, G2, B2, ...]
-                    idx_base = ((y-1) * fig%width + (x-1)) * 3
-                    
-                    ! Extract RGB values (normalized to 0-1)
-                    rgb_data(x, y, 1) = real(backend%raster%image_data(idx_base + 1), real64) / 255.0_real64
-                    rgb_data(x, y, 2) = real(backend%raster%image_data(idx_base + 2), real64) / 255.0_real64
-                    rgb_data(x, y, 3) = real(backend%raster%image_data(idx_base + 3), real64) / 255.0_real64
-                end do
-            end do
-        class default
-            status = -1
-        end select
+        ! Extract RGB data from rendered frame using polymorphic method
+        call fig%backend%extract_rgb_data(fig%width, fig%height, rgb_data)
     end subroutine extract_frame_rgb_data
 
     subroutine save_animation_with_ffmpeg_pipeline(anim, filename, fps, status)
@@ -373,13 +357,8 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        select type (backend => fig%backend)
-        type is (png_context)
-            call get_png_data(fig%width, fig%height, backend%raster%image_data, png_data)
-            status = 0
-        class default
-            status = -1
-        end select
+        ! Use polymorphic method to get PNG data - eliminates SELECT TYPE
+        call fig%backend%get_png_data_backend(fig%width, fig%height, png_data, status)
     end subroutine extract_png_data
 
     subroutine render_figure_components(fig)

@@ -151,12 +151,9 @@ contains
         
         ! Now we need to transform from projected data space to screen space
         ! This should use the same transformation as regular plot data
-        select type (ctx)
-        class is (plot_context)
-            ! Transform each corner from data to screen coordinates
-            call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
-                                           z_min, z_max)
-        end select
+        ! Transform each corner from data to screen coordinates
+        call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
+                                       z_min, z_max)
         
         ! Draw axes matplotlib/MATLAB style - forming a corner shape
         ! Not all axes meet at the same point for proper 3D visualization
