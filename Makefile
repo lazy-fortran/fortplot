@@ -127,6 +127,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/smart_show_demo
 	@mkdir -p output/example/fortran/animation
 	@mkdir -p output/example/fortran/stateful_streamplot
+	@mkdir -p output/example/fortran/annotation_demo
 	@mkdir -p output/example/fortran/histogram_demo
 	@mkdir -p output/example/fortran/subplot_demo
 	@mkdir -p output/example/fortran/bar_chart_demo

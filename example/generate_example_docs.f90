@@ -7,7 +7,7 @@ program generate_example_docs
     integer :: n_examples, i
     
     ! List of examples to document
-    n_examples = 17
+    n_examples = 18
     example_dirs(1) = "example/fortran/basic_plots"
     example_names(1) = "basic_plots"
     
@@ -58,6 +58,9 @@ program generate_example_docs
     
     example_dirs(17) = "example/fortran/stateful_streamplot"
     example_names(17) = "stateful_streamplot"
+    
+    example_dirs(18) = "example/fortran/annotation_demo"
+    example_names(18) = "annotation_demo"
     
     print *, "Generating example documentation..."
     
@@ -421,6 +424,8 @@ contains
             call add_if_exists(dir, 'math_examples.png', media_files, n_media)
         case('build/example/stateful_streamplot')
             call add_if_exists(dir, 'stateful_streamplot.png', media_files, n_media)
+        case('build/example/annotation_demo')
+            call add_if_exists(dir, 'annotation_demo.png', media_files, n_media)
         case default
             ! For other examples, try the standard pattern
             test_file = dir(index(dir, '/', back=.true.)+1:) // '.png'
