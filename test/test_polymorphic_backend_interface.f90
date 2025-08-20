@@ -197,8 +197,9 @@ contains
             read(unit, '(A)', iostat=iostat) line
             if (iostat /= 0) exit
             
-            ! Look for type extension of abstract interface
-            if (index(line, 'extends') > 0 .and. index(line, 'plot_context') > 0) then
+            ! Look for type extension of abstract interface (direct or indirect)
+            if (index(line, 'extends') > 0 .and. &
+                (index(line, 'plot_context') > 0 .or. index(line, 'raster_context') > 0)) then
                 extends_abstract = .true.
             end if
             
@@ -313,9 +314,9 @@ contains
             if (iostat /= 0) exit
             
             ! Look for initialization or configuration routines
-            if (index(line, 'subroutine') > 0 .and. &
+            if ((index(line, 'subroutine') > 0 .or. index(line, 'function') > 0) .and. &
                 (index(line, 'init') > 0 .or. index(line, 'config') > 0 .or. &
-                 index(line, 'setup') > 0)) then
+                 index(line, 'setup') > 0 .or. index(line, 'create') > 0)) then
                 has_init_routine = .true.
                 exit
             end if
