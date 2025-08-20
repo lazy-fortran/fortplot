@@ -47,6 +47,11 @@ module fortplot_pdf
         procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
         procedure :: draw_arrow => draw_pdf_arrow
         procedure :: get_ascii_output => pdf_get_ascii_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => pdf_get_width_scale
+        procedure :: get_height_scale => pdf_get_height_scale
+        procedure :: fill_quad => pdf_fill_quad
     end type pdf_context
     
 contains
@@ -1719,5 +1724,62 @@ contains
         
         output = ""  ! PDF backend doesn't produce ASCII output
     end function pdf_get_ascii_output
+
+    function pdf_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(pdf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to PDF coordinates
+        if (this%width > 0 .and. this%x_max > this%x_min) then
+            scale = real(this%width, wp) / (this%x_max - this%x_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function pdf_get_width_scale
+
+    function pdf_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(pdf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to PDF coordinates
+        if (this%height > 0 .and. this%y_max > this%y_min) then
+            scale = real(this%height, wp) / (this%y_max - this%y_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function pdf_get_height_scale
+
+    subroutine pdf_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral using polymorphic interface
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        character(len=100) :: cmd
+        real(wp) :: pdf_x(4), pdf_y(4)
+        integer :: i
+        
+        ! Convert coordinates to PDF space
+        do i = 1, 4
+            call normalize_to_pdf_coords(this, x_quad(i), y_quad(i), pdf_x(i), pdf_y(i))
+        end do
+        
+        call this%stream_writer%add_to_stream("q")
+        
+        ! Move to first point
+        write(cmd, '(F8.2, 1X, F8.2, 1X, "m")') pdf_x(1), pdf_y(1)
+        call this%stream_writer%add_to_stream(cmd)
+        
+        ! Draw lines to remaining points
+        do i = 2, 4
+            write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') pdf_x(i), pdf_y(i)
+            call this%stream_writer%add_to_stream(cmd)
+        end do
+        
+        call this%stream_writer%add_to_stream("h")  ! Close path
+        call this%stream_writer%add_to_stream("f")  ! Fill
+        call this%stream_writer%add_to_stream("Q")
+    end subroutine pdf_fill_quad
 
 end module fortplot_pdf

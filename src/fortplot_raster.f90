@@ -57,6 +57,10 @@ module fortplot_raster
         procedure :: fill_quad => raster_fill_quad
         procedure :: draw_arrow => raster_draw_arrow
         procedure :: get_ascii_output => raster_get_ascii_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => raster_get_width_scale
+        procedure :: get_height_scale => raster_get_height_scale
     end type raster_context
 
 contains
@@ -1583,5 +1587,31 @@ contains
         
         output = ""  ! Raster backend doesn't produce ASCII output
     end function raster_get_ascii_output
+
+    function raster_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(raster_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to pixel coordinates
+        if (this%width > 0 .and. this%x_max > this%x_min) then
+            scale = real(this%width, wp) / (this%x_max - this%x_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function raster_get_width_scale
+
+    function raster_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(raster_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to pixel coordinates
+        if (this%height > 0 .and. this%y_max > this%y_min) then
+            scale = real(this%height, wp) / (this%y_max - this%y_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function raster_get_height_scale
 
 end module fortplot_raster

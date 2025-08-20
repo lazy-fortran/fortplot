@@ -36,6 +36,12 @@ module fortplot_gltf
         procedure :: set_marker_colors_with_alpha => gltf_set_marker_colors_with_alpha
         procedure :: draw_arrow => gltf_draw_arrow
         procedure :: get_ascii_output => gltf_get_ascii_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => gltf_get_width_scale
+        procedure :: get_height_scale => gltf_get_height_scale
+        procedure :: fill_quad => gltf_fill_quad
+        
         procedure :: add_3d_line_data
         procedure :: add_3d_surface_data
     end type gltf_context
@@ -447,5 +453,32 @@ contains
         
         output = ""  ! GLTF backend doesn't produce ASCII output
     end function gltf_get_ascii_output
+
+    function gltf_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(gltf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! For 3D GLTF export, no 2D coordinate scaling needed
+        scale = 1.0_wp
+    end function gltf_get_width_scale
+
+    function gltf_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(gltf_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! For 3D GLTF export, no 2D coordinate scaling needed
+        scale = 1.0_wp
+    end function gltf_get_height_scale
+
+    subroutine gltf_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral using polymorphic interface (not supported in 3D)
+        class(gltf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        ! GLTF backend is for 3D export - 2D filled quads not supported
+        ! Could potentially be implemented as 3D quad meshes in the future
+    end subroutine gltf_fill_quad
 
 end module fortplot_gltf

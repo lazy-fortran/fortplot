@@ -30,6 +30,11 @@ module fortplot_context
         procedure(marker_colors_alpha_interface), deferred :: set_marker_colors_with_alpha
         procedure(arrow_interface), deferred :: draw_arrow
         procedure(ascii_output_interface), deferred :: get_ascii_output
+        
+        !! Additional polymorphic methods to eliminate SELECT TYPE violations
+        procedure(get_width_scale_interface), deferred :: get_width_scale
+        procedure(get_height_scale_interface), deferred :: get_height_scale
+        procedure(fill_quad_interface), deferred :: fill_quad
     end type plot_context
     
     abstract interface
@@ -97,6 +102,24 @@ module fortplot_context
             class(plot_context), intent(in) :: this
             character(len=:), allocatable :: output
         end function ascii_output_interface
+
+        function get_width_scale_interface(this) result(scale)
+            import :: plot_context, wp
+            class(plot_context), intent(in) :: this
+            real(wp) :: scale
+        end function get_width_scale_interface
+
+        function get_height_scale_interface(this) result(scale)
+            import :: plot_context, wp
+            class(plot_context), intent(in) :: this
+            real(wp) :: scale
+        end function get_height_scale_interface
+
+        subroutine fill_quad_interface(this, x_quad, y_quad)
+            import :: plot_context, wp
+            class(plot_context), intent(inout) :: this
+            real(wp), intent(in) :: x_quad(4), y_quad(4)
+        end subroutine fill_quad_interface
     end interface
 
 contains

@@ -2801,19 +2801,8 @@ contains
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: x_screen(4), y_screen(4)
         
-        ! Use backend-specific filled quad rendering
-        select type (backend)
-        type is (raster_context)
-            call backend%fill_quad(x_screen, y_screen)
-        type is (png_context)
-            call backend%fill_quad(x_screen, y_screen)
-        class default
-            ! Fallback: draw wireframe for unsupported backends
-            call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
-            call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
-            call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
-            call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
-        end select
+        ! Use polymorphic filled quad rendering - eliminates SELECT TYPE
+        call backend%fill_quad(x_screen, y_screen)
     end subroutine draw_filled_quad
 
     subroutine draw_quad_edges(backend, x_screen, y_screen, line_width)

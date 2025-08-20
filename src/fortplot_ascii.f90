@@ -44,6 +44,11 @@ module fortplot_ascii
         procedure :: fill_heatmap => ascii_fill_heatmap
         procedure :: draw_arrow => ascii_draw_arrow
         procedure :: get_ascii_output => ascii_get_output
+        
+        !! New polymorphic methods to eliminate SELECT TYPE
+        procedure :: get_width_scale => ascii_get_width_scale
+        procedure :: get_height_scale => ascii_get_height_scale
+        procedure :: fill_quad => ascii_fill_quad
     end type ascii_context
     
     ! ASCII plotting constants
@@ -643,5 +648,57 @@ contains
             output = output // line_buffer(1:line_len) // new_line('a')
         end do
     end function ascii_get_output
+
+    function ascii_get_width_scale(this) result(scale)
+        !! Get width scaling factor for coordinate transformation
+        class(ascii_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to ASCII coordinates
+        if (this%plot_width > 0 .and. this%x_max > this%x_min) then
+            scale = real(this%plot_width, wp) / (this%x_max - this%x_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function ascii_get_width_scale
+
+    function ascii_get_height_scale(this) result(scale)
+        !! Get height scaling factor for coordinate transformation  
+        class(ascii_context), intent(in) :: this
+        real(wp) :: scale
+        
+        ! Calculate scaling from logical to ASCII coordinates
+        if (this%plot_height > 0 .and. this%y_max > this%y_min) then
+            scale = real(this%plot_height, wp) / (this%y_max - this%y_min)
+        else
+            scale = 1.0_wp
+        end if
+    end function ascii_get_height_scale
+
+    subroutine ascii_fill_quad(this, x_quad, y_quad)
+        !! Fill quadrilateral using polymorphic interface (approximation)
+        class(ascii_context), intent(inout) :: this
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        
+        integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
+        
+        ! Convert coordinates to ASCII canvas coordinates
+        do i = 1, 4
+            px(i) = nint((x_quad(i) - this%x_min) / (this%x_max - this%x_min) * this%plot_width) + 1
+            py(i) = nint((y_quad(i) - this%y_min) / (this%y_max - this%y_min) * this%plot_height) + 1
+        end do
+        
+        ! Simple approximation: fill bounding rectangle
+        min_x = max(1, min(minval(px), this%plot_width))
+        max_x = max(1, min(maxval(px), this%plot_width))  
+        min_y = max(1, min(minval(py), this%plot_height))
+        max_y = max(1, min(maxval(py), this%plot_height))
+        
+        do j = min_y, max_y
+            do i = min_x, max_x
+                this%canvas(j, i) = '#'
+            end do
+        end do
+    end subroutine ascii_fill_quad
 
 end module fortplot_ascii
