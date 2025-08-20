@@ -3,7 +3,7 @@ module fortplot_animation
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_figure_core, only: figure_t, plot_data_t, ensure_directory_exists
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
-    use fortplot_png, only: png_context, create_png_canvas, get_png_data
+    use fortplot_utils, only: initialize_backend
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
@@ -240,13 +240,10 @@ contains
         real(real64), intent(out) :: rgb_data(:,:,:)
         integer, intent(out) :: status
         
-        type(png_context) :: png_ctx
-        integer :: x, y, idx_base
-        
         status = 0
         
         ! Setup PNG backend to render frame
-        call setup_png_backend(fig, png_ctx)
+        call setup_png_backend(fig)
         call render_to_backend(fig)
         
         ! Extract RGB data from rendered frame using polymorphic method
@@ -327,22 +324,16 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        type(png_context) :: png_ctx
-        
-        call setup_png_backend(fig, png_ctx)
+        call setup_png_backend(fig)
         call render_to_backend(fig)
         call extract_png_data(fig, png_data, status)
     end subroutine render_frame_to_png
 
-    subroutine setup_png_backend(fig, png_ctx)
+    subroutine setup_png_backend(fig)
         type(figure_t), intent(inout) :: fig
-        type(png_context), intent(out) :: png_ctx
-        
-        png_ctx = create_png_canvas(fig%width, fig%height)
         
         if (allocated(fig%backend)) deallocate(fig%backend)
-        allocate(png_context :: fig%backend)
-        fig%backend = png_ctx
+        call initialize_backend(fig%backend, 'png', fig%width, fig%height)
         fig%rendered = .false.
     end subroutine setup_png_backend
 
