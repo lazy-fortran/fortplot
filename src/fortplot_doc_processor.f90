@@ -31,20 +31,25 @@ contains
             return
         end if
         
-        call open_output_file(output_file, unit_out, ios)
+        call setup_file_units(readme_file, output_file, unit_in, unit_out, ios)
         if (ios /= 0) return
-        
-        call open_input_file(readme_file, unit_in, ios)
-        if (ios /= 0) then
-            close(unit_out)
-            return
-        end if
         
         call process_readme_content(unit_in, unit_out, example_dir, example_name)
         
         close(unit_in)
         close(unit_out)
     end subroutine process_example
+    
+    subroutine setup_file_units(readme_file, output_file, unit_in, unit_out, ios)
+        character(len=*), intent(in) :: readme_file, output_file
+        integer, intent(out) :: unit_in, unit_out, ios
+        
+        call open_output_file(output_file, unit_out, ios)
+        if (ios /= 0) return
+        
+        call open_input_file(readme_file, unit_in, ios)
+        if (ios /= 0) close(unit_out)
+    end subroutine setup_file_units
     
     subroutine check_readme_exists(readme_file, file_exists)
         character(len=*), intent(in) :: readme_file
