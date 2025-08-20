@@ -10,6 +10,7 @@ module fortplot_pcolormesh
     !! - Interface Segregation: Minimal, focused interface
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_DIMENSION_MISMATCH, log_error
     implicit none
     
     private
@@ -54,7 +55,7 @@ module fortplot_pcolormesh
      
 contains
 
-    subroutine initialize_regular_grid(self, x_coords, y_coords, c_data, colormap, status_ok)
+    subroutine initialize_regular_grid(self, x_coords, y_coords, c_data, colormap, error)
         !! Initialize pcolormesh with regular grid from 1D coordinate arrays
         !! 
         !! Arguments:
@@ -62,13 +63,13 @@ contains
         !!   y_coords: 1D array of y-coordinates (length ny+1)  
         !!   c_data: 2D color data array (ny, nx)
         !!   colormap: Optional colormap name
-        !!   status_ok: Returns .false. if validation fails
+        !!   error: Error object containing status and message
         class(pcolormesh_t), intent(inout) :: self
         real(wp), intent(in) :: x_coords(:)
         real(wp), intent(in) :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
         character(len=*), intent(in), optional :: colormap
-        logical, intent(out), optional :: status_ok
+        type(fortplot_error_t), intent(out), optional :: error
         
         integer :: i, j
         
@@ -77,20 +78,23 @@ contains
         self%ny = size(c_data, 1)
         
         if (size(x_coords) /= self%nx + 1) then
-            if (present(status_ok)) then
-                status_ok = .false.
-                return
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: x_coords size must be nx+1")
             else
-                error stop "pcolormesh: x_coords size must be nx+1"
+                call log_error(ERROR_DIMENSION_MISMATCH, "initialize_regular_grid")
             end if
+            return
         end if
+        
         if (size(y_coords) /= self%ny + 1) then
-            if (present(status_ok)) then
-                status_ok = .false.
-                return
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: y_coords size must be ny+1")  
             else
-                error stop "pcolormesh: y_coords size must be ny+1"
+                call log_error(ERROR_DIMENSION_MISMATCH, "initialize_regular_grid")
             end if
+            return
         end if
         
         ! Allocate arrays (deallocate first if already allocated)
@@ -122,31 +126,46 @@ contains
         call self%get_data_range()
         
         ! Set success status
-        if (present(status_ok)) status_ok = .true.
+        if (present(error)) call error%clear_error()
     end subroutine initialize_regular_grid
     
-    subroutine initialize_irregular_grid(self, x_verts, y_verts, c_data, colormap)
+    subroutine initialize_irregular_grid(self, x_verts, y_verts, c_data, colormap, error)
         !! Initialize pcolormesh with irregular grid from 2D vertex arrays
         !!
         !! Arguments:
         !!   x_verts, y_verts: 2D vertex coordinate arrays (ny+1, nx+1)
         !!   c_data: 2D color data array (ny, nx)
         !!   colormap: Optional colormap name
+        !!   error: Error object containing status and message
         class(pcolormesh_t), intent(inout) :: self
         real(wp), intent(in) :: x_verts(:,:)
         real(wp), intent(in) :: y_verts(:,:)
         real(wp), intent(in) :: c_data(:,:)
         character(len=*), intent(in), optional :: colormap
+        type(fortplot_error_t), intent(out), optional :: error
         
         ! Validate dimensions
         self%ny = size(c_data, 1)
         self%nx = size(c_data, 2)
         
         if (size(x_verts, 1) /= self%ny + 1 .or. size(x_verts, 2) /= self%nx + 1) then
-            error stop "pcolormesh: x_verts dimensions must be (ny+1, nx+1)"
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: x_verts dimensions must be (ny+1, nx+1)")
+            else
+                call log_error(ERROR_DIMENSION_MISMATCH, "initialize_irregular_grid")
+            end if
+            return
         end if
+        
         if (size(y_verts, 1) /= self%ny + 1 .or. size(y_verts, 2) /= self%nx + 1) then
-            error stop "pcolormesh: y_verts dimensions must be (ny+1, nx+1)"
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: y_verts dimensions must be (ny+1, nx+1)")
+            else
+                call log_error(ERROR_DIMENSION_MISMATCH, "initialize_irregular_grid")
+            end if
+            return
         end if
         
         ! Allocate and copy data (deallocate first if already allocated)
@@ -169,6 +188,9 @@ contains
         
         ! Compute data range
         call self%get_data_range()
+        
+        ! Set success status
+        if (present(error)) call error%clear_error()
     end subroutine initialize_irregular_grid
     
     subroutine get_data_range(self)
@@ -208,7 +230,7 @@ contains
         y_quad(4) = self%y_vertices(i+1, j)
     end subroutine get_quad_vertices
     
-    subroutine validate_pcolormesh_grid(x_coords, y_coords, c_data)
+    subroutine validate_pcolormesh_grid(x_coords, y_coords, c_data, error)
         !! Validate grid dimensions for pcolormesh
         !!
         !! For regular grids: x(nx+1), y(ny+1), C(ny,nx)
@@ -216,6 +238,7 @@ contains
         real(wp), intent(in) :: x_coords(:)
         real(wp), intent(in) :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
+        type(fortplot_error_t), intent(out), optional :: error
         
         integer :: nx, ny
         
@@ -223,12 +246,27 @@ contains
         nx = size(c_data, 2)
         
         if (size(x_coords) /= nx + 1) then
-            error stop "pcolormesh: x coordinate array size must be nx+1"
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: x coordinate array size must be nx+1")
+            else
+                call log_error(ERROR_DIMENSION_MISMATCH, "validate_pcolormesh_grid")
+            end if
+            return
         end if
         
         if (size(y_coords) /= ny + 1) then
-            error stop "pcolormesh: y coordinate array size must be ny+1"
+            if (present(error)) then
+                call error%set_error(ERROR_DIMENSION_MISMATCH, &
+                    "pcolormesh: y coordinate array size must be ny+1")
+            else
+                call log_error(ERROR_DIMENSION_MISMATCH, "validate_pcolormesh_grid")
+            end if
+            return
         end if
+        
+        ! Set success status
+        if (present(error)) call error%clear_error()
     end subroutine validate_pcolormesh_grid
     
     subroutine create_regular_mesh_grid(x_1d, y_1d, x_2d, y_2d)
