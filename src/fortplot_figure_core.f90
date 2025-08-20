@@ -23,7 +23,7 @@ module fortplot_figure_core
     use fortplot_legend
     use fortplot_raster, only: draw_rotated_ylabel_raster
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
-    use fortplot_colors, only: parse_color, color_t
+    use fortplot_colors, only: parse_color, parse_color_rgba, color_t
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
@@ -116,6 +116,13 @@ module fortplot_figure_core
         type(text_annotation_t), allocatable :: annotations(:)
         integer :: annotation_count = 0
         integer :: max_annotations = 100
+        
+        ! Subplot support
+        logical :: using_subplots = .false.
+        integer :: n_rows = 1
+        integer :: n_cols = 1
+        integer :: current_subplot = 1
+        type(subplot_t), allocatable :: subplots(:)
 
     contains
         procedure :: initialize
@@ -150,6 +157,10 @@ module fortplot_figure_core
         procedure :: has_3d_plots
         procedure :: text => add_text_annotation
         procedure :: annotate => add_arrow_annotation
+        ! Subplot procedures
+        procedure :: setup_subplot_grid
+        procedure :: switch_to_subplot
+        procedure :: calculate_subplot_position
         final :: destroy
     end type figure_t
 
@@ -195,22 +206,26 @@ contains
         real(wp), intent(in), optional :: color_rgb(3)
         
         character(len=20) :: parsed_marker, parsed_linestyle
+        type(plot_data_t) :: plot_data
         
-        if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
-            return
-        end if
-        
-        self%plot_count = self%plot_count + 1
-        
-        if (present(linestyle) .and. contains_format_chars(linestyle)) then
-            ! Parse format string and use those values
-            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
-            call add_line_plot_data(self, x, y, label, parsed_linestyle, color_rgb, color_str, parsed_marker, markercolor)
+        ! Check if we can add more plots
+        if (self%using_subplots .and. allocated(self%subplots)) then
+            if (self%subplots(self%current_subplot)%plot_count >= self%subplots(self%current_subplot)%max_plots) then
+                write(*, '(A)') 'Warning: Maximum number of plots reached for current subplot'
+                return
+            end if
         else
-            ! Use traditional linestyle with optional marker
-            call add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
+            if (self%plot_count >= self%max_plots) then
+                write(*, '(A)') 'Warning: Maximum number of plots reached'
+                return
+            end if
         end if
+        
+        ! Create plot data structure
+        call build_line_plot_data(plot_data, x, y, label, linestyle, color_rgb, color_str, marker, markercolor, self)
+        
+        ! Add to figure or current subplot
+        call add_plot_to_figure(self, plot_data)
         call update_data_ranges(self)
     end subroutine add_plot
     
@@ -851,19 +866,34 @@ contains
     subroutine set_xlabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        self%xlabel = label
+        
+        if (self%using_subplots .and. allocated(self%subplots)) then
+            self%subplots(self%current_subplot)%xlabel = label
+        else
+            self%xlabel = label
+        end if
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        self%ylabel = label
+        
+        if (self%using_subplots .and. allocated(self%subplots)) then
+            self%subplots(self%current_subplot)%ylabel = label
+        else
+            self%ylabel = label
+        end if
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
-        self%title = title
+        
+        if (self%using_subplots .and. allocated(self%subplots)) then
+            self%subplots(self%current_subplot)%title = title
+        else
+            self%title = title
+        end if
     end subroutine set_title
 
     subroutine set_xscale(self, scale, threshold)
@@ -3364,12 +3394,23 @@ contains
     end subroutine set_scatter_common_properties
     
     subroutine add_plot_to_figure(self, plot_data)
-        !! Add plot data to figure's plot collection
+        !! Add plot data to figure's plot collection or current subplot
         class(figure_t), intent(inout) :: self
         type(plot_data_t), intent(in) :: plot_data
         
-        self%plot_count = self%plot_count + 1
-        self%plots(self%plot_count) = plot_data
+        if (self%using_subplots .and. allocated(self%subplots)) then
+            ! Add to current subplot
+            if (self%subplots(self%current_subplot)%plot_count >= self%subplots(self%current_subplot)%max_plots) then
+                write(*, '(A)') 'Warning: Maximum number of plots reached for current subplot'
+                return
+            end if
+            self%subplots(self%current_subplot)%plot_count = self%subplots(self%current_subplot)%plot_count + 1
+            self%subplots(self%current_subplot)%plots(self%subplots(self%current_subplot)%plot_count) = plot_data
+        else
+            ! Add to main figure
+            self%plot_count = self%plot_count + 1
+            self%plots(self%plot_count) = plot_data
+        end if
     end subroutine add_plot_to_figure
     
     subroutine safe_minmax_arrays(arr, min_val, max_val)
@@ -3596,5 +3637,138 @@ contains
         ! Mark figure as needing re-rendering
         self%rendered = .false.
     end subroutine add_arrow_annotation
+
+    subroutine setup_subplot_grid(self, rows, cols)
+        !! Setup subplot grid layout
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: rows, cols
+        integer :: i, subplot_count
+        
+        self%using_subplots = .true.
+        self%n_rows = rows
+        self%n_cols = cols
+        self%current_subplot = 1
+        
+        subplot_count = rows * cols
+        
+        if (allocated(self%subplots)) deallocate(self%subplots)
+        allocate(self%subplots(subplot_count))
+        
+        ! Initialize each subplot
+        do i = 1, subplot_count
+            allocate(self%subplots(i)%plots(self%subplots(i)%max_plots))
+            self%subplots(i)%plot_count = 0
+        end do
+    end subroutine setup_subplot_grid
+
+    subroutine switch_to_subplot(self, subplot_idx)
+        !! Switch to specified subplot
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: subplot_idx
+        integer :: max_subplots
+        
+        if (.not. self%using_subplots) return
+        
+        max_subplots = self%n_rows * self%n_cols
+        if (subplot_idx < 1 .or. subplot_idx > max_subplots) return
+        
+        self%current_subplot = subplot_idx
+    end subroutine switch_to_subplot
+
+    subroutine calculate_subplot_position(self, row, col, bounds)
+        !! Calculate subplot position in normalized coordinates
+        class(figure_t), intent(in) :: self
+        integer, intent(in) :: row, col
+        real(wp), intent(out) :: bounds(4)  ! [left, bottom, width, height]
+        real(wp) :: subplot_width, subplot_height
+        real(wp) :: left_margin, bottom_margin
+        
+        ! Calculate subplot dimensions with small padding
+        subplot_width = (1.0_wp - self%margin_left - self%margin_right) / self%n_cols
+        subplot_height = (1.0_wp - self%margin_top - self%margin_bottom) / self%n_rows
+        
+        ! Calculate position (0-based indexing for row/col)
+        left_margin = self%margin_left + (col - 1) * subplot_width
+        bottom_margin = self%margin_bottom + (self%n_rows - row) * subplot_height
+        
+        bounds(1) = left_margin       ! left
+        bounds(2) = bottom_margin     ! bottom  
+        bounds(3) = subplot_width * 0.9_wp   ! width (with small padding)
+        bounds(4) = subplot_height * 0.9_wp  ! height (with small padding)
+    end subroutine calculate_subplot_position
+
+    subroutine build_line_plot_data(plot_data, x, y, label, linestyle, color_rgb, color_str, marker, markercolor, fig)
+        !! Build plot_data_t structure for line plots
+        type(plot_data_t), intent(out) :: plot_data
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label, linestyle, color_str, marker, markercolor
+        real(wp), intent(in), optional :: color_rgb(3)
+        class(figure_t), intent(in) :: fig
+        
+        character(len=20) :: parsed_marker, parsed_linestyle
+        integer :: color_idx
+        real(wp) :: rgba(4)
+        logical :: success
+        
+        plot_data%plot_type = PLOT_TYPE_LINE
+        
+        ! Allocate and store data
+        allocate(plot_data%x(size(x)))
+        allocate(plot_data%y(size(y)))
+        plot_data%x = x
+        plot_data%y = y
+        
+        ! Set properties
+        if (present(label)) then
+            plot_data%label = label
+        else
+            plot_data%label = ''
+        end if
+        
+        ! Handle linestyle with format string parsing
+        if (present(linestyle) .and. contains_format_chars(linestyle)) then
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            plot_data%linestyle = parsed_linestyle
+            plot_data%marker = parsed_marker
+        else
+            if (present(linestyle)) then
+                plot_data%linestyle = linestyle
+            else
+                plot_data%linestyle = '-'
+            end if
+            
+            if (present(marker)) then
+                plot_data%marker = marker
+            else
+                plot_data%marker = ''
+            end if
+        end if
+        
+        ! Handle color
+        if (present(color_rgb)) then
+            plot_data%color = color_rgb
+        elseif (present(color_str)) then
+            call parse_color_rgba(color_str, rgba, success)
+            if (success) then
+                plot_data%color = rgba(1:3)
+            else
+                ! Use default color from palette
+                color_idx = mod(fig%plot_count, size(fig%colors, 2)) + 1
+                plot_data%color = fig%colors(:, color_idx)
+            end if
+        else
+            ! Use default color from palette
+            color_idx = mod(fig%plot_count, size(fig%colors, 2)) + 1
+            plot_data%color = fig%colors(:, color_idx)
+        end if
+        
+        ! Markercolor support
+        if (present(markercolor)) then
+            call parse_color_rgba(markercolor, rgba, success)
+            if (success) then
+                plot_data%color = rgba(1:3)
+            end if
+        end if
+    end subroutine build_line_plot_data
 
 end module fortplot_figure_core

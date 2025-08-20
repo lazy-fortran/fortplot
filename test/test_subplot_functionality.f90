@@ -334,7 +334,7 @@ contains
         !! Given: Invalid subplot operations
         !! When: Error conditions are triggered
         !! Then: Appropriate error handling should occur
-        type(figure_t) :: fig
+        type(figure_t) :: fig, fig2
         print *, 'Test: Subplot error handling'
         call increment_test_count()
         
@@ -349,7 +349,6 @@ contains
         print *, '  PASS: Invalid subplot index handled gracefully'
         
         ! Test subplot without grid setup
-        type(figure_t) :: fig2
         call fig2%initialize(800, 600)
         call fig2%switch_to_subplot(1)  ! No grid setup - should handle gracefully
         

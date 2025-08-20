@@ -76,6 +76,7 @@ module fortplot
     public :: set_line_width, set_ydata
     public :: bar, barh
     public :: text, annotate
+    public :: subplot
     public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
     public :: get_global_figure
     
@@ -1076,5 +1077,25 @@ contains
         type(figure_t), pointer :: global_fig
         global_fig => fig
     end function get_global_figure
+
+    subroutine subplot(rows, cols, subplot_idx)
+        !! Setup subplot grid and switch to specified subplot (matplotlib-style)
+        !!
+        !! Arguments:
+        !!   rows: Number of subplot rows
+        !!   cols: Number of subplot columns  
+        !!   subplot_idx: Index of subplot to activate (1-based)
+        integer, intent(in) :: rows, cols, subplot_idx
+        
+        call ensure_global_figure_initialized()
+        
+        ! Setup grid if not already done or if dimensions changed
+        if (.not. fig%using_subplots .or. fig%n_rows /= rows .or. fig%n_cols /= cols) then
+            call fig%setup_subplot_grid(rows, cols)
+        end if
+        
+        ! Switch to specified subplot
+        call fig%switch_to_subplot(subplot_idx)
+    end subroutine subplot
 
 end module fortplot
