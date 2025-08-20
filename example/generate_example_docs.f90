@@ -261,8 +261,8 @@ contains
         logical :: file_exists
         character(len=10) :: extension
         
-        ! Find output files in build directory
-        call find_output_files('build/example/' // trim(example_name), example_name, media_files, n_media, &
+        ! Find output files in output directory
+        call find_output_files('output/example/fortran/' // trim(example_name), example_name, media_files, n_media, &
                               pdf_files, n_pdf, txt_files, n_txt)
         
         ! Add media outputs (PNG or MP4)
@@ -276,20 +276,20 @@ contains
             if (extension == 'mp4') then
                 ! Embed video using HTML
                 write(unit_out, '(A)') '<video width="800" height="600" controls>'
-                write(unit_out, '(A)') '  <source src="../../example/' // trim(example_name) // '/' // &
+                write(unit_out, '(A)') '  <source src="../../media/examples/' // trim(example_name) // '/' // &
                                        trim(media_files(j)) // '" type="video/mp4">'
                 write(unit_out, '(A)') '  Your browser does not support the video tag.'
                 write(unit_out, '(A)') '</video>'
                 write(unit_out, '(A)') ''
-                write(unit_out, '(A)') '[Download MP4](../../example/' // trim(example_name) // '/' // trim(media_files(j)) // ')'
+                write(unit_out, '(A)') '[Download MP4](../../media/examples/' // trim(example_name) // '/' // trim(media_files(j)) // ')'
             else
                 ! Regular image
-                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../../example/' // &
+                write(unit_out, '(A)') '![' // trim(media_files(j)) // '](../../media/examples/' // &
                                        trim(example_name) // '/' // trim(media_files(j)) // ')'
                 write(unit_out, '(A)') ''
                 
                 ! Add corresponding ASCII output
-                ascii_file = 'build/example/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
+                ascii_file = 'output/example/fortran/' // trim(example_name) // '/' // replace_extension(media_files(j), 'txt')
                 inquire(file=trim(ascii_file), exist=file_exists)
                 if (file_exists) then
                     write(unit_out, '(A)') 'ASCII output:'
@@ -310,7 +310,7 @@ contains
                 end if
                 
                 ! Add PDF link
-                write(unit_out, '(A)') '[Download PDF](../../example/' // trim(example_name) // '/' // &
+                write(unit_out, '(A)') '[Download PDF](../../media/examples/' // trim(example_name) // '/' // &
                     trim(replace_extension(media_files(j), 'pdf')) // ')'
             end if
             write(unit_out, '(A)') ''
@@ -337,8 +337,8 @@ contains
                 if (index(filename, '/') > 0) then
                     filename = filename(index(filename, '/', back=.true.)+1:)
                 end if
-                ! Replace with relative path to example directory
-                new_path = '../../example/' // trim(example_name) // '/' // trim(filename)
+                ! Replace with relative path to media directory
+                new_path = '../../media/examples/' // trim(example_name) // '/' // trim(filename)
                 line = line(1:start_pos+1) // trim(new_path) // ')'
             end if
         end if
@@ -372,54 +372,54 @@ contains
         
         n_media = 0
         
-        ! Check each known pattern - extract example name from build path
+        ! Check each known pattern - extract example name from output path
         select case(trim(dir))
-        case('build/example/animation')
+        case('output/example/fortran/animation')
             call add_if_exists(dir, 'wave_animation.mp4', media_files, n_media)
-        case('build/example/basic_plots')
+        case('output/example/fortran/basic_plots')
             call add_if_exists(dir, 'simple_plot.png', media_files, n_media)
             call add_if_exists(dir, 'multi_line.png', media_files, n_media)
-        case('build/example/line_styles')
+        case('output/example/fortran/line_styles')
             call add_if_exists(dir, 'line_styles.png', media_files, n_media)
-        case('build/example/contour_demo')
+        case('output/example/fortran/contour_demo')
             call add_if_exists(dir, 'contour_gaussian.png', media_files, n_media)
             call add_if_exists(dir, 'mixed_plot.png', media_files, n_media)
-        case('build/example/scale_examples')
+        case('output/example/fortran/scale_examples')
             call add_if_exists(dir, 'log_scale.png', media_files, n_media)
             call add_if_exists(dir, 'symlog_scale.png', media_files, n_media)
-        case('build/example/marker_demo')
+        case('output/example/fortran/marker_demo')
             call add_if_exists(dir, 'scatter_plot.png', media_files, n_media)
             call add_if_exists(dir, 'all_marker_types.png', media_files, n_media)
             call add_if_exists(dir, 'marker_colors.png', media_files, n_media)
-        case('build/example/colored_contours')
+        case('output/example/fortran/colored_contours')
             call add_if_exists(dir, 'gaussian_default.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_jet.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_coolwarm.png', media_files, n_media)
             call add_if_exists(dir, 'ripple_inferno.png', media_files, n_media)
             call add_if_exists(dir, 'saddle_plasma.png', media_files, n_media)
-        case('build/example/legend_demo')
+        case('output/example/fortran/legend_demo')
             call add_if_exists(dir, 'basic_legend.png', media_files, n_media)
             call add_if_exists(dir, 'legend_upper_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_upper_right.png', media_files, n_media)
             call add_if_exists(dir, 'legend_lower_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_lower_right.png', media_files, n_media)
             call add_if_exists(dir, 'multi_function_legend.png', media_files, n_media)
-        case('build/example/legend_box_demo')
+        case('output/example/fortran/legend_box_demo')
             call add_if_exists(dir, 'legend_box_demo_default.png', media_files, n_media)
             call add_if_exists(dir, 'legend_box_demo_upper_left.png', media_files, n_media)
             call add_if_exists(dir, 'legend_box_demo_lower_right.png', media_files, n_media)
-        case('build/example/format_string_demo')
+        case('output/example/fortran/format_string_demo')
             call add_if_exists(dir, 'format_string_demo.png', media_files, n_media)
-        case('build/example/pcolormesh_demo')
+        case('output/example/fortran/pcolormesh_demo')
             call add_if_exists(dir, 'pcolormesh_basic.png', media_files, n_media)
             call add_if_exists(dir, 'pcolormesh_plasma.png', media_files, n_media)
             call add_if_exists(dir, 'pcolormesh_sinusoidal.png', media_files, n_media)
-        case('build/example/streamplot_demo')
+        case('output/example/fortran/streamplot_demo')
             call add_if_exists(dir, 'streamplot_demo.png', media_files, n_media)
-        case('build/example/unicode_demo')
+        case('output/example/fortran/unicode_demo')
             call add_if_exists(dir, 'unicode_demo.png', media_files, n_media)
             call add_if_exists(dir, 'math_examples.png', media_files, n_media)
-        case('build/example/stateful_streamplot')
+        case('output/example/fortran/stateful_streamplot')
             call add_if_exists(dir, 'stateful_streamplot.png', media_files, n_media)
         case default
             ! For other examples, try the standard pattern
