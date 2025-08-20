@@ -19,56 +19,79 @@ contains
 
     subroutine pack_vertex_data(x, y, z, buffer)
         !! Pack 3D vertex data into byte buffer
-        !! Following KISS - direct packing as float32
+        !! Following KISS - safe byte packing as float32
         real(wp), intent(in) :: x(:), y(:), z(:)
         integer(1), allocatable, intent(out) :: buffer(:)
         
-        integer :: n_vertices, buffer_size, i, offset
-        real(real32) :: x32, y32, z32
+        integer :: n_vertices, buffer_size, i, offset, j
+        real(real32) :: coords(3)
+        integer(1) :: temp_bytes(4)
+        real(real32) :: temp
+        equivalence (temp, temp_bytes)
         
+        ! Input validation
         n_vertices = size(x)
-        buffer_size = n_vertices * 3 * 4  ! 3 components * 4 bytes each
+        if (size(y) /= n_vertices .or. size(z) /= n_vertices) then
+            ! Allocate empty buffer for invalid input
+            allocate(buffer(0))
+            return
+        end if
         
+        buffer_size = n_vertices * 3 * 4  ! 3 components * 4 bytes each
         allocate(buffer(buffer_size))
         
         ! Pack vertices interleaved: x,y,z,x,y,z,...
         offset = 1
         do i = 1, n_vertices
             ! Convert to single precision
-            x32 = real(x(i), real32)
-            y32 = real(y(i), real32)
-            z32 = real(z(i), real32)
+            coords(1) = real(x(i), real32)
+            coords(2) = real(y(i), real32)
+            coords(3) = real(z(i), real32)
             
-            ! Pack bytes
-            buffer(offset:offset+3) = transfer(x32, buffer(1:4))
-            offset = offset + 4
-            buffer(offset:offset+3) = transfer(y32, buffer(1:4))
-            offset = offset + 4
-            buffer(offset:offset+3) = transfer(z32, buffer(1:4))
-            offset = offset + 4
+            ! Pack each coordinate
+            do j = 1, 3
+                temp = coords(j)
+                buffer(offset:offset+3) = temp_bytes(1:4)
+                offset = offset + 4
+            end do
         end do
         
     end subroutine pack_vertex_data
     
     subroutine pack_index_data(indices, buffer)
         !! Pack triangle indices into byte buffer
-        !! Following KISS - pack as uint16
+        !! Following KISS - safe packing as uint16
         integer, intent(in) :: indices(:)
         integer(1), allocatable, intent(out) :: buffer(:)
         
         integer :: n_indices, buffer_size, i, offset
         integer(int16) :: idx16
+        integer(1) :: temp_bytes(2)
+        equivalence (idx16, temp_bytes)
         
+        ! Input validation
         n_indices = size(indices)
-        buffer_size = n_indices * 2  ! 2 bytes per uint16
+        if (n_indices == 0) then
+            allocate(buffer(0))
+            return
+        end if
         
+        ! Validate indices are in valid range for uint16
+        do i = 1, n_indices
+            if (indices(i) < 0 .or. indices(i) > 65535) then
+                allocate(buffer(0))
+                return
+            end if
+        end do
+        
+        buffer_size = n_indices * 2  ! 2 bytes per uint16
         allocate(buffer(buffer_size))
         
         ! Pack indices
         offset = 1
         do i = 1, n_indices
             idx16 = int(indices(i), int16)
-            buffer(offset:offset+1) = transfer(idx16, buffer(1:2))
+            buffer(offset:offset+1) = temp_bytes(1:2)
             offset = offset + 2
         end do
         
