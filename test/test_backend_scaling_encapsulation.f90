@@ -56,14 +56,13 @@ contains
                 if (iostat /= 0) exit
                 
                 ! Look for coordinate scaling methods
-                if (index(line, 'scale_coordinates') > 0 .or. &
-                    index(line, 'transform_coordinates') > 0) then
+                if (index(line, 'save_coordinates') > 0 .or. &
+                    index(line, 'set_coordinates') > 0) then
                     has_coordinate_scaling = .true.
                 end if
                 
-                ! Look for value scaling methods
-                if (index(line, 'scale_values') > 0 .or. &
-                    index(line, 'transform_values') > 0) then
+                ! Look for axes drawing methods (backend-specific rendering)
+                if (index(line, 'draw_axes_and_labels_backend') > 0) then
                     has_value_scaling = .true.
                 end if
             end do
@@ -78,13 +77,12 @@ contains
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
                 
-                if (index(line, 'scale_coordinates') > 0 .or. &
-                    index(line, 'transform_coordinates') > 0) then
+                if (index(line, 'save_coordinates') > 0 .or. &
+                    index(line, 'set_coordinates') > 0) then
                     has_coordinate_scaling = .true.
                 end if
                 
-                if (index(line, 'scale_values') > 0 .or. &
-                    index(line, 'transform_values') > 0) then
+                if (index(line, 'draw_axes_and_labels_backend') > 0) then
                     has_value_scaling = .true.
                 end if
             end do
@@ -226,14 +224,13 @@ contains
             
             ! Look for scaling method implementations
             if (index(line, 'subroutine') > 0 .and. &
-                (index(line, 'scale_coordinates') > 0 .or. &
-                 index(line, 'transform_coordinates') > 0)) then
+                (index(line, 'save_coordinates') > 0 .or. &
+                 index(line, 'set_coordinates') > 0)) then
                 has_scale_coords = .true.
             end if
             
             if (index(line, 'subroutine') > 0 .and. &
-                (index(line, 'scale_values') > 0 .or. &
-                 index(line, 'transform_values') > 0)) then
+                index(line, 'draw_axes_and_labels') > 0) then
                 has_scale_values = .true.
             end if
         end do
@@ -285,10 +282,9 @@ contains
             if (iostat /= 0) exit
             
             ! Look for generic scaling method calls
-            if ((index(line, 'call backend%scale_coordinates') > 0) .or. &
-                (index(line, 'call backend%scale_values') > 0) .or. &
-                (index(line, 'call self%backend%scale_coordinates') > 0) .or. &
-                (index(line, 'call self%backend%scale_values') > 0)) then
+            if ((index(line, 'call self%backend%save_coordinates') > 0) .or. &
+                (index(line, 'call self%backend%set_coordinates') > 0) .or. &
+                (index(line, 'call self%backend%draw_axes_and_labels_backend') > 0)) then
                 uses_generic_scaling = .true.
                 exit
             end if
