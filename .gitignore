@@ -26,6 +26,7 @@ example/*/*.txt
 terminal
 *.pyc
 *.egg-info
+__pycache__/
 
 # Video files
 *.mp4

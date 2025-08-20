@@ -547,8 +547,6 @@ contains
         real(wp), intent(in), optional :: color(3)
 
         ! TODO: Implement boxplot method in figure_core
-        ! call fig%boxplot(data, position=position, width=width, label=label, &
-        !                show_outliers=show_outliers, horizontal=horizontal, color=color)
         call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
     end subroutine boxplot
 
