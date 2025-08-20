@@ -88,8 +88,140 @@ end program legend_box_demo
 
 ## Output
 
+### Legend Box Demo Default
+
+![legend_box_demo_default.png](../../media/examples/legend_box_demo/legend_box_demo_default.png)
+
+ASCII output:
+```
+
+                            Legend Box Spacing Demo
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                 #                                                            |
+|                # #  # ##                               -- sin(x)               |
+|             # #          #                             -- 0.5 sin(x)           |
+|            #              #                            -- 0.7 cos(x)           |
+| .                           #                          -- -0.3 sin(x)          |
+| ## ##    #                   #                                          ## # # |
+|       ##                                                             ##        |
+| .     #  #       ## # #        #                                   #           |
+|            ## ##       # ##      #                                #            |
+|     #    # ##               #                                   #              |
+|        #      #              # #  #                # # ## ## ##                |
+| .  ## #        #                 #  #          ## #          #  # ##           |
+|  # #             #                #         ##             #         ## #      |
+|  #                                  ##  # #                              # #   |
+| #                 #                  # #                  #                  # |
+|  # #                #             # #  ##               #                  #   |
+|     # ##              #        # #        #            #                 # #   |
+| .        # ##          #  # ##          #   #        #                # ##     |
+|               ## ## # ## #                #  # #   #                 #         |
+|                           #                     # #               ##    #      |
+|                             #               #   # ## #       ## #              |
+| .                            #               # #       ## ##          #        |
+|                                #             #                       #         |
+|                                  ## ## ## # #  #                   #           |
+| .                                               #                              |
+|                                                   #               #            |
+|                                                    #          # #              |
+| . .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  # ## ## #.  .  .  .  .  . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/legend_box_demo/legend_box_demo_default.pdf)
+
+### Legend Box Demo Upper Left
+
+![legend_box_demo_upper_left.png](../../media/examples/legend_box_demo/legend_box_demo_upper_left.png)
+
+ASCII output:
+```
+
+                            Legend Box Spacing Demo
++--------------------------------------------------------------------------------+
+| -- sin(x)                                                                      |
+| -- 0.5 sin(x)     #                                                            |
+| -- 0.7 cos(x)  # #  # ##                                                       |
+| -- -0.3 sin(x)#          #                                                     |
+| -- sin(x)  #              #                                                    |
+| -- 0.5 sin(x)               #                                                  |
+| ## 0#7 cos(x)                #                                          ## # # |
+| -- -0.3#sin(x)                                                       ##        |
+| .     #  #       ## # #        #                                   #           |
+|            ## ##       # ##      #                                #            |
+|     #    # ##               #                                   #              |
+|        #      #              # #  #                # # ## ## ##                |
+| .  ## #        #                 #  #          ## #          #  # ##           |
+|  # #             #                #         ##             #         ## #      |
+|  #                                  ##  # #                              # #   |
+| #                 #                  # #                  #                  # |
+|  # #                #             # #  ##               #                  #   |
+|     # ##              #        # #        #            #                 # #   |
+| .        # ##          #  # ##          #   #        #                # ##     |
+|               ## ## # ## #                #  # #   #                 #         |
+|                           #                     # #               ##    #      |
+|                             #               #   # ## #       ## #              |
+| .                            #               # #       ## ##          #        |
+|                                #             #                       #         |
+|                                  ## ## ## # #  #                   #           |
+| .                                               #                              |
+|                                                   #               #            |
+|                                                    #          # #              |
+| . .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  # ## ## #.  .  .  .  .  . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/legend_box_demo/legend_box_demo_upper_left.pdf)
+
+### Legend Box Demo Lower Right
+
+![legend_box_demo_lower_right.png](../../media/examples/legend_box_demo/legend_box_demo_lower_right.png)
+
+ASCII output:
+```
+
+                            Legend Box Spacing Demo
++--------------------------------------------------------------------------------+
+|                                                                                |
+| .                 #                                                            |
+|                # #  # ##                                                       |
+|             # #          #                                                     |
+|            #              #                                                    |
+| .                           #                                                  |
+| ## ##    #                   #                                          ## # # |
+|       ##                                                             ##        |
+| .     #  #       ## # #        #                                   #           |
+|            ## ##       # ##      #                                #            |
+|     #    # ##               #                                   #              |
+|        #      #              # #  #                # # ## ## ##                |
+| .  ## #        #                 #  #          ## #          #  # ##           |
+|  # #             #                #         ##             #         ## #      |
+|  #                                  ##  # #                              # #   |
+| #                 #                  # #                  #                  # |
+|  # #                #             # #  ##              -# sin(x)           #   |
+|     # ##              #        # #        #            #- 0.5 sin(x)     # #   |
+| .        # ##          #  # ##          #   #        # -- 0.7 cos(x)  # ##     |
+|               ## ## # ## #                #  # #   #   -- -0.3 sin(x)#         |
+|                           #                     # #    -- sin(x)  ##    #      |
+|                             #               #   # ## # -- 0.5#sin(x)           |
+| .                            #               # #       ## 0#7 cos(x)  #        |
+|                                #             #         -- -0.3 sin(x)#         |
+|                                  ## ## ## # #  #       -- sin(x)   #           |
+| .                                               #      -- 0.5 sin(x)           |
+|                                                   #    -- 0.7 cos(x)           |
+|                                                    #   -- -0.3#sin(x)          |
+| . .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  # ## ## #.  .  .  .  .  . |
+|                                                                                |
++--------------------------------------------------------------------------------+
+```
+
+[Download PDF](../../media/examples/legend_box_demo/legend_box_demo_lower_right.pdf)
+
 ### Default Legend Box
-![Default Legend Box](../../example/legend_box_demo/legend_box_demo_default.png)
+![Default Legend Box](../../media/examples/legend_box_demo/legend_box_demo_default.png)
 
 ### Upper Left Position
-![Upper Left](../../example/legend_box_demo/legend_box_demo_upper_left.png)
+![Upper Left](../../media/examples/legend_box_demo/legend_box_demo_upper_left.png)

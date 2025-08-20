@@ -50,15 +50,20 @@ jobs:
         run: |
           # Create output directories
           mkdir -p doc/media/examples
+          mkdir -p doc/example
           
           # Run all examples to generate outputs
           make example
           
-          # Copy generated outputs to media directory
-          find output/example/fortran -name "*.png" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
-          find output/example/fortran -name "*.txt" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
-          find output/example/fortran -name "*.pdf" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
-          find output/example/fortran -name "*.mp4" -exec cp {} doc/media/examples/ \; 2>/dev/null || true
+          # Copy generated outputs to media directory (preserving structure)
+          for dir in output/example/fortran/*/; do
+            example_name=$(basename "$dir")
+            mkdir -p "doc/media/examples/${example_name}"
+            cp -r "${dir}"*.png "doc/media/examples/${example_name}/" 2>/dev/null || true
+            cp -r "${dir}"*.txt "doc/media/examples/${example_name}/" 2>/dev/null || true
+            cp -r "${dir}"*.pdf "doc/media/examples/${example_name}/" 2>/dev/null || true
+            cp -r "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
+          done
           
           # Generate example documentation from README files
           make example ARGS="generate_example_docs"
@@ -67,9 +72,13 @@ jobs:
         run: |
           make doc
           
-          # Copy media files to build directory after FORD runs
+          # Copy media files to build directory after FORD runs (preserving structure)
           mkdir -p build/doc/media/examples
-          cp doc/media/examples/* build/doc/media/examples/ || true
+          cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true
+          
+          # Copy example documentation pages to build directory
+          mkdir -p build/doc/page/example
+          cp -r doc/example/*.md build/doc/page/example/ 2>/dev/null || true
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
