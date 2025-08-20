@@ -22,6 +22,7 @@ module fortplot_gltf
         type(gltf_accessor_t), allocatable :: accessors(:)
         type(gltf_buffer_view_t), allocatable :: buffer_views(:)
         integer :: mesh_count = 0
+        integer :: mesh_capacity = 0  ! Track allocated array capacity
         integer :: accessor_count = 0
         integer :: buffer_view_count = 0
         integer(1), allocatable :: buffer_data(:)
@@ -172,13 +173,11 @@ contains
         
         integer :: idx
         
-        ! Allocate space for new mesh
-        this%mesh_count = this%mesh_count + 1
-        if (.not. allocated(this%meshes)) then
-            allocate(this%meshes(10))  ! Pre-allocate space
-        end if
+        ! Ensure mesh array capacity
+        call ensure_mesh_capacity(this)
         
         ! Convert line to GLTF mesh
+        this%mesh_count = this%mesh_count + 1
         idx = this%mesh_count
         call convert_line_to_gltf(x, y, z, this%meshes(idx))
         
@@ -192,13 +191,11 @@ contains
         
         integer :: idx
         
-        ! Allocate space for new mesh
-        this%mesh_count = this%mesh_count + 1
-        if (.not. allocated(this%meshes)) then
-            allocate(this%meshes(10))  ! Pre-allocate space
-        end if
+        ! Ensure mesh array capacity
+        call ensure_mesh_capacity(this)
         
         ! Convert surface to GLTF mesh
+        this%mesh_count = this%mesh_count + 1
         idx = this%mesh_count
         call convert_surface_to_gltf(x_grid, y_grid, z_grid, this%meshes(idx))
         
@@ -428,20 +425,23 @@ contains
     
     subroutine pack_float_to_bytes(float_val, bytes)
         !! Pack float32 to byte array (little-endian)
-        !! Following KISS - direct binary conversion
+        !! Following KISS - safe byte manipulation
+        use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_positive_inf
         real(real32), intent(in) :: float_val
         integer(1), intent(out) :: bytes(4)
         
-        integer :: int_val
+        integer :: int_val, i
+        real(real32) :: temp
+        integer(1) :: temp_bytes(4)
+        equivalence (temp, temp_bytes)
         
-        ! Convert float to integer representation
-        int_val = transfer(float_val, int_val)
+        ! Use equivalence for safe type punning
+        temp = float_val
         
-        ! Pack as little-endian
-        bytes(1) = int(iand(int_val, 255), int8)
-        bytes(2) = int(iand(ishft(int_val, -8), 255), int8)
-        bytes(3) = int(iand(ishft(int_val, -16), 255), int8)
-        bytes(4) = int(iand(ishft(int_val, -24), 255), int8)
+        ! Copy bytes in little-endian order
+        do i = 1, 4
+            bytes(i) = temp_bytes(i)
+        end do
         
     end subroutine pack_float_to_bytes
 
@@ -639,5 +639,40 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine gltf_set_coordinates
+
+    subroutine ensure_mesh_capacity(this)
+        !! Ensure mesh array has capacity for new mesh
+        !! Dynamic growth strategy: double capacity when needed
+        class(gltf_context), intent(inout) :: this
+        
+        type(gltf_mesh_t), allocatable :: temp_meshes(:)
+        integer :: new_capacity, i
+        
+        ! Initialize if not allocated
+        if (.not. allocated(this%meshes)) then
+            this%mesh_capacity = 10  ! Initial capacity
+            allocate(this%meshes(this%mesh_capacity))
+            return
+        end if
+        
+        ! Check if growth needed
+        if (this%mesh_count >= this%mesh_capacity) then
+            ! Double capacity for efficient growth
+            new_capacity = this%mesh_capacity * 2
+            
+            ! Allocate new array
+            allocate(temp_meshes(new_capacity))
+            
+            ! Copy existing meshes
+            do i = 1, this%mesh_count
+                temp_meshes(i) = this%meshes(i)
+            end do
+            
+            ! Replace old array
+            call move_alloc(temp_meshes, this%meshes)
+            this%mesh_capacity = new_capacity
+        end if
+        
+    end subroutine ensure_mesh_capacity
 
 end module fortplot_gltf
