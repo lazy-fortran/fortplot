@@ -6,9 +6,7 @@ program test_gltf_json_structure
     use fortplot_gltf_writer, only: write_gltf_header, write_gltf_asset
     implicit none
     
-    ! TEMPORARY: Skip GLTF tests until Issue #153 is resolved
-    print *, "SKIP: GLTF JSON structure tests - blocked by Issue #153"
-    return
+    ! Running GLTF JSON structure tests
     
     call test_minimal_gltf_structure()
     call test_gltf_asset_info()

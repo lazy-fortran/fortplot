@@ -8,9 +8,7 @@ program test_gltf_buffer_packing
     use fortplot_gltf_base, only: gltf_accessor_t, gltf_buffer_view_t
     implicit none
     
-    ! TEMPORARY: Skip GLTF tests until Issue #153 is resolved
-    print *, "SKIP: GLTF buffer packing tests - blocked by Issue #153"
-    return
+    ! Running GLTF buffer packing tests
     
     call test_vertex_data_packing()
     call test_index_data_packing()

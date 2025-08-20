@@ -7,9 +7,7 @@ program test_gltf_mesh_generation
     use fortplot_security, only: safe_remove_file
     implicit none
     
-    ! TEMPORARY: Skip GLTF tests until Issue #153 is resolved
-    print *, "SKIP: GLTF mesh generation tests - blocked by Issue #153"
-    return
+    ! Running GLTF mesh generation tests
     
     call test_gltf_contains_mesh_data()
     call test_gltf_contains_accessor_data()
@@ -27,7 +25,7 @@ contains
         real(wp), dimension(3) :: y = [0.0_wp, 1.0_wp, 0.0_wp]
         real(wp), dimension(3) :: z = [0.0_wp, 0.5_wp, 1.0_wp]
         character(len=256) :: filename
-        character(len=8192) :: file_content
+        character(len=65536) :: file_content
         integer :: unit, iostat
         
         filename = "test_mesh_data.gltf"
@@ -68,7 +66,7 @@ contains
         real(wp), dimension(2) :: y = [0.0_wp, 1.0_wp]
         real(wp), dimension(2) :: z = [0.0_wp, 1.0_wp]
         character(len=256) :: filename
-        character(len=8192) :: file_content
+        character(len=65536) :: file_content
         integer :: unit
         
         filename = "test_accessor.gltf"
@@ -112,7 +110,7 @@ contains
         real(wp), dimension(2) :: y = [0.0_wp, 1.0_wp]
         real(wp), dimension(2) :: z = [0.0_wp, 1.0_wp]
         character(len=256) :: filename
-        character(len=8192) :: file_content
+        character(len=65536) :: file_content
         integer :: unit
         
         filename = "test_buffer.gltf"
@@ -156,7 +154,7 @@ contains
         real(wp), dimension(2) :: y = [0.0_wp, 1.0_wp]
         real(wp), dimension(2) :: z = [0.0_wp, 1.0_wp]
         character(len=256) :: filename
-        character(len=8192) :: file_content
+        character(len=65536) :: file_content
         integer :: unit
         
         filename = "test_scene.gltf"
