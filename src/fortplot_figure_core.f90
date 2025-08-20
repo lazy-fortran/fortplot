@@ -26,6 +26,7 @@ module fortplot_figure_core
     use fortplot_ascii, only: ascii_context
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_colors, only: parse_color, color_t
+    use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
     implicit none
 
     private
@@ -34,6 +35,7 @@ module fortplot_figure_core
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
     public :: ensure_directory_exists
+    public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
     
     ! Note: add_plot supports both RGB arrays and color strings via different parameter names
 
@@ -200,6 +202,11 @@ module fortplot_figure_core
         type(arrow_data_t), allocatable :: arrow_data(:)
         
         logical :: has_error = .false.
+        
+        ! Text annotation support
+        type(text_annotation_t), allocatable :: annotations(:)
+        integer :: annotation_count = 0
+        integer :: max_annotations = 100
 
     contains
         procedure :: initialize
@@ -232,6 +239,8 @@ module fortplot_figure_core
         procedure :: show
         procedure :: clear_streamlines
         procedure :: has_3d_plots
+        procedure :: text => add_text_annotation
+        procedure :: annotate => add_arrow_annotation
         final :: destroy
     end type figure_t
 
@@ -252,6 +261,12 @@ contains
         self%plot_count = 0
         self%rendered = .false.
         self%has_error = .false.
+        
+        ! Initialize annotations
+        if (.not. allocated(self%annotations)) then
+            allocate(self%annotations(self%max_annotations))
+        end if
+        self%annotation_count = 0
         
         ! Initialize legend following SOLID principles  
         self%show_legend = .false.
@@ -3610,5 +3625,123 @@ contains
         
         first_plot = .true.
     end subroutine initialize_range_calculation
+
+    subroutine add_text_annotation(self, x, y, text, coord_type, font_size, rotation, &
+                                  alignment, has_bbox, font_family)
+        !! Add text annotation to the figure
+        !! 
+        !! Arguments:
+        !!   x, y: Position coordinates
+        !!   text: Text content to display
+        !!   coord_type: Optional coordinate system (COORD_DATA, COORD_FIGURE, COORD_AXIS)
+        !!   font_size: Optional font size in points
+        !!   rotation: Optional rotation angle in degrees
+        !!   alignment: Optional text alignment ('left', 'center', 'right')
+        !!   has_bbox: Optional background box flag
+        !!   font_family: Optional font family name
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        integer, intent(in), optional :: coord_type
+        real(wp), intent(in), optional :: font_size, rotation
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        character(len=*), intent(in), optional :: font_family
+        
+        ! Check if we have space for more annotations
+        if (self%annotation_count >= self%max_annotations) then
+            call log_warning("Maximum number of annotations reached")
+            return
+        end if
+        
+        ! Increment annotation count and add annotation
+        self%annotation_count = self%annotation_count + 1
+        
+        ! Set annotation properties
+        self%annotations(self%annotation_count)%text = text
+        self%annotations(self%annotation_count)%x = x
+        self%annotations(self%annotation_count)%y = y
+        
+        ! Set optional properties with defaults
+        self%annotations(self%annotation_count)%coord_type = COORD_DATA
+        if (present(coord_type)) self%annotations(self%annotation_count)%coord_type = coord_type
+        
+        self%annotations(self%annotation_count)%font_size = 12.0_wp
+        if (present(font_size)) self%annotations(self%annotation_count)%font_size = font_size
+        
+        self%annotations(self%annotation_count)%rotation = 0.0_wp
+        if (present(rotation)) self%annotations(self%annotation_count)%rotation = rotation
+        
+        self%annotations(self%annotation_count)%alignment = 'left'
+        if (present(alignment)) self%annotations(self%annotation_count)%alignment = alignment
+        
+        self%annotations(self%annotation_count)%has_bbox = .false.
+        if (present(has_bbox)) self%annotations(self%annotation_count)%has_bbox = has_bbox
+        
+        ! Mark figure as needing re-rendering
+        self%rendered = .false.
+    end subroutine add_text_annotation
+
+    subroutine add_arrow_annotation(self, text, xy, xytext, xy_coord_type, xytext_coord_type, &
+                                   font_size, alignment, has_bbox)
+        !! Add arrow annotation to the figure
+        !! 
+        !! Arguments:
+        !!   text: Text content to display
+        !!   xy: Position coordinates of arrow tip [x, y]
+        !!   xytext: Position coordinates of text [x, y]
+        !!   xy_coord_type: Optional coordinate system for arrow tip
+        !!   xytext_coord_type: Optional coordinate system for text
+        !!   font_size: Optional font size in points
+        !!   alignment: Optional text alignment
+        !!   has_bbox: Optional background box flag
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: xy(2), xytext(2)
+        integer, intent(in), optional :: xy_coord_type, xytext_coord_type
+        real(wp), intent(in), optional :: font_size
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        
+        ! Check if we have space for more annotations
+        if (self%annotation_count >= self%max_annotations) then
+            call log_warning("Maximum number of annotations reached")
+            return
+        end if
+        
+        ! Increment annotation count and add annotation
+        self%annotation_count = self%annotation_count + 1
+        
+        ! Set annotation properties
+        self%annotations(self%annotation_count)%text = text
+        self%annotations(self%annotation_count)%x = xy(1)
+        self%annotations(self%annotation_count)%y = xy(2)
+        
+        ! Set arrow properties
+        self%annotations(self%annotation_count)%has_arrow = .true.
+        self%annotations(self%annotation_count)%xytext_x = xytext(1)
+        self%annotations(self%annotation_count)%xytext_y = xytext(2)
+        
+        ! Set coordinate systems with defaults
+        self%annotations(self%annotation_count)%coord_type = COORD_DATA
+        if (present(xy_coord_type)) self%annotations(self%annotation_count)%coord_type = xy_coord_type
+        
+        self%annotations(self%annotation_count)%xytext_coord_type = COORD_DATA
+        if (present(xytext_coord_type)) &
+            self%annotations(self%annotation_count)%xytext_coord_type = xytext_coord_type
+        
+        ! Set optional properties with defaults
+        self%annotations(self%annotation_count)%font_size = 12.0_wp
+        if (present(font_size)) self%annotations(self%annotation_count)%font_size = font_size
+        
+        self%annotations(self%annotation_count)%alignment = 'left'
+        if (present(alignment)) self%annotations(self%annotation_count)%alignment = alignment
+        
+        self%annotations(self%annotation_count)%has_bbox = .false.
+        if (present(has_bbox)) self%annotations(self%annotation_count)%has_bbox = has_bbox
+        
+        ! Mark figure as needing re-rendering
+        self%rendered = .false.
+    end subroutine add_arrow_annotation
 
 end module fortplot_figure_core
