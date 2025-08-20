@@ -53,7 +53,6 @@ contains
         if (file_content(pos:pos) == '"') then
             ! TEMPORARY: Skip this test until GLTF implementation is complete
             print *, "SKIP: GLTF base64 encoding not yet implemented"
-            call safe_remove_file(filename)
             return
         end if
         
