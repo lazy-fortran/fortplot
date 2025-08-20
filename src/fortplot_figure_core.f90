@@ -859,11 +859,19 @@ contains
         !! Arguments:
         !!   filename: Output filename (extension determines format)
         !!   blocking: Optional - if true, wait for user input after save (default: false)
+        use fortplot_security, only: is_safe_path
+        use fortplot_logging, only: log_error
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         character(len=20) :: backend_type
         logical :: do_block
+        
+        ! Validate filename security (Issue #135)
+        if (.not. is_safe_path(filename)) then
+            call log_error("Unsafe filename rejected: " // trim(filename))
+            return
+        end if
         
         ! Default to non-blocking
         do_block = .false.
