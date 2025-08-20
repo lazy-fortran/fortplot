@@ -88,49 +88,5 @@ end program legend_box_demo
 
 ## Output
 
-### Legend Box Demo Default
-
-![legend_box_demo_default.png](../../media/examples/legend_box_demo/legend_box_demo_default.png)
-
-ASCII output:
-```
-
-                            Legend Box Spacing Demo
-+--------------------------------------------------------------------------------+
-|                                                                                |
-| .                 #                                                            |
-|                # #  # ##                               -- sin(x)               |
-|             # #          #                             -- 0.5 sin(x)           |
-|            #              #                            -- 0.7 cos(x)           |
-| .                           #                          -- -0.3 sin(x)          |
-| ## ##    #                   #                                          ## # # |
-|       ##                                                             ##        |
-| .     #  #       ## # #        #                                   #           |
-|            ## ##       # ##      #                                #            |
-|     #    # ##               #                                   #              |
-|        #      #              # #  #                # # ## ## ##                |
-| .  ## #        #                 #  #          ## #          #  # ##           |
-|  # #             #                #         ##             #         ## #      |
-|  #                                  ##  # #                              # #   |
-| #                 #                  # #                  #                  # |
-|  # #                #             # #  ##               #                  #   |
-|     # ##              #        # #        #            #                 # #   |
-| .        # ##          #  # ##          #   #        #                # ##     |
-|               ## ## # ## #                #  # #   #                 #         |
-|                           #                     # #               ##    #      |
-|                             #               #   # ## #       ## #              |
-| .                            #               # #       ## ##          #        |
-|                                #             #                       #         |
-|                                  ## ## ## # #  #                   #           |
-| .                                               #                              |
-|                                                   #               #            |
-|                                                    #          # #              |
-| . .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  # ## ## #.  .  .  .  .  . |
-|                                                                                |
-+--------------------------------------------------------------------------------+
-```
-
-[Download PDF](../../media/examples/legend_box_demo/legend_box_demo_default.pdf                                                                                                                                                                                                                                     )
-
 ### Default Legend Box
 ### Upper Left Position
