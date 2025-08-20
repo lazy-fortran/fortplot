@@ -12,7 +12,7 @@ module fortplot_legend
     implicit none
     
     private
-    public :: legend_t, legend_entry_t, create_legend, legend_render
+    public :: legend_t, legend_entry_t, create_legend, legend_render, render_ascii_legend, render_standard_legend
     public :: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     
     ! Legend position constants

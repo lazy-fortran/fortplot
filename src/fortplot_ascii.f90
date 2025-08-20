@@ -714,7 +714,7 @@ contains
 
     subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
         !! Render legend using ASCII-specific compact layout
-        use fortplot_legend, only: legend_t
+        use fortplot_legend, only: legend_t, render_ascii_legend
         class(ascii_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y

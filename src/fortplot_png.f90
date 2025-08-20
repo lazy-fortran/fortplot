@@ -14,6 +14,7 @@ module fortplot_png
     type, extends(raster_context) :: png_context
     contains
         procedure :: save => png_finalize
+        procedure :: get_png_data_backend => png_get_png_data
     end type png_context
 
 contains
@@ -41,6 +42,17 @@ contains
 
         call write_png_file(filename, this%width, this%height, this%raster%image_data)
     end subroutine png_finalize
+
+    subroutine png_get_png_data(this, width, height, png_data, status)
+        !! Get PNG data from PNG context's raster data
+        class(png_context), intent(in) :: this
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        call generate_png_data(width, height, this%raster%image_data, png_data)
+        status = 0
+    end subroutine png_get_png_data
 
     ! Generate PNG data from image data
     subroutine generate_png_data(width, height, image_data, png_buffer)

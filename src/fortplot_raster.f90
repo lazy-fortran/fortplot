@@ -1702,15 +1702,16 @@ contains
     end subroutine raster_extract_rgb_data
 
     subroutine raster_get_png_data(this, width, height, png_data, status)
-        !! Get PNG data from PNG backend
-        use fortplot_png, only: get_png_data
+        !! Raster context doesn't generate PNG data - only PNG context does
         class(raster_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        call get_png_data(width, height, this%raster%image_data, png_data)
-        status = 0
+        ! Raster context doesn't generate PNG data
+        ! This should be overridden by PNG context
+        allocate(png_data(0))
+        status = -1
     end subroutine raster_get_png_data
 
     subroutine raster_prepare_3d_data(this, plots)

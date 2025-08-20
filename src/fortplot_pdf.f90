@@ -1806,7 +1806,7 @@ contains
 
     subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
         !! Render legend using standard algorithm for PDF
-        use fortplot_legend, only: legend_t
+        use fortplot_legend, only: legend_t, render_standard_legend
         class(pdf_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
@@ -1836,27 +1836,20 @@ contains
 
     subroutine pdf_calculate_legend_position(this, legend, x, y)
         !! Calculate standard legend position for PDF using plot coordinates
-        use fortplot_legend, only: legend_t, calculate_text_dimensions
+        use fortplot_legend, only: legend_t
         class(pdf_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
         real(wp) :: legend_width, legend_height
-        character(len=:), allocatable :: labels(:)
         
         ! Get standard dimensions
         call this%calculate_legend_dimensions(legend, legend_width, legend_height)
         
         ! For PNG/PDF backends, use standard matplotlib positioning
         if (legend%num_entries > 0) then
-            ! Calculate text dimensions for positioning
-            allocate(labels(legend%num_entries))
-            call calculate_text_dimensions(legend, this, labels, legend_width, legend_height)
-            
             ! Position in upper right with margin from edges
             x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
             y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
-            
-            deallocate(labels)
         else
             ! Fallback for empty legend
             x = this%x_max - this%x_max * 0.2_wp
