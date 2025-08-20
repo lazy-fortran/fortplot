@@ -10,7 +10,7 @@ module fortplot_doc_files
     
 contains
 
-    pure logical function check_file_exists(dir, filename)
+    logical function check_file_exists(dir, filename)
         character(len=*), intent(in) :: dir, filename
         character(len=PATH_MAX_LEN) :: full_path
         

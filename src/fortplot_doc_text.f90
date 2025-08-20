@@ -46,7 +46,7 @@ contains
     pure subroutine capitalize_if_lowercase(char)
         character(len=1), intent(inout) :: char
         if (char >= 'a' .and. char <= 'z') then
-            char = char(ichar(char) - 32)
+            char = achar(ichar(char) - 32)
         end if
     end subroutine capitalize_if_lowercase
     
