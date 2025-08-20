@@ -136,9 +136,6 @@ contains
             px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
             py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
             
-            ! Debug first few points
-            ! if (i < 3) then
-            ! end if
             
             if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
                 if (this%canvas(py, px) == ' ') then
