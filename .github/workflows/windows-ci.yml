@@ -30,31 +30,9 @@ jobs:
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-make
           mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-fpm
           mingw-w64-x86_64-pkg-config
           git
-          wget
-
-    - name: Setup Fortran Package Manager
-      run: |
-        # Install FPM using multiple retry mechanisms for resilience
-        for i in 1 2 3; do
-          echo "FPM download attempt $i"
-          if wget --timeout=30 --tries=2 \
-              https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
-              -O fpm.exe; then
-            chmod +x fpm.exe
-            mv fpm.exe /mingw64/bin/fpm
-            echo "FPM installation successful"
-            break
-          else
-            echo "FPM download failed, attempt $i"
-            sleep 10
-            if [ $i -eq 3 ]; then
-              echo "All FPM download attempts failed"
-              exit 1
-            fi
-          fi
-        done
 
     - name: Verify installations
       run: |
