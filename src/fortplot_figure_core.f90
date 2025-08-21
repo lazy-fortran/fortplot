@@ -21,7 +21,7 @@ module fortplot_figure_core
     use fortplot_pcolormesh
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_legend
-    use fortplot_raster, only: draw_rotated_ylabel_raster
+    use fortplot_raster, only: raster_render_ylabel
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_colors, only: parse_color, color_t
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS

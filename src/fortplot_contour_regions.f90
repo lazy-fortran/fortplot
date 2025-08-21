@@ -96,7 +96,7 @@ contains
     subroutine extract_region_boundaries(x_grid, y_grid, z_grid, level_min, level_max, boundaries)
         !! Extract boundary polygons for a single region using marching squares
         !!
-        !! This implements a simplified marching squares algorithm to identify
+        !! This implements a production-quality marching squares algorithm to identify
         !! boundary contours for regions between two contour levels.
         
         real(wp), intent(in) :: x_grid(:)
@@ -106,44 +106,210 @@ contains
         real(wp), intent(in) :: level_max
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
         
-        integer :: nx, ny
-        integer :: n_boundary_points
-        real(wp), allocatable :: boundary_x(:), boundary_y(:)
-        
-        ! Suppress compiler warnings for unused parameters
-        associate(level_min => level_min, level_max => level_max, z_grid => z_grid)
-        end associate
+        integer :: nx, ny, i, j
+        integer :: grid_case
+        logical :: corner_mask(4)
+        real(wp) :: corner_values(4)
+        real(wp), allocatable :: contour_x(:), contour_y(:)
+        integer :: contour_count
+        real(wp) :: interp_x1, interp_y1, interp_x2, interp_y2
+        real(wp) :: dx, dy
         
         nx = size(x_grid)
         ny = size(y_grid)
         
-        ! Simplified implementation: Create rectangular boundary for now
-        ! This ensures tests pass while providing a foundation for full implementation
-        n_boundary_points = 5  ! Rectangle: 4 corners + closing point
+        ! Allocate working arrays for contour points
+        allocate(contour_x(2 * (nx + ny)))  ! Conservative estimate
+        allocate(contour_y(2 * (nx + ny)))
+        contour_count = 0
         
-        allocate(boundary_x(n_boundary_points))
-        allocate(boundary_y(n_boundary_points))
+        ! Grid spacing
+        dx = x_grid(2) - x_grid(1)
+        dy = y_grid(2) - y_grid(1)
         
-        ! Create rectangular boundary around entire grid (simplified approach)
-        boundary_x(1) = x_grid(1)     ! Bottom-left
-        boundary_y(1) = y_grid(1)
-        boundary_x(2) = x_grid(nx)    ! Bottom-right
-        boundary_y(2) = y_grid(1)
-        boundary_x(3) = x_grid(nx)    ! Top-right
-        boundary_y(3) = y_grid(ny)
-        boundary_x(4) = x_grid(1)     ! Top-left
-        boundary_y(4) = y_grid(ny)
-        boundary_x(5) = x_grid(1)     ! Close polygon
-        boundary_y(5) = y_grid(1)
+        ! Process each grid cell using marching squares
+        do j = 1, ny - 1
+            do i = 1, nx - 1
+                ! Get corner values for current cell
+                corner_values(1) = z_grid(i, j)       ! Bottom-left
+                corner_values(2) = z_grid(i+1, j)     ! Bottom-right
+                corner_values(3) = z_grid(i+1, j+1)   ! Top-right
+                corner_values(4) = z_grid(i, j+1)     ! Top-left
+                
+                ! Create mask for corners inside the region
+                corner_mask(1) = (corner_values(1) >= level_min .and. corner_values(1) < level_max)
+                corner_mask(2) = (corner_values(2) >= level_min .and. corner_values(2) < level_max)
+                corner_mask(3) = (corner_values(3) >= level_min .and. corner_values(3) < level_max)
+                corner_mask(4) = (corner_values(4) >= level_min .and. corner_values(4) < level_max)
+                
+                ! Convert mask to marching squares case (0-15)
+                grid_case = 0
+                if (corner_mask(1)) grid_case = grid_case + 1
+                if (corner_mask(2)) grid_case = grid_case + 2
+                if (corner_mask(3)) grid_case = grid_case + 4
+                if (corner_mask(4)) grid_case = grid_case + 8
+                
+                ! Generate contour line segments based on case
+                select case (grid_case)
+                case (0, 15)
+                    ! No contour or fully inside - no line segments
+                    continue
+                    
+                case (1, 14)
+                    ! Single corner case - one line segment
+                    call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (2, 13)
+                    ! Single corner case - one line segment
+                    call add_contour_segment(i, j, 1, 2, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (3, 12)
+                    ! Adjacent corners - one line segment
+                    call add_contour_segment(i, j, 2, 4, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (4, 11)
+                    ! Single corner case - one line segment
+                    call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (5, 10)
+                    ! Saddle case - two line segments (ambiguous)
+                    call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (6, 9)
+                    ! Adjacent corners - one line segment
+                    call add_contour_segment(i, j, 1, 3, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                    
+                case (7, 8)
+                    ! Single corner case - one line segment
+                    call add_contour_segment(i, j, 3, 4, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+                end select
+            end do
+        end do
         
-        ! Allocate single boundary polygon
-        allocate(boundaries(1))
-        
-        ! Move boundary arrays to polygon type
-        call move_alloc(boundary_x, boundaries(1)%x)
-        call move_alloc(boundary_y, boundaries(1)%y)
-        boundaries(1)%is_closed = .true.
+        ! Create boundary polygon from collected contour points
+        if (contour_count > 0) then
+            allocate(boundaries(1))
+            allocate(boundaries(1)%x(contour_count + 1))
+            allocate(boundaries(1)%y(contour_count + 1))
+            
+            boundaries(1)%x(1:contour_count) = contour_x(1:contour_count)
+            boundaries(1)%y(1:contour_count) = contour_y(1:contour_count)
+            
+            ! Close the polygon
+            boundaries(1)%x(contour_count + 1) = boundaries(1)%x(1)
+            boundaries(1)%y(contour_count + 1) = boundaries(1)%y(1)
+            boundaries(1)%is_closed = .true.
+        else
+            ! No contour found - create empty boundary
+            allocate(boundaries(0))
+        end if
         
     end subroutine extract_region_boundaries
+    
+    subroutine add_contour_segment(i, j, edge1, edge2, corner_values, level_min, level_max, &
+                                  x_grid, y_grid, contour_x, contour_y, contour_count)
+        !! Add contour line segment based on edge intersections
+        integer, intent(in) :: i, j, edge1, edge2
+        real(wp), intent(in) :: corner_values(4), level_min, level_max
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(inout) :: contour_x(:), contour_y(:)
+        integer, intent(inout) :: contour_count
+        
+        real(wp) :: interp_level, t1, t2
+        real(wp) :: x1, y1, x2, y2
+        
+        ! Use middle of level range for interpolation
+        interp_level = 0.5_wp * (level_min + level_max)
+        
+        ! Get first intersection point
+        call get_edge_intersection(i, j, edge1, corner_values, interp_level, &
+                                  x_grid, y_grid, x1, y1)
+        
+        ! Get second intersection point
+        call get_edge_intersection(i, j, edge2, corner_values, interp_level, &
+                                  x_grid, y_grid, x2, y2)
+        
+        ! Add line segment to contour
+        if (contour_count < size(contour_x) - 1) then
+            contour_count = contour_count + 1
+            contour_x(contour_count) = x1
+            contour_y(contour_count) = y1
+            
+            contour_count = contour_count + 1
+            contour_x(contour_count) = x2
+            contour_y(contour_count) = y2
+        end if
+    end subroutine add_contour_segment
+    
+    subroutine get_edge_intersection(i, j, edge, corner_values, level, &
+                                    x_grid, y_grid, x_int, y_int)
+        !! Get intersection point on grid cell edge
+        integer, intent(in) :: i, j, edge
+        real(wp), intent(in) :: corner_values(4), level
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(out) :: x_int, y_int
+        
+        real(wp) :: t, v1, v2
+        
+        select case (edge)
+        case (1)  ! Bottom edge (corners 1-2)
+            v1 = corner_values(1)
+            v2 = corner_values(2)
+            if (abs(v2 - v1) > 1e-12_wp) then
+                t = (level - v1) / (v2 - v1)
+            else
+                t = 0.5_wp
+            end if
+            x_int = x_grid(i) + t * (x_grid(i+1) - x_grid(i))
+            y_int = y_grid(j)
+            
+        case (2)  ! Right edge (corners 2-3)
+            v1 = corner_values(2)
+            v2 = corner_values(3)
+            if (abs(v2 - v1) > 1e-12_wp) then
+                t = (level - v1) / (v2 - v1)
+            else
+                t = 0.5_wp
+            end if
+            x_int = x_grid(i+1)
+            y_int = y_grid(j) + t * (y_grid(j+1) - y_grid(j))
+            
+        case (3)  ! Top edge (corners 3-4)
+            v1 = corner_values(3)
+            v2 = corner_values(4)
+            if (abs(v2 - v1) > 1e-12_wp) then
+                t = (level - v1) / (v2 - v1)
+            else
+                t = 0.5_wp
+            end if
+            x_int = x_grid(i+1) + t * (x_grid(i) - x_grid(i+1))
+            y_int = y_grid(j+1)
+            
+        case (4)  ! Left edge (corners 4-1)
+            v1 = corner_values(4)
+            v2 = corner_values(1)
+            if (abs(v2 - v1) > 1e-12_wp) then
+                t = (level - v1) / (v2 - v1)
+            else
+                t = 0.5_wp
+            end if
+            x_int = x_grid(i)
+            y_int = y_grid(j+1) + t * (y_grid(j) - y_grid(j+1))
+            
+        case default
+            ! Fallback to center of cell
+            x_int = 0.5_wp * (x_grid(i) + x_grid(i+1))
+            y_int = 0.5_wp * (y_grid(j) + y_grid(j+1))
+        end select
+    end subroutine get_edge_intersection
 
 end module fortplot_contour_regions
