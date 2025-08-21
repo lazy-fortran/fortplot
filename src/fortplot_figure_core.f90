@@ -1109,6 +1109,11 @@ contains
         if (present(markercolor)) then
             call log_warning('Separate marker colors not yet implemented. Using line color for markers.')
         end if
+        
+        ! BACKWARD COMPATIBILITY: Also store in legacy plots array for tests
+        if (self%plot_count <= self%max_plots) then
+            self%plots(self%plot_count) = self%subplots(subplot_idx)%plots(plot_idx)
+        end if
     end subroutine add_line_plot_data
     
     subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
