@@ -972,8 +972,16 @@ contains
             self%subplot_rows = rows
             self%subplot_cols = cols
             
-            ! Reallocate subplots array
-            if (allocated(self%subplots)) deallocate(self%subplots)
+            ! Reallocate subplots array - clean up existing subplots first
+            if (allocated(self%subplots)) then
+                do i = 1, size(self%subplots)
+                    if (allocated(self%subplots(i)%plots)) deallocate(self%subplots(i)%plots)
+                    if (allocated(self%subplots(i)%title)) deallocate(self%subplots(i)%title)
+                    if (allocated(self%subplots(i)%xlabel)) deallocate(self%subplots(i)%xlabel)
+                    if (allocated(self%subplots(i)%ylabel)) deallocate(self%subplots(i)%ylabel)
+                end do
+                deallocate(self%subplots)
+            end if
             allocate(self%subplots(total_subplots))
             
             ! Initialize each subplot
@@ -1000,9 +1008,21 @@ contains
     subroutine destroy(self)
         !! Clean up figure resources
         type(figure_t), intent(inout) :: self
+        integer :: i
         
         if (allocated(self%plots)) deallocate(self%plots)
-        if (allocated(self%subplots)) deallocate(self%subplots)
+        
+        ! Deallocate allocatable components within each subplot before deallocating the array
+        if (allocated(self%subplots)) then
+            do i = 1, size(self%subplots)
+                if (allocated(self%subplots(i)%plots)) deallocate(self%subplots(i)%plots)
+                if (allocated(self%subplots(i)%title)) deallocate(self%subplots(i)%title)
+                if (allocated(self%subplots(i)%xlabel)) deallocate(self%subplots(i)%xlabel)
+                if (allocated(self%subplots(i)%ylabel)) deallocate(self%subplots(i)%ylabel)
+            end do
+            deallocate(self%subplots)
+        end if
+        
         if (allocated(self%backend)) deallocate(self%backend)
     end subroutine destroy
 
