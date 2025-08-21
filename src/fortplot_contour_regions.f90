@@ -80,8 +80,8 @@ contains
                 regions(i)%level_max = maxval(z_grid) + 1.0_wp
             else
                 ! Region between two levels
-                regions(i)%level_min = levels(i - 1)
-                regions(i)%level_max = levels(i)
+                regions(i)%level_min = levels(max(1, i - 1))
+                regions(i)%level_max = levels(min(n_levels, i))
             end if
             
             ! Extract boundary polygons for this region
@@ -109,6 +109,10 @@ contains
         integer :: nx, ny
         integer :: n_boundary_points
         real(wp), allocatable :: boundary_x(:), boundary_y(:)
+        
+        ! Suppress compiler warnings for unused parameters
+        associate(level_min => level_min, level_max => level_max, z_grid => z_grid)
+        end associate
         
         nx = size(x_grid)
         ny = size(y_grid)
