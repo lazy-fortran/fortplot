@@ -13,6 +13,7 @@ module fortplot_raster
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
+    use fortplot_colormap, only: colormap_value_to_color
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -1667,13 +1668,78 @@ contains
     end function raster_get_height_scale
 
     subroutine raster_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
-        !! Fill heatmap (not supported for raster backend - no-op)
+        !! Fill contour plot using scanline method for pixel-by-pixel rendering
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        ! Raster backend doesn't support heatmap rendering like ASCII
-        ! This is a no-op to satisfy polymorphic interface
+        integer :: px, py, nx, ny
+        real(wp) :: world_x, world_y, z_value, normalized_z
+        real(wp) :: color_rgb(3)
+        integer(1) :: r_byte, g_byte, b_byte
+        integer :: offset
+        real(wp) :: dx, dy
+        real(wp) :: x_min, x_max, y_min, y_max
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Validate input dimensions
+        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        if (abs(z_max - z_min) < 1e-10_wp) return
+        
+        ! Get data bounds
+        x_min = minval(x_grid)
+        x_max = maxval(x_grid)
+        y_min = minval(y_grid)
+        y_max = maxval(y_grid)
+        
+        ! Grid spacing for interpolation
+        if (nx > 1) then
+            dx = (x_max - x_min) / real(nx - 1, wp)
+        else
+            dx = 1.0_wp
+        end if
+        
+        if (ny > 1) then
+            dy = (y_max - y_min) / real(ny - 1, wp) 
+        else
+            dy = 1.0_wp
+        end if
+        
+        ! Scanline rendering: iterate over all pixels in plot area
+        do py = this%plot_area%bottom, this%plot_area%bottom + this%plot_area%height - 1
+            do px = this%plot_area%left, this%plot_area%left + this%plot_area%width - 1
+                
+                ! Map pixel to world coordinates
+                world_x = this%x_min + (real(px - this%plot_area%left, wp) / &
+                         real(this%plot_area%width - 1, wp)) * (this%x_max - this%x_min)
+                         
+                world_y = this%y_max - (real(py - this%plot_area%bottom, wp) / &
+                         real(this%plot_area%height - 1, wp)) * (this%y_max - this%y_min)
+                
+                ! Interpolate Z value at this pixel
+                call interpolate_z_value(x_grid, y_grid, z_grid, world_x, world_y, z_value)
+                
+                ! Convert Z value to color using default colormap (viridis)
+                call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
+                
+                ! Convert to bytes
+                r_byte = color_to_byte(color_rgb(1))
+                g_byte = color_to_byte(color_rgb(2))
+                b_byte = color_to_byte(color_rgb(3))
+                
+                ! Set pixel directly in image data (RGB format)
+                if (px >= 1 .and. px <= this%width .and. py >= 1 .and. py <= this%height) then
+                    offset = 3 * ((py - 1) * this%width + (px - 1)) + 1
+                    if (offset >= 1 .and. offset + 2 <= size(this%raster%image_data)) then
+                        this%raster%image_data(offset) = r_byte
+                        this%raster%image_data(offset + 1) = g_byte
+                        this%raster%image_data(offset + 2) = b_byte
+                    end if
+                end if
+            end do
+        end do
     end subroutine raster_fill_heatmap
 
     subroutine raster_render_legend_specialized(this, legend, legend_x, legend_y)
@@ -1814,5 +1880,99 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine raster_set_coordinates
+
+    subroutine interpolate_z_value(x_grid, y_grid, z_grid, world_x, world_y, z_value)
+        !! Bilinear interpolation of Z value at world coordinates
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: world_x, world_y
+        real(wp), intent(out) :: z_value
+        
+        integer :: nx, ny, i, j, i1, i2, j1, j2
+        real(wp) :: x1, x2, y1, y2, dx_norm, dy_norm
+        real(wp) :: z11, z12, z21, z22
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Find grid indices for interpolation
+        ! X direction
+        if (world_x <= x_grid(1)) then
+            i1 = 1; i2 = 1
+        else if (world_x >= x_grid(nx)) then
+            i1 = nx; i2 = nx
+        else
+            do i = 1, nx - 1
+                if (world_x >= x_grid(i) .and. world_x <= x_grid(i + 1)) then
+                    i1 = i; i2 = i + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Y direction
+        if (world_y <= y_grid(1)) then
+            j1 = 1; j2 = 1
+        else if (world_y >= y_grid(ny)) then
+            j1 = ny; j2 = ny
+        else
+            do j = 1, ny - 1
+                if (world_y >= y_grid(j) .and. world_y <= y_grid(j + 1)) then
+                    j1 = j; j2 = j + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Handle edge cases where indices weren't found
+        if (i1 == 0) then
+            i1 = 1; i2 = min(2, nx)
+        end if
+        if (j1 == 0) then
+            j1 = 1; j2 = min(2, ny)
+        end if
+        
+        ! Get coordinates and values at corners
+        x1 = x_grid(i1); x2 = x_grid(i2)
+        y1 = y_grid(j1); y2 = y_grid(j2)
+        z11 = z_grid(i1, j1)
+        z12 = z_grid(i1, j2)
+        z21 = z_grid(i2, j1)
+        z22 = z_grid(i2, j2)
+        
+        ! Bilinear interpolation
+        if (i1 == i2 .and. j1 == j2) then
+            ! Point coincides with grid point
+            z_value = z11
+        else if (i1 == i2) then
+            ! Linear interpolation in Y direction only
+            if (abs(y2 - y1) > 1e-10_wp) then
+                dy_norm = (world_y - y1) / (y2 - y1)
+                z_value = z11 + dy_norm * (z12 - z11)
+            else
+                z_value = z11
+            end if
+        else if (j1 == j2) then
+            ! Linear interpolation in X direction only
+            if (abs(x2 - x1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                z_value = z11 + dx_norm * (z21 - z11)
+            else
+                z_value = z11
+            end if
+        else
+            ! Full bilinear interpolation
+            if (abs(x2 - x1) > 1e-10_wp .and. abs(y2 - y1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                dy_norm = (world_y - y1) / (y2 - y1)
+                
+                z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
+                         z21 * dx_norm * (1.0_wp - dy_norm) + &
+                         z12 * (1.0_wp - dx_norm) * dy_norm + &
+                         z22 * dx_norm * dy_norm
+            else
+                z_value = z11
+            end if
+        end if
+    end subroutine interpolate_z_value
 
 end module fortplot_raster

@@ -12,6 +12,7 @@ module fortplot_pdf
                                          calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
     use fortplot_text, only: calculate_text_width
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
+    use fortplot_colormap, only: colormap_value_to_color
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -1835,13 +1836,71 @@ contains
     end subroutine pdf_fill_quad
 
     subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
-        !! Fill heatmap (not supported for PDF backend - no-op)
+        !! Fill contour plot using vector-based grid quads for PDF backend
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        ! PDF backend doesn't support ASCII-style heatmap rendering
-        ! This is a no-op to satisfy polymorphic interface
+        integer, parameter :: QUAD_RESOLUTION = 100  ! Quads per dimension
+        integer :: qx, qy, nx, ny
+        real(wp) :: quad_width, quad_height, quad_x, quad_y
+        real(wp) :: center_x, center_y, z_value
+        real(wp) :: color_rgb(3)
+        real(wp) :: x_quad(4), y_quad(4)
+        real(wp) :: x_min, x_max, y_min, y_max
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Validate input dimensions
+        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        if (abs(z_max - z_min) < 1e-10_wp) return
+        
+        ! Get data bounds
+        x_min = minval(x_grid)
+        x_max = maxval(x_grid)
+        y_min = minval(y_grid)
+        y_max = maxval(y_grid)
+        
+        ! Calculate quad dimensions in world coordinates
+        quad_width = (x_max - x_min) / real(QUAD_RESOLUTION, wp)
+        quad_height = (y_max - y_min) / real(QUAD_RESOLUTION, wp)
+        
+        ! Generate grid of colored quads
+        do qy = 1, QUAD_RESOLUTION
+            do qx = 1, QUAD_RESOLUTION
+                
+                ! Calculate quad position in world coordinates
+                quad_x = x_min + real(qx - 1, wp) * quad_width
+                quad_y = y_min + real(qy - 1, wp) * quad_height
+                
+                ! Calculate center point of quad for color sampling
+                center_x = quad_x + 0.5_wp * quad_width
+                center_y = quad_y + 0.5_wp * quad_height
+                
+                ! Interpolate Z value at quad center
+                call interpolate_z_value_pdf(x_grid, y_grid, z_grid, center_x, center_y, z_value)
+                
+                ! Convert Z value to color using default colormap (viridis)
+                call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
+                
+                ! Set color for this quad
+                call this%color(color_rgb(1), color_rgb(2), color_rgb(3))
+                
+                ! Define quad vertices (counter-clockwise)
+                x_quad(1) = quad_x
+                y_quad(1) = quad_y
+                x_quad(2) = quad_x + quad_width
+                y_quad(2) = quad_y
+                x_quad(3) = quad_x + quad_width
+                y_quad(3) = quad_y + quad_height
+                x_quad(4) = quad_x
+                y_quad(4) = quad_y + quad_height
+                
+                ! Fill the quad
+                call this%fill_quad(x_quad, y_quad)
+            end do
+        end do
     end subroutine pdf_fill_heatmap
 
     subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
@@ -1981,5 +2040,101 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine pdf_set_coordinates
+
+    subroutine interpolate_z_value_pdf(x_grid, y_grid, z_grid, world_x, world_y, z_value)
+        !! Bilinear interpolation of Z value at world coordinates for PDF backend
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: world_x, world_y
+        real(wp), intent(out) :: z_value
+        
+        integer :: nx, ny, i, j, i1, i2, j1, j2
+        real(wp) :: x1, x2, y1, y2, dx_norm, dy_norm
+        real(wp) :: z11, z12, z21, z22
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Find grid indices for interpolation
+        ! X direction
+        i1 = 0; i2 = 0
+        if (world_x <= x_grid(1)) then
+            i1 = 1; i2 = 1
+        else if (world_x >= x_grid(nx)) then
+            i1 = nx; i2 = nx
+        else
+            do i = 1, nx - 1
+                if (world_x >= x_grid(i) .and. world_x <= x_grid(i + 1)) then
+                    i1 = i; i2 = i + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Y direction
+        j1 = 0; j2 = 0
+        if (world_y <= y_grid(1)) then
+            j1 = 1; j2 = 1
+        else if (world_y >= y_grid(ny)) then
+            j1 = ny; j2 = ny
+        else
+            do j = 1, ny - 1
+                if (world_y >= y_grid(j) .and. world_y <= y_grid(j + 1)) then
+                    j1 = j; j2 = j + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Handle edge cases where indices weren't found
+        if (i1 == 0) then
+            i1 = 1; i2 = min(2, nx)
+        end if
+        if (j1 == 0) then
+            j1 = 1; j2 = min(2, ny)
+        end if
+        
+        ! Get coordinates and values at corners
+        x1 = x_grid(i1); x2 = x_grid(i2)
+        y1 = y_grid(j1); y2 = y_grid(j2)
+        z11 = z_grid(i1, j1)
+        z12 = z_grid(i1, j2)
+        z21 = z_grid(i2, j1)
+        z22 = z_grid(i2, j2)
+        
+        ! Bilinear interpolation
+        if (i1 == i2 .and. j1 == j2) then
+            ! Point coincides with grid point
+            z_value = z11
+        else if (i1 == i2) then
+            ! Linear interpolation in Y direction only
+            if (abs(y2 - y1) > 1e-10_wp) then
+                dy_norm = (world_y - y1) / (y2 - y1)
+                z_value = z11 + dy_norm * (z12 - z11)
+            else
+                z_value = z11
+            end if
+        else if (j1 == j2) then
+            ! Linear interpolation in X direction only
+            if (abs(x2 - x1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                z_value = z11 + dx_norm * (z21 - z11)
+            else
+                z_value = z11
+            end if
+        else
+            ! Full bilinear interpolation
+            if (abs(x2 - x1) > 1e-10_wp .and. abs(y2 - y1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                dy_norm = (world_y - y1) / (y2 - y1)
+                
+                z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
+                         z21 * dx_norm * (1.0_wp - dy_norm) + &
+                         z12 * (1.0_wp - dx_norm) * dy_norm + &
+                         z22 * dx_norm * dy_norm
+            else
+                z_value = z11
+            end if
+        end if
+    end subroutine interpolate_z_value_pdf
 
 end module fortplot_pdf
