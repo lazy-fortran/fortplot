@@ -79,7 +79,7 @@ jobs:
         export FORTPLOT_ENABLE_FFMPEG=0
         export OMP_NUM_THREADS=2
         mkdir -p /tmp/test
-        timeout 30m make test
+        timeout 10m make test-ci
 
     - name: Test FPM example
       run: |

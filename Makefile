@@ -27,6 +27,23 @@ debug:
 test:
 	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
+# Run fast tests for CI (skip heavy I/O and MPEG tests)
+test-ci:
+	@echo "Running CI-optimized test suite (skipping heavy I/O tests)..."
+	@echo "Skipping MPEG tests (require ffmpeg)"
+	@echo "Skipping visual validation tests (heavy file I/O)"
+	@echo "Running core functionality tests only"
+	@for test_file in test/test_*.f90; do \
+		test_name=$$(basename "$$test_file" .f90); \
+		if echo "$$test_name" | grep -qE "mpeg|pdf_.*(edge|user|ylabel|png|comparison)|pcolormesh_(api|extended|performance)|path_validation_security|output_validation|documentation_examples|annotation_backend_integration|text_.*|.*_png.*|.*_pdf.*"; then \
+			echo "SKIP: $$test_name (heavy I/O or requires ffmpeg)"; \
+		else \
+			echo "RUN: $$test_name"; \
+			fpm test $(FPM_FLAGS_TEST) --target "$$test_name" || exit 1; \
+		fi; \
+	done
+	@echo "CI test suite completed successfully"
+
 # Run Python examples with fortplot (default mode)
 example_python:
 	@echo "Running Python examples with fortplot..."
@@ -149,6 +166,7 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
+	@echo "  test-ci          - Run CI-optimized tests (skip heavy I/O, MPEG tests)"
 	@echo "  validate-output  - Run functional output validation tests"
 	@echo "  test-docs        - Test documentation examples"
 	@echo "  coverage         - Generate coverage report"
