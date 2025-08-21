@@ -142,125 +142,9 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, char_len, codepoint, symbol_char
-        character(len=1) :: current_char
-        character(len=200) :: text_cmd
-        character(len=500) :: current_segment
-        character(len=1000) :: escaped_segment
-        logical :: in_symbol_font, need_font_switch
-        integer :: segment_pos, escaped_len
-        
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
-        call this%stream_writer%add_to_stream(text_cmd)
-        
-        i = 1
-        in_symbol_font = .false.
-        current_segment = ""
-        segment_pos = 1
-        
-        do while (i <= len_trim(text))
-            current_char = text(i:i)
-            need_font_switch = .false.
-            
-            ! Check if this is a Unicode character (high bit set)
-            if (iachar(current_char) > 127) then
-                ! Get the Unicode codepoint
-                char_len = utf8_char_length(text(i:i))
-                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
-                    codepoint = utf8_to_codepoint(text, i)
-                    call unicode_to_symbol_char(codepoint, symbol_char)
-                    
-                    if (symbol_char > 0) then
-                        ! This is a Greek letter
-                        if (.not. in_symbol_font) then
-                            ! Need to switch to Symbol font
-                            need_font_switch = .true.
-                            ! Output current segment before switching
-                            if (segment_pos > 1) then
-                                ! Escape parentheses for Helvetica font
-                                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
-                                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                                current_segment = ""
-                                segment_pos = 1
-                            end if
-                            ! Switch to Symbol
-                            call this%stream_writer%add_to_stream("/F2 12 Tf")
-                            in_symbol_font = .true.
-                        end if
-                        ! Add Greek character
-                        current_segment(segment_pos:segment_pos) = char(symbol_char)
-                        segment_pos = segment_pos + 1
-                        i = i + char_len
-                    else
-                        ! Non-Greek Unicode
-                        if (in_symbol_font) then
-                            ! Need to switch back to Helvetica
-                            need_font_switch = .true.
-                            ! Output current segment before switching
-                            if (segment_pos > 1) then
-                                ! Symbol font doesn't need escaping
-                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                                current_segment = ""
-                                segment_pos = 1
-                            end if
-                            ! Switch to Helvetica
-                            call this%stream_writer%add_to_stream("/F1 12 Tf")
-                            in_symbol_font = .false.
-                        end if
-                        ! Add ASCII representation
-                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
-                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
-                        i = i + char_len
-                    end if
-                else
-                    ! Invalid UTF-8, skip
-                    i = i + 1
-                end if
-            else
-                ! Regular ASCII character
-                ! All ASCII characters must be in Helvetica font
-                if (in_symbol_font) then
-                    ! Need to switch to Helvetica for ASCII characters
-                    need_font_switch = .true.
-                    ! Output current segment before switching
-                    if (segment_pos > 1) then
-                        ! Symbol font doesn't need escaping
-                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                        call this%stream_writer%add_to_stream(text_cmd)
-                        current_segment = ""
-                        segment_pos = 1
-                    end if
-                    ! Switch to Helvetica
-                    call this%stream_writer%add_to_stream("/F1 12 Tf")
-                    in_symbol_font = .false.
-                end if
-                
-                ! Add ASCII character
-                current_segment(segment_pos:segment_pos) = current_char
-                segment_pos = segment_pos + 1
-                i = i + 1
-            end if
-        end do
-        
-        ! Output final segment
-        if (segment_pos > 1) then
-            if (in_symbol_font) then
-                ! Symbol font doesn't need escaping
-                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-            else
-                ! Helvetica font needs escaping
-                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
-                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
-            end if
-            call this%stream_writer%add_to_stream(text_cmd)
-        end if
-        
-        call this%stream_writer%add_to_stream("ET")
+        call begin_pdf_text_block(this, x, y)
+        call process_pdf_mixed_text_content(this, text)
+        call end_pdf_text_block(this)
     end subroutine draw_mixed_font_text
 
     subroutine draw_rotated_mixed_font_text(this, x, y, text)
@@ -2136,5 +2020,159 @@ contains
             end if
         end if
     end subroutine interpolate_z_value_pdf
+
+    ! Internal helper functions for draw_mixed_font_text
+
+    subroutine begin_pdf_text_block(this, x, y)
+        !! Initialize PDF text block with position and default font
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=200) :: text_cmd
+        
+        call this%stream_writer%add_to_stream("BT")
+        write(text_cmd, '("/F1 12 Tf")') 
+        call this%stream_writer%add_to_stream(text_cmd)
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
+        call this%stream_writer%add_to_stream(text_cmd)
+    end subroutine begin_pdf_text_block
+
+    subroutine end_pdf_text_block(this)
+        !! Close PDF text block
+        class(pdf_context), intent(inout) :: this
+        call this%stream_writer%add_to_stream("ET")
+    end subroutine end_pdf_text_block
+
+    subroutine output_pdf_text_segment(this, segment, segment_len, in_symbol_font)
+        !! Output accumulated text segment with appropriate font encoding
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: segment
+        integer, intent(in) :: segment_len
+        logical, intent(in) :: in_symbol_font
+        
+        character(len=200) :: text_cmd
+        character(len=1000) :: escaped_segment
+        integer :: escaped_len
+        
+        if (segment_len > 0) then
+            if (in_symbol_font) then
+                write(text_cmd, '("(", A, ") Tj")') segment(1:segment_len)
+            else
+                call escape_pdf_string(segment(1:segment_len), escaped_segment, escaped_len)
+                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
+            end if
+            call this%stream_writer%add_to_stream(text_cmd)
+        end if
+    end subroutine output_pdf_text_segment
+
+    subroutine switch_pdf_font(this, to_symbol, in_symbol_font)
+        !! Switch between Helvetica and Symbol fonts
+        class(pdf_context), intent(inout) :: this
+        logical, intent(in) :: to_symbol
+        logical, intent(inout) :: in_symbol_font
+        
+        if (to_symbol .and. .not. in_symbol_font) then
+            call this%stream_writer%add_to_stream("/F2 12 Tf")
+            in_symbol_font = .true.
+        else if (.not. to_symbol .and. in_symbol_font) then
+            call this%stream_writer%add_to_stream("/F1 12 Tf")
+            in_symbol_font = .false.
+        end if
+    end subroutine switch_pdf_font
+
+    subroutine process_pdf_unicode_char(this, text, text_pos, current_segment, &
+                                       segment_pos, in_symbol_font)
+        !! Process a Unicode character and update state
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: text_pos
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        
+        integer :: char_len, codepoint, symbol_char
+        
+        char_len = utf8_char_length(text(text_pos:text_pos))
+        if (char_len > 0 .and. text_pos + char_len - 1 <= len_trim(text)) then
+            codepoint = utf8_to_codepoint(text, text_pos)
+            call unicode_to_symbol_char(codepoint, symbol_char)
+            
+            if (symbol_char > 0) then
+                ! Greek letter - ensure Symbol font
+                if (.not. in_symbol_font) then
+                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .false.)
+                    call switch_pdf_font(this, .true., in_symbol_font)
+                    segment_pos = 1
+                end if
+                current_segment(segment_pos:segment_pos) = char(symbol_char)
+                segment_pos = segment_pos + 1
+            else
+                ! Non-Greek Unicode - ensure Helvetica font  
+                if (in_symbol_font) then
+                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
+                    call switch_pdf_font(this, .false., in_symbol_font)
+                    segment_pos = 1
+                end if
+                call unicode_codepoint_to_pdf_escape(codepoint, &
+                                                    current_segment(segment_pos:))
+                segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+            end if
+            text_pos = text_pos + char_len
+        else
+            ! Invalid UTF-8, skip
+            text_pos = text_pos + 1
+        end if
+    end subroutine process_pdf_unicode_char
+
+    subroutine process_pdf_ascii_char(this, current_char, current_segment, &
+                                     segment_pos, in_symbol_font)
+        !! Process an ASCII character and update state
+        class(pdf_context), intent(inout) :: this
+        character(len=1), intent(in) :: current_char
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        
+        ! ASCII characters must be in Helvetica font
+        if (in_symbol_font) then
+            call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
+            call switch_pdf_font(this, .false., in_symbol_font)
+            segment_pos = 1
+        end if
+        
+        current_segment(segment_pos:segment_pos) = current_char
+        segment_pos = segment_pos + 1
+    end subroutine process_pdf_ascii_char
+
+    subroutine process_pdf_mixed_text_content(this, text)
+        !! Process text content with font switching logic
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: text
+        
+        integer :: i, segment_pos
+        character(len=1) :: current_char
+        character(len=500) :: current_segment
+        logical :: in_symbol_font
+        
+        i = 1
+        in_symbol_font = .false.
+        current_segment = ""
+        segment_pos = 1
+        
+        do while (i <= len_trim(text))
+            current_char = text(i:i)
+            
+            if (iachar(current_char) > 127) then
+                call process_pdf_unicode_char(this, text, i, current_segment, &
+                                             segment_pos, in_symbol_font)
+            else
+                call process_pdf_ascii_char(this, current_char, current_segment, &
+                                           segment_pos, in_symbol_font)
+                i = i + 1
+            end if
+        end do
+        
+        ! Output final segment
+        call output_pdf_text_segment(this, current_segment, segment_pos-1, in_symbol_font)
+    end subroutine process_pdf_mixed_text_content
 
 end module fortplot_pdf
