@@ -49,7 +49,7 @@ contains
         call title('Y Values Label Test')
         call xlabel('X axis')
         call ylabel('Y values')  ! The problematic label
-        call savefig('example/fortran/test_outputs/test_y_values.png')
+        call savefig('build/test/test_y_values.png')
         
         print *, "  Created: test_y_values.png"
         print *, "  VERIFY: 'Y values' should read from bottom 'Y' to top 's'"
@@ -76,7 +76,7 @@ contains
         call title('L Test')
         call xlabel('X')
         call ylabel('lllll')  ! Multiple 'l' chars to test spacing
-        call savefig('example/fortran/test_outputs/test_label_lllll.png')
+        call savefig('build/test/test_label_lllll.png')
         
         ! Test 2: Mixed case
         call figure(200, 300)
@@ -84,7 +84,7 @@ contains
         call title('Mixed Case')
         call xlabel('X')
         call ylabel('Values')
-        call savefig('example/fortran/test_outputs/test_label_values.png')
+        call savefig('build/test/test_label_values.png')
         
         ! Test 3: All caps
         call figure(200, 300)
@@ -92,7 +92,7 @@ contains
         call title('All Caps')
         call xlabel('X')
         call ylabel('VOLTAGE')
-        call savefig('example/fortran/test_outputs/test_label_voltage.png')
+        call savefig('build/test/test_label_voltage.png')
         
         ! Test 4: Numbers and letters
         call figure(200, 300)
@@ -100,7 +100,7 @@ contains
         call title('Mixed')
         call xlabel('X')
         call ylabel('Data123')
-        call savefig('example/fortran/test_outputs/test_label_data123.png')
+        call savefig('build/test/test_label_data123.png')
         
         print *, "  Created: test_label_*.png files"
         print *, "  VERIFY: All labels should read bottom-to-top correctly"
@@ -121,14 +121,14 @@ contains
         call title('Spacing Test')
         call xlabel('X')
         call ylabel('Will Wall')  ! 'l' next to 'l' and 'W'
-        call savefig('example/fortran/test_outputs/test_spacing_will_wall.png')
+        call savefig('build/test/test_spacing_will_wall.png')
         
         call figure(200, 300)
         call plot(x, y)
         call title('Spacing Test 2')
         call xlabel('X')
         call ylabel('TALL WALL')  ! All caps with 'L's
-        call savefig('example/fortran/test_outputs/test_spacing_tall_wall.png')
+        call savefig('build/test/test_spacing_tall_wall.png')
         
         print *, "  Created: test_spacing_*.png files"
         print *, "  VERIFY: Character spacing should be consistent, no weird gaps"
@@ -149,7 +149,7 @@ contains
         call title('Single Char')
         call xlabel('X')
         call ylabel('Y')
-        call savefig('example/fortran/test_outputs/test_simple_y.png')
+        call savefig('build/test/test_simple_y.png')
         
         ! Two characters
         call figure(150, 200)
@@ -157,7 +157,7 @@ contains
         call title('Two Chars')
         call xlabel('X')
         call ylabel('AB')
-        call savefig('example/fortran/test_outputs/test_simple_ab.png')
+        call savefig('build/test/test_simple_ab.png')
         
         ! Three characters
         call figure(150, 200)
@@ -165,7 +165,7 @@ contains
         call title('Three Chars')
         call xlabel('X')
         call ylabel('ABC')
-        call savefig('example/fortran/test_outputs/test_simple_abc.png')
+        call savefig('build/test/test_simple_abc.png')
         
         print *, "  Created: test_simple_*.png files"
         print *, "  VERIFY: Simple cases should be perfect"
