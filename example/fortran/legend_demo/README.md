@@ -14,6 +14,9 @@ This example demonstrates legend placement and customization options.
 - `legend_lower_left.png/pdf/txt` - Legend in lower left
 - `legend_lower_right.png/pdf/txt` - Legend in lower right
 - `multi_function_legend.png/pdf/txt` - Multiple functions with legend
+- `legend_box_default.png/pdf/txt` - Legend box with default styling
+- `legend_box_upper_left.png/pdf/txt` - Legend box in upper left position
+- `legend_box_lower_right.png/pdf/txt` - Legend box in lower right position
 
 ## Running
 
@@ -27,6 +30,9 @@ make example ARGS="legend_demo"
 - **Manual placement**: Specify corner positions
 - **Multi-line legends**: Handle multiple labeled plots
 - **Smart positioning**: Avoids overlapping with data
+- **Box styling**: Legend boxes with frames and backgrounds
+- **Multiple entries**: Complex legends with 4+ labeled plots
+- **Multi-format output**: PNG, PDF, and ASCII text versions
 
 ## Legend Locations
 
@@ -43,3 +49,6 @@ make example ARGS="legend_demo"
 
 ### Multi-function Legend
 ![Multi-function Legend](multi_function_legend.png)
+
+### Legend Box Styling
+![Legend Box Default](legend_box_default.png)

@@ -8,6 +8,7 @@ program legend_demo
     call basic_legend_example()
     call positioned_legend_example()
     call multi_function_legend_example()
+    call legend_box_styling_example()
     
 contains
 
@@ -134,5 +135,51 @@ contains
         
         print *, "Created: multi_function_legend.png/pdf/txt"
     end subroutine multi_function_legend_example
+
+    subroutine legend_box_styling_example()
+        !! Demonstrate legend box styling and multiple entries
+        type(figure_t) :: fig
+        real(wp), dimension(50) :: x, y1, y2, y3, y4
+        integer :: i
+        
+        print *, "=== Legend Box Styling Example ==="
+        
+        ! Generate test data with multiple functions
+        x = [(real(i-1, wp) / 49.0_wp * 2.0_wp * 3.14159_wp, i=1, 50)]
+        y1 = sin(x)
+        y2 = y1 * 0.5_wp
+        y3 = cos(x) * 0.7_wp
+        y4 = -y1 * 0.3_wp
+        
+        call fig%initialize(800, 600)
+        call fig%set_title("Legend Box Styling Demo")
+        call fig%set_xlabel("x")
+        call fig%set_ylabel("y")
+        
+        ! Add multiple plots to test legend box styling
+        call fig%add_plot(x, y1, label="sin(x)")
+        call fig%add_plot(x, y2, label="0.5 sin(x)")
+        call fig%add_plot(x, y3, label="0.7 cos(x)")
+        call fig%add_plot(x, y4, label="-0.3 sin(x)")
+        
+        ! Test legend box with default styling
+        call fig%legend()
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_default.png')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_default.pdf')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_default.txt')
+        
+        ! Test legend box in different positions
+        call fig%legend(location="upper left")
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_upper_left.png')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_upper_left.pdf')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_upper_left.txt')
+        
+        call fig%legend(location="lower right")
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_lower_right.png')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_lower_right.pdf')
+        call fig%savefig('output/example/fortran/legend_demo/legend_box_lower_right.txt')
+        
+        print *, "Created: legend_box_default.png/pdf/txt, legend_box_upper_left.png/pdf/txt, legend_box_lower_right.png/pdf/txt"
+    end subroutine legend_box_styling_example
 
 end program legend_demo
