@@ -217,6 +217,7 @@ contains
         end if
         
         self%subplots(subplot_idx)%plot_count = self%subplots(subplot_idx)%plot_count + 1
+        self%plot_count = self%plot_count + 1
         
         if (present(linestyle) .and. contains_format_chars(linestyle)) then
             ! Parse format string and use those values
