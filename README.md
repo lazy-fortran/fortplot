@@ -23,6 +23,19 @@ call ylim(-1.0d0, 1.0d0)   ! Set y-axis limits
 call savefig("plot.png")
 ```
 
+### Subplot Grids
+```fortran
+call figure(800, 600)
+call subplot(2, 2, 1)  ! 2x2 grid, top-left
+call plot(x, sin(x))
+call title("Sine Wave")
+
+call subplot(2, 2, 2)  ! Top-right
+call plot(x, cos(x))
+call title("Cosine Wave")
+call savefig("subplots.png")
+```
+
 ### Object-Oriented API
 ```fortran
 type(figure_t) :: fig
@@ -302,13 +315,13 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Legends with automatic positioning
 - [x] Scales: linear, log, symlog (with configurable threshold)
 - [x] Axis limits (`xlim`, `ylim`)
+- [x] Subplot grids (`subplot`) for multiple plots in a single figure
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [x] **Security features**: Executable stack protection, trampoline detection, path validation
-- [ ] Subplots
 - [ ] Annotations
 
 

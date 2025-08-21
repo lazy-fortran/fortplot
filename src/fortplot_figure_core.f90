@@ -14,7 +14,7 @@ module fortplot_figure_core
     use fortplot_scales
     use fortplot_utils
     use fortplot_axes
-    use fortplot_logging, only: log_warning, log_info
+    use fortplot_logging, only: log_warning, log_info, log_error_message => log_error
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT, log_error
     use fortplot_gltf, only: gltf_context
     use fortplot_colormap
@@ -116,6 +116,12 @@ module fortplot_figure_core
         type(text_annotation_t), allocatable :: annotations(:)
         integer :: annotation_count = 0
         integer :: max_annotations = 100
+        
+        ! Subplot grid support
+        integer :: subplot_rows = 1
+        integer :: subplot_cols = 1
+        integer :: current_subplot = 1
+        type(subplot_t), allocatable :: subplots(:)
 
     contains
         procedure :: initialize
@@ -150,6 +156,8 @@ module fortplot_figure_core
         procedure :: has_3d_plots
         procedure :: text => add_text_annotation
         procedure :: annotate => add_arrow_annotation
+        procedure :: set_subplot
+        procedure :: initialize_default_subplot
         final :: destroy
     end type figure_t
 
@@ -177,6 +185,9 @@ contains
         end if
         self%annotation_count = 0
         
+        ! Initialize subplots to single plot by default
+        call self%initialize_default_subplot()
+        
         ! Initialize legend following SOLID principles  
         self%show_legend = .false.
         
@@ -195,12 +206,17 @@ contains
         real(wp), intent(in), optional :: color_rgb(3)
         
         character(len=20) :: parsed_marker, parsed_linestyle
+        integer :: subplot_idx
         
-        if (self%plot_count >= self%max_plots) then
-            write(*, '(A)') 'Warning: Maximum number of plots reached'
+        ! Get current subplot
+        subplot_idx = self%current_subplot
+        
+        if (self%subplots(subplot_idx)%plot_count >= self%max_plots) then
+            write(*, '(A)') 'Warning: Maximum number of plots reached in subplot'
             return
         end if
         
+        self%subplots(subplot_idx)%plot_count = self%subplots(subplot_idx)%plot_count + 1
         self%plot_count = self%plot_count + 1
         
         if (present(linestyle) .and. contains_format_chars(linestyle)) then
@@ -762,6 +778,26 @@ contains
         
     end subroutine streamplot
 
+    subroutine gather_subplot_plots(self)
+        !! Gather all subplot plots into main plots array for rendering
+        class(figure_t), intent(inout) :: self
+        integer :: subplot_idx, plot_idx, total_idx
+        
+        if (self%subplot_rows > 1 .or. self%subplot_cols > 1) then
+            ! Multiple subplots - gather all plots
+            total_idx = 0
+            do subplot_idx = 1, self%subplot_rows * self%subplot_cols
+                do plot_idx = 1, self%subplots(subplot_idx)%plot_count
+                    total_idx = total_idx + 1
+                    if (total_idx <= self%max_plots) then
+                        self%plots(total_idx) = self%subplots(subplot_idx)%plots(plot_idx)
+                    end if
+                end do
+            end do
+            self%plot_count = total_idx
+        end if
+    end subroutine gather_subplot_plots
+    
     subroutine savefig(self, filename, blocking)
         !! Save figure to file with backend auto-detection
         !! 
@@ -794,6 +830,9 @@ contains
         ! Always reinitialize backend for correct format
         if (allocated(self%backend)) deallocate(self%backend)
         call initialize_backend(self%backend, backend_type, self%width, self%height)
+        
+        ! Gather subplot plots if using subplots
+        call gather_subplot_plots(self)
         
         ! Handle GLTF differently - needs 3D data not 2D rendering
         select case (trim(backend_type))
@@ -851,18 +890,24 @@ contains
     subroutine set_xlabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
+        
+        ! Set the main figure xlabel property (for API compatibility)
         self%xlabel = label
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
+        
+        ! Set the main figure ylabel property (for API compatibility)
         self%ylabel = label
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
+        
+        ! Set the main figure title property (for API compatibility)
         self%title = title
     end subroutine set_title
 
@@ -901,6 +946,53 @@ contains
         self%y_max = y_max
         self%ylim_set = .true.
     end subroutine set_ylim
+    
+    subroutine set_subplot(self, rows, cols, index)
+        !! Set the current subplot in a grid layout
+        !! rows: number of subplot rows
+        !! cols: number of subplot columns  
+        !! index: subplot index (1-based, row-major order)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: rows, cols, index
+        integer :: total_subplots, i
+        
+        total_subplots = rows * cols
+        
+        ! Validate input
+        if (index < 1 .or. index > total_subplots) then
+            call log_error_message("Invalid subplot index")
+            return
+        end if
+        
+        ! Initialize subplot grid if needed
+        if (self%subplot_rows /= rows .or. self%subplot_cols /= cols) then
+            self%subplot_rows = rows
+            self%subplot_cols = cols
+            
+            ! Reallocate subplots array - clean up existing subplots first
+            if (allocated(self%subplots)) then
+                do i = 1, size(self%subplots)
+                    if (allocated(self%subplots(i)%plots)) deallocate(self%subplots(i)%plots)
+                    if (allocated(self%subplots(i)%title)) deallocate(self%subplots(i)%title)
+                    if (allocated(self%subplots(i)%xlabel)) deallocate(self%subplots(i)%xlabel)
+                    if (allocated(self%subplots(i)%ylabel)) deallocate(self%subplots(i)%ylabel)
+                end do
+                deallocate(self%subplots)
+            end if
+            allocate(self%subplots(total_subplots))
+            
+            ! Initialize each subplot
+            do i = 1, total_subplots
+                if (.not. allocated(self%subplots(i)%plots)) then
+                    allocate(self%subplots(i)%plots(self%max_plots))
+                end if
+                self%subplots(i)%plot_count = 0
+            end do
+        end if
+        
+        ! Set current subplot
+        self%current_subplot = index
+    end subroutine set_subplot
 
     subroutine set_line_width(self, width)
         !! Set line width for subsequent plot operations
@@ -913,12 +1005,42 @@ contains
     subroutine destroy(self)
         !! Clean up figure resources
         type(figure_t), intent(inout) :: self
+        integer :: i
         
         if (allocated(self%plots)) deallocate(self%plots)
+        
+        ! Deallocate allocatable components within each subplot before deallocating the array
+        if (allocated(self%subplots)) then
+            do i = 1, size(self%subplots)
+                if (allocated(self%subplots(i)%plots)) deallocate(self%subplots(i)%plots)
+                if (allocated(self%subplots(i)%title)) deallocate(self%subplots(i)%title)
+                if (allocated(self%subplots(i)%xlabel)) deallocate(self%subplots(i)%xlabel)
+                if (allocated(self%subplots(i)%ylabel)) deallocate(self%subplots(i)%ylabel)
+            end do
+            deallocate(self%subplots)
+        end if
+        
         if (allocated(self%backend)) deallocate(self%backend)
     end subroutine destroy
 
     ! Private helper routines (implementation details)
+    
+    subroutine initialize_default_subplot(self)
+        !! Initialize default single subplot configuration
+        class(figure_t), intent(inout) :: self
+        
+        self%subplot_rows = 1
+        self%subplot_cols = 1
+        self%current_subplot = 1
+        if (.not. allocated(self%subplots)) then
+            allocate(self%subplots(1))
+            ! Initialize the default subplot
+            if (.not. allocated(self%subplots(1)%plots)) then
+                allocate(self%subplots(1)%plots(self%max_plots))
+            end if
+            self%subplots(1)%plot_count = 0
+        end if
+    end subroutine initialize_default_subplot
     
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
         !! Add line plot data to internal storage with support for both RGB arrays and color strings
@@ -927,60 +1049,70 @@ contains
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker, markercolor
         real(wp), intent(in), optional :: color_rgb(3)
         
-        integer :: plot_idx, color_idx
+        integer :: plot_idx, color_idx, subplot_idx
         real(wp) :: rgb(3)
         logical :: success
         
-        plot_idx = self%plot_count
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        ! Get current subplot
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
         
         ! Store data
-        if (allocated(self%plots(plot_idx)%x)) deallocate(self%plots(plot_idx)%x)
-        if (allocated(self%plots(plot_idx)%y)) deallocate(self%plots(plot_idx)%y)
-        allocate(self%plots(plot_idx)%x(size(x)))
-        allocate(self%plots(plot_idx)%y(size(y)))
-        self%plots(plot_idx)%x = x
-        self%plots(plot_idx)%y = y
+        if (allocated(self%subplots(subplot_idx)%plots(plot_idx)%x)) &
+            deallocate(self%subplots(subplot_idx)%plots(plot_idx)%x)
+        if (allocated(self%subplots(subplot_idx)%plots(plot_idx)%y)) &
+            deallocate(self%subplots(subplot_idx)%plots(plot_idx)%y)
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
+        self%subplots(subplot_idx)%plots(plot_idx)%x = x
+        self%subplots(subplot_idx)%plots(plot_idx)%y = y
         
         ! Set properties
         if (present(label)) then
-            self%plots(plot_idx)%label = label
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
         else
-            self%plots(plot_idx)%label = ''
+            self%subplots(subplot_idx)%plots(plot_idx)%label = ''
         end if
         
         if (present(linestyle)) then
-            self%plots(plot_idx)%linestyle = linestyle
+            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = linestyle
         else
-            self%plots(plot_idx)%linestyle = 'solid'
+            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'solid'
         end if
 
         if (present(marker)) then
-            self%plots(plot_idx)%marker = marker
+            self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
         else
-            self%plots(plot_idx)%marker = 'None'
+            self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
         end if
         
         ! Handle color specification - color string takes precedence over RGB array
         if (present(color_str)) then
             call parse_color(color_str, rgb, success)
             if (success) then
-                self%plots(plot_idx)%color = rgb
+                self%subplots(subplot_idx)%plots(plot_idx)%color = rgb
             else
                 call log_warning('Invalid color specification: ' // color_str // '. Using default color.')
                 color_idx = mod(plot_idx - 1, 6) + 1
-                self%plots(plot_idx)%color = self%colors(:, color_idx)
+                self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
             end if
         else if (present(color_rgb)) then
-            self%plots(plot_idx)%color = color_rgb
+            self%subplots(subplot_idx)%plots(plot_idx)%color = color_rgb
         else
             color_idx = mod(plot_idx - 1, 6) + 1
-            self%plots(plot_idx)%color = self%colors(:, color_idx)
+            self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
         
         ! TODO: Handle markercolor separately when marker colors are implemented
         if (present(markercolor)) then
             call log_warning('Separate marker colors not yet implemented. Using line color for markers.')
+        end if
+        
+        ! BACKWARD COMPATIBILITY: Also store in legacy plots array for tests
+        if (self%plot_count <= self%max_plots) then
+            self%plots(self%plot_count) = self%subplots(subplot_idx)%plots(plot_idx)
         end if
     end subroutine add_line_plot_data
     
@@ -1413,6 +1545,9 @@ contains
         real(wp) :: plot_x_min, plot_x_max, plot_y_min, plot_y_max, plot_z_min, plot_z_max
         logical :: first_plot, first_3d_plot
         
+        ! Gather subplot plots into main plots array if using subplots
+        call gather_subplot_plots(self)
+        
         if (self%plot_count == 0) return
         
         first_plot = .true.
@@ -1459,8 +1594,13 @@ contains
                     ! Handle 2D plots as before
                     if (first_plot) then
                         ! Store ORIGINAL data ranges for tick generation (safely handling NaN/Inf)
-                        call safe_minmax_arrays(self%plots(i)%x, x_min_orig, x_max_orig)
-                        call safe_minmax_arrays(self%plots(i)%y, y_min_orig, y_max_orig)
+                        if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
+                            call safe_minmax_arrays(self%plots(i)%x, x_min_orig, x_max_orig)
+                            call safe_minmax_arrays(self%plots(i)%y, y_min_orig, y_max_orig)
+                        else
+                            ! Skip plots with unallocated data arrays
+                            cycle
+                        end if
                         
                         ! Calculate transformed ranges for rendering
                         x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
@@ -1470,8 +1610,13 @@ contains
                         first_plot = .false.
                     else
                         ! Update original ranges (safely handling NaN/Inf)
-                        call safe_minmax_arrays(self%plots(i)%x, plot_x_min, plot_x_max)
-                        call safe_minmax_arrays(self%plots(i)%y, plot_y_min, plot_y_max)
+                        if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
+                            call safe_minmax_arrays(self%plots(i)%x, plot_x_min, plot_x_max)
+                            call safe_minmax_arrays(self%plots(i)%y, plot_y_min, plot_y_max)
+                        else
+                            ! Skip plots with unallocated data arrays
+                            cycle
+                        end if
                         x_min_orig = min(x_min_orig, plot_x_min)
                         x_max_orig = max(x_max_orig, plot_x_max)
                         y_min_orig = min(y_min_orig, plot_y_min)

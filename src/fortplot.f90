@@ -69,7 +69,7 @@ module fortplot
     public :: plot, contour, contour_filled, pcolormesh, streamplot, errorbar, boxplot, show, show_viewer
     public :: hist, histogram, scatter
     public :: xlabel, ylabel, title, legend
-    public :: savefig, figure
+    public :: savefig, figure, subplot
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
     public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
@@ -605,6 +605,28 @@ contains
             call fig%initialize()
         end if
     end subroutine figure
+    
+    subroutine subplot(rows, cols, index)
+        !! Create a subplot grid and switch to specified subplot
+        !!
+        !! Arguments:
+        !!   rows: Number of subplot rows
+        !!   cols: Number of subplot columns
+        !!   index: Subplot index (1-based, row-major order)
+        integer, intent(in) :: rows, cols, index
+        
+        ! Ensure figure is initialized (may have been called after figure())
+        if (.not. allocated(fig%backend)) then
+            call fig%initialize()
+        end if
+        
+        ! Ensure subplots are initialized if not already
+        if (.not. allocated(fig%subplots)) then
+            call fig%initialize_default_subplot()
+        end if
+        
+        call fig%set_subplot(rows, cols, index)
+    end subroutine subplot
 
     subroutine xlabel(text)
         !! Set x-axis label for the global figure
