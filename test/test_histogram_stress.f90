@@ -191,9 +191,11 @@ contains
         data = real([(i, i=1,max_overlap_size)], wp) * 0.01_wp
         
         call fig%initialize(800, 600)
-        call fig%hist(data(1:max_overlap_size/2), bins=30, label='First Half', color=[1.0_wp, 0.0_wp, 0.0_wp])
+        call fig%hist(data(1:max_overlap_size/2), bins=30, label='First Half', &
+                      color=[1.0_wp, 0.0_wp, 0.0_wp])
         if (max_overlap_size >= 2500) then
-            call fig%hist(data(max_overlap_size/2+1:4*max_overlap_size/5), bins=30, label='Second Half', color=[0.0_wp, 0.0_wp, 1.0_wp])
+            call fig%hist(data(max_overlap_size/2+1:4*max_overlap_size/5), bins=30, &
+                          label='Second Half', color=[0.0_wp, 0.0_wp, 1.0_wp])
         end if
         call fig%legend()
         call fig%set_title('Overlapping Histograms')
