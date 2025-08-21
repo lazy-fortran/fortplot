@@ -26,6 +26,14 @@ contains
 
     subroutine test_check_actual_mpeg_file_size()
         ! Given: Animation system that should create valid MPEG files
+        logical :: ffmpeg_available
+        
+        ffmpeg_available = check_ffmpeg_available_external()
+        if (.not. ffmpeg_available) then
+            print *, "FFmpeg not available - skipping actual MPEG file size test"
+            return
+        end if
+        
         test_file = "debug_animation.mp4"
         
         test_x = [(real(i, real64), i=1,10)]

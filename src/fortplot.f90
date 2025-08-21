@@ -59,6 +59,7 @@ module fortplot
     use fortplot_colors, only: color_t, parse_color, parse_color_rgba, is_valid_color, &
                                validate_color_for_backend, clear_color_cache
     use fortplot_figure_core, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
 
     implicit none
 
@@ -94,6 +95,9 @@ module fortplot
     ! Color interface for matplotlib-compatible color syntax
     public :: color_t, parse_color, parse_color_rgba, is_valid_color, &
               validate_color_for_backend, clear_color_cache
+              
+    ! Contour region extraction interface for polygon decomposition
+    public :: contour_region_t, contour_polygon_t, extract_contour_regions
 
     ! Line style constants (matplotlib-compatible)
     

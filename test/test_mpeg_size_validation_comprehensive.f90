@@ -1,6 +1,6 @@
 program test_mpeg_size_validation_comprehensive
     use fortplot
-    use fortplot_security, only: safe_remove_file
+    use fortplot_security, only: safe_remove_file, safe_check_program_available
     use iso_fortran_env, only: real64
     implicit none
 
@@ -11,8 +11,16 @@ program test_mpeg_size_validation_comprehensive
     type(figure_t) :: test_fig
     real(real64), dimension(10) :: test_x, test_y
     integer :: i
+    logical :: ffmpeg_available
 
     print *, "=== COMPREHENSIVE MPEG SIZE VALIDATION TESTS ==="
+    
+    ! Check if ffmpeg is available before running tests
+    ffmpeg_available = safe_check_program_available('ffmpeg')
+    if (.not. ffmpeg_available) then
+        print *, "FFmpeg not available - skipping all size validation tests"
+        stop 0
+    end if
     
     call test_minimum_size_validation()
     call test_frame_count_size_correlation()

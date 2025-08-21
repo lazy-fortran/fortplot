@@ -4,6 +4,255 @@
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
+## Colored Contour Plots Fix (Issue #177)
+
+### Architectural Overview
+
+The colored contour fill functionality is broken across PNG and PDF backends. While contour lines render correctly, the filled regions between contour levels are not being rendered. The issue stems from incomplete backend implementation where `fill_heatmap` is called but only implemented for ASCII backend, leaving PNG/PDF outputs blank.
+
+### Current Architecture Analysis
+
+**Existing Implementation**:
+- `add_contour_filled()` in `fortplot_figure_core.f90` sets `use_color_levels = .true.`
+- `render_contour_plot()` checks `use_color_levels` flag
+- For filled contours, calls `fill_heatmap()` which is no-op for PNG/PDF
+- Contour line tracing via marching squares algorithm exists
+- `fill_quad()` primitive available in all backends but unused for contours
+
+**Architecture Gaps**:
+- No region extraction between contour levels
+- Missing polygon fill implementation for contour regions
+- `fill_heatmap()` inappropriate for vector graphics backends
+- No color interpolation for smooth gradients
+
+### Implementation Architecture
+
+#### 1. Contour Region Extraction Design
+
+**Region Data Structure**:
+```fortran
+type :: contour_region_t
+    real(wp), allocatable :: boundary_points(:,:)  ! (x,y) boundary coordinates
+    integer :: n_points                            ! Number of boundary points
+    real(wp) :: level_min, level_max              ! Value range for this region
+    real(wp) :: fill_color(3)                     ! RGB color for region
+end type
+```
+
+**Region Extraction Algorithm**:
+- Use marching squares to identify cells crossing each contour level
+- Extract closed polygons between adjacent contour levels
+- Handle edge cases: boundaries, islands, saddle points
+- Store regions sorted by z-value for proper rendering order
+
+#### 2. Filled Contour Rendering Pipeline
+
+**Rendering Strategy**:
+1. Extract all contour regions between levels
+2. Sort regions by z-value (lowest first for proper overlap)
+3. For each region:
+   - Calculate fill color from colormap
+   - Decompose complex polygons into convex sub-polygons
+   - Call backend's `fill_quad()` for each sub-polygon
+
+**Backend Integration**:
+- **PNG Backend**: Use raster polygon fill algorithm
+- **PDF Backend**: Use PDF path construction with fill operator
+- **ASCII Backend**: Keep existing heatmap approach (already working)
+
+#### 3. Polygon Decomposition Algorithm
+
+**Complex Polygon Handling**:
+```fortran
+subroutine decompose_polygon_to_quads(boundary_points, n_points, quads, n_quads)
+    ! Ear clipping triangulation followed by quad merging
+    ! 1. Triangulate polygon using ear clipping
+    ! 2. Merge adjacent triangles into quads where possible
+    ! 3. Return array of convex quadrilaterals
+end subroutine
+```
+
+#### 4. Color Interpolation Enhancement
+
+**Smooth Gradient Option**:
+- Linear interpolation between contour levels
+- Per-pixel color calculation for raster backends
+- Gradient mesh for vector backends (PDF)
+
+### Risk Assessment
+
+#### Technical Risks
+
+**HIGH RISK - Polygon Decomposition Complexity**:
+- Risk: Complex contour regions may create non-convex polygons
+- Impact: Incorrect rendering or crashes
+- Mitigation: Implement robust ear-clipping algorithm with edge case handling
+
+**MEDIUM RISK - Performance Impact**:
+- Risk: Region extraction and polygon fill may be slow for dense grids
+- Impact: Slow rendering for high-resolution contour plots
+- Mitigation: Optimize marching squares, use spatial indexing
+
+**LOW RISK - Color Accuracy**:
+- Risk: Colormap interpolation may differ from matplotlib
+- Impact: Visual differences in output
+- Mitigation: Use exact matplotlib colormap definitions
+
+### Implementation Roadmap
+
+1. **Phase 1: Region Extraction** (Backend-agnostic)
+   - Implement contour region extraction from grid data
+   - Create region boundary tracing algorithm
+   - Handle all marching squares cases
+
+2. **Phase 2: Polygon Decomposition**
+   - Implement ear clipping triangulation
+   - Add triangle-to-quad merging optimization
+   - Test with complex contour shapes
+
+3. **Phase 3: Backend Integration**
+   - PNG: Implement polygon rasterization
+   - PDF: Add path-based polygon fill
+   - Ensure consistent rendering across backends
+
+4. **Phase 4: Testing & Validation**
+   - Compare outputs with matplotlib reference
+   - Test edge cases: saddle points, boundaries
+   - Performance profiling and optimization
+
+### API Compatibility
+
+**No API Changes Required**:
+- Existing `add_contour_filled()` interface unchanged
+- All parameters maintain current behavior
+- Fix is purely internal implementation
+
+### Testing Strategy
+
+**Test Coverage Requirements**:
+1. Simple Gaussian peak (single closed contour)
+2. Saddle function (disconnected regions)
+3. Ripple function (nested contours)
+4. Edge cases: NaN values, constant regions
+5. All colormaps with different level counts
+6. Cross-backend consistency validation
+
+### Detailed Implementation Plan
+
+#### Leveraging Existing Infrastructure
+
+**Existing Marching Squares Implementation**:
+- `trace_contour_level()` - Traces single contour level
+- `process_contour_cell()` - Processes individual grid cells
+- `calculate_marching_squares_config()` - Computes cell configuration
+- `apply_marching_squares_lookup()` - Gets line segments from lookup table
+
+**Enhancement Strategy**:
+Instead of just drawing contour lines, collect boundary segments to form closed regions between levels.
+
+#### Module Structure
+
+**New Module**: `fortplot_contour_fill.f90`
+```fortran
+module fortplot_contour_fill
+    use fortplot_utils, only: wp
+    use fortplot_colormap, only: colormap_value_to_color
+    
+    type :: contour_region_t
+        real(wp), allocatable :: boundary(:,:)
+        integer :: n_boundary
+        real(wp) :: level_min, level_max
+        real(wp) :: color(3)
+    end type
+    
+    contains
+    
+    subroutine extract_filled_regions(x_grid, y_grid, z_grid, levels, regions)
+        ! Extract filled regions between contour levels
+        ! 1. For each pair of adjacent levels (level_i, level_i+1)
+        ! 2. Use modified marching squares to extract region boundaries
+        ! 3. Connect segments to form closed polygons
+        ! 4. Handle special cases: boundaries, holes, islands
+    end subroutine
+    
+    subroutine fill_contour_region(backend, region)
+        ! Render a filled contour region using backend primitives
+        ! For simple convex regions: direct fill_quad calls
+        ! For complex regions: triangulation then fill
+    end subroutine
+end module
+```
+
+#### Integration Points
+
+1. **fortplot_figure_core.f90** modifications:
+   - Replace `fill_heatmap()` call with new region-based rendering
+   - Add `render_filled_contour_plot()` alongside existing `render_contour_plot()`
+   
+2. **Backend enhancements**:
+   - Extend `fill_quad()` to handle arbitrary polygons
+   - Add `fill_polygon()` method to backend interface
+   
+3. **Colormap integration**:
+   - Use existing `colormap_value_to_color()` for region colors
+   - Support all existing colormaps without modification
+
+#### Performance Optimizations
+
+1. **Spatial Indexing**: 
+   - Pre-compute grid cell classifications (inside/outside/boundary)
+   - Cache marching squares edge intersections
+   
+2. **Polygon Simplification**:
+   - Douglas-Peucker algorithm for boundary simplification
+   - Adaptive detail level based on output resolution
+   
+3. **Rendering Order**:
+   - Z-order sorting for correct overlapping regions
+   - Batch similar colors to minimize state changes
+
+### Backward Compatibility Guarantee
+
+- Zero API changes required
+- Existing examples continue working unchanged
+- Performance characteristics maintained for non-filled contours
+- File format outputs remain compatible
+
+### Alternative Quick Fix Approach
+
+For immediate resolution while the full polygon-based solution is developed:
+
+#### Scanline Fill Method
+
+**Implementation**:
+1. For each pixel/cell in the output raster:
+   - Map pixel to data grid coordinates
+   - Interpolate z-value from grid
+   - Determine which contour band contains this z-value
+   - Apply corresponding color from colormap
+
+**Advantages**:
+- Simple implementation (~100 lines of code)
+- No complex polygon operations needed
+- Works immediately with existing backends
+- Guaranteed to fill all regions correctly
+
+**Disadvantages**:
+- Less efficient for vector backends (PDF)
+- No smooth boundaries (pixelated edges)
+- Requires backend-specific implementations
+
+**Code Location**:
+```fortran
+subroutine render_filled_contour_scanline(self, plot_idx)
+    ! Add to fortplot_figure_core.f90
+    ! Call instead of fill_heatmap for use_color_levels case
+    ! Iterate through output pixels and fill by z-value
+end subroutine
+```
+
+This approach can be implemented immediately as a working fix, then enhanced with proper polygon filling in a subsequent iteration.
+
 ## Streamplot Arrow Enhancement (Issue #22)
 
 ### Architectural Overview

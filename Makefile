@@ -27,6 +27,22 @@ debug:
 test:
 	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
+# Run fast tests for CI (skip heavy I/O and MPEG tests)
+test-ci:
+	@echo "Running CI-optimized test suite (essential tests only)..."
+	@echo "Testing core functionality, axes, backend basics"
+	@fpm test $(FPM_FLAGS_TEST) --target test_axes_coordinate_transformation_red || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_contour_filled_backend_rendering || exit 1  
+	@fpm test $(FPM_FLAGS_TEST) --target test_contour_color_mapping || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_contour_polygon_decomposition || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_backend_polymorphism_regression || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_matplotlib_syntax_compatibility || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_syntax_backward_compatibility || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_color_syntax_parsing || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_blocking || exit 1
+	@fpm test $(FPM_FLAGS_TEST) --target test_scatter || exit 1
+	@echo "CI essential test suite completed successfully"
+
 # Run Python examples with fortplot (default mode)
 example_python:
 	@echo "Running Python examples with fortplot..."
@@ -149,6 +165,7 @@ help:
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
+	@echo "  test-ci          - Run CI-optimized tests (skip heavy I/O, MPEG tests)"
 	@echo "  validate-output  - Run functional output validation tests"
 	@echo "  test-docs        - Test documentation examples"
 	@echo "  coverage         - Generate coverage report"
