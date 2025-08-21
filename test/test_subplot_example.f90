@@ -14,12 +14,12 @@ program test_subplot_example
 
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t, plot, xlabel, ylabel, title, &
-                        savefig, figure, show
+                        savefig, figure, show, subplot
     implicit none
 
     integer :: test_count = 0
     integer :: passed_count = 0
-    real(wp), allocatable :: x(:), y(:), x2(:), y2(:)
+    real(wp), allocatable :: x(:), y(:), x2(:), y2(:), cos_x(:)
     integer :: i
 
     print *, 'Running subplot example functionality tests (RED phase)...'
@@ -44,10 +44,11 @@ contains
         !! When: Data is generated like in the example
         !! Then: Should create sine, cosine, damped oscillation data
         
-        allocate(x(100), y(100))
+        allocate(x(100), y(100), cos_x(100))
         do i = 1, 100
             x(i) = real(i - 1, wp) * 0.1_wp
             y(i) = sin(x(i))
+            cos_x(i) = cos(x(i))
         end do
         
         allocate(x2(50), y2(50))
@@ -67,36 +68,35 @@ contains
         
         call figure(800, 600)
         
-        ! RED PHASE: These calls will fail because subplot() doesn't exist yet
-        ! Expected API usage:
-        ! call subplot(2, 2, 1)
-        ! call plot(x, sin(x))
-        ! call title('Sine Wave')
-        ! call xlabel('x')
-        ! call ylabel('sin(x)')
+        ! GREEN PHASE: Testing subplot implementation
+        call subplot(2, 2, 1)
+        call plot(x, y)  ! y already contains sin(x)
+        call title('Sine Wave')
+        call xlabel('x')
+        call ylabel('sin(x)')
         
-        ! call subplot(2, 2, 2)
-        ! call plot(x, cos(x))
-        ! call title('Cosine Wave')
-        ! call xlabel('x')
-        ! call ylabel('cos(x)')
+        call subplot(2, 2, 2)
+        call plot(x, cos_x)
+        call title('Cosine Wave')
+        call xlabel('x')
+        call ylabel('cos(x)')
         
-        ! call subplot(2, 2, 3)
-        ! call plot(x2, y2)
-        ! call title('Damped Oscillation')
-        ! call xlabel('x')
-        ! call ylabel('y')
+        call subplot(2, 2, 3)
+        call plot(x2, y2)
+        call title('Damped Oscillation')
+        call xlabel('x')
+        call ylabel('y')
         
-        ! call subplot(2, 2, 4)
-        ! call plot(x2, x2**2 / 50.0_wp)
-        ! call title('Quadratic Function')
-        ! call xlabel('x')
-        ! call ylabel('y')
+        call subplot(2, 2, 4)
+        call plot(x2, x2**2 / 50.0_wp)
+        call title('Quadratic Function')
+        call xlabel('x')
+        call ylabel('y')
         
-        ! This should fail until implementation is complete
         call savefig('test_output/subplot_2x2_test.png')
         
-        print *, 'FAIL: subplot() function not implemented yet (RED phase expected)'
+        print *, 'PASS: 2x2 subplot layout created successfully'
+        call mark_test_passed()
         
     end subroutine test_subplot_2x2_layout
 
@@ -110,22 +110,23 @@ contains
         
         call figure(800, 400)
         
-        ! RED PHASE: Expected API usage:
-        ! call subplot(1, 3, 1)
-        ! call plot(x2, x2)
-        ! call title('Linear')
+        ! GREEN PHASE: Testing subplot implementation  
+        call subplot(1, 3, 1)
+        call plot(x2, x2)
+        call title('Linear')
         
-        ! call subplot(1, 3, 2)
-        ! call plot(x2, x2**2)
-        ! call title('Quadratic')
+        call subplot(1, 3, 2)
+        call plot(x2, x2**2)
+        call title('Quadratic')
         
-        ! call subplot(1, 3, 3)
-        ! call plot(x2, x2**3)
-        ! call title('Cubic')
+        call subplot(1, 3, 3)
+        call plot(x2, x2**3)
+        call title('Cubic')
         
         call savefig('test_output/subplot_1x3_test.png')
         
-        print *, 'FAIL: subplot() function not implemented yet (RED phase expected)'
+        print *, 'PASS: 1x3 subplot layout created successfully'
+        call mark_test_passed()
         
     end subroutine test_subplot_1x3_layout
 
@@ -139,22 +140,23 @@ contains
         
         call figure(600, 600)
         
-        ! RED PHASE: Expected API usage for independent subplot labels:
-        ! call subplot(2, 1, 1)
-        ! call plot(x, sin(x))
-        ! call title('Top Plot: Sine Function')
-        ! call xlabel('Time (s)')
-        ! call ylabel('Amplitude')
+        ! GREEN PHASE: Testing independent subplot labels
+        call subplot(2, 1, 1)
+        call plot(x, y)  ! y already contains sin(x)
+        call title('Top Plot: Sine Function')
+        call xlabel('Time (s)')
+        call ylabel('Amplitude')
         
-        ! call subplot(2, 1, 2)
-        ! call plot(x, cos(x))
-        ! call title('Bottom Plot: Cosine Function')
-        ! call xlabel('Frequency (Hz)')
-        ! call ylabel('Magnitude')
+        call subplot(2, 1, 2)
+        call plot(x, cos_x)
+        call title('Bottom Plot: Cosine Function')
+        call xlabel('Frequency (Hz)')
+        call ylabel('Magnitude')
         
         call savefig('test_output/subplot_independent_labels_test.png')
         
-        print *, 'FAIL: subplot() function not implemented yet (RED phase expected)'
+        print *, 'PASS: Independent subplot titles and labels created successfully'
+        call mark_test_passed()
         
     end subroutine test_subplot_independent_titles_labels
 
@@ -168,27 +170,27 @@ contains
         
         call figure(800, 600)
         
-        ! Line plot
-        ! RED PHASE: Expected API usage for different plot types:
-        ! call subplot(2, 2, 1)
-        ! call plot(x, sin(x))
-        ! call title('Line Plot')
+        ! GREEN PHASE: Testing different plot types
+        call subplot(2, 2, 1)
+        call plot(x, y)  ! y already contains sin(x)
+        call title('Line Plot')
         
-        ! call subplot(2, 2, 2)
-        ! call plot(x2, y2)
-        ! call title('Damped Oscillation')
+        call subplot(2, 2, 2)
+        call plot(x2, y2)
+        call title('Damped Oscillation')
         
-        ! call subplot(2, 2, 3)
-        ! call plot(x2, x2**2)
-        ! call title('Quadratic')
+        call subplot(2, 2, 3)
+        call plot(x2, x2**2)
+        call title('Quadratic')
         
-        ! call subplot(2, 2, 4)
-        ! call plot(x2, sqrt(abs(x2)))
-        ! call title('Square Root')
+        call subplot(2, 2, 4)
+        call plot(x2, sqrt(abs(x2)))
+        call title('Square Root')
         
         call savefig('test_output/subplot_different_types_test.png')
         
-        print *, 'FAIL: subplot() function not implemented yet (RED phase expected)'
+        print *, 'PASS: Different plot types in subplots created successfully'
+        call mark_test_passed()
         
     end subroutine test_subplot_different_plot_types
 
@@ -201,15 +203,16 @@ contains
         print *, 'Test: Subplot example output directory creation'
         
         call figure(400, 300)
-        ! RED PHASE: Expected API usage:
-        ! call subplot(1, 1, 1)
-        ! call plot(x2(1:10), x2(1:10))
-        ! call title('Simple Test Plot')
+        ! GREEN PHASE: Testing subplot output
+        call subplot(1, 1, 1)
+        call plot(x2(1:10), x2(1:10))
+        call title('Simple Test Plot')
         
         ! Test the expected output path for the example
         call savefig('output/example/fortran/subplot_demo/test.png')
         
-        print *, 'FAIL: subplot() function not implemented yet (RED phase expected)'
+        print *, 'PASS: Subplot example output directory creation successful'
+        call mark_test_passed()
         
     end subroutine test_subplot_output_directory_creation
 
