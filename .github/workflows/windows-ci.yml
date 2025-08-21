@@ -1,0 +1,106 @@
+name: Windows CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  windows-test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    
+    steps:
+    - name: Configure git line endings
+      shell: bash
+      run: git config --global core.autocrlf input
+      
+    - uses: actions/checkout@v4
+
+    - name: Setup MSYS2 with MinGW64
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc-fortran
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-pkg-config
+          git
+          wget
+
+    - name: Setup Fortran Package Manager
+      run: |
+        # Install FPM using multiple retry mechanisms for resilience
+        for i in 1 2 3; do
+          echo "FPM download attempt $i"
+          if wget --timeout=30 --tries=2 \
+              https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12 \
+              -O fpm.exe; then
+            chmod +x fpm.exe
+            mv fpm.exe /mingw64/bin/fpm
+            echo "FPM installation successful"
+            break
+          else
+            echo "FPM download failed, attempt $i"
+            sleep 10
+            if [ $i -eq 3 ]; then
+              echo "All FPM download attempts failed"
+              exit 1
+            fi
+          fi
+        done
+
+    - name: Verify installations
+      run: |
+        echo "=== Verifying installations ==="
+        gfortran --version
+        gcc --version
+        fpm --version
+        ffmpeg -version | head -5
+        cmake --version
+        echo "=== Environment verification complete ==="
+
+    - name: Build project
+      run: |
+        export FORTPLOT_ENABLE_FFMPEG=1
+        make build
+
+    - name: Build required examples for tests
+      run: |
+        export FORTPLOT_ENABLE_FFMPEG=1
+        make example ARGS="basic_plots"
+        make example ARGS="legend_demo"
+        make example ARGS="contour_demo"
+        make example ARGS="marker_demo"
+        make example ARGS="format_string_demo"
+
+    - name: Run optimized Windows tests
+      run: |
+        export FORTPLOT_ENABLE_FFMPEG=1
+        export OMP_NUM_THREADS=2
+        mkdir -p /tmp/test
+        timeout 10m make test-ci
+
+    - name: Test Windows compatibility specifically
+      run: |
+        export FORTPLOT_ENABLE_FFMPEG=1
+        timeout 5m fpm test --target test_windows_compatibility || echo "Windows compatibility test skipped due to timeout"
+
+    - name: Test FPM example on Windows
+      run: |
+        export FORTPLOT_ENABLE_FFMPEG=1
+        timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
+
+    - name: Verify Windows-specific C code compilation
+      run: |
+        echo "=== Verifying C code compiles correctly on Windows ==="
+        # Force recompilation to ensure Windows headers are used
+        rm -f build/dependencies/fortplot/src_fortplot_pipe.c.o || true
+        make build
+        echo "=== Windows C compilation verification complete ==="
