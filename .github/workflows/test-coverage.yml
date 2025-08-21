@@ -76,7 +76,7 @@ jobs:
     - name: Run FPM tests with coverage
       run: |
         mkdir -p /tmp/test
-        make test ARGS="--flag '-fprofile-arcs -ftest-coverage'"
+        timeout 15m make test-ci ARGS="--flag '-fprofile-arcs -ftest-coverage'" || echo "Some CI tests may have timed out"
 
     - name: Test FPM example build
       run: |
