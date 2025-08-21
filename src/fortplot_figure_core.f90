@@ -890,28 +890,25 @@ contains
     subroutine set_xlabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        integer :: subplot_idx
         
-        subplot_idx = self%current_subplot
-        self%subplots(subplot_idx)%xlabel = label
+        ! Set the main figure xlabel property (for API compatibility)
+        self%xlabel = label
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        integer :: subplot_idx
         
-        subplot_idx = self%current_subplot
-        self%subplots(subplot_idx)%ylabel = label
+        ! Set the main figure ylabel property (for API compatibility)
+        self%ylabel = label
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
-        integer :: subplot_idx
         
-        subplot_idx = self%current_subplot
-        self%subplots(subplot_idx)%title = title
+        ! Set the main figure title property (for API compatibility)
+        self%title = title
     end subroutine set_title
 
     subroutine set_xscale(self, scale, threshold)
