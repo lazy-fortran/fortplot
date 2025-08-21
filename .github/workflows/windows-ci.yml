@@ -8,9 +8,6 @@ on:
 jobs:
   windows-test:
     runs-on: windows-latest
-    defaults:
-      run:
-        shell: msys2 {0}
     
     steps:
     - name: Configure git line endings
@@ -19,76 +16,59 @@ jobs:
       
     - uses: actions/checkout@v4
 
-    - name: Setup MSYS2 with MinGW64
+    - name: Setup MSYS2
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: true
+        update: false
+        path-type: inherit
+        cache: true
+        release: false
         install: >-
           mingw-w64-x86_64-gcc-fortran
           mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-make
           mingw-w64-x86_64-ffmpeg
-          mingw-w64-x86_64-pkg-config
           git
-          make
-          wget
 
-    - name: Setup Fortran Package Manager
+    - name: Add MinGW to PATH
+      run: echo C:\msys64\mingw64\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+
+    - name: Cache FPM binary (Windows)
+      id: cache-fpm-win
+      uses: actions/cache@v4
+      with:
+        path: C:\msys64\mingw64\bin\fpm.exe
+        key: ${{ runner.os }}-fpm-0.12.0
+
+    - name: Install FPM
+      if: steps.cache-fpm-win.outputs.cache-hit != 'true'
+      shell: pwsh
       run: |
-        # Download Windows FPM binary directly (MSYS2 package has issues)
-        echo "Downloading Windows FPM binary..."
-        wget -q https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe -O /mingw64/bin/fpm.exe
-        chmod +x /mingw64/bin/fpm.exe
-        ln -sf /mingw64/bin/fpm.exe /mingw64/bin/fpm
-        echo "FPM installation complete"
+        Write-Host "Installing FPM directly from GitHub releases..."
+        Invoke-WebRequest -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile "fpm.exe"
+        Move-Item -Path "fpm.exe" -Destination "C:\msys64\mingw64\bin\fpm.exe"
+        & "C:\msys64\mingw64\bin\fpm.exe" --version
 
     - name: Verify installations
+      shell: cmd
       run: |
-        echo "=== Verifying installations ==="
+        echo === Verifying installations ===
         gfortran --version
         gcc --version
         fpm --version
-        ffmpeg -version | head -5
-        cmake --version
-        echo "=== Environment verification complete ==="
+        ffmpeg -version
+        echo === Environment verification complete ===
 
     - name: Build project
+      shell: cmd
       run: |
-        export FORTPLOT_ENABLE_FFMPEG=1
-        make build
+        set FORTPLOT_ENABLE_FFMPEG=1
+        fpm build --flag "-fPIC"
 
-    - name: Build required examples for tests
+    - name: Run Windows tests
+      shell: cmd
       run: |
-        export FORTPLOT_ENABLE_FFMPEG=1
-        make example ARGS="basic_plots"
-        make example ARGS="legend_demo"
-        make example ARGS="contour_demo"
-        make example ARGS="marker_demo"
-        make example ARGS="format_string_demo"
-
-    - name: Run optimized Windows tests
-      run: |
-        export FORTPLOT_ENABLE_FFMPEG=1
-        export OMP_NUM_THREADS=2
-        mkdir -p /tmp/test
-        timeout 10m make test-ci
-
-    - name: Test Windows compatibility specifically
-      run: |
-        export FORTPLOT_ENABLE_FFMPEG=1
-        timeout 5m fpm test --target test_windows_compatibility || echo "Windows compatibility test skipped due to timeout"
-
-    - name: Test FPM example on Windows
-      run: |
-        export FORTPLOT_ENABLE_FFMPEG=1
-        timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
-
-    - name: Verify Windows-specific C code compilation
-      run: |
-        echo "=== Verifying C code compiles correctly on Windows ==="
-        # Force recompilation to ensure Windows headers are used
-        rm -f build/dependencies/fortplot/src_fortplot_pipe.c.o || true
-        make build
-        echo "=== Windows C compilation verification complete ==="
+        echo Running all tests...
+        set FORTPLOT_ENABLE_FFMPEG=1
+        fpm test --flag "-cpp -fmax-stack-var-size=65536"
