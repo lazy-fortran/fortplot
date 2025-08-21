@@ -147,6 +147,153 @@ subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
 
 ### Implementation Roadmap
 
+## Example Library Streamlining Plan
+
+### Current State Analysis
+
+**Working Examples** (23 directories):
+- animation - Save animation demo with MP4 output
+- annotation_demo - Text annotation positioning
+- ascii_heatmap - ASCII backend heatmap visualization
+- basic_3d_demo - 3D scatter plots
+- basic_plots - Core 2D plotting functionality
+- colored_contours - Filled contour plots with colormaps
+- contour_demo - Basic contour line plots
+- format_string_demo - Matplotlib-style format strings
+- gltf_glb_demo - GLTF/GLB 3D output
+- legend_box_demo - Legend positioning and styling
+- legend_demo - Basic legend functionality
+- line_styles - Line style options
+- marker_demo - Marker styles and combinations
+- pcolormesh_demo - 2D grid visualization
+- scale_examples - Log/symlog/linear scaling
+- scatter3d_demo - 3D scatter plots
+- scatter_demo - 2D scatter plots
+- show_viewer_demo - Display plot in viewer
+- smart_show_demo - Smart show functionality
+- stateful_streamplot - Streamplot with stateful API
+- streamplot_demo - Vector field visualization
+- unicode_demo - Unicode text support
+
+**Standalone Examples** (3 files):
+- bar_chart_demo.f90 - Bar and horizontal bar charts
+- histogram_demo.f90 - Histogram plotting
+- errorbar_demo.f90 - Error bars on plots
+
+**Disabled Examples** (4 files):
+- subplot_demo.f90.disabled - Subplot functionality (needs update)
+- boxplot_demo.f90.disabled - Box plot statistics
+- grid_demo.f90.disabled - Grid lines on plots
+- histogram_demo.f90.disabled - Duplicate histogram
+
+**Misplaced Files**:
+- disconnected_lines.f90 - At example/ root level instead of fortran/
+- test_outputs/ - Debug outputs in examples directory
+
+### Streamlining Strategy
+
+#### 1. Complete Missing Feature Examples
+
+**Priority 1 - Core Features Missing Examples**:
+- **Subplots**: Enable and update subplot_demo.f90 with stateful API
+- **Box plots**: Enable boxplot_demo.f90 if API exists
+- **Grid lines**: Enable grid_demo.f90 for axis grid display
+
+**Priority 2 - Enhanced Examples**:
+- **Combined features**: Show subplot + multiple plot types
+- **Animation variations**: Different animation types
+- **3D surfaces**: Surface plot examples (if supported)
+
+#### 2. Consolidation and Organization
+
+**Merge Similar Examples**:
+- Keep histogram_demo.f90, remove disabled duplicate
+- Consolidate 3D examples (basic_3d_demo + scatter3d_demo)
+- Merge legend_demo + legend_box_demo into comprehensive legend example
+
+**Fix File Organization**:
+- Move disconnected_lines.f90 to proper location
+- Remove test_outputs/ directory (belongs in build/)
+- Ensure all examples follow fortran/<feature>/ structure
+
+#### 3. Documentation and Output
+
+**Standardize Example Structure**:
+- Each example in own directory with README.md
+- Consistent output paths: output/example/fortran/<example>/
+- Include expected output images in documentation
+
+**Fix Known Issues**:
+- Animation download link (https://ffmpeg.org/download.html) is correct
+- Ensure all examples work with `make example ARGS="example_name"`
+
+### Implementation Issues
+
+#### Issue #160: Enable and Update Subplot Example
+**Priority**: HIGH
+**Scope**: Enable subplot_demo.f90.disabled and update for new stateful API
+**Tasks**:
+- Update subplot example to use new subplot() function
+- Test 2x2, 1x3, and 3x1 layouts
+- Add comprehensive subplot features demonstration
+- Move to example/fortran/subplot_demo/ directory
+
+#### Issue #161: Consolidate and Fix Disconnected Lines Example
+**Priority**: MEDIUM
+**Scope**: Organize disconnected_lines.f90 properly
+**Tasks**:
+- Move to example/fortran/disconnected_lines/ directory
+- Add README.md documentation
+- Ensure proper output directory structure
+
+#### Issue #162: Enable Box Plot Example
+**Priority**: MEDIUM
+**Scope**: Enable boxplot_demo.f90.disabled if API exists
+**Tasks**:
+- Check if boxplot API is implemented
+- Update example to working state
+- Add statistical data demonstration
+
+#### Issue #163: Enable Grid Lines Example
+**Priority**: LOW
+**Scope**: Enable grid_demo.f90.disabled
+**Tasks**:
+- Implement grid() function if missing
+- Show major/minor grid lines
+- Demonstrate grid styling options
+
+#### Issue #164: Consolidate Legend Examples
+**Priority**: LOW
+**Scope**: Merge legend examples into one comprehensive demo
+**Tasks**:
+- Combine legend_demo and legend_box_demo
+- Show all legend positioning options
+- Demonstrate legend styling and formatting
+
+#### Issue #165: Clean Up Test Outputs
+**Priority**: LOW
+**Scope**: Remove test_outputs from examples
+**Tasks**:
+- Delete test_outputs/ directory
+- Ensure examples use proper output paths
+- Update any references in documentation
+
+#### Issue #166: Consolidate 3D Examples
+**Priority**: LOW
+**Scope**: Merge 3D scatter examples
+**Tasks**:
+- Combine basic_3d_demo and scatter3d_demo
+- Create comprehensive 3D plotting example
+- Include both scatter and surface plots (if available)
+
+### Success Metrics
+
+1. **Coverage**: Every major API feature has at least one clear example
+2. **Clarity**: One example per feature, no redundancy
+3. **Organization**: Consistent directory structure and naming
+4. **Documentation**: Every example has README with expected output
+5. **Functionality**: All examples run with `make example ARGS="name"`
+
 #### Phase 1: Core Arrow Infrastructure (Priority: HIGH)
 1. **Define arrow data structures** in `fortplot_streamplot_matplotlib.f90`
 2. **Implement arrow placement algorithm** following matplotlib approach
@@ -5010,12 +5157,217 @@ end subroutine render_legend_entry
 
 This refactoring provides the **architectural foundation** for clean backend extensibility and maintains strict adherence to SOLID principles throughout the rendering system.
 
+## Subplot Functionality Public API (Issue #150)
+
+### Architectural Overview
+
+Expose existing `subplot_t` infrastructure through the public API to enable matplotlib-compatible subplot functionality for comparative visualization and professional scientific plots.
+
+### Current State Analysis
+
+**Existing Infrastructure**:
+- `subplot_t` type exists in `fortplot_plot_data.f90` but unused
+- `figure_t` uses simple plot array, no subplot grid support
+- Public API in `fortplot.f90` has no subplot functions
+- Layout system assumes single plot per figure
+
+**Enhancement Requirements**:
+- Integrate `subplot_t` with `figure_t` subplot grid system
+- Add public `subplot()` function to `fortplot.f90`
+- Implement subplot positioning and layout calculations
+- Maintain backward compatibility for existing single-plot API
+
+### Implementation Architecture
+
+#### 1. Figure_t Enhancement
+
+**Extended Figure Type**:
+```fortran
+type :: figure_t
+    ! Existing fields...
+    
+    ! Subplot grid configuration
+    integer :: n_rows = 1, n_cols = 1      ! Grid dimensions
+    integer :: current_subplot = 1         ! Active subplot index
+    type(subplot_t), allocatable :: subplots(:)  ! Subplot array
+    logical :: using_subplots = .false.    ! Track subplot mode
+    
+    ! Subplot layout properties
+    real(wp) :: subplot_spacing = 0.1_wp   ! Space between subplots
+    real(wp) :: subplot_margin = 0.05_wp   ! Margin around subplot grid
+end type
+```
+
+**Subplot Grid Methods**:
+```fortran
+procedure :: setup_subplot_grid
+procedure :: get_subplot_bounds
+procedure :: switch_to_subplot
+procedure :: calculate_subplot_position
+```
+
+#### 2. Public API Extension
+
+**New Public Functions in fortplot.f90**:
+```fortran
+! Create subplot grid and switch to specific subplot
+subroutine subplot(nrows, ncols, index)
+    integer, intent(in) :: nrows, ncols, index
+end subroutine
+
+! Set active subplot without grid changes
+subroutine set_current_subplot(index)
+    integer, intent(in) :: index
+end subroutine
+```
+
+**Integration with Existing Functions**:
+- `plot()`, `xlabel()`, `ylabel()`, `title()` operate on current subplot
+- `savefig()` renders entire subplot grid
+- Backward compatibility: single subplot behavior preserved
+
+#### 3. Layout System Architecture
+
+**Subplot Positioning Algorithm**:
+```fortran
+subroutine calculate_subplot_position(self, row, col, bounds)
+    ! Calculate normalized coordinates [0,1] for subplot
+    ! Input: grid position (row, col)
+    ! Output: bounds(4) = [left, bottom, width, height]
+    
+    real(wp) :: grid_width, grid_height
+    real(wp) :: subplot_width, subplot_height
+    
+    grid_width = 1.0_wp - 2.0_wp * self%subplot_margin
+    grid_height = 1.0_wp - 2.0_wp * self%subplot_margin
+    
+    subplot_width = (grid_width - (self%n_cols - 1) * self%subplot_spacing) / self%n_cols
+    subplot_height = (grid_height - (self%n_rows - 1) * self%subplot_spacing) / self%n_rows
+    
+    bounds(1) = self%subplot_margin + col * (subplot_width + self%subplot_spacing)
+    bounds(2) = self%subplot_margin + row * (subplot_height + self%subplot_spacing)
+    bounds(3) = subplot_width
+    bounds(4) = subplot_height
+end subroutine
+```
+
+**Coordinate Transformation**:
+- Convert data coordinates to subplot-relative coordinates
+- Apply subplot bounds to final figure coordinates
+- Maintain existing axis scaling and limit functionality per subplot
+
+#### 4. Enhanced Subplot_t Integration
+
+**Extended Subplot Type**:
+```fortran
+type :: subplot_t
+    ! Existing fields...
+    type(plot_data_t), allocatable :: plots(:)
+    integer :: plot_count = 0
+    character(len=:), allocatable :: title, xlabel, ylabel
+    character(len=10) :: xscale = 'linear', yscale = 'linear'
+    
+    ! New layout fields
+    real(wp) :: bounds(4)  ! [left, bottom, width, height] in figure coords
+    integer :: row, col    ! Grid position
+    logical :: active = .false.  ! Current subplot flag
+end type
+```
+
+**Subplot State Management**:
+- Each subplot maintains independent plot data array
+- Current subplot receives new plot operations
+- Rendering iterates through all subplots with coordinate transforms
+
+#### 5. Rendering Architecture
+
+**Multi-Subplot Rendering Pipeline**:
+```fortran
+subroutine render_subplot_figure(self)
+    class(figure_t), intent(inout) :: self
+    integer :: i
+    
+    if (.not. self%using_subplots) then
+        ! Legacy single-plot rendering
+        call render_single_plot_figure(self)
+        return
+    end if
+    
+    ! Render each subplot with coordinate transformation
+    do i = 1, size(self%subplots)
+        call setup_subplot_viewport(self, self%subplots(i))
+        call render_subplot_content(self, self%subplots(i))
+        call render_subplot_axes(self, self%subplots(i))
+    end do
+end subroutine
+```
+
+**Backend Coordinate Scaling**:
+- Scale subplot bounds to backend coordinate system
+- Apply subplot-specific axis transformations
+- Maintain backend polymorphism through existing interfaces
+
+### Risk Assessment and Mitigation
+
+**CRITICAL RISKS**:
+- **Backward Compatibility**: New subplot mode could break existing single-plot usage
+  - *Mitigation*: Default behavior preserves single-plot mode; subplot mode explicit
+- **Layout Complexity**: Subplot positioning calculations could introduce coordinate bugs  
+  - *Mitigation*: Reference matplotlib layout algorithms; comprehensive test coverage
+- **State Management**: Multiple subplot states could create confusion
+  - *Mitigation*: Clear current subplot tracking; explicit state management
+
+**MAJOR RISKS**:
+- **Performance Impact**: Rendering multiple subplots could degrade performance
+  - *Mitigation*: Minimal overhead for single-plot mode; efficient subplot iteration
+- **API Complexity**: New subplot functions could complicate public interface
+  - *Mitigation*: Minimal API surface; matplotlib-compatible design
+
+### Implementation Plan
+
+**Phase 1: Figure_t Enhancement**
+1. Add subplot grid fields to `figure_t` type
+2. Implement subplot positioning calculations
+3. Add subplot grid setup methods
+
+**Phase 2: API Integration**  
+1. Add `subplot()` function to `fortplot.f90`
+2. Modify existing functions to work with current subplot
+3. Ensure backward compatibility
+
+**Phase 3: Rendering Pipeline**
+1. Extend rendering to handle subplot grids
+2. Implement coordinate transformations per subplot
+3. Test across all backends (PNG, PDF, ASCII)
+
+**Phase 4: Testing and Validation**
+1. Unit tests for subplot positioning
+2. Integration tests for multi-subplot figures  
+3. Validation against matplotlib equivalent output
+
+### Success Metrics
+
+**Functional Requirements**:
+- ✅ Users can create subplot grids with `subplot(nrows, ncols, index)`
+- ✅ Each subplot maintains independent axes, labels, and plot data
+- ✅ Rendering produces correctly positioned and scaled subplots
+- ✅ Backward compatibility maintained for single-plot usage
+
+**Quality Requirements**:
+- ✅ No performance degradation for single-plot mode
+- ✅ Subplot positioning matches professional plotting standards
+- ✅ All existing tests pass without modification
+- ✅ Comprehensive test coverage for subplot functionality
+
+This architecture provides a **matplotlib-compatible subplot interface** while maintaining the library's SOLID principles and backend polymorphism.
+
 ## Next Steps
 
 1. ✅ **COMPLETED**: fortplot_figure_core refactoring (Issue #141) - architectural foundation established
-2. **HIGH PRIORITY**: Implement matplotlib-compatible color syntax (Issue #7) - foundation infrastructure for all plotting functionality  
-3. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
-4. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
-5. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
-6. **Short-term**: Add ffmpeg detection and graceful degradation
-7. **Medium-term**: Comprehensive integration testing and documentation
+2. ✅ **CURRENT**: Subplot functionality public API (Issue #150) - comparative visualization enhancement
+3. **HIGH PRIORITY**: Implement matplotlib-compatible color syntax (Issue #7) - foundation infrastructure for all plotting functionality  
+4. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
+5. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
+6. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+7. **Short-term**: Add ffmpeg detection and graceful degradation
+8. **Medium-term**: Comprehensive integration testing and documentation
