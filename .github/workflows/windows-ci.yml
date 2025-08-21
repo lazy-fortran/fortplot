@@ -30,10 +30,19 @@ jobs:
           mingw-w64-x86_64-cmake
           mingw-w64-x86_64-make
           mingw-w64-x86_64-ffmpeg
-          mingw-w64-x86_64-fpm
           mingw-w64-x86_64-pkg-config
           git
           make
+          wget
+
+    - name: Setup Fortran Package Manager
+      run: |
+        # Download Windows FPM binary directly (MSYS2 package has issues)
+        echo "Downloading Windows FPM binary..."
+        wget -q https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-13.exe -O /mingw64/bin/fpm.exe
+        chmod +x /mingw64/bin/fpm.exe
+        ln -sf /mingw64/bin/fpm.exe /mingw64/bin/fpm
+        echo "FPM installation complete"
 
     - name: Verify installations
       run: |
