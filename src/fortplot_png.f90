@@ -1,14 +1,14 @@
 module fortplot_png
     use iso_c_binding
     use fortplot_context, only: setup_canvas
-    use fortplot_raster, only: raster_context, create_raster_canvas, draw_axes_and_labels, draw_rotated_ylabel_raster
+    use fortplot_raster, only: raster_context, create_raster_canvas, raster_draw_axes_and_labels, raster_render_ylabel
     use fortplot_zlib, only: zlib_compress, crc32_calculate
     use fortplot_logging, only: log_error, log_info
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
 
     private
-    public :: png_context, create_png_canvas, draw_axes_and_labels, write_png_file, get_png_data
+    public :: png_context, create_png_canvas, raster_draw_axes_and_labels, write_png_file, get_png_data
 
     ! PNG plotting context - extends raster context and adds PNG file I/O
     type, extends(raster_context) :: png_context

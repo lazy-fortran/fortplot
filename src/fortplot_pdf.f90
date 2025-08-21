@@ -12,6 +12,7 @@ module fortplot_pdf
                                          calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
     use fortplot_text, only: calculate_text_width
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
+    use fortplot_colormap, only: colormap_value_to_color
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -141,125 +142,9 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         
-        integer :: i, char_len, codepoint, symbol_char
-        character(len=1) :: current_char
-        character(len=200) :: text_cmd
-        character(len=500) :: current_segment
-        character(len=1000) :: escaped_segment
-        logical :: in_symbol_font, need_font_switch
-        integer :: segment_pos, escaped_len
-        
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
-        call this%stream_writer%add_to_stream(text_cmd)
-        
-        i = 1
-        in_symbol_font = .false.
-        current_segment = ""
-        segment_pos = 1
-        
-        do while (i <= len_trim(text))
-            current_char = text(i:i)
-            need_font_switch = .false.
-            
-            ! Check if this is a Unicode character (high bit set)
-            if (iachar(current_char) > 127) then
-                ! Get the Unicode codepoint
-                char_len = utf8_char_length(text(i:i))
-                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
-                    codepoint = utf8_to_codepoint(text, i)
-                    call unicode_to_symbol_char(codepoint, symbol_char)
-                    
-                    if (symbol_char > 0) then
-                        ! This is a Greek letter
-                        if (.not. in_symbol_font) then
-                            ! Need to switch to Symbol font
-                            need_font_switch = .true.
-                            ! Output current segment before switching
-                            if (segment_pos > 1) then
-                                ! Escape parentheses for Helvetica font
-                                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
-                                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                                current_segment = ""
-                                segment_pos = 1
-                            end if
-                            ! Switch to Symbol
-                            call this%stream_writer%add_to_stream("/F2 12 Tf")
-                            in_symbol_font = .true.
-                        end if
-                        ! Add Greek character
-                        current_segment(segment_pos:segment_pos) = char(symbol_char)
-                        segment_pos = segment_pos + 1
-                        i = i + char_len
-                    else
-                        ! Non-Greek Unicode
-                        if (in_symbol_font) then
-                            ! Need to switch back to Helvetica
-                            need_font_switch = .true.
-                            ! Output current segment before switching
-                            if (segment_pos > 1) then
-                                ! Symbol font doesn't need escaping
-                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                                current_segment = ""
-                                segment_pos = 1
-                            end if
-                            ! Switch to Helvetica
-                            call this%stream_writer%add_to_stream("/F1 12 Tf")
-                            in_symbol_font = .false.
-                        end if
-                        ! Add ASCII representation
-                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
-                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
-                        i = i + char_len
-                    end if
-                else
-                    ! Invalid UTF-8, skip
-                    i = i + 1
-                end if
-            else
-                ! Regular ASCII character
-                ! All ASCII characters must be in Helvetica font
-                if (in_symbol_font) then
-                    ! Need to switch to Helvetica for ASCII characters
-                    need_font_switch = .true.
-                    ! Output current segment before switching
-                    if (segment_pos > 1) then
-                        ! Symbol font doesn't need escaping
-                        write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                        call this%stream_writer%add_to_stream(text_cmd)
-                        current_segment = ""
-                        segment_pos = 1
-                    end if
-                    ! Switch to Helvetica
-                    call this%stream_writer%add_to_stream("/F1 12 Tf")
-                    in_symbol_font = .false.
-                end if
-                
-                ! Add ASCII character
-                current_segment(segment_pos:segment_pos) = current_char
-                segment_pos = segment_pos + 1
-                i = i + 1
-            end if
-        end do
-        
-        ! Output final segment
-        if (segment_pos > 1) then
-            if (in_symbol_font) then
-                ! Symbol font doesn't need escaping
-                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-            else
-                ! Helvetica font needs escaping
-                call escape_pdf_string(current_segment(1:segment_pos-1), escaped_segment, escaped_len)
-                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
-            end if
-            call this%stream_writer%add_to_stream(text_cmd)
-        end if
-        
-        call this%stream_writer%add_to_stream("ET")
+        call begin_pdf_text_block(this, x, y)
+        call process_pdf_mixed_text_content(this, text)
+        call end_pdf_text_block(this)
     end subroutine draw_mixed_font_text
 
     subroutine draw_rotated_mixed_font_text(this, x, y, text)
@@ -1835,13 +1720,71 @@ contains
     end subroutine pdf_fill_quad
 
     subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
-        !! Fill heatmap (not supported for PDF backend - no-op)
+        !! Fill contour plot using vector-based grid quads for PDF backend
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        ! PDF backend doesn't support ASCII-style heatmap rendering
-        ! This is a no-op to satisfy polymorphic interface
+        integer, parameter :: QUAD_RESOLUTION = 100  ! Quads per dimension
+        integer :: qx, qy, nx, ny
+        real(wp) :: quad_width, quad_height, quad_x, quad_y
+        real(wp) :: center_x, center_y, z_value
+        real(wp) :: color_rgb(3)
+        real(wp) :: x_quad(4), y_quad(4)
+        real(wp) :: x_min, x_max, y_min, y_max
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Validate input dimensions
+        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        if (abs(z_max - z_min) < 1e-10_wp) return
+        
+        ! Get data bounds
+        x_min = minval(x_grid)
+        x_max = maxval(x_grid)
+        y_min = minval(y_grid)
+        y_max = maxval(y_grid)
+        
+        ! Calculate quad dimensions in world coordinates
+        quad_width = (x_max - x_min) / real(QUAD_RESOLUTION, wp)
+        quad_height = (y_max - y_min) / real(QUAD_RESOLUTION, wp)
+        
+        ! Generate grid of colored quads
+        do qy = 1, QUAD_RESOLUTION
+            do qx = 1, QUAD_RESOLUTION
+                
+                ! Calculate quad position in world coordinates
+                quad_x = x_min + real(qx - 1, wp) * quad_width
+                quad_y = y_min + real(qy - 1, wp) * quad_height
+                
+                ! Calculate center point of quad for color sampling
+                center_x = quad_x + 0.5_wp * quad_width
+                center_y = quad_y + 0.5_wp * quad_height
+                
+                ! Interpolate Z value at quad center
+                call interpolate_z_value_pdf(x_grid, y_grid, z_grid, center_x, center_y, z_value)
+                
+                ! Convert Z value to color using default colormap (viridis)
+                call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
+                
+                ! Set color for this quad
+                call this%color(color_rgb(1), color_rgb(2), color_rgb(3))
+                
+                ! Define quad vertices (counter-clockwise)
+                x_quad(1) = quad_x
+                y_quad(1) = quad_y
+                x_quad(2) = quad_x + quad_width
+                y_quad(2) = quad_y
+                x_quad(3) = quad_x + quad_width
+                y_quad(3) = quad_y + quad_height
+                x_quad(4) = quad_x
+                y_quad(4) = quad_y + quad_height
+                
+                ! Fill the quad
+                call this%fill_quad(x_quad, y_quad)
+            end do
+        end do
     end subroutine pdf_fill_heatmap
 
     subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
@@ -1981,5 +1924,255 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine pdf_set_coordinates
+
+    subroutine interpolate_z_value_pdf(x_grid, y_grid, z_grid, world_x, world_y, z_value)
+        !! Bilinear interpolation of Z value at world coordinates for PDF backend
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: world_x, world_y
+        real(wp), intent(out) :: z_value
+        
+        integer :: nx, ny, i, j, i1, i2, j1, j2
+        real(wp) :: x1, x2, y1, y2, dx_norm, dy_norm
+        real(wp) :: z11, z12, z21, z22
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Find grid indices for interpolation
+        ! X direction
+        i1 = 0; i2 = 0
+        if (world_x <= x_grid(1)) then
+            i1 = 1; i2 = 1
+        else if (world_x >= x_grid(nx)) then
+            i1 = nx; i2 = nx
+        else
+            do i = 1, nx - 1
+                if (world_x >= x_grid(i) .and. world_x <= x_grid(i + 1)) then
+                    i1 = i; i2 = i + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Y direction
+        j1 = 0; j2 = 0
+        if (world_y <= y_grid(1)) then
+            j1 = 1; j2 = 1
+        else if (world_y >= y_grid(ny)) then
+            j1 = ny; j2 = ny
+        else
+            do j = 1, ny - 1
+                if (world_y >= y_grid(j) .and. world_y <= y_grid(j + 1)) then
+                    j1 = j; j2 = j + 1
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Handle edge cases where indices weren't found
+        if (i1 == 0) then
+            i1 = 1; i2 = min(2, nx)
+        end if
+        if (j1 == 0) then
+            j1 = 1; j2 = min(2, ny)
+        end if
+        
+        ! Get coordinates and values at corners
+        x1 = x_grid(i1); x2 = x_grid(i2)
+        y1 = y_grid(j1); y2 = y_grid(j2)
+        z11 = z_grid(i1, j1)
+        z12 = z_grid(i1, j2)
+        z21 = z_grid(i2, j1)
+        z22 = z_grid(i2, j2)
+        
+        ! Bilinear interpolation
+        if (i1 == i2 .and. j1 == j2) then
+            ! Point coincides with grid point
+            z_value = z11
+        else if (i1 == i2) then
+            ! Linear interpolation in Y direction only
+            if (abs(y2 - y1) > 1e-10_wp) then
+                dy_norm = (world_y - y1) / (y2 - y1)
+                z_value = z11 + dy_norm * (z12 - z11)
+            else
+                z_value = z11
+            end if
+        else if (j1 == j2) then
+            ! Linear interpolation in X direction only
+            if (abs(x2 - x1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                z_value = z11 + dx_norm * (z21 - z11)
+            else
+                z_value = z11
+            end if
+        else
+            ! Full bilinear interpolation
+            if (abs(x2 - x1) > 1e-10_wp .and. abs(y2 - y1) > 1e-10_wp) then
+                dx_norm = (world_x - x1) / (x2 - x1)
+                dy_norm = (world_y - y1) / (y2 - y1)
+                
+                z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
+                         z21 * dx_norm * (1.0_wp - dy_norm) + &
+                         z12 * (1.0_wp - dx_norm) * dy_norm + &
+                         z22 * dx_norm * dy_norm
+            else
+                z_value = z11
+            end if
+        end if
+    end subroutine interpolate_z_value_pdf
+
+    ! Internal helper functions for draw_mixed_font_text
+
+    subroutine begin_pdf_text_block(this, x, y)
+        !! Initialize PDF text block with position and default font
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=200) :: text_cmd
+        
+        call this%stream_writer%add_to_stream("BT")
+        write(text_cmd, '("/F1 12 Tf")') 
+        call this%stream_writer%add_to_stream(text_cmd)
+        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
+        call this%stream_writer%add_to_stream(text_cmd)
+    end subroutine begin_pdf_text_block
+
+    subroutine end_pdf_text_block(this)
+        !! Close PDF text block
+        class(pdf_context), intent(inout) :: this
+        call this%stream_writer%add_to_stream("ET")
+    end subroutine end_pdf_text_block
+
+    subroutine output_pdf_text_segment(this, segment, segment_len, in_symbol_font)
+        !! Output accumulated text segment with appropriate font encoding
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: segment
+        integer, intent(in) :: segment_len
+        logical, intent(in) :: in_symbol_font
+        
+        character(len=200) :: text_cmd
+        character(len=1000) :: escaped_segment
+        integer :: escaped_len
+        
+        if (segment_len > 0) then
+            if (in_symbol_font) then
+                write(text_cmd, '("(", A, ") Tj")') segment(1:segment_len)
+            else
+                call escape_pdf_string(segment(1:segment_len), escaped_segment, escaped_len)
+                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
+            end if
+            call this%stream_writer%add_to_stream(text_cmd)
+        end if
+    end subroutine output_pdf_text_segment
+
+    subroutine switch_pdf_font(this, to_symbol, in_symbol_font)
+        !! Switch between Helvetica and Symbol fonts
+        class(pdf_context), intent(inout) :: this
+        logical, intent(in) :: to_symbol
+        logical, intent(inout) :: in_symbol_font
+        
+        if (to_symbol .and. .not. in_symbol_font) then
+            call this%stream_writer%add_to_stream("/F2 12 Tf")
+            in_symbol_font = .true.
+        else if (.not. to_symbol .and. in_symbol_font) then
+            call this%stream_writer%add_to_stream("/F1 12 Tf")
+            in_symbol_font = .false.
+        end if
+    end subroutine switch_pdf_font
+
+    subroutine process_pdf_unicode_char(this, text, text_pos, current_segment, &
+                                       segment_pos, in_symbol_font)
+        !! Process a Unicode character and update state
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: text
+        integer, intent(inout) :: text_pos
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        
+        integer :: char_len, codepoint, symbol_char
+        
+        char_len = utf8_char_length(text(text_pos:text_pos))
+        if (char_len > 0 .and. text_pos + char_len - 1 <= len_trim(text)) then
+            codepoint = utf8_to_codepoint(text, text_pos)
+            call unicode_to_symbol_char(codepoint, symbol_char)
+            
+            if (symbol_char > 0) then
+                ! Greek letter - ensure Symbol font
+                if (.not. in_symbol_font) then
+                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .false.)
+                    call switch_pdf_font(this, .true., in_symbol_font)
+                    segment_pos = 1
+                end if
+                current_segment(segment_pos:segment_pos) = char(symbol_char)
+                segment_pos = segment_pos + 1
+            else
+                ! Non-Greek Unicode - ensure Helvetica font  
+                if (in_symbol_font) then
+                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
+                    call switch_pdf_font(this, .false., in_symbol_font)
+                    segment_pos = 1
+                end if
+                call unicode_codepoint_to_pdf_escape(codepoint, &
+                                                    current_segment(segment_pos:))
+                segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
+            end if
+            text_pos = text_pos + char_len
+        else
+            ! Invalid UTF-8, skip
+            text_pos = text_pos + 1
+        end if
+    end subroutine process_pdf_unicode_char
+
+    subroutine process_pdf_ascii_char(this, current_char, current_segment, &
+                                     segment_pos, in_symbol_font)
+        !! Process an ASCII character and update state
+        class(pdf_context), intent(inout) :: this
+        character(len=1), intent(in) :: current_char
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        
+        ! ASCII characters must be in Helvetica font
+        if (in_symbol_font) then
+            call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
+            call switch_pdf_font(this, .false., in_symbol_font)
+            segment_pos = 1
+        end if
+        
+        current_segment(segment_pos:segment_pos) = current_char
+        segment_pos = segment_pos + 1
+    end subroutine process_pdf_ascii_char
+
+    subroutine process_pdf_mixed_text_content(this, text)
+        !! Process text content with font switching logic
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: text
+        
+        integer :: i, segment_pos
+        character(len=1) :: current_char
+        character(len=500) :: current_segment
+        logical :: in_symbol_font
+        
+        i = 1
+        in_symbol_font = .false.
+        current_segment = ""
+        segment_pos = 1
+        
+        do while (i <= len_trim(text))
+            current_char = text(i:i)
+            
+            if (iachar(current_char) > 127) then
+                call process_pdf_unicode_char(this, text, i, current_segment, &
+                                             segment_pos, in_symbol_font)
+            else
+                call process_pdf_ascii_char(this, current_char, current_segment, &
+                                           segment_pos, in_symbol_font)
+                i = i + 1
+            end if
+        end do
+        
+        ! Output final segment
+        call output_pdf_text_segment(this, current_segment, segment_pos-1, in_symbol_font)
+    end subroutine process_pdf_mixed_text_content
 
 end module fortplot_pdf
