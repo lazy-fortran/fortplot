@@ -39,7 +39,7 @@ jobs:
       run: |
         # Download Windows FPM binary directly (MSYS2 package has issues)
         echo "Downloading Windows FPM binary..."
-        wget -q https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-13.exe -O /mingw64/bin/fpm.exe
+        wget -q https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe -O /mingw64/bin/fpm.exe
         chmod +x /mingw64/bin/fpm.exe
         ln -sf /mingw64/bin/fpm.exe /mingw64/bin/fpm
         echo "FPM installation complete"
