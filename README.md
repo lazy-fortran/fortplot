@@ -322,7 +322,6 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [x] **Security features**: Executable stack protection, trampoline detection, path validation
-- [ ] Subplots
 - [ ] Annotations
 
 
