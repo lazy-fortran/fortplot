@@ -8,6 +8,7 @@ module fortplot_raster
     use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
+    use fortplot_scales, only: apply_scale_transform
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
@@ -1081,6 +1082,8 @@ contains
         real(wp) :: nice_y_min, nice_y_max, nice_y_step
         integer :: num_x_ticks, num_y_ticks, i
         real(wp) :: data_x_min, data_x_max, data_y_min, data_y_max
+        real(wp) :: symlog_thresh
+        character(len=10) :: x_scale_type, y_scale_type
 
         ! Set color to black for axes
         call ctx%raster%set_color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -1131,9 +1134,46 @@ contains
         call draw_raster_frame(ctx)
 
         ! Generate nice tick VALUES (not positions!) based on scale type
-        if (present(xscale) .and. trim(xscale) /= 'linear') then
-            ! For non-linear scales, use the old approach for now
-            call get_axis_tick_positions(ctx%plot_area, 5, 5, x_positions, y_positions, num_x_ticks, num_y_ticks)
+        if (present(xscale) .and. present(yscale) .and. (trim(xscale) /= 'linear' .or. trim(yscale) /= 'linear')) then
+            ! For non-linear scales, use scale-aware coordinate transformation
+            call find_nice_tick_locations(data_x_min, data_x_max, 5, &
+                                        nice_x_min, nice_x_max, nice_x_step, &
+                                        x_tick_values, num_x_ticks)
+            
+            call find_nice_tick_locations(data_y_min, data_y_max, 5, &
+                                        nice_y_min, nice_y_max, nice_y_step, &
+                                        y_tick_values, num_y_ticks)
+            
+            ! Apply scale transformation to boundaries and tick values
+            ! Handle optional parameters with defaults
+            symlog_thresh = 1.0_wp
+            if (present(symlog_threshold)) symlog_thresh = symlog_threshold
+            
+            x_scale_type = 'linear'
+            if (present(xscale)) x_scale_type = trim(xscale)
+            
+            y_scale_type = 'linear'
+            if (present(yscale)) y_scale_type = trim(yscale)
+            
+            ctx%x_min = apply_scale_transform(x_tick_values(1), x_scale_type, symlog_thresh)
+            ctx%x_max = apply_scale_transform(x_tick_values(num_x_ticks), x_scale_type, symlog_thresh)
+            
+            ctx%y_min = apply_scale_transform(y_tick_values(1), y_scale_type, symlog_thresh)
+            ctx%y_max = apply_scale_transform(y_tick_values(num_y_ticks), y_scale_type, symlog_thresh)
+            
+            ! Convert tick values to pixel positions using scale-aware transformation
+            do i = 1, num_x_ticks
+                x_positions(i) = real(ctx%plot_area%left, wp) + &
+                                (apply_scale_transform(x_tick_values(i), x_scale_type, symlog_thresh) - ctx%x_min) / &
+                                (ctx%x_max - ctx%x_min) * real(ctx%plot_area%width, wp)
+            end do
+            
+            ! For Y axis, account for flipped coordinates in raster
+            do i = 1, num_y_ticks
+                y_positions(i) = real(ctx%plot_area%bottom + ctx%plot_area%height, wp) - &
+                                (apply_scale_transform(y_tick_values(i), y_scale_type, symlog_thresh) - ctx%y_min) / &
+                                (ctx%y_max - ctx%y_min) * real(ctx%plot_area%height, wp)
+            end do
         else
             ! For linear scale, use nice tick locations and adjust boundaries to match
             call find_nice_tick_locations(data_x_min, data_x_max, 5, &
