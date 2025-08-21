@@ -1543,6 +1543,9 @@ contains
         real(wp) :: plot_x_min, plot_x_max, plot_y_min, plot_y_max, plot_z_min, plot_z_max
         logical :: first_plot, first_3d_plot
         
+        ! Gather subplot plots into main plots array if using subplots
+        call gather_subplot_plots(self)
+        
         if (self%plot_count == 0) return
         
         first_plot = .true.
@@ -1589,8 +1592,13 @@ contains
                     ! Handle 2D plots as before
                     if (first_plot) then
                         ! Store ORIGINAL data ranges for tick generation (safely handling NaN/Inf)
-                        call safe_minmax_arrays(self%plots(i)%x, x_min_orig, x_max_orig)
-                        call safe_minmax_arrays(self%plots(i)%y, y_min_orig, y_max_orig)
+                        if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
+                            call safe_minmax_arrays(self%plots(i)%x, x_min_orig, x_max_orig)
+                            call safe_minmax_arrays(self%plots(i)%y, y_min_orig, y_max_orig)
+                        else
+                            ! Skip plots with unallocated data arrays
+                            cycle
+                        end if
                         
                         ! Calculate transformed ranges for rendering
                         x_min_trans = apply_scale_transform(x_min_orig, self%xscale, self%symlog_threshold)
@@ -1600,8 +1608,13 @@ contains
                         first_plot = .false.
                     else
                         ! Update original ranges (safely handling NaN/Inf)
-                        call safe_minmax_arrays(self%plots(i)%x, plot_x_min, plot_x_max)
-                        call safe_minmax_arrays(self%plots(i)%y, plot_y_min, plot_y_max)
+                        if (allocated(self%plots(i)%x) .and. allocated(self%plots(i)%y)) then
+                            call safe_minmax_arrays(self%plots(i)%x, plot_x_min, plot_x_max)
+                            call safe_minmax_arrays(self%plots(i)%y, plot_y_min, plot_y_max)
+                        else
+                            ! Skip plots with unallocated data arrays
+                            cycle
+                        end if
                         x_min_orig = min(x_min_orig, plot_x_min)
                         x_max_orig = max(x_max_orig, plot_x_max)
                         y_min_orig = min(y_min_orig, plot_y_min)
