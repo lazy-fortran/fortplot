@@ -622,14 +622,7 @@ contains
         
         ! Ensure subplots are initialized if not already
         if (.not. allocated(fig%subplots)) then
-            allocate(fig%subplots(1))
-            if (.not. allocated(fig%subplots(1)%plots)) then
-                allocate(fig%subplots(1)%plots(fig%max_plots))
-            end if
-            fig%subplots(1)%plot_count = 0
-            fig%subplot_rows = 1
-            fig%subplot_cols = 1
-            fig%current_subplot = 1
+            call fig%initialize_default_subplot()
         end if
         
         call fig%set_subplot(rows, cols, index)

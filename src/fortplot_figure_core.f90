@@ -157,6 +157,7 @@ module fortplot_figure_core
         procedure :: text => add_text_annotation
         procedure :: annotate => add_arrow_annotation
         procedure :: set_subplot
+        procedure :: initialize_default_subplot
         final :: destroy
     end type figure_t
 
@@ -185,17 +186,7 @@ contains
         self%annotation_count = 0
         
         ! Initialize subplots to single plot by default
-        self%subplot_rows = 1
-        self%subplot_cols = 1
-        self%current_subplot = 1
-        if (.not. allocated(self%subplots)) then
-            allocate(self%subplots(1))
-            ! Initialize the default subplot
-            if (.not. allocated(self%subplots(1)%plots)) then
-                allocate(self%subplots(1)%plots(self%max_plots))
-            end if
-            self%subplots(1)%plot_count = 0
-        end if
+        call self%initialize_default_subplot()
         
         ! Initialize legend following SOLID principles  
         self%show_legend = .false.
@@ -1010,10 +1001,28 @@ contains
         type(figure_t), intent(inout) :: self
         
         if (allocated(self%plots)) deallocate(self%plots)
+        if (allocated(self%subplots)) deallocate(self%subplots)
         if (allocated(self%backend)) deallocate(self%backend)
     end subroutine destroy
 
     ! Private helper routines (implementation details)
+    
+    subroutine initialize_default_subplot(self)
+        !! Initialize default single subplot configuration
+        class(figure_t), intent(inout) :: self
+        
+        self%subplot_rows = 1
+        self%subplot_cols = 1
+        self%current_subplot = 1
+        if (.not. allocated(self%subplots)) then
+            allocate(self%subplots(1))
+            ! Initialize the default subplot
+            if (.not. allocated(self%subplots(1)%plots)) then
+                allocate(self%subplots(1)%plots(self%max_plots))
+            end if
+            self%subplots(1)%plot_count = 0
+        end if
+    end subroutine initialize_default_subplot
     
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker, markercolor)
         !! Add line plot data to internal storage with support for both RGB arrays and color strings
