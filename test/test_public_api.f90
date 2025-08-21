@@ -16,7 +16,7 @@ program test_public_api
     call title('Simple Plot Test')
     call xlabel('x')
     call ylabel('y')
-    call savefig('example/fortran/test_outputs/simple_plot.png')
+    call savefig('build/test/simple_plot.png')
     
     print *, "Public API test completed - simple_plot.png created"
 

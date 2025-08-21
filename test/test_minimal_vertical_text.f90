@@ -30,7 +30,7 @@ contains
         call title('Single Y')
         call xlabel('X')
         call ylabel('Y')  ! Single character should be trivial
-        call savefig('example/fortran/test_outputs/debug_single_y.png')
+        call savefig('build/test/debug_single_y.png')
         
         print *, "  Created: debug_single_y.png"
         print *, "  Should show: Single 'Y' character rotated 90 degrees"
@@ -50,7 +50,7 @@ contains
         call title('Two Chars')
         call xlabel('X')
         call ylabel('AB')  ! Should show A at bottom, B at top when rotated
-        call savefig('example/fortran/test_outputs/debug_two_ab.png')
+        call savefig('build/test/debug_two_ab.png')
         
         print *, "  Created: debug_two_ab.png"
         print *, "  Should show: 'A' at bottom, 'B' at top (reading bottom-to-top)"
@@ -70,7 +70,7 @@ contains
         call title('Y Values Problem')
         call xlabel('X')
         call ylabel('Y values')  ! The original problem case
-        call savefig('example/fortran/test_outputs/debug_y_values_problem.png')
+        call savefig('build/test/debug_y_values_problem.png')
         
         print *, "  Created: debug_y_values_problem.png"
         print *, "  Should show: 'Y' at bottom, then space, 'v', 'a', 'l', 'u', 'e', 's' at top"
