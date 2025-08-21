@@ -1,8 +1,10 @@
 # Allow additional arguments to be passed
 ARGS ?=
 
-# FPM flags for C compilation compatibility
-FPM_FLAGS = --flag -fPIC
+# FPM flags for different build targets
+FPM_FLAGS_LIB = --flag -fPIC
+FPM_FLAGS_TEST = 
+FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
 .PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs
 
@@ -11,19 +13,19 @@ all: build
 
 # Build the project
 build:
-	fpm build $(FPM_FLAGS) $(ARGS)
+	fpm build $(FPM_FLAGS_DEFAULT) $(ARGS)
 
 # Build and run the examples
 example: create_build_dirs
-	fpm run --example $(FPM_FLAGS) $(ARGS)
+	fpm run --example $(FPM_FLAGS_TEST) $(ARGS)
 
 # Build and run the apps for debugging
 debug:
-	fpm run $(FPM_FLAGS) $(ARGS)
+	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
 # Run tests
 test:
-	fpm test $(FPM_FLAGS) $(ARGS)
+	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
 # Run Python examples with fortplot (default mode)
 example_python:
@@ -98,14 +100,14 @@ coverage:
 validate-output: create_build_dirs
 	@echo "Running functional output validation tests..."
 	@mkdir -p output/test
-	fpm test $(FPM_FLAGS) --target test_output_validation
+	fpm test $(FPM_FLAGS_TEST) --target test_output_validation
 	@echo "Functional output validation completed successfully"
 
 # Test documentation examples
 test-docs: create_build_dirs
 	@echo "Running documentation example validation..."
 	@mkdir -p output/test
-	fpm test $(FPM_FLAGS) --target test_documentation_examples
+	fpm test $(FPM_FLAGS_TEST) --target test_documentation_examples
 	@echo "Documentation example validation completed successfully"
 
 # Run comprehensive functional tests
