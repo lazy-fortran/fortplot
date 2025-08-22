@@ -4,103 +4,166 @@
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
-## Colored Contour Plots Fix (Issue #177)
+## Text Annotations Not Working (Issue #179)
 
-### Architectural Overview
+### Problem Analysis
 
-The colored contour fill functionality is broken across PNG and PDF backends. While contour lines render correctly, the filled regions between contour levels are not being rendered. The issue stems from incomplete backend implementation where `fill_heatmap` is called but only implemented for ASCII backend, leaving PNG/PDF outputs blank.
+The text annotation system in fortplot has a complete architecture for storing and managing annotations (coordinates, typography, alignment, etc.) but is **missing the actual rendering implementation** in the figure rendering pipeline. Tests pass because they only validate data structures and coordinate transforms, but no text actually appears in generated output files.
 
-### Current Architecture Analysis
+### Root Cause Identification
 
-**Existing Implementation**:
-- `add_contour_filled()` in `fortplot_figure_core.f90` sets `use_color_levels = .true.`
-- `render_contour_plot()` checks `use_color_levels` flag
-- For filled contours, calls `fill_heatmap()` which is no-op for PNG/PDF
-- Contour line tracing via marching squares algorithm exists
-- `fill_quad()` primitive available in all backends but unused for contours
+**Existing Infrastructure**:
+- Complete `text_annotation_t` type with all required fields
+- Coordinate transformation system with data/figure/axis coordinate support  
+- Typography system with font sizing, rotation, alignment
+- Backend `text_interface` defined in `plot_context`
+- All backends (PNG, PDF, ASCII) implement `text()` method
 
-**Architecture Gaps**:
-- No region extraction between contour levels
-- Missing polygon fill implementation for contour regions
-- `fill_heatmap()` inappropriate for vector graphics backends
-- No color interpolation for smooth gradients
+**Critical Gap**:
+- `render_figure()` in `fortplot_figure_core.f90` does NOT call annotation rendering
+- Figure contains `annotations()` array and `annotation_count` but never processes them
+- Backend text methods exist but are never invoked for annotations
 
-### Implementation Architecture
+### Text Annotation Architecture
 
-#### 1. Contour Region Extraction Design
+#### 1. Data Flow Architecture
 
-**Region Data Structure**:
-```fortran
-type :: contour_region_t
-    real(wp), allocatable :: boundary_points(:,:)  ! (x,y) boundary coordinates
-    integer :: n_points                            ! Number of boundary points
-    real(wp) :: level_min, level_max              ! Value range for this region
-    real(wp) :: fill_color(3)                     ! RGB color for region
-end type
+**Current Data Path** (Working):
+```
+User calls fig%text() -> add_text_annotation() -> stores in self%annotations()
 ```
 
-**Region Extraction Algorithm**:
-- Use marching squares to identify cells crossing each contour level
-- Extract closed polygons between adjacent contour levels
-- Handle edge cases: boundaries, islands, saddle points
-- Store regions sorted by z-value for proper rendering order
+**Missing Rendering Path** (Broken):
+```
+render_figure() -> [MISSING] render_annotations() -> backend%text()
+```
 
-#### 2. Filled Contour Rendering Pipeline
+#### 2. Backend Integration Architecture
 
-**Rendering Strategy**:
-1. Extract all contour regions between levels
-2. Sort regions by z-value (lowest first for proper overlap)
-3. For each region:
-   - Calculate fill color from colormap
-   - Decompose complex polygons into convex sub-polygons
-   - Call backend's `fill_quad()` for each sub-polygon
+**Text Interface Design**:
+- Each backend implements `text(x, y, text_content)` method
+- Backends handle coordinate mapping, font rendering, rotation
+- PNG: Raster text with STB TrueType font rendering
+- PDF: Vector text with embedded fonts
+- ASCII: Character positioning in terminal grid
 
-**Backend Integration**:
-- **PNG Backend**: Use raster polygon fill algorithm
-- **PDF Backend**: Use PDF path construction with fill operator
-- **ASCII Backend**: Keep existing heatmap approach (already working)
+#### 3. Coordinate System Architecture
 
-#### 3. Polygon Decomposition Algorithm
+**Three Coordinate Systems**:
+- `COORD_DATA`: Position relative to plot data bounds
+- `COORD_FIGURE`: Position relative to figure (0-1 normalized)  
+- `COORD_AXIS`: Position relative to plot area (0-1 normalized)
 
-**Complex Polygon Handling**:
+**Transform Pipeline**:
 ```fortran
-subroutine decompose_polygon_to_quads(boundary_points, n_points, quads, n_quads)
-    ! Ear clipping triangulation followed by quad merging
-    ! 1. Triangulate polygon using ear clipping
-    ! 2. Merge adjacent triangles into quads where possible
-    ! 3. Return array of convex quadrilaterals
+annotation -> transform_annotation_coordinates() -> pixel_coords -> backend%text()
+```
+
+### Implementation Fix Plan
+
+#### Phase 1: Add Annotation Rendering to Figure Pipeline (CRITICAL)
+
+**File**: `src/fortplot_figure_core.f90`
+**Method**: `render_figure()`
+**Change**: Add annotation rendering call after plot rendering:
+
+```fortran
+subroutine render_figure(self)
+    ! ... existing code ...
+    call render_all_plots(self)
+    
+    ! ADD THIS - Render annotations
+    call render_all_annotations(self)  ! NEW METHOD NEEDED
+    
+    ! ... rest of method
 end subroutine
 ```
 
-#### 4. Color Interpolation Enhancement
+#### Phase 2: Implement Annotation Renderer (HIGH PRIORITY)
 
-**Smooth Gradient Option**:
-- Linear interpolation between contour levels
-- Per-pixel color calculation for raster backends
-- Gradient mesh for vector backends (PDF)
+**New Method**: `render_all_annotations(self)`
+**Location**: `src/fortplot_figure_core.f90`
+**Functionality**:
+- Iterate through `self%annotations(1:self%annotation_count)`
+- Transform coordinates using existing coordinate system
+- Apply typography settings (font size, rotation, alignment)
+- Call `self%backend%text()` for each annotation
+- Handle arrow annotations with backend line drawing
 
-### Risk Assessment
+#### Phase 3: Backend-Specific Enhancements (MEDIUM PRIORITY)
 
-#### Technical Risks
+**ASCII Backend Issues**:
+- Current text rendering may conflict with plot characters
+- Need proper text positioning and character priority
+- Handle rotated text in character grid limitations
 
-**HIGH RISK - Polygon Decomposition Complexity**:
-- Risk: Complex contour regions may create non-convex polygons
-- Impact: Incorrect rendering or crashes
-- Mitigation: Implement robust ear-clipping algorithm with edge case handling
+**PNG/PDF Backend Issues**:
+- Verify font rendering works correctly
+- Ensure proper text positioning accuracy
+- Test background boxes and arrow annotations
 
-**MEDIUM RISK - Performance Impact**:
-- Risk: Region extraction and polygon fill may be slow for dense grids
-- Impact: Slow rendering for high-resolution contour plots
-- Mitigation: Optimize marching squares, use spatial indexing
+### Implementation Steps for Development Team
 
-**LOW RISK - Color Accuracy**:
-- Risk: Colormap interpolation may differ from matplotlib
-- Impact: Visual differences in output
-- Mitigation: Use exact matplotlib colormap definitions
+#### Step 1: Core Annotation Rendering (sergei)
 
-### Implementation Roadmap
+1. Add `render_all_annotations()` method to `fortplot_figure_core.f90`
+2. Call from `render_figure()` after plot rendering, before legend
+3. Implement coordinate transformation for each annotation
+4. Call appropriate backend text method
 
-1. **Phase 1: Region Extraction** (Backend-agnostic)
+#### Step 2: Backend Text Verification (sergei)
+
+1. Test that PNG backend text rendering works correctly
+2. Test that PDF backend text rendering works correctly  
+3. Fix ASCII backend text positioning conflicts
+4. Verify all coordinate systems work properly
+
+#### Step 3: Typography Features (sergei)
+
+1. Implement font size scaling in backend calls
+2. Add rotation support for text rendering
+3. Implement text alignment calculations
+4. Add background box rendering support
+
+#### Step 4: Arrow Annotation Support (sergei)
+
+1. Extend annotation renderer to handle arrow annotations
+2. Use backend line drawing for arrow lines
+3. Calculate arrow head positioning and rendering
+4. Test arrow + text positioning accuracy
+
+### Testing Strategy
+
+**Validation Approach**:
+1. Run existing `test_text_annotations.f90` - should still pass
+2. Run `annotation_demo.f90` example - text should now be visible
+3. Create simple text test with all three coordinate systems
+4. Verify output files contain visible text annotations
+5. Test all backends: PNG, PDF, ASCII
+
+**Success Criteria**:
+- Text annotations visible in all output formats
+- Coordinate systems work correctly
+- Typography features (size, rotation, alignment) work
+- Arrow annotations render properly
+- No regression in existing functionality
+
+### Architecture Impact
+
+**Design Principles Maintained**:
+- SOLID: Single responsibility for annotation rendering
+- Clean backend abstraction preserved
+- Existing coordinate system architecture reused
+- No breaking API changes
+
+**Performance Considerations**:
+- Annotation rendering after plots prevents z-order issues
+- Coordinate transformations cached where possible
+- Backend text calls optimized for batch rendering
+
+This fix addresses the fundamental gap in the rendering pipeline while maintaining the existing well-designed annotation architecture.
+
+## Core Architecture Documentation
    - Implement contour region extraction from grid data
    - Create region boundary tracing algorithm
    - Handle all marching squares cases
