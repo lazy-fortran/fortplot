@@ -1,147 +1,124 @@
-title: MPEG Animation Validation Framework
+title: Enhanced Animation Validation
 ---
 
-# MPEG Animation Validation Framework
+# Enhanced Animation Validation Framework
+
+Comprehensive validation system with Issue #186 pipe reliability improvements.
 
 ## Quick Start
 
 ```fortran
 use fortplot
+use fortplot_animation
+
 type(animation_t) :: anim
-logical :: is_valid
+integer :: status
 
-! Create animation
+! Create and save animation with enhanced validation
 anim = FuncAnimation(update_func, frames=20, interval=50, fig=fig)
-call anim%save("output.mp4", fps=24)
+call anim%save("output.mp4", fps=24, status=status)
 
-! Validate result with comprehensive framework
-is_valid = validate_mpeg_comprehensive("output.mp4")
+! Status code now includes comprehensive validation
+if (status == 0) print *, "Animation created and validated successfully"
 ```
 
-## Validation Problem
+## Enhanced Validation (Issue #186)
 
-**Issue #32**: Previous MPEG validation tests gave false positives - files existed but contained invalid MPEG content (624-byte dummy files).
+**Problem**: Animation saves failing with status -6 and file validation issues
+**Solution**: Integrated validation with pipe reliability improvements
 
-**Solution**: 5-layer validation framework prevents false positives through comprehensive checks.
+**Key Improvements**:
+- Real-time pipe health monitoring during frame transmission
+- Enhanced cross-platform file validation
+- Better error recovery with detailed diagnostics
+- Automatic fallback to PNG sequences when video encoding fails
 
-## 5-Layer Validation Framework
+## Integrated Validation System
 
-### Layer 1: Basic File Validation
-```fortran
-logical :: basic_valid
-basic_valid = validate_basic_requirements(filename)
-```
+### Real-Time Validation During Save
 
-**Checks**:
-- File exists on filesystem
-- File size > 0 bytes
-- File readable
-
-**Purpose**: Eliminates completely missing or empty files.
-
-### Layer 2: Size Validation
-```fortran
-logical :: size_valid
-size_valid = validate_size_requirements(filename)
-```
-
-**Checks**:
-- Minimum 2KB for any valid video
-- Frame count vs file size correlation
-- Resolution vs file size correlation
-
-**Critical Thresholds**:
-- Multi-frame content: 300 bytes per frame minimum
-- High resolution (1024x768): Additional 500+ bytes expected
-- Complex animations: 400+ bytes per frame
-
-### Layer 3: Header Validation
-```fortran
-logical :: header_valid
-header_valid = validate_header_requirements(filename)
-```
-
-**Checks**:
-- MP4 format signatures: `ftyp`, `mdat`, `moov`
-- Valid binary header structure
-- Container format integrity
-
-**Implementation**:
-```fortran
-! Read first 16 bytes for format detection
-character(len=16) :: header
-is_valid = (index(header, 'ftyp') > 0 .or. &
-           index(header, 'mdat') > 0 .or. &
-           index(header, 'moov') > 0)
-```
-
-### Layer 4: Semantic Validation
-```fortran
-logical :: semantic_valid
-semantic_valid = validate_semantic_requirements(filename)
-```
-
-**Checks**:
-- Frame count consistency
-- Resolution metadata validation
-- Duration calculation accuracy
-- Content complexity assessment
-
-### Layer 5: External Tool Validation
-```fortran
-logical :: tool_valid
-tool_valid = validate_external_tool_requirements(filename)
-```
-
-**Tools**:
-- **FFprobe**: Media format validation
-- **Media players**: Playback compatibility testing
-
-**FFprobe Command**:
-```bash
-ffprobe -v error -show_format "filename.mp4"
-```
-
-**Graceful Degradation**: If external tools unavailable, layer passes automatically.
-
-## Comprehensive Validation Function
+Validation now occurs throughout the animation save process:
 
 ```fortran
-function validate_mpeg_comprehensive(filename) result(is_valid)
-    character(len=*), intent(in) :: filename
-    logical :: is_valid
-    logical :: basic_valid, size_valid, header_valid, semantic_valid, tool_valid
+! Enhanced save with integrated validation
+call anim%save(filename, fps=24, status=status)
+
+! Status codes reflect comprehensive validation results
+select case (status)
+case (0)
+    ! File created, validated, and confirmed playable
+case (-6)
+    ! Pipe write failed - enhanced recovery attempted
+case (-7)
+    ! Video created but failed final validation
+end select
+```
+
+### Validation Stages
+
+**Stage 1: Pre-Flight Validation**
+- Format compatibility check
+- Output path validation
+- FFmpeg availability verification
+
+**Stage 2: Pipeline Monitoring** 
+- Real-time pipe health during frame transmission
+- Frame data integrity checking
+- Memory usage and error detection
+
+**Stage 3: Post-Creation Validation**
+- File existence and size verification
+- Header format validation (MP4 signatures)
+- Optional external tool verification with FFprobe
+
+**Stage 4: Playback Verification**
+- Basic format compliance checking
+- Container structure validation
+- Graceful degradation when external tools unavailable
+
+## Enhanced Status Codes
+
+Animation save now returns comprehensive status reflecting all validation stages:
+
+```fortran
+subroutine enhanced_animation_save_example()
+    type(animation_t) :: anim
+    integer :: status
     
-    ! Apply all 5 layers sequentially
-    basic_valid = validate_basic_requirements(filename)
-    if (.not. basic_valid) then
-        is_valid = .false.
-        return
-    end if
+    call anim%save("animation.mp4", fps=24, status=status)
     
-    size_valid = validate_size_requirements(filename)
-    header_valid = validate_header_requirements(filename)
-    semantic_valid = validate_semantic_requirements(filename)
-    tool_valid = validate_external_tool_requirements(filename)
-    
-    is_valid = basic_valid .and. size_valid .and. header_valid .and. &
-              semantic_valid .and. tool_valid
-end function
+    select case (status)
+    case (0)
+        print *, "✓ Animation created and fully validated"
+    case (-1)
+        print *, "✗ FFmpeg not available"
+    case (-3) 
+        print *, "✗ Invalid file format"
+    case (-4)
+        print *, "✗ Pipe connection failed"
+    case (-5)
+        print *, "✗ Frame generation failed"
+    case (-6)
+        print *, "✗ Pipe write failed (Issue #186 - enhanced recovery)"
+    case (-7)
+        print *, "✗ Video validation failed"
+    end select
+end subroutine
 ```
 
-## False Positive Prevention
+## Issue #186 Pipe Reliability Integration
 
-**Problem Scenarios**:
-1. **624-byte dummy files**: Caught by Layer 2 (size validation)
-2. **Wrong format files**: Caught by Layer 3 (header validation)
-3. **Corrupted content**: Caught by Layer 5 (external tool validation)
-4. **Inadequate compression**: Caught by Layer 4 (semantic validation)
+**Enhanced Error Recovery**:
+- **Automatic retry**: Failed pipe writes trigger retry with exponential backoff
+- **Fallback mechanisms**: PNG sequence generation when video encoding fails
+- **Cross-platform consistency**: Unified behavior across Windows, Linux, macOS
+- **Better diagnostics**: Detailed error reporting for troubleshooting
 
-**Prevention Strategy**:
-- **Multiple validation criteria**: No single check determines validity
-- **Context-aware sizing**: File size validated against frame count, resolution, complexity
-- **External verification**: Third-party tools confirm format validity
-- **Graduated failure**: Specific layer failures indicate specific problem types
+**Validation Improvements**:
+- **Real-time monitoring**: Pipe health checked during frame transmission
+- **File consistency**: Better detection of "File exists: F" and "File size: -1" issues
+- **Memory management**: Enhanced frame data validation and cleanup
+- **Format robustness**: Improved MP4 container validation
 
 ## Test Procedure
 
@@ -168,30 +145,31 @@ Layer 5 - External tool validation: T
 Overall framework validation: T
 ```
 
-### Test Failure Interpretation
+### Enhanced Diagnostic Output
 
-**Layer 1 Failure**: File missing or unreadable
+**Status -6 Enhanced Recovery** (Issue #186):
 ```
-Layer 1 - Basic validation: F
->>> File does not exist or has zero size
-```
-
-**Layer 2 Failure**: File too small for content
-```
-Layer 2 - Size validation: F
->>> File size 624 bytes inadequate for 20 frames at 640x480
+Pipe write failed - attempting recovery...
+✓ Retry 1/3: Frame transmission restored
+✓ Animation completed with enhanced reliability
 ```
 
-**Layer 3 Failure**: Invalid format headers
+**File Validation Issues**:
 ```
-Layer 3 - Header validation: F
->>> No MP4 format signatures found in file header
+File validation failed:
+- File exists: T
+- File size: 2.5KB (expected >1KB for 10 frames)
+- Format: Valid MP4 container
+- Recommendation: Animation completed successfully
 ```
 
-**Layer 5 Failure**: External tool rejects file
-```
-Layer 5 - External tool validation: F
->>> FFprobe reports format errors or corruption
+**Advanced Diagnostics**:
+```fortran
+! Enable detailed validation logging
+use fortplot_logging
+call set_log_level(LOG_DEBUG)
+call anim%save("debug.mp4", fps=24, status=status)
+! Outputs detailed pipe and validation diagnostics
 ```
 
 ## Integration with Animation Save
@@ -253,26 +231,55 @@ file output.mp4
 # Expected: output.mp4: ISO Media, MP4 v2
 ```
 
-## Troubleshooting
+## Troubleshooting Enhanced System
 
-### Common Validation Failures
+### Status -6 Pipe Write Issues (Resolved)
+**Problem**: "Failed to write frame to pipe" errors  
+**Solution**: Enhanced pipe reliability with automatic recovery
+- Retry mechanisms with exponential backoff
+- Improved cross-platform pipe handling  
+- Better error state management
+- Fallback to PNG sequence when needed
 
-**Problem**: All layers pass but animation quality poor
-**Solution**: Increase fps, resolution, or frame count
+### File Validation Issues
+**Problem**: "File exists: F" or "File size: -1"  
+**Solution**: Enhanced file system consistency checking
+- Multi-stage validation during save process
+- Better cross-platform file handling
+- Improved error reporting with actionable feedback
 
-**Problem**: Layer 5 fails consistently  
-**Solution**: Check FFmpeg installation and PATH configuration
+### Performance and Memory
+**Problem**: Large animations fail or hang  
+**Solution**: Enhanced resource management
+- Better memory allocation for frame data
+- Improved timeout handling for slow systems
+- Configurable retry and fallback thresholds
 
-**Problem**: Layer 2 fails for valid content
-**Solution**: Review minimum size thresholds for specific use case
+### Advanced Debugging
 
-**Problem**: Layer 3 fails for generated files
-**Solution**: Verify MPEG encoder implementation produces valid headers
-
-### Debug Mode Validation
 ```fortran
-! Enable detailed validation logging
-call validate_mpeg_comprehensive_debug("output.mp4", debug=.true.)
+! Comprehensive animation debugging
+use fortplot_animation
+use fortplot_logging
+
+type(animation_t) :: anim
+integer :: status
+
+! Enable detailed diagnostics
+call set_log_level(LOG_DEBUG)
+
+! Save with enhanced error reporting
+call anim%save("debug.mp4", fps=24, status=status)
+
+! Check fallback PNG sequence if video fails
+if (status /= 0) then
+    call anim%save_png_sequence("fallback_frame_")
+end if
 ```
 
-Outputs detailed information for each validation layer to help diagnose failures.
+**Debug Output Includes**:
+- Pipe connection status and health monitoring
+- Frame transmission progress and validation
+- File system operations and validation results
+- FFmpeg command execution and output parsing
+- Memory usage and performance metrics
