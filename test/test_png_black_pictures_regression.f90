@@ -12,6 +12,7 @@ program test_png_black_pictures_regression
     use fortplot_testing
     use fortplot_png, only: get_png_data, png_context
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_security, only: get_test_output_path
     implicit none
 
     logical :: all_tests_passed
@@ -75,7 +76,9 @@ contains
         logical :: passed
         type(figure_t) :: fig
         real(wp) :: x(5), y(5)
-        character(len=*), parameter :: filename = "output/test/test_png_black_pictures_regression/simple_plot_test.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_black_pictures_regression/simple_plot_test.png")
         
         ! Create visible test data
         x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
@@ -101,7 +104,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(10), y(10)
         integer :: i
-        character(len=*), parameter :: filename = "output/test/test_png_black_pictures_regression/scatter_plot_test.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_black_pictures_regression/scatter_plot_test.png")
         
         ! Create scattered data points
         do i = 1, 10
@@ -126,7 +131,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(5), y(5), z(5)
         integer :: i
-        character(len=*), parameter :: filename = "output/test/test_png_black_pictures_regression/3d_plot_test.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_black_pictures_regression/3d_plot_test.png")
         
         ! Create 3D helix data
         do i = 1, 5
@@ -168,16 +175,16 @@ contains
             raw_image_has_content = validate_raw_image_content(backend%raster%image_data, fig%width, fig%height)
             if (.not. raw_image_has_content) then
                 ! For gfortran-14 compatibility: fallback to file-based validation
-                call fig%savefig('output/test/test_png_black_pictures_regression/buffer_test.png')
-                passed = png_file_has_visible_content('output/test/test_png_black_pictures_regression/buffer_test.png')
+                call fig%savefig(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
+                passed = png_file_has_visible_content(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
                 return
             end if
             
             call get_png_data(fig%width, fig%height, backend%raster%image_data, png_buffer)
         class default
             ! Fallback: save to file and read back for now
-            call fig%savefig('output/test/test_png_black_pictures_regression/buffer_test.png')
-            passed = png_file_has_visible_content('output/test/test_png_black_pictures_regression/buffer_test.png')
+            call fig%savefig(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
+            passed = png_file_has_visible_content(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
             return
         end select
         
