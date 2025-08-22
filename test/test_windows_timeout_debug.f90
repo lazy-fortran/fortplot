@@ -27,7 +27,8 @@ program test_windows_timeout_debug
     print *, ""
     
     print *, "  Timeout-protected FFmpeg check:"
-    result = check_ffmpeg_available_timeout()
+    ! Note: Timeout protection is now internal to check_ffmpeg_available
+    result = check_ffmpeg_available()
     print *, "    Result:", result
     print *, ""
     
