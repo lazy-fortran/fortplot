@@ -11,7 +11,7 @@ program test_pdf_parentheses
     
     call fig%initialize(600, 400)
     call fig%add_plot(x, y, label="sin(omega)")
-    call fig%savefig("test_parentheses.pdf")
+    call figure_savefig(fig, "test_parentheses.pdf")
     
     print *, "Test completed"
     

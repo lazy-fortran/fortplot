@@ -53,9 +53,9 @@ contains
         
         ! Act - Render with viridis colormap
         call fig%initialize(300, 300)
-        call fig%add_contour_filled(x, y, z, levels=levels, colormap='viridis')
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, colormap='viridis')
         call fig%set_title("Basic Colormap Test")
-        call fig%savefig(get_test_output_path('/tmp/test_basic_colormap_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_basic_colormap_issue177.png'))
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_basic_colormap_issue177.png'), exist=file_exists)
@@ -188,9 +188,9 @@ contains
         
         ! Act - Render with custom levels
         call fig%initialize(400, 400)
-        call fig%add_contour_filled(x, y, z, levels=custom_levels, colormap='plasma')
+        call figure_add_contour_filled(fig, x, y, z, levels=custom_levels, colormap='plasma')
         call fig%set_title("Custom Levels Test")
-        call fig%savefig(get_test_output_path('/tmp/test_custom_levels_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_custom_levels_issue177.png'))
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_custom_levels_issue177.png'), exist=file_exists)
@@ -286,9 +286,9 @@ contains
         
         ! Act - Render with colorbar
         call fig%initialize(500, 400)
-        call fig%add_contour_filled(x, y, z, colormap='viridis', show_colorbar=.true.)
+        call figure_add_contour_filled(fig, x, y, z, colormap='viridis', show_colorbar=.true.)
         call fig%set_title("Colorbar Correspondence Test")
-        call fig%savefig(get_test_output_path('/tmp/test_colorbar_correspondence_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_colorbar_correspondence_issue177.png'))
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_colorbar_correspondence_issue177.png'), exist=file_exists)

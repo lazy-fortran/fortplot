@@ -31,9 +31,9 @@ contains
         call fig%set_xlabel("Time (seconds)")
         call fig%set_ylabel("Voltage (V)")
         call fig%set_title("Voltage Measurement Near Zero - PDF Overlap Test")
-        call fig%legend()
+        call figure_legend(fig, )
         
-        call fig%savefig(get_test_output_path("/tmp/test_scientific_near_origin.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_scientific_near_origin.pdf"))
         print *, "Created: /tmp/test_scientific_near_origin.pdf"
         print *, "Expected: Clean Y-axis labels without overlap, readable voltage values"
     end subroutine test_scientific_data_near_origin
@@ -54,9 +54,9 @@ contains
         call fig%set_xlabel("Trading Day")
         call fig%set_ylabel("Return (%)")
         call fig%set_title("Daily Stock Returns - PDF Y-axis Test")
-        call fig%legend()
+        call figure_legend(fig, )
         
-        call fig%savefig(get_test_output_path("/tmp/test_financial_returns.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_financial_returns.pdf"))
         print *, "Created: /tmp/test_financial_returns.pdf"
         print *, "Expected: Professional-looking chart with non-overlapping Y-labels"
     end subroutine test_financial_small_variations
@@ -76,9 +76,9 @@ contains
         call fig%set_xlabel("Sample Number")
         call fig%set_ylabel("Deviation from Reference (units)")
         call fig%set_title("Precision Measurement Analysis - PDF Format")
-        call fig%legend()
+        call figure_legend(fig, )
         
-        call fig%savefig(get_test_output_path("/tmp/test_precision_measurement.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_precision_measurement.pdf"))
         print *, "Created: /tmp/test_precision_measurement.pdf"
         print *, "Expected: High-precision labels without crowding, scientific notation if needed"
     end subroutine test_measurement_precision

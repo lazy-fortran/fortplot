@@ -67,12 +67,12 @@ contains
         ! Create visual test plots
         call fig%initialize(400, 300)
         call fig%add_plot(x_data, y_small_neg, label="small_negative")
-        call fig%savefig("test_pdf_small_negative.pdf")
+        call figure_savefig(fig, "test_pdf_small_negative.pdf")
         print *, "Created test_pdf_small_negative.pdf"
         
         call fig%initialize(400, 300)
         call fig%add_plot(x_data, y_large_neg, label="large_negative")
-        call fig%savefig("test_pdf_large_negative.pdf")
+        call figure_savefig(fig, "test_pdf_large_negative.pdf")
         print *, "Created test_pdf_large_negative.pdf"
         print *, ""
         
@@ -108,13 +108,13 @@ contains
         ! Test with tiny range
         call fig%initialize(400, 300)
         call fig%add_plot(x_tiny, y_tiny, label="tiny_range")
-        call fig%savefig("test_pdf_tiny_range.pdf")
+        call figure_savefig(fig, "test_pdf_tiny_range.pdf")
         print *, "Created test_pdf_tiny_range.pdf"
         
         ! Test with micro range  
         call fig%initialize(400, 300)
         call fig%add_plot(x_micro, y_micro, label="micro_range")
-        call fig%savefig("test_pdf_micro_range.pdf")
+        call figure_savefig(fig, "test_pdf_micro_range.pdf")
         print *, "Created test_pdf_micro_range.pdf"
         
         print *, "Small range tests completed - check for label clustering"
@@ -152,13 +152,13 @@ contains
         ! Test with large range
         call fig%initialize(400, 300)
         call fig%add_plot(x_large, y_large, label="large_range")
-        call fig%savefig("test_pdf_large_range.pdf")
+        call figure_savefig(fig, "test_pdf_large_range.pdf")
         print *, "Created test_pdf_large_range.pdf"
         
         ! Test with huge range
         call fig%initialize(400, 300)
         call fig%add_plot(x_huge, y_huge, label="huge_range")
-        call fig%savefig("test_pdf_huge_range.pdf")
+        call figure_savefig(fig, "test_pdf_huge_range.pdf")
         print *, "Created test_pdf_huge_range.pdf"
         
         print *, "Large range tests completed - check for coordinate handling"
@@ -198,19 +198,19 @@ contains
         ! Test symmetric zero-crossing
         call fig%initialize(400, 300)
         call fig%add_plot(x_data, y_symmetric, label="symmetric_zero")
-        call fig%savefig("test_pdf_symmetric_zero.pdf")
+        call figure_savefig(fig, "test_pdf_symmetric_zero.pdf")
         print *, "Created test_pdf_symmetric_zero.pdf"
         
         ! Test asymmetric positive
         call fig%initialize(400, 300)
         call fig%add_plot(x_data, y_asymmetric_pos, label="asymmetric_pos")
-        call fig%savefig("test_pdf_asymmetric_pos.pdf")
+        call figure_savefig(fig, "test_pdf_asymmetric_pos.pdf")
         print *, "Created test_pdf_asymmetric_pos.pdf"
         
         ! Test asymmetric negative  
         call fig%initialize(400, 300)
         call fig%add_plot(x_data, y_asymmetric_neg, label="asymmetric_neg")
-        call fig%savefig("test_pdf_asymmetric_neg.pdf")
+        call figure_savefig(fig, "test_pdf_asymmetric_neg.pdf")
         print *, "Created test_pdf_asymmetric_neg.pdf"
         
         print *, "Zero-crossing tests completed - verify no origin clustering"

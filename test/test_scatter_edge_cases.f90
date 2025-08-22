@@ -58,7 +58,7 @@ contains
         ! This should filter invalid positions gracefully (will FAIL)
         call fig%add_plot(x, y, label='NaN/Inf Position Test')
         
-        call fig%savefig(get_test_output_path('/tmp/nan_inf_positions.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/nan_inf_positions.png'))
         
         ! This should now work with NaN/Inf filtering
         write(error_unit, '(A)') 'PASS: NaN/Inf position filtering implemented'
@@ -90,7 +90,7 @@ contains
         ! This should handle invalid sizes gracefully (will FAIL)
         call fig%add_plot(x, y, label='NaN/Inf Size Test')
         
-        call fig%savefig(get_test_output_path('/tmp/nan_inf_sizes.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/nan_inf_sizes.png'))
         
         ! This should now work with NaN/Inf size handling
         write(error_unit, '(A)') 'PASS: NaN/Inf size handling implemented'
@@ -112,7 +112,7 @@ contains
         ! This should handle empty data gracefully (will FAIL)
         call fig%add_plot(empty_x, empty_y, label='Empty Dataset Test')
         
-        call fig%savefig(get_test_output_path('/tmp/empty_dataset.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/empty_dataset.png'))
         
         ! This should now work with empty dataset handling
         write(error_unit, '(A)') 'PASS: Empty dataset handling implemented'
@@ -136,7 +136,7 @@ contains
         ! This should handle single point correctly (will FAIL)
         call fig%add_plot(x, y, label='Single Point Test')
         
-        call fig%savefig(get_test_output_path('/tmp/single_point.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/single_point.png'))
         
         ! This should now work with single point handling
         write(error_unit, '(A)') 'PASS: Single point handling implemented'
@@ -162,7 +162,7 @@ contains
         ! This should clamp extreme sizes (will FAIL)
         call fig%add_plot(x, y, label='Extreme Sizes Test')
         
-        call fig%savefig(get_test_output_path('/tmp/extreme_sizes.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/extreme_sizes.png'))
         
         ! This should now work with extreme size range handling
         write(error_unit, '(A)') 'PASS: Extreme size range handling implemented'
@@ -186,7 +186,7 @@ contains
         call fig%add_plot(x+1.0_wp, y, label='Empty Marker Test')
         call fig%add_plot(x+2.0_wp, y, label='Nonexistent Marker Test')
         
-        call fig%savefig(get_test_output_path('/tmp/invalid_markers.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/invalid_markers.png'))
         
         ! This should now work with invalid marker handling
         write(error_unit, '(A)') 'PASS: Invalid marker handling implemented'

@@ -27,8 +27,8 @@ program test_backend_scatter
     call fig%set_title('Scatter Plot - PNG Backend')
     call fig%set_xlabel('X Values')
     call fig%set_ylabel('Y Values')
-    call fig%legend()
-    call fig%savefig(get_test_output_path('/tmp/scatter_test.png'))
+    call figure_legend(fig, )
+    call figure_savefig(fig, get_test_output_path('/tmp/scatter_test.png'))
     write(error_unit, '(A)') '  ✓ PNG backend test completed'
     
     ! Test PDF backend
@@ -39,8 +39,8 @@ program test_backend_scatter
     call fig%set_title('Scatter Plot - PDF Backend')
     call fig%set_xlabel('X Values')
     call fig%set_ylabel('Y Values')
-    call fig%legend()
-    call fig%savefig(get_test_output_path('/tmp/scatter_test.pdf'))
+    call figure_legend(fig, )
+    call figure_savefig(fig, get_test_output_path('/tmp/scatter_test.pdf'))
     write(error_unit, '(A)') '  ✓ PDF backend test completed'
     
     ! Test ASCII backend
@@ -50,7 +50,7 @@ program test_backend_scatter
     call fig%set_title('Scatter Plot - ASCII Backend')
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
-    call fig%savefig(get_test_output_path('/tmp/scatter_test.txt'))
+    call figure_savefig(fig, get_test_output_path('/tmp/scatter_test.txt'))
     write(error_unit, '(A)') '  ✓ ASCII backend test completed'
     
     write(error_unit, '(A)') 'All backend tests completed successfully!'

@@ -86,7 +86,7 @@ contains
         
         call fig%initialize(width=400, height=300)
         call fig%add_plot(x, y, label="test data")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Test that file exists
         call assert_file_exists(filename)
@@ -116,7 +116,7 @@ contains
         
         call fig%initialize(width=400, height=300)
         call fig%add_scatter(x, y, marker='o', label="scatter data")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         passed = png_file_has_visible_content(filename)
@@ -144,7 +144,7 @@ contains
         
         call fig%initialize(width=400, height=300)
         call fig%add_3d_plot(x, y, z, label="3d data")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         passed = png_file_has_visible_content(filename)
@@ -175,7 +175,7 @@ contains
             raw_image_has_content = validate_raw_image_content(backend%raster%image_data, fig%width, fig%height)
             if (.not. raw_image_has_content) then
                 ! For gfortran-14 compatibility: fallback to file-based validation
-                call fig%savefig(get_test_output_path( &
+                call figure_savefig(fig, get_test_output_path( &
                     'output/test/test_png_black_pictures_regression/buffer_test.png'))
                 passed = png_file_has_visible_content(get_test_output_path( &
                     'output/test/test_png_black_pictures_regression/buffer_test.png'))
@@ -185,7 +185,7 @@ contains
             call get_png_data(fig%width, fig%height, backend%raster%image_data, png_buffer)
         class default
             ! Fallback: save to file and read back for now
-            call fig%savefig(get_test_output_path( &
+            call figure_savefig(fig, get_test_output_path( &
                 'output/test/test_png_black_pictures_regression/buffer_test.png'))
             passed = png_file_has_visible_content(get_test_output_path( &
                 'output/test/test_png_black_pictures_regression/buffer_test.png'))

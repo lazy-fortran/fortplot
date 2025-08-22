@@ -32,7 +32,7 @@ contains
             ! Create minimal test file for validation
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "test")
-            call fig%savefig(example_file)
+            call figure_savefig(fig, example_file)
         end if
         
         ! Now test file validation should pass
@@ -116,14 +116,14 @@ contains
             ! Create minimal test file for validation
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "test")
-            call fig%savefig(example_file)
+            call figure_savefig(fig, example_file)
         else
             ! Check if file is empty and recreate if needed
             size_val = validate_file_size(example_file, MIN_PNG_SIZE)
             if (.not. size_val%passed) then
                 call fig%initialize(600, 400)
                 call fig%add_plot(x, y, "test")
-                call fig%savefig(example_file)
+                call figure_savefig(fig, example_file)
             end if
         end if
         

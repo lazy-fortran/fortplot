@@ -55,8 +55,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_norm_0to1.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_norm_0to1.txt'))
         
         ! Test with range [-1, 1]
         do i = 1, 5
@@ -66,8 +66,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_norm_neg1to1.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_norm_neg1to1.txt'))
         
         ! Test with large positive range
         do i = 1, 5
@@ -77,8 +77,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_norm_large.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_norm_large.txt'))
         
         print *, "test_value_normalization: PASSED"
     end subroutine
@@ -100,12 +100,12 @@ contains
             z = real(level, wp) / 9.0_wp
             
             call fig%initialize(30, 15)
-            call fig%add_contour_filled(x, y, z)
+            call figure_add_contour_filled(fig, x, y, z)
             
             ! Save with descriptive filename
             write(*, '(A, I1, A, A)') "Level ", level, " should use character: '", &
                   ASCII_CHARS(level+1:level+1), "'"
-            call fig%savefig('test_level_' // char(iachar('0') + level) // '.txt')
+            call figure_savefig(fig, 'test_level_' // char(iachar('0') + level) // '.txt')
         end do
         
         print *, "test_character_density_levels: PASSED"
@@ -121,14 +121,14 @@ contains
         ! Test minimum value (should map to first character: space)
         z = 0.0_wp
         call fig%initialize(20, 10)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_min_value.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_min_value.txt'))
         
         ! Test maximum value (should map to last character: @)
         z = 1.0_wp
         call fig%initialize(20, 10)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_max_value.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_max_value.txt'))
         
         ! Test with only min and max values
         z = reshape([0.0_wp, 1.0_wp, 0.0_wp, &
@@ -136,8 +136,8 @@ contains
                      0.0_wp, 1.0_wp, 0.0_wp], [3, 3])
         
         call fig%initialize(20, 10)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_minmax_pattern.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_minmax_pattern.txt'))
         
         print *, "test_edge_value_mapping: PASSED"
     end subroutine
@@ -156,21 +156,21 @@ contains
         ! Test with all zeros (should produce uniform minimum character)
         z = 0.0_wp
         call fig%initialize(50, 25)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_all_zeros.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_all_zeros.txt'))
         
         ! Test with all same non-zero value
         z = 42.0_wp
         call fig%initialize(50, 25)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_all_same.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_all_same.txt'))
         
         ! Test with very small range (should still map to characters)
         z = 1.0_wp
         z(5, 5) = 1.0001_wp  ! One slightly different value
         call fig%initialize(50, 25)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_tiny_range.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_tiny_range.txt'))
         
         print *, "test_uniform_value_mapping: PASSED"
     end subroutine

@@ -32,7 +32,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file and check buffer URI
         open(newunit=unit, file=filename, status='old', action='read')
@@ -74,7 +74,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file and extract base64 data
         open(newunit=unit, file=filename, status='old', action='read')
@@ -116,7 +116,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file and check accessor count
         open(newunit=unit, file=filename, status='old', action='read')
@@ -153,7 +153,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file and check for bounds
         open(newunit=unit, file=filename, status='old', action='read')
