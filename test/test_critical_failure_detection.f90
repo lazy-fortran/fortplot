@@ -23,7 +23,9 @@ contains
         type(validation_result_t) :: validation
         real(wp), dimension(10) :: x, y
         integer :: i
-        character(len=*), parameter :: test_output = get_test_output_path("output/test/critical_mismatch.png")
+        character(len=512) :: test_output
+        
+        test_output = get_test_output_path("output/test/critical_mismatch.png")
         
         ! Arrange: Create test data
         do i = 1, 10
@@ -115,8 +117,10 @@ contains
     ! Then: Format validation should detect silent corruption
     subroutine test_silent_format_corruption()
         type(validation_result_t) :: validation
-        character(len=*), parameter :: corrupted_file = get_test_output_path("output/test/silent_corruption.png")
+        character(len=512) :: corrupted_file
         integer :: unit
+        
+        corrupted_file = get_test_output_path("output/test/silent_corruption.png")
         
         ! Simulate a file that exists but has corrupted PNG header
         open(newunit=unit, file=corrupted_file, form='unformatted', access='stream')
