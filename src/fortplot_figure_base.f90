@@ -9,6 +9,7 @@ module fortplot_figure_base
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_t
     use fortplot_legend
     use fortplot_annotations, only: text_annotation_t
+    use fortplot_logging, only: log_warning
 
     implicit none
 
@@ -225,11 +226,12 @@ contains
     end subroutine set_ylim
 
     subroutine set_subplot(self, rows, cols, index)
-        !! Configure subplot layout
+        !! Configure subplot layout with warning generation for excessive subplots
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: rows, cols, index
         
         integer :: total_subplots, i
+        character(len=100) :: warning_msg
         
         if (rows < 1 .or. cols < 1 .or. index < 1 .or. index > rows * cols) then
             self%has_error = .true.
@@ -241,6 +243,21 @@ contains
         self%current_subplot = index
         
         total_subplots = rows * cols
+        
+        ! Generate warning for excessive subplot counts
+        if (total_subplots > 25) then
+            write(warning_msg, '(A,I0,A,I0,A,I0,A)') &
+                'Large number of subplots requested (', rows, 'x', cols, '=', total_subplots, &
+                '), performance may be degraded'
+            call log_warning(trim(warning_msg))
+        end if
+        
+        ! Generate warning for extreme subplot indices
+        if (index > 100) then
+            write(warning_msg, '(A,I0,A)') &
+                'Subplot index ', index, ' exceeds typical display capacity'
+            call log_warning(trim(warning_msg))
+        end if
         
         ! Reallocate subplots if needed
         if (.not. allocated(self%subplots) .or. size(self%subplots) /= total_subplots) then

@@ -507,10 +507,18 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
         end if
         
-        ! Update main plot count
+        ! Update main plot count with warning generation
         self%plot_count = self%plot_count + 1
         if (self%plot_count <= self%max_plots) then
             self%plots(self%plot_count) = self%subplots(subplot_idx)%plots(plot_idx)
+        else
+            ! Generate warning when max plots exceeded
+            call log_warning('Maximum number of plots reached, additional plots may not be rendered properly')
+        end if
+        
+        ! Also check subplot-specific plot limits
+        if (self%subplots(subplot_idx)%plot_count > self%subplots(subplot_idx)%max_plots) then
+            call log_warning('Subplot plot limit exceeded, performance may be degraded')
         end if
     end subroutine add_line_plot_data
 
