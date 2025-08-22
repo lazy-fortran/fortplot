@@ -60,6 +60,7 @@ module fortplot
                                validate_color_for_backend, clear_color_cache
     use fortplot_figure_core, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
+    use fortplot_security, only: safe_launch_viewer, safe_remove_file
 
     implicit none
 
@@ -897,7 +898,6 @@ contains
         !! Arguments:
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         use iso_fortran_env, only: int64
-        use fortplot_security, only: safe_launch_viewer, safe_remove_file
         
         logical, intent(in), optional :: blocking
         logical :: do_block, success
