@@ -11,7 +11,6 @@
     #include <direct.h>
     #include <process.h>
     #define access _access
-    #define mkdir(path, mode) _mkdir(path)
     #define R_OK 4
 #else
     #include <sys/stat.h>
@@ -28,7 +27,7 @@ int create_directory_c(const char* path) {
     // Use mkdir system call directly - safer than shell commands
     // This creates the final directory, not parent directories
     #ifdef _WIN32
-        if (mkdir(path) == 0) {
+        if (_mkdir(path) == 0) {
             return 0;  // Success
         }
         
@@ -79,7 +78,7 @@ int create_directory_c(const char* path) {
         
         // Now try to create the directory again
         #ifdef _WIN32
-            if (mkdir(path) == 0 || errno == EEXIST) {
+            if (_mkdir(path) == 0 || errno == EEXIST) {
                 free(path_copy);
                 return 0;
             }
