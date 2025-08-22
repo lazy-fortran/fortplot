@@ -2,6 +2,7 @@ module fortplot_animation
     use iso_fortran_env, only: real64, wp => real64
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_figure_core, only: figure_t, plot_data_t, ensure_directory_exists
+    use fortplot_rendering, only: savefig
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_utils, only: initialize_backend
     use fortplot_logging, only: log_error, log_info, log_warning
@@ -144,7 +145,7 @@ contains
             write(filename, '(A,I0,A)') trim(pattern), i, ".png"
             call self%animate_func(i + 1)
             if (associated(self%fig)) then
-                call self%fig%savefig(trim(filename))
+                call savefig(self%fig, trim(filename))
             end if
         end do
         
