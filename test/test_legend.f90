@@ -29,14 +29,14 @@ contains
         call fig%add_plot(x, y2, label="cos(x)")
         
         ! Test legend API - this should exist and work
-        call fig%legend()
+        call figure_legend(fig)
         
         ! Test legend with custom location
-        call fig%legend(location="upper right")
+        call figure_legend(fig)
         
         ! Save to test rendering
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_basic.png'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_basic.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_basic.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_basic.png'))
         
         print *, "PASS: Legend API tests completed"
     end subroutine test_legend_api
@@ -54,15 +54,15 @@ contains
         call fig%add_plot(x, y, label="x²")
         
         ! Test different legend positions
-        call fig%legend(location="upper left")
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_upper_left.png'))
+        call figure_legend(fig)
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_upper_left.png'))
         
-        call fig%legend(location="lower right")  
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_lower_right.png'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_upper_left.png'))
+        call figure_legend(fig)  
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_lower_right.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_upper_left.png'))
         
-        call fig%legend(location="lower right")  
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_lower_right.png'))
+        call figure_legend(fig)  
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_lower_right.png'))
         
         print *, "PASS: Legend positioning tests completed"
     end subroutine test_legend_positioning
@@ -84,15 +84,15 @@ contains
         call fig%add_plot(x, y2, label="0.5x")  
         call fig%add_plot(x, y3, label="sin(2x)")
         
-        call fig%legend()
+        call figure_legend(fig)
         
         ! Test all backends render legends correctly
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.png'))
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.pdf'))
-        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.txt'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.png'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.pdf'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.txt'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.pdf'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.txt'))
         
         print *, "PASS: Legend rendering tests completed"
     end subroutine test_legend_rendering

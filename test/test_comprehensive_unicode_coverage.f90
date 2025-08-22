@@ -162,11 +162,11 @@ contains
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [1.5_wp, 2.5_wp, 3.5_wp], label="\beta decay")
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [0.5_wp, 1.5_wp, 2.5_wp], label="\gamma emission")
         
-        call fig%legend("upper right")
+        call figure_legend(fig, "upper right")
         
         ! Test in all backends
         test_filename = get_test_output_path("/tmp/test_all_elements_unicode.png")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then
             print *, "ERROR: PNG with all Unicode elements not created"
@@ -174,7 +174,7 @@ contains
         end if
         
         test_filename = get_test_output_path("/tmp/test_all_elements_unicode.pdf")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then
             print *, "ERROR: PDF with all Unicode elements not created"
@@ -182,7 +182,7 @@ contains
         end if
         
         test_filename = get_test_output_path("/tmp/test_all_elements_unicode.txt")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then
             print *, "ERROR: ASCII with all Unicode elements not created"

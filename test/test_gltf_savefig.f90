@@ -34,7 +34,7 @@ contains
         call fig%add_3d_plot(x, y, z, label="Test 3D line")
         
         ! Save as GLTF
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Check file exists
         inquire(file=filename, exist=file_exists)
@@ -72,7 +72,7 @@ contains
         call fig%add_surface(x_grid, y_grid, z_grid, label="Test surface")
         
         ! Save as GLTF
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Check file exists
         inquire(file=filename, exist=file_exists)
@@ -111,7 +111,7 @@ contains
         call fig%add_3d_plot(x, y, z, label="3D plot")
         
         ! Save - should detect 3D and use GLTF
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         inquire(file=filename, exist=file_exists)
         if (.not. file_exists) then
@@ -143,7 +143,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file content
         open(newunit=unit, file=filename, status='old', action='read')

@@ -201,16 +201,16 @@ contains
         call fig%initialize(800, 600)
         
         ! Basic text placement
-        call fig%text(1.5_wp, 2.5_wp, "Basic text")
+        call text(1.5_wp, 2.5_wp, "Basic text")
         
         ! Text with coordinate type specification
-        call fig%text(0.5_wp, 0.8_wp, "Figure coords", coord_type=COORD_FIGURE)
+        call text(0.5_wp, 0.8_wp, "Figure coords", coord_type=COORD_FIGURE)
         
         ! Text with typography parameters
-        call fig%text(1.0_wp, 3.0_wp, "Styled text", font_size=14.0_wp, rotation=30.0_wp, alignment='center')
+        call text(1.0_wp, 3.0_wp, "Styled text", font_size=14.0_wp, rotation=30.0_wp, alignment='center')
         
         ! Text with background box
-        call fig%text(2.0_wp, 1.0_wp, "Boxed text", has_bbox=.true.)
+        call text(2.0_wp, 1.0_wp, "Boxed text", has_bbox=.true.)
         
         print *, "PASS: Figure text method API test"
     end subroutine test_figure_text_method_api
@@ -337,8 +337,8 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "PNG test text")
-        call fig%savefig("test_annotation_png.png")
+        call text(1.0_wp, 1.0_wp, "PNG test text")
+        call figure_savefig(fig, "test_annotation_png.png")
         
         ! Verify PNG file was created and contains text data
         call verify_png_contains_text("test_annotation_png.png", "PNG test text")
@@ -353,8 +353,8 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "PDF test text")
-        call fig%savefig("test_annotation_pdf.pdf")
+        call text(1.0_wp, 1.0_wp, "PDF test text")
+        call figure_savefig(fig, "test_annotation_pdf.pdf")
         
         ! Verify PDF file was created and contains text data
         call verify_pdf_contains_text("test_annotation_pdf.pdf", "PDF test text")
@@ -369,8 +369,8 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(40, 20)
-        call fig%text(1.0_wp, 1.0_wp, "ASCII test")
-        call fig%savefig("test_annotation_ascii.txt")
+        call text(1.0_wp, 1.0_wp, "ASCII test")
+        call figure_savefig(fig, "test_annotation_ascii.txt")
         
         ! Verify ASCII file was created and contains text data
         call verify_ascii_contains_text("test_annotation_ascii.txt", "ASCII test")
@@ -458,12 +458,12 @@ contains
         call fig%initialize(600, 400)
         
         ! Add multiple annotations with different properties
-        call fig%text(1.0_wp, 1.0_wp, "Annotation 1")
-        call fig%text(2.0_wp, 2.0_wp, "Annotation 2", font_size=20.0_wp)
-        call fig%text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
+        call text(1.0_wp, 1.0_wp, "Annotation 1")
+        call text(2.0_wp, 2.0_wp, "Annotation 2", font_size=20.0_wp)
+        call text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
         call fig%annotate("Arrow annotation", [3.0_wp, 3.0_wp], [2.5_wp, 2.5_wp])
         
-        call fig%savefig("test_multiple_annotations.png")
+        call figure_savefig(fig, "test_multiple_annotations.png")
         
         ! Verify all annotations are present
         call verify_png_contains_text("test_multiple_annotations.png", "Annotation 1")
@@ -569,10 +569,10 @@ contains
         
         ! Add many annotations to test performance (limited to avoid max_annotations warning spam)
         do i = 1, 50  ! Reduced from 1000 to stay within max_annotations limit
-            call fig%text(real(i, wp) * 0.01_wp, real(i, wp) * 0.01_wp, "Annotation")
+            call text(real(i, wp) * 0.01_wp, real(i, wp) * 0.01_wp, "Annotation")
         end do
         
-        call fig%savefig("test_performance_annotations.png")
+        call figure_savefig(fig, "test_performance_annotations.png")
         
         call cpu_time(end_time)
         
@@ -591,8 +591,8 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "Boxed text", has_bbox=.true.)
-        call fig%savefig("test_background_box.png")
+        call text(1.0_wp, 1.0_wp, "Boxed text", has_bbox=.true.)
+        call figure_savefig(fig, "test_background_box.png")
         
         ! Verify background box is rendered
         call verify_png_has_background_box("test_background_box.png")
@@ -608,7 +608,7 @@ contains
         
         call fig%initialize(400, 300)
         call fig%annotate("Arrow test", [2.0_wp, 2.0_wp], [1.0_wp, 1.0_wp])
-        call fig%savefig("test_arrow_annotation.png")
+        call figure_savefig(fig, "test_arrow_annotation.png")
         
         ! Verify both text and arrow are rendered
         call verify_png_contains_text("test_arrow_annotation.png", "Arrow test")
@@ -624,11 +624,11 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "Consistency test", font_size=16.0_wp)
+        call text(1.0_wp, 1.0_wp, "Consistency test", font_size=16.0_wp)
         
-        call fig%savefig("test_consistency.png")
-        call fig%savefig("test_consistency.pdf")
-        call fig%savefig("test_consistency.txt")
+        call figure_savefig(fig, "test_consistency.png")
+        call figure_savefig(fig, "test_consistency.pdf")
+        call figure_savefig(fig, "test_consistency.txt")
         
         ! Verify consistent text positioning across backends
         call verify_backend_consistency("test_consistency")

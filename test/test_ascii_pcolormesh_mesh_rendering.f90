@@ -136,8 +136,8 @@ contains
         
         ! Create pcolormesh plot
         call fig%initialize(40, 20)
-        call fig%add_pcolormesh(x_coords, y_coords, mesh_data)
-        call fig%savefig("terminal")  ! Force ASCII output
+        call figure_add_pcolormesh(fig, x_coords, y_coords, mesh_data)
+        call figure_savefig(fig, "terminal")  ! Force ASCII output
         
         ! For Issue #176: ASCII output should show mesh structure variation
         ! NOT uniform solid fill with all same characters
@@ -178,8 +178,8 @@ contains
         ! Test different colormaps produce different outputs
         ! (This will fail until proper colormap integration is implemented)
         call fig%initialize(40, 20)
-        call fig%add_pcolormesh(x, y, data, colormap='viridis')
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data, colormap='viridis')
+        call figure_savefig(fig, "terminal")
         
         print *, "EXPECTED FAIL: Colormap integration with ASCII mesh rendering"
         failed_tests = failed_tests + 1
@@ -202,8 +202,8 @@ contains
         
         call fig%initialize(20, 10)
         ! This should not crash
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "PASS: Empty mesh handling (no crash)"
     end subroutine test_empty_mesh_handling
@@ -221,8 +221,8 @@ contains
         total_tests = total_tests + 1
         
         call fig%initialize(10, 10)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         ! Should render single quad, not crash
         print *, "EXPECTED FAIL: Single quad mesh rendering produces solid block"
@@ -254,8 +254,8 @@ contains
         end do
         
         call fig%initialize(20, 15)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "EXPECTED FAIL: Mesh boundaries show solid fill instead of pattern"
         failed_tests = failed_tests + 1

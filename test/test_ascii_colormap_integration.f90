@@ -144,8 +144,8 @@ contains
         
         ! Test with custom vmin/vmax
         call fig%initialize(20, 15)
-        call fig%add_pcolormesh(x, y, data, vmin=150.0_wp, vmax=400.0_wp)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data, vmin=150.0_wp, vmax=400.0_wp)
+        call figure_savefig(fig, "terminal")
         
         ! Should map full data range to ASCII character range
         ! This will fail until proper colormap range mapping is implemented
@@ -166,8 +166,8 @@ contains
         print *, "Testing colormap data normalization..."
         
         call fig%initialize(15, 10)
-        call fig%add_pcolormesh(x, y, data)  ! Auto-normalize from -1 to 2
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)  ! Auto-normalize from -1 to 2
+        call figure_savefig(fig, "terminal")
         
         ! Should normalize data range [-1, 2] to character range
         print *, "EXPECTED FAIL: Data normalization not implemented properly"
@@ -188,8 +188,8 @@ contains
         
         ! Test uniform data (no variation)
         call fig%initialize(15, 10)
-        call fig%add_pcolormesh(x, y, uniform_data)
-        call fig%savefig("terminal")  ! Should not crash
+        call figure_add_pcolormesh(fig, x, y, uniform_data)
+        call figure_savefig(fig, "terminal")  ! Should not crash
         
         print *, "PASS: Uniform data handled without crash"
         
@@ -200,8 +200,8 @@ contains
             real(wp) :: y_single(2) = [0.0_wp, 1.0_wp]
             
             call fig%initialize(10, 8)
-            call fig%add_pcolormesh(x_single, y_single, single_data)
-            call fig%savefig("terminal")  ! Should not crash
+            call figure_add_pcolormesh(fig, x_single, y_single, single_data)
+            call figure_savefig(fig, "terminal")  ! Should not crash
             
             print *, "PASS: Single-value data handled without crash"
         end block

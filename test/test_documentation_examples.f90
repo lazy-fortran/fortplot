@@ -81,7 +81,7 @@ contains
         call fig%set_ylabel("y")
         call fig%add_plot(x, yf)
         call fig%add_3d_plot(x, y, z, label="3D data")  ! 3D plotting
-        call fig%savefig(get_test_output_path("output/test/test_readme_oo.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_readme_oo.png"))
         
         ! Assert: Validate output generation
         validation = validate_file_exists(get_test_output_path("output/test/test_readme_oo.png"))
@@ -254,7 +254,7 @@ contains
         ! call fig%scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')  ! TODO: implement scatter method
         call fig%add_plot(x, y, label='Bubble Chart')  ! Fallback to basic plot for now
         call fig%set_title("Bubble Chart - Size Represents Population")
-        call fig%savefig(get_test_output_path("output/test/test_readme_bubble_chart.pdf"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_readme_bubble_chart.pdf"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_readme_bubble_chart.pdf"))
         if (.not. validation%passed) then

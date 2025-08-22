@@ -37,9 +37,9 @@ program test_pcolormesh_ascii_integration_176
     data(2, 2) = 0.1_wp  ! Low
     
     call fig%initialize(25, 15)
-    call fig%add_pcolormesh(x, y, data)
+    call figure_add_pcolormesh(fig, x, y, data)
     output_path = get_test_output_path('/tmp/test_pcolormesh_checkerboard.txt')
-    call fig%savefig(output_path)
+    call figure_savefig(fig, output_path)
     
     print '(A,A)', "  Output saved to: ", trim(output_path)
     print *, "  Expected: Different patterns for high/low values"
@@ -63,9 +63,9 @@ program test_pcolormesh_ascii_integration_176
     end do
     
     call fig%initialize(30, 18)
-    call fig%add_pcolormesh(x, y, data)
+    call figure_add_pcolormesh(fig, x, y, data)
     output_path = get_test_output_path('/tmp/test_pcolormesh_gradient.txt')  
-    call fig%savefig(output_path)
+    call figure_savefig(fig, output_path)
     
     print '(A,A)', "  Output saved to: ", trim(output_path)
     print *, "  Expected: Gradual change from light to dense characters"
@@ -83,9 +83,9 @@ program test_pcolormesh_ascii_integration_176
     data(1, 1) = 0.5_wp  ! Medium value
     
     call fig%initialize(15, 10)
-    call fig%add_pcolormesh(x, y, data)  
+    call figure_add_pcolormesh(fig, x, y, data)  
     output_path = get_test_output_path('/tmp/test_pcolormesh_single.txt')
-    call fig%savefig(output_path)
+    call figure_savefig(fig, output_path)
     
     print '(A,A)', "  Output saved to: ", trim(output_path)
     print *, "  Expected: Medium-density ASCII pattern"
@@ -104,17 +104,17 @@ program test_pcolormesh_ascii_integration_176
     
     ! Test viridis colormap
     call fig%initialize(20, 12)
-    call fig%add_pcolormesh(x, y, data, colormap='viridis')
+    call figure_add_pcolormesh(fig, x, y, data, colormap='viridis')
     output_path = get_test_output_path('/tmp/test_pcolormesh_viridis.txt')
-    call fig%savefig(output_path)
+    call figure_savefig(fig, output_path)
     
     print '(A,A)', "  Viridis output: ", trim(output_path)
     
     ! Test plasma colormap  
     call fig%initialize(20, 12)
-    call fig%add_pcolormesh(x, y, data, colormap='plasma')
+    call figure_add_pcolormesh(fig, x, y, data, colormap='plasma')
     output_path = get_test_output_path('/tmp/test_pcolormesh_plasma.txt')
-    call fig%savefig(output_path)
+    call figure_savefig(fig, output_path)
     
     print '(A,A)', "  Plasma output: ", trim(output_path)
     print *, "  Expected: Different colormaps should produce different patterns"

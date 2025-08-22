@@ -45,7 +45,7 @@ contains
         ! But miss actual file generation failure
         
         ! Simulate the actual savefig operation
-        call fig%savefig(test_output)
+        call figure_savefig(fig, test_output)
         
         ! Assert: Functional validation must verify actual output exists
         validation = validate_file_exists(test_output)
@@ -79,7 +79,7 @@ contains
         ! Test PNG backend
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig(get_test_output_path("output/test/backend_test.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/backend_test.png"))
         
         validation = validate_png_format(get_test_output_path("output/test/backend_test.png"))
         if (.not. validation%passed) then
@@ -90,7 +90,7 @@ contains
         ! Test PDF backend
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig(get_test_output_path("output/test/backend_test.pdf"))
+        call figure_savefig(fig, get_test_output_path("output/test/backend_test.pdf"))
         
         validation = validate_pdf_format(get_test_output_path("output/test/backend_test.pdf"))
         if (.not. validation%passed) then
@@ -101,7 +101,7 @@ contains
         ! Test ASCII backend
         call fig%initialize(60, 20)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig(get_test_output_path("output/test/backend_test.txt"))
+        call figure_savefig(fig, get_test_output_path("output/test/backend_test.txt"))
         
         validation = validate_ascii_format(get_test_output_path("output/test/backend_test.txt"))
         if (.not. validation%passed) then
@@ -165,8 +165,8 @@ contains
         call fig%set_title("Dependency Validation Test")
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
-        call fig%legend()  ! Requires text rendering (STB TrueType)
-        call fig%savefig(get_test_output_path("output/test/dependency_test.png"))  ! Requires PNG encoding (STB Image Write)
+        call figure_legend(fig, )  ! Requires text rendering (STB TrueType)
+        call figure_savefig(fig, get_test_output_path("output/test/dependency_test.png"))  ! Requires PNG encoding (STB Image Write)
         
         ! Assert: Verify dependencies worked correctly
         validation = validate_file_exists(get_test_output_path("output/test/dependency_test.png"))

@@ -33,7 +33,7 @@ contains
         print *, "Testing show() without blocking parameter (default)"
         if (.not. is_windows()) then
             ! Use figure method to force ASCII display and avoid GUI viewer
-            call fig%show(blocking=.false.)
+            call show(blocking=.false.)
         else
             print *, "SKIPPED: show() on Windows (prevents CI hang)"
         end if
@@ -42,7 +42,7 @@ contains
         print *, "Testing show() with explicit blocking=.false."
         if (.not. is_windows()) then
             ! Use figure method to force ASCII display and avoid GUI viewer
-            call fig%show(blocking=.false.)
+            call show(blocking=.false.)
         else
             print *, "SKIPPED: show(blocking=.false.) on Windows (prevents CI hang)"
         end if
@@ -66,12 +66,12 @@ contains
         
         ! Test non-blocking (default)
         print *, "Testing savefig() without blocking parameter (default)"
-        call fig%savefig(get_test_output_path('output/test/test_blocking/test_blocking.png'))
-        call fig%savefig(get_test_output_path('/tmp/test_blocking.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_blocking/test_blocking.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_blocking.png'))
         
         ! Test with explicit blocking=false for ASCII
         print *, "Testing savefig() with blocking=.false. for ASCII"
-        call fig%savefig(get_test_output_path('output/test/test_blocking/test_blocking.txt'), blocking=.false.)
+        call figure_savefig(fig, get_test_output_path('output/test/test_blocking/test_blocking.txt'), blocking=.false.)
         
         print *, "test_savefig_with_blocking: PASSED"
     end subroutine test_savefig_with_blocking

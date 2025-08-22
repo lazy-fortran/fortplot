@@ -248,7 +248,7 @@ contains
         
         test_count = test_count + 1
         print *, "Testing savefig with single dot path: './malicious.png'"
-        call fig%savefig("./malicious.png")
+        call figure_savefig(fig, "./malicious.png")
         inquire(file="./malicious.png", exist=file_exists)
         if (.not. file_exists) then
             print *, "  PASS: savefig rejected single dot path"
@@ -263,7 +263,7 @@ contains
         
         test_count = test_count + 1
         print *, "Testing savefig with double dot path: '../malicious.png'"
-        call fig%savefig("../malicious.png")
+        call figure_savefig(fig, "../malicious.png")
         inquire(file="../malicious.png", exist=file_exists)
         if (.not. file_exists) then
             print *, "  PASS: savefig rejected double dot path"
@@ -278,7 +278,7 @@ contains
         
         test_count = test_count + 1
         print *, "Testing savefig with valid path: 'safe_output.png'"
-        call fig%savefig("safe_output.png")
+        call figure_savefig(fig, "safe_output.png")
         inquire(file="safe_output.png", exist=file_exists)
         if (file_exists) then
             print *, "  PASS: savefig accepted safe path"

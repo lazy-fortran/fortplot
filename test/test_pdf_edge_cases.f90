@@ -28,7 +28,7 @@ contains
         call fig%set_ylim(-0.0012_wp, 0.0012_wp)  ! Extremely tight
         call fig%set_title("Extreme tight range test")
         call fig%set_ylabel("Micro values")
-        call fig%savefig(get_test_output_path("/tmp/test_extreme_tight.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_extreme_tight.pdf"))
         
         print *, "Expected: Maximum label filtering, only essential labels shown"
     end subroutine test_extreme_tight_range
@@ -52,7 +52,7 @@ contains
         call fig%set_ylim(-0.1_wp, 0.005_wp)
         call fig%set_title("Many tick candidates test")
         call fig%set_ylabel("Dense value range")
-        call fig%savefig(get_test_output_path("/tmp/test_many_candidates.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_many_candidates.pdf"))
         
         print *, "Expected: Intelligent filtering preserves key values, prevents crowding"
     end subroutine test_many_tick_candidates
@@ -71,7 +71,7 @@ contains
         call fig%set_ylim(-0.00035_wp, 0.00035_wp)
         call fig%set_title("Zero crossing precision test")
         call fig%set_ylabel("Precision values around zero")
-        call fig%savefig(get_test_output_path("/tmp/test_zero_precision.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_zero_precision.pdf"))
         
         print *, "Expected: Zero value preserved, symmetric labeling, no overlap"
     end subroutine test_zero_crossing_precision
@@ -89,7 +89,7 @@ contains
         call fig%set_ylim(-0.09_wp, -0.005_wp)
         call fig%set_title("Negative small values test")
         call fig%set_ylabel("All negative range")
-        call fig%savefig(get_test_output_path("/tmp/test_negative_small.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_negative_small.pdf"))
         
         print *, "Expected: Proper negative value formatting, no label overlap"
     end subroutine test_negative_small_values
@@ -109,7 +109,7 @@ contains
         call fig%set_ylim(-0.12_wp, 0.22_wp)
         call fig%set_title("Mixed scale scenarios test")
         call fig%set_ylabel("Mixed magnitude values")
-        call fig%savefig(get_test_output_path("/tmp/test_mixed_scales.pdf"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_mixed_scales.pdf"))
         
         print *, "Expected: Balanced label distribution across different magnitudes"
     end subroutine test_mixed_scale_scenarios

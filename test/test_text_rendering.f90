@@ -148,9 +148,9 @@ contains
         call fig%set_ylabel("y")
         
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
-        call fig%savefig(get_test_output_path('output/test/test_text_rendering/test_text_rendering_output.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_text_rendering/test_text_rendering_output.png'))
         inquire(file="test_text_rendering_output.png", exist=file_exists, iostat=iostat)
-        call fig%savefig(get_test_output_path("/tmp/test_text_rendering_output.png"))
+        call figure_savefig(fig, get_test_output_path("/tmp/test_text_rendering_output.png"))
         inquire(file=get_test_output_path("/tmp/test_text_rendering_output.png"), exist=file_exists, iostat=iostat)
 
         if (file_exists .and. iostat == 0) then

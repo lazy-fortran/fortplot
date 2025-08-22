@@ -43,9 +43,9 @@ contains
         ! Use exact matplotlib defaults: density=1.0, broken_streamlines=True, maxlength=4.0
         call fig%streamplot(x, y, u, v, density=1.0_real64)
         call fig%set_title('Fortplotlib - Should match matplotlib behavior')
-        call fig%savefig(get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_equivalent.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_equivalent.png'))
         call fig%set_title('Fortplot - Should match matplotlib behavior')
-        call fig%savefig(get_test_output_path('/tmp/test/test_matplotlib_equivalent.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_matplotlib_equivalent.png'))
         
         print *, "Same parameters test completed - compare with matplotlib reference"
         
@@ -58,15 +58,15 @@ contains
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=1.5_real64)
         call fig%set_title('Higher density test')
-        call fig%savefig(get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_higher_density.png'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_matplotlib_higher_density.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_higher_density.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_matplotlib_higher_density.png'))
         
         ! Test 2: Lower density  
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v, density=0.7_real64)
         call fig%set_title('Lower density test')
-        call fig%savefig(get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_lower_density.png'))
-        call fig%savefig(get_test_output_path('/tmp/test/test_matplotlib_lower_density.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_matplotlib_equivalence/test_matplotlib_lower_density.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test/test_matplotlib_lower_density.png'))
         
         print *, "Behavior tests completed - verify quality matches matplotlib"
         

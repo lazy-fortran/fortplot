@@ -77,7 +77,7 @@ contains
         end do
         
         ! Add contour plot
-        call fig%add_contour(x_grid, y_grid, z_grid)
+        call figure_add_contour_filled(fig, x_grid, y_grid, z_grid)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Contour plot count")
         
         call end_test()

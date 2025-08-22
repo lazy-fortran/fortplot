@@ -42,7 +42,7 @@ contains
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_scatter_2d(x, y, label="markers")
-            call fig%savefig("output/example/fortran/marker_demo/scatter_plot.png")
+            call figure_savefig(fig, "output/example/fortran/marker_demo/scatter_plot.png")
         end if
         
         ! Create additional format files for comprehensive testing
@@ -50,14 +50,14 @@ contains
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "test data")
-            call fig%savefig("output/example/fortran/basic_plots/simple_plot.pdf")
+            call figure_savefig(fig, "output/example/fortran/basic_plots/simple_plot.pdf")
         end if
         
         validation = validate_file_exists("output/example/fortran/basic_plots/simple_plot.txt")
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "test data")
-            call fig%savefig("output/example/fortran/basic_plots/simple_plot.txt")
+            call figure_savefig(fig, "output/example/fortran/basic_plots/simple_plot.txt")
         end if
         
         validation = validate_file_exists("output/example/fortran/marker_demo/scatter_plot.png")
@@ -180,21 +180,21 @@ contains
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "r-", "red line")
-            call fig%savefig("output/example/fortran/format_string_demo/format_string_demo.png")
+            call figure_savefig(fig, "output/example/fortran/format_string_demo/format_string_demo.png")
         end if
         
         validation = validate_file_exists("output/example/fortran/format_string_demo/format_string_demo.pdf")
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "r-", "red line") 
-            call fig%savefig("output/example/fortran/format_string_demo/format_string_demo.pdf")
+            call figure_savefig(fig, "output/example/fortran/format_string_demo/format_string_demo.pdf")
         end if
         
         validation = validate_file_exists("output/example/fortran/format_string_demo/format_string_demo.txt")
         if (.not. validation%passed) then
             call fig%initialize(600, 400)
             call fig%add_plot(x, y, "r-", "red line")
-            call fig%savefig("output/example/fortran/format_string_demo/format_string_demo.txt")
+            call figure_savefig(fig, "output/example/fortran/format_string_demo/format_string_demo.txt")
         end if
         
         ! Test that backend selection doesn't break organization

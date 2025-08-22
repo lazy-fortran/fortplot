@@ -39,7 +39,7 @@ contains
         call fig%set_title("PDF Y-Label Test")
         
         filename = get_test_output_path('/tmp/pdf_ylabel_consolidated.pdf')
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         inquire(file=filename, exist=file_exists)
         if (.not. file_exists) then
@@ -70,7 +70,7 @@ contains
         call fig%set_ylabel("Large Y Values")
         call fig%set_title("Overlap Test")
         
-        call fig%savefig(get_test_output_path('/tmp/pdf_overlap_test.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/pdf_overlap_test.pdf'))
         
         print *, "✓ Overlap detection: PASS"
         print *, "✓ Collision avoidance: PASS"
@@ -94,7 +94,7 @@ contains
         call fig%set_ylabel("Long Y Label")
         call fig%set_title("Edge Case: Long Labels")
         
-        call fig%savefig(get_test_output_path('/tmp/pdf_long_labels.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/pdf_long_labels.pdf'))
         
         ! Test special characters (if supported)
         call fig%initialize(300, 250)
@@ -103,7 +103,7 @@ contains
         call fig%set_ylabel("Y [values]")
         call fig%set_title("Special: ()[]")
         
-        call fig%savefig(get_test_output_path('/tmp/pdf_special_chars.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/pdf_special_chars.pdf'))
         
         print *, "✓ Long labels: PASS"
         print *, "✓ Special characters: PASS"
@@ -126,7 +126,7 @@ contains
         call fig%set_ylabel("Large Values")
         call fig%set_title("Coordinate Transform Test")
         
-        call fig%savefig(get_test_output_path('/tmp/pdf_coordinates.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/pdf_coordinates.pdf'))
         
         print *, "✓ Scale transformations: PASS"
         print *, "✓ Label coordinate mapping: PASS"

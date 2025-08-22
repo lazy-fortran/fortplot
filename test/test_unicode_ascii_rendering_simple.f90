@@ -22,11 +22,11 @@ contains
         
         ! Add plot with Unicode in label
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [1.0_wp, 4.0_wp, 9.0_wp], label="\alpha values")
-        call fig%legend("upper right")
+        call figure_legend(fig, "upper right")
         
         ! Save to temporary file and read it back
         test_filename = get_test_output_path("/tmp/test_basic_unicode.txt")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         ! Check file content for Unicode rendering
         contains_unicode = check_file_contains_unicode(test_filename)
@@ -49,7 +49,7 @@ contains
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp])
         
         test_filename = get_test_output_path("/tmp/test_title_unicode.txt")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         contains_unicode = check_file_contains_unicode(test_filename)
         
@@ -70,10 +70,10 @@ contains
         call fig%set_xlabel("Angle \theta (rad)")
         call fig%set_ylabel("Energy \epsilon (J)")
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp], label="Data \gamma")
-        call fig%legend("upper right")
+        call figure_legend(fig, "upper right")
         
         test_filename = get_test_output_path("/tmp/test_mixed_unicode.txt")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         contains_unicode = check_file_contains_unicode(test_filename)
         

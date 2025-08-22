@@ -58,7 +58,7 @@ contains
         call assert_equal(real(fig%plot_count, wp), 4.0_wp, "Plot added for RGB tuple")
         
         ! Test PNG backend color conversion
-        call fig%savefig('test_png_colors.png')
+        call figure_savefig(fig, 'test_png_colors.png')
         call assert_file_exists('test_png_colors.png', "PNG file created")
         call assert_png_contains_colors('test_png_colors.png', "PNG contains expected colors")
         
@@ -90,7 +90,7 @@ contains
         call fig%add_plot(x, y*3, color_str='(0.5, 0.8, 0.2)', label='Custom Green')
         
         ! Test PDF backend color conversion
-        call fig%savefig('test_pdf_colors.pdf')
+        call figure_savefig(fig, 'test_pdf_colors.pdf')
         call assert_file_exists('test_pdf_colors.pdf', "PDF file created")
         call assert_pdf_contains_colors('test_pdf_colors.pdf', "PDF contains expected colors")
         
@@ -123,7 +123,7 @@ contains
         call fig%add_plot(x, y*4, color_str='k', label='Black')
         
         ! Test ASCII backend color handling
-        call fig%savefig('test_ascii_colors.txt')
+        call figure_savefig(fig, 'test_ascii_colors.txt')
         call assert_file_exists('test_ascii_colors.txt', "ASCII file created")
         call assert_ascii_distinguishes_colors('test_ascii_colors.txt', "ASCII uses different markers")
         
@@ -201,9 +201,9 @@ contains
         call assert_equal(real(fig%plot_count, wp), 3.0_wp, "Out-of-range RGB clamped")
         
         ! Verify backends handle edge cases
-        call fig%savefig('test_edge_cases.png')
-        call fig%savefig('test_edge_cases.pdf')
-        call fig%savefig('test_edge_cases.txt')
+        call figure_savefig(fig, 'test_edge_cases.png')
+        call figure_savefig(fig, 'test_edge_cases.pdf')
+        call figure_savefig(fig, 'test_edge_cases.txt')
         
         call assert_file_exists('test_edge_cases.png', "PNG handles edge cases")
         call assert_file_exists('test_edge_cases.pdf', "PDF handles edge cases") 
@@ -237,16 +237,16 @@ contains
         call fig%add_plot(x, y*3, color_str='(0.0, 1.0, 0.0, 0.8)', label='Green 80%')
         
         ! Test PNG alpha support
-        call fig%savefig('test_alpha.png')
+        call figure_savefig(fig, 'test_alpha.png')
         call assert_file_exists('test_alpha.png', "PNG with alpha created")
         call assert_png_supports_alpha('test_alpha.png', "PNG handles alpha channel")
         
         ! Test PDF alpha support
-        call fig%savefig('test_alpha.pdf')
+        call figure_savefig(fig, 'test_alpha.pdf')
         call assert_file_exists('test_alpha.pdf', "PDF with alpha created")
         
         ! Test ASCII alpha fallback (should ignore alpha)
-        call fig%savefig('test_alpha.txt')
+        call figure_savefig(fig, 'test_alpha.txt')
         call assert_file_exists('test_alpha.txt', "ASCII ignores alpha gracefully")
         
         call end_test()

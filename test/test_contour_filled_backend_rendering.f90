@@ -68,9 +68,9 @@ contains
         
         ! Act - Render PNG with filled contours
         call fig%initialize(400, 300)
-        call fig%add_contour_filled(x, y, z, colormap='viridis')
+        call figure_add_contour_filled(fig, x, y, z, colormap='viridis')
         call fig%set_title("Contour Filled PNG Test")
-        call fig%savefig(get_test_output_path('/tmp/test_contour_filled_png_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_png_issue177.png'))
         
         ! Assert - File should exist (basic check)
         inquire(file=get_test_output_path('/tmp/test_contour_filled_png_issue177.png'), exist=file_exists)
@@ -110,11 +110,11 @@ contains
         
         ! Act - Render PDF with filled contours
         call fig%initialize(600, 400)
-        call fig%add_contour_filled(x, y, z, colormap='plasma')
+        call figure_add_contour_filled(fig, x, y, z, colormap='plasma')
         call fig%set_title("Contour Filled PDF Test")
         call fig%set_xlabel("X coordinate")
         call fig%set_ylabel("Y coordinate")
-        call fig%savefig(get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'))
         
         ! Assert - File should exist (basic check)
         inquire(file=get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'), exist=file_exists)
@@ -154,9 +154,9 @@ contains
         
         ! Act - Render ASCII with filled contours
         call fig%initialize(60, 30)
-        call fig%add_contour_filled(x, y, z)
+        call figure_add_contour_filled(fig, x, y, z)
         call fig%set_title("Contour Filled ASCII Test")
-        call fig%savefig(get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'))
         
         ! Assert - File should exist and contain non-space characters
         inquire(file=get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'), exist=file_exists)
@@ -256,9 +256,9 @@ contains
         
         ! Act - Render with specific levels and colormap
         call fig%initialize(500, 400)
-        call fig%add_contour_filled(x, y, z, levels=levels, colormap='jet')
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, colormap='jet')
         call fig%set_title("Color Interpolation Test")
-        call fig%savefig(get_test_output_path('/tmp/test_color_interpolation_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_color_interpolation_issue177.png'))
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_color_interpolation_issue177.png'), exist=file_exists)
@@ -300,9 +300,9 @@ contains
         
         ! Act - Render complex pattern
         call fig%initialize(600, 600)
-        call fig%add_contour_filled(x, y, z, colormap='viridis')
+        call figure_add_contour_filled(fig, x, y, z, colormap='viridis')
         call fig%set_title("Complex Contour Regions Test")
-        call fig%savefig(get_test_output_path('/tmp/test_complex_regions_issue177.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_complex_regions_issue177.png'))
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_complex_regions_issue177.png'), exist=file_exists)

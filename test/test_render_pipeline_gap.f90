@@ -36,9 +36,9 @@ contains
         call fig%initialize(100, 100)
         
         ! Add annotations - this part works
-        call fig%text(1.0_wp, 1.0_wp, "Annotation 1")
-        call fig%text(2.0_wp, 2.0_wp, "Annotation 2", font_size=16.0_wp)
-        call fig%text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
+        call text(1.0_wp, 1.0_wp, "Annotation 1")
+        call text(2.0_wp, 2.0_wp, "Annotation 2", font_size=16.0_wp)
+        call text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
         
         ! At this point, annotations should be stored in fig%annotations(:)
         ! We cannot directly access this from the test due to private members,
@@ -59,11 +59,11 @@ contains
         
         call fig%initialize(200, 150)
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp])
-        call fig%text(0.5_wp, 0.5_wp, "MISSING_IN_RENDER", coord_type=COORD_DATA)
+        call text(0.5_wp, 0.5_wp, "MISSING_IN_RENDER", coord_type=COORD_DATA)
         
         print *, "About to call savefig() which triggers render_figure()..."
         
-        call fig%savefig("test_pipeline_gap.txt")
+        call figure_savefig(fig, "test_pipeline_gap.txt")
         
         print *, "✓ render_figure() completed successfully"
         print *, "✓ Background rendered"  
@@ -95,7 +95,7 @@ contains
         ! - ASCII backend: text() method exists
         ! These are used successfully by other components (labels, legend, etc.)
         
-        call fig%savefig("test_backend_text_exists.txt")
+        call figure_savefig(fig, "test_backend_text_exists.txt")
         
         print *, "✓ Backend text() methods exist and are functional"
         print *, "✓ Used successfully by other components (axis labels, etc.)"
@@ -113,7 +113,7 @@ contains
         
         call fig%initialize(300, 200)
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp])
-        call fig%text(1.5_wp, 1.5_wp, "NEEDS_RENDER_CALL", coord_type=COORD_DATA)
+        call text(1.5_wp, 1.5_wp, "NEEDS_RENDER_CALL", coord_type=COORD_DATA)
         
         print *, "CURRENT render_figure() sequence:"
         print *, "1. setup_coordinate_system(self)  ✓"
@@ -128,7 +128,7 @@ contains
         print *, "7. call render_annotations(self)  ✗ MISSING!"
         print *, ""
         
-        call fig%savefig("test_missing_call.txt")
+        call figure_savefig(fig, "test_missing_call.txt")
         
         print *, "IMPLEMENTATION NEEDED:"
         print *, "- Add render_annotations(self) subroutine"

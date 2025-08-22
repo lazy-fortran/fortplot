@@ -53,8 +53,8 @@ contains
         y(1) = 0.0_wp
         
         call fig%initialize(20, 10)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")  ! Should not crash
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")  ! Should not crash
         
         print *, "PASS: Empty mesh handled without crash"
         
@@ -65,8 +65,8 @@ contains
             
             call fig%initialize(10, 5)
             ! This might fail with dimension error - should be handled gracefully
-            call fig%add_pcolormesh(empty_x, empty_y, empty_data)
-            call fig%savefig("terminal")
+            call figure_add_pcolormesh(fig, empty_x, empty_y, empty_data)
+            call figure_savefig(fig, "terminal")
             
             print *, "PASS: Completely empty arrays handled"
         end block
@@ -85,8 +85,8 @@ contains
         print *, "Testing single quad rendering..."
         
         call fig%initialize(12, 8)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "EXPECTED FAIL: Single quad renders as solid block instead of pattern"
         all_tests_passed = .false.
@@ -94,13 +94,13 @@ contains
         ! Test with different single values
         data(1, 1) = 0.0_wp  ! Minimum
         call fig%initialize(12, 8)  
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         data(1, 1) = 1.0_wp  ! Maximum
         call fig%initialize(12, 8)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "Single quad test completed"
     end subroutine test_single_quad_rendering
@@ -195,15 +195,15 @@ contains
         
         ! Test minimal canvas size
         call fig%initialize(3, 2)  ! Very small
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")  ! Should not crash
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")  ! Should not crash
         
         print *, "PASS: Very small canvas handled"
         
         ! Test single character canvas
         call fig%initialize(1, 1)  
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "PASS: Single character canvas handled"
     end subroutine test_very_small_canvas
@@ -223,8 +223,8 @@ contains
         
         ! Test large canvas (but not too large to avoid memory issues in tests)
         call fig%initialize(200, 100)  
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig(get_test_output_path('/tmp/test_large_canvas.txt'))
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_large_canvas.txt'))
         
         print *, "PASS: Large canvas handled"
     end subroutine test_very_large_canvas
@@ -246,8 +246,8 @@ contains
         data = reshape([0.2_wp, 0.8_wp, 0.4_wp, 0.6_wp], [2, 2])
         
         call fig%initialize(20, 15)
-        call fig%add_pcolormesh(x_large, y_large, data)
-        call fig%savefig("terminal")  ! Should not overflow
+        call figure_add_pcolormesh(fig, x_large, y_large, data)
+        call figure_savefig(fig, "terminal")  ! Should not overflow
         
         print *, "PASS: Large coordinates handled"
         
@@ -256,8 +256,8 @@ contains
         y_small = [1.0e-6_wp, 2.0e-6_wp, 3.0e-6_wp]
         
         call fig%initialize(20, 15)
-        call fig%add_pcolormesh(x_small, y_small, data)
-        call fig%savefig("terminal")  # Should not underflow
+        call figure_add_pcolormesh(fig, x_small, y_small, data)
+        call figure_savefig(fig, "terminal")  # Should not underflow
         
         print *, "PASS: Small coordinates handled"
     end subroutine test_extreme_coordinate_ranges
@@ -281,8 +281,8 @@ contains
         data = reshape([0.3_wp, 0.7_wp, 0.1_wp, 0.9_wp], [2, 2])
         
         call fig%initialize(20, 15)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")  ! Should handle precision limits
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")  ! Should handle precision limits
         
         print *, "PASS: Precision limits handled"
         
@@ -291,8 +291,8 @@ contains
         y = [0.0_wp, epsilon_val * 0.1_wp, epsilon_val * 0.2_wp]
         
         call fig%initialize(15, 10)
-        call fig%add_pcolormesh(x, y, data)
-        call fig%savefig("terminal")
+        call figure_add_pcolormesh(fig, x, y, data)
+        call figure_savefig(fig, "terminal")
         
         print *, "PASS: Near-identical coordinates handled"
     end subroutine test_mesh_precision_limits

@@ -37,7 +37,7 @@ contains
         
         call fig%initialize(width=800, height=600)
         call fig%add_surface(x, y, z)
-        call fig%savefig(get_test_output_path('output/test/test_3d_png/test_surface_3d.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_3d_png/test_surface_3d.png'))
         
         ! Test file exists
         call assert_file_exists(get_test_output_path('output/test/test_3d_png/test_surface_3d.png'))
@@ -64,7 +64,7 @@ contains
         call fig%initialize(width=800, height=600)
         ! Wireframe will be implemented later, for now use surface
         call fig%add_surface(x, y, z, label="wireframe")
-        call fig%savefig(get_test_output_path('output/test/test_3d_png/test_wireframe_3d.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_3d_png/test_wireframe_3d.png'))
         
         ! Test file exists
         call assert_file_exists(get_test_output_path('output/test/test_3d_png/test_wireframe_3d.png'))
@@ -85,7 +85,7 @@ contains
         
         call fig%initialize(width=800, height=600)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(get_test_output_path('output/test/test_3d_png/test_scatter_3d.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_3d_png/test_scatter_3d.png'))
         
         ! Test file exists
         call assert_file_exists(get_test_output_path('output/test/test_3d_png/test_scatter_3d.png'))
@@ -112,7 +112,7 @@ contains
         ! We'll verify this works when implementation is complete
         call fig%initialize(width=800, height=600)
         call fig%add_3d_plot(x3d, y3d, z3d)
-        call fig%savefig(get_test_output_path('output/test/test_3d_png/test_projection_3d.png'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_3d_png/test_projection_3d.png'))
         
         call assert_file_exists(get_test_output_path('output/test/test_3d_png/test_projection_3d.png'))
     end subroutine
