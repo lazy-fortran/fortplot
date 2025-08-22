@@ -208,13 +208,13 @@ contains
         character(len=*), intent(in) :: input_string
         character(len=len(input_string)) :: output_string
         integer :: i, ascii_val
+        integer, parameter :: ASCII_A = 65, ASCII_Z = 90, CASE_OFFSET = 32
         
         output_string = input_string
         do i = 1, len(input_string)
             ascii_val = iachar(input_string(i:i))
-            ! Convert A-Z (65-90) to a-z (97-122)
-            if (ascii_val >= 65 .and. ascii_val <= 90) then
-                output_string(i:i) = achar(ascii_val + 32)
+            if (ascii_val >= ASCII_A .and. ascii_val <= ASCII_Z) then
+                output_string(i:i) = achar(ascii_val + CASE_OFFSET)
             end if
         end do
     end function to_lowercase

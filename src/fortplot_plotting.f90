@@ -364,9 +364,6 @@ contains
         annotation%rotation = 0.0_wp
         if (present(rotation)) annotation%rotation = rotation
         
-        ! Note: Text color would be handled in proper implementation
-        ! annotation%color = [0.0_wp, 0.0_wp, 0.0_wp]  ! Black default
-        ! if (present(color)) annotation%color = color
         
         annotation%alignment = 'left'
         if (present(halign)) annotation%alignment = trim(halign)
@@ -418,9 +415,6 @@ contains
         annotation%font_size = 12.0_wp
         if (present(font_size)) annotation%font_size = font_size
         
-        ! Note: Text color would be handled in proper implementation
-        ! annotation%color = [0.0_wp, 0.0_wp, 0.0_wp]  ! Black default
-        ! if (present(color)) annotation%color = color
         
         annotation%alignment = 'center'
         if (present(halign)) annotation%alignment = trim(halign)
@@ -433,9 +427,6 @@ contains
         annotation%xytext_y = xy(2)
         ! Note: arrow coordinate type would be handled in proper implementation
         
-        ! Note: arrowprops would be handled in proper implementation
-        ! annotation%arrowprops = 'arrowstyle=->'
-        ! if (present(arrowprops)) annotation%arrowprops = trim(arrowprops)
         
         ! Add to annotations array
         if (.not. allocated(self%annotations)) then
