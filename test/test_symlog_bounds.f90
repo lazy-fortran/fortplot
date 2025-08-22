@@ -24,7 +24,8 @@ program test_symlog_bounds
     call test_fig%initialize(640, 480)
     call test_fig%add_plot(x_exp, y_symlog)
     call test_fig%set_yscale('symlog', 10.0_wp)
-    call test_fig%savefig(get_test_output_path('output/test/test_symlog_bounds/test_symlog_bounds_check.png'))
+    call test_fig%savefig(get_test_output_path( &
+        'output/test/test_symlog_bounds/test_symlog_bounds_check.png'))
     
     if (.not. allocated(test_fig%backend)) then
         print *, "❌ FAIL: Backend not allocated"

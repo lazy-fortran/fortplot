@@ -175,8 +175,10 @@ contains
             raw_image_has_content = validate_raw_image_content(backend%raster%image_data, fig%width, fig%height)
             if (.not. raw_image_has_content) then
                 ! For gfortran-14 compatibility: fallback to file-based validation
-                call fig%savefig(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
-                passed = png_file_has_visible_content(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
+                call fig%savefig(get_test_output_path( &
+                    'output/test/test_png_black_pictures_regression/buffer_test.png'))
+                passed = png_file_has_visible_content(get_test_output_path( &
+                    'output/test/test_png_black_pictures_regression/buffer_test.png'))
                 return
             end if
             
