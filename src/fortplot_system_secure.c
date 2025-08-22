@@ -3,6 +3,58 @@
 #include <string.h>
 #include <errno.h>
 
+// Path manipulation functions that can be tested independently
+char* map_unix_to_windows_path(const char* path) {
+    if (path == NULL) return NULL;
+    
+    char* mapped_path = NULL;
+    
+    // Map /tmp paths to local tmp directory
+    if (strcmp(path, "/tmp") == 0) {
+        mapped_path = strdup("tmp");
+    } else if (strncmp(path, "/tmp/", 5) == 0) {
+        // Map /tmp/filename to tmp\filename
+        size_t len = 4 + strlen(path) - 4 + 1; // "tmp" + rest of path + null
+        mapped_path = malloc(len);
+        if (mapped_path != NULL) {
+            snprintf(mapped_path, len, "tmp%s", path + 4);
+        }
+    } else {
+        mapped_path = strdup(path);
+    }
+    
+    return mapped_path;
+}
+
+// Find last path separator (both / and \)
+int find_last_separator(const char* path) {
+    if (path == NULL) return -1;
+    
+    int last_sep = -1;
+    int i;
+    for (i = 0; path[i] != '\0'; i++) {
+        if (path[i] == '/' || path[i] == '\\') {
+            last_sep = i;
+        }
+    }
+    return last_sep;
+}
+
+// Extract parent directory from path
+char* get_parent_directory(const char* path) {
+    if (path == NULL) return NULL;
+    
+    int last_sep = find_last_separator(path);
+    if (last_sep <= 0) return NULL;
+    
+    char* parent = malloc(last_sep + 1);
+    if (parent != NULL) {
+        strncpy(parent, path, last_sep);
+        parent[last_sep] = '\0';
+    }
+    return parent;
+}
+
 // Platform-specific includes
 #ifdef _WIN32
     #include <windows.h>
@@ -91,6 +143,15 @@ static int create_directory_recursive_windows(const char* path) {
 }
 #endif
 
+// Check if running on Windows (for testing)
+int is_windows_build() {
+    #ifdef _WIN32
+        return 1;
+    #else
+        return 0;
+    #endif
+}
+
 // Secure directory creation with recursive parent creation
 int create_directory_c(const char* path) {
     if (path == NULL || strlen(path) == 0) {
@@ -98,21 +159,8 @@ int create_directory_c(const char* path) {
     }
     
     #ifdef _WIN32
-        // Special handling for Unix-style /tmp directory on Windows
-        char* effective_path = NULL;
-        if (strcmp(path, "/tmp") == 0) {
-            // Map /tmp to a local tmp directory on Windows
-            effective_path = strdup("tmp");
-        } else if (strncmp(path, "/tmp/", 5) == 0) {
-            // Map /tmp/filename to tmp\filename (relative to current directory)
-            size_t len = 4 + strlen(path) - 4 + 1; // "tmp" + rest of path + null
-            effective_path = malloc(len);
-            if (effective_path != NULL) {
-                snprintf(effective_path, len, "tmp%s", path + 4); // skip "/tmp"
-            }
-        } else {
-            effective_path = strdup(path);
-        }
+        // Use our path mapping function
+        char* effective_path = map_unix_to_windows_path(path);
         
         if (effective_path == NULL) {
             return -1;
