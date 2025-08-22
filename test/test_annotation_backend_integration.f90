@@ -239,8 +239,8 @@ contains
         
         ! PNG performance test
         call fig%initialize(600, 400)
-        do i = 1, 100
-            call fig%text(real(i, wp) * 0.005_wp, 0.5_wp, "Performance test")
+        do i = 1, 20  ! Reduced to avoid max_annotations warning spam
+            call fig%text(real(i, wp) * 0.025_wp, 0.5_wp, "Performance test")
         end do
         
         call cpu_time(start_time)
@@ -250,8 +250,8 @@ contains
         
         ! PDF performance test
         call fig%initialize(600, 400)
-        do i = 1, 100
-            call fig%text(real(i, wp) * 0.005_wp, 0.5_wp, "Performance test")
+        do i = 1, 20  ! Reduced to avoid max_annotations warning spam
+            call fig%text(real(i, wp) * 0.025_wp, 0.5_wp, "Performance test")
         end do
         
         call cpu_time(start_time)
@@ -261,8 +261,8 @@ contains
         
         ! ASCII performance test
         call fig%initialize(80, 25)
-        do i = 1, 100
-            call fig%text(real(i, wp) * 0.01_wp, 0.5_wp, "Perf")
+        do i = 1, 20  ! Reduced to avoid max_annotations warning spam
+            call fig%text(real(i, wp) * 0.05_wp, 0.5_wp, "Perf")
         end do
         
         call cpu_time(start_time)

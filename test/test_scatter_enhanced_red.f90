@@ -4,6 +4,7 @@ program test_scatter_enhanced_red
     !! These tests use existing API where possible and document missing features
     
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
     implicit none
     
@@ -51,7 +52,7 @@ contains
                                show_colorbar=.true.)
         
         write(error_unit, '(A)') '  ✓ Basic scatter plot with size and color mapping works'
-        call fig%savefig('/tmp/test_current_api.png')
+        call fig%savefig(get_test_output_path('/tmp/test_current_api.png'))
         
         ! Test different marker
         call fig%initialize(400, 300) 
@@ -59,7 +60,7 @@ contains
         write(error_unit, '(A)') '  ✓ Square markers supported'
         
         call fig%legend()
-        call fig%savefig('/tmp/test_current_markers.png')
+        call fig%savefig(get_test_output_path('/tmp/test_current_markers.png'))
         
     end subroutine test_current_scatter_api
     
@@ -101,9 +102,9 @@ contains
         
         call fig%set_title('Marker System Completeness Test')
         call fig%legend()
-        call fig%savefig('/tmp/test_marker_completeness.png')
-        call fig%savefig('/tmp/test_marker_completeness.pdf')
-        call fig%savefig('/tmp/test_marker_completeness.txt')  ! ASCII test
+        call fig%savefig(get_test_output_path('/tmp/test_marker_completeness.png'))
+        call fig%savefig(get_test_output_path('/tmp/test_marker_completeness.pdf'))
+        call fig%savefig(get_test_output_path('/tmp/test_marker_completeness.txt'))  ! ASCII test
         
     end subroutine test_marker_system_completeness
     
@@ -132,7 +133,7 @@ contains
                                    marker='o', label=trim(required_colormaps(i)))
             
             call fig%set_title('Colormap: ' // trim(required_colormaps(i)))
-            call fig%savefig('/tmp/test_colormap_' // trim(required_colormaps(i)) // '.png')
+            call fig%savefig(get_test_output_path('/tmp/test_colormap_') // trim(required_colormaps(i)) // '.png')
             write(error_unit, '(A,A)') '  ✓ Colormap ', trim(required_colormaps(i)), ' available'
         end do
         
@@ -166,7 +167,7 @@ contains
         write(error_unit, '(A)') '  → REQUIREMENT: Proper handling of identical size values needed'
         
         call fig%legend()
-        call fig%savefig('/tmp/test_size_requirements.png')
+        call fig%savefig(get_test_output_path('/tmp/test_size_requirements.png'))
         
     end subroutine test_size_mapping_requirements
     
@@ -195,7 +196,7 @@ contains
         write(error_unit, '(A)') '  → REQUIREMENT: vmin/vmax range control needed'
         
         call fig%legend()
-        call fig%savefig('/tmp/test_color_requirements.png')
+        call fig%savefig(get_test_output_path('/tmp/test_color_requirements.png'))
         
     end subroutine test_color_mapping_requirements
     
@@ -227,7 +228,7 @@ contains
         
         call fig%set_title('Colorbar Integration Test')
         call fig%legend()
-        call fig%savefig('/tmp/test_colorbar_requirements.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colorbar_requirements.png'))
         
     end subroutine test_colorbar_integration_requirements
     
@@ -249,7 +250,7 @@ contains
         call fig%add_scatter_2d(x, y, s=sizes, c=colors, colormap='viridis', &
                                marker='o', label='PNG Backend')
         call fig%set_title('Backend Test - PNG')
-        call fig%savefig('/tmp/test_backend_png.png')
+        call fig%savefig(get_test_output_path('/tmp/test_backend_png.png'))
         write(error_unit, '(A)') '  ✓ PNG backend scatter support'
         
         ! PDF backend test  
@@ -257,14 +258,14 @@ contains
         call fig%add_scatter_2d(x, y, s=sizes, c=colors, colormap='plasma', &
                                marker='s', label='PDF Backend')
         call fig%set_title('Backend Test - PDF') 
-        call fig%savefig('/tmp/test_backend_pdf.pdf')
+        call fig%savefig(get_test_output_path('/tmp/test_backend_pdf.pdf'))
         write(error_unit, '(A)') '  ✓ PDF backend scatter support'
         
         ! ASCII backend test
         call fig%initialize(60, 20)
         call fig%add_scatter_2d(x, y, marker='*', label='ASCII Backend')
         call fig%set_title('Backend Test - ASCII')
-        call fig%savefig('/tmp/test_backend_ascii.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_backend_ascii.txt'))
         write(error_unit, '(A)') '  ✓ ASCII backend scatter support'
         write(error_unit, '(A)') '  → REQUIREMENT: Enhanced ASCII marker representation needed'
         
@@ -304,7 +305,7 @@ contains
         write(error_unit, '(A)') '  → REQUIREMENT: Optimization for 10^4+ points needed'
         
         call fig%set_title('Performance Requirements Test')
-        call fig%savefig('/tmp/test_performance_requirements.png')
+        call fig%savefig(get_test_output_path('/tmp/test_performance_requirements.png'))
         
     end subroutine test_performance_requirements
     
@@ -335,7 +336,7 @@ contains
         write(error_unit, '(A)') '  → REQUIREMENT: Invalid marker validation needed'
         
         call fig%legend()
-        call fig%savefig('/tmp/test_edge_case_requirements.png')
+        call fig%savefig(get_test_output_path('/tmp/test_edge_case_requirements.png'))
         
     end subroutine test_edge_case_requirements
 

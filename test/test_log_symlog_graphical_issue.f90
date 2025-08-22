@@ -1,6 +1,7 @@
 program test_log_symlog_graphical_issue
     !! Test to reproduce Issue #156: log and symlog giving only horizontal lines in PNG/PDF
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -36,7 +37,7 @@ contains
         call fig%set_xlabel("x")
         call fig%set_ylabel("10*exp(0.2x)")
         call fig%legend()
-        call fig%savefig('build/test/log_scale_test.png')
+        call fig%savefig(get_test_output_path('build/test/log_scale_test.png'))
         
         ! Test PDF output  
         call fig%initialize(800, 600)
@@ -46,7 +47,7 @@ contains
         call fig%set_xlabel("x")
         call fig%set_ylabel("10*exp(0.2x)")
         call fig%legend()
-        call fig%savefig('build/test/log_scale_test.pdf')
+        call fig%savefig(get_test_output_path('build/test/log_scale_test.pdf'))
         
         print *, "Created: log_scale_test.png/pdf"
     end subroutine test_log_scale_graphical
@@ -73,7 +74,7 @@ contains
         call fig%set_xlabel("x")
         call fig%set_ylabel("sign(x)*x²*100")
         call fig%legend()
-        call fig%savefig('build/test/symlog_scale_test.png')
+        call fig%savefig(get_test_output_path('build/test/symlog_scale_test.png'))
         
         ! Test PDF output
         call fig%initialize(800, 600)
@@ -83,7 +84,7 @@ contains
         call fig%set_xlabel("x")
         call fig%set_ylabel("sign(x)*x²*100")
         call fig%legend()
-        call fig%savefig('build/test/symlog_scale_test.pdf')
+        call fig%savefig(get_test_output_path('build/test/symlog_scale_test.pdf'))
         
         print *, "Created: symlog_scale_test.png/pdf"
     end subroutine test_symlog_scale_graphical

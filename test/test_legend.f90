@@ -3,6 +3,7 @@ program test_legend
     !! Tests both API design and rendering across backends
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_legend_api()
@@ -34,8 +35,8 @@ contains
         call fig%legend(location="upper right")
         
         ! Save to test rendering
-        call fig%savefig('output/test/test_legend/test_legend_basic.png')
-        call fig%savefig('/tmp/test/test_legend_basic.png')
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_basic.png'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_basic.png'))
         
         print *, "PASS: Legend API tests completed"
     end subroutine test_legend_api
@@ -54,14 +55,14 @@ contains
         
         ! Test different legend positions
         call fig%legend(location="upper left")
-        call fig%savefig('output/test/test_legend/test_legend_upper_left.png')
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_upper_left.png'))
         
         call fig%legend(location="lower right")  
-        call fig%savefig('output/test/test_legend/test_legend_lower_right.png')
-        call fig%savefig('/tmp/test/test_legend_upper_left.png')
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_lower_right.png'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_upper_left.png'))
         
         call fig%legend(location="lower right")  
-        call fig%savefig('/tmp/test/test_legend_lower_right.png')
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_lower_right.png'))
         
         print *, "PASS: Legend positioning tests completed"
     end subroutine test_legend_positioning
@@ -86,12 +87,12 @@ contains
         call fig%legend()
         
         ! Test all backends render legends correctly
-        call fig%savefig('output/test/test_legend/test_legend_render.png')
-        call fig%savefig('output/test/test_legend/test_legend_render.pdf')
-        call fig%savefig('output/test/test_legend/test_legend_render.txt')
-        call fig%savefig('/tmp/test/test_legend_render.png')
-        call fig%savefig('/tmp/test/test_legend_render.pdf')
-        call fig%savefig('/tmp/test/test_legend_render.txt')
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.png'))
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_legend/test_legend_render.txt'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.png'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.pdf'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_legend_render.txt'))
         
         print *, "PASS: Legend rendering tests completed"
     end subroutine test_legend_rendering

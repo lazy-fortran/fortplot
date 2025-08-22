@@ -1,6 +1,6 @@
 program test_security_validation
     !! Test security validation functions including single dot vulnerability  
-    use fortplot_security, only: is_safe_path
+    use fortplot_security, only: is_safe_path, get_test_output_path
     implicit none
     
     integer :: test_count, passed_count
@@ -38,7 +38,7 @@ program test_security_validation
     call test_path_validation("animation.mp4", .true., "Simple filename", test_count, passed_count)
     call test_path_validation("output/test.mp4", .true., "Subdirectory path", test_count, passed_count)
     call test_path_validation("my-video_file.mp4", .true., "Complex safe filename", test_count, passed_count)
-    call test_path_validation("/tmp/output.png", .true., "Absolute path", test_count, passed_count)
+    call test_path_validation(get_test_output_path("/tmp/output.png"), .true., "Absolute path", test_count, passed_count)
     call test_path_validation("plots/figure_2025.pdf", .true., "Year in filename", test_count, passed_count)
     
     print *, ""
