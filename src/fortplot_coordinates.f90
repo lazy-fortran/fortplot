@@ -132,13 +132,13 @@ contains
         real(wp), intent(in) :: x_norm(:), y_norm(:), z_norm(:)
         real(wp), intent(out) :: x2d(:), y2d(:)
         
-        real(wp) :: azim, elev
+        real(wp) :: azim, elev, dist
         
         ! Get default viewing angles
-        call get_default_view_angles(azim, elev)
+        call get_default_view_angles(azim, elev, dist)
         
         ! Project to 2D
-        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, x2d, y2d)
+        call project_3d_to_2d(x_norm, y_norm, z_norm, azim, elev, dist, x2d, y2d)
     end subroutine project_normalized_3d_data
 
     subroutine setup_3d_coordinate_system(self, x2d, y2d, orig_x_min, orig_x_max, &
@@ -183,9 +183,7 @@ contains
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
         ! Set backend to use projection coordinate system
-        call self%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max, &
-                                         self%margin_left, self%margin_right, &
-                                         self%margin_bottom, self%margin_top)
+        call self%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max)
     end subroutine save_and_set_backend_coordinates
 
     subroutine restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
@@ -195,9 +193,7 @@ contains
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
         ! Restore original coordinate system
-        call self%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max, &
-                                         self%margin_left, self%margin_right, &
-                                         self%margin_bottom, self%margin_top)
+        call self%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
     end subroutine restore_original_coordinate_system
 
     subroutine save_original_coordinates(self, orig_x_min, orig_x_max, orig_y_min, orig_y_max)

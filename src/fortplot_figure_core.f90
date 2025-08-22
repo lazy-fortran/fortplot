@@ -19,8 +19,7 @@ module fortplot_figure_core
     use fortplot_rendering, only: render_figure, savefig, show, figure_legend, &
                                   render_annotations, clear_streamlines, gather_subplot_plots
     use fortplot_coordinates, only: transform_annotation_coordinates, transform_quad_to_screen
-    use fortplot_streamplot_core, only: setup_streamplot_parameters, generate_streamlines, &
-                                       render_streamplot_arrows
+    use fortplot_streamplot_core, only: setup_streamplot_parameters, generate_streamlines
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                     PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &

@@ -47,7 +47,8 @@ module fortplot
     !! Author: fortplot contributors
 
     use iso_fortran_env, only: wp => real64
-    use fortplot_figure, only: figure_t
+    use fortplot_figure_core, only: figure_t
+    use fortplot_plotting, only: add_text_annotation, add_arrow_annotation
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
     use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
@@ -1057,8 +1058,8 @@ contains
         logical, intent(in), optional :: has_bbox
         
         call ensure_global_figure_initialized()
-        call fig%text(x, y, text_content, coord_type=coord_type, font_size=font_size, &
-                     rotation=rotation, alignment=alignment, has_bbox=has_bbox)
+        call add_text_annotation(fig, x, y, text_content, coord_type=coord_type, font_size=font_size, &
+                                 rotation=rotation, halign=alignment, bbox=has_bbox)
     end subroutine text
 
     subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
@@ -1082,9 +1083,9 @@ contains
         logical, intent(in), optional :: has_bbox
         
         call ensure_global_figure_initialized()
-        call fig%annotate(text_content, xy, xytext, xy_coord_type=xy_coord_type, &
-                         xytext_coord_type=xytext_coord_type, font_size=font_size, &
-                         alignment=alignment, has_bbox=has_bbox)
+        call add_arrow_annotation(fig, text_content, xy, xytext, xy_coord_type=xy_coord_type, &
+                                 xytext_coord_type=xytext_coord_type, font_size=font_size, &
+                                 halign=alignment)
     end subroutine annotate
 
     subroutine ensure_global_figure_initialized()

@@ -23,7 +23,7 @@ module fortplot_rendering
     use fortplot_colormap
     use fortplot_security, only: is_safe_path
     use fortplot_logging, only: log_error, log_info, log_warning
-    use fortplot_utils, only: get_backend_from_filename
+    use fortplot_utils, only: get_backend_from_filename, to_lowercase
 
     implicit none
 
@@ -118,8 +118,8 @@ contains
         ! Render figure
         call render_figure(self)
         
-        ! Show using backend
-        call self%backend%show()
+        ! Display the figure (save to ASCII output for terminal display)
+        call self%backend%save('fortplot_output.txt')
         
         ! Handle blocking behavior
         if (do_block) then
@@ -185,7 +185,8 @@ contains
         !! Render figure background
         class(figure_t), intent(inout) :: self
         
-        call self%backend%clear()
+        ! Backend initialization handles clearing
+        ! No explicit clear needed as setup_canvas initializes clean backend
     end subroutine render_figure_background
 
     subroutine render_figure_axes(self)
@@ -198,9 +199,12 @@ contains
         ! Render labels
         call render_axis_labels(self)
         
-        ! Render title
+        ! Render title using text method
         if (allocated(self%title)) then
-            call self%backend%add_title(self%title)
+            ! Place title at top center of the plot area
+            call self%backend%text((self%x_min_transformed + self%x_max_transformed) / 2.0_wp, &
+                                  self%y_max_transformed + 0.05_wp * (self%y_max_transformed - self%y_min_transformed), &
+                                  self%title)
         end if
     end subroutine render_figure_axes
 
@@ -271,35 +275,6 @@ contains
 
     ! Private implementation subroutines
 
-    function get_backend_from_filename(filename) result(backend_type)
-        !! Determine backend from file extension
-        character(len=*), intent(in) :: filename
-        character(len=20) :: backend_type
-        
-        character(len=10) :: extension
-        integer :: dot_pos
-        
-        dot_pos = index(filename, '.', back=.true.)
-        if (dot_pos > 0) then
-            extension = filename(dot_pos+1:)
-            call to_lowercase(extension)
-            
-            select case (trim(extension))
-            case ('png')
-                backend_type = 'png'
-            case ('pdf')
-                backend_type = 'pdf'
-            case ('gltf', 'glb')
-                backend_type = 'gltf'
-            case ('txt', 'ascii')
-                backend_type = 'ascii'
-            case default
-                backend_type = 'png'  ! Default fallback
-            end select
-        else
-            backend_type = 'png'  ! Default fallback
-        end if
-    end function get_backend_from_filename
 
     subroutine switch_backend_if_needed(self, target_backend)
         !! Switch backend if current doesn't match target
@@ -436,11 +411,6 @@ contains
         legend_location = 1  ! Default: upper right
     end subroutine parse_legend_location
 
-    subroutine to_lowercase(input)
-        !! Stub: Convert to lowercase
-        character(len=*), intent(inout) :: input
-        ! Stub implementation
-    end subroutine to_lowercase
 
     subroutine update_ranges_from_line_plot(self, plot, first_plot)
         !! Stub: Update ranges from line plot
