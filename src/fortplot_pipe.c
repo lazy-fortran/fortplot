@@ -40,7 +40,8 @@ int escape_windows_path(const char* input, char* output, size_t output_size);
 
 // Validate filename for safety (no command injection)
 int is_safe_filename_c(const char* filename) {
-    if (!filename || strlen(filename) == 0 || strlen(filename) > 512) {
+    const size_t MAX_FILENAME_LENGTH = 512;
+    if (!filename || strlen(filename) == 0 || strlen(filename) > MAX_FILENAME_LENGTH) {
         return 0;  // Invalid
     }
     
@@ -136,15 +137,18 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         close_ffmpeg_pipe_c();
     }
     
-    // SECURITY: Validate filename safety
+    // Validate filename safety
     if (!is_safe_filename_c(filename)) {
         fprintf(stderr, "Security error: Unsafe filename rejected: %s\n", filename);
         return -1;
     }
     
-    // SECURITY: Validate fps parameter
-    if (fps < 1 || fps > 120) {
-        fprintf(stderr, "Security error: Invalid fps value: %d\n", fps);
+    // Validate fps parameter (reasonable bounds for video)
+    const int MIN_FPS = 1;
+    const int MAX_FPS = 120;
+    if (fps < MIN_FPS || fps > MAX_FPS) {
+        fprintf(stderr, "Security error: Invalid fps value: %d (must be %d-%d)\n", 
+                fps, MIN_FPS, MAX_FPS);
         return -1;
     }
     
@@ -157,28 +161,30 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
     }
     
     // Build FFmpeg command with platform-specific controls
-    char command[1024];
-    char escaped_filename[512];
+    const size_t COMMAND_BUFFER_SIZE = 1024;
+    const size_t ESCAPED_FILENAME_SIZE = 512;
+    char command[COMMAND_BUFFER_SIZE];
+    char escaped_filename[ESCAPED_FILENAME_SIZE];
     
     #ifdef _WIN32
         // Windows: Escape path and use NUL for stderr redirection
-        if (!escape_windows_path(filename, escaped_filename, sizeof(escaped_filename))) {
+        if (!escape_windows_path(filename, escaped_filename, ESCAPED_FILENAME_SIZE)) {
             fprintf(stderr, "Error: Failed to escape Windows path\n");
             return -1;
         }
-        int ret = snprintf(command, sizeof(command), 
+        int ret = snprintf(command, COMMAND_BUFFER_SIZE, 
             "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>NUL",
             fps, escaped_filename);
     #else
         // Unix: Simple escaping and /dev/null for stderr
-        strncpy(escaped_filename, filename, sizeof(escaped_filename) - 1);
-        escaped_filename[sizeof(escaped_filename) - 1] = '\0';
-        int ret = snprintf(command, sizeof(command), 
+        strncpy(escaped_filename, filename, ESCAPED_FILENAME_SIZE - 1);
+        escaped_filename[ESCAPED_FILENAME_SIZE - 1] = '\0';
+        int ret = snprintf(command, COMMAND_BUFFER_SIZE, 
             "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>/dev/null",
             fps, escaped_filename);
     #endif
     
-    if (ret >= sizeof(command) || ret < 0) {
+    if (ret >= COMMAND_BUFFER_SIZE || ret < 0) {
         fprintf(stderr, "Error: FFmpeg command too long or formatting failed\n");
         return -1;
     }
