@@ -1,3 +1,6 @@
+title: Surface Plot User Guide
+---
+
 # Surface Plot User Guide
 
 ## Overview

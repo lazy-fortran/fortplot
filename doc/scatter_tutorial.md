@@ -1,3 +1,6 @@
+title: Scatter Plot Tutorial
+---
+
 # Scatter Plot Tutorial: From Basic to Advanced
 
 ## Step 1: Your First Scatter Plot

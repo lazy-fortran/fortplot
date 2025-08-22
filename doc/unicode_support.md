@@ -1,3 +1,6 @@
+title: Unicode and LaTeX Support
+---
+
 # Unicode and LaTeX Support in fortplot
 
 ## Overview

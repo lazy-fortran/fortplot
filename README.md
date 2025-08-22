@@ -352,6 +352,21 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] **Text annotations** (`text`, `annotate`) with multi-coordinate systems and typography
 
 
+## Documentation Generation
+
+Generate HTML documentation using FORD:
+
+```bash
+make doc
+```
+
+The documentation is generated in `build/doc/index.html` and includes:
+- API reference with full procedure documentation
+- Source code cross-references
+- Example gallery with working code
+
+**Browse documentation**: Open `file:///path/to/fortplot/build/doc/index.html`
+
 ## Why though?
 
 Mostly for the lulz and to help make Fortran great again. In addition,
