@@ -1,3 +1,6 @@
+title: MPEG Animation Validation Framework
+---
+
 # MPEG Animation Validation Framework
 
 ## Quick Start

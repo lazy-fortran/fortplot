@@ -1,3 +1,6 @@
+title: Advanced Scatter Plot Usage
+---
+
 # Advanced Scatter Plot Usage
 
 ## Performance Optimization
