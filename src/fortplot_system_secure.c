@@ -18,27 +18,92 @@
     #include <sys/wait.h>
 #endif
 
-// Secure directory creation
+// Helper function to normalize path separators for Windows
+#ifdef _WIN32
+static char* normalize_path_windows(const char* path) {
+    if (path == NULL) return NULL;
+    
+    char* normalized = strdup(path);
+    if (normalized == NULL) return NULL;
+    
+    // Convert forward slashes to backslashes on Windows
+    for (char* p = normalized; *p; p++) {
+        if (*p == '/') {
+            *p = '\\';
+        }
+    }
+    return normalized;
+}
+#endif
+
+// Secure directory creation with recursive parent creation
 int create_directory_c(const char* path) {
     if (path == NULL || strlen(path) == 0) {
         return -1;
     }
     
-    // Use mkdir system call directly - safer than shell commands
-    // This creates the final directory, not parent directories
     #ifdef _WIN32
-        if (_mkdir(path) == 0) {
+        // Normalize path for Windows (convert / to \)
+        char* normalized_path = normalize_path_windows(path);
+        if (normalized_path == NULL) {
+            return -1;
+        }
+        
+        // Try to create directory directly first
+        if (_mkdir(normalized_path) == 0) {
+            free(normalized_path);
             return 0;  // Success
         }
         
         if (errno == EEXIST) {
             // Directory already exists - check if it's actually a directory
-            DWORD attrs = GetFileAttributesA(path);
+            DWORD attrs = GetFileAttributesA(normalized_path);
             if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
+                free(normalized_path);
                 return 0;  // Success - directory exists
             }
         }
+        
+        // If direct creation failed, try recursive creation
+        char* path_copy = strdup(normalized_path);
+        free(normalized_path);  // Free normalized path, use copy for recursion
+        
+        if (path_copy == NULL) {
+            return -1;
+        }
+        
+        // Find last backslash (Windows path separator)
+        char* slash = strrchr(path_copy, '\\');
+        if (slash != NULL && slash != path_copy) {
+            *slash = '\0';
+            // Recursively create parent directory
+            int parent_result = create_directory_c(path_copy);
+            free(path_copy);
+            
+            if (parent_result != 0) {
+                return parent_result;
+            }
+            
+            // Try to create the target directory again
+            char* final_normalized = normalize_path_windows(path);
+            if (final_normalized == NULL) {
+                return -1;
+            }
+            
+            int result = _mkdir(final_normalized);
+            free(final_normalized);
+            
+            if (result == 0 || errno == EEXIST) {
+                return 0;
+            }
+        } else {
+            free(path_copy);
+        }
+        
+        return -1;
+        
     #else
+        // Unix/Linux path handling
         if (mkdir(path, 0755) == 0) {
             return 0;  // Success
         }
@@ -50,48 +115,33 @@ int create_directory_c(const char* path) {
                 return 0;  // Success - directory exists
             }
         }
-    #endif
-    
-    // For parent directory creation, we need to handle it recursively
-    char* path_copy = strdup(path);
-    if (path_copy == NULL) {
-        return -1;
-    }
-    
-    #ifdef _WIN32
-        char* slash = strrchr(path_copy, '\\');
-        if (slash == NULL) {
-            slash = strrchr(path_copy, '/');  // Support forward slash too
-        }
-    #else
-        char* slash = strrchr(path_copy, '/');
-    #endif
-    
-    if (slash != NULL && slash != path_copy) {
-        *slash = '\0';
-        // Recursively create parent
-        int parent_result = create_directory_c(path_copy);
-        if (parent_result != 0) {
-            free(path_copy);
-            return parent_result;
+        
+        // For parent directory creation, we need to handle it recursively
+        char* path_copy = strdup(path);
+        if (path_copy == NULL) {
+            return -1;
         }
         
-        // Now try to create the directory again
-        #ifdef _WIN32
-            if (_mkdir(path) == 0 || errno == EEXIST) {
+        char* slash = strrchr(path_copy, '/');
+        if (slash != NULL && slash != path_copy) {
+            *slash = '\0';
+            // Recursively create parent
+            int parent_result = create_directory_c(path_copy);
+            if (parent_result != 0) {
                 free(path_copy);
-                return 0;
+                return parent_result;
             }
-        #else
+            
+            // Now try to create the directory again
             if (mkdir(path, 0755) == 0 || errno == EEXIST) {
                 free(path_copy);
                 return 0;
             }
-        #endif
-    }
-    
-    free(path_copy);
-    return -1;
+        }
+        
+        free(path_copy);
+        return -1;
+    #endif
 }
 
 // Secure file opening with default application
