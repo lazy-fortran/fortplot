@@ -882,13 +882,40 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        ! For raster/PNG backends, draw matplotlib-style axes with margins
-        ! This would typically call the internal axes drawing routine
-        ! For now, just draw simple axes as a placeholder
+        real(wp) :: label_x, label_y
+        
+        ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
         
-        ! TODO: Add full axes implementation with ticks, labels, etc.
+        ! Draw title at top if present
+        if (present(title)) then
+            if (allocated(title)) then
+                label_x = (x_min + x_max) / 2.0_wp
+                label_y = y_max + 0.05_wp * (y_max - y_min)
+                call this%text(label_x, label_y, title)
+            end if
+        end if
+        
+        ! Draw xlabel centered below x-axis
+        if (present(xlabel)) then
+            if (allocated(xlabel)) then
+                label_x = (x_min + x_max) / 2.0_wp
+                label_y = y_min - 0.05_wp * (y_max - y_min)
+                call this%text(label_x, label_y, xlabel)
+            end if
+        end if
+        
+        ! Draw ylabel to the left of y-axis
+        if (present(ylabel)) then
+            if (allocated(ylabel)) then
+                ! For raster, ylabel needs special handling for rotation
+                ! For now, just place it horizontally
+                label_x = x_min - 0.1_wp * (x_max - x_min)
+                label_y = (y_min + y_max) / 2.0_wp
+                call this%text(label_x, label_y, ylabel)
+            end if
+        end if
     end subroutine raster_draw_axes_and_labels
 
     subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)

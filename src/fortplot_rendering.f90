@@ -363,15 +363,40 @@ contains
     ! Note: These would contain full implementations in the complete version
 
     subroutine render_axis_framework(self)
-        !! Stub: Render axis framework
+        !! Render axis framework (axes, ticks, grid)
         class(figure_t), intent(inout) :: self
-        ! Stub implementation
+        logical :: has_3d
+        integer :: i
+        
+        ! Determine if we have any 3D plots
+        has_3d = .false.
+        if (allocated(self%plots)) then
+            do i = 1, self%plot_count
+                if (self%plots(i)%is_3d()) then
+                    has_3d = .true.
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Call backend to draw axes and labels
+        call self%backend%draw_axes_and_labels_backend( &
+            self%xscale, self%yscale, self%symlog_threshold, &
+            self%x_min, self%x_max, self%y_min, self%y_max, &
+            self%title, self%xlabel, self%ylabel, &
+            self%z_min, self%z_max, has_3d)
     end subroutine render_axis_framework
 
     subroutine render_axis_labels(self)
-        !! Stub: Render axis labels
+        !! Render axis labels (xlabel, ylabel, title)
+        !! Note: Labels are now rendered as part of draw_axes_and_labels_backend
+        !! This method is kept for interface compatibility but the actual
+        !! rendering happens in render_axis_framework
         class(figure_t), intent(inout) :: self
-        ! Stub implementation
+        
+        ! Labels are already rendered in render_axis_framework
+        ! via the backend's draw_axes_and_labels_backend method
+        ! This stub is kept for backward compatibility
     end subroutine render_axis_labels
 
     subroutine render_single_arrow(self, arrow_idx)

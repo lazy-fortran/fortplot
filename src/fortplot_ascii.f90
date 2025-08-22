@@ -25,6 +25,8 @@ module fortplot_ascii
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
+        character(len=:), allocatable :: xlabel_text
+        character(len=:), allocatable :: ylabel_text
         logical :: title_set = .false.  ! Track if title was explicitly set
         type(text_element_t), allocatable :: text_elements(:)
         integer :: num_text_elements = 0
@@ -198,11 +200,6 @@ contains
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
         
-        ! Only store as title if not explicitly set and no title allocated yet
-        if (.not. this%title_set .and. .not. allocated(this%title_text)) then
-            this%title_text = processed_text(1:processed_len)
-        end if
-        
         ! Store text element for later rendering
         if (this%num_text_elements < size(this%text_elements)) then
             this%num_text_elements = this%num_text_elements + 1
@@ -301,6 +298,11 @@ contains
         end do
         
         print '(A)', '+' // repeat('-', this%plot_width) // '+'
+        
+        ! Print xlabel below the plot if present
+        if (allocated(this%xlabel_text)) then
+            call print_centered_title(this%xlabel_text, this%plot_width)
+        end if
     end subroutine output_to_terminal
     
     subroutine output_to_file(this, unit)
@@ -326,6 +328,11 @@ contains
         end do
         
         write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
+        
+        ! Write xlabel below the plot if present
+        if (allocated(this%xlabel_text)) then
+            call write_centered_title(unit, this%xlabel_text, this%plot_width)
+        end if
     end subroutine output_to_file
 
     integer function get_char_density(char)
@@ -842,14 +849,31 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
+        real(wp) :: label_x, label_y
+        
         ! ASCII backend: explicitly set title and draw simple axes
         if (present(title)) then
             if (allocated(title)) then
                 call this%set_title(title)
             end if
         end if
+        
+        ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
+        
+        ! Store xlabel and ylabel for rendering outside the plot frame
+        if (present(xlabel)) then
+            if (allocated(xlabel)) then
+                this%xlabel_text = xlabel
+            end if
+        end if
+        
+        if (present(ylabel)) then
+            if (allocated(ylabel)) then
+                this%ylabel_text = ylabel
+            end if
+        end if
     end subroutine ascii_draw_axes_and_labels
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)
