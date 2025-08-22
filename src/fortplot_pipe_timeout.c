@@ -11,6 +11,10 @@
     #define popen _popen
     #define pclose _pclose
     typedef HANDLE timeout_handle_t;
+    // Binary mode flag for Windows
+    #ifndef _O_BINARY
+        #define _O_BINARY 0x8000
+    #endif
 #else
     #include <unistd.h>
     #include <sys/wait.h>
@@ -93,7 +97,7 @@ int check_ffmpeg_available_timeout_c(void) {
     const char* test_command;
     
 #ifdef _WIN32
-    test_command = "ffmpeg -version >nul 2>&1";
+    test_command = "ffmpeg -version >NUL 2>&1";
 #else
     test_command = "ffmpeg -version >/dev/null 2>&1";
 #endif
@@ -141,6 +145,16 @@ FILE* popen_timeout_c(const char* command, const char* mode, int timeout_ms) {
         cleanup_timeout();
         return NULL;
     }
+    
+#ifdef _WIN32
+    // Windows: Ensure binary mode for pipe if writing mode
+    if (strchr(mode, 'w') != NULL || strchr(mode, 'b') != NULL) {
+        int fd = _fileno(pipe);
+        if (fd != -1) {
+            _setmode(fd, _O_BINARY);
+        }
+    }
+#endif
     
     // Note: Keep timeout active for subsequent operations
     return pipe;

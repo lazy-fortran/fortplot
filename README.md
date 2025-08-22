@@ -215,14 +215,19 @@ anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
 call anim%save("animation.mp4", fps=24, status=status)
 if (status /= 0) then
     print *, "ERROR: Animation save failed. Check ffmpeg installation."
+    print *, "Windows: choco install ffmpeg"
+    print *, "Linux: sudo apt install ffmpeg"
 end if
 ```
 
-**MPEG Validation**: Use comprehensive validation framework to verify animation quality:
-```fortran
-logical :: is_valid
-is_valid = validate_mpeg_comprehensive("animation.mp4")
-```
+**Windows Support (Issue #189 Fixed)**: Binary pipe handling and path escaping now work correctly on Windows.
+
+**Cross-Platform FFmpeg Setup**:
+- **Windows**: `choco install ffmpeg` or download from ffmpeg.org
+- **Linux**: `sudo apt install ffmpeg` (Ubuntu/Debian) or equivalent
+- **macOS**: `brew install ffmpeg`
+
+**File Validation**: Use `ffprobe -v error -show_format filename.mp4` to verify video integrity.
 
 For more examples, see the [example directory](example) and run
 
@@ -242,9 +247,10 @@ to build and run them.
 
 **Optional:**
 - `ffmpeg` - Required for saving animations in compressed video formats (MP4, AVI, MKV)
-  - **5-Layer Validation**: Comprehensive framework prevents false positives
-  - **External validation**: FFprobe integration for format verification
-  - **Documentation**: See [MPEG Validation Guide](doc/mpeg_validation.md) for details
+  - **Windows Support**: Issue #189 fixed - binary pipes and path escaping work correctly
+  - **Cross-platform**: Install via `choco install ffmpeg` (Windows), `brew install ffmpeg` (macOS), or package manager (Linux)
+  - **Setup Guide**: See [Windows FFmpeg Setup](doc/windows_ffmpeg_setup.md) for Windows-specific installation
+  - **Validation**: FFprobe integration for format verification
 
 ### For fpm (Fortran Package Manager) projects
 

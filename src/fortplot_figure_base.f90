@@ -103,6 +103,8 @@ module fortplot_figure_base
         procedure :: set_subplot
         procedure :: set_line_width
         procedure :: initialize_default_subplot
+        procedure :: set_ydata
+        procedure :: add_plot
     end type figure_t
 
 contains
@@ -294,5 +296,112 @@ contains
         allocate(self%subplots(1)%plots(self%subplots(1)%max_plots))
         self%subplots(1)%plot_count = 0
     end subroutine initialize_default_subplot
+
+    subroutine set_ydata(self, plot_index, y_new)
+        !! Update y-data for an existing plot
+        !! Useful for animations and interactive updates
+        !! 
+        !! Arguments:
+        !!   plot_index: Index of the plot to update (1-based)
+        !!   y_new: New y-data array (must match size of original)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: plot_index
+        real(wp), dimension(:), intent(in) :: y_new
+        
+        integer :: subplot_idx
+        
+        ! Get current subplot (default to 1 if not set)
+        subplot_idx = self%current_subplot
+        if (subplot_idx < 1 .or. subplot_idx > size(self%subplots)) then
+            subplot_idx = 1
+        end if
+        
+        ! Check if plot exists
+        if (plot_index < 1 .or. plot_index > self%subplots(subplot_idx)%plot_count) then
+            call log_warning("set_ydata: Invalid plot index")
+            return
+        end if
+        
+        ! Check if sizes match
+        if (size(y_new) /= size(self%subplots(subplot_idx)%plots(plot_index)%y)) then
+            call log_warning("set_ydata: Size mismatch between new and existing y data")
+            return
+        end if
+        
+        ! Update the y data
+        self%subplots(subplot_idx)%plots(plot_index)%y = y_new
+        
+        ! Mark figure as needing re-render
+        self%rendered = .false.
+    end subroutine set_ydata
+    
+    subroutine add_plot(self, x, y, label, linestyle, color, marker)
+        !! Add a line plot to the figure (OO API)
+        !! Implements inline to avoid circular dependency
+        use fortplot_plot_data, only: PLOT_TYPE_LINE
+        use fortplot_colors, only: parse_color
+        
+        class(figure_t), intent(inout) :: self
+        real(wp), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: label
+        character(len=*), intent(in), optional :: linestyle
+        character(len=*), intent(in), optional :: color
+        character(len=*), intent(in), optional :: marker
+        
+        integer :: plot_idx, color_idx, subplot_idx
+        real(wp) :: rgb(3)
+        logical :: success
+        
+        ! Get current subplot
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        
+        ! Store data
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
+        self%subplots(subplot_idx)%plots(plot_idx)%x = x
+        self%subplots(subplot_idx)%plots(plot_idx)%y = y
+        
+        ! Set label
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        else
+            self%subplots(subplot_idx)%plots(plot_idx)%label = ''
+        end if
+        
+        ! Set linestyle 
+        if (present(linestyle)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = linestyle
+        else
+            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = '-'
+        end if
+        
+        ! Set color 
+        if (present(color)) then
+            call parse_color(color, rgb, success)
+            if (success) then
+                self%subplots(subplot_idx)%plots(plot_idx)%color = rgb
+            else
+                ! Use default color from palette
+                color_idx = mod(plot_idx - 1, 6) + 1
+                self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
+            end if
+        else
+            ! No color specified, use default from palette
+            color_idx = mod(plot_idx - 1, 6) + 1
+            self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
+        end if
+        
+        ! Set marker 
+        if (present(marker)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+        else
+            self%subplots(subplot_idx)%plots(plot_idx)%marker = ''
+        end if
+    end subroutine add_plot
+    
 
 end module fortplot_figure_base

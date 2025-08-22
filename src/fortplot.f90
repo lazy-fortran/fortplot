@@ -843,9 +843,12 @@ contains
         !! Useful for animations and interactive updates
         integer, intent(in) :: plot_index
         real(8), dimension(:), intent(in) :: y_new
-        ! TODO: set_ydata not implemented in refactored architecture
-        ! This functionality needs to be implemented in figure_base
-        call log_warning("set_ydata not yet implemented in refactored architecture")
+        
+        ! Ensure figure is initialized
+        call ensure_global_figure_initialized()
+        
+        ! Call the type-bound procedure
+        call fig%set_ydata(plot_index, y_new)
     end subroutine set_ydata
 
     function is_gui_available() result(gui_available)
