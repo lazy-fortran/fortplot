@@ -352,6 +352,24 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] **Text annotations** (`text`, `annotate`) with multi-coordinate systems and typography
 
 
+## Testing
+
+### Run Tests
+```bash
+make test
+```
+
+### Control Warning Output
+```bash
+# Suppress warnings for clean test output
+FORTPLOT_SUPPRESS_WARNINGS=1 make test
+
+# Force warnings even in CI environments
+FORTPLOT_FORCE_WARNINGS=1 make test
+```
+
+See [Testing Guide](doc/testing_guide.md) for complete testing documentation.
+
 ## Documentation Generation
 
 Generate HTML documentation using FORD:
