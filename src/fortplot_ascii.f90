@@ -694,17 +694,33 @@ contains
     end function ascii_get_height_scale
 
     subroutine ascii_fill_quad(this, x_quad, y_quad)
-        !! Fill quadrilateral using polymorphic interface (approximation)
+        !! Fill quadrilateral using character mapping based on current color
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
         
         integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
+        character(len=1) :: fill_char
+        real(wp) :: color_intensity
+        integer :: char_index
         
         ! Convert coordinates to ASCII canvas coordinates
         do i = 1, 4
             px(i) = nint((x_quad(i) - this%x_min) / (this%x_max - this%x_min) * this%plot_width) + 1
             py(i) = nint((y_quad(i) - this%y_min) / (this%y_max - this%y_min) * this%plot_height) + 1
         end do
+        
+        ! Calculate color intensity from RGB values (luminance formula)
+        color_intensity = 0.299_wp * this%current_r + 0.587_wp * this%current_g + 0.114_wp * this%current_b
+        
+        ! Map color intensity to ASCII character index
+        if (color_intensity <= 0.001_wp) then
+            char_index = 1  ! Space for very low intensity
+        else
+            ! Map 0.0-1.0 intensity to character indices 2-len(ASCII_CHARS)
+            char_index = min(len(ASCII_CHARS), max(2, int(color_intensity * (len(ASCII_CHARS) - 1)) + 2))
+        end if
+        
+        fill_char = ASCII_CHARS(char_index:char_index)
         
         ! Simple approximation: fill bounding rectangle
         min_x = max(1, min(minval(px), this%plot_width))
@@ -714,7 +730,11 @@ contains
         
         do j = min_y, max_y
             do i = min_x, max_x
-                this%canvas(j, i) = '#'
+                ! Use density-aware character selection
+                if (this%canvas(j, i) == ' ' .or. &
+                    get_char_density(fill_char) > get_char_density(this%canvas(j, i))) then
+                    this%canvas(j, i) = fill_char
+                end if
             end do
         end do
     end subroutine ascii_fill_quad
