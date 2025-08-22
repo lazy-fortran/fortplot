@@ -39,20 +39,22 @@ module fortplot
     !!   ! Advanced figure with multiple plots
     !!   type(figure_t) :: fig
     !!   call fig%initialize(800, 600)
-    !!   call add_plot(fig, x, y, label="data", linestyle='b-o')
-    !!   call add_contour(fig, x_grid, y_grid, z_field)
+    !!   call figure_add_plot(fig, x, y, label="data", linestyle='b-o')
+    !!   call figure_add_contour(fig, x_grid, y_grid, z_field)
     !!   call figure_legend(fig, )
-    !!   call savefig(fig, 'results.pdf')
+    !!   call figure_savefig(fig, 'results.pdf')
     !!
     !! Author: fortplot contributors
 
     use iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_plotting, only: add_text_annotation, add_arrow_annotation, add_scatter_2d, add_scatter_3d, &
-                                add_3d_plot, add_surface, add_plot, add_contour, add_contour_filled, &
-                                add_pcolormesh, streamplot, bar, barh, hist, errorbar
-    use fortplot_rendering, only: savefig, figure_legend
-    use fortplot_rendering, show_figure_backend => show
+                                figure_add_plot => add_plot, figure_add_contour => add_contour, &
+                                figure_add_contour_filled => add_contour_filled, figure_add_pcolormesh => add_pcolormesh, &
+                                figure_streamplot => streamplot, figure_bar => bar, figure_barh => barh, &
+                                figure_hist => hist, figure_errorbar => errorbar, figure_add_3d_plot => add_3d_plot, &
+                                figure_add_surface => add_surface
+    use fortplot_rendering, only: figure_legend, render_show => show, figure_savefig => savefig
     use fortplot_format_parser, only: parse_format_string, contains_format_chars
     use fortplot_animation, only: animation_t, FuncAnimation
     use fortplot_logging, only: set_log_level, log_error, log_warning, log_info, &
@@ -233,7 +235,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
 
         call ensure_global_figure_initialized()
-        call add_plot(fig, x, y, label=label, linestyle=linestyle)
+        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
     subroutine contour(x, y, z, levels, label)
@@ -255,7 +257,7 @@ contains
         real(8), dimension(:), intent(in), optional :: levels
         character(len=*), intent(in), optional :: label
 
-        call add_contour(fig, x, y, z, levels=levels, label=label)
+        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
     end subroutine contour
 
     subroutine contour_filled(x, y, z, levels, colormap, show_colorbar, label)
@@ -311,7 +313,7 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
 
-        call add_contour_filled(fig, x, y, z, levels=levels, colormap=colormap, &
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, colormap=colormap, &
                                    show_colorbar=show_colorbar, label=label)
     end subroutine contour_filled
 
@@ -381,7 +383,7 @@ contains
         character(len=*), intent(in), optional :: edgecolors
         real(8), intent(in), optional :: linewidths
 
-        call add_pcolormesh(fig, x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
+        call figure_add_pcolormesh(fig, x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine pcolormesh
 
@@ -442,7 +444,7 @@ contains
         real(wp), intent(in), optional :: arrowsize
         character(len=*), intent(in), optional :: arrowstyle
 
-        call streamplot(fig, x, y, u, v, density=density, arrowsize=arrowsize, arrowstyle=arrowstyle)
+        call figure_streamplot(fig, x, y, u, v, density=density, arrowsize=arrowsize, arrowstyle=arrowstyle)
     end subroutine streamplot
 
     subroutine bar(x, heights, width, label, color)
@@ -459,7 +461,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), dimension(3), intent(in), optional :: color
 
-        call bar(fig, x, heights, width=width, label=label, color=color)
+        call figure_bar(fig, x, heights, width=width, label=label, color=color)
     end subroutine bar
 
     subroutine barh(y, widths, height, label, color)
@@ -476,7 +478,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), dimension(3), intent(in), optional :: color
 
-        call barh(fig, y, widths, height=height, label=label, color=color)
+        call figure_barh(fig, y, widths, height=height, label=label, color=color)
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -501,7 +503,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        call hist(fig, data, bins=bins, density=density, label=label, color=color)
+        call figure_hist(fig, data, bins=bins, density=density, label=label, color=color)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -527,7 +529,7 @@ contains
         real(8), intent(in), optional :: color(3)
 
         call ensure_global_figure_initialized()
-        call hist(fig, data, bins=bins, density=density, label=label, color=color)
+        call figure_hist(fig, data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -580,8 +582,8 @@ contains
         if (present(xlabel_text)) call fig%set_xlabel(xlabel_text)
         if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
 
-        call add_plot(fig, x, y, label=label)
-        call show_figure_backend(fig)
+        call figure_add_plot(fig, x, y, label=label)
+        call render_show(fig)
     end subroutine show_data
 
     subroutine show_figure(blocking)
@@ -598,7 +600,7 @@ contains
             call show_viewer_implementation(blocking=blocking)
         else
             ! Fallback to ASCII display
-            call show_figure_backend(fig)
+            call render_show(fig)
         end if
     end subroutine show_figure
 
@@ -671,7 +673,7 @@ contains
         !!   blocking: Optional - if true, wait for user input after save (default: false)
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
-        call savefig(fig, filename, blocking=blocking)
+        call figure_savefig(fig, filename, blocking=blocking)
     end subroutine savefig
 
     subroutine add_plot(x, y, label, linestyle)
@@ -685,7 +687,7 @@ contains
         real(8), dimension(:), intent(in) :: x, y
         character(len=*), intent(in), optional :: label, linestyle
 
-        call add_plot(fig, x, y, label=label, linestyle=linestyle)
+        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
     end subroutine add_plot
 
     subroutine add_contour(x, y, z, levels, label)
@@ -700,7 +702,7 @@ contains
         real(8), dimension(:,:), intent(in) :: z
         real(8), dimension(:), intent(in), optional :: levels
         character(len=*), intent(in), optional :: label
-        call add_contour(fig, x, y, z, levels=levels, label=label)
+        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
     end subroutine add_contour
 
     subroutine add_contour_filled(x, y, z, levels, colormap, show_colorbar, label)
@@ -710,7 +712,7 @@ contains
         real(8), dimension(:), intent(in), optional :: levels
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
-        call add_contour_filled(fig, x, y, z, levels=levels, colormap=colormap, &
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, colormap=colormap, &
                                    show_colorbar=show_colorbar, label=label)
     end subroutine add_contour_filled
 
@@ -723,7 +725,7 @@ contains
         character(len=*), intent(in), optional :: edgecolors
         real(8), intent(in), optional :: linewidths
         call ensure_global_figure_initialized()
-        call add_pcolormesh(fig, x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
+        call figure_add_pcolormesh(fig, x, y, c, colormap=colormap, vmin=vmin, vmax=vmax, &
                                edgecolors=edgecolors, linewidths=linewidths)
     end subroutine add_pcolormesh
 
@@ -750,7 +752,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(8), dimension(3), intent(in), optional :: color
 
-        call errorbar(fig, x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+        call figure_errorbar(fig, x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
                          yerr_lower=yerr_lower, yerr_upper=yerr_upper, &
                          label=label, linestyle=linestyle, marker=marker, color=color)
     end subroutine errorbar
@@ -766,7 +768,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(8), dimension(3), intent(in), optional :: color
 
-        call errorbar(fig, x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
+        call figure_errorbar(fig, x, y, xerr=xerr, yerr=yerr, xerr_lower=xerr_lower, xerr_upper=xerr_upper, &
                          yerr_lower=yerr_lower, yerr_upper=yerr_upper, &
                          label=label, linestyle=linestyle, marker=marker, color=color)
     end subroutine add_errorbar
@@ -785,7 +787,7 @@ contains
         real(8), intent(in), optional :: markersize, linewidth
         
         call ensure_global_figure_initialized()
-        call add_3d_plot(fig, x, y, z, label=label, linestyle=linestyle, &
+        call figure_add_3d_plot(fig, x, y, z, label=label, linestyle=linestyle, &
                          markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
@@ -801,7 +803,7 @@ contains
         character(len=*), intent(in), optional :: label
         
         call ensure_global_figure_initialized()
-        call add_surface(fig, x, y, z, label=label)
+        call figure_add_surface(fig, x, y, z, label=label)
     end subroutine add_surface
 
     subroutine set_xscale(scale, threshold)
@@ -936,7 +938,7 @@ contains
         end if
         
         ! Save figure to temporary file
-        call savefig(fig, temp_filename)
+        call figure_savefig(fig, temp_filename)
         
         ! Open with secure viewer launch
         call safe_launch_viewer(temp_filename, success)
