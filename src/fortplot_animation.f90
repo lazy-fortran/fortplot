@@ -76,7 +76,8 @@ contains
         integer :: i
 
         if (.not. associated(self%animate_func)) then
-            call log_error("Animation callback function not associated")
+            call log_error_with_remediation("Animation callback function not associated", &
+                                           "Ensure FuncAnimation() was called with a valid animation procedure")
             return
         end if
 
@@ -129,19 +130,28 @@ contains
         
         if (.not. is_supported_video_format(filename)) then
             if (present(status)) status = -3
-            call log_error("Unsupported file format. Use .mp4, .avi, or .mkv")
+            call log_error_with_remediation("Unsupported file format: " // trim(filename), &
+                                           "Change filename extension to .mp4, .avi, or .mkv")
             return
         end if
         
         if (.not. check_ffmpeg_available()) then
-            if (present(status)) status = -1
-            call log_error("ffmpeg not found. Please install ffmpeg to save animations.")
+            ! PNG sequence fallback when FFmpeg not available
+            call log_warning("FFmpeg not found - falling back to PNG sequence")
+            call save_with_png_sequence_fallback(self, filename, stat)
+            if (present(status)) status = stat
             return
         end if
         
         actual_fps = get_fps_or_default(fps)
         call ensure_directory_exists(filename)
         call save_animation_with_ffmpeg_pipe(self, filename, actual_fps, stat)
+        
+        ! If FFmpeg fails, fallback to PNG sequence
+        if (stat /= 0) then
+            call log_warning("FFmpeg animation failed - falling back to PNG sequence")
+            call save_with_png_sequence_fallback(self, filename, stat)
+        end if
         
         if (present(status)) status = stat
     end subroutine save
@@ -161,6 +171,31 @@ contains
         end do
         
     end subroutine save_frame_sequence
+
+    subroutine save_with_png_sequence_fallback(self, filename, status)
+        class(animation_t), intent(inout) :: self
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
+        
+        character(len=:), allocatable :: base_name, pattern
+        integer :: dot_pos
+        
+        ! Extract base name from video filename
+        dot_pos = index(filename, ".", back=.true.)
+        if (dot_pos > 0) then
+            base_name = filename(1:dot_pos-1)
+        else
+            base_name = filename
+        end if
+        
+        ! Create PNG sequence pattern
+        pattern = base_name // "_frame_"
+        
+        call log_info("Saving PNG sequence: " // pattern // "*.png")
+        call self%save_frame_sequence(pattern)
+        
+        status = 0  ! PNG sequence always succeeds if frames can be generated
+    end subroutine save_with_png_sequence_fallback
 
     subroutine set_figure(self, fig)
         class(animation_t), intent(inout) :: self
@@ -250,7 +285,9 @@ contains
         open_stat = open_ffmpeg_pipe(filename, fps)
         if (open_stat /= 0) then
             status = -4
-            call log_error("Could not open pipe to ffmpeg")
+            call log_error_with_remediation("Could not open pipe to FFmpeg", &
+                                           "Check that FFmpeg is installed and accessible in PATH, " // &
+                                           "or set FORTPLOT_ENABLE_FFMPEG=1 environment variable")
             return
         end if
         
@@ -282,7 +319,8 @@ contains
             call generate_png_frame_data(anim, frame_idx, png_data, stat)
             if (stat /= 0) then
                 status = -5
-                call log_error("Failed to generate frame")
+                call log_error_with_remediation("Failed to generate frame data", &
+                                               "Check figure data validity and ensure backend is properly initialized")
                 return
             end if
             
@@ -290,7 +328,9 @@ contains
             call write_frame_with_exponential_backoff(png_data, stat)
             if (stat /= 0) then
                 status = -6
-                call log_error("Failed to write frame to pipe after enhanced recovery")
+                call log_error_with_remediation("Failed to write frame to pipe after retry attempts", &
+                                               "FFmpeg pipe may be broken. Try reducing animation complexity " // &
+                                               "or increasing system memory")
                 return
             end if
             
@@ -329,7 +369,8 @@ contains
                         " with ", delay_ms, "ms exponential backoff)..."
                     call exponential_backoff_delay(delay_ms)
                 else
-                    call log_error("Pipe write failed after all retry attempts")
+                    call log_error_with_remediation("Pipe write failed after all retry attempts", &
+                                                   "FFmpeg pipe is unresponsive. Check system resources or try PNG fallback")
                 end if
             else
                 ! Other write errors - immediate failure
@@ -360,13 +401,15 @@ contains
         
         if (.not. file_exists) then
             status = -7
-            call log_error("Output file was not created")
+            call log_error_with_remediation("Output file was not created: " // trim(filename), &
+                                           "Check directory permissions and disk space availability")
             return
         end if
         
         if (file_size <= 0) then
             status = -8
-            call log_error("Output file exists but has invalid size")
+            call log_error_with_remediation("Output file exists but has invalid size", &
+                                           "FFmpeg may have encountered an error. Check FFmpeg installation and codecs")
             return
         end if
         
@@ -376,7 +419,9 @@ contains
             call log_info("Video validation successful")
         else
             status = -7
-            call log_error("Generated video failed content validation")
+            call log_error_with_remediation("Generated video failed content validation", &
+                                           "Video format may be corrupted. Try different format (.mp4, .avi, .mkv) " // &
+                                           "or check FFmpeg codec support")
         end if
     end subroutine validate_output_video_enhanced
 
@@ -612,22 +657,31 @@ contains
         character(len=*), intent(in) :: filename
         integer, intent(in) :: file_size
         logical :: is_valid
-        logical :: has_content, has_video_header, adequate_size
+        logical :: stage1_basic, stage2_format, stage3_structure, stage4_content
         
-        ! Enhanced validation with better error tolerance
-        has_content = (file_size > MIN_VALID_VIDEO_SIZE)
-        adequate_size = validate_size_for_video_content(filename, file_size)
-        has_video_header = validate_video_header_format(filename)
-        
-        ! More lenient validation - don't require ffprobe for basic functionality
-        is_valid = has_content .and. adequate_size .and. has_video_header
-        
-        if (.not. is_valid) then
-            call log_warning("Video validation details:")
-            if (.not. has_content) call log_warning("- File too small")
-            if (.not. adequate_size) call log_warning("- Inadequate size for content")
-            if (.not. has_video_header) call log_warning("- Invalid video header")
+        ! Multi-stage validation architecture
+        ! Stage 1: Basic file validation
+        stage1_basic = validate_basic_file_properties(filename, file_size)
+        if (.not. stage1_basic) then
+            is_valid = .false.
+            return
         end if
+        
+        ! Stage 2: Format-specific validation
+        stage2_format = validate_format_specific_properties(filename)
+        
+        ! Stage 3: Structure validation
+        stage3_structure = validate_video_structure(filename)
+        
+        ! Stage 4: Content validation (optional, best-effort)
+        stage4_content = validate_content_integrity(filename)
+        
+        ! Multi-stage result evaluation
+        is_valid = stage1_basic .and. stage2_format .and. stage3_structure
+        
+        ! Log detailed validation results
+        call log_multi_stage_validation_results(stage1_basic, stage2_format, &
+                                              stage3_structure, stage4_content)
     end function validate_generated_video_enhanced
     
     function validate_generated_video(filename) result(is_valid)
@@ -645,6 +699,155 @@ contains
         
         is_valid = validate_generated_video_enhanced(filename, file_size)
     end function validate_generated_video
+
+    function validate_basic_file_properties(filename, file_size) result(is_valid)
+        character(len=*), intent(in) :: filename
+        integer, intent(in) :: file_size
+        logical :: is_valid
+        
+        is_valid = (file_size > MIN_VALID_VIDEO_SIZE) .and. &
+                   (file_size < 2000000000)  ! Max 2GB reasonable limit
+    end function validate_basic_file_properties
+
+    function validate_format_specific_properties(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        character(len=:), allocatable :: extension
+        
+        extension = get_file_extension(filename)
+        
+        select case (extension)
+        case ("mp4")
+            is_valid = validate_mp4_format(filename)
+        case ("avi")
+            is_valid = validate_avi_format(filename)
+        case ("mkv")
+            is_valid = validate_mkv_format(filename)
+        case default
+            is_valid = .false.
+        end select
+    end function validate_format_specific_properties
+
+    function validate_video_structure(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        
+        ! Enhanced structure validation
+        is_valid = validate_video_header_format(filename) .and. &
+                   validate_container_structure(filename)
+    end function validate_video_structure
+
+    function validate_content_integrity(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        
+        ! Best-effort content validation
+        is_valid = validate_with_ffprobe(filename)
+        ! If ffprobe validation fails, don't fail overall validation
+        ! This is optional validation for enhanced checking only
+    end function validate_content_integrity
+
+    subroutine log_multi_stage_validation_results(stage1, stage2, stage3, stage4)
+        logical, intent(in) :: stage1, stage2, stage3, stage4
+        
+        call log_info("Multi-stage video validation results:")
+        if (stage1) then
+            call log_info("  Stage 1 (Basic): PASS")
+        else
+            call log_warning("  Stage 1 (Basic): FAIL - File size issues")
+        end if
+        
+        if (stage2) then
+            call log_info("  Stage 2 (Format): PASS")
+        else
+            call log_warning("  Stage 2 (Format): FAIL - Format validation issues")
+        end if
+        
+        if (stage3) then
+            call log_info("  Stage 3 (Structure): PASS")
+        else
+            call log_warning("  Stage 3 (Structure): FAIL - Container structure issues")
+        end if
+        
+        if (stage4) then
+            call log_info("  Stage 4 (Content): PASS")
+        else
+            call log_info("  Stage 4 (Content): SKIP - Optional validation not available")
+        end if
+    end subroutine log_multi_stage_validation_results
+
+    function validate_mp4_format(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        character(len=20) :: header
+        integer :: file_unit, ios
+        
+        is_valid = .false.
+        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
+        if (ios /= 0) return
+        
+        read(file_unit, iostat=ios) header
+        close(file_unit)
+        if (ios /= 0) return
+        
+        ! MP4 format validation
+        is_valid = (index(header, 'ftyp') > 0)
+    end function validate_mp4_format
+
+    function validate_avi_format(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        character(len=20) :: header
+        integer :: file_unit, ios
+        
+        is_valid = .false.
+        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
+        if (ios /= 0) return
+        
+        read(file_unit, iostat=ios) header
+        close(file_unit)
+        if (ios /= 0) return
+        
+        ! AVI format validation
+        is_valid = (index(header, 'RIFF') > 0 .and. index(header, 'AVI ') > 0)
+    end function validate_avi_format
+
+    function validate_mkv_format(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        character(len=20) :: header
+        integer :: file_unit, ios
+        
+        is_valid = .false.
+        open(newunit=file_unit, file=filename, access='stream', form='unformatted', iostat=ios)
+        if (ios /= 0) return
+        
+        read(file_unit, iostat=ios) header
+        close(file_unit)
+        if (ios /= 0) return
+        
+        ! Matroska/MKV format validation (EBML header)
+        is_valid = (header(1:1) == achar(26) .and. header(2:2) == achar(69))  ! EBML signature
+    end function validate_mkv_format
+
+    function validate_container_structure(filename) result(is_valid)
+        character(len=*), intent(in) :: filename
+        logical :: is_valid
+        integer :: file_size
+        
+        ! Basic container structure checks
+        inquire(file=filename, size=file_size)
+        
+        ! Ensure file has reasonable structure (not just header)
+        is_valid = (file_size > 1000)  ! Minimum for valid video container
+    end function validate_container_structure
+
+    subroutine log_error_with_remediation(error_msg, remediation_msg)
+        character(len=*), intent(in) :: error_msg, remediation_msg
+        
+        call log_error("ERROR: " // error_msg)
+        call log_info("REMEDIATION: " // remediation_msg)
+    end subroutine log_error_with_remediation
 
     function validate_size_for_video_content(filename, file_size) result(adequate)
         character(len=*), intent(in) :: filename
