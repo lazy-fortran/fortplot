@@ -11,6 +11,7 @@ program test_png_content_validation
 
     use fortplot
     use fortplot_testing
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -30,7 +31,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(20), y(20)
         integer :: i
-        character(len=*), parameter :: filename = "output/test/test_png_content_validation/pixel_diversity.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_content_validation/pixel_diversity.png")
         
         print *, ""
         print *, "Test: PNG Pixel Diversity Validation"
@@ -60,7 +63,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(100), y(100)
         integer :: i
-        character(len=*), parameter :: filename = "output/test/test_png_content_validation/size_validation.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_content_validation/size_validation.png")
         
         print *, ""
         print *, "Test: PNG File Size Validation"  
@@ -86,7 +91,9 @@ contains
         !! Test PNG file structure integrity
         type(figure_t) :: fig
         real(wp) :: x(5), y(5)
-        character(len=*), parameter :: filename = "output/test/test_png_content_validation/structure_validation.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_content_validation/structure_validation.png")
         
         print *, ""
         print *, "Test: PNG Structure Validation"
@@ -110,7 +117,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x1(10), y1(10), x2(15), y2(15)
         integer :: i
-        character(len=*), parameter :: filename = "output/test/test_png_content_validation/mixed_content.png"
+        character(len=512) :: filename
+        
+        filename = get_test_output_path("output/test/test_png_content_validation/mixed_content.png")
         
         print *, ""
         print *, "Test: Mixed Content Rendering"

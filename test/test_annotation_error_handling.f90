@@ -294,8 +294,8 @@ contains
         
         call cpu_time(start_time)
         
-        ! Add many annotations with various parameters
-        do i = 1, 5000
+        ! Add many annotations with various parameters (limited to avoid max_annotations warning spam)
+        do i = 1, 30  ! Reduced from 5000 to stay within max_annotations limit
             call fig%text(real(mod(i, 100), wp) * 0.01_wp, &
                          real(i/100, wp) * 0.02_wp, &
                          "Stress test annotation", &

@@ -10,6 +10,7 @@ program test_contour_color_mapping
 
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_basic_colormap_region_mapping()
@@ -54,10 +55,10 @@ contains
         call fig%initialize(300, 300)
         call fig%add_contour_filled(x, y, z, levels=levels, colormap='viridis')
         call fig%set_title("Basic Colormap Test")
-        call fig%savefig('/tmp/test_basic_colormap_issue177.png')
+        call fig%savefig(get_test_output_path('/tmp/test_basic_colormap_issue177.png'))
         
         ! Assert - File should exist
-        inquire(file='/tmp/test_basic_colormap_issue177.png', exist=file_exists)
+        inquire(file=get_test_output_path('/tmp/test_basic_colormap_issue177.png'), exist=file_exists)
         if (.not. file_exists) then
             error stop "ERROR: Basic colormap test file was not created"
         end if
@@ -123,28 +124,28 @@ contains
         call fig_viridis%initialize(300, 300)
         call fig_viridis%add_contour_filled(x, y, z, colormap='viridis')
         call fig_viridis%set_title("Viridis Colormap")
-        call fig_viridis%savefig('/tmp/test_colormap_viridis_issue177.png')
+        call fig_viridis%savefig(get_test_output_path('/tmp/test_colormap_viridis_issue177.png'))
         
         call fig_plasma%initialize(300, 300)
         call fig_plasma%add_contour_filled(x, y, z, colormap='plasma')
         call fig_plasma%set_title("Plasma Colormap")
-        call fig_plasma%savefig('/tmp/test_colormap_plasma_issue177.png')
+        call fig_plasma%savefig(get_test_output_path('/tmp/test_colormap_plasma_issue177.png'))
         
         call fig_jet%initialize(300, 300)
         call fig_jet%add_contour_filled(x, y, z, colormap='jet')
         call fig_jet%set_title("Jet Colormap")
-        call fig_jet%savefig('/tmp/test_colormap_jet_issue177.png')
+        call fig_jet%savefig(get_test_output_path('/tmp/test_colormap_jet_issue177.png'))
         
         call fig_coolwarm%initialize(300, 300)
         call fig_coolwarm%add_contour_filled(x, y, z, colormap='coolwarm')
         call fig_coolwarm%set_title("Coolwarm Colormap")
-        call fig_coolwarm%savefig('/tmp/test_colormap_coolwarm_issue177.png')
+        call fig_coolwarm%savefig(get_test_output_path('/tmp/test_colormap_coolwarm_issue177.png'))
         
         ! Assert - All files should exist
-        inquire(file='/tmp/test_colormap_viridis_issue177.png', exist=v_exists)
-        inquire(file='/tmp/test_colormap_plasma_issue177.png', exist=p_exists)
-        inquire(file='/tmp/test_colormap_jet_issue177.png', exist=j_exists)
-        inquire(file='/tmp/test_colormap_coolwarm_issue177.png', exist=c_exists)
+        inquire(file=get_test_output_path('/tmp/test_colormap_viridis_issue177.png'), exist=v_exists)
+        inquire(file=get_test_output_path('/tmp/test_colormap_plasma_issue177.png'), exist=p_exists)
+        inquire(file=get_test_output_path('/tmp/test_colormap_jet_issue177.png'), exist=j_exists)
+        inquire(file=get_test_output_path('/tmp/test_colormap_coolwarm_issue177.png'), exist=c_exists)
         
         if (.not. v_exists) error stop "ERROR: Viridis colormap test file missing"
         if (.not. p_exists) error stop "ERROR: Plasma colormap test file missing"
@@ -189,10 +190,10 @@ contains
         call fig%initialize(400, 400)
         call fig%add_contour_filled(x, y, z, levels=custom_levels, colormap='plasma')
         call fig%set_title("Custom Levels Test")
-        call fig%savefig('/tmp/test_custom_levels_issue177.png')
+        call fig%savefig(get_test_output_path('/tmp/test_custom_levels_issue177.png'))
         
         ! Assert - File should exist
-        inquire(file='/tmp/test_custom_levels_issue177.png', exist=file_exists)
+        inquire(file=get_test_output_path('/tmp/test_custom_levels_issue177.png'), exist=file_exists)
         if (.not. file_exists) then
             error stop "ERROR: Custom levels test file was not created"
         end if
@@ -239,16 +240,16 @@ contains
         call fig_uniform%initialize(200, 200)
         call fig_uniform%add_contour_filled(x, y, z_uniform)
         call fig_uniform%set_title("Uniform Data Test")
-        call fig_uniform%savefig('/tmp/test_uniform_colormap_issue177.png')
+        call fig_uniform%savefig(get_test_output_path('/tmp/test_uniform_colormap_issue177.png'))
         
         call fig_extreme%initialize(200, 200)
         call fig_extreme%add_contour_filled(x, y, z_extreme)
         call fig_extreme%set_title("Extreme Range Test")
-        call fig_extreme%savefig('/tmp/test_extreme_colormap_issue177.png')
+        call fig_extreme%savefig(get_test_output_path('/tmp/test_extreme_colormap_issue177.png'))
         
         ! Assert - Files should exist
-        inquire(file='/tmp/test_uniform_colormap_issue177.png', exist=u_exists)
-        inquire(file='/tmp/test_extreme_colormap_issue177.png', exist=e_exists)
+        inquire(file=get_test_output_path('/tmp/test_uniform_colormap_issue177.png'), exist=u_exists)
+        inquire(file=get_test_output_path('/tmp/test_extreme_colormap_issue177.png'), exist=e_exists)
         
         if (.not. u_exists) error stop "ERROR: Uniform colormap test file missing"
         if (.not. e_exists) error stop "ERROR: Extreme colormap test file missing"
@@ -287,10 +288,10 @@ contains
         call fig%initialize(500, 400)
         call fig%add_contour_filled(x, y, z, colormap='viridis', show_colorbar=.true.)
         call fig%set_title("Colorbar Correspondence Test")
-        call fig%savefig('/tmp/test_colorbar_correspondence_issue177.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colorbar_correspondence_issue177.png'))
         
         ! Assert - File should exist
-        inquire(file='/tmp/test_colorbar_correspondence_issue177.png', exist=file_exists)
+        inquire(file=get_test_output_path('/tmp/test_colorbar_correspondence_issue177.png'), exist=file_exists)
         if (.not. file_exists) then
             error stop "ERROR: Colorbar correspondence test file was not created"
         end if

@@ -85,11 +85,13 @@ contains
         ! Check for dangerous characters (allow reasonable path characters)
         do i = 1, len_path
             c = path(i:i)
-            ! Allow alphanumeric, dash, underscore, dot, forward slash, space
+            ! Allow alphanumeric, dash, underscore, dot, forward slash, backslash, colon, space
+            ! This supports both Unix (/tmp/file) and Windows (C:\temp\file) paths
             if (.not. ((c >= 'a' .and. c <= 'z') .or. &
                        (c >= 'A' .and. c <= 'Z') .or. &
                        (c >= '0' .and. c <= '9') .or. &
-                       c == '-' .or. c == '_' .or. c == '.' .or. c == '/' .or. c == ' ')) then
+                       c == '-' .or. c == '_' .or. c == '.' .or. c == '/' .or. &
+                       c == '\' .or. c == ':' .or. c == ' ')) then
                 return
             end if
         end do

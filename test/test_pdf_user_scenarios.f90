@@ -1,6 +1,7 @@
 program test_pdf_user_scenarios
     !! Real-world user scenarios to validate PDF Y-axis overlap fix from user perspective
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -32,7 +33,7 @@ contains
         call fig%set_title("Voltage Measurement Near Zero - PDF Overlap Test")
         call fig%legend()
         
-        call fig%savefig("/tmp/test_scientific_near_origin.pdf")
+        call fig%savefig(get_test_output_path("/tmp/test_scientific_near_origin.pdf"))
         print *, "Created: /tmp/test_scientific_near_origin.pdf"
         print *, "Expected: Clean Y-axis labels without overlap, readable voltage values"
     end subroutine test_scientific_data_near_origin
@@ -55,7 +56,7 @@ contains
         call fig%set_title("Daily Stock Returns - PDF Y-axis Test")
         call fig%legend()
         
-        call fig%savefig("/tmp/test_financial_returns.pdf")
+        call fig%savefig(get_test_output_path("/tmp/test_financial_returns.pdf"))
         print *, "Created: /tmp/test_financial_returns.pdf"
         print *, "Expected: Professional-looking chart with non-overlapping Y-labels"
     end subroutine test_financial_small_variations
@@ -77,7 +78,7 @@ contains
         call fig%set_title("Precision Measurement Analysis - PDF Format")
         call fig%legend()
         
-        call fig%savefig("/tmp/test_precision_measurement.pdf")
+        call fig%savefig(get_test_output_path("/tmp/test_precision_measurement.pdf"))
         print *, "Created: /tmp/test_precision_measurement.pdf"
         print *, "Expected: High-precision labels without crowding, scientific notation if needed"
     end subroutine test_measurement_precision

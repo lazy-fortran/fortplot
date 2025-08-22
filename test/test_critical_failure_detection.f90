@@ -3,6 +3,7 @@
 program test_critical_failure_detection
     use fortplot
     use fortplot_validation
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_plot_generation_vs_unit_test_mismatch()
@@ -22,7 +23,9 @@ contains
         type(validation_result_t) :: validation
         real(wp), dimension(10) :: x, y
         integer :: i
-        character(len=*), parameter :: test_output = "output/test/critical_mismatch.png"
+        character(len=512) :: test_output
+        
+        test_output = get_test_output_path("output/test/critical_mismatch.png")
         
         ! Arrange: Create test data
         do i = 1, 10
@@ -76,9 +79,9 @@ contains
         ! Test PNG backend
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig("output/test/backend_test.png")
+        call fig%savefig(get_test_output_path("output/test/backend_test.png"))
         
-        validation = validate_png_format("output/test/backend_test.png")
+        validation = validate_png_format(get_test_output_path("output/test/backend_test.png"))
         if (.not. validation%passed) then
             print *, "CRITICAL FAILURE: PNG backend failed - ", trim(validation%message)
             stop 1
@@ -87,9 +90,9 @@ contains
         ! Test PDF backend
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig("output/test/backend_test.pdf")
+        call fig%savefig(get_test_output_path("output/test/backend_test.pdf"))
         
-        validation = validate_pdf_format("output/test/backend_test.pdf")
+        validation = validate_pdf_format(get_test_output_path("output/test/backend_test.pdf"))
         if (.not. validation%passed) then
             print *, "CRITICAL FAILURE: PDF backend failed - ", trim(validation%message)
             stop 1
@@ -98,9 +101,9 @@ contains
         ! Test ASCII backend
         call fig%initialize(60, 20)
         call fig%add_plot(x, y, label="backend test")
-        call fig%savefig("output/test/backend_test.txt")
+        call fig%savefig(get_test_output_path("output/test/backend_test.txt"))
         
-        validation = validate_ascii_format("output/test/backend_test.txt")
+        validation = validate_ascii_format(get_test_output_path("output/test/backend_test.txt"))
         if (.not. validation%passed) then
             print *, "CRITICAL FAILURE: ASCII backend failed - ", trim(validation%message)
             stop 1
@@ -114,8 +117,10 @@ contains
     ! Then: Format validation should detect silent corruption
     subroutine test_silent_format_corruption()
         type(validation_result_t) :: validation
-        character(len=*), parameter :: corrupted_file = "output/test/silent_corruption.png"
+        character(len=512) :: corrupted_file
         integer :: unit
+        
+        corrupted_file = get_test_output_path("output/test/silent_corruption.png")
         
         ! Simulate a file that exists but has corrupted PNG header
         open(newunit=unit, file=corrupted_file, form='unformatted', access='stream')
@@ -161,10 +166,10 @@ contains
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
         call fig%legend()  ! Requires text rendering (STB TrueType)
-        call fig%savefig("output/test/dependency_test.png")  ! Requires PNG encoding (STB Image Write)
+        call fig%savefig(get_test_output_path("output/test/dependency_test.png"))  ! Requires PNG encoding (STB Image Write)
         
         ! Assert: Verify dependencies worked correctly
-        validation = validate_file_exists("output/test/dependency_test.png")
+        validation = validate_file_exists(get_test_output_path("output/test/dependency_test.png"))
         if (.not. validation%passed) then
             print *, "CRITICAL FAILURE: Dependency-based plot generation failed"
             print *, "This indicates STB library or text rendering issues"
@@ -172,7 +177,7 @@ contains
             stop 1
         end if
         
-        validation = validate_file_size("output/test/dependency_test.png", MIN_PNG_SIZE * 2)
+        validation = validate_file_size(get_test_output_path("output/test/dependency_test.png"), MIN_PNG_SIZE * 2)
         if (.not. validation%passed) then
             print *, "CRITICAL FAILURE: Complex plot with dependencies produced undersized output"
             print *, "Message: ", trim(validation%message)

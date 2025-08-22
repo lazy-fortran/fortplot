@@ -31,7 +31,8 @@ module fortplot_colors
     
     ! Color cache for performance optimization
     type :: color_cache_entry_t
-        character(len=:), allocatable :: color_string
+        character(len=256) :: color_string = ""
+        integer :: string_length = 0
         type(color_t) :: color
         logical :: used = .false.
     end type color_cache_entry_t
@@ -427,8 +428,8 @@ contains
         cache_idx = 0
         do i = 1, cache_size
             if (color_cache(i)%used .and. &
-                allocated(color_cache(i)%color_string) .and. &
-                color_cache(i)%color_string == color_str) then
+                color_cache(i)%string_length > 0 .and. &
+                color_cache(i)%color_string(1:color_cache(i)%string_length) == color_str) then
                 cache_idx = i
                 return
             end if
@@ -450,10 +451,7 @@ contains
             insert_idx = 1
         end if
         
-        if (allocated(color_cache(insert_idx)%color_string)) then
-            deallocate(color_cache(insert_idx)%color_string)
-        end if
-        
+        color_cache(insert_idx)%string_length = len_trim(color_str)
         color_cache(insert_idx)%color_string = color_str
         color_cache(insert_idx)%color = color
         color_cache(insert_idx)%used = .true.
@@ -464,9 +462,8 @@ contains
         integer :: i
         
         do i = 1, cache_size
-            if (allocated(color_cache(i)%color_string)) then
-                deallocate(color_cache(i)%color_string)
-            end if
+            color_cache(i)%color_string = ""
+            color_cache(i)%string_length = 0
             color_cache(i)%used = .false.
         end do
         

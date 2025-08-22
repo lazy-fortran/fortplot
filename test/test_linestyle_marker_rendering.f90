@@ -7,6 +7,7 @@ program test_linestyle_marker_rendering
     !! THEN: should produce consistent visual output matching matplotlib behavior
 
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -58,7 +59,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='-.', label='Dash-dot (-.)') 
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/png_linestyle_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/png_linestyle_test.png'))
         
         ! Test matplotlib marker syntax in PNG backend
         call fig%initialize(800, 600)
@@ -72,7 +73,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*', label='Star (*)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/png_marker_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/png_marker_test.png'))
         
         ! Test combined marker+linestyle in PNG backend
         call fig%initialize(800, 600)
@@ -86,7 +87,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*-.', label='Star+Dashdot (*-.)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/png_combined_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/png_combined_test.png'))
         
         call end_test()
     end subroutine test_png_backend_rendering
@@ -123,7 +124,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='-.', label='Dash-dot (-.)') 
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pdf_linestyle_test.pdf')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pdf_linestyle_test.pdf'))
         
         ! Test matplotlib marker syntax in PDF backend
         call fig%initialize(800, 600)
@@ -137,7 +138,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*', label='Star (*)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pdf_marker_test.pdf')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pdf_marker_test.pdf'))
         
         ! Test combined marker+linestyle in PDF backend
         call fig%initialize(800, 600)
@@ -151,7 +152,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*-.', label='Star+Dashdot (*-.)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pdf_combined_test.pdf')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pdf_combined_test.pdf'))
         
         call end_test()
     end subroutine test_pdf_backend_rendering
@@ -188,7 +189,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='-.', label='Dash-dot (-.)') 
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/ascii_linestyle_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/ascii_linestyle_test.txt'))
         
         ! Test matplotlib marker syntax in ASCII backend
         call fig%initialize(80, 25)
@@ -202,7 +203,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*', label='Star (*)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/ascii_marker_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/ascii_marker_test.txt'))
         
         ! Test combined marker+linestyle in ASCII backend
         call fig%initialize(80, 25)
@@ -216,7 +217,7 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='*-.', label='Star+Dashdot (*-.)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/ascii_combined_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/ascii_combined_test.txt'))
         
         call end_test()
     end subroutine test_ascii_backend_rendering
@@ -245,9 +246,9 @@ contains
         call fig%legend()
         
         ! Save to all backends for visual comparison
-        call fig%savefig('output/test/test_linestyle_marker_rendering/consistency_test.png')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/consistency_test.pdf')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/consistency_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/consistency_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/consistency_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/consistency_test.txt'))
         
         call end_test()
     end subroutine test_cross_backend_consistency
@@ -283,9 +284,9 @@ contains
         call fig%add_plot(x(6:6), y(6:6), linestyle='+', label='Plus (+)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/marker_sizes_test.png')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/marker_sizes_test.pdf')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/marker_sizes_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/marker_sizes_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/marker_sizes_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/marker_sizes_test.txt'))
         
         call end_test()
     end subroutine test_marker_size_consistency
@@ -322,9 +323,9 @@ contains
         call fig%add_plot(x, y_dashdot, linestyle='-.', label='Dash-dot (-.)') 
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.png')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.pdf')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/pattern_accuracy_test.txt'))
         
         call end_test()
     end subroutine test_linestyle_pattern_accuracy
@@ -361,9 +362,9 @@ contains
         call fig%add_plot(x, y4, linestyle='*-.', label='Star+Dashdot (*-.)')
         
         call fig%legend()
-        call fig%savefig('output/test/test_linestyle_marker_rendering/combined_quality_test.png')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/combined_quality_test.pdf')
-        call fig%savefig('output/test/test_linestyle_marker_rendering/combined_quality_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/combined_quality_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/combined_quality_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_linestyle_marker_rendering/combined_quality_test.txt'))
         
         call end_test()
     end subroutine test_combined_rendering_quality

@@ -60,6 +60,7 @@ module fortplot
                                validate_color_for_backend, clear_color_cache
     use fortplot_figure_core, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
+    use fortplot_security, only: safe_launch_viewer, safe_remove_file
 
     implicit none
 
@@ -845,8 +846,26 @@ contains
         
         gui_available = .false.
         
-#ifdef __linux__
-        ! Check for Wayland (modern Linux GUI) - secure environment variable check
+        ! Runtime OS detection instead of preprocessor directives
+        
+        ! Check for Windows first
+        call get_environment_variable('OS', session_type, status=status)
+        if (status == 0 .and. index(session_type, 'Windows') > 0) then
+            ! Windows typically has GUI available
+            gui_available = .true.
+            return
+        end if
+        
+        ! Check for macOS
+        call get_environment_variable('HOME', session_type, status=status)
+        if (status == 0 .and. index(session_type, '/Users/') == 1) then
+            ! macOS paths typically start with /Users/
+            gui_available = .true.
+            return
+        end if
+        
+        ! Linux/Unix checks
+        ! Check for Wayland (modern Linux GUI)
         call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
         if (status == 0 .and. len_trim(wayland_var) > 0) then
             gui_available = .true.
@@ -865,30 +884,11 @@ contains
             end if
         end if
         
-        ! Check for X11 (traditional Linux GUI) - only environment variable
+        ! Check for X11 (traditional Linux GUI)
         call get_environment_variable('DISPLAY', display_var, status=status)
         if (status == 0 .and. len_trim(display_var) > 0) then
             gui_available = .true.
         end if
-#elif defined(__APPLE__)
-        ! On macOS, assume GUI is available (secure assumption)
-        gui_available = .true.
-#elif defined(_WIN32) || defined(_WIN64)
-        ! Windows typically has GUI available  
-        gui_available = .true.
-#else
-        ! For other Unix-like systems, check environment variables only
-        call get_environment_variable('WAYLAND_DISPLAY', wayland_var, status=status)
-        if (status == 0 .and. len_trim(wayland_var) > 0) then
-            gui_available = .true.
-            return
-        end if
-        
-        call get_environment_variable('DISPLAY', display_var, status=status)
-        if (status == 0 .and. len_trim(display_var) > 0) then
-            gui_available = .true.
-        end if
-#endif
     end function is_gui_available
 
     subroutine show_viewer_implementation(blocking)
@@ -898,7 +898,6 @@ contains
         !! Arguments:
         !!   blocking: Optional - if true, wait for user input after display (default: false)
         use iso_fortran_env, only: int64
-        use fortplot_security, only: safe_launch_viewer, safe_remove_file
         
         logical, intent(in), optional :: blocking
         logical :: do_block, success

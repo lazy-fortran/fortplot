@@ -2,6 +2,7 @@
 program test_output_validation
     use fortplot
     use fortplot_validation
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_basic_plot_output_generation()
@@ -35,15 +36,15 @@ contains
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig("output/test/test_basic_validation.png")
+        call fig%savefig(get_test_output_path("output/test/test_basic_validation.png"))
         
-        validation = validate_file_exists("output/test/test_basic_validation.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: PNG output not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_png_format("output/test/test_basic_validation.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_basic_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: PNG format invalid - ", trim(validation%message)
             stop 1
@@ -53,15 +54,15 @@ contains
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig("output/test/test_basic_validation.pdf")
+        call fig%savefig(get_test_output_path("output/test/test_basic_validation.pdf"))
         
-        validation = validate_file_exists("output/test/test_basic_validation.pdf")
+        validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: PDF output not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_pdf_format("output/test/test_basic_validation.pdf")
+        validation = validate_pdf_format(get_test_output_path("output/test/test_basic_validation.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: PDF format invalid - ", trim(validation%message)
             stop 1
@@ -71,15 +72,15 @@ contains
         call fig%initialize(80, 24)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig("output/test/test_basic_validation.txt")
+        call fig%savefig(get_test_output_path("output/test/test_basic_validation.txt"))
         
-        validation = validate_file_exists("output/test/test_basic_validation.txt")
+        validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.txt"))
         if (.not. validation%passed) then
             print *, "FAIL: ASCII output not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_ascii_format("output/test/test_basic_validation.txt")
+        validation = validate_ascii_format(get_test_output_path("output/test/test_basic_validation.txt"))
         if (.not. validation%passed) then
             print *, "FAIL: ASCII format invalid - ", trim(validation%message)
             stop 1
@@ -110,15 +111,15 @@ contains
         call fig%set_title("Scatter Plot Validation")
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
-        call fig%savefig("output/test/test_scatter_validation.png")
+        call fig%savefig(get_test_output_path("output/test/test_scatter_validation.png"))
         
-        validation = validate_file_exists("output/test/test_scatter_validation.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_scatter_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: Scatter plot PNG not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_file_size("output/test/test_scatter_validation.png", MIN_PNG_SIZE)
+        validation = validate_file_size(get_test_output_path("output/test/test_scatter_validation.png"), MIN_PNG_SIZE)
         if (.not. validation%passed) then
             print *, "FAIL: Scatter plot file too small - ", trim(validation%message)
             stop 1
@@ -153,15 +154,15 @@ contains
         call fig%initialize(600, 500)
         call fig%add_contour(x, y, z, label='gaussian')
         call fig%set_title("Contour Plot Validation")
-        call fig%savefig("output/test/test_contour_validation.pdf")
+        call fig%savefig(get_test_output_path("output/test/test_contour_validation.pdf"))
         
-        validation = validate_file_exists("output/test/test_contour_validation.pdf")
+        validation = validate_file_exists(get_test_output_path("output/test/test_contour_validation.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: Contour plot PDF not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_file_size("output/test/test_contour_validation.pdf", MIN_PDF_SIZE)
+        validation = validate_file_size(get_test_output_path("output/test/test_contour_validation.pdf"), MIN_PDF_SIZE)
         if (.not. validation%passed) then
             print *, "FAIL: Contour plot file too small - ", trim(validation%message)
             stop 1
@@ -190,15 +191,15 @@ contains
         call fig%initialize(700, 600)
         call fig%add_3d_plot(x, y, z, label='3d spiral')
         call fig%set_title("3D Plot Validation")
-        call fig%savefig("output/test/test_3d_validation.png")
+        call fig%savefig(get_test_output_path("output/test/test_3d_validation.png"))
         
-        validation = validate_file_exists("output/test/test_3d_validation.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_3d_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: 3D plot PNG not generated - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_png_format("output/test/test_3d_validation.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_3d_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: 3D plot PNG format invalid - ", trim(validation%message)
             stop 1
@@ -219,32 +220,32 @@ contains
         ! Act: Generate same plot in all formats
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig("output/test/test_backend_validation.png")
+        call fig%savefig(get_test_output_path("output/test/test_backend_validation.png"))
         
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig("output/test/test_backend_validation.pdf")
+        call fig%savefig(get_test_output_path("output/test/test_backend_validation.pdf"))
         
         call fig%initialize(60, 20)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig("output/test/test_backend_validation.txt")
+        call fig%savefig(get_test_output_path("output/test/test_backend_validation.txt"))
         
         ! Assert: Validate PNG properties
-        validation = validate_png_format("output/test/test_backend_validation.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_backend_validation.png"))
         if (.not. validation%passed) then
             print *, "FAIL: Backend PNG format validation - ", trim(validation%message)
             stop 1
         end if
         
         ! Assert: Validate PDF properties  
-        validation = validate_pdf_format("output/test/test_backend_validation.pdf")
+        validation = validate_pdf_format(get_test_output_path("output/test/test_backend_validation.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: Backend PDF format validation - ", trim(validation%message)
             stop 1
         end if
         
         ! Assert: Validate ASCII properties
-        validation = validate_ascii_format("output/test/test_backend_validation.txt")
+        validation = validate_ascii_format(get_test_output_path("output/test/test_backend_validation.txt"))
         if (.not. validation%passed) then
             print *, "FAIL: Backend ASCII format validation - ", trim(validation%message)
             stop 1
@@ -275,10 +276,10 @@ contains
         call fig%set_xlabel("X Axis")
         call fig%set_ylabel("Y Axis")
         call fig%legend()
-        call fig%savefig("output/test/test_properties_validation.png")
+        call fig%savefig(get_test_output_path("output/test/test_properties_validation.png"))
         
         ! Assert: Validate minimum file size (complex plot should be larger)
-        validation = validate_file_size("output/test/test_properties_validation.png", MIN_PNG_SIZE * 2)
+        validation = validate_file_size(get_test_output_path("output/test/test_properties_validation.png"), MIN_PNG_SIZE * 2)
         if (.not. validation%passed) then
             print *, "FAIL: Complex plot file size too small - ", trim(validation%message)
             stop 1
@@ -306,17 +307,17 @@ contains
         call fig%initialize(450, 350)
         call fig%add_plot(x, y, label="exponential decay")
         call fig%set_title("Regression Baseline Test")
-        call fig%savefig("output/test/test_regression_current.png")
+        call fig%savefig(get_test_output_path("output/test/test_regression_current.png"))
         
         ! Create a fake baseline for testing (normally this would exist)
         call fig%initialize(450, 350)
         call fig%add_plot(x, y, label="exponential decay")
         call fig%set_title("Regression Baseline Test")
-        call fig%savefig("output/test/test_regression_baseline.png")
+        call fig%savefig(get_test_output_path("output/test/test_regression_baseline.png"))
         
         ! Assert: Compare with baseline
-        validation = compare_with_baseline("output/test/test_regression_current.png", &
-                                          "output/test/test_regression_baseline.png")
+        validation = compare_with_baseline(get_test_output_path("output/test/test_regression_current.png"), &
+                                          get_test_output_path("output/test/test_regression_baseline.png"))
         if (.not. validation%passed) then
             print *, "FAIL: Regression comparison failed - ", trim(validation%message)
             stop 1

@@ -1,5 +1,6 @@
 program test_unicode_ascii_rendering_simple
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -24,7 +25,7 @@ contains
         call fig%legend("upper right")
         
         ! Save to temporary file and read it back
-        test_filename = "/tmp/test_basic_unicode.txt"
+        test_filename = get_test_output_path("/tmp/test_basic_unicode.txt")
         call fig%savefig(test_filename)
         
         ! Check file content for Unicode rendering
@@ -47,7 +48,7 @@ contains
         call fig%set_title("Graph of \alpha vs \beta")
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp])
         
-        test_filename = "/tmp/test_title_unicode.txt"
+        test_filename = get_test_output_path("/tmp/test_title_unicode.txt")
         call fig%savefig(test_filename)
         
         contains_unicode = check_file_contains_unicode(test_filename)
@@ -71,7 +72,7 @@ contains
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp], label="Data \gamma")
         call fig%legend("upper right")
         
-        test_filename = "/tmp/test_mixed_unicode.txt"
+        test_filename = get_test_output_path("/tmp/test_mixed_unicode.txt")
         call fig%savefig(test_filename)
         
         contains_unicode = check_file_contains_unicode(test_filename)

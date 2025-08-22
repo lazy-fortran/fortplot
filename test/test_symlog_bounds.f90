@@ -3,7 +3,7 @@ program test_symlog_bounds
     !! Based on the actual scale_examples symlog implementation
     use fortplot
     use fortplot_figure, only: apply_scale_transform
-    use fortplot_security, only: safe_remove_file
+    use fortplot_security, only: safe_remove_file, get_test_output_path
     implicit none
     
     real(wp), dimension(50) :: x_exp, y_symlog
@@ -24,7 +24,8 @@ program test_symlog_bounds
     call test_fig%initialize(640, 480)
     call test_fig%add_plot(x_exp, y_symlog)
     call test_fig%set_yscale('symlog', 10.0_wp)
-    call test_fig%savefig('output/test/test_symlog_bounds/test_symlog_bounds_check.png')
+    call test_fig%savefig(get_test_output_path( &
+        'output/test/test_symlog_bounds/test_symlog_bounds_check.png'))
     
     if (.not. allocated(test_fig%backend)) then
         print *, "❌ FAIL: Backend not allocated"

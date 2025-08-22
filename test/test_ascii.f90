@@ -6,6 +6,7 @@ program test_ascii
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure
+    use fortplot_system_runtime, only: is_windows
     implicit none
 
     real(wp), dimension(100) :: x, sx, cx
@@ -22,7 +23,15 @@ program test_ascii
     call ascii_fig%add_plot(x, sx, label="sin(x)")
     call ascii_fig%add_plot(x, cx, label="cos(x)")
 
-    call ascii_fig%show()
+    ! Skip show() on Windows to prevent MS Paint hanging in CI
+    ! Use blocking=.false. to avoid CI hang on all platforms
+    if (.not. is_windows()) then
+        call ascii_fig%show(blocking=.false.)
+    else
+        print *, "SKIPPED: show() on Windows (prevents CI hang)"
+        ! Test that we can save to file instead
+        call ascii_fig%savefig("test_ascii_output.txt")
+    end if
 
     print *, ""
     print *, "ascii terminal plot created successfully!"

@@ -3,6 +3,7 @@
 module fortplot_security
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
     use fortplot_logging, only: log_error, log_warning, log_info
+    use fortplot_system_runtime
     implicit none
     private
 
@@ -13,6 +14,7 @@ module fortplot_security
     public :: safe_launch_viewer
     public :: sanitize_filename
     public :: is_safe_path
+    public :: get_test_output_path
 
     ! Security-related constants
     integer, parameter :: MAX_PATH_LENGTH = 4096
@@ -105,18 +107,8 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        integer :: stat_result
-        character(len=MAX_COMMAND_LENGTH) :: safe_command
-        
-        ! For CI environments and Unix systems, use mkdir -p
-        ! This is safe because dir_path has already been validated by is_safe_path
-        safe_command = 'mkdir -p "' // trim(dir_path) // '" 2>/dev/null'
-        
-        ! Try to execute mkdir command
-        call execute_command_line(safe_command, exitstat=stat_result)
-        
-        ! Verify if directory was created
-        success = check_path_exists(dir_path)
+        ! Use the new runtime system module for cross-platform support
+        call create_directory_runtime(dir_path, success)
     end subroutine try_mkdir_command
     
     !> Create parent directories iteratively (no recursion)
@@ -258,19 +250,13 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(out) :: success
         
-        integer :: unit, iostat
+        ! Use the runtime system module for cross-platform support
+        call delete_file_runtime(filename, success)
         
-        open(newunit=unit, file=trim(filename), iostat=iostat)
-        if (iostat == 0) then
-            close(unit, status='delete', iostat=iostat)
-            success = (iostat == 0)
-            if (success) then
-                call log_info("File removed: " // trim(filename))
-            else
-                call log_warning("Could not remove file: " // trim(filename))
-            end if
+        if (success) then
+            call log_info("File removed: " // trim(filename))
         else
-            call log_warning("Could not access file for removal: " // trim(filename))
+            call log_warning("Could not remove file: " // trim(filename))
         end if
     end subroutine perform_file_removal
 
@@ -412,13 +398,16 @@ contains
             return
         end if
         
-        ! In secure mode, we cannot safely launch external viewers
-        call log_info("Secure mode: External viewer launch disabled")
-        call log_info("Plot saved to: " // trim(filename))
-        call log_info("Please open the file manually with your preferred viewer")
+        ! Try to open with default application using runtime system
+        call open_with_default_app_runtime(filename, success)
         
-        ! Consider this a success since the file exists and is ready
-        success = .true.
+        if (success) then
+            call log_info("Opened file with default viewer: " // trim(filename))
+        else
+            call log_info("Could not launch viewer, please open manually: " // trim(filename))
+            ! Still consider this a success since the file exists
+            success = .true.
+        end if
     end subroutine safe_launch_viewer
 
     !> Sanitize filename for safe file operations
@@ -651,18 +640,9 @@ contains
     function test_program_availability(program_name) result(available)
         character(len=*), intent(in) :: program_name
         logical :: available
-        integer :: exit_code
-        character(len=100) :: command
         
-        available = .false.
-        
-        ! Build safe command to test program availability
-        write(command, '(A,A,A)') trim(program_name), " -version >/dev/null 2>&1"
-        
-        ! Execute command and check exit code
-        call execute_command_line(command, exitstat=exit_code)
-        
-        available = (exit_code == 0)
+        ! Use runtime system module for cross-platform support
+        call check_command_available_runtime(program_name, available)
     end function test_program_availability
     
     !> Validate video file with actual ffprobe
@@ -689,5 +669,52 @@ contains
             call log_warning("FFprobe validation failed: " // trim(filename))
         end if
     end function validate_with_actual_ffprobe
+
+    !> Get cross-platform test output path with automatic directory creation
+    function get_test_output_path(relative_path) result(full_path)
+        character(len=*), intent(in) :: relative_path
+        character(len=512) :: full_path
+        logical :: success
+        character(len=256) :: dir_path
+        integer :: last_slash, i
+        
+        ! Handle /tmp paths by mapping to Windows-compatible paths
+        if (relative_path(1:5) == '/tmp/') then
+            ! Map /tmp paths using our runtime system
+            full_path = map_unix_to_windows_path(relative_path)
+        else
+            ! For output/test paths, ensure they're relative to current directory
+            if (relative_path(1:1) == '/') then
+                ! Absolute path starting with / - make it relative
+                full_path = '.' // relative_path
+            else
+                ! Already relative path
+                full_path = relative_path
+            end if
+        end if
+        
+        ! Convert path separators for Windows if needed
+        if (is_windows()) then
+            full_path = normalize_path_separators(full_path, .true.)
+        end if
+        
+        ! Extract directory part and ensure it exists
+        last_slash = 0
+        do i = 1, len_trim(full_path)
+            if (full_path(i:i) == '/' .or. full_path(i:i) == '\') then
+                last_slash = i
+            end if
+        end do
+        
+        if (last_slash > 0) then
+            dir_path = full_path(1:last_slash-1)
+            if (len_trim(dir_path) > 0) then
+                call safe_create_directory(dir_path, success)
+                if (.not. success) then
+                    call log_warning("Could not create test output directory: " // trim(dir_path))
+                end if
+            end if
+        end if
+    end function get_test_output_path
 
 end module fortplot_security

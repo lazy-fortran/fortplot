@@ -8,6 +8,7 @@ program test_syntax_backward_compatibility
 
     use fortplot
     use fortplot_markers, only: validate_marker_style, get_marker_size
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -61,9 +62,9 @@ contains
         call fig%add_plot(x, y5, linestyle=LINESTYLE_NONE, label='LINESTYLE_NONE')
         
         call fig%legend()
-        call fig%savefig('output/test/test_syntax_backward_compatibility/linestyle_constants_test.png')
-        call fig%savefig('output/test/test_syntax_backward_compatibility/linestyle_constants_test.pdf')
-        call fig%savefig('output/test/test_syntax_backward_compatibility/linestyle_constants_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/linestyle_constants_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/linestyle_constants_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/linestyle_constants_test.txt'))
         
         call end_test()
     end subroutine test_existing_linestyle_constants
@@ -98,7 +99,7 @@ contains
         call xlabel('X values')
         call ylabel('Y values')
         call legend()
-        call savefig('output/test/test_syntax_backward_compatibility/parameter_names_test.png')
+        call savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/parameter_names_test.png'))
         
         call end_test()
     end subroutine test_existing_parameter_names
@@ -178,7 +179,7 @@ contains
                          linestyle='-')
         
         call fig%legend()
-        call fig%savefig('output/test/test_syntax_backward_compatibility/api_signatures_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/api_signatures_test.png'))
         
         call end_test()
     end subroutine test_existing_api_signatures
@@ -209,7 +210,7 @@ contains
         call fig%set_xlabel('X')
         call fig%set_ylabel('Y')
         call fig%legend()
-        call fig%savefig('output/test/test_syntax_backward_compatibility/legacy_basic_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/legacy_basic_test.png'))
         
         ! Legacy pattern 2: Global function usage
         call figure(600, 400)
@@ -219,7 +220,7 @@ contains
         call xlabel('X')
         call ylabel('Y')
         call legend()
-        call savefig('output/test/test_syntax_backward_compatibility/legacy_global_test.png')
+        call savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/legacy_global_test.png'))
         
         call end_test()
     end subroutine test_legacy_examples_still_work
@@ -256,9 +257,9 @@ contains
         call fig%add_plot(x, y4, linestyle='o', label='New: matplotlib marker')
         
         call fig%legend()
-        call fig%savefig('output/test/test_syntax_backward_compatibility/mixed_syntax_test.png')
-        call fig%savefig('output/test/test_syntax_backward_compatibility/mixed_syntax_test.pdf')
-        call fig%savefig('output/test/test_syntax_backward_compatibility/mixed_syntax_test.txt')
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/mixed_syntax_test.png'))
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/mixed_syntax_test.pdf'))
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/mixed_syntax_test.txt'))
         
         call end_test()
     end subroutine test_mixed_old_new_syntax
@@ -291,7 +292,7 @@ contains
         ! These tests will help define the precedence rules
         
         call fig%legend()
-        call fig%savefig('output/test/test_syntax_backward_compatibility/precedence_test.png')
+        call fig%savefig(get_test_output_path('output/test/test_syntax_backward_compatibility/precedence_test.png'))
         
         call end_test()
     end subroutine test_parameter_precedence

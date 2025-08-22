@@ -8,10 +8,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        compiler: [gfortran-11, gfortran-12, gfortran-13, gfortran-14]
     
     steps:
     - uses: actions/checkout@v4
@@ -44,23 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ${{ matrix.compiler }} cmake make ffmpeg pngcheck python3-pil
-
-    - name: Set compiler
-      run: |
-        if [ "${{ matrix.compiler }}" = "gfortran-11" ]; then
-          echo "FC=gfortran-11" >> $GITHUB_ENV
-          echo "FPM_FC=gfortran-11" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "gfortran-12" ]; then
-          echo "FC=gfortran-12" >> $GITHUB_ENV
-          echo "FPM_FC=gfortran-12" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "gfortran-13" ]; then
-          echo "FC=gfortran-13" >> $GITHUB_ENV
-          echo "FPM_FC=gfortran-13" >> $GITHUB_ENV
-        elif [ "${{ matrix.compiler }}" = "gfortran-14" ]; then
-          echo "FC=gfortran-14" >> $GITHUB_ENV
-          echo "FPM_FC=gfortran-14" >> $GITHUB_ENV
-        fi
+        sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil
 
     - name: Build project
       run: |

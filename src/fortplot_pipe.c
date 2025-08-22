@@ -1,15 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
-#include <sys/wait.h>
 #include <ctype.h>
+
+// Platform-specific includes
+#ifdef _WIN32
+    #include <windows.h>
+    #include <io.h>
+    #include <fcntl.h>
+    #define popen _popen
+    #define pclose _pclose
+#else
+    #include <unistd.h>
+    #include <sys/wait.h>
+#endif
 
 typedef struct {
     FILE* pipe;
-    pid_t pid;
+    #ifdef _WIN32
+        HANDLE process;
+    #else
+        pid_t pid;
+    #endif
 } ffmpeg_pipe_t;
 
+// Initialize with zero - works for both platforms (NULL == 0, and pid_t 0)
 static ffmpeg_pipe_t current_pipe = {NULL, 0};
 
 // Forward declarations
@@ -47,11 +62,20 @@ int is_safe_filename_c(const char* filename) {
     }
     
     // Check for dangerous paths
-    if (strncmp(filename, "/dev/", 5) == 0 ||
-        strncmp(filename, "/proc/", 6) == 0 ||
-        strncmp(filename, "/sys/", 5) == 0) {
-        return 0;  // Dangerous system path
-    }
+    #ifdef _WIN32
+        // Windows dangerous paths
+        if (strncmp(filename, "C:\\Windows\\", 11) == 0 ||
+            strncmp(filename, "C:\\Program Files\\", 17) == 0) {
+            return 0;  // Dangerous system path
+        }
+    #else
+        // Unix dangerous paths
+        if (strncmp(filename, "/dev/", 5) == 0 ||
+            strncmp(filename, "/proc/", 6) == 0 ||
+            strncmp(filename, "/sys/", 5) == 0) {
+            return 0;  // Dangerous system path
+        }
+    #endif
     
     return 1;  // Safe
 }
@@ -137,8 +161,13 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         return -1;
     }
     
-    // Open pipe to FFmpeg
-    current_pipe.pipe = popen(command, "w");
+    // Open pipe to FFmpeg with platform-specific mode
+    #ifdef _WIN32
+        // Windows requires binary mode to prevent corruption
+        current_pipe.pipe = popen(command, "wb");
+    #else
+        current_pipe.pipe = popen(command, "w");
+    #endif
     if (current_pipe.pipe == NULL) {
         fprintf(stderr, "Error: Failed to start FFmpeg process\n");
         return -1;
@@ -182,7 +211,11 @@ int close_ffmpeg_pipe_c(void) {
         if (current_pipe.pipe != NULL) {
             fprintf(stderr, "Warning: Cleaning up unexpected pipe in secure mode\n");
             current_pipe.pipe = NULL;
-            current_pipe.pid = 0;
+            #ifdef _WIN32
+                current_pipe.process = NULL;
+            #else
+                current_pipe.pid = 0;
+            #endif
         }
         return 0;
     }
@@ -193,14 +226,24 @@ int close_ffmpeg_pipe_c(void) {
     
     int status = pclose(current_pipe.pipe);
     current_pipe.pipe = NULL;
-    current_pipe.pid = 0;
+    #ifdef _WIN32
+        current_pipe.process = NULL;
+    #else
+        current_pipe.pid = 0;
+    #endif
     
     if (status == -1) {
         fprintf(stderr, "Error: Failed to close FFmpeg pipe\n");
         return -1;
     }
     
-    int exit_status = WEXITSTATUS(status);
+    #ifdef _WIN32
+        // Windows _pclose returns exit status directly
+        int exit_status = status;
+    #else
+        // Unix needs WEXITSTATUS macro to extract exit status
+        int exit_status = WEXITSTATUS(status);
+    #endif
     if (exit_status != 0) {
         fprintf(stderr, "Warning: FFmpeg exited with status %d\n", exit_status);
         return -1;
@@ -218,8 +261,13 @@ int check_ffmpeg_available_c(void) {
         return 0;
     }
     
-    // Test if ffmpeg command is available
-    int status = system("ffmpeg -version >/dev/null 2>&1");
+    // Test if ffmpeg command is available (cross-platform)
+    #ifdef _WIN32
+        int status = system("ffmpeg -version >nul 2>&1");
+    #else  
+        int status = system("ffmpeg -version >/dev/null 2>&1");
+    #endif
+    
     if (status == 0) {
         fprintf(stderr, "Info: FFmpeg is available\n");
         return 1;

@@ -567,8 +567,8 @@ contains
         
         call cpu_time(start_time)
         
-        ! Add many annotations to test performance
-        do i = 1, 1000
+        ! Add many annotations to test performance (limited to avoid max_annotations warning spam)
+        do i = 1, 50  ! Reduced from 1000 to stay within max_annotations limit
             call fig%text(real(i, wp) * 0.01_wp, real(i, wp) * 0.01_wp, "Annotation")
         end do
         

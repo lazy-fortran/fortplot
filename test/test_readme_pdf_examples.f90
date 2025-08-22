@@ -1,6 +1,7 @@
 program test_readme_pdf_examples
     !! Validate all README examples that generate PDF files work correctly with overlap fix
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -31,7 +32,7 @@ contains
         call plot(x, cos(x), label="cos(x)", linestyle="r--")
         call plot(x, sin(2*x), label="sin(2x)", linestyle="g:")
         call legend()
-        call savefig("/tmp/readme_trig_functions.pdf")
+        call savefig(get_test_output_path("/tmp/readme_trig_functions.pdf"))
         
         print *, "Created: /tmp/readme_trig_functions.pdf"
         print *, "Expected: Three trigonometric functions with legend, no Y-axis overlap"
@@ -57,7 +58,7 @@ contains
         call set_yscale("symlog", threshold=0.01_wp)
         call xlim(1.0e-3_wp, 1.0e3_wp)
         call ylim(-100.0_wp, 100.0_wp)
-        call savefig("/tmp/readme_log_plot.pdf")
+        call savefig(get_test_output_path("/tmp/readme_log_plot.pdf"))
         
         print *, "Created: /tmp/readme_log_plot.pdf"
         print *, "Expected: Log/symlog plot with proper Y-axis label spacing near zero"
@@ -90,7 +91,7 @@ contains
         call plot(t, damped_sine, label="α decay")
         call plot(t, damped_cosine, label="β oscillation")
         call legend()
-        call savefig("/tmp/readme_unicode_demo.pdf")
+        call savefig(get_test_output_path("/tmp/readme_unicode_demo.pdf"))
         
         print *, "Created: /tmp/readme_unicode_demo.pdf"
         print *, "Expected: Unicode characters in titles/labels, clean Y-axis spacing"

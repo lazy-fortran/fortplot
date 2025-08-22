@@ -2,6 +2,7 @@ program test_mixed_marker_line
     !! Test that combined marker+line formats still work correctly after the fix
     
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -31,8 +32,8 @@ contains
         call fig%add_plot(x, y, linestyle='o-', label='Markers with Lines')
         
         ! Save as ASCII to visually verify both markers and lines
-        call fig%savefig('output/test/test_mixed_marker_line/test_mixed_marker_line.txt')
-        call fig%savefig('/tmp/test_mixed_marker_line.txt')
+        call fig%savefig(get_test_output_path('output/test/test_mixed_marker_line/test_mixed_marker_line.txt'))
+        call fig%savefig(get_test_output_path('/tmp/test_mixed_marker_line.txt'))
         
         print *, "Check test_mixed_marker_line.txt - should show both 'o' markers and '#' lines"
     end subroutine test_should_draw_both_markers_and_lines
