@@ -14,6 +14,15 @@ module fortplot_system_runtime
     public :: map_unix_to_windows_path
     public :: normalize_path_separators
 
+    ! C interface for Windows directory creation
+    interface
+        function create_directory_windows_c(path) bind(C, name="create_directory_windows_c")
+            use iso_c_binding, only: c_int, c_char
+            character(kind=c_char), dimension(*), intent(in) :: path
+            integer(c_int) :: create_directory_windows_c
+        end function create_directory_windows_c
+    end interface
+
 contains
 
     function is_debug_enabled() result(debug_enabled)
@@ -157,15 +166,15 @@ contains
     end function get_parent_directory
 
     subroutine create_directory_runtime(path, success)
-        !! Create directory with cross-platform support - avoid execute_command_line on Windows
+        !! Create directory with cross-platform support - uses Windows API on Windows
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         character(len=:), allocatable :: effective_path
         character(len=:), allocatable :: command
-        integer :: exitstat, cmdstat
+        character(len=512) :: c_path
+        integer :: exitstat, cmdstat, result
         character(len=256) :: cmdmsg
         logical :: debug_enabled
-        logical :: dir_exists
         
         success = .false.
         debug_enabled = is_debug_enabled()
@@ -175,19 +184,18 @@ contains
             effective_path = map_unix_to_windows_path(path)
             effective_path = normalize_path_separators(effective_path, .true.)
             
-            ! CRITICAL: On Windows, just check if directory exists and skip creation
-            ! This avoids the hanging execute_command_line issue
-            inquire(file=trim(effective_path)//'\nul', exist=dir_exists)
-            if (dir_exists) then
-                success = .true.
-                return
-            end if
+            ! Use Windows API through C binding
+            c_path = trim(effective_path) // c_null_char
+            result = create_directory_windows_c(c_path)
+            success = (result == 1)
             
-            ! For now, on Windows CI, we'll just pretend directories are created
-            ! This is a workaround for the hanging issue
-            write(*,'(A,A)') 'WARNING: [Windows] Directory creation skipped for: ', trim(effective_path)
-            success = .true.  ! Pretend success to allow tests to continue
-            return
+            if (debug_enabled) then
+                if (success) then
+                    write(*,'(A,A)') 'DEBUG: [Windows] Created directory: ', trim(effective_path)
+                else
+                    write(*,'(A,A)') 'DEBUG: [Windows] Failed to create directory: ', trim(effective_path)
+                end if
+            end if
         else
             effective_path = path
             ! Unix: Use mkdir with -p for parent directories
