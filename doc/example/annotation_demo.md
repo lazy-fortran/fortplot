@@ -99,8 +99,6 @@ The annotation system is optimized for practical use:
 - **Scalable**: Handles dozens of annotations without performance impact
 - **Backend-optimized**: Each backend uses its optimal text rendering
 
-## Source Files
-
 ## Source Code
 
 🔷 **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
@@ -271,6 +269,3 @@ contains
 end program annotation_demo
 ```
 
-## Output
-
-## Integration with Other Features

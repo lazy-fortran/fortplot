@@ -180,6 +180,33 @@ call ylim(-100.0d0, 100.0d0)
 call savefig("log_plot.pdf")
 ```
 
+#### Text annotations with coordinate systems
+```fortran
+type(figure_t) :: fig
+call fig%initialize(800, 600)
+call fig%add_plot(x, y, label="Scientific Data")
+
+! Basic text at data coordinates
+call fig%text(2.5_wp, 1.0_wp, "Peak Region", coord_type=COORD_DATA)
+
+! Arrow annotation pointing to data point
+call fig%annotate("Maximum", xy=[x_max, y_max], &
+                  xytext=[x_max+1.0_wp, y_max+0.3_wp], &
+                  xy_coord_type=COORD_DATA, font_size=12.0_wp)
+
+! Typography and positioning
+call fig%text(0.5_wp, 0.95_wp, "TITLE", coord_type=COORD_FIGURE, &
+              font_size=16.0_wp, alignment="center")
+call fig%text(4.0_wp, 0.0_wp, "Vertical Label", rotation=90.0_wp, &
+              coord_type=COORD_DATA, alignment="center")
+
+! Mathematical expressions with Unicode
+call fig%text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4}", &
+              coord_type=COORD_DATA, font_size=10.0_wp)
+
+call fig%savefig("annotated_plot.png")
+```
+
 #### Animation example
 ```fortran
 type(animation_t) :: anim
@@ -322,7 +349,7 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [x] **Security features**: Executable stack protection, trampoline detection, path validation
-- [ ] Annotations
+- [x] **Text annotations** (`text`, `annotate`) with multi-coordinate systems and typography
 
 
 ## Why though?
