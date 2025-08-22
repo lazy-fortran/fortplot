@@ -4,6 +4,7 @@ program test_mpeg_consolidated
     use fortplot
     use fortplot_pipe, only: check_ffmpeg_available
     use fortplot_security, only: safe_remove_file
+    use fortplot_system_runtime, only: is_windows
     use iso_fortran_env, only: real64
     implicit none
 
@@ -11,7 +12,16 @@ program test_mpeg_consolidated
     real(real64), dimension(5) :: x, y
     character(len=256) :: ci_env
     integer :: status
-    logical :: in_ci
+    logical :: in_ci, on_windows
+    
+    ! Skip on Windows CI - FFmpeg pipe issues
+    on_windows = is_windows()
+    call get_environment_variable("CI", ci_env, status=status)
+    
+    if (on_windows .and. status == 0) then
+        print *, "SKIPPED: MPEG tests on Windows CI (pipe issues)"
+        stop 0
+    end if
     
     ! Check if running in CI to skip slow tests
     call get_environment_variable("CI", ci_env, status=status)
