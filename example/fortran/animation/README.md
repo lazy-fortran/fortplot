@@ -1,86 +1,62 @@
 title: Animation Example
 ---
 
-# Animation
+# Animation Example
 
-This example demonstrates creating animated plots and saving to video files.
+Creates animated plots and saves to video files with cross-platform support.
 
 ## Files
 
-- `save_animation_demo.f90` - Animation saving example
+- `save_animation_demo.f90` - Animation saving example with error handling
 - `wave_animation.mp4` - Example output video
 
-## Running
+## Quick Start
 
 ```bash
+# Install FFmpeg first
+# Windows: choco install ffmpeg
+# Linux: sudo apt install ffmpeg  
+# macOS: brew install ffmpeg
+
+# Run example
 make example ARGS="save_animation_demo"
 ```
 
-## Features Demonstrated
+## Windows Support (Issue #189 Fixed)
 
-- **Frame generation**: Create individual frames
-- **Video export**: Save as MP4 using ffmpeg
-- **Time evolution**: Animate changing data
-- **Smooth transitions**: Proper frame timing
+Windows FFmpeg animation export now works correctly with:
+- Binary pipe handling for PNG data
+- Automatic path escaping for special characters  
+- Windows-specific error reporting
 
-## Animation Workflow
+## Platform-Specific Setup
 
-1. **Initialize animation**: Set frame rate and duration
-2. **Generate frames**: Update data for each time step
-3. **Save frames**: Store as temporary images
-4. **Create video**: Use ffmpeg to combine frames
+### Windows
+```powershell
+# Install FFmpeg
+choco install ffmpeg
 
-## Requirements
-
-- **ffmpeg**: Must be installed for video generation
-- **Frame rate**: Typically 30 fps for smooth playback
-- **Resolution**: Match your figure size
-
-## MPEG File Validation
-
-Generated MPEG files should meet these criteria:
-- **File size**: >5KB for multi-frame animations (typical range: 10KB-1MB+)
-- **Header validation**: Must contain valid MP4 box signatures (`ftyp`, `mdat`, `moov`)
-- **External validation**: Should pass `ffprobe -v error -show_format filename.mp4`
-- **Playback**: Should be compatible with standard media players
-
-## Example Code Structure
-
-```fortran
-! Initialize animation
-call anim%init(fps=30, duration=5.0)
-
-! Generate frames
-do i = 1, n_frames
-    ! Update data
-    call update_data(t)
-    
-    ! Plot frame
-    call fig%clear()
-    call fig%add_plot(x, y)
-    
-    ! Add frame
-    call anim%add_frame(fig)
-end do
-
-! Save video
-call anim%save('animation.mp4')
+# Verify installation
+ffmpeg -version
 ```
 
-## Output Examples
+### Linux/macOS  
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
 
-The animation example generates an MP4 video file showing a wave that changes over time.
+# macOS
+brew install ffmpeg
+```
 
-## Troubleshooting MPEG Issues
+## Complete Documentation
 
-If generated MPEG files are unusually small (<5KB) or fail to play:
+For comprehensive documentation including:
+- Cross-platform installation guides
+- Windows-specific troubleshooting
+- Error handling examples
+- Path and filename handling
 
-1. **Check file size**: `ls -la *.mp4` - should be >5KB for valid video
-2. **Validate with ffprobe**: `ffprobe -v error -show_format filename.mp4`
-3. **Test playback**: Open in VLC, mpv, or other media players
-4. **Check encoding**: Ensure proper frame rate and resolution settings
+See: [Animation Documentation](../../../doc/example/animation.md)
 
-**Common Issues:**
-- Files <1KB usually indicate encoding failure
-- Missing headers suggest incomplete MPEG-1 format compliance
-- Playback failures often indicate quantization or DCT encoding problems
+**Windows Users**: See [Windows FFmpeg Setup Guide](../../../doc/windows_ffmpeg_setup.md) for detailed installation and troubleshooting.
