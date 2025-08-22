@@ -179,10 +179,23 @@ contains
         success = .false.
         debug_enabled = is_debug_enabled()
         
+        ! Validate path length to prevent issues
+        if (len_trim(path) > 240) then
+            if (debug_enabled) then
+                write(*,'(A)') 'DEBUG: Path too long for Windows (>240 chars)'
+            end if
+            return
+        end if
+        
         ! Map Unix paths for Windows if needed
         if (is_windows()) then
             effective_path = map_unix_to_windows_path(path)
             effective_path = normalize_path_separators(effective_path, .true.)
+            
+            ! Additional validation for Windows paths
+            if (len_trim(effective_path) == 0 .or. len_trim(effective_path) > 240) then
+                return
+            end if
             
             ! Use Windows API through C binding
             c_path = trim(effective_path) // c_null_char
