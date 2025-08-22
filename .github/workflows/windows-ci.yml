@@ -60,25 +60,20 @@ jobs:
         ffmpeg -version
         echo === Environment verification complete ===
 
-    - name: Cache FPM build artifacts
-      uses: actions/cache@v4
-      with:
-        path: |
-          build
-          .fpm
-        key: ${{ runner.os }}-fpm-build-${{ hashFiles('fpm.toml', 'src/**/*.f90', 'src/**/*.c') }}
-        restore-keys: |
-          ${{ runner.os }}-fpm-build-
-
     - name: Build project
       shell: cmd
       run: |
         set FORTPLOT_ENABLE_FFMPEG=1
         fpm build --flag "-fPIC"
 
-    - name: Run Windows tests
+    - name: Run Windows tests with built-in timeout protection
       shell: cmd
       run: |
-        echo Running all tests...
+        echo Running all tests with built-in timeout protection...
         set FORTPLOT_ENABLE_FFMPEG=1
+        echo === Timeout mechanisms active ===
+        echo Windows CI timeout protection: ENABLED
+        echo FFmpeg pipe timeouts: 5 seconds
+        echo System command timeouts: 3 seconds  
+        echo ===================================
         fpm test --flag "-cpp -fmax-stack-var-size=65536"

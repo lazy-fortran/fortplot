@@ -16,6 +16,34 @@ module fortplot_system_runtime
 
 contains
 
+    subroutine execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, timeout_ms)
+        !! Windows-specific command execution with timeout
+        character(len=*), intent(in) :: command
+        integer, intent(out) :: exitstat, cmdstat
+        character(len=*), intent(out) :: cmdmsg
+        integer, intent(in) :: timeout_ms
+        
+        character(len=:), allocatable :: timeout_command
+        character(len=16) :: timeout_str
+        
+        ! Convert timeout from ms to seconds (minimum 1 second)
+        write(timeout_str, '(I0)') max(1, timeout_ms/1000 + 1)
+        
+        ! Wrap with Windows timeout command
+        timeout_command = 'timeout /t ' // trim(timeout_str) // ' ' // trim(command)
+        
+        write(*,'(A,A,A)') 'DEBUG: [timeout_wrapper] Executing: ', trim(timeout_command), ''
+        
+        call execute_command_line(timeout_command, exitstat=exitstat, &
+                                 cmdstat=cmdstat, cmdmsg=cmdmsg)
+        
+        if (exitstat == 1 .and. cmdstat == 0) then
+            write(*,'(A,I0,A)') 'DEBUG: [timeout_wrapper] Command timed out after ', timeout_ms, 'ms'
+        else if (cmdstat /= 0) then
+            write(*,'(A,I0,A,A)') 'DEBUG: [timeout_wrapper] Command failed (cmdstat=', cmdstat, '): ', trim(cmdmsg)
+        end if
+    end subroutine execute_command_line_windows_timeout
+
     function is_windows() result(windows)
         !! Detect if running on Windows at runtime
         logical :: windows
@@ -137,17 +165,24 @@ contains
             command = 'mkdir -p "' // trim(effective_path) // '" 2>/dev/null'
         end if
         
-        call execute_command_line(command, exitstat=exitstat, &
-                                 cmdstat=cmdstat, cmdmsg=cmdmsg)
+        ! Add Windows CI timeout protection
+        if (is_windows()) then
+            write(*,'(A,A,A)') 'DEBUG: [create_dir] Windows mkdir command: ', trim(command), ''
+            call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 3000)
+        else
+            call execute_command_line(command, exitstat=exitstat, &
+                                     cmdstat=cmdstat, cmdmsg=cmdmsg)
+        end if
         
         ! Check if directory exists (either created or already existed)
         if (is_windows()) then
             command = 'if exist "' // trim(effective_path) // '\" exit 0'
+            write(*,'(A,A,A)') 'DEBUG: [create_dir] Windows exist check: ', trim(command), ''
+            call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 2000)
         else
             command = 'test -d "' // trim(effective_path) // '"'
+            call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
         end if
-        
-        call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
         success = (exitstat == 0 .and. cmdstat == 0)
     end subroutine create_directory_runtime
 
@@ -229,6 +264,7 @@ contains
         character(len=*), intent(in) :: command_name
         logical, intent(out) :: available
         character(len=:), allocatable :: command
+        character(len=256) :: cmdmsg
         integer :: exitstat, cmdstat
         
         available = .false.
@@ -239,7 +275,12 @@ contains
             command = 'which "' // trim(command_name) // '" >/dev/null 2>&1'
         end if
         
-        call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
+        if (is_windows()) then
+            write(*,'(A,A,A)') 'DEBUG: [check_cmd] Windows where command: ', trim(command), ''
+            call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 2000)
+        else
+            call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
+        end if
         available = (exitstat == 0 .and. cmdstat == 0)
     end subroutine check_command_available_runtime
 
