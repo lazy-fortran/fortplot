@@ -2,6 +2,7 @@ program test_file_io_error_handling
     use fortplot
     use fortplot_logging, only: log_info, log_error
     use fortplot_validation, only: validation_result_t, validate_file_exists
+    use fortplot_security, only: get_test_output_path
     use iso_fortran_env, only: error_unit, wp => real64
     implicit none
     
@@ -31,7 +32,7 @@ program test_file_io_error_handling
     print *, "Test 1: Non-existent directory handling"
     print *, "----------------------------------------"
     
-    invalid_path = "/non/existent/directory/test_plot.png"
+    invalid_path = "non_existent_directory/test_plot.png"
     call fig%initialize(width=640, height=480)
     call fig%add_plot(x, y, label="test")
     
@@ -54,7 +55,7 @@ program test_file_io_error_handling
     print *, "Test 2: Permission denied handling"
     print *, "-----------------------------------"
     
-    invalid_path = "/root/test_plot.png"
+    invalid_path = "restricted_directory/test_plot.png"
     call fig%initialize(width=640, height=480)
     call fig%add_plot(x, y, label="test")
     
@@ -103,7 +104,7 @@ program test_file_io_error_handling
     print *, "Test 4: PDF backend error handling"
     print *, "-----------------------------------"
     
-    invalid_path = "/non/existent/directory/test_plot.pdf"
+    invalid_path = "non_existent_directory/test_plot.pdf"
     call fig%initialize(width=640, height=480)
     call fig%add_plot(x, y, label="test")
     
@@ -125,7 +126,7 @@ program test_file_io_error_handling
     print *, "Test 5: ASCII backend error handling"
     print *, "-------------------------------------"
     
-    invalid_path = "/non/existent/directory/test_plot.txt"
+    invalid_path = "non_existent_directory/test_plot.txt"
     call fig%initialize(width=80, height=24)
     call fig%add_plot(x, y, label="test")
     
