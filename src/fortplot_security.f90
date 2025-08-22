@@ -678,10 +678,10 @@ contains
         character(len=256) :: dir_path
         integer :: last_slash, i
         
-        ! Handle /tmp paths by using standard temp directory structure
+        ! Handle /tmp paths by mapping to Windows-compatible paths
         if (relative_path(1:5) == '/tmp/') then
-            ! For /tmp paths, just use them as-is - the C backend will handle Windows mapping
-            full_path = relative_path
+            ! Map /tmp paths using our runtime system
+            full_path = map_unix_to_windows_path(relative_path)
         else
             ! For output/test paths, ensure they're relative to current directory
             if (relative_path(1:1) == '/') then
@@ -691,6 +691,11 @@ contains
                 ! Already relative path
                 full_path = relative_path
             end if
+        end if
+        
+        ! Convert path separators for Windows if needed
+        if (is_windows()) then
+            full_path = normalize_path_separators(full_path, .true.)
         end if
         
         ! Extract directory part and ensure it exists
