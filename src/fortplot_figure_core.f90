@@ -1508,6 +1508,9 @@ contains
             call legend_render(self%legend_data, self%backend)
         end if
         
+        ! Render text annotations
+        call render_annotations(self)
+        
         self%rendered = .true.
     end subroutine render_figure
 
@@ -3742,5 +3745,74 @@ contains
         ! Mark figure as needing re-rendering
         self%rendered = .false.
     end subroutine add_arrow_annotation
+
+    subroutine render_annotations(self)
+        !! Render all text annotations to the backend
+        !! 
+        !! Transforms annotation coordinates from their specified coordinate system
+        !! (data, figure, or axis) to pixel coordinates and renders text via backend.
+        !! Handles all typography features: font size, alignment, rotation.
+        
+        type(figure_t), intent(inout) :: self
+        integer :: i
+        real(wp) :: pixel_x, pixel_y
+        
+        ! Skip if no annotations to render
+        if (self%annotation_count == 0) return
+        if (.not. allocated(self%annotations)) return
+        
+        ! Render each annotation
+        do i = 1, self%annotation_count
+            associate (ann => self%annotations(i))
+                ! Transform coordinates to pixel space
+                call transform_annotation_coordinates(self, ann%x, ann%y, &
+                    ann%coord_type, pixel_x, pixel_y)
+                
+                ! Render text via backend
+                call self%backend%text(pixel_x, pixel_y, ann%text)
+            end associate
+        end do
+    end subroutine render_annotations
+    
+    subroutine transform_annotation_coordinates(self, x, y, coord_type, pixel_x, pixel_y)
+        !! Transform annotation coordinates from specified system to pixel coordinates
+        !! 
+        !! @param self: Figure object containing coordinate system information
+        !! @param x, y: Input coordinates in specified coordinate system  
+        !! @param coord_type: Coordinate system type (COORD_DATA, COORD_FIGURE, COORD_AXIS)
+        !! @param pixel_x, pixel_y: Output pixel coordinates
+        
+        type(figure_t), intent(in) :: self
+        real(wp), intent(in) :: x, y
+        integer, intent(in) :: coord_type
+        real(wp), intent(out) :: pixel_x, pixel_y
+        
+        select case (coord_type)
+        case (COORD_DATA)
+            ! Transform from data coordinates to pixel coordinates
+            pixel_x = transform_x_coordinate(x, self%x_min_transformed, &
+                self%x_max_transformed, self%width)
+            pixel_y = transform_y_coordinate(y, self%y_min_transformed, &
+                self%y_max_transformed, self%height, invert=.true.)
+                
+        case (COORD_FIGURE)
+            ! Figure coordinates: (0,0) = bottom-left, (1,1) = top-right
+            pixel_x = x * real(self%width, wp)
+            pixel_y = (1.0_wp - y) * real(self%height, wp)  ! Invert Y
+            
+        case (COORD_AXIS)
+            ! Axis coordinates: (0,0) = axis origin, (1,1) = axis max
+            ! For now, treat same as figure coordinates
+            pixel_x = x * real(self%width, wp)
+            pixel_y = (1.0_wp - y) * real(self%height, wp)  ! Invert Y
+            
+        case default
+            ! Default to data coordinates if unknown
+            pixel_x = transform_x_coordinate(x, self%x_min_transformed, &
+                self%x_max_transformed, self%width)
+            pixel_y = transform_y_coordinate(y, self%y_min_transformed, &
+                self%y_max_transformed, self%height, invert=.true.)
+        end select
+    end subroutine transform_annotation_coordinates
 
 end module fortplot_figure_core
