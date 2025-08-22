@@ -419,10 +419,12 @@ contains
         
         ! Stub implementation - create a simple figure
         type(figure_t) :: fig
-        integer :: i
+        integer :: i, max_plots_to_add
         
         call fig%initialize(640, 480)
-        do i = 1, min(size(x), size(colors))
+        ! Limit to reasonable number of plots to avoid max_plots warning spam
+        max_plots_to_add = min(size(x), size(colors), 20)
+        do i = 1, max_plots_to_add
             if (i < size(x)) then
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
@@ -436,10 +438,12 @@ contains
         
         ! Stub implementation - create a simple figure
         type(figure_t) :: fig
-        integer :: i
+        integer :: i, max_plots_to_add
         
         call fig%initialize(640, 480)
-        do i = 1, min(size(x), size(colors))
+        ! Limit to reasonable number of plots to avoid max_plots warning spam
+        max_plots_to_add = min(size(x), size(colors), 20)
+        do i = 1, max_plots_to_add
             if (i < size(x)) then
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
@@ -453,10 +457,12 @@ contains
         
         ! Stub implementation - create a simple figure
         type(figure_t) :: fig
-        integer :: i
+        integer :: i, max_plots_to_add
         
         call fig%initialize(80, 24)
-        do i = 1, min(size(x), size(colors))
+        ! Limit to reasonable number of plots to avoid max_plots warning spam
+        max_plots_to_add = min(size(x), size(colors), 20)
+        do i = 1, max_plots_to_add
             if (i < size(x)) then
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
