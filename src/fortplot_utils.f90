@@ -15,7 +15,7 @@ module fortplot_utils
     
     private
     public :: get_backend_from_filename, initialize_backend
-    public :: to_lowercase
+    public :: to_lowercase, ensure_directory_exists
     
 contains
 
@@ -101,5 +101,11 @@ contains
         end do
     end function to_lowercase
 
+    subroutine ensure_directory_exists(filepath)
+        !! Stub: Ensure directory exists for given filepath
+        character(len=*), intent(in) :: filepath
+        ! Stub implementation - directory creation would be OS-specific
+        ! In full implementation, extract directory path and create if needed
+    end subroutine ensure_directory_exists
 
 end module fortplot_utils
