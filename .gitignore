@@ -60,4 +60,11 @@ coverage.*
 *.backup
 *~
 .#*
+# Executable files and test binaries
+*.exe
+*.out
+test/test_*
+!test/test_*.f90
+!test/test_*.py
+
 # Force CI rebuild

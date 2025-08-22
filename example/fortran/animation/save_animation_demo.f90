@@ -71,7 +71,7 @@ contains
         case (-5)
             print *, "ERROR: Failed to generate animation frames."
         case (-6)
-            print *, "ERROR: Failed to write frame data to ffmpeg."
+            print *, "✗ Pipe write failed - enhanced recovery attempted (Issue #186: exponential backoff exhausted)"
         case (-7)
             print *, "ERROR: Generated video failed validation. Check ffmpeg version."
         case default
