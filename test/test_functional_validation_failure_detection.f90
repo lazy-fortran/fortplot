@@ -2,6 +2,7 @@
 program test_functional_validation_failure_detection
     use fortplot
     use fortplot_validation
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_file_existence_failure_detection()
@@ -18,7 +19,9 @@ contains
     ! Then: Validation should FAIL with appropriate message
     subroutine test_file_existence_failure_detection()
         type(validation_result_t) :: validation
-        character(len=*), parameter :: missing_file = "output/test/nonexistent_plot.png"
+        character(len=512) :: missing_file
+        
+        missing_file = get_test_output_path("output/test/nonexistent_plot.png")
         
         ! Act: Validate non-existent file
         validation = validate_file_exists(missing_file)
@@ -37,9 +40,12 @@ contains
     ! Then: Validation should FAIL for corrupted formats
     subroutine test_invalid_format_detection()
         type(validation_result_t) :: validation
-        character(len=*), parameter :: invalid_png = "output/test/invalid_format.png"
-        character(len=*), parameter :: invalid_pdf = "output/test/invalid_format.pdf"
+        character(len=512) :: invalid_png
+        character(len=512) :: invalid_pdf
         integer :: unit
+        
+        invalid_png = get_test_output_path("output/test/invalid_format.png")
+        invalid_pdf = get_test_output_path("output/test/invalid_format.pdf")
         
         ! Arrange: Create files with invalid format signatures
         open(newunit=unit, file=invalid_png, form='unformatted', access='stream')
@@ -72,8 +78,10 @@ contains
     ! Then: Validation should FAIL for undersized outputs
     subroutine test_empty_file_detection()
         type(validation_result_t) :: validation
-        character(len=*), parameter :: empty_png = "output/test/empty_plot.png"
+        character(len=512) :: empty_png
         integer :: unit
+        
+        empty_png = get_test_output_path("output/test/empty_plot.png")
         
         ! Arrange: Create empty file
         open(newunit=unit, file=empty_png)
@@ -99,7 +107,9 @@ contains
         type(validation_result_t) :: validation
         real(wp), dimension(5) :: x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
         real(wp), dimension(5) :: y = [1.0_wp, 4.0_wp, 2.0_wp, 5.0_wp, 3.0_wp]
-        character(len=*), parameter :: broken_output = "output/test/broken_plot_output.png"
+        character(len=512) :: broken_output
+        
+        broken_output = get_test_output_path("output/test/broken_plot_output.png")
         
         ! Simulate broken plot generation by not actually creating the file
         ! In a real scenario, this would happen if savefig() failed internally

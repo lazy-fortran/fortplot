@@ -13,6 +13,7 @@ module fortplot_security
     public :: safe_launch_viewer
     public :: sanitize_filename
     public :: is_safe_path
+    public :: get_test_output_path
 
     ! Security-related constants
     integer, parameter :: MAX_PATH_LENGTH = 4096
@@ -689,5 +690,47 @@ contains
             call log_warning("FFprobe validation failed: " // trim(filename))
         end if
     end function validate_with_actual_ffprobe
+
+    !> Get cross-platform test output path with automatic directory creation
+    function get_test_output_path(relative_path) result(full_path)
+        character(len=*), intent(in) :: relative_path
+        character(len=512) :: full_path
+        logical :: success
+        character(len=256) :: dir_path
+        integer :: last_slash, i
+        
+        ! Handle /tmp paths by using standard temp directory structure
+        if (relative_path(1:5) == '/tmp/') then
+            ! For /tmp paths, just use them as-is - the C backend will handle Windows mapping
+            full_path = relative_path
+        else
+            ! For output/test paths, ensure they're relative to current directory
+            if (relative_path(1:1) == '/') then
+                ! Absolute path starting with / - make it relative
+                full_path = '.' // relative_path
+            else
+                ! Already relative path
+                full_path = relative_path
+            end if
+        end if
+        
+        ! Extract directory part and ensure it exists
+        last_slash = 0
+        do i = 1, len_trim(full_path)
+            if (full_path(i:i) == '/' .or. full_path(i:i) == '\') then
+                last_slash = i
+            end if
+        end do
+        
+        if (last_slash > 0) then
+            dir_path = full_path(1:last_slash-1)
+            if (len_trim(dir_path) > 0) then
+                call safe_create_directory(dir_path, success)
+                if (.not. success) then
+                    call log_warning("Could not create test output directory: " // trim(dir_path))
+                end if
+            end if
+        end if
+    end function get_test_output_path
 
 end module fortplot_security

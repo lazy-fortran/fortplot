@@ -7,6 +7,7 @@ program test_pcolormesh_api
     
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t, add_pcolormesh, show, savefig, xlabel, ylabel, title
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_object_oriented_api()
@@ -48,33 +49,33 @@ contains
         ! Act & Assert - Test basic OO interface
         call fig%add_pcolormesh(x, y, c)
         call fig%set_title("OO API - Basic pcolormesh")
-        call fig%savefig('/tmp/test_oo_basic.png')
+        call fig%savefig(get_test_output_path('/tmp/test_oo_basic.png'))
         
         ! Test with colormap parameter
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='plasma')
         call fig%set_title("OO API - Plasma colormap")
-        call fig%savefig('/tmp/test_oo_colormap.png')
+        call fig%savefig(get_test_output_path('/tmp/test_oo_colormap.png'))
         
         ! Test with vmin/vmax parameters
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis', vmin=0.0_wp, vmax=1.0_wp)
         call fig%set_title("OO API - Normalized range")
-        call fig%savefig('/tmp/test_oo_normalized.png')
+        call fig%savefig(get_test_output_path('/tmp/test_oo_normalized.png'))
         
         ! Test with edge parameters
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='coolwarm', &
                                edgecolors='black', linewidths=1.5_wp)
         call fig%set_title("OO API - Black edges")
-        call fig%savefig('/tmp/test_oo_edges.png')
+        call fig%savefig(get_test_output_path('/tmp/test_oo_edges.png'))
         
         ! Test parameter combination (full matplotlib compatibility)
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='inferno', vmin=0.1_wp, vmax=0.9_wp, &
                                edgecolors='white', linewidths=0.8_wp)
         call fig%set_title("OO API - Full parameter set")
-        call fig%savefig('/tmp/test_oo_full_params.png')
+        call fig%savefig(get_test_output_path('/tmp/test_oo_full_params.png'))
         
         print *, "test_object_oriented_api: PASSED"
     end subroutine test_object_oriented_api
@@ -100,25 +101,25 @@ contains
         ! Basic stateful call (equivalent to plt.pcolormesh(x, y, c))
         call add_pcolormesh(x, y, c)
         call title("Stateful API - Basic")
-        call savefig('/tmp/test_stateful_basic.png')
+        call savefig(get_test_output_path('/tmp/test_stateful_basic.png'))
         
         ! Stateful call with colormap (equivalent to plt.pcolormesh(x, y, c, cmap='plasma'))
         call add_pcolormesh(x, y, c, colormap='plasma')
         call title("Stateful API - Plasma colormap")
-        call savefig('/tmp/test_stateful_colormap.png')
+        call savefig(get_test_output_path('/tmp/test_stateful_colormap.png'))
         
         ! Stateful with normalization (plt.pcolormesh(x, y, c, vmin=0, vmax=1))
         call add_pcolormesh(x, y, c, colormap='viridis', vmin=0.0_wp, vmax=1.0_wp)
         call xlabel("X coordinate")
         call ylabel("Y coordinate")
         call title("Stateful API - Normalized")
-        call savefig('/tmp/test_stateful_normalized.png')
+        call savefig(get_test_output_path('/tmp/test_stateful_normalized.png'))
         
         ! Stateful with edges (plt.pcolormesh(x, y, c, edgecolors='k', linewidths=1))
         call add_pcolormesh(x, y, c, colormap='coolwarm', &
                            edgecolors='black', linewidths=1.0_wp)
         call title("Stateful API - With edges")
-        call savefig('/tmp/test_stateful_edges.png')
+        call savefig(get_test_output_path('/tmp/test_stateful_edges.png'))
         
         print *, "test_stateful_api_compatibility: PASSED"
     end subroutine test_stateful_api_compatibility
@@ -154,7 +155,7 @@ contains
         
         ! Test correct dimensions (should work)
         call fig%add_pcolormesh(x_correct, y_correct, c_test)
-        call fig%savefig('/tmp/test_param_validation_good.png')
+        call fig%savefig(get_test_output_path('/tmp/test_param_validation_good.png'))
         
         print *, "test_parameter_validation: PASSED"
     end subroutine test_parameter_validation
@@ -189,17 +190,17 @@ contains
             
             write(filename, '(A, A, A)') '/tmp/test_colormap_', &
                                        trim(test_colormaps(cmap_idx)), '.png'
-            call fig%savefig(filename)
+            call fig%savefig(get_test_output_path(filename))
         end do
         
         ! Test colormap case insensitivity (matplotlib allows 'Viridis', 'PLASMA', etc.)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='VIRIDIS')  ! Uppercase
-        call fig%savefig('/tmp/test_colormap_uppercase.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colormap_uppercase.png'))
         
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='Plasma')   ! Mixed case
-        call fig%savefig('/tmp/test_colormap_mixedcase.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colormap_mixedcase.png'))
         
         print *, "test_colormap_parameter_support: PASSED"
     end subroutine test_colormap_parameter_support
@@ -228,27 +229,27 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
         call fig%set_title("No edges (default)")
-        call fig%savefig('/tmp/test_edges_none.png')
+        call fig%savefig(get_test_output_path('/tmp/test_edges_none.png'))
         
         ! Test black edges (common matplotlib pattern)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis', edgecolors='black')
         call fig%set_title("Black edges")
-        call fig%savefig('/tmp/test_edges_black.png')
+        call fig%savefig(get_test_output_path('/tmp/test_edges_black.png'))
         
         ! Test white edges with specific width
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='plasma', &
                                edgecolors='white', linewidths=2.0_wp)
         call fig%set_title("White edges, width 2.0")
-        call fig%savefig('/tmp/test_edges_white_thick.png')
+        call fig%savefig(get_test_output_path('/tmp/test_edges_white_thick.png'))
         
         ! Test thin edges (matplotlib default linewidth when edges enabled)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='coolwarm', &
                                edgecolors='gray', linewidths=0.5_wp)
         call fig%set_title("Gray edges, width 0.5")
-        call fig%savefig('/tmp/test_edges_gray_thin.png')
+        call fig%savefig(get_test_output_path('/tmp/test_edges_gray_thin.png'))
         
         print *, "test_edge_parameter_support: PASSED"
     end subroutine test_edge_parameter_support
@@ -280,31 +281,31 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
         call fig%set_title("Auto normalization (0.0 to 2.0)")
-        call fig%savefig('/tmp/test_norm_auto.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_auto.png'))
         
         ! Test explicit full range normalization
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis', vmin=0.0_wp, vmax=2.0_wp)
         call fig%set_title("Explicit range (0.0 to 2.0)")
-        call fig%savefig('/tmp/test_norm_explicit_full.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_explicit_full.png'))
         
         ! Test clipping normalization (narrower range)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='plasma', vmin=0.5_wp, vmax=1.5_wp)
         call fig%set_title("Clipped range (0.5 to 1.5)")
-        call fig%savefig('/tmp/test_norm_clipped.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_clipped.png'))
         
         ! Test expanding normalization (wider range)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c, colormap='coolwarm', vmin=-0.5_wp, vmax=2.5_wp)
         call fig%set_title("Expanded range (-0.5 to 2.5)")
-        call fig%savefig('/tmp/test_norm_expanded.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_expanded.png'))
         
         ! Test symmetric normalization around zero
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c - 1.0_wp, colormap='coolwarm', vmin=-1.0_wp, vmax=1.0_wp)
         call fig%set_title("Symmetric range (-1.0 to 1.0)")
-        call fig%savefig('/tmp/test_norm_symmetric.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_symmetric.png'))
         
         print *, "test_vmin_vmax_normalization: PASSED"
     end subroutine test_vmin_vmax_normalization
@@ -334,21 +335,21 @@ contains
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
         call fig%set_title("Equivalent to matplotlib basic pcolormesh")
-        call fig%savefig('/tmp/test_matplotlib_basic.png')
+        call fig%savefig(get_test_output_path('/tmp/test_matplotlib_basic.png'))
         
         ! Equivalent to: plt.pcolormesh(X, Y, C, cmap='plasma', vmin=0, vmax=1, edgecolors='k')
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='plasma', vmin=0.0_wp, vmax=1.0_wp, &
                                edgecolors='black')
         call fig%set_title("Equivalent to matplotlib with edges")
-        call fig%savefig('/tmp/test_matplotlib_edges.png')
+        call fig%savefig(get_test_output_path('/tmp/test_matplotlib_edges.png'))
         
         ! Equivalent to: plt.pcolormesh(X, Y, C, cmap='coolwarm', alpha=0.8)
         ! Note: alpha parameter may not be implemented yet
         call fig%initialize(400, 300)
         call fig%add_pcolormesh(x, y, c, colormap='coolwarm')
         call fig%set_title("Equivalent to matplotlib coolwarm")
-        call fig%savefig('/tmp/test_matplotlib_coolwarm.png')
+        call fig%savefig(get_test_output_path('/tmp/test_matplotlib_coolwarm.png'))
         
         ! Test scientific data pattern (common matplotlib use case)
         ! Equivalent to typical scientific field visualization
@@ -373,7 +374,7 @@ contains
             call fig%set_xlabel("X coordinate")
             call fig%set_ylabel("Y coordinate") 
             call fig%set_title("Scientific field visualization")
-            call fig%savefig('/tmp/test_matplotlib_scientific.png')
+            call fig%savefig(get_test_output_path('/tmp/test_matplotlib_scientific.png'))
         end block
         
         print *, "test_matplotlib_parameter_equivalence: PASSED"
