@@ -2991,10 +2991,11 @@ contains
         integer :: last_slash
         logical :: success
         
-        ! Find the last directory separator
+        ! Find the last directory separator (handle both / and \)
         last_slash = 0
         do last_slash = len_trim(filename), 1, -1
-            if (filename(last_slash:last_slash) == '/') exit
+            if (filename(last_slash:last_slash) == '/' .or. &
+                filename(last_slash:last_slash) == '\') exit
         end do
         
         ! If there's a directory path, create it safely
