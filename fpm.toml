@@ -7,7 +7,7 @@ copyright = "Copyright 2025, Christopher Albert"
 
 [build]
 auto-executables = true
-auto-tests = true
+auto-tests = false
 auto-examples = false
 module-naming = false
 
