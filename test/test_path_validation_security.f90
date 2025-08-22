@@ -6,7 +6,7 @@
 !! Then: Ensure malicious paths are rejected and safe paths are allowed
 program test_path_validation_security
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
-    use fortplot_security, only: is_safe_path
+    use fortplot_security, only: is_safe_path, get_test_output_path
     use fortplot, only: figure_t
     implicit none
     

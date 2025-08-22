@@ -4,7 +4,7 @@ program test_pdf_content_regression
     !! When: We generate PDF files using fortplot
     !! Then: Files should contain PDF headers and NOT PNG data
     use fortplot
-    use fortplot_security, only: safe_remove_file
+    use fortplot_security, only: safe_remove_file, get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     

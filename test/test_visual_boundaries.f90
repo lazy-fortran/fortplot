@@ -1,7 +1,7 @@
 program test_visual_boundaries
     !! Test that actual rendered plots stay within canvas boundaries
     use fortplot
-    use fortplot_security, only: safe_remove_file
+    use fortplot_security, only: safe_remove_file, get_test_output_path
     implicit none
     
     integer :: test_count = 0

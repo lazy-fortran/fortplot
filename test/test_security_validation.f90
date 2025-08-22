@@ -1,6 +1,6 @@
 program test_security_validation
     !! Test security validation functions including single dot vulnerability  
-    use fortplot_security, only: is_safe_path
+    use fortplot_security, only: is_safe_path, get_test_output_path
     implicit none
     
     integer :: test_count, passed_count
