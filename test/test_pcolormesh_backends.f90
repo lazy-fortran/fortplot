@@ -7,6 +7,7 @@ program test_pcolormesh_backends
     
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_backend_rendering_consistency()
@@ -46,20 +47,20 @@ contains
         ! Act - Render through all three backends
         call fig_png%initialize(400, 300)
         call fig_png%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_png%savefig('/tmp/test_pcolormesh_consistency.png')
+        call fig_png%savefig(get_test_output_path('/tmp/test_pcolormesh_consistency.png'))
         
         call fig_pdf%initialize(400, 300)
         call fig_pdf%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_pdf%savefig('/tmp/test_pcolormesh_consistency.pdf')
+        call fig_pdf%savefig(get_test_output_path('/tmp/test_pcolormesh_consistency.pdf'))
         
         call fig_ascii%initialize(60, 30)
         call fig_ascii%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_ascii%savefig('/tmp/test_pcolormesh_consistency.txt')
+        call fig_ascii%savefig(get_test_output_path('/tmp/test_pcolormesh_consistency.txt'))
         
         ! Assert - All backends should have created output files
-        inquire(file='/tmp/test_pcolormesh_consistency.png', exist=png_exists)
-        inquire(file='/tmp/test_pcolormesh_consistency.pdf', exist=pdf_exists)
-        inquire(file='/tmp/test_pcolormesh_consistency.txt', exist=ascii_exists)
+        inquire(file=get_test_output_path('/tmp/test_pcolormesh_consistency.png'), exist=png_exists)
+        inquire(file=get_test_output_path('/tmp/test_pcolormesh_consistency.pdf'), exist=pdf_exists)
+        inquire(file=get_test_output_path('/tmp/test_pcolormesh_consistency.txt'), exist=ascii_exists)
         
         if (.not. png_exists) error stop "PNG backend failed to create pcolormesh output"
         if (.not. pdf_exists) error stop "PDF backend failed to create pcolormesh output"
@@ -91,7 +92,7 @@ contains
         
         ! Act - Test backend rendering with proper dimensions
         call fig%add_pcolormesh(x_edges, y_edges, c_test, colormap='plasma')
-        call fig%savefig('/tmp/test_pcolormesh_png_accuracy.png')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_png_accuracy.png'))
         
         ! Assert - PNG should contain properly filled irregular quadrilaterals
         ! This will fail until irregular mesh support is implemented
@@ -125,7 +126,7 @@ contains
         ! Act - Render high-precision pcolormesh
         call fig%add_pcolormesh(x, y, c, colormap='coolwarm')
         call fig%set_title("PDF Vector Quality Test - High Precision Mesh")
-        call fig%savefig('/tmp/test_pcolormesh_pdf_quality.pdf')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_pdf_quality.pdf'))
         
         ! Assert - PDF should maintain vector precision without pixelation
         print *, "test_pdf_backend_vector_quality: PASSED"
@@ -157,7 +158,7 @@ contains
         
         ! Act - ASCII rendering should map values to distinct characters
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig%savefig('/tmp/test_pcolormesh_ascii_mapping.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_ascii_mapping.txt'))
         
         ! Assert - ASCII output should show distinct character patterns
         ! This test will validate that different data values produce different characters
@@ -193,13 +194,13 @@ contains
             ! PNG backend
             call fig_png%initialize(300, 300)
             call fig_png%add_pcolormesh(x, y, c, colormap=trim(colormaps(cm_idx)))
-            write(filename_base, '(A, A, A)') '/tmp/test_colormap_', trim(colormaps(cm_idx)), '.png'
+            write(filename_base, '(A, A, A)') get_test_output_path('/tmp/test_colormap_'), trim(colormaps(cm_idx)), '.png'
             call fig_png%savefig(trim(filename_base))
             
             ! PDF backend - should produce same colormap mapping
             call fig_pdf%initialize(300, 300)
             call fig_pdf%add_pcolormesh(x, y, c, colormap=trim(colormaps(cm_idx)))
-            write(filename_base, '(A, A, A)') '/tmp/test_colormap_', trim(colormaps(cm_idx)), '.pdf'
+            write(filename_base, '(A, A, A)') get_test_output_path('/tmp/test_colormap_'), trim(colormaps(cm_idx)), '.pdf'
             call fig_pdf%savefig(trim(filename_base))
         end do
         
@@ -230,12 +231,12 @@ contains
         call fig_png%initialize(300, 300)
         call fig_png%add_pcolormesh(x, y, c, colormap='viridis', &
                                    edgecolors='black', linewidths=2.0_wp)
-        call fig_png%savefig('/tmp/test_pcolormesh_edges.png')
+        call fig_png%savefig(get_test_output_path('/tmp/test_pcolormesh_edges.png'))
         
         call fig_pdf%initialize(300, 300)
         call fig_pdf%add_pcolormesh(x, y, c, colormap='viridis', &
                                    edgecolors='black', linewidths=2.0_wp)
-        call fig_pdf%savefig('/tmp/test_pcolormesh_edges.pdf')
+        call fig_pdf%savefig(get_test_output_path('/tmp/test_pcolormesh_edges.pdf'))
         
         ! Assert - Both backends should render black edges with 2.0 width
         ! This will fail until edge rendering is implemented

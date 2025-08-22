@@ -1,6 +1,7 @@
 program test_streamplot_circles
     !! Test streamplot circles close properly and have correct radial positioning
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
     
@@ -48,8 +49,8 @@ contains
         
         ! The visual test is: are the circles closed?
         ! This should be verified by examining the output
-        call fig%savefig('output/test/test_streamplot_circles/test_streamplot_circles_closure.png')
-        call fig%savefig('/tmp/test/test_streamplot_circles_closure.png')
+        call fig%savefig(get_test_output_path('output/test/test_streamplot_circles/test_streamplot_circles_closure.png'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_streamplot_circles_closure.png'))
         print *, "Circle closure test completed - verify visually that circles are closed"
         
     end subroutine test_circle_closure
@@ -63,8 +64,8 @@ contains
         
         call fig%initialize(400, 400)  
         call fig%streamplot(x, y, u, v, density=2.0_real64)
-        call fig%savefig('output/test/test_streamplot_circles/test_streamplot_circles_radial.png')
-        call fig%savefig('/tmp/test/test_streamplot_circles_radial.png')
+        call fig%savefig(get_test_output_path('output/test/test_streamplot_circles/test_streamplot_circles_radial.png'))
+        call fig%savefig(get_test_output_path('/tmp/test/test_streamplot_circles_radial.png'))
         print *, "Radial positioning test completed - verify circles match expected radii"
         
     end subroutine test_radial_positioning

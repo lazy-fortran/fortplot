@@ -1,5 +1,6 @@
 program test_pcolormesh_extended
     use fortplot, only: figure_t, wp
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_pcolormesh_data_validation()
@@ -35,7 +36,7 @@ contains
         
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_validation.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_validation.txt'))
         
         ! Test with different data patterns
         ! Diagonal gradient
@@ -47,7 +48,7 @@ contains
         
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_diagonal.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_diagonal.txt'))
         
         print *, "test_pcolormesh_data_validation: PASSED"
     end subroutine
@@ -81,7 +82,7 @@ contains
         call fig%add_pcolormesh(x, y, z)
         call fig%set_xlabel("X (log scale)")
         call fig%set_ylabel("Y (linear scale)")
-        call fig%savefig('/tmp/test_pcolormesh_logspace.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_logspace.txt'))
         
         ! Test with negative coordinates
         do i = 1, 11
@@ -97,7 +98,7 @@ contains
         
         call fig%initialize(70, 35)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_negative.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_negative.txt'))
         
         print *, "test_pcolormesh_coordinate_mapping: PASSED"
     end subroutine
@@ -117,7 +118,7 @@ contains
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x_coarse, y_coarse, z_coarse)
-        call fig%savefig('/tmp/test_pcolormesh_coarse.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_coarse.txt'))
         
         ! Fine grid with smooth function
         do i = 1, 21
@@ -133,7 +134,7 @@ contains
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x_fine, y_fine, z_fine)
-        call fig%savefig('/tmp/test_pcolormesh_fine.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_fine.txt'))
         
         print *, "test_pcolormesh_interpolation: PASSED"
     end subroutine
@@ -161,7 +162,7 @@ contains
         ! Test ASCII backend
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_backend_ascii.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_backend_ascii.txt'))
         
         print *, "test_pcolormesh_backends: PASSED"
     end subroutine
@@ -195,7 +196,7 @@ contains
         call fig%add_pcolormesh(x_mesh, y_mesh, z_mesh)
         call fig%add_plot(x_line, y_line, label="Sine wave")
         call fig%set_title("Pcolormesh with Line Overlay")
-        call fig%savefig('/tmp/test_pcolormesh_combined.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_combined.txt'))
         
         print *, "test_pcolormesh_with_other_plots: PASSED"
     end subroutine

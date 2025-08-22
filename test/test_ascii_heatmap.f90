@@ -1,5 +1,6 @@
 program test_ascii_heatmap
     use fortplot, only: figure_t, wp
+    use fortplot_security, only: get_test_output_path
     implicit none
     integer :: i, j
     real(wp), allocatable :: x(:), y(:), z(:,:)
@@ -21,7 +22,7 @@ program test_ascii_heatmap
     ! Test contour_filled ASCII output
     call fig%initialize(80, 25)
     call fig%add_contour_filled(x, y, z, label="Gaussian")
-    call fig%savefig('/tmp/test_contour_filled.txt')
+    call fig%savefig(get_test_output_path('/tmp/test_contour_filled.txt'))
     
     ! Test pcolormesh ASCII output - needs edge coordinates
     block
@@ -38,7 +39,7 @@ program test_ascii_heatmap
         
         call fig%initialize(80, 25)
         call fig%add_pcolormesh(x_edges, y_edges, z)
-        call fig%savefig('/tmp/test_pcolormesh.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh.txt'))
     end block
     
     print *, "ASCII heatmap tests completed"

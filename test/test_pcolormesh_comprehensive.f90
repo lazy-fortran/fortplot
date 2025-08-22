@@ -1,5 +1,6 @@
 program test_pcolormesh_comprehensive
     use fortplot, only: figure_t, wp
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_pcolormesh_ascii_rendering()
@@ -34,7 +35,7 @@ contains
         
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_checkerboard.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_checkerboard.txt'))
         
         ! Test gradient pattern
         do i = 1, 10
@@ -45,7 +46,7 @@ contains
         
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_gradient.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_gradient.txt'))
         
         print *, "test_pcolormesh_ascii_rendering: PASSED"
     end subroutine
@@ -71,7 +72,7 @@ contains
             
             call fig%initialize(70, 35)
             call fig%add_pcolormesh(x_irreg, y_irreg, z_irreg)
-            call fig%savefig('/tmp/test_pcolormesh_irregular.txt')
+            call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_irregular.txt'))
         end block
         
         ! Test with negative coordinates
@@ -92,7 +93,7 @@ contains
             
             call fig%initialize(70, 35)
             call fig%add_pcolormesh(x_neg, y_neg, z_neg)
-            call fig%savefig('/tmp/test_pcolormesh_negative.txt')
+            call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_negative.txt'))
         end block
         
         print *, "test_pcolormesh_coordinate_systems: PASSED"
@@ -118,7 +119,7 @@ contains
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_small_values.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_small_values.txt'))
         
         ! Test with large values
         do i = 1, 4
@@ -129,21 +130,21 @@ contains
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_large_values.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_large_values.txt'))
         
         ! Test with uniform values
         z = 42.0_wp
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_uniform.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_uniform.txt'))
         
         ! Test with NaN handling (if supported)
         ! Skip NaN test as it causes compilation errors
         
         call fig%initialize(50, 25)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_with_nan.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_with_nan.txt'))
         
         print *, "test_pcolormesh_value_ranges: PASSED"
     end subroutine
@@ -161,7 +162,7 @@ contains
             
             call fig%initialize(30, 20)
             call fig%add_pcolormesh(x_min, y_min, z_min)
-            call fig%savefig('/tmp/test_pcolormesh_minimal.txt')
+            call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_minimal.txt'))
         end block
         
         ! Test rectangular grid (non-square)
@@ -184,7 +185,7 @@ contains
             
             call fig%initialize(80, 30)
             call fig%add_pcolormesh(x_rect, y_rect, z_rect)
-            call fig%savefig('/tmp/test_pcolormesh_rectangular.txt')
+            call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_rectangular.txt'))
         end block
         
         print *, "test_pcolormesh_grid_sizes: PASSED"
@@ -210,7 +211,7 @@ contains
         call fig%set_xlabel("X (edges at integers)")
         call fig%set_ylabel("Y (edges at integers)")
         call fig%set_title("Edge Alignment Test")
-        call fig%savefig('/tmp/test_pcolormesh_edges.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_edges.txt'))
         
         print *, "test_pcolormesh_edge_alignment: PASSED"
     end subroutine
@@ -240,7 +241,7 @@ contains
         call fig%set_xlabel("X coordinate")
         call fig%set_ylabel("Y coordinate")
         call fig%set_title("Pcolormesh Wave Pattern")
-        call fig%savefig('/tmp/test_pcolormesh_labeled.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_labeled.txt'))
         
         print *, "test_pcolormesh_with_labels: PASSED"
     end subroutine
@@ -266,7 +267,7 @@ contains
         ! Test different colormaps - colormap parameter may not be supported in ASCII
         call fig%initialize(60, 30)
         call fig%add_pcolormesh(x, y, z)
-        call fig%savefig('/tmp/test_pcolormesh_colormap.txt')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_colormap.txt'))
         
         print *, "test_pcolormesh_colormap_variations: PASSED"
     end subroutine

@@ -2,6 +2,7 @@ program test_minimal_vertical_text
     !! Minimal test to debug Y-axis text rendering issues
     !! Focus on the simplest possible case to isolate the problem
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -30,7 +31,7 @@ contains
         call title('Single Y')
         call xlabel('X')
         call ylabel('Y')  ! Single character should be trivial
-        call savefig('build/test/debug_single_y.png')
+        call savefig(get_test_output_path('build/test/debug_single_y.png'))
         
         print *, "  Created: debug_single_y.png"
         print *, "  Should show: Single 'Y' character rotated 90 degrees"
@@ -50,7 +51,7 @@ contains
         call title('Two Chars')
         call xlabel('X')
         call ylabel('AB')  ! Should show A at bottom, B at top when rotated
-        call savefig('build/test/debug_two_ab.png')
+        call savefig(get_test_output_path('build/test/debug_two_ab.png'))
         
         print *, "  Created: debug_two_ab.png"
         print *, "  Should show: 'A' at bottom, 'B' at top (reading bottom-to-top)"
@@ -70,7 +71,7 @@ contains
         call title('Y Values Problem')
         call xlabel('X')
         call ylabel('Y values')  ! The original problem case
-        call savefig('build/test/debug_y_values_problem.png')
+        call savefig(get_test_output_path('build/test/debug_y_values_problem.png'))
         
         print *, "  Created: debug_y_values_problem.png"
         print *, "  Should show: 'Y' at bottom, then space, 'v', 'a', 'l', 'u', 'e', 's' at top"

@@ -6,6 +6,7 @@ program test_pdf_yaxis_label_overlap
     !! When: Multiple tick labels are positioned close together
     !! Then: Labels should not overlap and maintain minimum spacing
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -38,7 +39,7 @@ contains
         call fig%set_title("PDF Y-axis overlap test")
         
         ! Save to PDF - this should trigger the overlap issue
-        test_filename = "/tmp/test_pdf_yaxis_overlap.pdf" 
+        test_filename = get_test_output_path("/tmp/test_pdf_yaxis_overlap.pdf") 
         call fig%savefig(test_filename)
         
         ! Verify file was created
@@ -72,7 +73,7 @@ contains
         call fig%set_ylim(-0.06_wp, 0.05_wp)  ! Very tight range
         call fig%set_title("Minimum spacing test")
         
-        test_filename = "/tmp/test_pdf_min_spacing.pdf"
+        test_filename = get_test_output_path("/tmp/test_pdf_min_spacing.pdf")
         call fig%savefig(test_filename)
         
         ! TODO: Add actual spacing measurement logic
@@ -97,7 +98,7 @@ contains
         call fig%set_ylim(-0.002_wp, 0.002_wp)  ! Very small range around origin
         call fig%set_title("Origin coordinate test")
         
-        test_filename = "/tmp/test_pdf_origin_coords.pdf"
+        test_filename = get_test_output_path("/tmp/test_pdf_origin_coords.pdf")
         call fig%savefig(test_filename)
         
         ! TODO: Validate that coordinate transformation near origin

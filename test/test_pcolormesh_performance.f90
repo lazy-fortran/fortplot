@@ -7,6 +7,7 @@ program test_pcolormesh_performance
     
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_large_mesh_memory_efficiency()
@@ -56,7 +57,7 @@ contains
         call fig%initialize(800, 600)
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
         call fig%set_title("Large Mesh Performance Test - 50x50 cells")
-        call fig%savefig('/tmp/test_pcolormesh_large_memory.png')
+        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_large_memory.png'))
         
         call cpu_time(end_time)
         
@@ -102,7 +103,7 @@ contains
         call cpu_time(start_time)
         call fig_png%initialize(600, 600)
         call fig_png%add_pcolormesh(x, y, c, colormap='plasma')
-        call fig_png%savefig('/tmp/test_pcolormesh_1000_cells.png')
+        call fig_png%savefig(get_test_output_path('/tmp/test_pcolormesh_1000_cells.png'))
         call cpu_time(end_time)
         png_time = end_time - start_time
         
@@ -114,7 +115,7 @@ contains
         call cpu_time(start_time)
         call fig_pdf%initialize(600, 600)
         call fig_pdf%add_pcolormesh(x, y, c, colormap='plasma')
-        call fig_pdf%savefig('/tmp/test_pcolormesh_1000_cells.pdf')
+        call fig_pdf%savefig(get_test_output_path('/tmp/test_pcolormesh_1000_cells.pdf'))
         call cpu_time(end_time)
         pdf_time = end_time - start_time
         
@@ -126,7 +127,7 @@ contains
         call cpu_time(start_time)
         call fig_ascii%initialize(80, 60)
         call fig_ascii%add_pcolormesh(x, y, c, colormap='plasma')
-        call fig_ascii%savefig('/tmp/test_pcolormesh_1000_cells.txt')
+        call fig_ascii%savefig(get_test_output_path('/tmp/test_pcolormesh_1000_cells.txt'))
         call cpu_time(end_time)
         ascii_time = end_time - start_time
         
@@ -182,7 +183,7 @@ contains
             ! Act - Render rectangular mesh
             call fig%initialize(600, 400)
             call fig%add_pcolormesh(x, y, c, colormap='coolwarm')
-            write(filename, '(A, I0, A, I0, A)') '/tmp/test_rect_mesh_', nx, 'x', ny, '.png'
+            write(filename, '(A, I0, A, I0, A)') get_test_output_path('/tmp/test_rect_mesh_'), nx, 'x', ny, '.png'
             call fig%savefig(filename)
             
             call cpu_time(end_time)
@@ -283,7 +284,7 @@ contains
             call fig%add_pcolormesh(x, y, c, colormap=trim(colormaps(colormap_idx)))
             call fig%set_title("Performance Test - " // trim(colormaps(colormap_idx)))
             
-            write(filename, '(A, A, A)') '/tmp/test_time_limit_', &
+            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_time_limit_'), &
                                        trim(colormaps(colormap_idx)), '.png'
             call fig%savefig(filename)
             
@@ -335,7 +336,7 @@ contains
         call cpu_time(start_time)
         call fig_ascii%initialize(60, 45)
         call fig_ascii%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_ascii%savefig('/tmp/test_performance_ascii.txt')
+        call fig_ascii%savefig(get_test_output_path('/tmp/test_performance_ascii.txt'))
         call cpu_time(end_time)
         ascii_time = end_time - start_time
         
@@ -343,7 +344,7 @@ contains
         call cpu_time(start_time)
         call fig_png%initialize(500, 400)
         call fig_png%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_png%savefig('/tmp/test_performance_png.png')
+        call fig_png%savefig(get_test_output_path('/tmp/test_performance_png.png'))
         call cpu_time(end_time)
         png_time = end_time - start_time
         
@@ -351,7 +352,7 @@ contains
         call cpu_time(start_time)
         call fig_pdf%initialize(500, 400)
         call fig_pdf%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig_pdf%savefig('/tmp/test_performance_pdf.pdf')
+        call fig_pdf%savefig(get_test_output_path('/tmp/test_performance_pdf.pdf'))
         call cpu_time(end_time)
         pdf_time = end_time - start_time
         

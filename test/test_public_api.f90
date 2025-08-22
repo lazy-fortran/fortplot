@@ -1,6 +1,7 @@
 program test_public_api
     !! Test program for the public fortplot API
     use fortplot
+    use fortplot_security, only: get_test_output_path
     implicit none
 
     real(wp), dimension(100) :: x, y
@@ -16,7 +17,7 @@ program test_public_api
     call title('Simple Plot Test')
     call xlabel('x')
     call ylabel('y')
-    call savefig('build/test/simple_plot.png')
+    call savefig(get_test_output_path('build/test/simple_plot.png'))
     
     print *, "Public API test completed - simple_plot.png created"
 

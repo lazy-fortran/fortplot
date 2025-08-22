@@ -2,6 +2,7 @@ program test_blocking
     !! Test blocking parameter in show and savefig routines
     
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use iso_fortran_env, only: wp => real64
     implicit none
     
@@ -54,12 +55,12 @@ contains
         
         ! Test non-blocking (default)
         print *, "Testing savefig() without blocking parameter (default)"
-        call fig%savefig('output/test/test_blocking/test_blocking.png')
-        call fig%savefig('/tmp/test_blocking.png')
+        call fig%savefig(get_test_output_path('output/test/test_blocking/test_blocking.png'))
+        call fig%savefig(get_test_output_path('/tmp/test_blocking.png'))
         
         ! Test with explicit blocking=false for ASCII
         print *, "Testing savefig() with blocking=.false. for ASCII"
-        call fig%savefig('output/test/test_blocking/test_blocking.txt', blocking=.false.)
+        call fig%savefig(get_test_output_path('output/test/test_blocking/test_blocking.txt'), blocking=.false.)
         
         print *, "test_savefig_with_blocking: PASSED"
     end subroutine test_savefig_with_blocking

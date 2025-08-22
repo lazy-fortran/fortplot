@@ -1,6 +1,7 @@
 program test_legend_box_intersection
     !! Test for issue #38: Legend boxes often intersect with legend text
     use fortplot
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     type(figure_t) :: fig
@@ -35,10 +36,10 @@ program test_legend_box_intersection
     call fig%set_ylim(-1.5d0, 1.5d0)
     
     ! Save to different formats to test rendering
-    call fig%savefig('output/test/test_legend_box_intersection/test_legend_box_png.png')
-    call fig%savefig('output/test/test_legend_box_intersection/test_legend_box_pdf.pdf')
-    call fig%savefig('/tmp/test_legend_box_png.png')
-    call fig%savefig('/tmp/test_legend_box_pdf.pdf')
+    call fig%savefig(get_test_output_path('output/test/test_legend_box_intersection/test_legend_box_png.png'))
+    call fig%savefig(get_test_output_path('output/test/test_legend_box_intersection/test_legend_box_pdf.pdf'))
+    call fig%savefig(get_test_output_path('/tmp/test_legend_box_png.png'))
+    call fig%savefig(get_test_output_path('/tmp/test_legend_box_pdf.pdf'))
     
     print *, "Saved test_legend_box_png.png and test_legend_box_pdf.pdf"
     print *, "Check if legend box intersects with text"

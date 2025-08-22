@@ -11,6 +11,7 @@ program test_text_positioning_accuracy
     use fortplot_png  
     use fortplot_text
     use fortplot_figure
+    use fortplot_security, only: get_test_output_path
     implicit none
 
     logical :: all_tests_passed
@@ -199,9 +200,9 @@ contains
         call fig%add_plot([0.0_wp, 1.0_wp, 2.0_wp], [0.0_wp, 1.0_wp, 0.5_wp], label="test data")
 
         ! Generate output to validate positioning system
-        call fig%savefig("/tmp/test_text_positioning_accuracy.png")
+        call fig%savefig(get_test_output_path("/tmp/test_text_positioning_accuracy.png"))
         
-        inquire(file="/tmp/test_text_positioning_accuracy.png", exist=file_created)
+        inquire(file=get_test_output_path("/tmp/test_text_positioning_accuracy.png"), exist=file_created)
         
         if (file_created) then
             print *, "✅ Figure label positioning test completed successfully"

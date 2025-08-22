@@ -31,7 +31,7 @@ contains
         
         print *, "=== Testing PDF header validation ==="
         
-        test_file = "output/test/test_pdf_header_validation.pdf"
+        test_file = get_test_output_path("output/test/test_pdf_header_validation.pdf")
         
         call fig%initialize(640, 480)
         call fig%add_plot(x_data, y_data)
@@ -81,7 +81,7 @@ contains
         
         print *, "=== Testing PDF does not contain PNG data ==="
         
-        test_file = "output/test/test_pdf_not_png.pdf"
+        test_file = get_test_output_path("output/test/test_pdf_not_png.pdf")
         
         call fig%initialize(800, 600)
         call fig%add_plot(x_data, y_data, label="Test Data")
@@ -145,7 +145,7 @@ contains
         
         print *, "=== Testing PDF structure integrity ==="
         
-        test_file = "output/test/test_pdf_structure.pdf"
+        test_file = get_test_output_path("output/test/test_pdf_structure.pdf")
         
         ! Generate test data
         do i = 1, 20
@@ -212,9 +212,9 @@ contains
         
         print *, "=== Testing PDF format across various scenarios ==="
         
-        scatter_file = "output/test/test_pdf_scatter.pdf"
-        line_file = "output/test/test_pdf_line.pdf"
-        contour_file = "output/test/test_pdf_contour.pdf"
+        scatter_file = get_test_output_path("output/test/test_pdf_scatter.pdf")
+        line_file = get_test_output_path("output/test/test_pdf_line.pdf")
+        contour_file = get_test_output_path("output/test/test_pdf_contour.pdf")
         
         ! Create scatter plot PDF
         call create_test_scatter_pdf(scatter_file)

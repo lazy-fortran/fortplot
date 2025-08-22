@@ -7,6 +7,7 @@ program test_pcolormesh_error_handling
     
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_dimension_mismatch_errors()
@@ -92,7 +93,7 @@ contains
         
         ! Test correct dimensions (should work)
         call fig%add_pcolormesh(x_correct, y_correct, c_test)
-        call fig%savefig('/tmp/test_error_correct_dimensions.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_correct_dimensions.png'))
         
         print *, "test_dimension_mismatch_errors: PASSED"
     end subroutine test_dimension_mismatch_errors
@@ -147,7 +148,7 @@ contains
         
         ! Test valid colormap (should work)
         call fig%add_pcolormesh(x, y, c, colormap='viridis')
-        call fig%savefig('/tmp/test_error_valid_colormap.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_valid_colormap.png'))
         
         print *, "test_invalid_colormap_handling: PASSED"
     end subroutine test_invalid_colormap_handling
@@ -189,19 +190,19 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x_flat, y_overlap, c_test)  ! Use valid y for comparison
         call fig%set_title("Degenerate Grid - Zero height quads")
-        call fig%savefig('/tmp/test_error_flat_grid.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_flat_grid.png'))
         
         ! Test with overlapping coordinates
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x_overlap, y_overlap, c_test)
         call fig%set_title("Degenerate Grid - Overlapping vertices")
-        call fig%savefig('/tmp/test_error_overlap_grid.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_overlap_grid.png'))
         
         ! Test single-point grid (all vertices at same location)
         call fig%initialize(300, 300) 
         call fig%add_pcolormesh(x_single, y_single, c_test)
         call fig%set_title("Degenerate Grid - Single point")
-        call fig%savefig('/tmp/test_error_single_point.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_single_point.png'))
         
         print *, "test_degenerate_grid_handling: PASSED"
     end subroutine test_degenerate_grid_handling
@@ -247,13 +248,13 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_large, colormap='viridis')
         call fig%set_title("Extreme Values - Very large (1e30)")
-        call fig%savefig('/tmp/test_error_large_values.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_large_values.png'))
         
         ! Test with very small values
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_small, colormap='plasma')
         call fig%set_title("Extreme Values - Very small (1e-30)")
-        call fig%savefig('/tmp/test_error_small_values.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_small_values.png'))
         
         ! Test mixed extreme values
         c_extreme(1, 1) = huge_val * 0.1_wp
@@ -263,7 +264,7 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_extreme, colormap='coolwarm')
         call fig%set_title("Extreme Values - Mixed range")
-        call fig%savefig('/tmp/test_error_mixed_extreme.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_mixed_extreme.png'))
         
         print *, "test_extreme_value_handling: PASSED"
     end subroutine test_extreme_value_handling
@@ -289,7 +290,7 @@ contains
         ! Test 1x1 cell (minimal valid pcolormesh)
         call fig%add_pcolormesh(x_minimal, y_minimal, c_minimal)
         call fig%set_title("Minimal Data - 1x1 cell")
-        call fig%savefig('/tmp/test_error_minimal.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_minimal.png'))
         
         ! Test zero-area plot region
         call fig%initialize(0, 0)  ! Zero size figure
@@ -359,13 +360,13 @@ contains
         ! Test decreasing coordinates (should work but may produce flipped plot)
         call fig%add_pcolormesh(x_decreasing, y_decreasing, c_test, colormap='viridis')
         call fig%set_title("Coordinate Order - Decreasing")
-        call fig%savefig('/tmp/test_error_decreasing.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_decreasing.png'))
         
         ! Test unordered coordinates (may produce invalid quadrilaterals)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x_unordered, y_unordered, c_test, colormap='plasma')
         call fig%set_title("Coordinate Order - Unordered")
-        call fig%savefig('/tmp/test_error_unordered.png')
+        call fig%savefig(get_test_output_path('/tmp/test_error_unordered.png'))
         
         print *, "test_coordinate_ordering_validation: PASSED"
     end subroutine test_coordinate_ordering_validation

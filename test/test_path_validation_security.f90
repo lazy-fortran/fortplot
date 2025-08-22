@@ -123,7 +123,7 @@ contains
                                 all_passed, test_count, passed_count)
         call assert_path_allowed("plots/figure1.png", "Subdirectory path", &
                                 all_passed, test_count, passed_count)
-        call assert_path_allowed("/tmp/output.pdf", "Absolute path", &
+        call assert_path_allowed(get_test_output_path("/tmp/output.pdf"), "Absolute path", &
                                 all_passed, test_count, passed_count)
         call assert_path_allowed("results/data_analysis_2025.png", "Complex valid filename", &
                                 all_passed, test_count, passed_count)

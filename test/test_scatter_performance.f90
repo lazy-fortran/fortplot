@@ -3,6 +3,7 @@ program test_scatter_performance
     !! RED phase tests for large dataset optimization and memory efficiency
     
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64, int64, error_unit
     implicit none
     
@@ -63,7 +64,7 @@ contains
         end if
         
         ! Save test output to verify rendering works
-        call fig%savefig('/tmp/test_10k_scatter_performance.png')
+        call fig%savefig(get_test_output_path('/tmp/test_10k_scatter_performance.png'))
     end subroutine test_10k_point_rendering_performance
     
     subroutine test_memory_leak_prevention()

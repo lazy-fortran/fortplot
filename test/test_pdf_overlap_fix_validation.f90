@@ -2,6 +2,7 @@ program test_pdf_overlap_fix_validation
     !! User acceptance test to validate the PDF Y-axis label overlap fix
     !! Tests the actual implementation with real PDF output
     use fortplot
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -34,7 +35,7 @@ contains
         call fig%set_title("PDF Y-axis overlap fix validation")
         
         ! Generate PDF - overlap detection should prevent overlapping labels
-        test_filename = "/tmp/test_pdf_overlap_fix.pdf"
+        test_filename = get_test_output_path("/tmp/test_pdf_overlap_fix.pdf")
         call fig%savefig(test_filename)
         
         ! Verify file was created
@@ -70,7 +71,7 @@ contains
         call fig%set_ylabel("Tight range values")
         call fig%set_title("Minimum spacing enforcement test")
         
-        test_filename = "/tmp/test_pdf_min_spacing_enforcement.pdf"
+        test_filename = get_test_output_path("/tmp/test_pdf_min_spacing_enforcement.pdf")
         call fig%savefig(test_filename)
         
         print *, "PASS: PDF generated with minimum spacing enforcement"
@@ -100,7 +101,7 @@ contains
         call fig%set_ylabel("Dense value range")
         call fig%set_title("Label filtering effectiveness test")
         
-        test_filename = "/tmp/test_pdf_label_filtering.pdf"
+        test_filename = get_test_output_path("/tmp/test_pdf_label_filtering.pdf")
         call fig%savefig(test_filename)
         
         print *, "PASS: PDF generated with effective label filtering"

@@ -8,6 +8,7 @@ program test_pcolormesh_colormap_integration
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
     use fortplot_colormap, only: get_colormap_color, colormap_value_to_color
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_colormap_system_integration()
@@ -55,7 +56,7 @@ contains
             call fig%add_pcolormesh(x, y, c_linear, colormap=trim(standard_colormaps(cmap_idx)))
             call fig%set_title("Colormap Integration - " // trim(standard_colormaps(cmap_idx)))
             
-            write(filename, '(A, A, A)') '/tmp/test_colormap_integration_', &
+            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_colormap_integration_'), &
                                        trim(standard_colormaps(cmap_idx)), '.png'
             call fig%savefig(filename)
             
@@ -98,7 +99,7 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_precise, colormap='viridis', vmin=0.0_wp, vmax=1.0_wp)
         call fig%set_title("Color Mapping Accuracy - Precise values")
-        call fig%savefig('/tmp/test_color_mapping_accuracy.png')
+        call fig%savefig(get_test_output_path('/tmp/test_color_mapping_accuracy.png'))
         
         ! Assert - Test specific color values using colormap system
         ! Test minimum value (should map to viridis minimum)
@@ -117,7 +118,7 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_precise, colormap='plasma', vmin=0.0_wp, vmax=1.0_wp)
         call fig%set_title("Color Mapping Accuracy - Plasma colormap")
-        call fig%savefig('/tmp/test_color_mapping_plasma.png')
+        call fig%savefig(get_test_output_path('/tmp/test_color_mapping_plasma.png'))
         
         print *, "test_color_value_mapping_accuracy: PASSED"
     end subroutine test_color_value_mapping_accuracy
@@ -157,35 +158,35 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_range, colormap='viridis')
         call fig%set_title("Auto normalization")
-        call fig%savefig('/tmp/test_norm_auto.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_auto.png'))
         
         ! Explicit data range normalization (should be identical to auto)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_range, colormap='viridis', &
                                vmin=data_min, vmax=data_max)
         call fig%set_title("Explicit data range normalization")
-        call fig%savefig('/tmp/test_norm_explicit.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_explicit.png'))
         
         ! Clipped normalization (narrower range)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_range, colormap='viridis', &
                                vmin=mid_value - 0.5_wp, vmax=mid_value + 0.5_wp)
         call fig%set_title("Clipped normalization")
-        call fig%savefig('/tmp/test_norm_clipped.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_clipped.png'))
         
         ! Expanded normalization (wider range)
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_range, colormap='viridis', &
                                vmin=data_min - 1.0_wp, vmax=data_max + 1.0_wp)
         call fig%set_title("Expanded normalization")
-        call fig%savefig('/tmp/test_norm_expanded.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_expanded.png'))
         
         ! Symmetric normalization around zero
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_range, colormap='coolwarm', &
                                vmin=-2.0_wp, vmax=2.0_wp)
         call fig%set_title("Symmetric normalization")
-        call fig%savefig('/tmp/test_norm_symmetric.png')
+        call fig%savefig(get_test_output_path('/tmp/test_norm_symmetric.png'))
         
         print *, "test_normalization_consistency: PASSED"
     end subroutine test_normalization_consistency
@@ -214,7 +215,7 @@ contains
         call fig%add_pcolormesh(x, y, c_edges, colormap='coolwarm', &
                                vmin=v_min, vmax=v_max)
         call fig%set_title("Colormap Edge Behavior - Exact vmin/vmax")
-        call fig%savefig('/tmp/test_colormap_edges.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colormap_edges.png'))
         
         ! Assert - Verify edge color mapping
         call colormap_value_to_color(v_min, v_min, v_max, 'coolwarm', edge_color_min)
@@ -231,7 +232,7 @@ contains
         call fig%add_pcolormesh(x, y, c_edges, colormap='viridis', &
                                vmin=v_min, vmax=v_max)
         call fig%set_title("Colormap Edge Behavior - Clamping")
-        call fig%savefig('/tmp/test_colormap_clamping.png')
+        call fig%savefig(get_test_output_path('/tmp/test_colormap_clamping.png'))
         
         print *, "test_colormap_edge_behavior: PASSED"
     end subroutine test_colormap_edge_behavior
@@ -267,18 +268,18 @@ contains
         call fig%initialize(500, 500)
         call fig%add_pcolormesh(x, y, c_smooth, colormap='viridis')
         call fig%set_title("Colormap Interpolation - Viridis (smooth function)")
-        call fig%savefig('/tmp/test_interpolation_viridis.png')
+        call fig%savefig(get_test_output_path('/tmp/test_interpolation_viridis.png'))
         
         call fig%initialize(500, 500)
         call fig%add_pcolormesh(x, y, c_smooth, colormap='plasma')
         call fig%set_title("Colormap Interpolation - Plasma (smooth function)")
-        call fig%savefig('/tmp/test_interpolation_plasma.png')
+        call fig%savefig(get_test_output_path('/tmp/test_interpolation_plasma.png'))
         
         ! Test with high contrast colormap
         call fig%initialize(500, 500)
         call fig%add_pcolormesh(x, y, c_smooth, colormap='coolwarm')
         call fig%set_title("Colormap Interpolation - Coolwarm (high contrast)")
-        call fig%savefig('/tmp/test_interpolation_coolwarm.png')
+        call fig%savefig(get_test_output_path('/tmp/test_interpolation_coolwarm.png'))
         
         deallocate(x, y, c_smooth)
         print *, "test_colormap_interpolation_quality: PASSED"
@@ -319,7 +320,7 @@ contains
             call fig%set_xlabel("X coordinate")
             call fig%set_ylabel("Y coordinate")
             
-            write(filename, '(A, A, A)') '/tmp/test_colormap_compare_', &
+            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_colormap_compare_'), &
                                        trim(comparison_colormaps(cmap_idx)), '.png'
             call fig%savefig(filename)
         end do
@@ -351,14 +352,14 @@ contains
         call fig%initialize(300, 300)
         call fig%add_pcolormesh(x, y, c_custom, colormap='viridis')
         call fig%set_title("Custom Colormap Support - Future extensibility")
-        call fig%savefig('/tmp/test_custom_colormap.png')
+        call fig%savefig(get_test_output_path('/tmp/test_custom_colormap.png'))
         
         ! Test colormap with unusual normalization
         call fig%initialize(300, 300) 
         call fig%add_pcolormesh(x, y, c_custom, colormap='plasma', &
                                vmin=0.2_wp, vmax=0.8_wp)  ! Narrow range
         call fig%set_title("Custom Normalization - Narrow range")
-        call fig%savefig('/tmp/test_custom_normalization.png')
+        call fig%savefig(get_test_output_path('/tmp/test_custom_normalization.png'))
         
         print *, "test_custom_colormap_support: PASSED"
     end subroutine test_custom_colormap_support
