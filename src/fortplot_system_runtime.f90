@@ -56,8 +56,13 @@ contains
             write(*,'(A,A)') 'DEBUG: [timeout_wrapper] Executing: ', trim(timeout_command)
         end if
         
+        ! Add forced debug info for Windows CI hanging issues
+        write(*,'(A,A,A,I0,A)') 'INFO: [Windows] Executing command "', trim(timeout_command), '" with ', timeout_ms, 'ms timeout'
+        
         call execute_command_line(timeout_command, exitstat=exitstat, &
                                  cmdstat=cmdstat, cmdmsg=cmdmsg)
+        
+        write(*,'(A,I0,A,I0)') 'INFO: [Windows] Command completed - exitstat=', exitstat, ', cmdstat=', cmdstat
         
         ! Only report problems or when debug is enabled
         if (exitstat == 1 .and. cmdstat == 0) then
