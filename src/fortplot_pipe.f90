@@ -71,7 +71,6 @@ contains
         if (is_windows()) then
             ! Use timeout-protected version on Windows
             available = (check_ffmpeg_available_timeout_c() == 1)
-            write(*,'(A,L1)') 'DEBUG: [check_ffmpeg] Windows timeout check result: ', available
         else
             available = (check_ffmpeg_available_c() == 1)
         end if
@@ -81,9 +80,7 @@ contains
         !! Timeout-protected FFmpeg availability check for Windows CI
         logical :: available
         
-        write(*,'(A)') 'DEBUG: [check_ffmpeg_timeout] Starting timeout-protected check'
         available = (check_ffmpeg_available_timeout_c() == 1)
-        write(*,'(A,L1)') 'DEBUG: [check_ffmpeg_timeout] Result: ', available
     end function check_ffmpeg_available_timeout
 
 end module fortplot_pipe

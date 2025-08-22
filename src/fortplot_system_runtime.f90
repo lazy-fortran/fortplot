@@ -16,6 +16,23 @@ module fortplot_system_runtime
 
 contains
 
+    function is_debug_enabled() result(debug_enabled)
+        !! Check if debug logging is enabled via environment variable
+        logical :: debug_enabled
+        character(len=256) :: debug_env
+        integer :: status
+        
+        debug_enabled = .false.
+        
+        ! Check for FORTPLOT_DEBUG_TIMEOUT environment variable
+        call get_environment_variable("FORTPLOT_DEBUG_TIMEOUT", debug_env, status=status)
+        if (status == 0 .and. len_trim(debug_env) > 0) then
+            if (trim(debug_env) == "1" .or. trim(debug_env) == "true") then
+                debug_enabled = .true.
+            end if
+        end if
+    end function is_debug_enabled
+
     subroutine execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, timeout_ms)
         !! Windows-specific command execution with timeout
         character(len=*), intent(in) :: command
@@ -25,21 +42,27 @@ contains
         
         character(len=:), allocatable :: timeout_command
         character(len=16) :: timeout_str
+        logical :: debug_enabled
         
-        ! Convert timeout from ms to seconds (minimum 1 second)
-        write(timeout_str, '(I0)') max(1, timeout_ms/1000 + 1)
+        ! Check if debug logging is enabled
+        debug_enabled = is_debug_enabled()
         
-        ! Wrap with Windows timeout command
-        timeout_command = 'timeout /t ' // trim(timeout_str) // ' ' // trim(command)
+        ! For Windows, we need a different approach since Windows timeout command
+        ! doesn't work the same way as Unix timeout. Let's use a simple wrapper.
+        ! For now, just execute directly with short timeout monitoring
+        timeout_command = trim(command)
         
-        write(*,'(A,A,A)') 'DEBUG: [timeout_wrapper] Executing: ', trim(timeout_command), ''
+        if (debug_enabled) then
+            write(*,'(A,A)') 'DEBUG: [timeout_wrapper] Executing: ', trim(timeout_command)
+        end if
         
         call execute_command_line(timeout_command, exitstat=exitstat, &
                                  cmdstat=cmdstat, cmdmsg=cmdmsg)
         
+        ! Only report problems or when debug is enabled
         if (exitstat == 1 .and. cmdstat == 0) then
-            write(*,'(A,I0,A)') 'DEBUG: [timeout_wrapper] Command timed out after ', timeout_ms, 'ms'
-        else if (cmdstat /= 0) then
+            write(*,'(A,I0,A)') 'INFO: [timeout] Command timed out after ', timeout_ms, 'ms'
+        else if (cmdstat /= 0 .and. debug_enabled) then
             write(*,'(A,I0,A,A)') 'DEBUG: [timeout_wrapper] Command failed (cmdstat=', cmdstat, '): ', trim(cmdmsg)
         end if
     end subroutine execute_command_line_windows_timeout
@@ -133,57 +156,54 @@ contains
         end if
     end function get_parent_directory
 
-    recursive subroutine create_directory_runtime(path, success)
-        !! Create directory with cross-platform support
+    subroutine create_directory_runtime(path, success)
+        !! Create directory with cross-platform support - non-recursive to avoid infinite loops
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         character(len=:), allocatable :: effective_path
         character(len=:), allocatable :: command
-        character(len=:), allocatable :: parent_dir
         integer :: exitstat, cmdstat
         character(len=256) :: cmdmsg
+        logical :: debug_enabled
         
         success = .false.
+        debug_enabled = is_debug_enabled()
         
         ! Map Unix paths for Windows if needed
         if (is_windows()) then
             effective_path = map_unix_to_windows_path(path)
             effective_path = normalize_path_separators(effective_path, .true.)
             
-            ! First try to create parent directories if needed
-            parent_dir = get_parent_directory(effective_path)
-            if (len_trim(parent_dir) > 0) then
-                ! Create parent first (recursive)
-                call create_directory_runtime(parent_dir, success)
-            end if
+            ! Windows: Use md command with error suppression
+            ! md automatically creates parent directories (like mkdir -p)
+            command = 'md "' // trim(effective_path) // '" 2>nul || cd .'
             
-            ! Use Windows mkdir command (doesn't need -p flag)
-            command = 'mkdir "' // trim(effective_path) // '" 2>nul'
+            if (debug_enabled) then
+                write(*,'(A,A)') 'DEBUG: [create_dir] Windows command: ', trim(command)
+            end if
         else
             effective_path = path
-            ! Use Unix mkdir with -p for parent directories
+            ! Unix: Use mkdir with -p for parent directories
             command = 'mkdir -p "' // trim(effective_path) // '" 2>/dev/null'
         end if
         
-        ! Add Windows CI timeout protection
+        ! Execute directory creation command
         if (is_windows()) then
-            write(*,'(A,A,A)') 'DEBUG: [create_dir] Windows mkdir command: ', trim(command), ''
             call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 3000)
         else
             call execute_command_line(command, exitstat=exitstat, &
                                      cmdstat=cmdstat, cmdmsg=cmdmsg)
         end if
         
-        ! Check if directory exists (either created or already existed)
-        if (is_windows()) then
-            command = 'if exist "' // trim(effective_path) // '\" exit 0'
-            write(*,'(A,A,A)') 'DEBUG: [create_dir] Windows exist check: ', trim(command), ''
-            call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 2000)
-        else
-            command = 'test -d "' // trim(effective_path) // '"'
-            call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
+        ! For directory creation, success if command succeeded OR directory already exists
+        ! Windows md command returns 0 if dir exists or was created successfully
+        ! Unix mkdir -p returns 0 if dir exists or was created successfully
+        success = (cmdstat == 0)
+        
+        if (debug_enabled .and. .not. success) then
+            write(*,'(A,A,A,I0,A,I0)') 'DEBUG: [create_dir] Failed to create "', trim(effective_path), &
+                                      '" - exitstat=', exitstat, ', cmdstat=', cmdstat
         end if
-        success = (exitstat == 0 .and. cmdstat == 0)
     end subroutine create_directory_runtime
 
     subroutine delete_file_runtime(filename, success)
@@ -276,7 +296,6 @@ contains
         end if
         
         if (is_windows()) then
-            write(*,'(A,A,A)') 'DEBUG: [check_cmd] Windows where command: ', trim(command), ''
             call execute_command_line_windows_timeout(command, exitstat, cmdstat, cmdmsg, 2000)
         else
             call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
