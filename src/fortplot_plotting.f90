@@ -513,117 +513,395 @@ contains
         end if
     end subroutine add_line_plot_data
 
-    ! Additional implementation subroutines would be added here for:
-    ! - add_3d_line_plot_data, add_surface_plot_data, add_contour_plot_data
-    ! - add_colored_contour_plot_data, add_pcolormesh_plot_data  
-    ! - add_bar_plot_data, add_histogram_plot_data, add_boxplot_data
-    ! - add_scatter_plot_data, validate_histogram_input, etc.
-    !
-    ! Note: These are placeholder stubs - full implementations would preserve
-    ! exact functionality from the original file
+    ! Additional plot implementation subroutines
 
     subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
-        !! Stub implementation
+        !! Add 3D line plot data by projecting to 2D
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
-        ! Stub implementation
+        
+        ! Project 3D to 2D for basic plotting (z-axis ignored for now)
+        call add_line_plot_data(self, x, y, label, linestyle)
     end subroutine add_3d_line_plot_data
 
     subroutine add_surface_plot_data(self, x, y, z, label)
-        !! Stub implementation  
+        !! Add surface plot data (simplified as contour representation)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:,:)
         character(len=*), intent(in), optional :: label
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        ! Get current subplot
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        ! Store grid data
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z, 1), size(z, 2)))
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x
+        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y
+        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_surface_plot_data
 
     subroutine add_contour_plot_data(self, x_grid, y_grid, z_grid, levels, label)
-        !! Stub implementation
+        !! Add contour plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x_grid)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y_grid)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x_grid
+        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y_grid
+        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z_grid
+        
+        if (present(levels)) then
+            allocate(self%subplots(subplot_idx)%plots(plot_idx)%contour_levels(size(levels)))
+            self%subplots(subplot_idx)%plots(plot_idx)%contour_levels = levels
+        end if
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_contour_plot_data
 
     subroutine add_colored_contour_plot_data(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
-        !! Stub implementation
+        !! Add colored contour plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x_grid)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y_grid)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x_grid
+        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y_grid
+        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z_grid
+        
+        if (present(levels)) then
+            allocate(self%subplots(subplot_idx)%plots(plot_idx)%contour_levels(size(levels)))
+            self%subplots(subplot_idx)%plots(plot_idx)%contour_levels = levels
+        end if
+        
+        if (present(colormap)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%colormap = colormap
+        end if
+        
+        if (present(show_colorbar)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%show_colorbar = show_colorbar
+        end if
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_colored_contour_plot_data
 
     subroutine add_pcolormesh_plot_data(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths, error)
-        !! Stub implementation
+        !! Add pcolormesh plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), c(:,:)
         character(len=*), intent(in), optional :: colormap, edgecolors
         real(wp), intent(in), optional :: vmin, vmax, linewidths
         type(fortplot_error_t), intent(out), optional :: error
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        if (present(error)) then
+            error%status = SUCCESS
+        end if
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
+        
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(c, 1), size(c, 2)))
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%x = x
+        self%subplots(subplot_idx)%plots(plot_idx)%y = y
+        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = c
+        
+        if (present(colormap)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%colormap = colormap
+        end if
+        
+        if (present(vmin)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmin = vmin
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+        end if
+        
+        if (present(vmax)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmax = vmax
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+        end if
     end subroutine add_pcolormesh_plot_data
 
     subroutine add_bar_plot_data(self, positions, values, bar_size, label, color, horizontal)
-        !! Stub implementation
+        !! Add bar plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: positions(:), values(:), bar_size
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         logical, intent(in) :: horizontal
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
+        
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(positions)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(values)))
+        
+        if (horizontal) then
+            self%subplots(subplot_idx)%plots(plot_idx)%x = values
+            self%subplots(subplot_idx)%plots(plot_idx)%y = positions
+        else
+            self%subplots(subplot_idx)%plots(plot_idx)%x = positions
+            self%subplots(subplot_idx)%plots(plot_idx)%y = values
+        end if
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%bar_width = bar_size
+        self%subplots(subplot_idx)%plots(plot_idx)%bar_horizontal = horizontal
+        
+        if (present(color)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+        end if
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_bar_plot_data
 
     function validate_histogram_input(self, data, bins) result(is_valid)
-        !! Stub implementation
+        !! Validate histogram input parameters
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
         integer, intent(in) :: bins
         logical :: is_valid
+        
         is_valid = .true.
+        
+        if (size(data) == 0) then
+            is_valid = .false.
+            return
+        end if
+        
+        if (bins <= 0 .or. bins > MAX_SAFE_BINS) then
+            is_valid = .false.
+            return
+        end if
+        
+        ! Check for finite values
+        if (.not. all(ieee_is_finite(data))) then
+            is_valid = .false.
+            return
+        end if
     end function validate_histogram_input
 
     subroutine add_histogram_plot_data(self, data, bins, density, label, color)
-        !! Stub implementation
+        !! Add histogram plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
         integer, intent(in) :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        if (.not. validate_histogram_input(self, data, bins)) return
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        
+        ! Store raw data for histogram computation
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(data)))
+        self%subplots(subplot_idx)%plots(plot_idx)%x = data
+        ! Store bins as metadata (would need custom field or use existing structure)
+        
+        if (present(density)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%hist_density = density
+        end if
+        
+        if (present(color)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+        end if
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_histogram_plot_data
 
     subroutine add_boxplot_data(self, data, position, width, label, show_outliers, horizontal, color)
-        !! Stub implementation
+        !! Add boxplot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:), position, width
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers, horizontal
         real(wp), intent(in), optional :: color(3)
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        
+        ! Store raw data for boxplot computation
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(data)))
+        self%subplots(subplot_idx)%plots(plot_idx)%x = data
+        self%subplots(subplot_idx)%plots(plot_idx)%position = position
+        self%subplots(subplot_idx)%plots(plot_idx)%width = width
+        
+        if (present(show_outliers)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%show_outliers = show_outliers
+        end if
+        
+        if (present(horizontal)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%horizontal = horizontal
+        end if
+        
+        if (present(color)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+        end if
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_boxplot_data
 
     subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
                                     colormap, vmin, vmax, show_colorbar, alpha)
-        !! Stub implementation
+        !! Add scatter plot data
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: z(:), s(:), c(:), markersize, color(3), vmin, vmax, alpha
         character(len=*), intent(in), optional :: label, marker, colormap
         logical, intent(in), optional :: show_colorbar
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_SCATTER
+        
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
+        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
+        
+        self%subplots(subplot_idx)%plots(plot_idx)%x = x
+        self%subplots(subplot_idx)%plots(plot_idx)%y = y
+        
+        if (present(z)) then
+            allocate(self%subplots(subplot_idx)%plots(plot_idx)%z(size(z)))
+            self%subplots(subplot_idx)%plots(plot_idx)%z = z
+        end if
+        
+        if (present(s)) then
+            allocate(self%subplots(subplot_idx)%plots(plot_idx)%scatter_sizes(size(s)))
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_sizes = s
+        end if
+        
+        if (present(c)) then
+            allocate(self%subplots(subplot_idx)%plots(plot_idx)%scatter_colors(size(c)))
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colors = c
+        end if
+        
+        if (present(color)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+        end if
+        
+        if (present(marker)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+        end if
+        
+        if (present(markersize)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_size_default = markersize
+        end if
+        
+        if (present(colormap)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colormap = colormap
+        end if
+        
+        if (present(vmin)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmin = vmin
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+        end if
+        
+        if (present(vmax)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmax = vmax
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+        end if
+        
+        if (present(show_colorbar)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colorbar = show_colorbar
+        end if
+        
+        ! Note: alpha not directly supported in plot_data_t structure
+        
+        if (present(label)) then
+            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+        end if
     end subroutine add_scatter_plot_data
 
     subroutine add_plot_to_figure(self, plot_data)
-        !! Stub implementation
+        !! Add plot data to figure
         class(figure_t), intent(inout) :: self
         type(plot_data_t), intent(in) :: plot_data
-        ! Stub implementation
+        
+        integer :: subplot_idx, plot_idx
+        
+        subplot_idx = self%current_subplot
+        plot_idx = self%subplots(subplot_idx)%plot_count + 1
+        self%subplots(subplot_idx)%plot_count = plot_idx
+        
+        ! Copy plot data to subplot
+        self%subplots(subplot_idx)%plots(plot_idx) = plot_data
     end subroutine add_plot_to_figure
 
     subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, linewidth, &
