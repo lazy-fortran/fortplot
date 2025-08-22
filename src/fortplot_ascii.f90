@@ -706,12 +706,15 @@ contains
         ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
         do i = 1, 4
             ! Map to usable plot area (excluding 1-char border on each side)
-            px(i) = int((x_quad(i) - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
-            py(i) = (this%plot_height - 1) - int((y_quad(i) - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
+            px(i) = int((x_quad(i) - this%x_min) / &
+                (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
+            py(i) = (this%plot_height - 1) - int((y_quad(i) - this%y_min) / &
+                (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
         end do
         
         ! Calculate color intensity from RGB values (luminance formula)
-        color_intensity = 0.299_wp * this%current_r + 0.587_wp * this%current_g + 0.114_wp * this%current_b
+        color_intensity = 0.299_wp * this%current_r + 0.587_wp * this%current_g + &
+            0.114_wp * this%current_b
         
         ! Map color intensity to ASCII character index with proper low-intensity handling
         if (color_intensity <= 0.001_wp) then
