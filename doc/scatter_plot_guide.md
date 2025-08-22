@@ -1,3 +1,6 @@
+title: Enhanced Scatter Plot Guide
+---
+
 # Enhanced Scatter Plot Guide
 
 Fortplot's enhanced scatter plots provide size and color mapping for multi-dimensional data visualization.

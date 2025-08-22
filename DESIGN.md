@@ -4,6 +4,18 @@
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
+## Documentation Generation
+
+**Status**: ✅ RESOLVED - FORD documentation generation working correctly.
+
+**Commands**:
+```bash
+make doc  # Generate HTML documentation
+```
+
+**Output**: Documentation generated at `build/doc/index.html`
+
+
 ## Text Annotations Not Working (Issue #179)
 
 ### Problem Analysis

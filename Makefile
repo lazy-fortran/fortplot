@@ -86,7 +86,7 @@ run-release:
 
 # Build documentation with FORD
 doc:
-	ford doc.md
+	ford README.md
 	# Copy example media files to doc build directory for proper linking
 	mkdir -p build/doc/media/examples
 	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; fi
