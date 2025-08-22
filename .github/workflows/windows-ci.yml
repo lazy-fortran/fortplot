@@ -20,10 +20,10 @@ jobs:
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: false
+        update: false  # Skip update for faster installation
         path-type: inherit
-        cache: true
-        release: false
+        cache: true    # Cache packages between runs for speed
+        release: false # Use pre-installed MSYS2 on runner
         install: >-
           mingw-w64-x86_64-gcc-fortran
           mingw-w64-x86_64-gcc
@@ -59,6 +59,16 @@ jobs:
         fpm --version
         ffmpeg -version
         echo === Environment verification complete ===
+
+    - name: Cache FPM build artifacts
+      uses: actions/cache@v4
+      with:
+        path: |
+          build
+          .fpm
+        key: ${{ runner.os }}-fpm-build-${{ hashFiles('fpm.toml', 'src/**/*.f90', 'src/**/*.c') }}
+        restore-keys: |
+          ${{ runner.os }}-fpm-build-
 
     - name: Build project
       shell: cmd
