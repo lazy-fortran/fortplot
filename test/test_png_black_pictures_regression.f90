@@ -185,8 +185,10 @@ contains
             call get_png_data(fig%width, fig%height, backend%raster%image_data, png_buffer)
         class default
             ! Fallback: save to file and read back for now
-            call fig%savefig(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
-            passed = png_file_has_visible_content(get_test_output_path('output/test/test_png_black_pictures_regression/buffer_test.png'))
+            call fig%savefig(get_test_output_path( &
+                'output/test/test_png_black_pictures_regression/buffer_test.png'))
+            passed = png_file_has_visible_content(get_test_output_path( &
+                'output/test/test_png_black_pictures_regression/buffer_test.png'))
             return
         end select
         
