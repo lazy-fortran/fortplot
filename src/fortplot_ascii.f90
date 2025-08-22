@@ -703,30 +703,31 @@ contains
         real(wp) :: color_intensity
         integer :: char_index
         
-        ! Convert coordinates to ASCII canvas coordinates
+        ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
         do i = 1, 4
-            px(i) = nint((x_quad(i) - this%x_min) / (this%x_max - this%x_min) * this%plot_width) + 1
-            py(i) = nint((y_quad(i) - this%y_min) / (this%y_max - this%y_min) * this%plot_height) + 1
+            ! Map to usable plot area (excluding 1-char border on each side)
+            px(i) = int((x_quad(i) - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
+            py(i) = (this%plot_height - 1) - int((y_quad(i) - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
         end do
         
         ! Calculate color intensity from RGB values (luminance formula)
         color_intensity = 0.299_wp * this%current_r + 0.587_wp * this%current_g + 0.114_wp * this%current_b
         
-        ! Map color intensity to ASCII character index
+        ! Map color intensity to ASCII character index with proper low-intensity handling
         if (color_intensity <= 0.001_wp) then
-            char_index = 1  ! Space for very low intensity
+            char_index = 1  ! Space for zero intensity
         else
-            ! Map 0.0-1.0 intensity to character indices 2-len(ASCII_CHARS)
-            char_index = min(len(ASCII_CHARS), max(2, int(color_intensity * (len(ASCII_CHARS) - 1)) + 2))
+            ! Map 0.0-1.0 intensity to full character range 1-len(ASCII_CHARS)
+            char_index = min(len(ASCII_CHARS), max(1, int(color_intensity * len(ASCII_CHARS)) + 1))
         end if
         
         fill_char = ASCII_CHARS(char_index:char_index)
         
-        ! Simple approximation: fill bounding rectangle
-        min_x = max(1, min(minval(px), this%plot_width))
-        max_x = max(1, min(maxval(px), this%plot_width))  
-        min_y = max(1, min(minval(py), this%plot_height))
-        max_y = max(1, min(maxval(py), this%plot_height))
+        ! Fill bounding rectangle with bounds checking
+        min_x = max(2, min(minval(px), this%plot_width - 1))
+        max_x = max(2, min(maxval(px), this%plot_width - 1))  
+        min_y = max(2, min(minval(py), this%plot_height - 1))
+        max_y = max(2, min(maxval(py), this%plot_height - 1))
         
         do j = min_y, max_y
             do i = min_x, max_x
