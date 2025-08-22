@@ -50,7 +50,7 @@ contains
         call fig%set_xlabel("X values")
         call fig%set_ylabel("Y values")  
         call fig%set_title("Pixel Diversity Test")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         call validate_pixel_diversity(filename)
@@ -79,7 +79,7 @@ contains
         
         call fig%initialize(width=800, height=600)
         call fig%add_plot(x, y, label="dense data")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         call validate_reasonable_file_size(filename, 800, 600)
@@ -104,7 +104,7 @@ contains
         
         call fig%initialize(width=400, height=300)
         call fig%add_plot(x, y)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         call validate_png_structure(filename)
@@ -142,8 +142,8 @@ contains
         call fig%set_xlabel("Time")
         call fig%set_ylabel("Amplitude")
         call fig%set_title("Mixed Content Test")
-        call fig%legend()
-        call fig%savefig(filename)
+        call figure_legend(fig, )
+        call figure_savefig(fig, filename)
         
         call assert_file_exists(filename)
         call validate_mixed_content(filename)

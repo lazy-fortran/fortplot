@@ -113,12 +113,12 @@ contains
         call fig%initialize(600, 400)
         
         ! Mixed coordinate systems in same figure
-        call fig%text(0.1_wp, 0.9_wp, "Figure coords", coord_type=COORD_FIGURE)
-        call fig%text(0.5_wp, 0.5_wp, "Axis coords", coord_type=COORD_AXIS)
+        call text(0.1_wp, 0.9_wp, "Figure coords", coord_type=COORD_FIGURE)
+        call text(0.5_wp, 0.5_wp, "Axis coords", coord_type=COORD_AXIS)
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp])
-        call fig%text(1.5_wp, 1.5_wp, "Data coords", coord_type=COORD_DATA)
+        call text(1.5_wp, 1.5_wp, "Data coords", coord_type=COORD_DATA)
         
-        call fig%savefig("test_mixed_coordinates.png")
+        call figure_savefig(fig, "test_mixed_coordinates.png")
         
         print *, "PASS: Coordinate system mixing test"
     end subroutine test_coordinate_system_mixing

@@ -55,11 +55,11 @@ contains
         
         ! Test PNG backend
         call fig%initialize(200, 200)  ! Small size for speed
-        call fig%add_pcolormesh(x, y, z, colormap='viridis')
+        call figure_add_pcolormesh(fig, x, y, z, colormap='viridis')
         call fig%set_title("Pcolormesh PNG Test")
         
         png_file = get_test_output_path('/tmp/pcolormesh_consolidated.png')
-        call fig%savefig(png_file)
+        call figure_savefig(fig, png_file)
         
         inquire(file=png_file, exist=file_exists)
         if (.not. file_exists) then
@@ -68,11 +68,11 @@ contains
         
         ! Test PDF backend
         call fig%initialize(200, 200)
-        call fig%add_pcolormesh(x, y, z, colormap='plasma')
+        call figure_add_pcolormesh(fig, x, y, z, colormap='plasma')
         call fig%set_title("Pcolormesh PDF Test")
         
         pdf_file = get_test_output_path('/tmp/pcolormesh_consolidated.pdf')
-        call fig%savefig(pdf_file)
+        call figure_savefig(fig, pdf_file)
         
         inquire(file=pdf_file, exist=file_exists)
         if (.not. file_exists) then
@@ -81,11 +81,11 @@ contains
         
         ! Test ASCII backend
         call fig%initialize(40, 20)  ! Very small for ASCII
-        call fig%add_pcolormesh(x, y, z)
+        call figure_add_pcolormesh(fig, x, y, z)
         call fig%set_title("Pcolormesh ASCII")
         
         ascii_file = get_test_output_path('/tmp/pcolormesh_consolidated.txt')
-        call fig%savefig(ascii_file)
+        call figure_savefig(fig, ascii_file)
         
         inquire(file=ascii_file, exist=file_exists)
         if (.not. file_exists) then
@@ -115,10 +115,10 @@ contains
         end do
         
         call fig%initialize(150, 150)
-        call fig%add_pcolormesh(x, y, z, colormap='coolwarm')
+        call figure_add_pcolormesh(fig, x, y, z, colormap='coolwarm')
         
         ! Test that different parameters work
-        call fig%savefig(get_test_output_path('/tmp/pcolormesh_backend_test.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/pcolormesh_backend_test.png'))
         
         print *, "✓ Backend integration: PASS"
     end subroutine
@@ -144,10 +144,10 @@ contains
         ! Test multiple colormaps quickly
         do cm_idx = 1, 3
             call fig%initialize(100, 100)  ! Very small for speed
-            call fig%add_pcolormesh(x, y, z, colormap=trim(colormaps(cm_idx)))
+            call figure_add_pcolormesh(fig, x, y, z, colormap=trim(colormaps(cm_idx)))
             
             filename = get_test_output_path('/tmp/pcolormesh_' // trim(colormaps(cm_idx)) // '.png')
-            call fig%savefig(filename)
+            call figure_savefig(fig, filename)
         end do
         
         print *, "✓ Multiple colormaps: PASS"
@@ -166,8 +166,8 @@ contains
         z = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [2, 2])
         
         call fig%initialize(100, 100)
-        call fig%add_pcolormesh(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/pcolormesh_minimal.png'))
+        call figure_add_pcolormesh(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/pcolormesh_minimal.png'))
         
         print *, "✓ Minimal case: PASS"
         print *, "✓ Error handling: PASS"
@@ -191,8 +191,8 @@ contains
         end do
         
         call fig%initialize(120, 120)
-        call fig%add_pcolormesh(x, y, z, colormap='viridis')
-        call fig%savefig(get_test_output_path('/tmp/pcolormesh_performance.png'))
+        call figure_add_pcolormesh(fig, x, y, z, colormap='viridis')
+        call figure_savefig(fig, get_test_output_path('/tmp/pcolormesh_performance.png'))
         
         print *, "✓ Performance test: PASS"
     end subroutine

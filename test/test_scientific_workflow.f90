@@ -42,8 +42,8 @@ contains
         call fig%set_title('Experimental Measurement Distribution')
         call fig%set_xlabel('Measured Value')
         call fig%set_ylabel('Probability Density')
-        call fig%legend()
-        call fig%savefig('build/scientific_measurements.png')
+        call figure_legend(fig, )
+        call figure_savefig(fig, 'build/scientific_measurements.png')
         write(*,*) '  ✓ Measurement distribution analysis complete'
         
     end subroutine test_measurement_distribution
@@ -69,8 +69,8 @@ contains
         call fig%set_title('Monte Carlo Simulation Results')
         call fig%set_xlabel('Computed Value')
         call fig%set_ylabel('Frequency')
-        call fig%legend()
-        call fig%savefig('build/scientific_simulation.png')
+        call figure_legend(fig, )
+        call figure_savefig(fig, 'build/scientific_simulation.png')
         write(*,*) '  ✓ Simulation result analysis complete'
         
     end subroutine test_simulation_results
@@ -99,8 +99,8 @@ contains
         call fig%set_title('Control vs Treatment Group Comparison')
         call fig%set_xlabel('Response Variable')
         call fig%set_ylabel('Probability Density')
-        call fig%legend()
-        call fig%savefig('build/scientific_comparison.png')
+        call figure_legend(fig, )
+        call figure_savefig(fig, 'build/scientific_comparison.png')
         write(*,*) '  ✓ Comparative analysis complete'
         
     end subroutine test_comparative_analysis
@@ -126,9 +126,9 @@ contains
         call fig%set_title('Publication Quality Histogram')
         call fig%set_xlabel('Parameter X (units)')
         call fig%set_ylabel('Probability Density (1/units)')
-        call fig%legend()
-        call fig%savefig('build/scientific_publication.png')
-        call fig%savefig('build/scientific_publication.pdf')
+        call figure_legend(fig, )
+        call figure_savefig(fig, 'build/scientific_publication.png')
+        call figure_savefig(fig, 'build/scientific_publication.pdf')
         write(*,*) '  ✓ Publication-quality output complete'
         
     end subroutine test_publication_quality

@@ -64,7 +64,7 @@ contains
         end if
         
         ! Save test output to verify rendering works
-        call fig%savefig(get_test_output_path('/tmp/test_10k_scatter_performance.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_10k_scatter_performance.png'))
     end subroutine test_10k_point_rendering_performance
     
     subroutine test_memory_leak_prevention()

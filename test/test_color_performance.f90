@@ -429,7 +429,7 @@ contains
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
         end do
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine render_colored_elements_png
 
     subroutine render_colored_elements_pdf(x, y, colors, filename)
@@ -448,7 +448,7 @@ contains
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
         end do
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine render_colored_elements_pdf
 
     subroutine render_colored_elements_ascii(x, y, colors, filename)
@@ -467,7 +467,7 @@ contains
                 call fig%add_plot(x(i:i), y(i:i), color_str=colors(i))
             end if
         end do
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine render_colored_elements_ascii
 
     ! Note: apply_colormap_to_array is now imported from fortplot_colors module

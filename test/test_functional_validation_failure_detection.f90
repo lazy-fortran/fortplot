@@ -119,7 +119,7 @@ contains
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="test data")
         call fig%set_title("Broken Plot Test")
-        ! INTENTIONALLY NOT CALLING: call fig%savefig(broken_output)
+        ! INTENTIONALLY NOT CALLING: call figure_savefig(fig, broken_output)
         
         ! Act: Validate output that should exist but doesn't
         validation = validate_file_exists(broken_output)

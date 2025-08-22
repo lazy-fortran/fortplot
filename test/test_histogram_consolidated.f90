@@ -55,7 +55,7 @@ contains
         call fig%set_ylabel("Frequency")
         
         filename = get_test_output_path('/tmp/histogram_consolidated.png')
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         inquire(file=filename, exist=file_exists)
         if (.not. file_exists) then
@@ -77,13 +77,13 @@ contains
         ! Test single data point
         call fig%initialize(200, 150)
         call fig%hist(single_data, bins=1)
-        call fig%savefig(get_test_output_path('/tmp/histogram_single.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/histogram_single.png'))
         
         ! Test uniform data
         uniform_data = [(5.0_wp, i=1, 10)]  ! All same value
         call fig%initialize(200, 150)
         call fig%hist(uniform_data, bins=3)
-        call fig%savefig(get_test_output_path('/tmp/histogram_uniform.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/histogram_uniform.png'))
         
         print *, "✓ Single data point: PASS"
         print *, "✓ Uniform data: PASS"
@@ -105,7 +105,7 @@ contains
         
         call fig%initialize(200, 150)
         call fig%hist(negative_data, bins=3)
-        call fig%savefig(get_test_output_path('/tmp/histogram_negative.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/histogram_negative.png'))
         
         ! Test mixed positive/negative
         do i = 1, 10
@@ -114,7 +114,7 @@ contains
         
         call fig%initialize(200, 150)
         call fig%hist(mixed_data, bins=4)
-        call fig%savefig(get_test_output_path('/tmp/histogram_mixed.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/histogram_mixed.png'))
         
         print *, "✓ Negative values: PASS"
         print *, "✓ Mixed values: PASS"
@@ -137,7 +137,7 @@ contains
         call fig%initialize(250, 180)
         call fig%hist(realistic_data, bins=4)
         call fig%set_title("User Acceptance Test")
-        call fig%savefig(get_test_output_path('/tmp/histogram_uat.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/histogram_uat.png'))
         
         print *, "✓ User acceptance scenario: PASS"
     end subroutine

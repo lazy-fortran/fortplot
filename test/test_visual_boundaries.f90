@@ -40,8 +40,8 @@ contains
         ! Create plot
         call fig%initialize(640, 480)
         call fig%add_plot(x_data, y_data)
-        call fig%savefig(get_test_output_path('output/test/test_visual_boundaries/test_linear_visual.txt'))
-        call fig%savefig(get_test_output_path('/tmp/test_linear_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_visual_boundaries/test_linear_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_linear_visual.txt'))
         
         if (validate_ascii_boundaries(get_test_output_path('/tmp/test_linear_visual.txt'))) then
             print *, "  ✓ PASS: Linear plot stays within ASCII canvas bounds"
@@ -76,8 +76,8 @@ contains
         call fig%initialize(640, 480)
         call fig%set_yscale('log')
         call fig%add_plot(x_data, y_data)
-        call fig%savefig(get_test_output_path('output/test/test_visual_boundaries/test_log_visual.txt'))
-        call fig%savefig(get_test_output_path('/tmp/test_log_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_visual_boundaries/test_log_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_log_visual.txt'))
         
         if (validate_ascii_boundaries(get_test_output_path('/tmp/test_log_visual.txt'))) then
             print *, "  ✓ PASS: Log plot stays within ASCII canvas bounds"
@@ -112,8 +112,8 @@ contains
         call fig%initialize(640, 480)
         call fig%set_yscale('symlog', 10.0_wp)
         call fig%add_plot(x_data, y_data)
-        call fig%savefig(get_test_output_path('output/test/test_visual_boundaries/test_symlog_visual.txt'))
-        call fig%savefig(get_test_output_path('/tmp/test_symlog_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('output/test/test_visual_boundaries/test_symlog_visual.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_symlog_visual.txt'))
         
         if (validate_ascii_boundaries(get_test_output_path('/tmp/test_symlog_visual.txt'))) then
             print *, "  ✓ PASS: Symlog plot stays within ASCII canvas bounds"

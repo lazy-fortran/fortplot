@@ -35,7 +35,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Check file exists
         inquire(file=filename, exist=file_exists)
@@ -69,7 +69,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read magic header
         open(newunit=unit, file=filename, status='old', &
@@ -115,7 +115,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read file header and first chunk
         open(newunit=unit, file=filename, status='old', &
@@ -165,7 +165,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Check file size indicates binary data
         inquire(file=filename, size=file_size)

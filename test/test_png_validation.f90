@@ -21,7 +21,7 @@ program test_png_validation
     test_file = get_test_output_path('output/test/test_png_validation/test_png_validation.png')
     call fig%initialize(100, 100)
     call fig%add_plot(x, y, label="validation_test")
-    call fig%savefig(test_file)
+    call figure_savefig(fig, test_file)
     print *, "Generated test PNG: ", test_file
 
     ! Check if external validation tools are available before using them

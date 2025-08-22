@@ -25,11 +25,11 @@ contains
         call fig%set_xlabel("Angle \theta (rad)")
         call fig%set_ylabel("Energy \epsilon (J)")
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [1.0_wp, 4.0_wp, 9.0_wp], label="\gamma values")
-        call fig%legend("upper right")
+        call figure_legend(fig, "upper right")
         
         ! Save to PNG file
         test_filename = get_test_output_path("/tmp/test_unicode_png.png")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         ! Check that file was created
         inquire(file=test_filename, exist=file_created)
@@ -55,11 +55,11 @@ contains
         call fig%set_xlabel("Frequency \nu (Hz)")
         call fig%set_ylabel("Amplitude \psi")
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [2.0_wp, 3.0_wp, 1.0_wp], label="\lambda wave")
-        call fig%legend("upper left")
+        call figure_legend(fig, "upper left")
         
         ! Save to PDF file
         test_filename = get_test_output_path("/tmp/test_unicode_pdf.pdf")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         ! Check that file was created
         inquire(file=test_filename, exist=file_created)
@@ -92,12 +92,12 @@ contains
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [1.0_wp, 2.0_wp, 4.0_wp, 8.0_wp], label="\alpha(x)")
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [2.0_wp, 3.0_wp, 5.0_wp, 9.0_wp], label="\beta(x)")
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [0.5_wp, 1.5_wp, 3.5_wp, 7.5_wp], label="\gamma(x)")
-        call fig%legend("upper left")
+        call figure_legend(fig, "upper left")
         
         ! Save to all three backends
-        call fig%savefig(png_file)
-        call fig%savefig(pdf_file)
-        call fig%savefig(ascii_file)
+        call figure_savefig(fig, png_file)
+        call figure_savefig(fig, pdf_file)
+        call figure_savefig(fig, ascii_file)
         
         ! Verify all files were created
         inquire(file=png_file, exist=png_exists)

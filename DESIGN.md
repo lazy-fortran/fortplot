@@ -6030,3 +6030,276 @@ This architecture provides **targeted noise reduction** while maintaining **full
 7. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
 8. **Short-term**: Add ffmpeg detection and graceful degradation
 9. **Medium-term**: Comprehensive integration testing and documentation
+
+## Pcolormesh ASCII Rendering Architecture (Issue #176)
+
+### Problem Analysis
+
+**Status**: 🚨 MAJOR - User-facing rendering defect affecting ASCII backend
+**Issue**: Pcolormesh plots rendering as solid blocks instead of proper mesh visualization
+**Impact**: ASCII backend users cannot visualize 2D scalar field data with proper mesh representation
+**Backend Specificity**: ASCII-only issue, other backends (PNG, PDF) work correctly
+
+**Root Cause**: The ASCII backend's `fill_quad` method uses a simple bounding rectangle approximation instead of implementing proper mesh grid discretization and character-based value mapping.
+
+### Current Architecture Limitations
+
+#### 1. Inadequate Mesh Rendering Algorithm
+
+**Current Implementation** (`fortplot_ascii.f90:696-720`):
+```fortran
+subroutine ascii_fill_quad(this, x_quad, y_quad)
+    ! Simple bounding rectangle approximation - INCORRECT FOR MESH
+    min_x = max(1, min(minval(px), this%plot_width))
+    max_x = max(1, min(maxval(px), this%plot_width))
+    do j = min_y, max_y
+        do i = min_x, max_x
+            this%canvas(j, i) = '#'  ! SOLID FILL - PROBLEM
+        end do
+    end do
+end subroutine
+```
+
+**Problems**:
+- Treats all quadrilaterals as solid rectangles
+- No value-based character mapping
+- No interpolation for mesh grid visualization
+- Ignores color/value data from pcolormesh
+
+#### 2. Missing Value-to-Character Mapping
+
+**Missing Infrastructure**:
+- No colormap-to-ASCII character mapping
+- No value normalization for character density
+- No spatial interpolation for smooth visualization
+
+#### 3. Incomplete Rendering Pipeline Integration
+
+**Current Gap**: `render_pcolormesh_plot` is stub implementation
+- No data flow from pcolormesh_t to ASCII backend
+- No mesh discretization for character-based output
+- No integration with existing ASCII character sets
+
+### Enhanced ASCII Mesh Rendering Architecture
+
+#### 1. Mesh Grid Discretization Algorithm
+
+**New ASCII Mesh Renderer** (`fortplot_ascii.f90`):
+```fortran
+subroutine ascii_render_pcolormesh(this, mesh_data)
+    !! Render pcolormesh with proper ASCII character mapping
+    class(ascii_context), intent(inout) :: this
+    type(pcolormesh_t), intent(in) :: mesh_data
+    
+    integer :: i, j, px, py, char_idx
+    real(wp) :: quad_x(4), quad_y(4), quad_center_x, quad_center_y
+    real(wp) :: value_normalized, canvas_value
+    character(len=1) :: mesh_char
+    
+    ! Process each quadrilateral in the mesh
+    do i = 1, mesh_data%ny
+        do j = 1, mesh_data%nx
+            ! Get quadrilateral vertices
+            call mesh_data%get_quad_vertices(i, j, quad_x, quad_y)
+            
+            ! Calculate representative point (center)
+            quad_center_x = sum(quad_x) / 4.0_wp
+            quad_center_y = sum(quad_y) / 4.0_wp
+            
+            ! Map to canvas coordinates
+            px = nint((quad_center_x - this%x_min) / &
+                     (this%x_max - this%x_min) * this%plot_width)
+            py = nint((quad_center_y - this%y_min) / &
+                     (this%y_max - this%y_min) * this%plot_height)
+            
+            ! Skip if outside canvas bounds
+            if (px < 1 .or. px > this%plot_width .or. &
+                py < 1 .or. py > this%plot_height) cycle
+                
+            ! Get normalized value for character mapping
+            value_normalized = (mesh_data%c_values(i, j) - mesh_data%vmin) / &
+                              (mesh_data%vmax - mesh_data%vmin)
+            value_normalized = max(0.0_wp, min(1.0_wp, value_normalized))
+            
+            ! Map to ASCII character based on density
+            call map_value_to_ascii_char(value_normalized, mesh_char)
+            
+            ! Apply character with blending for overlapping regions
+            call blend_ascii_char(this%canvas(py, px), mesh_char)
+        end do
+    end do
+end subroutine
+```
+
+#### 2. Value-to-Character Mapping System
+
+**ASCII Mesh Character Set**:
+```fortran
+! Enhanced mesh visualization characters (light to dark)
+character(len=*), parameter :: MESH_CHARS = ' ░▒▓█'
+character(len=*), parameter :: MESH_GRADIENT = ' .:-=+*#%@'
+
+subroutine map_value_to_ascii_char(value_norm, char_out)
+    !! Map normalized value [0,1] to ASCII character
+    real(wp), intent(in) :: value_norm
+    character(len=1), intent(out) :: char_out
+    
+    integer :: char_idx, char_set_len
+    
+    ! Use Unicode box drawing for better mesh representation
+    char_set_len = len(MESH_CHARS)
+    char_idx = min(char_set_len, max(1, int(value_norm * (char_set_len - 1)) + 1))
+    char_out = MESH_CHARS(char_idx:char_idx)
+end subroutine
+
+subroutine blend_ascii_char(current_char, new_char)
+    !! Blend characters for overlapping regions
+    character(len=1), intent(inout) :: current_char
+    character(len=1), intent(in) :: new_char
+    
+    integer :: current_density, new_density
+    
+    current_density = get_mesh_char_density(current_char)
+    new_density = get_mesh_char_density(new_char)
+    
+    ! Keep higher density character (darker/more prominent)
+    if (new_density > current_density) then
+        current_char = new_char
+    end if
+end subroutine
+```
+
+#### 3. Colormap Integration Strategy
+
+**Colormap-to-ASCII Adaptation**:
+```fortran
+subroutine apply_ascii_colormap(this, mesh_data, colormap_name)
+    !! Apply ASCII-adapted colormap visualization
+    class(ascii_context), intent(inout) :: this
+    type(pcolormesh_t), intent(in) :: mesh_data
+    character(len=*), intent(in) :: colormap_name
+    
+    select case (trim(colormap_name))
+    case ('viridis')
+        ! Use gradient characters for smooth transitions
+        call render_with_character_set(this, mesh_data, MESH_GRADIENT)
+    case ('plasma', 'hot')
+        ! Use density characters for intensity mapping  
+        call render_with_character_set(this, mesh_data, MESH_CHARS)
+    case ('binary', 'gray')
+        ! Use simple binary representation
+        call render_with_character_set(this, mesh_data, ' ▓')
+    case default
+        ! Default to gradient visualization
+        call render_with_character_set(this, mesh_data, MESH_GRADIENT)
+    end select
+end subroutine
+```
+
+#### 4. Enhanced Rendering Pipeline Integration
+
+**Updated Rendering Pipeline** (`fortplot_rendering.f90`):
+```fortran
+subroutine render_pcolormesh_plot(self, plot_idx)
+    !! Complete pcolormesh rendering implementation
+    class(figure_t), intent(inout) :: self
+    integer, intent(in) :: plot_idx
+    
+    type(pcolormesh_t) :: mesh_data
+    
+    ! Extract mesh data from plot
+    call extract_pcolormesh_data(self%plots(plot_idx), mesh_data)
+    
+    ! Backend-specific rendering
+    select type(ctx => self%ctx)
+    class is (ascii_context)
+        call ctx%ascii_render_pcolormesh(mesh_data)
+    class default
+        ! Existing backend rendering (already working)
+        call render_mesh_generic(ctx, mesh_data)
+    end select
+end subroutine
+```
+
+### Implementation Strategy
+
+#### Phase 1: Core ASCII Mesh Infrastructure (HIGH PRIORITY)
+
+**Files to Modify**:
+- `src/fortplot_ascii.f90`: Add `ascii_render_pcolormesh` method
+- `src/fortplot_rendering.f90`: Complete `render_pcolormesh_plot` implementation
+- `src/fortplot_pcolormesh.f90`: Add data extraction utilities
+
+**Key Components**:
+1. **Mesh Grid Discretization**: Convert continuous mesh to discrete ASCII canvas
+2. **Value-to-Character Mapping**: Implement density-based character selection
+3. **Character Blending System**: Handle overlapping regions gracefully
+
+#### Phase 2: Colormap Integration (MEDIUM PRIORITY)
+
+**Enhanced Features**:
+- ASCII-adapted colormap support (viridis, plasma, gray, binary)
+- Character set selection based on data characteristics
+- Enhanced Unicode support for better mesh representation
+
+#### Phase 3: Advanced Mesh Features (LOWER PRIORITY)
+
+**Advanced Capabilities**:
+- Edge rendering with ASCII line characters
+- Mesh interpolation for smoother transitions
+- Adaptive character selection based on mesh density
+
+### Testing Strategy
+
+#### Test Coverage Requirements
+
+**Primary Test Cases**:
+```fortran
+! Test mesh character mapping
+call test_ascii_character_mapping()
+
+! Test overlapping quad rendering
+call test_mesh_quad_overlaps()
+
+! Test colormap integration
+call test_ascii_colormap_adaptation()
+
+! Test edge cases (empty mesh, single quad, etc.)
+call test_mesh_edge_cases()
+```
+
+**Visual Validation**:
+- Compare ASCII output with PNG reference images
+- Verify mesh structure preservation in ASCII format
+- Test various mesh densities and value ranges
+
+### Fallback and Edge Case Handling
+
+#### Graceful Degradation
+
+**Large Mesh Handling**:
+- Automatic mesh downsampling for terminal size constraints
+- Adaptive character selection for readability
+
+**Error Recovery**:
+- Fallback to contour representation for invalid mesh data
+- Clear error messages for unsupported mesh configurations
+
+**Performance Considerations**:
+- O(n*m) complexity for n×m mesh (acceptable for ASCII constraints)
+- Memory-efficient character mapping tables
+- Lazy evaluation for large mesh datasets
+
+### Integration Points
+
+**Backend Consistency**:
+- Maintain API compatibility with PNG/PDF backends
+- Consistent colormap behavior across all backends
+- Unified mesh data structures
+
+**User Interface**:
+- No API changes required for existing pcolormesh calls
+- Enhanced ASCII-specific options (character sets, density levels)
+- Improved terminal output formatting
+
+This architecture addresses the core pcolormesh ASCII rendering defect while maintaining system consistency and providing a foundation for enhanced ASCII mesh visualization capabilities.

@@ -34,7 +34,7 @@ contains
         call fig%add_plot(x2, y2)
         
         ! This test will fail initially, showing the issue
-        call fig%savefig("test_disconnected_multiple_plots.png")
+        call figure_savefig(fig, "test_disconnected_multiple_plots.png")
         
         print *, "Test multiple plots: Generated test_disconnected_multiple_plots.png"
     end subroutine test_multiple_plots_should_not_connect
@@ -54,7 +54,7 @@ contains
         
         call fig%add_plot(x, y)
         
-        call fig%savefig("test_disconnected_nan_break.png")
+        call figure_savefig(fig, "test_disconnected_nan_break.png")
         
         print *, "Test NaN line breaks: Generated test_disconnected_nan_break.png"
     end subroutine test_nan_values_should_break_lines
@@ -74,7 +74,7 @@ contains
         
         call fig%add_plot(x, y, linestyle='--')
         
-        call fig%savefig("test_disconnected_dashed.png")
+        call figure_savefig(fig, "test_disconnected_dashed.png")
         
         print *, "Test dashed NaN breaks: Generated test_disconnected_dashed.png"
     end subroutine test_nan_with_patterned_lines
@@ -94,7 +94,7 @@ contains
         
         call fig%add_plot(x, y, linestyle='o')
         
-        call fig%savefig("test_disconnected_markers.png")
+        call figure_savefig(fig, "test_disconnected_markers.png")
         
         print *, "Test markers with NaN: Generated test_disconnected_markers.png"
     end subroutine test_nan_with_markers_only
@@ -124,7 +124,7 @@ contains
         ! Test unknown pattern (should fall back to solid)
         call fig%add_plot(x, y + 4.5_8, linestyle='unknown')
         
-        call fig%savefig("test_all_patterns_nan.png")
+        call figure_savefig(fig, "test_all_patterns_nan.png")
         
         print *, "Test all patterns: Generated test_all_patterns_nan.png"
     end subroutine test_all_linestyle_patterns
@@ -159,7 +159,7 @@ contains
         y(1:7) = [0.0_8, 1.0_8, nan, nan, nan, 1.0_8, 0.0_8]
         call fig%add_plot(x(1:7), y(1:7) + 2.0_8, linestyle='-.')
         
-        call fig%savefig("test_edge_cases_nan.png")
+        call figure_savefig(fig, "test_edge_cases_nan.png")
         
         print *, "Test edge cases: Generated test_edge_cases_nan.png"
     end subroutine test_edge_cases
@@ -198,7 +198,7 @@ contains
         y2 = [1.0_8, 1.000001_8]
         call fig%add_plot(x2, y2 + 1.0_8, linestyle='-.')
         
-        call fig%savefig("test_small_arrays_nan.png")
+        call figure_savefig(fig, "test_small_arrays_nan.png")
         
         print *, "Test small arrays: Generated test_small_arrays_nan.png"
     end subroutine test_empty_and_small_arrays
@@ -225,7 +225,7 @@ contains
         call fig%add_plot(x, y, linestyle='-.')  ! dash-dot
         call fig%add_plot(x, y, linestyle='o')   ! markers only
         
-        call fig%savefig("test_all_nan_edge.png")
+        call figure_savefig(fig, "test_all_nan_edge.png")
         
         print *, "Test all NaN edge case: Generated test_all_nan_edge.png"
     end subroutine test_all_nan_array_edge_case

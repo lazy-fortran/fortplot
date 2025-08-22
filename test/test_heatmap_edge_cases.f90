@@ -33,8 +33,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z_wrong)  ! Should not crash
-        call fig%savefig(get_test_output_path('/tmp/test_mismatch_dims.txt'))
+        call figure_add_contour_filled(fig, x, y, z_wrong)  ! Should not crash
+        call figure_savefig(fig, get_test_output_path('/tmp/test_mismatch_dims.txt'))
         
         ! Correct dimensions
         do i = 1, 5
@@ -44,8 +44,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z_correct)
-        call fig%savefig(get_test_output_path('/tmp/test_correct_dims.txt'))
+        call figure_add_contour_filled(fig, x, y, z_correct)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_correct_dims.txt'))
         
         print *, "test_mismatched_dimensions: PASSED"
     end subroutine
@@ -60,8 +60,8 @@ contains
         z(1, 1) = 1.0_wp
         
         call fig%initialize(30, 15)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_single_point.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_single_point.txt'))
         
         ! For pcolormesh, need 2x2 vertices for single cell
         block
@@ -72,8 +72,8 @@ contains
             z_mesh(1, 1) = 0.5_wp
             
             call fig%initialize(30, 15)
-            call fig%add_pcolormesh(x_mesh, y_mesh, z_mesh)
-            call fig%savefig(get_test_output_path('/tmp/test_single_cell.txt'))
+            call figure_add_pcolormesh(fig, x_mesh, y_mesh, z_mesh)
+            call figure_savefig(fig, get_test_output_path('/tmp/test_single_cell.txt'))
         end block
         
         print *, "test_single_point_data: PASSED"
@@ -95,8 +95,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_large_values.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_large_values.txt'))
         
         ! Very small values
         do i = 1, 4
@@ -106,8 +106,8 @@ contains
         end do
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_small_values.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_small_values.txt'))
         
         ! Mix of positive and negative
         z = reshape([1.0e6_wp, -1.0e6_wp, 1.0e-6_wp, -1.0e-6_wp, &
@@ -116,8 +116,8 @@ contains
                      -1.0e-6_wp, 1.0e-6_wp, -1.0e6_wp, 1.0e6_wp], [4, 4])
         
         call fig%initialize(40, 20)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_mixed_extreme.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_mixed_extreme.txt'))
         
         print *, "test_extreme_values: PASSED"
     end subroutine
@@ -139,16 +139,16 @@ contains
         z(2, 2) = nan_val
         
         call fig%initialize(30, 15)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_with_nan.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_with_nan.txt'))
         
         ! Test with Inf in data
         z = 1.0_wp
         z(2, 2) = inf_val
         
         call fig%initialize(30, 15)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_with_inf.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_with_inf.txt'))
         
         ! Test with mix of NaN, Inf, and normal values
         z = reshape([1.0_wp, nan_val, 3.0_wp, &
@@ -156,8 +156,8 @@ contains
                      7.0_wp, 8.0_wp, nan_val], [3, 3])
         
         call fig%initialize(30, 15)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_mixed_special.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_mixed_special.txt'))
         
         print *, "test_nan_and_inf_handling: PASSED"
     end subroutine
@@ -174,18 +174,18 @@ contains
         
         ! Test with minimum reasonable size
         call fig%initialize(10, 5)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_tiny_figure.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_tiny_figure.txt'))
         
         ! Test with very wide aspect ratio
         call fig%initialize(100, 10)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_wide_figure.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_wide_figure.txt'))
         
         ! Test with very tall aspect ratio
         call fig%initialize(20, 50)
-        call fig%add_contour_filled(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_tall_figure.txt'))
+        call figure_add_contour_filled(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_tall_figure.txt'))
         
         print *, "test_zero_size_figure: PASSED"
     end subroutine
@@ -206,13 +206,13 @@ contains
         end do
         
         call fig%initialize(60, 30)
-        call fig%add_contour_filled(x_irreg, y_irreg, z)
-        call fig%savefig(get_test_output_path('/tmp/test_irregular_grid.txt'))
+        call figure_add_contour_filled(fig, x_irreg, y_irreg, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_irregular_grid.txt'))
         
         ! Test with reversed coordinates
         call fig%initialize(60, 30)
-        call fig%add_contour_filled(x_irreg(5:1:-1), y_irreg(4:1:-1), z(5:1:-1, 4:1:-1))
-        call fig%savefig(get_test_output_path('/tmp/test_reversed_coords.txt'))
+        call figure_add_contour_filled(fig, x_irreg(5:1:-1), y_irreg(4:1:-1), z(5:1:-1, 4:1:-1))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_reversed_coords.txt'))
         
         print *, "test_irregular_grids: PASSED"
     end subroutine
@@ -229,8 +229,8 @@ contains
                      4.0_wp, 5.0_wp, 6.0_wp], [3, 2])  ! 3×2 cells
         
         call fig%initialize(40, 20)
-        call fig%add_pcolormesh(x, y, z)
-        call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_correct.txt'))
+        call figure_add_pcolormesh(fig, x, y, z)
+        call figure_savefig(fig, get_test_output_path('/tmp/test_pcolormesh_correct.txt'))
         
         ! Test with different z dimensions (should handle gracefully)
         block
@@ -240,8 +240,8 @@ contains
             z_alt = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp], [2, 3])
             
             call fig%initialize(40, 20)
-            call fig%add_pcolormesh(x_alt, y_alt, z_alt)  ! Should not crash
-            call fig%savefig(get_test_output_path('/tmp/test_pcolormesh_alt.txt'))
+            call figure_add_pcolormesh(fig, x_alt, y_alt, z_alt)  ! Should not crash
+            call figure_savefig(fig, get_test_output_path('/tmp/test_pcolormesh_alt.txt'))
         end block
         
         print *, "test_dimension_mismatch_pcolormesh: PASSED"

@@ -36,7 +36,7 @@ contains
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig(get_test_output_path("output/test/test_basic_validation.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_basic_validation.png"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.png"))
         if (.not. validation%passed) then
@@ -54,7 +54,7 @@ contains
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig(get_test_output_path("output/test/test_basic_validation.pdf"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_basic_validation.pdf"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.pdf"))
         if (.not. validation%passed) then
@@ -72,7 +72,7 @@ contains
         call fig%initialize(80, 24)
         call fig%add_plot(x, y, label="sine wave")
         call fig%set_title("Basic Plot Test")
-        call fig%savefig(get_test_output_path("output/test/test_basic_validation.txt"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_basic_validation.txt"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_basic_validation.txt"))
         if (.not. validation%passed) then
@@ -111,7 +111,7 @@ contains
         call fig%set_title("Scatter Plot Validation")
         call fig%set_xlabel("X Values")
         call fig%set_ylabel("Y Values")
-        call fig%savefig(get_test_output_path("output/test/test_scatter_validation.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_scatter_validation.png"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_scatter_validation.png"))
         if (.not. validation%passed) then
@@ -152,9 +152,9 @@ contains
         
         ! Act & Assert: Generate contour plot
         call fig%initialize(600, 500)
-        call fig%add_contour(x, y, z, label='gaussian')
+        call figure_add_contour_filled(fig, x, y, z, label='gaussian')
         call fig%set_title("Contour Plot Validation")
-        call fig%savefig(get_test_output_path("output/test/test_contour_validation.pdf"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_contour_validation.pdf"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_contour_validation.pdf"))
         if (.not. validation%passed) then
@@ -191,7 +191,7 @@ contains
         call fig%initialize(700, 600)
         call fig%add_3d_plot(x, y, z, label='3d spiral')
         call fig%set_title("3D Plot Validation")
-        call fig%savefig(get_test_output_path("output/test/test_3d_validation.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_3d_validation.png"))
         
         validation = validate_file_exists(get_test_output_path("output/test/test_3d_validation.png"))
         if (.not. validation%passed) then
@@ -220,15 +220,15 @@ contains
         ! Act: Generate same plot in all formats
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig(get_test_output_path("output/test/test_backend_validation.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_backend_validation.png"))
         
         call fig%initialize(400, 300)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig(get_test_output_path("output/test/test_backend_validation.pdf"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_backend_validation.pdf"))
         
         call fig%initialize(60, 20)
         call fig%add_plot(x, y, label="test")
-        call fig%savefig(get_test_output_path("output/test/test_backend_validation.txt"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_backend_validation.txt"))
         
         ! Assert: Validate PNG properties
         validation = validate_png_format(get_test_output_path("output/test/test_backend_validation.png"))
@@ -275,8 +275,8 @@ contains
         call fig%set_title("File Properties Validation Test")
         call fig%set_xlabel("X Axis")
         call fig%set_ylabel("Y Axis")
-        call fig%legend()
-        call fig%savefig(get_test_output_path("output/test/test_properties_validation.png"))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path("output/test/test_properties_validation.png"))
         
         ! Assert: Validate minimum file size (complex plot should be larger)
         validation = validate_file_size(get_test_output_path("output/test/test_properties_validation.png"), MIN_PNG_SIZE * 2)
@@ -307,13 +307,13 @@ contains
         call fig%initialize(450, 350)
         call fig%add_plot(x, y, label="exponential decay")
         call fig%set_title("Regression Baseline Test")
-        call fig%savefig(get_test_output_path("output/test/test_regression_current.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_regression_current.png"))
         
         ! Create a fake baseline for testing (normally this would exist)
         call fig%initialize(450, 350)
         call fig%add_plot(x, y, label="exponential decay")
         call fig%set_title("Regression Baseline Test")
-        call fig%savefig(get_test_output_path("output/test/test_regression_baseline.png"))
+        call figure_savefig(fig, get_test_output_path("output/test/test_regression_baseline.png"))
         
         ! Assert: Compare with baseline
         validation = compare_with_baseline(get_test_output_path("output/test/test_regression_current.png"), &

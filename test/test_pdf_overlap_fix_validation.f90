@@ -36,7 +36,7 @@ contains
         
         ! Generate PDF - overlap detection should prevent overlapping labels
         test_filename = get_test_output_path("/tmp/test_pdf_overlap_fix.pdf")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         ! Verify file was created
         inquire(file=test_filename, exist=file_created)
@@ -72,7 +72,7 @@ contains
         call fig%set_title("Minimum spacing enforcement test")
         
         test_filename = get_test_output_path("/tmp/test_pdf_min_spacing_enforcement.pdf")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         print *, "PASS: PDF generated with minimum spacing enforcement"
         print *, "File: ", trim(test_filename)
@@ -102,7 +102,7 @@ contains
         call fig%set_title("Label filtering effectiveness test")
         
         test_filename = get_test_output_path("/tmp/test_pdf_label_filtering.pdf")
-        call fig%savefig(test_filename)
+        call figure_savefig(fig, test_filename)
         
         print *, "PASS: PDF generated with effective label filtering"
         print *, "File: ", trim(test_filename)

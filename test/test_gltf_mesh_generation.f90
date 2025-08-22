@@ -32,7 +32,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z, label="Test line")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         ! Read entire file
         open(newunit=unit, file=filename, status='old', action='read')
@@ -73,7 +73,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         open(newunit=unit, file=filename, status='old', action='read')
         read(unit, '(A)') file_content
@@ -117,7 +117,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         open(newunit=unit, file=filename, status='old', action='read')
         read(unit, '(A)') file_content
@@ -161,7 +161,7 @@ contains
         
         call fig%initialize(640, 480)
         call fig%add_3d_plot(x, y, z)
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
         
         open(newunit=unit, file=filename, status='old', action='read')
         read(unit, '(A)') file_content

@@ -57,9 +57,9 @@ contains
         call fig%add_plot([1.0_wp, 2.0_wp, 3.0_wp], [1.0_wp, 4.0_wp, 2.0_wp])
         
         ! Add text annotation that should appear in ASCII output
-        call fig%text(1.5_wp, 2.5_wp, "TEST_ANNOTATION", coord_type=COORD_DATA)
+        call text(1.5_wp, 2.5_wp, "TEST_ANNOTATION", coord_type=COORD_DATA)
         
-        call fig%savefig("test_ascii_annotation_render.txt")
+        call figure_savefig(fig, "test_ascii_annotation_render.txt")
         
         ! Read the entire ASCII file content
         open(newunit=file_unit, file="test_ascii_annotation_render.txt", &
@@ -108,10 +108,10 @@ contains
         call fig%add_plot([0.0_wp, 1.0_wp, 2.0_wp], [0.0_wp, 1.0_wp, 0.5_wp])
         
         ! Add prominent text annotation  
-        call fig%text(0.5_wp, 0.5_wp, "VISIBLE_TEXT", &
+        call text(0.5_wp, 0.5_wp, "VISIBLE_TEXT", &
                       coord_type=COORD_DATA, font_size=20.0_wp)
         
-        call fig%savefig("test_png_annotation_render.png")
+        call figure_savefig(fig, "test_png_annotation_render.png")
         
         ! Verify PNG file was created
         inquire(file="test_png_annotation_render.png", exist=file_exists, size=file_size)
@@ -155,10 +155,10 @@ contains
         call fig%add_plot([0.0_wp, 5.0_wp], [0.0_wp, 3.0_wp])
         
         ! Add text annotation with clear content
-        call fig%text(2.5_wp, 1.5_wp, "PDF_ANNOTATION_TEST", &
+        call text(2.5_wp, 1.5_wp, "PDF_ANNOTATION_TEST", &
                       coord_type=COORD_DATA, font_size=16.0_wp)
         
-        call fig%savefig("test_pdf_annotation_render.pdf")
+        call figure_savefig(fig, "test_pdf_annotation_render.pdf")
         
         ! Verify PDF file creation
         inquire(file="test_pdf_annotation_render.pdf", exist=file_exists, size=file_size)
@@ -196,18 +196,18 @@ contains
         call fig%add_plot([0.0_wp, 2.0_wp, 4.0_wp], [1.0_wp, 3.0_wp, 2.0_wp])
         
         ! Add multiple annotations with different coordinate systems
-        call fig%text(1.0_wp, 2.0_wp, "DATA_COORDS", coord_type=COORD_DATA, font_size=12.0_wp)
-        call fig%text(0.1_wp, 0.9_wp, "FIGURE_COORDS", coord_type=COORD_FIGURE, font_size=14.0_wp)
-        call fig%text(0.5_wp, 0.1_wp, "AXIS_COORDS", coord_type=COORD_AXIS, font_size=10.0_wp)
+        call text(1.0_wp, 2.0_wp, "DATA_COORDS", coord_type=COORD_DATA, font_size=12.0_wp)
+        call text(0.1_wp, 0.9_wp, "FIGURE_COORDS", coord_type=COORD_FIGURE, font_size=14.0_wp)
+        call text(0.5_wp, 0.1_wp, "AXIS_COORDS", coord_type=COORD_AXIS, font_size=10.0_wp)
         
         ! Different typography features
-        call fig%text(3.0_wp, 1.5_wp, "ROTATED_TEXT", coord_type=COORD_DATA, &
+        call text(3.0_wp, 1.5_wp, "ROTATED_TEXT", coord_type=COORD_DATA, &
                       rotation=45.0_wp, alignment="center", font_size=16.0_wp)
         
         ! Render to all backends
-        call fig%savefig("test_multi_annotations.png")
-        call fig%savefig("test_multi_annotations.pdf") 
-        call fig%savefig("test_multi_annotations.txt")
+        call figure_savefig(fig, "test_multi_annotations.png")
+        call figure_savefig(fig, "test_multi_annotations.pdf") 
+        call figure_savefig(fig, "test_multi_annotations.txt")
         
         ! Verify files created
         inquire(file="test_multi_annotations.png", exist=png_exists)
@@ -244,18 +244,18 @@ contains
         
         ! Place annotations at exact coordinate positions for verification
         ! Data coordinates: should map to specific pixel positions
-        call fig%text(5.0_wp, 2.5_wp, "CENTER_DATA", coord_type=COORD_DATA)
-        call fig%text(0.0_wp, 0.0_wp, "ORIGIN_DATA", coord_type=COORD_DATA)  
-        call fig%text(10.0_wp, 5.0_wp, "MAX_DATA", coord_type=COORD_DATA)
+        call text(5.0_wp, 2.5_wp, "CENTER_DATA", coord_type=COORD_DATA)
+        call text(0.0_wp, 0.0_wp, "ORIGIN_DATA", coord_type=COORD_DATA)  
+        call text(10.0_wp, 5.0_wp, "MAX_DATA", coord_type=COORD_DATA)
         
         ! Figure coordinates: should map to figure fractions  
-        call fig%text(0.5_wp, 0.5_wp, "CENTER_FIGURE", coord_type=COORD_FIGURE)
-        call fig%text(0.0_wp, 1.0_wp, "TOP_LEFT_FIGURE", coord_type=COORD_FIGURE)
+        call text(0.5_wp, 0.5_wp, "CENTER_FIGURE", coord_type=COORD_FIGURE)
+        call text(0.0_wp, 1.0_wp, "TOP_LEFT_FIGURE", coord_type=COORD_FIGURE)
         
         ! Axis coordinates: should map to plot area fractions
-        call fig%text(0.5_wp, 0.5_wp, "CENTER_AXIS", coord_type=COORD_AXIS)
+        call text(0.5_wp, 0.5_wp, "CENTER_AXIS", coord_type=COORD_AXIS)
         
-        call fig%savefig("test_coordinate_accuracy.png")
+        call figure_savefig(fig, "test_coordinate_accuracy.png")
         
         inquire(file="test_coordinate_accuracy.png", exist=file_exists)
         if (.not. file_exists) then
@@ -284,10 +284,10 @@ contains
         
         ! Simple plot with annotation
         call fig%add_plot([1.0_wp, 2.0_wp], [1.0_wp, 2.0_wp])
-        call fig%text(1.5_wp, 1.5_wp, "BACKEND_INTEGRATION_TEST", coord_type=COORD_DATA)
+        call text(1.5_wp, 1.5_wp, "BACKEND_INTEGRATION_TEST", coord_type=COORD_DATA)
         
         ! This should trigger render_figure() which should call backend%text()
-        call fig%savefig("test_backend_integration.txt")  ! Use ASCII for simpler verification
+        call figure_savefig(fig, "test_backend_integration.txt")  ! Use ASCII for simpler verification
         
         ! We know the annotation is stored (that part works)
         ! We know backend%text() method exists and works (used by other components)  
@@ -320,18 +320,18 @@ contains
         call fig%add_plot(x, y, label="Demo data")
         
         ! Key annotations from the demo
-        call fig%text(0.5_wp, 0.8_wp, "Peak Region", coord_type=COORD_DATA, font_size=12.0_wp)
-        call fig%text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
+        call text(0.5_wp, 0.8_wp, "Peak Region", coord_type=COORD_DATA, font_size=12.0_wp)
+        call text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
                       coord_type=COORD_FIGURE, font_size=16.0_wp, alignment="center")
-        call fig%text(0.02_wp, 0.02_wp, "Data generated for demonstration", &
+        call text(0.02_wp, 0.02_wp, "Data generated for demonstration", &
                       coord_type=COORD_FIGURE, font_size=8.0_wp)
-        call fig%text(1.5_wp, 0.2_wp, "Critical Point", &
+        call text(1.5_wp, 0.2_wp, "Critical Point", &
                       coord_type=COORD_DATA, alignment="center", has_bbox=.true.)
         
         ! Save in demo format
-        call fig%savefig("test_demo_validation.png")
-        call fig%savefig("test_demo_validation.pdf") 
-        call fig%savefig("test_demo_validation.txt")
+        call figure_savefig(fig, "test_demo_validation.png")
+        call figure_savefig(fig, "test_demo_validation.pdf") 
+        call figure_savefig(fig, "test_demo_validation.txt")
         
         inquire(file="test_demo_validation.png", exist=file_exists)
         if (.not. file_exists) then
@@ -361,25 +361,25 @@ contains
         call fig%add_plot([0.0_wp, 3.0_wp], [0.0_wp, 2.0_wp])
         
         ! Different font sizes
-        call fig%text(0.5_wp, 1.8_wp, "Large Text", font_size=24.0_wp)
-        call fig%text(0.5_wp, 1.6_wp, "Medium Text", font_size=16.0_wp)
-        call fig%text(0.5_wp, 1.4_wp, "Small Text", font_size=8.0_wp)
+        call text(0.5_wp, 1.8_wp, "Large Text", font_size=24.0_wp)
+        call text(0.5_wp, 1.6_wp, "Medium Text", font_size=16.0_wp)
+        call text(0.5_wp, 1.4_wp, "Small Text", font_size=8.0_wp)
         
         ! Different alignments
-        call fig%text(1.0_wp, 1.0_wp, "Left Align", alignment="left")
-        call fig%text(1.5_wp, 1.0_wp, "Center Align", alignment="center")
-        call fig%text(2.0_wp, 1.0_wp, "Right Align", alignment="right")
+        call text(1.0_wp, 1.0_wp, "Left Align", alignment="left")
+        call text(1.5_wp, 1.0_wp, "Center Align", alignment="center")
+        call text(2.0_wp, 1.0_wp, "Right Align", alignment="right")
         
         ! Rotation angles
-        call fig%text(0.8_wp, 0.6_wp, "0 degrees", rotation=0.0_wp)
-        call fig%text(1.2_wp, 0.6_wp, "45 degrees", rotation=45.0_wp)  
-        call fig%text(1.6_wp, 0.6_wp, "90 degrees", rotation=90.0_wp)
-        call fig%text(2.0_wp, 0.6_wp, "-30 degrees", rotation=-30.0_wp)
+        call text(0.8_wp, 0.6_wp, "0 degrees", rotation=0.0_wp)
+        call text(1.2_wp, 0.6_wp, "45 degrees", rotation=45.0_wp)  
+        call text(1.6_wp, 0.6_wp, "90 degrees", rotation=90.0_wp)
+        call text(2.0_wp, 0.6_wp, "-30 degrees", rotation=-30.0_wp)
         
         ! Background boxes
-        call fig%text(2.5_wp, 0.3_wp, "Boxed Text", has_bbox=.true., alignment="center")
+        call text(2.5_wp, 0.3_wp, "Boxed Text", has_bbox=.true., alignment="center")
         
-        call fig%savefig("test_typography_features.png")
+        call figure_savefig(fig, "test_typography_features.png")
         
         inquire(file="test_typography_features.png", exist=file_exists)
         if (.not. file_exists) then

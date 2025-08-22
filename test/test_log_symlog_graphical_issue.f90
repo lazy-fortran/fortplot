@@ -36,8 +36,8 @@ contains
         call fig%set_title("Log Scale Test (PNG) - Should show straight line")
         call fig%set_xlabel("x")
         call fig%set_ylabel("10*exp(0.2x)")
-        call fig%legend()
-        call fig%savefig(get_test_output_path('build/test/log_scale_test.png'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('build/test/log_scale_test.png'))
         
         ! Test PDF output  
         call fig%initialize(800, 600)
@@ -46,8 +46,8 @@ contains
         call fig%set_title("Log Scale Test (PDF) - Should show straight line")
         call fig%set_xlabel("x")
         call fig%set_ylabel("10*exp(0.2x)")
-        call fig%legend()
-        call fig%savefig(get_test_output_path('build/test/log_scale_test.pdf'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('build/test/log_scale_test.pdf'))
         
         print *, "Created: log_scale_test.png/pdf"
     end subroutine test_log_scale_graphical
@@ -73,8 +73,8 @@ contains
         call fig%set_title("Symlog Scale Test (PNG) - Should show S-curve")
         call fig%set_xlabel("x")
         call fig%set_ylabel("sign(x)*x²*100")
-        call fig%legend()
-        call fig%savefig(get_test_output_path('build/test/symlog_scale_test.png'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('build/test/symlog_scale_test.png'))
         
         ! Test PDF output
         call fig%initialize(800, 600)
@@ -83,8 +83,8 @@ contains
         call fig%set_title("Symlog Scale Test (PDF) - Should show S-curve")
         call fig%set_xlabel("x")
         call fig%set_ylabel("sign(x)*x²*100")
-        call fig%legend()
-        call fig%savefig(get_test_output_path('build/test/symlog_scale_test.pdf'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('build/test/symlog_scale_test.pdf'))
         
         print *, "Created: symlog_scale_test.png/pdf"
     end subroutine test_symlog_scale_graphical

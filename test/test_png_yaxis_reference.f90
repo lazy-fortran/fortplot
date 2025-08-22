@@ -122,19 +122,19 @@ contains
         ! Small range test
         call fig%initialize(400, 300)
         call fig%add_plot(x, y_small, label="small_range")
-        call fig%savefig("png_ref_small_range.png")
+        call figure_savefig(fig, "png_ref_small_range.png")
         print *, "Created PNG reference: small range [-0.4, 0.5]"
         
         ! Medium range test  
         call fig%initialize(400, 300)
         call fig%add_plot(x, y_medium, label="medium_range")
-        call fig%savefig("png_ref_medium_range.png")
+        call figure_savefig(fig, "png_ref_medium_range.png")
         print *, "Created PNG reference: medium range [-20, 25]"
         
         ! Large range test
         call fig%initialize(400, 300) 
         call fig%add_plot(x, y_large, label="large_range")
-        call fig%savefig("png_ref_large_range.png")
+        call figure_savefig(fig, "png_ref_large_range.png")
         print *, "Created PNG reference: large range [-400, 500]"
         
         print *, "PNG multi-range reference plots created"
@@ -163,13 +163,13 @@ contains
         ! Purely negative range
         call fig%initialize(400, 300)
         call fig%add_plot(x, y_negative, label="negative_only")
-        call fig%savefig("png_ref_negative_range.png")
+        call figure_savefig(fig, "png_ref_negative_range.png")
         print *, "Created PNG reference: negative range [-2, -16]"
         
         ! Mixed positive/negative range  
         call fig%initialize(400, 300)
         call fig%add_plot(x, y_mixed, label="mixed_range")
-        call fig%savefig("png_ref_mixed_range.png")
+        call figure_savefig(fig, "png_ref_mixed_range.png")
         print *, "Created PNG reference: mixed range [-9, 12]"
         
         print *, "PNG negative range reference plots created"
@@ -194,7 +194,7 @@ contains
         
         call fig%initialize(600, 400)
         call fig%add_plot(x, y, label="PNG_reference")
-        call fig%savefig("png_yaxis_reference.png")
+        call figure_savefig(fig, "png_yaxis_reference.png")
         
         print *, "Created png_yaxis_reference.png for visual comparison"
         

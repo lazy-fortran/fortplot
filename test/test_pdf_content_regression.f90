@@ -36,7 +36,7 @@ contains
         call fig%initialize(640, 480)
         call fig%add_plot(x_data, y_data)
         call fig%set_title("PDF Header Test")
-        call fig%savefig(test_file)
+        call figure_savefig(fig, test_file)
         
         ! Read first 8 bytes to check PDF header
         open(newunit=file_unit, file=test_file, access='stream', form='unformatted', iostat=ios)
@@ -85,8 +85,8 @@ contains
         
         call fig%initialize(800, 600)
         call fig%add_plot(x_data, y_data, label="Test Data")
-        call fig%legend()
-        call fig%savefig(test_file)
+        call figure_legend(fig, )
+        call figure_savefig(fig, test_file)
         
         ! Check file size first
         inquire(file=test_file, size=file_size)
@@ -158,7 +158,7 @@ contains
         call fig%set_title("PDF Structure Test")
         call fig%set_xlabel("Time (s)")
         call fig%set_ylabel("Amplitude")
-        call fig%savefig(test_file)
+        call figure_savefig(fig, test_file)
         
         ! Read file content to check internal structure
         inquire(file=test_file, size=file_size)
@@ -262,7 +262,7 @@ contains
         call fig%initialize(600, 450)
         call fig%add_scatter(x_data, y_data, marker='o')
         call fig%set_title("PDF Scatter Test")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine create_test_scatter_pdf
     
     subroutine create_test_line_pdf(filename)
@@ -279,7 +279,7 @@ contains
         call fig%initialize(800, 600)
         call fig%add_plot(x_data, y_data, linestyle='-')
         call fig%set_title("PDF Line Test")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine create_test_line_pdf
     
     subroutine create_test_contour_pdf(filename)
@@ -304,9 +304,9 @@ contains
         end do
         
         call fig%initialize(700, 500)
-        call fig%add_contour(x_data, y_data, z_data)
+        call figure_add_contour_filled(fig, x_data, y_data, z_data)
         call fig%set_title("PDF Contour Test")
-        call fig%savefig(filename)
+        call figure_savefig(fig, filename)
     end subroutine create_test_contour_pdf
 
 end program test_pdf_content_regression

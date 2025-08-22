@@ -63,7 +63,7 @@ contains
         call fig%set_title('Object-Oriented Scatter Plot')
         call fig%set_xlabel('X Values')
         call fig%set_ylabel('Y Values')
-        call fig%savefig(get_test_output_path('/tmp/test_oo_scatter.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_oo_scatter.png'))
         
         write(error_unit, '(A)') '  ✓ Basic scatter plot test completed'
     end subroutine test_basic_scatter_plot
@@ -97,8 +97,8 @@ contains
         call fig%set_title('Marker Shape Test - User Acceptance')
         call fig%set_xlabel('X Position')
         call fig%set_ylabel('Y Position (offset by marker type)')
-        call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_marker_shapes.png'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('/tmp/test_marker_shapes.png'))
         
         write(error_unit, '(A)') '  ✓ Marker shapes test completed'
     end subroutine test_marker_shapes
@@ -123,8 +123,8 @@ contains
         call fig%set_title('Bubble Chart Test - Size Mapping')
         call fig%set_xlabel('X Values')
         call fig%set_ylabel('Y Values')
-        call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_bubble_chart.png'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('/tmp/test_bubble_chart.png'))
         
         write(error_unit, '(A)') '  ✓ Bubble chart test completed'
     end subroutine test_bubble_chart
@@ -150,8 +150,8 @@ contains
         call fig%set_title('Color Mapping Test - Scientific Data Visualization')
         call fig%set_xlabel('X Parameter')
         call fig%set_ylabel('Y Response')
-        call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_color_mapping.png'))
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('/tmp/test_color_mapping.png'))
         
         write(error_unit, '(A)') '  ✓ Color mapping test completed'
     end subroutine test_color_mapping
@@ -182,7 +182,7 @@ contains
         call fig%initialize(600, 400)
         call fig%add_scatter(x, y, s=sizes, marker='o', label='Bubble Chart')
         call fig%set_title("Bubble Chart - Size Represents Population")
-        call fig%savefig(get_test_output_path("/tmp/readme_bubble_chart.png"))
+        call figure_savefig(fig, get_test_output_path("/tmp/readme_bubble_chart.png"))
         
         ! Color-mapped scatter from README style
         call figure(800, 600)
@@ -221,8 +221,8 @@ contains
         call fig%set_title('Gas Properties: Pressure vs Temperature')
         call fig%set_xlabel('Temperature (K)')
         call fig%set_ylabel('Pressure (bar)')
-        call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_scientific_workflow.png'))  ! Test with PNG first
+        call figure_legend(fig, )
+        call figure_savefig(fig, get_test_output_path('/tmp/test_scientific_workflow.png'))  ! Test with PNG first
         
         write(error_unit, '(A)') '  ✓ Scientific workflow test completed'
     end subroutine test_scientific_workflow
@@ -263,7 +263,7 @@ contains
         call fig%set_title('Error Handling Test - NaN/Inf Values')
         call fig%set_xlabel('X (with NaN)')
         call fig%set_ylabel('Y (with Inf)')
-        call fig%savefig(get_test_output_path('/tmp/test_error_handling.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_error_handling.png'))
         
         ! Test empty arrays
         call fig%initialize(600, 400)

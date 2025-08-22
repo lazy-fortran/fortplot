@@ -48,7 +48,7 @@ contains
         
         call fig%add_plot(x(3:4), y(3:4), label='Squares')
         
-        call fig%savefig(get_test_output_path('/tmp/test_png_markers.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_png_markers.png'))
         
         write(error_unit, '(A)') 'FAIL: PNG marker geometry rendering not implemented'
         ! TODO: Implement PNG marker geometry rendering
@@ -72,7 +72,7 @@ contains
         ! Test complex marker shapes for vector rendering (will FAIL)
         call fig%add_plot(x, y, label='Vector Stars')
         
-        call fig%savefig(get_test_output_path('/tmp/test_pdf_markers.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_pdf_markers.pdf'))
         
         write(error_unit, '(A)') 'FAIL: PDF vector marker rendering not implemented'
         ! TODO: Implement PDF vector marker rendering
@@ -96,7 +96,7 @@ contains
         ! Test ASCII marker representation (will FAIL)
         call fig%add_plot(x, y, label='ASCII Markers')
         
-        call fig%savefig(get_test_output_path('/tmp/test_ascii_markers.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/test_ascii_markers.txt'))
         
         write(error_unit, '(A)') 'FAIL: ASCII character marker mapping not implemented'
         ! TODO: Implement ASCII character marker mapping
@@ -119,9 +119,9 @@ contains
         call fig%add_plot(x, y, label='Size Consistency Test')
         
         ! Render to all backends
-        call fig%savefig(get_test_output_path('/tmp/size_consistency.png'))
-        call fig%savefig(get_test_output_path('/tmp/size_consistency.pdf'))
-        call fig%savefig(get_test_output_path('/tmp/size_consistency.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/size_consistency.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/size_consistency.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/size_consistency.txt'))
         
         write(error_unit, '(A)') 'FAIL: Marker size consistency not implemented'
         ! TODO: Implement marker size consistency
@@ -147,9 +147,9 @@ contains
         ! call fig%add_colorbar(position='right', label='Color Values')  ! Not implemented yet
         
         ! Render to backends
-        call fig%savefig(get_test_output_path('/tmp/colormap_consistency.png'))
-        call fig%savefig(get_test_output_path('/tmp/colormap_consistency.pdf'))
-        call fig%savefig(get_test_output_path('/tmp/colormap_consistency.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/colormap_consistency.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/colormap_consistency.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/colormap_consistency.txt'))
         
         write(error_unit, '(A)') 'FAIL: Colormap rendering consistency not implemented'
         ! TODO: Implement colormap rendering consistency
@@ -177,9 +177,9 @@ contains
         call fig%add_plot([x(3)], [y(3)], label='Hexagon')
         
         ! Render to all backends
-        call fig%savefig(get_test_output_path('/tmp/complex_shapes.png'))
-        call fig%savefig(get_test_output_path('/tmp/complex_shapes.pdf'))
-        call fig%savefig(get_test_output_path('/tmp/complex_shapes.txt'))
+        call figure_savefig(fig, get_test_output_path('/tmp/complex_shapes.png'))
+        call figure_savefig(fig, get_test_output_path('/tmp/complex_shapes.pdf'))
+        call figure_savefig(fig, get_test_output_path('/tmp/complex_shapes.txt'))
         
         write(error_unit, '(A)') 'FAIL: Complex marker shapes not implemented'
         ! TODO: Implement complex marker shapes

@@ -192,14 +192,14 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "Render test")
+        call text(1.0_wp, 1.0_wp, "Render test")
         
         ! Test invalid file path (expect graceful failure)
-        call fig%savefig("/invalid/path/test.png")
+        call figure_savefig(fig, "/invalid/path/test.png")
         ! Current implementation doesn't return error status
         
         ! Test unsupported format (expect graceful failure)
-        call fig%savefig("test.unsupported")
+        call figure_savefig(fig, "test.unsupported")
         ! Current implementation doesn't return error status
         
         ! Test disk space exhaustion simulation
@@ -296,7 +296,7 @@ contains
         
         ! Add many annotations with various parameters (limited to avoid max_annotations warning spam)
         do i = 1, 30  ! Reduced from 5000 to stay within max_annotations limit
-            call fig%text(real(mod(i, 100), wp) * 0.01_wp, &
+            call text(real(mod(i, 100), wp) * 0.01_wp, &
                          real(i/100, wp) * 0.02_wp, &
                          "Stress test annotation", &
                          font_size=real(8 + mod(i, 16), wp), &
@@ -311,7 +311,7 @@ contains
             ! Note as performance concern but don't fail the test
         end if
         
-        call fig%savefig("test_performance_stress.png")
+        call figure_savefig(fig, "test_performance_stress.png")
         
         print *, "PASS: Performance stress testing test"
     end subroutine test_performance_stress_testing
@@ -328,10 +328,10 @@ contains
             call fig%initialize(400, 300)
             
             do j = 1, 50
-                call fig%text(real(j, wp) * 0.02_wp, 0.5_wp, "Memory test")
+                call text(real(j, wp) * 0.02_wp, 0.5_wp, "Memory test")
             end do
             
-            call fig%savefig("test_memory_leak.png")
+            call figure_savefig(fig, "test_memory_leak.png")
             ! Figure should be automatically cleaned up
         end do
         
@@ -353,16 +353,16 @@ contains
         ! (In a real implementation, this might use OpenMP or threading)
         
         ! Add annotations that might interfere with each other
-        call fig%text(0.5_wp, 0.5_wp, "Center text", alignment='center')
-        call fig%text(0.5_wp, 0.5_wp, "Overlapping text", alignment='left')
-        call fig%text(0.5_wp, 0.5_wp, "More overlap", alignment='right')
+        call text(0.5_wp, 0.5_wp, "Center text", alignment='center')
+        call text(0.5_wp, 0.5_wp, "Overlapping text", alignment='left')
+        call text(0.5_wp, 0.5_wp, "More overlap", alignment='right')
         
         ! Test with same coordinates but different coordinate systems
-        call fig%text(0.5_wp, 0.5_wp, "Data coords", coord_type=COORD_DATA)
-        call fig%text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
-        call fig%text(0.5_wp, 0.5_wp, "Axis coords", coord_type=COORD_AXIS)
+        call text(0.5_wp, 0.5_wp, "Data coords", coord_type=COORD_DATA)
+        call text(0.5_wp, 0.5_wp, "Figure coords", coord_type=COORD_FIGURE)
+        call text(0.5_wp, 0.5_wp, "Axis coords", coord_type=COORD_AXIS)
         
-        call fig%savefig("test_concurrent_annotations.png")
+        call figure_savefig(fig, "test_concurrent_annotations.png")
         
         print *, "PASS: Concurrent annotation handling test"
     end subroutine test_concurrent_annotation_handling
@@ -417,15 +417,15 @@ contains
         
         ! Test with font system failure
         call simulate_font_system_failure()
-        call fig%text(0.5_wp, 0.5_wp, "Fallback text")  ! Should use fallback
+        call text(0.5_wp, 0.5_wp, "Fallback text")  ! Should use fallback
         
         ! Test with backend partial failure
         call simulate_backend_degradation()
-        call fig%savefig("test_degradation.png")  ! Should still produce output
+        call figure_savefig(fig, "test_degradation.png")  ! Should still produce output
         
         ! Test with memory constraints
         call simulate_memory_constraints()
-        call fig%text(0.3_wp, 0.7_wp, "Memory constrained")  ! Should handle gracefully
+        call text(0.3_wp, 0.7_wp, "Memory constrained")  ! Should handle gracefully
         
         print *, "PASS: Graceful degradation test"
     end subroutine test_graceful_degradation
@@ -440,10 +440,10 @@ contains
         type(figure_t) :: fig
         
         call fig%initialize(400, 300)
-        call fig%text(1.0_wp, 1.0_wp, "Disk space test")
+        call text(1.0_wp, 1.0_wp, "Disk space test")
         
         ! Simulate disk space error with invalid path 
-        call fig%savefig("/root/restricted/test.png")  ! Permission denied path
+        call figure_savefig(fig, "/root/restricted/test.png")  ! Permission denied path
         ! Current implementation should handle gracefully with warning
         
         print *, "PASS: Disk space error handling test"

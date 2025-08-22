@@ -37,7 +37,7 @@ program test_file_io_error_handling
     call fig%add_plot(x, y, label="test")
     
     ! Attempt to save to new directory (should auto-create)
-    call fig%savefig(invalid_path)
+    call figure_savefig(fig, invalid_path)
     
     ! Check if file was created (it should be - library auto-creates dirs)
     inquire(file=invalid_path, exist=file_exists)
@@ -63,7 +63,7 @@ program test_file_io_error_handling
     call fig%add_plot(x, y, label="test")
     
     ! Attempt to save to empty path (should not crash)
-    call fig%savefig(invalid_path)
+    call figure_savefig(fig, invalid_path)
     
     ! Test passes if we reach here without crashing
     print *, "  PASS: Empty filename handled gracefully (no crash)"
@@ -80,7 +80,7 @@ program test_file_io_error_handling
     call fig%add_plot(x, y, label="test")
     
     ! Save to valid path
-    call fig%savefig(valid_file)
+    call figure_savefig(fig, valid_file)
     
     ! Check if file was created
     inquire(file=valid_file, exist=file_exists)
@@ -106,7 +106,7 @@ program test_file_io_error_handling
     call fig%add_plot(x, y, label="test")
     
     ! Attempt to save PDF (should auto-create directory)
-    call fig%savefig(invalid_path)
+    call figure_savefig(fig, invalid_path)
     
     inquire(file=invalid_path, exist=file_exists)
     if (file_exists) then
@@ -131,7 +131,7 @@ program test_file_io_error_handling
     call fig%add_plot(x, y, label="test")
     
     ! Attempt to save ASCII (should auto-create directory)
-    call fig%savefig(invalid_path)
+    call figure_savefig(fig, invalid_path)
     
     inquire(file=invalid_path, exist=file_exists)
     if (file_exists) then

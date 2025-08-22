@@ -238,7 +238,7 @@ contains
         
         ! GIVEN: Grid data for contour plot
         ! WHEN: Contour plot is added
-        call fig%add_contour(x_grid, y_grid, z_grid)
+        call figure_add_contour_filled(fig, x_grid, y_grid, z_grid)
         
         ! THEN: Contour data should be stored correctly
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Contour plot count")
@@ -265,7 +265,7 @@ contains
         
         ! GIVEN: Grid data and contour levels
         ! WHEN: Filled contour plot is added
-        call fig%add_contour_filled(x_grid, y_grid, z_grid, levels, colormap="viridis")
+        call figure_add_contour_filled(fig, x_grid, y_grid, z_grid, levels, colormap="viridis")
         
         ! THEN: Filled contour should use color levels
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Filled contour count")
@@ -289,7 +289,7 @@ contains
         
         ! GIVEN: Mesh coordinate and color data
         ! WHEN: Pcolormesh plot is added
-        call fig%add_pcolormesh(x, y, c)
+        call figure_add_pcolormesh(fig, x, y, c)
         
         ! THEN: Pcolormesh data should be stored
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Pcolormesh plot count")

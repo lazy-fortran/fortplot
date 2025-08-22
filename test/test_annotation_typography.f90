@@ -171,14 +171,14 @@ contains
         call fig%initialize(400, 300)
         
         ! Test basic colors (color support to be added in future)
-        call fig%text(0.1_wp, 0.8_wp, "Red text")
-        call fig%text(0.1_wp, 0.6_wp, "Blue text") 
-        call fig%text(0.1_wp, 0.4_wp, "Green text")
+        call text(0.1_wp, 0.8_wp, "Red text")
+        call text(0.1_wp, 0.6_wp, "Blue text") 
+        call text(0.1_wp, 0.4_wp, "Green text")
         
         ! Test RGB color specification (color support to be added in future)
-        call fig%text(0.1_wp, 0.2_wp, "RGB text")
+        call text(0.1_wp, 0.2_wp, "RGB text")
         
-        call fig%savefig("test_text_colors.png")
+        call figure_savefig(fig, "test_text_colors.png")
         
         ! Verify text colors
         call verify_text_color_rendering("test_text_colors.png")
@@ -195,18 +195,18 @@ contains
         call fig%initialize(500, 400)
         
         ! Test basic background box
-        call fig%text(0.1_wp, 0.8_wp, "Basic box", has_bbox=.true.)
+        call text(0.1_wp, 0.8_wp, "Basic box", has_bbox=.true.)
         
         ! Test colored background box (bbox styling to be enhanced in future)
-        call fig%text(0.1_wp, 0.6_wp, "Colored box", has_bbox=.true.)
+        call text(0.1_wp, 0.6_wp, "Colored box", has_bbox=.true.)
         
         ! Test box with padding (bbox styling to be enhanced in future)
-        call fig%text(0.1_wp, 0.4_wp, "Padded box", has_bbox=.true.)
+        call text(0.1_wp, 0.4_wp, "Padded box", has_bbox=.true.)
         
         ! Test box with border (bbox styling to be enhanced in future) 
-        call fig%text(0.1_wp, 0.2_wp, "Border box", has_bbox=.true.)
+        call text(0.1_wp, 0.2_wp, "Border box", has_bbox=.true.)
         
-        call fig%savefig("test_background_boxes.png")
+        call figure_savefig(fig, "test_background_boxes.png")
         
         ! Verify background box rendering
         call verify_background_box_styling("test_background_boxes.png")
@@ -263,15 +263,15 @@ contains
         call fig%initialize(500, 400)
         
         ! Test multi-line text with newlines
-        call fig%text(0.1_wp, 0.8_wp, "Line 1" // char(10) // "Line 2" // char(10) // "Line 3")
+        call text(0.1_wp, 0.8_wp, "Line 1" // char(10) // "Line 2" // char(10) // "Line 3")
         
         ! Test multi-line text with explicit line spacing (line_spacing to be added in future)
-        call fig%text(0.1_wp, 0.5_wp, "Spaced" // char(10) // "Lines")
+        call text(0.1_wp, 0.5_wp, "Spaced" // char(10) // "Lines")
         
         ! Test multi-line alignment
-        call fig%text(0.5_wp, 0.3_wp, "Center" // char(10) // "Aligned", alignment='center')
+        call text(0.5_wp, 0.3_wp, "Center" // char(10) // "Aligned", alignment='center')
         
-        call fig%savefig("test_multiline_text.png")
+        call figure_savefig(fig, "test_multiline_text.png")
         
         ! Verify multi-line text rendering
         call verify_multiline_text_rendering("test_multiline_text.png")
@@ -288,12 +288,12 @@ contains
         call fig%initialize(200, 100)  ! Small figure
         
         ! Test text extending beyond right edge
-        call fig%text(0.8_wp, 0.5_wp, "This is very long text that extends beyond boundaries")
+        call text(0.8_wp, 0.5_wp, "This is very long text that extends beyond boundaries")
         
         ! Test text extending beyond bottom edge
-        call fig%text(0.1_wp, 0.1_wp, "Bottom" // char(10) // "Edge" // char(10) // "Text")
+        call text(0.1_wp, 0.1_wp, "Bottom" // char(10) // "Edge" // char(10) // "Text")
         
-        call fig%savefig("test_text_overflow.png")
+        call figure_savefig(fig, "test_text_overflow.png")
         
         ! Verify overflow handling
         call verify_text_overflow_handling("test_text_overflow.png")
@@ -310,18 +310,18 @@ contains
         call fig%initialize(500, 400)
         
         ! Test basic Unicode characters
-        call fig%text(0.1_wp, 0.8_wp, "Unicode: αβγδε ñçü")
+        call text(0.1_wp, 0.8_wp, "Unicode: αβγδε ñçü")
         
         ! Test mathematical symbols
-        call fig%text(0.1_wp, 0.6_wp, "Math: ∑∫∏√∞ ±×÷")
+        call text(0.1_wp, 0.6_wp, "Math: ∑∫∏√∞ ±×÷")
         
         ! Test special symbols
-        call fig%text(0.1_wp, 0.4_wp, "Symbols: ♠♣♥♦ ★☆")
+        call text(0.1_wp, 0.4_wp, "Symbols: ♠♣♥♦ ★☆")
         
         ! Test emoji (if supported)
-        call fig%text(0.1_wp, 0.2_wp, "Emoji: 😀🎯📊")
+        call text(0.1_wp, 0.2_wp, "Emoji: 😀🎯📊")
         
-        call fig%savefig("test_unicode_text.png")
+        call figure_savefig(fig, "test_unicode_text.png")
         
         ! Verify Unicode rendering
         call verify_unicode_text_rendering("test_unicode_text.png")
@@ -338,12 +338,12 @@ contains
         call fig%initialize(600, 400)
         
         ! Test basic mathematical expressions (LaTeX rendering to be added in future)
-        call fig%text(0.1_wp, 0.8_wp, "$x^2 + y^2 = z^2$")
-        call fig%text(0.1_wp, 0.6_wp, "$\frac{1}{2}\pi r^2$")
-        call fig%text(0.1_wp, 0.4_wp, "$\int_0^\infty e^{-x} dx$")
-        call fig%text(0.1_wp, 0.2_wp, "$\sum_{i=1}^n x_i$")
+        call text(0.1_wp, 0.8_wp, "$x^2 + y^2 = z^2$")
+        call text(0.1_wp, 0.6_wp, "$\frac{1}{2}\pi r^2$")
+        call text(0.1_wp, 0.4_wp, "$\int_0^\infty e^{-x} dx$")
+        call text(0.1_wp, 0.2_wp, "$\sum_{i=1}^n x_i$")
         
-        call fig%savefig("test_math_symbols.png")
+        call figure_savefig(fig, "test_math_symbols.png")
         
         ! Verify mathematical symbol rendering
         call verify_mathematical_symbol_rendering("test_math_symbols.png")

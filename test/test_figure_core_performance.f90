@@ -154,7 +154,7 @@ contains
         call system_clock(start_time, count_rate)
         
         ! WHEN: Contour plot is added
-        call fig%add_contour(x_grid, y_grid, z_grid)
+        call figure_add_contour_filled(fig, x_grid, y_grid, z_grid)
         
         call system_clock(end_time)
         elapsed_time = real(end_time - start_time, wp) / real(count_rate, wp)
@@ -287,7 +287,7 @@ contains
         call fig%add_plot(x, y, label="line_plot")
         call fig%add_3d_plot(x, y, z, label="3d_plot")
         call fig%add_scatter_2d(x, y, label="scatter_plot")
-        call fig%add_contour(x_grid, y_grid, z_grid)
+        call figure_add_contour_filled(fig, x_grid, y_grid, z_grid)
         call fig%set_xlabel("Complex X")
         call fig%set_ylabel("Complex Y")
         call fig%set_title("Complex Plot")
