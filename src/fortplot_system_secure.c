@@ -7,6 +7,7 @@
 #ifdef _WIN32
     #include <windows.h>
     #include <shellapi.h>
+    #include <shlobj.h>
     #include <io.h>
     #include <direct.h>
     #include <process.h>
@@ -36,47 +37,51 @@ static char* normalize_path_windows(const char* path) {
 }
 #endif
 
-// Helper function to create directory recursively on Windows
+// Helper function to create directory recursively on Windows - simple approach
 #ifdef _WIN32
 static int create_directory_recursive_windows(const char* path) {
-    // Try to create directory directly first
+    if (path == NULL || strlen(path) == 0) {
+        return -1;
+    }
+    
+    // Try to create the directory directly first
     if (_mkdir(path) == 0) {
         return 0;  // Success
     }
     
+    // If it exists and is a directory, that's fine
     if (errno == EEXIST) {
-        // Directory already exists - check if it's actually a directory
         DWORD attrs = GetFileAttributesA(path);
         if (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY)) {
             return 0;  // Success - directory exists
         }
     }
     
-    // If direct creation failed, try recursive creation
-    char* path_copy = strdup(path);
-    if (path_copy == NULL) {
-        return -1;
-    }
-    
-    // Find last backslash (Windows path separator)
-    char* slash = strrchr(path_copy, '\\');
-    if (slash != NULL && slash != path_copy && slash != path_copy + 2) { // Skip "C:\" root
-        *slash = '\0';
-        
-        // Recursively create parent directory
-        int parent_result = create_directory_recursive_windows(path_copy);
-        free(path_copy);
-        
-        if (parent_result != 0) {
-            return parent_result;
+    // If creation failed due to missing parent, create parent first
+    if (errno == ENOENT) {
+        char* path_copy = strdup(path);
+        if (path_copy == NULL) {
+            return -1;
         }
         
-        // Try to create the target directory again
-        int result = _mkdir(path);
-        if (result == 0 || errno == EEXIST) {
-            return 0;
+        // Find the last backslash
+        char* last_backslash = strrchr(path_copy, '\\');
+        if (last_backslash != NULL && last_backslash != path_copy) {
+            // Don't try to create root directories like "C:" or single letters
+            if (!(last_backslash == path_copy + 2 && path_copy[1] == ':')) {
+                *last_backslash = '\0';
+                
+                // Recursively create parent
+                if (create_directory_recursive_windows(path_copy) == 0) {
+                    free(path_copy);
+                    // Now try to create our directory again
+                    if (_mkdir(path) == 0 || errno == EEXIST) {
+                        return 0;
+                    }
+                    return -1;
+                }
+            }
         }
-    } else {
         free(path_copy);
     }
     
