@@ -101,22 +101,14 @@ int create_directory_c(const char* path) {
         // Special handling for Unix-style /tmp directory on Windows
         char* effective_path = NULL;
         if (strcmp(path, "/tmp") == 0) {
-            // Map /tmp to Windows temp directory
-            char* temp_dir = getenv("TEMP");
-            if (temp_dir == NULL) {
-                temp_dir = "C:\\Windows\\Temp";
-            }
-            effective_path = strdup(temp_dir);
+            // Map /tmp to a local tmp directory on Windows
+            effective_path = strdup("tmp");
         } else if (strncmp(path, "/tmp/", 5) == 0) {
-            // Map /tmp/filename to %TEMP%\filename
-            char* temp_dir = getenv("TEMP");
-            if (temp_dir == NULL) {
-                temp_dir = "C:\\Windows\\Temp";
-            }
-            size_t len = strlen(temp_dir) + strlen(path) - 4 + 1; // -4 for "/tmp", +1 for null
+            // Map /tmp/filename to tmp\filename (relative to current directory)
+            size_t len = 4 + strlen(path) - 4 + 1; // "tmp" + rest of path + null
             effective_path = malloc(len);
             if (effective_path != NULL) {
-                snprintf(effective_path, len, "%s%s", temp_dir, path + 4); // skip "/tmp"
+                snprintf(effective_path, len, "tmp%s", path + 4); // skip "/tmp"
             }
         } else {
             effective_path = strdup(path);
@@ -191,21 +183,12 @@ int open_file_with_default_app_c(const char* filename) {
         // Special handling for Unix-style /tmp paths on Windows
         char* effective_path = NULL;
         if (strncmp(filename, "/tmp/", 5) == 0) {
-            // Map /tmp/filename to %TEMP%\filename
-            char* temp_dir = getenv("TEMP");
-            if (temp_dir == NULL) {
-                temp_dir = "C:\\Windows\\Temp";
-            }
-            size_t len = strlen(temp_dir) + strlen(filename) - 4 + 1; // -4 for "/tmp", +1 for null
+            // Map /tmp/filename to tmp\filename (relative to current directory)
+            size_t len = 4 + strlen(filename) - 4 + 1; // "tmp" + rest of path + null
             effective_path = malloc(len);
             if (effective_path != NULL) {
-                snprintf(effective_path, len, "%s%s", temp_dir, filename + 4); // skip "/tmp"
-                // Normalize path separators
-                for (char* p = effective_path; *p; p++) {
-                    if (*p == '/') {
-                        *p = '\\';
-                    }
-                }
+                snprintf(effective_path, len, "tmp%s", filename + 4); // skip "/tmp"
+            }
             }
         } else {
             effective_path = normalize_path_windows(filename);
@@ -310,21 +293,12 @@ int delete_file_c(const char* filename) {
         // Special handling for Unix-style /tmp paths on Windows
         char* effective_path = NULL;
         if (strncmp(filename, "/tmp/", 5) == 0) {
-            // Map /tmp/filename to %TEMP%\filename
-            char* temp_dir = getenv("TEMP");
-            if (temp_dir == NULL) {
-                temp_dir = "C:\\Windows\\Temp";
-            }
-            size_t len = strlen(temp_dir) + strlen(filename) - 4 + 1; // -4 for "/tmp", +1 for null
+            // Map /tmp/filename to tmp\filename (relative to current directory)
+            size_t len = 4 + strlen(filename) - 4 + 1; // "tmp" + rest of path + null
             effective_path = malloc(len);
             if (effective_path != NULL) {
-                snprintf(effective_path, len, "%s%s", temp_dir, filename + 4); // skip "/tmp"
-                // Normalize path separators
-                for (char* p = effective_path; *p; p++) {
-                    if (*p == '/') {
-                        *p = '\\';
-                    }
-                }
+                snprintf(effective_path, len, "tmp%s", filename + 4); // skip "/tmp"
+            }
             }
         } else {
             effective_path = normalize_path_windows(filename);
