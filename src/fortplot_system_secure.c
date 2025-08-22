@@ -43,8 +43,38 @@ int create_directory_c(const char* path) {
     }
     
     #ifdef _WIN32
+        // Special handling for Unix-style /tmp directory on Windows
+        char* effective_path = NULL;
+        if (strcmp(path, "/tmp") == 0) {
+            // Map /tmp to Windows temp directory
+            char* temp_dir = getenv("TEMP");
+            if (temp_dir == NULL) {
+                temp_dir = "C:\\Windows\\Temp";
+            }
+            effective_path = strdup(temp_dir);
+        } else if (strncmp(path, "/tmp/", 5) == 0) {
+            // Map /tmp/filename to %TEMP%\filename
+            char* temp_dir = getenv("TEMP");
+            if (temp_dir == NULL) {
+                temp_dir = "C:\\Windows\\Temp";
+            }
+            size_t len = strlen(temp_dir) + strlen(path) - 4 + 1; // -4 for "/tmp", +1 for null
+            effective_path = malloc(len);
+            if (effective_path != NULL) {
+                snprintf(effective_path, len, "%s%s", temp_dir, path + 4); // skip "/tmp"
+            }
+        } else {
+            effective_path = strdup(path);
+        }
+        
+        if (effective_path == NULL) {
+            return -1;
+        }
+        
         // Normalize path for Windows (convert / to \)
-        char* normalized_path = normalize_path_windows(path);
+        char* normalized_path = normalize_path_windows(effective_path);
+        free(effective_path);
+        
         if (normalized_path == NULL) {
             return -1;
         }
@@ -150,20 +180,54 @@ int open_file_with_default_app_c(const char* filename) {
         return -1;
     }
     
-    // Check if file exists first
-    if (access(filename, R_OK) != 0) {
-        return -2;  // File doesn't exist or not readable
-    }
-    
     #ifdef _WIN32
+        // Special handling for Unix-style /tmp paths on Windows
+        char* effective_path = NULL;
+        if (strncmp(filename, "/tmp/", 5) == 0) {
+            // Map /tmp/filename to %TEMP%\filename
+            char* temp_dir = getenv("TEMP");
+            if (temp_dir == NULL) {
+                temp_dir = "C:\\Windows\\Temp";
+            }
+            size_t len = strlen(temp_dir) + strlen(filename) - 4 + 1; // -4 for "/tmp", +1 for null
+            effective_path = malloc(len);
+            if (effective_path != NULL) {
+                snprintf(effective_path, len, "%s%s", temp_dir, filename + 4); // skip "/tmp"
+                // Normalize path separators
+                for (char* p = effective_path; *p; p++) {
+                    if (*p == '/') {
+                        *p = '\\';
+                    }
+                }
+            }
+        } else {
+            effective_path = normalize_path_windows(filename);
+        }
+        
+        if (effective_path == NULL) {
+            return -1;
+        }
+        
+        // Check if file exists first
+        if (access(effective_path, R_OK) != 0) {
+            free(effective_path);
+            return -2;  // File doesn't exist or not readable
+        }
+        
         // Windows: Use ShellExecuteA to open with default application
-        HINSTANCE result = ShellExecuteA(NULL, "open", filename, NULL, NULL, SW_SHOWNORMAL);
+        HINSTANCE result = ShellExecuteA(NULL, "open", effective_path, NULL, NULL, SW_SHOWNORMAL);
+        free(effective_path);
+        
         if ((uintptr_t)result > 32) {
             return 0;  // Success
         } else {
             return -1;  // Error occurred
         }
     #else
+        // Check if file exists first
+        if (access(filename, R_OK) != 0) {
+            return -2;  // File doesn't exist or not readable
+        }
         // Unix/Linux: Use fork and exec
         pid_t pid = fork();
         if (pid == 0) {
@@ -236,12 +300,42 @@ int delete_file_c(const char* filename) {
     }
     
     #ifdef _WIN32
+        // Special handling for Unix-style /tmp paths on Windows
+        char* effective_path = NULL;
+        if (strncmp(filename, "/tmp/", 5) == 0) {
+            // Map /tmp/filename to %TEMP%\filename
+            char* temp_dir = getenv("TEMP");
+            if (temp_dir == NULL) {
+                temp_dir = "C:\\Windows\\Temp";
+            }
+            size_t len = strlen(temp_dir) + strlen(filename) - 4 + 1; // -4 for "/tmp", +1 for null
+            effective_path = malloc(len);
+            if (effective_path != NULL) {
+                snprintf(effective_path, len, "%s%s", temp_dir, filename + 4); // skip "/tmp"
+                // Normalize path separators
+                for (char* p = effective_path; *p; p++) {
+                    if (*p == '/') {
+                        *p = '\\';
+                    }
+                }
+            }
+        } else {
+            effective_path = normalize_path_windows(filename);
+        }
+        
+        if (effective_path == NULL) {
+            return -1;
+        }
+        
         // Windows: Use DeleteFileA
-        if (DeleteFileA(filename)) {
+        if (DeleteFileA(effective_path)) {
+            free(effective_path);
             return 0;  // Success
         }
         
         DWORD error = GetLastError();
+        free(effective_path);
+        
         if (error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND) {
             return 0;  // File doesn't exist - consider this success
         }
