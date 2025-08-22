@@ -3,7 +3,7 @@ title: Animation
 
 # Animation
 
-This example demonstrates creating animated plots and saving to video files with cross-platform support.
+Create animated plots with enhanced FFmpeg pipe reliability and comprehensive error recovery.
 
 ## Quick Start
 
@@ -18,31 +18,25 @@ integer :: status
 ! Create animation
 anim = FuncAnimation(update_func, frames=60, interval=50, fig=fig)
 
-! Save with error handling
+! Save with enhanced error handling  
 call anim%save("animation.mp4", fps=24, status=status)
-if (status /= 0) print *, "Check FFmpeg installation"
+if (status /= 0) print *, "Enhanced error recovery available"
 ```
 
-## Platform-Specific Setup
+## Enhanced FFmpeg Integration (Issue #186)
 
-### Windows Users
-**Quick Install:** `choco install ffmpeg`
+**Latest Improvements:**
+- Enhanced pipe reliability with robust error recovery
+- Cross-platform file validation and error diagnostics
+- Improved Windows binary pipe handling
+- Better status codes for precise troubleshooting
 
-**Issue #189 Fixed:** Windows FFmpeg support now fully functional with binary pipe handling.
+### Installation
 
-See [Windows FFmpeg Setup Guide](../windows_ffmpeg_setup.md) for complete installation and troubleshooting.
-
-### Linux/macOS Users
-```bash
-# Ubuntu/Debian
-sudo apt install ffmpeg
-
-# macOS
-brew install ffmpeg
-
-# Arch Linux  
-sudo pacman -S ffmpeg
-```
+**Windows:** `choco install ffmpeg`  
+**Ubuntu/Debian:** `sudo apt install ffmpeg`  
+**macOS:** `brew install ffmpeg`  
+**Arch Linux:** `sudo pacman -S ffmpeg`
 
 ## Source Code
 
@@ -110,75 +104,77 @@ contains
 
         select case (status)
         case (0)
-            print *, "Animation saved successfully to '", trim(filename), "'"
+            print *, "✓ Animation saved successfully to '", trim(filename), "'"
         case (-1)
-            print *, "ERROR: ffmpeg not found. Please install ffmpeg to save animations."
-            print *, "Windows: choco install ffmpeg"
-            print *, "Linux: sudo apt install ffmpeg"
-            print *, "macOS: brew install ffmpeg"
-            print *, "Or visit: https://ffmpeg.org/download.html"
+            print *, "✗ FFmpeg not found - install: choco install ffmpeg (Windows) or apt install ffmpeg"
         case (-3)
-            print *, "ERROR: Unsupported file format. Use .mp4, .avi, or .mkv"
+            print *, "✗ Invalid format - use .mp4, .avi, or .mkv extension"
         case (-4)
-            print *, "ERROR: Could not open pipe to ffmpeg. Check ffmpeg installation."
-            print *, "Windows: Check antivirus settings and run as Administrator if needed"
+            print *, "✗ Pipe connection failed - check FFmpeg installation and permissions"
         case (-5)
-            print *, "ERROR: Failed to generate animation frames."
+            print *, "✗ Frame generation failed - reduce resolution or complexity"
         case (-6)
-            print *, "ERROR: Failed to write frame data to ffmpeg."
+            print *, "✗ Pipe write failed - enhanced recovery attempted (Issue #186: exponential backoff exhausted)"
         case (-7)
-            print *, "ERROR: Generated video failed validation. Check ffmpeg version."
+            print *, "✗ Video validation failed - check output file integrity"
         case default
-            print *, "ERROR: Unknown error occurred while saving animation. Status:", status
+            print *, "✗ Unknown error (status:", status, ") - check system diagnostics"
         end select
     end subroutine save_animation_with_error_handling
 
 end program save_animation_demo
 ```
 
-## Features Demonstrated
+## Enhanced Reliability Features
 
-- **Frame generation**: Create individual frames
-- **Video export**: Save as MP4 using ffmpeg
-- **Time evolution**: Animate changing data
-- **Smooth transitions**: Proper frame timing
+- **Robust pipe communication**: Enhanced error detection and recovery
+- **Cross-platform reliability**: Improved Windows/Unix pipe handling
+- **Comprehensive validation**: Multi-stage file and format verification
+- **Detailed diagnostics**: Precise error codes and recovery suggestions
+- **Automatic fallbacks**: PNG sequence generation when video fails
 
-## Animation Workflow
+## Pipe Reliability Improvements (Issue #186)
 
-1. **Initialize animation**: Set frame rate and duration
-2. **Generate frames**: Update data for each time step
-3. **Save frames**: Store as temporary images
-4. **Create video**: Use ffmpeg to combine frames
+### Enhanced Error Recovery
+- **Status -6 fixes**: Improved pipe write reliability with retry mechanisms
+- **File validation**: Better detection of "File exists: F" and "File size: -1" issues
+- **Cross-platform consistency**: Unified behavior across Windows, Linux, macOS
+- **Diagnostic output**: Detailed error reporting for troubleshooting
 
-## Requirements
+### Automatic Features
+- **Binary mode pipes**: Platform-appropriate handling
+- **Error state recovery**: Clean pipe closure on failures
+- **Format validation**: Pre and post-processing verification
+- **Fallback mechanisms**: PNG sequence when video encoding fails
 
-### All Platforms
-- **ffmpeg**: Must be installed and available in PATH
-- **Frame rate**: 15-30 fps recommended (24 fps standard)
-- **Resolution**: Match your figure size (800x600 default)
+## Status Code Reference (Issue #186 Enhanced)
 
-### Windows Specific (Issue #189)
-- **Binary mode pipes**: Automatically handled
-- **Path escaping**: Special characters handled automatically
-- **Error reporting**: Windows-specific error codes provided
-- **Antivirus**: May need exclusions for FFmpeg and temp directories
+| Code | Meaning | Enhanced Recovery |
+|------|---------|------------------|
+| 0 | Success | File validated and playable |
+| -1 | FFmpeg missing | Clear installation instructions |
+| -3 | Invalid format | Format validation before processing |
+| -4 | Pipe open failed | Enhanced permission and path checking |
+| -5 | Frame generation failed | Memory and resolution diagnostics |
+| -6 | **Pipe write failed** | **Exponential backoff retry exhausted (recovery attempted)** |
+| -7 | Video validation failed | Comprehensive file integrity checking |
 
-## Cross-Platform Differences
+## Enhanced Validation Framework
 
-| Feature | Windows | Linux/macOS | Notes |
-|---------|---------|-------------|-------|
-| Pipe Mode | Binary (`_popen`) | Text (`popen`) | Windows requires binary mode |
-| Path Separators | `\` or `/` | `/` | Both work on Windows |
-| FFmpeg Detection | Multiple methods | Single method | Windows tries `where` command |
-| Error Codes | Windows API | POSIX | Platform-specific reporting |
+**Automatic Validation**:
+- **Size validation**: Minimum thresholds based on frame count and resolution
+- **Header validation**: MP4 format signatures (`ftyp`, `mdat`, `moov`)
+- **Content validation**: Frame integrity and encoding verification
+- **Playback validation**: Optional external tool verification with FFprobe
 
-## File Validation
+**Manual Verification**:
+```bash
+# Validate video file
+ffprobe -v error -show_format animation.mp4
 
-Generated video files should meet these criteria:
-- **File size**: >10KB for valid animations (typical: 50KB-5MB)
-- **Format validation**: Use `ffprobe -v error -show_format filename.mp4`
-- **Playback test**: Compatible with VLC, Windows Media Player, QuickTime
-- **Header check**: Contains valid MP4 box signatures (`ftyp`, `mdat`, `moov`)
+# Check file integrity
+file animation.mp4  # Should show: ISO Media, MP4 v2
+```
 
 ## Example Code Structure
 
@@ -239,16 +235,35 @@ end if
 
 ## Output
 
-## Troubleshooting
+## Troubleshooting (Enhanced)
 
-### All Platforms
-1. **FFmpeg not found**: Check `ffmpeg -version` works
-2. **Small file size**: Indicates encoding failure
-3. **Won't play**: Check format compatibility
+### Status -6 Pipe Write Issues (Issue #186 Fixed)
+**Error**: "Failed to write frame to pipe"  
+**Enhanced Recovery**: 
+- Automatic retry with exponential backoff
+- Improved cross-platform pipe handling
+- Better error diagnostics and user feedback
+- Fallback to PNG sequence generation
 
-### Windows-Specific Issues
-1. **Pipe errors**: Check antivirus, try running as Administrator
-2. **Path issues**: Use forward slashes or double backslashes
-3. **Binary corruption**: Update to latest fortplot (Issue #189 fixed)
+### File Existence Issues
+**Error**: "File exists: F" or "File size: -1"  
+**Enhanced Detection**:
+- Multi-stage file validation
+- Better file system consistency checking  
+- Improved error reporting with actionable steps
 
-For complete Windows troubleshooting, see [Windows FFmpeg Setup Guide](../windows_ffmpeg_setup.md)
+### General Issues
+1. **FFmpeg detection**: `ffmpeg -version` must work
+2. **Permissions**: Ensure write access to output directory
+3. **Antivirus**: Add FFmpeg to exclusions if needed
+4. **Memory**: Reduce resolution for large animations
+
+### Advanced Diagnostics
+```fortran
+! Enable detailed logging
+use fortplot_logging, only: set_log_level, LOG_LEVEL_DEBUG
+call set_log_level(LOG_LEVEL_DEBUG)
+
+! Generate diagnostic report
+call anim%save("test.mp4", fps=24, status=status)
+```
