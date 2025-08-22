@@ -50,11 +50,44 @@ Overall framework validation: T
 - **Layer 3 Failure**: Invalid MP4 format headers
 - **Layer 5 Failure**: External tools detect format errors
 
+## Warning Control
+
+### Environment Variables
+
+Control warning output during testing and development:
+
+```bash
+# Suppress all warnings (useful for CI and automated testing)
+export FORTPLOT_SUPPRESS_WARNINGS=1
+make test
+
+# Force warnings even in CI environments
+export FORTPLOT_FORCE_WARNINGS=1
+make test
+
+# Default behavior (warnings visible during development)
+unset FORTPLOT_SUPPRESS_WARNINGS
+unset FORTPLOT_FORCE_WARNINGS
+make test
+```
+
+**Supported Values**:
+- `FORTPLOT_SUPPRESS_WARNINGS`: `1`, `true`, `yes`, `on` (case-insensitive)
+- `FORTPLOT_FORCE_WARNINGS`: `1`, `true`, `yes`, `on` (case-insensitive)
+
+**CI Auto-Detection**: Warnings automatically suppressed in CI environments (GitHub Actions, Jenkins, Travis CI, CircleCI).
+
 ## General Testing
 
 ### All Tests
 ```bash
 make test
+```
+
+### Clean Test Output
+```bash
+# Run tests without warning noise
+FORTPLOT_SUPPRESS_WARNINGS=1 make test
 ```
 
 ### Specific Test Categories
@@ -67,6 +100,9 @@ make test ARGS="--target test_animation_save"
 
 # Unicode support
 make test ARGS="--target test_unicode_detection"
+
+# Warning suppression system
+make test ARGS="--target test_warning_suppression_control"
 ```
 
 ### Test Requirements

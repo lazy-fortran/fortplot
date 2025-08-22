@@ -5685,13 +5685,152 @@ end subroutine
 
 This architecture provides a **matplotlib-compatible subplot interface** while maintaining the library's SOLID principles and backend polymorphism.
 
+## Subplot Warning Management (Issue #187)
+
+### Problem Statement
+
+Test execution generates excessive warning spam from subplot functionality:
+```
+Warning: Maximum number of plots reached in subplot
+Warning: Maximum number of plots reached in subplot
+[... repeated 20+ times ...]
+```
+
+This warning noise obscures critical test failures and degrades CI readability. The warnings appear to originate from plot limit enforcement in subplot rendering, but the exact source and optimal suppression strategy require investigation.
+
+### Current Architecture Analysis
+
+**Plot Limit Infrastructure**:
+- Figure type has `max_plots = 50` limit (fortplot_figure_base.f90:90)
+- Subplot type has `max_plots = 10` limit (fortplot_plot_data.f90:108)  
+- Rendering checks `total_idx <= self%max_plots` (fortplot_rendering.f90:141)
+- Plotting checks `self%plot_count <= self%max_plots` (fortplot_plotting.f90:512)
+
+**Warning Generation Points**:
+- No direct warning output found in Fortran source
+- Likely generated from Python backend or subprocess calls
+- May originate from matplotlib subplot limit enforcement
+
+### Solution Architecture
+
+**Design Principle**: **Eliminate test noise while preserving developer warnings**
+
+#### Option 1: Conditional Warning Suppression (RECOMMENDED)
+
+**Approach**: Environment-based warning control
+- Add `FORTPLOT_SUPPRESS_WARNINGS` environment variable
+- Test framework sets this variable during test execution
+- Developer workflows retain full warning visibility
+
+**Implementation**:
+```fortran
+! In fortplot_logging.f90
+logical :: warnings_suppressed = .false.
+
+subroutine initialize_warning_system()
+    character(len=256) :: env_var
+    call get_environment_variable("FORTPLOT_SUPPRESS_WARNINGS", env_var)
+    warnings_suppressed = (trim(env_var) == "1" .or. trim(env_var) == "true")
+end subroutine
+
+subroutine log_warning(message)
+    if (.not. warnings_suppressed .and. current_log_level >= LOG_LEVEL_WARNING) then
+        print *, "[WARNING] ", trim(message)
+    end if
+end subroutine log_warning
+```
+
+#### Option 2: Warning Rate Limiting
+
+**Approach**: Limit identical warnings to prevent spam
+- Track warning message frequency per execution
+- Suppress repeated warnings after threshold (e.g., 3 occurrences)
+- Show summary count at execution end
+
+**Trade-offs**:
+- ✅ Preserves all warning types
+- ❌ Adds complexity to logging system
+- ❌ May miss legitimate repeated warnings
+
+#### Option 3: Targeted Warning Categories
+
+**Approach**: Categorize warnings by severity/type
+- Plot limit warnings as INFO level instead of WARNING  
+- Performance warnings as DEBUG level
+- Preserve ERROR/CRITICAL levels always
+
+**Implementation**:
+```fortran
+! Convert plot limit warnings to info level
+call log_info("Maximum plots reached, ignoring additional plots")
+```
+
+### Recommended Solution: Conditional Suppression
+
+**Rationale**:
+- **Clean test output**: Eliminates noise without losing information
+- **Developer visibility**: Maintains warnings in normal development workflow
+- **Zero performance impact**: Environmental check only at initialization
+- **Simple implementation**: Minimal code changes to existing logging system
+
+**Implementation Plan**:
+
+1. **Environment Variable Detection** (fortplot_logging.f90)
+   - Add initialization routine for warning suppression state
+   - Check `FORTPLOT_SUPPRESS_WARNINGS` environment variable
+
+2. **Warning Control Integration** (fortplot_logging.f90)
+   - Modify `log_warning()` to respect suppression flag
+   - Preserve error and critical message levels always
+
+3. **Test Framework Integration** (Makefile/test scripts)
+   - Set `FORTPLOT_SUPPRESS_WARNINGS=1` during test execution
+   - Ensure clean test output while maintaining debug capability
+
+4. **CI Integration** (.github/workflows/)
+   - Configure environment variable in CI test execution
+   - Preserve warning visibility for manual developer testing
+
+### Technical Requirements
+
+**Functional**:
+- Environment variable `FORTPLOT_SUPPRESS_WARNINGS` controls warning output
+- All WARNING level messages respect suppression flag
+- ERROR and CRITICAL messages always displayed
+- No impact on library functionality or performance
+
+**Non-Functional**:
+- Zero performance overhead during normal execution
+- Backward compatibility with existing logging calls
+- No changes required to existing warning call sites
+
+**Testing**:
+- Verify warning suppression during test execution
+- Confirm warnings appear in normal developer workflow
+- Validate error/critical messages always display
+
+### Success Metrics
+
+**Immediate Impact**:
+- Clean test output with no warning spam
+- CI logs focus on actual test failures
+- Improved developer debugging experience
+
+**Long-term Benefits**:
+- Scalable warning management for future growth
+- Foundation for sophisticated logging control
+- Enhanced professional library experience
+
+This architecture provides **targeted noise reduction** while maintaining **full debugging capability** for development workflows.
+
 ## Next Steps
 
 1. ✅ **COMPLETED**: fortplot_figure_core refactoring (Issue #141) - architectural foundation established
-2. ✅ **CURRENT**: Subplot functionality public API (Issue #150) - comparative visualization enhancement
-3. **HIGH PRIORITY**: Implement matplotlib-compatible color syntax (Issue #7) - foundation infrastructure for all plotting functionality  
-4. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
-5. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
-6. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
-7. **Short-term**: Add ffmpeg detection and graceful degradation
-8. **Medium-term**: Comprehensive integration testing and documentation
+2. ✅ **COMPLETED**: Subplot functionality public API (Issue #150) - comparative visualization enhancement
+3. ✅ **CURRENT**: Subplot warning management (Issue #187) - test noise reduction for clean CI output
+4. **HIGH PRIORITY**: Implement matplotlib-compatible color syntax (Issue #7) - foundation infrastructure for all plotting functionality  
+5. **HIGH PRIORITY**: Implement functional output validation framework (Issue #93) - critical foundation layer enhancement
+6. **HIGH PRIORITY**: Fix PDF Y-axis label clustering (Issue #34) - coordinate transformation bug
+7. **Immediate**: Create root CMakeLists.txt with minimal export configuration  
+8. **Short-term**: Add ffmpeg detection and graceful degradation
+9. **Medium-term**: Comprehensive integration testing and documentation
