@@ -261,8 +261,13 @@ int check_ffmpeg_available_c(void) {
         return 0;
     }
     
-    // Test if ffmpeg command is available
-    int status = system("ffmpeg -version >/dev/null 2>&1");
+    // Test if ffmpeg command is available (cross-platform)
+    #ifdef _WIN32
+        int status = system("ffmpeg -version >nul 2>&1");
+    #else  
+        int status = system("ffmpeg -version >/dev/null 2>&1");
+    #endif
+    
     if (status == 0) {
         fprintf(stderr, "Info: FFmpeg is available\n");
         return 1;

@@ -170,18 +170,25 @@ contains
     subroutine check_arial_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(5)
+        character(len=256) :: candidates(8)
         integer :: i
         
         found = .false.
         
-        candidates(1) = "/System/Library/Fonts/Arial.ttf"
-        candidates(2) = "/Library/Fonts/Arial.ttf"
-        candidates(3) = "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
-        candidates(4) = "/usr/share/fonts/TTF/arial.ttf"
-        candidates(5) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        ! Windows paths first
+        candidates(1) = "C:\Windows\Fonts\arial.ttf"
+        candidates(2) = "C:\Windows\Fonts\Arial.ttf"
+        ! macOS paths
+        candidates(3) = "/System/Library/Fonts/Arial.ttf"
+        candidates(4) = "/Library/Fonts/Arial.ttf"
+        ! Linux paths
+        candidates(5) = "/usr/share/fonts/truetype/msttcorefonts/arial.ttf"
+        candidates(6) = "/usr/share/fonts/TTF/arial.ttf"
+        candidates(7) = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        ! Fallback  
+        candidates(8) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
         
-        do i = 1, 5
+        do i = 1, 8
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
@@ -193,17 +200,23 @@ contains
     subroutine check_dejavu_paths(font_path, found)
         character(len=256), intent(out) :: font_path
         logical, intent(out) :: found
-        character(len=256) :: candidates(4)
+        character(len=256) :: candidates(7)
         integer :: i
         
         found = .false.
         
-        candidates(1) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-        candidates(2) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
-        candidates(3) = "/usr/share/fonts/dejavu-fonts/DejaVuSans.ttf"
-        candidates(4) = "/usr/local/share/fonts/DejaVuSans.ttf"
+        ! Windows paths (less common)
+        candidates(1) = "C:\Windows\Fonts\DejaVuSans.ttf"
+        candidates(2) = "C:\Windows\Fonts\calibri.ttf"
+        ! Linux paths
+        candidates(3) = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+        candidates(4) = "/usr/share/fonts/TTF/DejaVuSans.ttf"
+        candidates(5) = "/usr/share/fonts/dejavu-fonts/DejaVuSans.ttf"
+        candidates(6) = "/usr/local/share/fonts/DejaVuSans.ttf"
+        ! Windows fallback
+        candidates(7) = "C:\Windows\Fonts\tahoma.ttf"
         
-        do i = 1, 4
+        do i = 1, 7
             if (file_exists(candidates(i))) then
                 font_path = candidates(i)
                 found = .true.
