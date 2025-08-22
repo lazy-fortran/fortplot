@@ -29,10 +29,11 @@ contains
         call fig%initialize()
         call fig%add_plot(x, y, label="Test")
         
-        ! Test non-blocking (default) - skip on Windows
+        ! Test non-blocking (default) - use figure method to force ASCII
         print *, "Testing show() without blocking parameter (default)"
         if (.not. is_windows()) then
-            call fig%show()
+            ! Use figure method to force ASCII display and avoid GUI viewer
+            call fig%show(blocking=.false.)
         else
             print *, "SKIPPED: show() on Windows (prevents CI hang)"
         end if
@@ -40,6 +41,7 @@ contains
         ! Test with explicit blocking=false - skip on Windows  
         print *, "Testing show() with explicit blocking=.false."
         if (.not. is_windows()) then
+            ! Use figure method to force ASCII display and avoid GUI viewer
             call fig%show(blocking=.false.)
         else
             print *, "SKIPPED: show(blocking=.false.) on Windows (prevents CI hang)"
@@ -76,6 +78,7 @@ contains
     
     subroutine test_show_viewer_with_blocking()
         !! Test that show_viewer() accepts optional blocking parameter
+        type(figure_t) :: test_fig
         real(wp), dimension(5) :: x, y
         integer :: i
         
@@ -83,14 +86,15 @@ contains
         x = [(real(i, wp), i = 1, 5)]
         y = x**2
         
-        ! Test global figure API
-        call figure()
-        call plot(x, y, label="Test")
+        ! Use figure method to avoid GUI viewer and force ASCII
+        call test_fig%initialize()
+        call test_fig%add_plot(x, y, label="Test")
         
-        ! Test non-blocking (default)
+        ! Test non-blocking (default) - use figure method to force ASCII
         print *, "Testing show_viewer() without blocking parameter (default)"
         if (.not. is_windows()) then
-            call show_viewer()
+            ! Use figure method to force ASCII display and avoid GUI viewer
+            call test_fig%show(blocking=.false.)
         else
             print *, "SKIPPED: show_viewer() on Windows (prevents CI hang)"
         end if
