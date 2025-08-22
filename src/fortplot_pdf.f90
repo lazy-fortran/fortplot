@@ -147,28 +147,27 @@ contains
         call end_pdf_text_block(this)
     end subroutine draw_mixed_font_text
 
-    subroutine draw_rotated_mixed_font_text(this, x, y, text)
-        !! Draw rotated text with automatic font switching for Greek letters
+    subroutine setup_rotated_text_matrix(this, x, y)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
+        character(len=200) :: text_cmd
         
-        integer :: i, j, char_len, codepoint, symbol_char, next_codepoint
+        call this%stream_writer%add_to_stream("BT")
+        write(text_cmd, '("/F1 12 Tf")') 
+        call this%stream_writer%add_to_stream(text_cmd)
+        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') x, y
+        call this%stream_writer%add_to_stream(text_cmd)
+    end subroutine setup_rotated_text_matrix
+
+    subroutine process_rotated_text_segments(this, text)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: text
+        integer :: i, char_len, codepoint, symbol_char, next_codepoint
         character(len=1) :: current_char
         character(len=200) :: text_cmd
         character(len=500) :: current_segment
         logical :: in_symbol_font, next_is_greek
-        integer :: segment_pos
-        
-        call this%stream_writer%add_to_stream("BT")
-        
-        ! Start with Helvetica font
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        
-        ! Rotation matrix for -90 degrees (counter-clockwise): [cos(-90) -sin(-90) sin(-90) cos(-90) x y] = [0 1 -1 0 x y]
-        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') x, y
-        call this%stream_writer%add_to_stream(text_cmd)
+        integer :: segment_pos, j
         
         i = 1
         in_symbol_font = .false.
@@ -178,125 +177,150 @@ contains
         do while (i <= len_trim(text))
             current_char = text(i:i)
             
-            ! Check if this is a Unicode character (high bit set)
             if (iachar(current_char) > 127) then
-                ! Get the Unicode codepoint
                 char_len = utf8_char_length(text(i:i))
                 if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
                     codepoint = utf8_to_codepoint(text, i)
                     call unicode_to_symbol_char(codepoint, symbol_char)
                     
                     if (symbol_char > 0) then
-                        ! Greek letter - switch to Symbol font if needed
-                        if (.not. in_symbol_font) then
-                            ! Output current Helvetica segment
-                            if (segment_pos > 1) then
-                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                            end if
-                            ! Switch to Symbol font
-                            call this%stream_writer%add_to_stream("/F2 12 Tf")
-                            in_symbol_font = .true.
-                            current_segment = ""
-                            segment_pos = 1
-                        end if
+                        call switch_to_symbol_if_needed(this, current_segment, segment_pos, &
+                                                       in_symbol_font, text_cmd)
                         current_segment(segment_pos:segment_pos) = char(symbol_char)
                         segment_pos = segment_pos + 1
                     else
-                        ! Non-Greek Unicode - use ASCII fallback in Helvetica
-                        if (in_symbol_font) then
-                            ! Output current Symbol segment
-                            if (segment_pos > 1) then
-                                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                                call this%stream_writer%add_to_stream(text_cmd)
-                            end if
-                            ! Switch back to Helvetica
-                            call this%stream_writer%add_to_stream("/F1 12 Tf")
-                            in_symbol_font = .false.
-                            current_segment = ""
-                            segment_pos = 1
-                        end if
-                        ! Add ASCII fallback
+                        call switch_to_helvetica_if_needed(this, current_segment, segment_pos, &
+                                                          in_symbol_font, text_cmd)
                         call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
                         segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
                     end if
-                    
                     i = i + char_len
                 else
-                    ! Invalid Unicode sequence, skip
                     i = i + 1
                 end if
             else
-                ! Regular ASCII character
-                ! Check if next non-space character is Greek
-                next_is_greek = .false.
-                if (current_char == '(' .or. current_char == ' ') then
-                    j = i + 1
-                    ! Look for the next meaningful character
-                    do while (j <= len_trim(text))
-                        if (text(j:j) == ' ') then
-                            j = j + 1
-                        else
-                            exit
-                        end if
-                    end do
-                    if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
-                        char_len = utf8_char_length(text(j:j))
-                        if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
-                            next_codepoint = utf8_to_codepoint(text, j)
-                            call unicode_to_symbol_char(next_codepoint, symbol_char)
-                            if (symbol_char > 0) next_is_greek = .true.
-                        end if
-                    end if
-                end if
-                
-                ! Handle font switching
-                if (in_symbol_font) then
-                    ! Always switch back to Helvetica for parentheses and most ASCII
-                    if (current_char == '(' .or. current_char == ')' .or. &
-                        (.not. next_is_greek .and. current_char /= ' ')) then
-                        ! Output current Symbol segment before switching back
-                        if (segment_pos > 1) then
-                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                            call this%stream_writer%add_to_stream(text_cmd)
-                        end if
-                        ! Switch back to Helvetica
-                        call this%stream_writer%add_to_stream("/F1 12 Tf")
-                        in_symbol_font = .false.
-                        current_segment = ""
-                        segment_pos = 1
-                    end if
-                else
-                    ! In Helvetica - check if we need to switch to Symbol
-                    if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
-                        ! Output current segment including this character
-                        current_segment(segment_pos:segment_pos) = current_char
-                        segment_pos = segment_pos + 1
-                        if (segment_pos > 1) then
-                            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                            call this%stream_writer%add_to_stream(text_cmd)
-                        end if
-                        current_segment = ""
-                        segment_pos = 1
-                        i = i + 1
-                        cycle  ! Skip the normal character addition
-                    end if
-                end if
-                
-                ! Add character to current segment
-                current_segment(segment_pos:segment_pos) = current_char
-                segment_pos = segment_pos + 1
+                call handle_ascii_in_rotated_text(this, current_char, text, i, &
+                                                 current_segment, segment_pos, in_symbol_font, text_cmd)
                 i = i + 1
             end if
         end do
         
-        ! Output final segment
         if (segment_pos > 1) then
             write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
             call this%stream_writer%add_to_stream(text_cmd)
         end if
-        
         call this%stream_writer%add_to_stream("ET")
+    end subroutine process_rotated_text_segments
+
+    subroutine switch_to_symbol_if_needed(this, current_segment, segment_pos, in_symbol_font, text_cmd)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        character(len=*), intent(out) :: text_cmd
+        
+        if (.not. in_symbol_font) then
+            if (segment_pos > 1) then
+                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                call this%stream_writer%add_to_stream(text_cmd)
+            end if
+            call this%stream_writer%add_to_stream("/F2 12 Tf")
+            in_symbol_font = .true.
+            current_segment = ""
+            segment_pos = 1
+        end if
+    end subroutine switch_to_symbol_if_needed
+
+    subroutine switch_to_helvetica_if_needed(this, current_segment, segment_pos, in_symbol_font, text_cmd)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        character(len=*), intent(out) :: text_cmd
+        
+        if (in_symbol_font) then
+            if (segment_pos > 1) then
+                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                call this%stream_writer%add_to_stream(text_cmd)
+            end if
+            call this%stream_writer%add_to_stream("/F1 12 Tf")
+            in_symbol_font = .false.
+            current_segment = ""
+            segment_pos = 1
+        end if
+    end subroutine switch_to_helvetica_if_needed
+
+    subroutine handle_ascii_in_rotated_text(this, current_char, text, text_pos, &
+                                           current_segment, segment_pos, in_symbol_font, text_cmd)
+        class(pdf_context), intent(inout) :: this
+        character(len=1), intent(in) :: current_char
+        character(len=*), intent(in) :: text
+        integer, intent(in) :: text_pos
+        character(len=*), intent(inout) :: current_segment
+        integer, intent(inout) :: segment_pos
+        logical, intent(inout) :: in_symbol_font
+        character(len=*), intent(out) :: text_cmd
+        logical :: next_is_greek
+        integer :: j, char_len, next_codepoint, symbol_char
+        
+        next_is_greek = .false.
+        if (current_char == '(' .or. current_char == ' ') then
+            j = text_pos + 1
+            do while (j <= len_trim(text))
+                if (text(j:j) == ' ') then
+                    j = j + 1
+                else
+                    exit
+                end if
+            end do
+            if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
+                char_len = utf8_char_length(text(j:j))
+                if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
+                    next_codepoint = utf8_to_codepoint(text, j)
+                    call unicode_to_symbol_char(next_codepoint, symbol_char)
+                    if (symbol_char > 0) next_is_greek = .true.
+                end if
+            end if
+        end if
+        
+        if (in_symbol_font) then
+            if (current_char == '(' .or. current_char == ')' .or. &
+                (.not. next_is_greek .and. current_char /= ' ')) then
+                if (segment_pos > 1) then
+                    write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                    call this%stream_writer%add_to_stream(text_cmd)
+                end if
+                call this%stream_writer%add_to_stream("/F1 12 Tf")
+                in_symbol_font = .false.
+                current_segment = ""
+                segment_pos = 1
+            end if
+        else
+            if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
+                current_segment(segment_pos:segment_pos) = current_char
+                segment_pos = segment_pos + 1
+                if (segment_pos > 1) then
+                    write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
+                    call this%stream_writer%add_to_stream(text_cmd)
+                end if
+                current_segment = ""
+                segment_pos = 1
+                return
+            end if
+        end if
+        
+        current_segment(segment_pos:segment_pos) = current_char
+        segment_pos = segment_pos + 1
+    end subroutine handle_ascii_in_rotated_text
+
+    subroutine draw_rotated_mixed_font_text(this, x, y, text)
+        !! Draw rotated text with automatic font switching for Greek letters
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        
+        call setup_rotated_text_matrix(this, x, y)
+        call process_rotated_text_segments(this, text)
     end subroutine draw_rotated_mixed_font_text
     
     subroutine draw_pdf_text_direct(this, x, y, text)
@@ -538,117 +562,94 @@ contains
         deallocate(bytes)
     end subroutine write_string_to_unit
 
+    subroutine lookup_lowercase_greek(codepoint, escape_seq, found)
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: escape_seq
+        logical, intent(out) :: found
+        
+        found = .true.
+        select case (codepoint)
+        case (945); escape_seq = "alpha"
+        case (946); escape_seq = "beta" 
+        case (947); escape_seq = "gamma"
+        case (948); escape_seq = "delta"
+        case (949); escape_seq = "epsilon"
+        case (950); escape_seq = "zeta"
+        case (951); escape_seq = "eta"
+        case (952); escape_seq = "theta"
+        case (953); escape_seq = "iota"
+        case (954); escape_seq = "kappa"
+        case (955); escape_seq = "lambda"
+        case (956); escape_seq = "mu"
+        case (957); escape_seq = "nu"
+        case (958); escape_seq = "xi"
+        case (959); escape_seq = "omicron"
+        case (960); escape_seq = "pi"
+        case (961); escape_seq = "rho"
+        case (963); escape_seq = "sigma"
+        case (964); escape_seq = "tau"
+        case (965); escape_seq = "upsilon"
+        case (966); escape_seq = "phi"
+        case (967); escape_seq = "chi"
+        case (968); escape_seq = "psi"
+        case (969); escape_seq = "omega"
+        case default; found = .false.
+        end select
+    end subroutine lookup_lowercase_greek
+
+    subroutine lookup_uppercase_greek(codepoint, escape_seq, found)
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: escape_seq
+        logical, intent(out) :: found
+        
+        found = .true.
+        select case (codepoint)
+        case (913); escape_seq = "Alpha"
+        case (914); escape_seq = "Beta"
+        case (915); escape_seq = "Gamma"
+        case (916); escape_seq = "Delta"
+        case (917); escape_seq = "Epsilon"
+        case (918); escape_seq = "Zeta"
+        case (919); escape_seq = "Eta"
+        case (920); escape_seq = "Theta"
+        case (921); escape_seq = "Iota"
+        case (922); escape_seq = "Kappa"
+        case (923); escape_seq = "Lambda"
+        case (924); escape_seq = "Mu"
+        case (925); escape_seq = "Nu"
+        case (926); escape_seq = "Xi"
+        case (927); escape_seq = "Omicron"
+        case (928); escape_seq = "Pi"
+        case (929); escape_seq = "Rho"
+        case (931); escape_seq = "Sigma"
+        case (932); escape_seq = "Tau"
+        case (933); escape_seq = "Upsilon"
+        case (934); escape_seq = "Phi"
+        case (935); escape_seq = "Chi"
+        case (936); escape_seq = "Psi"
+        case (937); escape_seq = "Omega"
+        case default; found = .false.
+        end select
+    end subroutine lookup_uppercase_greek
 
     subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
         !! Convert Unicode codepoint to PDF escape sequence
         integer, intent(in) :: codepoint
         character(len=*), intent(out) :: escape_seq
+        logical :: found
         
-        ! For now, convert Greek letters to ASCII equivalents
-        ! TODO: Use proper PDF Unicode escape sequences
-        select case (codepoint)
-        case (945) ! α
-            escape_seq = "alpha"
-        case (946) ! β
-            escape_seq = "beta"
-        case (947) ! γ
-            escape_seq = "gamma"
-        case (948) ! δ
-            escape_seq = "delta"
-        case (949) ! ε
-            escape_seq = "epsilon"
-        case (950) ! ζ
-            escape_seq = "zeta"
-        case (951) ! η
-            escape_seq = "eta"
-        case (952) ! θ
-            escape_seq = "theta"
-        case (953) ! ι
-            escape_seq = "iota"
-        case (954) ! κ
-            escape_seq = "kappa"
-        case (955) ! λ
-            escape_seq = "lambda"
-        case (956) ! μ
-            escape_seq = "mu"
-        case (957) ! ν
-            escape_seq = "nu"
-        case (958) ! ξ
-            escape_seq = "xi"
-        case (959) ! ο
-            escape_seq = "omicron"
-        case (960) ! π
-            escape_seq = "pi"
-        case (961) ! ρ
-            escape_seq = "rho"
-        case (963) ! σ
-            escape_seq = "sigma"
-        case (964) ! τ
-            escape_seq = "tau"
-        case (965) ! υ
-            escape_seq = "upsilon"
-        case (966) ! φ
-            escape_seq = "phi"
-        case (967) ! χ
-            escape_seq = "chi"
-        case (968) ! ψ
-            escape_seq = "psi"
-        case (969) ! ω
-            escape_seq = "omega"
-        case (913) ! Α
-            escape_seq = "Alpha"
-        case (914) ! Β
-            escape_seq = "Beta"
-        case (915) ! Γ
-            escape_seq = "Gamma"
-        case (916) ! Δ
-            escape_seq = "Delta"
-        case (917) ! Ε
-            escape_seq = "Epsilon"
-        case (918) ! Ζ
-            escape_seq = "Zeta"
-        case (919) ! Η
-            escape_seq = "Eta"
-        case (920) ! Θ
-            escape_seq = "Theta"
-        case (921) ! Ι
-            escape_seq = "Iota"
-        case (922) ! Κ
-            escape_seq = "Kappa"
-        case (923) ! Λ
-            escape_seq = "Lambda"
-        case (924) ! Μ
-            escape_seq = "Mu"
-        case (925) ! Ν
-            escape_seq = "Nu"
-        case (926) ! Ξ
-            escape_seq = "Xi"
-        case (927) ! Ο
-            escape_seq = "Omicron"
-        case (928) ! Π
-            escape_seq = "Pi"
-        case (929) ! Ρ
-            escape_seq = "Rho"
-        case (931) ! Σ
-            escape_seq = "Sigma"
-        case (932) ! Τ
-            escape_seq = "Tau"
-        case (933) ! Υ
-            escape_seq = "Upsilon"
-        case (934) ! Φ
-            escape_seq = "Phi"
-        case (935) ! Χ
-            escape_seq = "Chi"
-        case (936) ! Ψ
-            escape_seq = "Psi"
-        case (937) ! Ω
-            escape_seq = "Omega"
-        case (178) ! ²
+        call lookup_lowercase_greek(codepoint, escape_seq, found)
+        if (found) return
+        
+        call lookup_uppercase_greek(codepoint, escape_seq, found)
+        if (found) return
+        
+        if (codepoint == 178) then
             escape_seq = "2"
-        case default
-            ! For other Unicode characters, use a placeholder
-            write(escape_seq, '("U+", Z4.4)') codepoint
-        end select
+            return
+        end if
+        
+        write(escape_seq, '("U+", Z4.4)') codepoint
     end subroutine unicode_codepoint_to_pdf_escape
 
     subroutine unicode_to_symbol_char(unicode_codepoint, symbol_char)
@@ -739,6 +740,120 @@ contains
         output_len = j - 1
     end subroutine escape_pdf_string
 
+    subroutine setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                    data_x_min, data_x_max, data_y_min, data_y_max)
+        type(pdf_context), intent(in) :: ctx
+        real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(out) :: data_x_min, data_x_max, data_y_min, data_y_max
+        
+        if (present(x_min_orig) .and. present(x_max_orig)) then
+            data_x_min = x_min_orig
+            data_x_max = x_max_orig
+        else
+            data_x_min = ctx%x_min
+            data_x_max = ctx%x_max
+        end if
+        
+        if (present(y_min_orig) .and. present(y_max_orig)) then
+            data_y_min = y_min_orig
+            data_y_max = y_max_orig
+        else
+            data_y_min = ctx%y_min
+            data_y_max = ctx%y_max
+        end if
+    end subroutine setup_axes_data_ranges
+
+    subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                xscale, yscale, symlog_threshold, &
+                                x_tick_values, y_tick_values, x_positions, y_positions, &
+                                x_labels, y_labels, num_x_ticks, num_y_ticks)
+        type(pdf_context), intent(inout) :: ctx
+        real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
+        character(len=*), intent(in), optional :: xscale, yscale
+        real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(out) :: x_tick_values(20), y_tick_values(20)
+        real(wp), intent(out) :: x_positions(20), y_positions(20)
+        character(len=20), intent(out) :: x_labels(20), y_labels(20)
+        integer, intent(out) :: num_x_ticks, num_y_ticks
+        real(wp) :: nice_x_min, nice_x_max, nice_x_step
+        real(wp) :: nice_y_min, nice_y_max, nice_y_step
+        real(wp) :: symlog_thresh
+        character(len=10) :: x_scale_type, y_scale_type
+        integer :: i
+        
+        call find_nice_tick_locations(data_x_min, data_x_max, 5, &
+                                    nice_x_min, nice_x_max, nice_x_step, &
+                                    x_tick_values, num_x_ticks)
+        
+        call find_nice_tick_locations(data_y_min, data_y_max, 5, &
+                                    nice_y_min, nice_y_max, nice_y_step, &
+                                    y_tick_values, num_y_ticks)
+        
+        if (present(xscale) .and. present(yscale) .and. &
+            (trim(xscale) /= 'linear' .or. trim(yscale) /= 'linear')) then
+            
+            symlog_thresh = 1.0_wp
+            if (present(symlog_threshold)) symlog_thresh = symlog_threshold
+            
+            x_scale_type = trim(xscale)
+            y_scale_type = trim(yscale)
+            
+            ctx%x_min = apply_scale_transform(x_tick_values(1), x_scale_type, symlog_thresh)
+            ctx%x_max = apply_scale_transform(x_tick_values(num_x_ticks), x_scale_type, symlog_thresh)
+            
+            ctx%y_min = apply_scale_transform(y_tick_values(1), y_scale_type, symlog_thresh)
+            ctx%y_max = apply_scale_transform(y_tick_values(num_y_ticks), y_scale_type, symlog_thresh)
+            
+            do i = 1, num_x_ticks
+                x_positions(i) = ctx%plot_area%left + &
+                                (apply_scale_transform(x_tick_values(i), x_scale_type, symlog_thresh) - ctx%x_min) / &
+                                (ctx%x_max - ctx%x_min) * ctx%plot_area%width
+            end do
+            
+            do i = 1, num_y_ticks
+                y_positions(i) = ctx%plot_area%bottom + &
+                                (apply_scale_transform(y_tick_values(i), y_scale_type, symlog_thresh) - ctx%y_min) / &
+                                (ctx%y_max - ctx%y_min) * ctx%plot_area%height
+            end do
+        else
+            if (num_x_ticks > 0) then
+                ctx%x_min = x_tick_values(1)
+                ctx%x_max = x_tick_values(num_x_ticks)
+            end if
+            
+            if (num_y_ticks > 0) then
+                ctx%y_min = y_tick_values(1)
+                ctx%y_max = y_tick_values(num_y_ticks)
+            end if
+            
+            do i = 1, num_x_ticks
+                x_positions(i) = ctx%plot_area%left + &
+                                (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * ctx%plot_area%width
+            end do
+            
+            do i = 1, num_y_ticks
+                y_positions(i) = ctx%plot_area%bottom + &
+                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
+            end do
+        end if
+        
+        if (present(xscale) .and. trim(xscale) /= 'linear') then
+            call generate_scale_aware_tick_labels(data_x_min, data_x_max, num_x_ticks, x_labels, xscale, symlog_threshold)
+        else
+            do i = 1, num_x_ticks
+                x_labels(i) = format_tick_value_smart(x_tick_values(i), 8)
+            end do
+        end if
+        
+        if (present(yscale) .and. trim(yscale) /= 'linear') then
+            call generate_scale_aware_tick_labels(data_y_min, data_y_max, num_y_ticks, y_labels, yscale, symlog_threshold)
+        else
+            do i = 1, num_y_ticks
+                y_labels(i) = format_tick_value_smart(y_tick_values(i), 8)
+            end do
+        end if
+    end subroutine generate_tick_data
+
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                       x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
                                       title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
@@ -761,168 +876,36 @@ contains
         real(wp) :: x_tick_values(20), y_tick_values(20)
         real(wp) :: x_positions(20), y_positions(20)
         character(len=20) :: x_labels(20), y_labels(20)
-        real(wp) :: nice_x_min, nice_x_max, nice_x_step
-        real(wp) :: nice_y_min, nice_y_max, nice_y_step
-        integer :: num_x_ticks, num_y_ticks, i
+        integer :: num_x_ticks, num_y_ticks
         real(wp) :: data_x_min, data_x_max, data_y_min, data_y_max
-        real(wp) :: symlog_thresh
-        character(len=10) :: x_scale_type, y_scale_type
         
-        ! Set color to black for axes
         call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
         
-        ! For 3D plots, draw 3D axes instead of 2D frame
         if (present(is_3d_plot) .and. is_3d_plot .and. &
             present(z_min_orig) .and. present(z_max_orig)) then
-            ! Use provided data ranges
-            if (present(x_min_orig) .and. present(x_max_orig)) then
-                data_x_min = x_min_orig
-                data_x_max = x_max_orig
-            else
-                data_x_min = ctx%x_min
-                data_x_max = ctx%x_max
-            end if
-            
-            if (present(y_min_orig) .and. present(y_max_orig)) then
-                data_y_min = y_min_orig
-                data_y_max = y_max_orig
-            else
-                data_y_min = ctx%y_min
-                data_y_max = ctx%y_max
-            end if
-            
+            call setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                       data_x_min, data_x_max, data_y_min, data_y_max)
             call draw_pdf_3d_axes_frame(ctx, data_x_min, data_x_max, &
                                        data_y_min, data_y_max, z_min_orig, z_max_orig)
             return
         end if
         
-        ! Use provided data ranges or backend ranges
-        if (present(x_min_orig) .and. present(x_max_orig)) then
-            data_x_min = x_min_orig
-            data_x_max = x_max_orig
-        else
-            data_x_min = ctx%x_min
-            data_x_max = ctx%x_max
-        end if
-        
-        if (present(y_min_orig) .and. present(y_max_orig)) then
-            data_y_min = y_min_orig
-            data_y_max = y_max_orig
-        else
-            data_y_min = ctx%y_min
-            data_y_max = ctx%y_max
-        end if
-        
-        ! Draw plot frame
+        call setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                   data_x_min, data_x_max, data_y_min, data_y_max)
         call draw_pdf_frame(ctx)
         
-        ! Generate nice tick values based on scale type (matching PNG backend)
-        if (present(xscale) .and. present(yscale) .and. (trim(xscale) /= 'linear' .or. trim(yscale) /= 'linear')) then
-            ! For non-linear scales, use scale-aware coordinate transformation
-            call find_nice_tick_locations(data_x_min, data_x_max, 5, &
-                                        nice_x_min, nice_x_max, nice_x_step, &
-                                        x_tick_values, num_x_ticks)
-            
-            call find_nice_tick_locations(data_y_min, data_y_max, 5, &
-                                        nice_y_min, nice_y_max, nice_y_step, &
-                                        y_tick_values, num_y_ticks)
-            
-            ! Apply scale transformation to boundaries and tick values
-            ! Handle optional parameters with defaults
-            symlog_thresh = 1.0_wp
-            if (present(symlog_threshold)) symlog_thresh = symlog_threshold
-            
-            x_scale_type = 'linear'
-            if (present(xscale)) x_scale_type = trim(xscale)
-            
-            y_scale_type = 'linear'
-            if (present(yscale)) y_scale_type = trim(yscale)
-            
-            ctx%x_min = apply_scale_transform(x_tick_values(1), x_scale_type, symlog_thresh)
-            ctx%x_max = apply_scale_transform(x_tick_values(num_x_ticks), x_scale_type, symlog_thresh)
-            
-            ctx%y_min = apply_scale_transform(y_tick_values(1), y_scale_type, symlog_thresh)
-            ctx%y_max = apply_scale_transform(y_tick_values(num_y_ticks), y_scale_type, symlog_thresh)
-            
-            ! Convert tick values to PDF coordinates using scale-aware transformation
-            do i = 1, num_x_ticks
-                x_positions(i) = ctx%plot_area%left + &
-                                (apply_scale_transform(x_tick_values(i), x_scale_type, symlog_thresh) - ctx%x_min) / &
-                                (ctx%x_max - ctx%x_min) * ctx%plot_area%width
-            end do
-            
-            ! For Y axis in PDF (origin at bottom, no flipping needed)
-            do i = 1, num_y_ticks
-                y_positions(i) = ctx%plot_area%bottom + &
-                                (apply_scale_transform(y_tick_values(i), y_scale_type, symlog_thresh) - ctx%y_min) / &
-                                (ctx%y_max - ctx%y_min) * ctx%plot_area%height
-            end do
-        else
-            ! For linear scale, use nice tick locations and adjust boundaries to match
-            call find_nice_tick_locations(data_x_min, data_x_max, 5, &
-                                        nice_x_min, nice_x_max, nice_x_step, &
-                                        x_tick_values, num_x_ticks)
-            
-            call find_nice_tick_locations(data_y_min, data_y_max, 5, &
-                                        nice_y_min, nice_y_max, nice_y_step, &
-                                        y_tick_values, num_y_ticks)
-            
-            ! Update the context boundaries to match the nice tick boundaries
-            if (num_x_ticks > 0) then
-                ctx%x_min = x_tick_values(1)
-                ctx%x_max = x_tick_values(num_x_ticks)
-            end if
-            
-            if (num_y_ticks > 0) then
-                ctx%y_min = y_tick_values(1)
-                ctx%y_max = y_tick_values(num_y_ticks)
-            end if
-            
-            ! Convert tick values to PDF coordinates (linear case)
-            do i = 1, num_x_ticks
-                x_positions(i) = ctx%plot_area%left + &
-                                (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * ctx%plot_area%width
-            end do
-            
-            ! For Y axis in PDF (origin at bottom, no flipping needed)
-            do i = 1, num_y_ticks
-                y_positions(i) = ctx%plot_area%bottom + &
-                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
-            end do
-        end if
+        call generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                              xscale, yscale, symlog_threshold, &
+                              x_tick_values, y_tick_values, x_positions, y_positions, &
+                              x_labels, y_labels, num_x_ticks, num_y_ticks)
         
-        ! Generate tick labels based on actual tick values
-        if (present(xscale) .and. trim(xscale) /= 'linear') then
-            call generate_scale_aware_tick_labels(data_x_min, data_x_max, num_x_ticks, x_labels, xscale, symlog_threshold)
-        else
-            do i = 1, num_x_ticks
-                x_labels(i) = format_tick_value_smart(x_tick_values(i), 8)
-            end do
-        end if
-        
-        if (present(yscale) .and. trim(yscale) /= 'linear') then
-            call generate_scale_aware_tick_labels(data_y_min, data_y_max, num_y_ticks, y_labels, yscale, symlog_threshold)
-        else
-            do i = 1, num_y_ticks
-                y_labels(i) = format_tick_value_smart(y_tick_values(i), 8)
-            end do
-        end if
-        
-        ! Draw tick marks and labels
         call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
         call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x_ticks, num_y_ticks)
-        
-        ! Draw title and axis labels
         call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
         
-        ! Draw grid lines if enabled
-        ! Draw grid lines if enabled
-        ! FIXED: Check if grid_enabled is present AND true to avoid accessing uninitialized memory
-        if (present(grid_enabled)) then
-            if (grid_enabled) then
-                call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                       grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
-            end if
+        if (present(grid_enabled) .and. grid_enabled) then
+            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                   grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
         end if
     end subroutine draw_pdf_axes_and_labels
 
