@@ -1,10 +1,12 @@
 module fortplot_pipe
     use iso_c_binding
+    use fortplot_system_runtime, only: is_windows
     implicit none
     private
     
     public :: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     public :: check_ffmpeg_available
+    public :: check_ffmpeg_available_timeout
     
     interface
         function open_ffmpeg_pipe_c(filename, fps) result(status) bind(C, name="open_ffmpeg_pipe_c")
@@ -30,6 +32,11 @@ module fortplot_pipe
             import :: c_int
             integer(c_int) :: available
         end function check_ffmpeg_available_c
+        
+        function check_ffmpeg_available_timeout_c() result(available) bind(C, name="check_ffmpeg_available_timeout_c")
+            import :: c_int
+            integer(c_int) :: available
+        end function check_ffmpeg_available_timeout_c
     end interface
     
 contains
@@ -61,7 +68,19 @@ contains
     function check_ffmpeg_available() result(available)
         logical :: available
         
-        available = (check_ffmpeg_available_c() == 1)
+        if (is_windows()) then
+            ! Use timeout-protected version on Windows
+            available = (check_ffmpeg_available_timeout_c() == 1)
+        else
+            available = (check_ffmpeg_available_c() == 1)
+        end if
     end function check_ffmpeg_available
+
+    function check_ffmpeg_available_timeout() result(available)
+        !! Timeout-protected FFmpeg availability check for Windows CI
+        logical :: available
+        
+        available = (check_ffmpeg_available_timeout_c() == 1)
+    end function check_ffmpeg_available_timeout
 
 end module fortplot_pipe

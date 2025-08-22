@@ -9,6 +9,7 @@ program test_text_rendering
     use fortplot_text
     use fortplot_png
     use fortplot_figure
+    use fortplot_security, only: get_test_output_path
     implicit none
 
     logical :: all_tests_passed
@@ -147,10 +148,10 @@ contains
         call fig%set_ylabel("y")
         
         call fig%add_plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label="test line")
-        call fig%savefig('output/test/test_text_rendering/test_text_rendering_output.png')
+        call fig%savefig(get_test_output_path('output/test/test_text_rendering/test_text_rendering_output.png'))
         inquire(file="test_text_rendering_output.png", exist=file_exists, iostat=iostat)
-        call fig%savefig("/tmp/test_text_rendering_output.png")
-        inquire(file="/tmp/test_text_rendering_output.png", exist=file_exists, iostat=iostat)
+        call fig%savefig(get_test_output_path("/tmp/test_text_rendering_output.png"))
+        inquire(file=get_test_output_path("/tmp/test_text_rendering_output.png"), exist=file_exists, iostat=iostat)
 
         if (file_exists .and. iostat == 0) then
             print *, "✅ PNG file created successfully: test_text_rendering_output.png"

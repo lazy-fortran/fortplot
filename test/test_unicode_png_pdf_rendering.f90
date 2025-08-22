@@ -1,6 +1,7 @@
 program test_unicode_png_pdf_rendering
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_unicode_png_rendering()
@@ -27,7 +28,7 @@ contains
         call fig%legend("upper right")
         
         ! Save to PNG file
-        test_filename = "/tmp/test_unicode_png.png"
+        test_filename = get_test_output_path("/tmp/test_unicode_png.png")
         call fig%savefig(test_filename)
         
         ! Check that file was created
@@ -57,7 +58,7 @@ contains
         call fig%legend("upper left")
         
         ! Save to PDF file
-        test_filename = "/tmp/test_unicode_pdf.pdf"
+        test_filename = get_test_output_path("/tmp/test_unicode_pdf.pdf")
         call fig%savefig(test_filename)
         
         ! Check that file was created
@@ -77,9 +78,9 @@ contains
         logical :: png_exists, pdf_exists, ascii_exists
         
         ! Test the same content across all backends
-        png_file = "/tmp/test_all_backends.png"
-        pdf_file = "/tmp/test_all_backends.pdf"
-        ascii_file = "/tmp/test_all_backends.txt"
+        png_file = get_test_output_path("/tmp/test_all_backends.png")
+        pdf_file = get_test_output_path("/tmp/test_all_backends.pdf")
+        ascii_file = get_test_output_path("/tmp/test_all_backends.txt")
         
         ! Create figure with comprehensive Unicode content
         call fig%initialize(800, 600)

@@ -42,11 +42,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil
 
-    - name: Set compiler
-      run: |
-        echo "FC=gfortran" >> $GITHUB_ENV
-        echo "FPM_FC=gfortran" >> $GITHUB_ENV
-
     - name: Build project
       run: |
         make build

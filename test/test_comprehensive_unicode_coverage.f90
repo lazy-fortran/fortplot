@@ -2,6 +2,7 @@ program test_comprehensive_unicode_coverage
     use fortplot
     use fortplot_latex_parser
     use fortplot_unicode
+    use fortplot_security, only: get_test_output_path
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -164,7 +165,7 @@ contains
         call fig%legend("upper right")
         
         ! Test in all backends
-        test_filename = "/tmp/test_all_elements_unicode.png"
+        test_filename = get_test_output_path("/tmp/test_all_elements_unicode.png")
         call fig%savefig(test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then
@@ -172,7 +173,7 @@ contains
             stop 1
         end if
         
-        test_filename = "/tmp/test_all_elements_unicode.pdf"
+        test_filename = get_test_output_path("/tmp/test_all_elements_unicode.pdf")
         call fig%savefig(test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then
@@ -180,7 +181,7 @@ contains
             stop 1
         end if
         
-        test_filename = "/tmp/test_all_elements_unicode.txt"
+        test_filename = get_test_output_path("/tmp/test_all_elements_unicode.txt")
         call fig%savefig(test_filename)
         inquire(file=test_filename, exist=file_exists)
         if (.not. file_exists) then

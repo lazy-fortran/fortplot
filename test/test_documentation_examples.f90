@@ -2,6 +2,7 @@
 program test_documentation_examples
     use fortplot
     use fortplot_validation
+    use fortplot_security, only: get_test_output_path
     implicit none
     
     call test_readme_stateful_api_example()
@@ -38,16 +39,16 @@ contains
         call ylabel("y")
         call xlim(0.0d0, 10.0d0)  ! Set x-axis limits
         call ylim(-1.0d0, 1.0d0)   ! Set y-axis limits
-        call savefig("output/test/test_readme_stateful.png")
+        call savefig(get_test_output_path("output/test/test_readme_stateful.png"))
         
         ! Assert: Validate output generation
-        validation = validate_file_exists("output/test/test_readme_stateful.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_stateful.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README stateful API example failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_png_format("output/test/test_readme_stateful.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_readme_stateful.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README stateful API PNG invalid - ", trim(validation%message)
             stop 1
@@ -80,16 +81,16 @@ contains
         call fig%set_ylabel("y")
         call fig%add_plot(x, yf)
         call fig%add_3d_plot(x, y, z, label="3D data")  ! 3D plotting
-        call fig%savefig("output/test/test_readme_oo.png")
+        call fig%savefig(get_test_output_path("output/test/test_readme_oo.png"))
         
         ! Assert: Validate output generation
-        validation = validate_file_exists("output/test/test_readme_oo.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_oo.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README OO API example failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_file_size("output/test/test_readme_oo.png", MIN_PNG_SIZE)
+        validation = validate_file_size(get_test_output_path("output/test/test_readme_oo.png"), MIN_PNG_SIZE)
         if (.not. validation%passed) then
             print *, "FAIL: README OO API file too small - ", trim(validation%message)
             stop 1
@@ -117,16 +118,16 @@ contains
         call figure(800, 600)
         call add_3d_plot(x, y, z, label="3D curve")
         call title("3D Line Plot")
-        call savefig("output/test/test_readme_3d.png")
+        call savefig(get_test_output_path("output/test/test_readme_3d.png"))
         
         ! Assert: Validate 3D output
-        validation = validate_file_exists("output/test/test_readme_3d.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_3d.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README 3D plotting example failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_png_format("output/test/test_readme_3d.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_readme_3d.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README 3D PNG format invalid - ", trim(validation%message)
             stop 1
@@ -158,16 +159,16 @@ contains
         call plot(x, cos_x, label="cos(x)", linestyle="r--")
         call plot(x, sin_2x, label="sin(2x)", linestyle="g:")
         call legend()
-        call savefig("output/test/test_readme_trig_functions.pdf")
+        call savefig(get_test_output_path("output/test/test_readme_trig_functions.pdf"))
         
         ! Assert: Validate PDF output with legend
-        validation = validate_file_exists("output/test/test_readme_trig_functions.pdf")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_trig_functions.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: README trig functions example failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_pdf_format("output/test/test_readme_trig_functions.pdf")
+        validation = validate_pdf_format(get_test_output_path("output/test/test_readme_trig_functions.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: README trig functions PDF invalid - ", trim(validation%message)
             stop 1
@@ -200,16 +201,16 @@ contains
         call plot(t, damped_sine, label="alpha decay")
         call plot(t, damped_cosine, label="beta oscillation")
         call legend()
-        call savefig("output/test/test_readme_unicode.png")  ! Works in PNG, PDF, and ASCII
+        call savefig(get_test_output_path("output/test/test_readme_unicode.png"))  ! Works in PNG, PDF, and ASCII
         
         ! Assert: Validate unicode example output
-        validation = validate_file_exists("output/test/test_readme_unicode.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_unicode.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README unicode example failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_file_size("output/test/test_readme_unicode.png", MIN_PNG_SIZE * 3)
+        validation = validate_file_size(get_test_output_path("output/test/test_readme_unicode.png"), MIN_PNG_SIZE * 3)
         if (.not. validation%passed) then
             print *, "FAIL: README unicode file too small - ", trim(validation%message)
             stop 1
@@ -240,9 +241,9 @@ contains
         ! call scatter(x, y, label="Data Points")  ! TODO: implement scatter function
         call plot(x, y, label="Data Points")  ! Fallback to basic plot for now
         call title("Basic Scatter Plot")
-        call savefig("output/test/test_readme_basic_scatter.png")
+        call savefig(get_test_output_path("output/test/test_readme_basic_scatter.png"))
         
-        validation = validate_file_exists("output/test/test_readme_basic_scatter.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_basic_scatter.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README basic scatter failed - ", trim(validation%message)
             stop 1
@@ -253,9 +254,9 @@ contains
         ! call fig%scatter(x, y, s=sizes, marker='circle', label='Bubble Chart')  ! TODO: implement scatter method
         call fig%add_plot(x, y, label='Bubble Chart')  ! Fallback to basic plot for now
         call fig%set_title("Bubble Chart - Size Represents Population")
-        call fig%savefig("output/test/test_readme_bubble_chart.pdf")
+        call fig%savefig(get_test_output_path("output/test/test_readme_bubble_chart.pdf"))
         
-        validation = validate_file_exists("output/test/test_readme_bubble_chart.pdf")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_bubble_chart.pdf"))
         if (.not. validation%passed) then
             print *, "FAIL: README bubble chart failed - ", trim(validation%message)
             stop 1
@@ -268,9 +269,9 @@ contains
         call title("Multi-dimensional Data Visualization")
         call xlabel("Temperature (K)")
         call ylabel("Pressure (Pa)")
-        call savefig("output/test/test_readme_scientific_scatter.png")
+        call savefig(get_test_output_path("output/test/test_readme_scientific_scatter.png"))
         
-        validation = validate_file_exists("output/test/test_readme_scientific_scatter.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_scientific_scatter.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README scientific scatter failed - ", trim(validation%message)
             stop 1
@@ -304,16 +305,16 @@ contains
         call title("Surface Plot with Dimension Validation")
         call xlabel("X Coordinate")
         call ylabel("Y Coordinate")
-        call savefig("output/test/test_readme_surface.png")
+        call savefig(get_test_output_path("output/test/test_readme_surface.png"))
         
         ! Assert: Validate surface plot output
-        validation = validate_file_exists("output/test/test_readme_surface.png")
+        validation = validate_file_exists(get_test_output_path("output/test/test_readme_surface.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README surface plot failed - ", trim(validation%message)
             stop 1
         end if
         
-        validation = validate_png_format("output/test/test_readme_surface.png")
+        validation = validate_png_format(get_test_output_path("output/test/test_readme_surface.png"))
         if (.not. validation%passed) then
             print *, "FAIL: README surface PNG invalid - ", trim(validation%message)
             stop 1
