@@ -3,9 +3,46 @@ title: Animation
 
 # Animation
 
-This example demonstrates creating animated plots and saving to video files.
+This example demonstrates creating animated plots and saving to video files with cross-platform support.
 
-## Source Files
+## Quick Start
+
+```fortran
+use fortplot
+use fortplot_animation
+
+type(figure_t) :: fig
+type(animation_t) :: anim
+integer :: status
+
+! Create animation
+anim = FuncAnimation(update_func, frames=60, interval=50, fig=fig)
+
+! Save with error handling
+call anim%save("animation.mp4", fps=24, status=status)
+if (status /= 0) print *, "Check FFmpeg installation"
+```
+
+## Platform-Specific Setup
+
+### Windows Users
+**Quick Install:** `choco install ffmpeg`
+
+**Issue #189 Fixed:** Windows FFmpeg support now fully functional with binary pipe handling.
+
+See [Windows FFmpeg Setup Guide](../windows_ffmpeg_setup.md) for complete installation and troubleshooting.
+
+### Linux/macOS Users
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+
+# Arch Linux  
+sudo pacman -S ffmpeg
+```
 
 ## Source Code
 
@@ -76,12 +113,15 @@ contains
             print *, "Animation saved successfully to '", trim(filename), "'"
         case (-1)
             print *, "ERROR: ffmpeg not found. Please install ffmpeg to save animations."
-            print *, "Install with: sudo pacman -S ffmpeg (Arch Linux)"
+            print *, "Windows: choco install ffmpeg"
+            print *, "Linux: sudo apt install ffmpeg"
+            print *, "macOS: brew install ffmpeg"
             print *, "Or visit: https://ffmpeg.org/download.html"
         case (-3)
             print *, "ERROR: Unsupported file format. Use .mp4, .avi, or .mkv"
         case (-4)
             print *, "ERROR: Could not open pipe to ffmpeg. Check ffmpeg installation."
+            print *, "Windows: Check antivirus settings and run as Administrator if needed"
         case (-5)
             print *, "ERROR: Failed to generate animation frames."
         case (-6)
@@ -112,17 +152,33 @@ end program save_animation_demo
 
 ## Requirements
 
-- **ffmpeg**: Must be installed for video generation
-- **Frame rate**: Typically 30 fps for smooth playback
-- **Resolution**: Match your figure size
+### All Platforms
+- **ffmpeg**: Must be installed and available in PATH
+- **Frame rate**: 15-30 fps recommended (24 fps standard)
+- **Resolution**: Match your figure size (800x600 default)
 
-## MPEG File Validation
+### Windows Specific (Issue #189)
+- **Binary mode pipes**: Automatically handled
+- **Path escaping**: Special characters handled automatically
+- **Error reporting**: Windows-specific error codes provided
+- **Antivirus**: May need exclusions for FFmpeg and temp directories
 
-Generated MPEG files should meet these criteria:
-- **File size**: >5KB for multi-frame animations (typical range: 10KB-1MB+)
-- **Header validation**: Must contain valid MP4 box signatures (`ftyp`, `mdat`, `moov`)
-- **External validation**: Should pass `ffprobe -v error -show_format filename.mp4`
-- **Playback**: Should be compatible with standard media players
+## Cross-Platform Differences
+
+| Feature | Windows | Linux/macOS | Notes |
+|---------|---------|-------------|-------|
+| Pipe Mode | Binary (`_popen`) | Text (`popen`) | Windows requires binary mode |
+| Path Separators | `\` or `/` | `/` | Both work on Windows |
+| FFmpeg Detection | Multiple methods | Single method | Windows tries `where` command |
+| Error Codes | Windows API | POSIX | Platform-specific reporting |
+
+## File Validation
+
+Generated video files should meet these criteria:
+- **File size**: >10KB for valid animations (typical: 50KB-5MB)
+- **Format validation**: Use `ffprobe -v error -show_format filename.mp4`
+- **Playback test**: Compatible with VLC, Windows Media Player, QuickTime
+- **Header check**: Contains valid MP4 box signatures (`ftyp`, `mdat`, `moov`)
 
 ## Example Code Structure
 
@@ -147,6 +203,52 @@ end do
 call anim%save('animation.mp4')
 ```
 
+## Windows-Specific Examples
+
+### Handling Paths with Spaces
+```fortran
+! Windows paths with spaces work automatically
+character(len=256) :: output_file
+output_file = "C:\Users\User Name\Documents\animation.mp4"
+call anim%save(output_file, fps=24, status=status)
+```
+
+### Error Handling for Windows
+```fortran
+use fortplot_system_runtime, only: is_windows
+
+if (is_windows() .and. status == -4) then
+    print *, "Windows pipe error - check antivirus settings"
+    print *, "Try adding FFmpeg to antivirus exclusions"
+else if (status == -1) then
+    print *, "FFmpeg not found in PATH"
+end if
+```
+
+### Directory Creation
+```fortran
+! Create output directory on Windows
+character(len=256) :: output_dir
+output_dir = "animations"
+if (is_windows()) then
+    call system('mkdir "' // trim(output_dir) // '" 2>NUL')
+else
+    call system('mkdir -p "' // trim(output_dir) // '"')
+end if
+```
+
 ## Output
 
-## Troubleshooting MPEG Issues
+## Troubleshooting
+
+### All Platforms
+1. **FFmpeg not found**: Check `ffmpeg -version` works
+2. **Small file size**: Indicates encoding failure
+3. **Won't play**: Check format compatibility
+
+### Windows-Specific Issues
+1. **Pipe errors**: Check antivirus, try running as Administrator
+2. **Path issues**: Use forward slashes or double backslashes
+3. **Binary corruption**: Update to latest fortplot (Issue #189 fixed)
+
+For complete Windows troubleshooting, see [Windows FFmpeg Setup Guide](../windows_ffmpeg_setup.md)
