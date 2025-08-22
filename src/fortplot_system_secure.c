@@ -64,12 +64,14 @@ static int create_directory_recursive_windows(const char* path) {
             return -1;
         }
         
-        // Find the last backslash
+        // Find the last backslash or forward slash
         char* last_backslash = strrchr(path_copy, '\\');
-        if (last_backslash != NULL && last_backslash != path_copy) {
+        char* last_forwardslash = strrchr(path_copy, '/');
+        char* last_slash = (last_backslash > last_forwardslash) ? last_backslash : last_forwardslash;
+        if (last_slash != NULL && last_slash != path_copy) {
             // Don't try to create root directories like "C:" or single letters
-            if (!(last_backslash == path_copy + 2 && path_copy[1] == ':')) {
-                *last_backslash = '\0';
+            if (!(last_slash == path_copy + 2 && path_copy[1] == ':')) {
+                *last_slash = '\0';
                 
                 // Recursively create parent
                 if (create_directory_recursive_windows(path_copy) == 0) {
