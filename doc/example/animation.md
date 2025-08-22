@@ -261,9 +261,9 @@ end if
 ### Advanced Diagnostics
 ```fortran
 ! Enable detailed logging
-use fortplot_logging, only: set_log_level
-call set_log_level(LOG_DEBUG)
+use fortplot_logging, only: set_log_level, LOG_LEVEL_DEBUG
+call set_log_level(LOG_LEVEL_DEBUG)
 
 ! Generate diagnostic report
-call anim%save("test.mp4", fps=24, status=status, debug=.true.)
+call anim%save("test.mp4", fps=24, status=status)
 ```
