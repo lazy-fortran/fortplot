@@ -174,7 +174,7 @@ contains
         real(wp) :: x(6), y(6), c(5, 5)
         character(len=*), parameter :: colormaps(4) = ['viridis', 'plasma ', 'inferno', 'coolwrm']
         integer :: i, j, cm_idx
-        character(len=50) :: filename_base
+        character(len=512) :: filename_base
         
         ! Arrange - Create test data
         do i = 1, 6
@@ -194,13 +194,13 @@ contains
             ! PNG backend
             call fig_png%initialize(300, 300)
             call fig_png%add_pcolormesh(x, y, c, colormap=trim(colormaps(cm_idx)))
-            write(filename_base, '(A, A, A)') get_test_output_path('/tmp/test_colormap_'), trim(colormaps(cm_idx)), '.png'
+            filename_base = trim(get_test_output_path('/tmp/test_colormap_')) // trim(colormaps(cm_idx)) // '.png'
             call fig_png%savefig(trim(filename_base))
             
             ! PDF backend - should produce same colormap mapping
             call fig_pdf%initialize(300, 300)
             call fig_pdf%add_pcolormesh(x, y, c, colormap=trim(colormaps(cm_idx)))
-            write(filename_base, '(A, A, A)') get_test_output_path('/tmp/test_colormap_'), trim(colormaps(cm_idx)), '.pdf'
+            filename_base = trim(get_test_output_path('/tmp/test_colormap_')) // trim(colormaps(cm_idx)) // '.pdf'
             call fig_pdf%savefig(trim(filename_base))
         end do
         

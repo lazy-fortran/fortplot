@@ -158,7 +158,7 @@ contains
         integer :: test_idx, nx, ny, i, j
         real(wp), allocatable :: x(:), y(:), c(:,:)
         real(wp) :: start_time, end_time, render_time
-        character(len=50) :: filename
+        character(len=512) :: filename
         
         do test_idx = 1, test_cases
             nx = nx_values(test_idx)
@@ -186,7 +186,7 @@ contains
             ! Act - Render rectangular mesh
             call fig%initialize(600, 400)
             call fig%add_pcolormesh(x, y, c, colormap='coolwarm')
-            write(filename, '(A, I0, A, I0, A)') get_test_output_path('/tmp/test_rect_mesh_'), nx, 'x', ny, '.png'
+            write(filename, '(A, I0, A, I0, A)') trim(get_test_output_path('/tmp/test_rect_mesh_')), nx, 'x', ny, '.png'
             call fig%savefig(filename)
             
             call cpu_time(end_time)
@@ -262,7 +262,7 @@ contains
         character(len=10), parameter :: colormaps(5) = &
             ['viridis   ', 'plasma    ', 'inferno   ', 'coolwarm  ', 'jet       ']
         real(wp) :: start_time, end_time, render_time
-        character(len=50) :: filename
+        character(len=512) :: filename
         
         ! Arrange - Medium complexity mesh
         allocate(x(n+1), y(n+1), c(n, n))
@@ -287,8 +287,8 @@ contains
             call fig%add_pcolormesh(x, y, c, colormap=trim(colormaps(colormap_idx)))
             call fig%set_title("Performance Test - " // trim(colormaps(colormap_idx)))
             
-            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_time_limit_'), &
-                                       trim(colormaps(colormap_idx)), '.png'
+            filename = trim(get_test_output_path('/tmp/test_time_limit_')) // &
+                       trim(colormaps(colormap_idx)) // '.png'
             call fig%savefig(filename)
             
             call cpu_time(end_time)

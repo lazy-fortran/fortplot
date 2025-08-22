@@ -35,7 +35,7 @@ contains
         character(len=*), parameter :: standard_colormaps(5) = &
             ['viridis ', 'plasma  ', 'inferno ', 'coolwarm', 'jet     ']
         integer :: cmap_idx
-        character(len=50) :: filename
+        character(len=512) :: filename
         
         ! Arrange - Create linear gradient data for color mapping verification
         do i = 1, 6
@@ -56,8 +56,8 @@ contains
             call fig%add_pcolormesh(x, y, c_linear, colormap=trim(standard_colormaps(cmap_idx)))
             call fig%set_title("Colormap Integration - " // trim(standard_colormaps(cmap_idx)))
             
-            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_colormap_integration_'), &
-                                       trim(standard_colormaps(cmap_idx)), '.png'
+            filename = trim(get_test_output_path('/tmp/test_colormap_integration_')) // &
+                       trim(standard_colormaps(cmap_idx)) // '.png'
             call fig%savefig(filename)
             
             ! Test that colormap system is being used correctly
@@ -296,7 +296,7 @@ contains
         character(len=*), parameter :: comparison_colormaps(4) = &
             ['viridis ', 'plasma  ', 'coolwarm', 'jet     ']
         integer :: cmap_idx
-        character(len=50) :: filename
+        character(len=512) :: filename
         
         ! Arrange - Create interesting test pattern
         do i = 1, 6
@@ -320,8 +320,8 @@ contains
             call fig%set_xlabel("X coordinate")
             call fig%set_ylabel("Y coordinate")
             
-            write(filename, '(A, A, A)') get_test_output_path('/tmp/test_colormap_compare_'), &
-                                       trim(comparison_colormaps(cmap_idx)), '.png'
+            filename = trim(get_test_output_path('/tmp/test_colormap_compare_')) // &
+                       trim(comparison_colormaps(cmap_idx)) // '.png'
             call fig%savefig(filename)
         end do
         
