@@ -10,6 +10,10 @@
     #include <fcntl.h>
     #define popen _popen
     #define pclose _pclose
+    // Binary mode flag for Windows
+    #ifndef _O_BINARY
+        #define _O_BINARY 0x8000
+    #endif
 #else
     #include <unistd.h>
     #include <sys/wait.h>
@@ -31,6 +35,8 @@ static ffmpeg_pipe_t current_pipe = {NULL, 0};
 int close_ffmpeg_pipe_c(void);
 int is_safe_filename_c(const char* filename);
 int is_ffmpeg_enabled(void);
+int ensure_binary_mode(FILE* pipe);
+int escape_windows_path(const char* input, char* output, size_t output_size);
 
 // Validate filename for safety (no command injection)
 int is_safe_filename_c(const char* filename) {
@@ -150,11 +156,27 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         return -1;
     }
     
-    // Build FFmpeg command with security controls
+    // Build FFmpeg command with platform-specific controls
     char command[1024];
-    int ret = snprintf(command, sizeof(command), 
-        "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>/dev/null",
-        fps, filename);
+    char escaped_filename[512];
+    
+    #ifdef _WIN32
+        // Windows: Escape path and use NUL for stderr redirection
+        if (!escape_windows_path(filename, escaped_filename, sizeof(escaped_filename))) {
+            fprintf(stderr, "Error: Failed to escape Windows path\n");
+            return -1;
+        }
+        int ret = snprintf(command, sizeof(command), 
+            "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>NUL",
+            fps, escaped_filename);
+    #else
+        // Unix: Simple escaping and /dev/null for stderr
+        strncpy(escaped_filename, filename, sizeof(escaped_filename) - 1);
+        escaped_filename[sizeof(escaped_filename) - 1] = '\0';
+        int ret = snprintf(command, sizeof(command), 
+            "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>/dev/null",
+            fps, escaped_filename);
+    #endif
     
     if (ret >= sizeof(command) || ret < 0) {
         fprintf(stderr, "Error: FFmpeg command too long or formatting failed\n");
@@ -164,7 +186,16 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
     // Open pipe to FFmpeg with platform-specific mode
     #ifdef _WIN32
         // Windows requires binary mode to prevent corruption
-        current_pipe.pipe = popen(command, "wb");
+        current_pipe.pipe = _popen(command, "wb");
+        if (current_pipe.pipe != NULL) {
+            // Ensure binary mode is set on the pipe
+            if (ensure_binary_mode(current_pipe.pipe) != 0) {
+                fprintf(stderr, "Error: Failed to set binary mode on Windows pipe\n");
+                _pclose(current_pipe.pipe);
+                current_pipe.pipe = NULL;
+                return -1;
+            }
+        }
     #else
         current_pipe.pipe = popen(command, "w");
     #endif
@@ -195,9 +226,19 @@ int write_png_to_pipe_c(const unsigned char* png_data, size_t data_size) {
         return -1;
     }
     
+    #ifdef _WIN32
+        // Windows: Ensure binary mode before each write (defensive)
+        ensure_binary_mode(current_pipe.pipe);
+    #endif
+    
     size_t written = fwrite(png_data, 1, data_size, current_pipe.pipe);
     if (written != data_size) {
         fprintf(stderr, "Error: Failed to write PNG data to pipe (%zu/%zu bytes)\n", written, data_size);
+        #ifdef _WIN32
+            // Windows-specific error reporting
+            DWORD error = GetLastError();
+            fprintf(stderr, "Windows error code: %lu\n", error);
+        #endif
         return -1;
     }
     
@@ -263,7 +304,13 @@ int check_ffmpeg_available_c(void) {
     
     // Test if ffmpeg command is available (cross-platform)
     #ifdef _WIN32
-        int status = system("ffmpeg -version >nul 2>&1");
+        // Windows: Try multiple detection methods
+        // First try: Direct command
+        int status = system("ffmpeg -version >NUL 2>&1");
+        if (status != 0) {
+            // Second try: With where command to find executable
+            status = system("where ffmpeg >NUL 2>&1");
+        }
     #else  
         int status = system("ffmpeg -version >/dev/null 2>&1");
     #endif
@@ -276,3 +323,76 @@ int check_ffmpeg_available_c(void) {
         return 0;
     }
 }
+
+// Platform-specific helper functions
+#ifdef _WIN32
+// Ensure binary mode on Windows pipe
+int ensure_binary_mode(FILE* pipe) {
+    if (pipe == NULL) {
+        return -1;
+    }
+    
+    int fd = _fileno(pipe);
+    if (fd == -1) {
+        return -1;
+    }
+    
+    // Set binary mode to prevent CRLF translation
+    if (_setmode(fd, _O_BINARY) == -1) {
+        return -1;
+    }
+    
+    return 0;
+}
+
+// Escape Windows path for command line
+int escape_windows_path(const char* input, char* output, size_t output_size) {
+    if (!input || !output || output_size == 0) {
+        return 0;
+    }
+    
+    size_t i, j = 0;
+    size_t input_len = strlen(input);
+    
+    for (i = 0; i < input_len && j < output_size - 2; i++) {
+        char c = input[i];
+        
+        // Handle special characters that need escaping in Windows
+        if (c == '\\') {
+            // Double backslashes for Windows paths
+            if (j + 1 < output_size - 1) {
+                output[j++] = '\\';
+                output[j++] = '\\';
+            } else {
+                return 0;  // Output buffer too small
+            }
+        } else if (c == '"') {
+            // Escape quotes
+            if (j + 1 < output_size - 1) {
+                output[j++] = '\\';
+                output[j++] = '"';
+            } else {
+                return 0;
+            }
+        } else {
+            output[j++] = c;
+        }
+    }
+    
+    output[j] = '\0';
+    return 1;
+}
+#else
+// Unix stub implementations
+int ensure_binary_mode(FILE* pipe) {
+    // Unix doesn't need binary mode
+    return 0;
+}
+
+int escape_windows_path(const char* input, char* output, size_t output_size) {
+    // Unix doesn't need special escaping
+    strncpy(output, input, output_size - 1);
+    output[output_size - 1] = '\0';
+    return 1;
+}
+#endif
