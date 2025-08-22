@@ -114,7 +114,7 @@ contains
         case (-5)
             print *, "✗ Frame generation failed - reduce resolution or complexity"
         case (-6)
-            print *, "✗ Pipe write failed - Issue #186 fixed: enhanced reliability and recovery"
+            print *, "✗ Pipe write failed - enhanced recovery attempted (Issue #186: exponential backoff exhausted)"
         case (-7)
             print *, "✗ Video validation failed - check output file integrity"
         case default
@@ -156,7 +156,7 @@ end program save_animation_demo
 | -3 | Invalid format | Format validation before processing |
 | -4 | Pipe open failed | Enhanced permission and path checking |
 | -5 | Frame generation failed | Memory and resolution diagnostics |
-| -6 | **Pipe write failed** | **Retry mechanisms and fallback options** |
+| -6 | **Pipe write failed** | **Exponential backoff retry exhausted (recovery attempted)** |
 | -7 | Video validation failed | Comprehensive file integrity checking |
 
 ## Enhanced Validation Framework

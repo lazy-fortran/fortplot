@@ -15,6 +15,10 @@ module fortplot_animation
     integer, parameter :: MIN_VALID_VIDEO_SIZE = 100
     integer, parameter :: MIN_EXPECTED_VIDEO_SIZE = 1000
     integer, parameter :: MAX_FILENAME_LENGTH = 255
+    
+    ! Enhanced recovery constants for exponential backoff
+    integer, parameter :: MAX_RETRY_ATTEMPTS = 3
+    integer, parameter :: BASE_RETRY_DELAY_MS = 100
 
     ! Animation callback interface
     abstract interface
@@ -282,10 +286,11 @@ contains
                 return
             end if
             
-            stat = write_png_to_pipe(png_data)
+            ! Enhanced pipe write with exponential backoff retry mechanism
+            call write_frame_with_exponential_backoff(png_data, stat)
             if (stat /= 0) then
                 status = -6
-                call log_error("Failed to write frame to pipe")
+                call log_error("Failed to write frame to pipe after enhanced recovery")
                 return
             end if
             
@@ -294,6 +299,54 @@ contains
         
         status = 0
     end subroutine write_all_frames_to_pipe
+
+    subroutine write_frame_with_exponential_backoff(png_data, status)
+        integer(1), allocatable, intent(in) :: png_data(:)
+        integer, intent(out) :: status
+        
+        integer :: attempt, write_stat, delay_ms
+        
+        status = -6  ! Default to pipe write failure
+        
+        do attempt = 1, MAX_RETRY_ATTEMPTS
+            write_stat = write_png_to_pipe(png_data)
+            
+            if (write_stat == 0) then
+                ! Success - frame written successfully
+                status = 0
+                if (attempt > 1) then
+                    call log_info("Frame write succeeded after enhanced recovery")
+                end if
+                return
+            else if (write_stat == -6) then
+                ! Status -6: Pipe flush failed - enhanced recovery with backoff
+                delay_ms = BASE_RETRY_DELAY_MS * (2 ** (attempt - 1))
+                
+                if (attempt < MAX_RETRY_ATTEMPTS) then
+                    write(*, '(A,I0,A,I0,A,I0,A)') &
+                        "Pipe write failed - attempting recovery (retry ", &
+                        attempt, "/", MAX_RETRY_ATTEMPTS, &
+                        " with ", delay_ms, "ms exponential backoff)..."
+                    call exponential_backoff_delay(delay_ms)
+                else
+                    call log_error("Pipe write failed after all retry attempts")
+                end if
+            else
+                ! Other write errors - immediate failure
+                write(*, '(A,I0)') "Pipe write failed with unrecoverable error: ", write_stat
+                status = write_stat
+                return
+            end if
+        end do
+    end subroutine write_frame_with_exponential_backoff
+
+    subroutine exponential_backoff_delay(delay_ms)
+        integer, intent(in) :: delay_ms
+        real(wp) :: delay_seconds
+        
+        delay_seconds = real(delay_ms, wp) / 1000.0_wp
+        call cpu_time_delay(delay_seconds)
+    end subroutine exponential_backoff_delay
 
     subroutine validate_output_video_enhanced(filename, status)
         character(len=*), intent(in) :: filename

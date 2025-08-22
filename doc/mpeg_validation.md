@@ -48,7 +48,7 @@ select case (status)
 case (0)
     ! File created, validated, and confirmed playable
 case (-6)
-    ! Pipe write failed - enhanced recovery attempted
+    ! Pipe write failed - exponential backoff retry exhausted
 case (-7)
     ! Video created but failed final validation
 end select
@@ -99,7 +99,7 @@ subroutine enhanced_animation_save_example()
     case (-5)
         print *, "✗ Frame generation failed"
     case (-6)
-        print *, "✗ Pipe write failed (Issue #186 - enhanced recovery)"
+        print *, "✗ Pipe write failed (Issue #186 - exponential backoff exhausted)"
     case (-7)
         print *, "✗ Video validation failed"
     end select
