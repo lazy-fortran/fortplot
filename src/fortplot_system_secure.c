@@ -237,7 +237,6 @@ int open_file_with_default_app_c(const char* filename) {
             if (effective_path != NULL) {
                 snprintf(effective_path, len, "tmp%s", filename + 4); // skip "/tmp"
             }
-            }
         } else {
             effective_path = normalize_path_windows(filename);
         }
@@ -346,7 +345,6 @@ int delete_file_c(const char* filename) {
             effective_path = malloc(len);
             if (effective_path != NULL) {
                 snprintf(effective_path, len, "tmp%s", filename + 4); // skip "/tmp"
-            }
             }
         } else {
             effective_path = normalize_path_windows(filename);
