@@ -78,11 +78,7 @@ jobs:
         
       - name: Build documentation
         run: |
-          # Copy media files to build directory BEFORE FORD runs (preserving structure)
-          mkdir -p build/doc/media/examples
-          cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true
-          
-          # Now run FORD with media files already in place
+          # Run make doc (which runs FORD then copies media)
           make doc
           
           # Copy example documentation pages to build directory
