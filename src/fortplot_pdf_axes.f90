@@ -1,0 +1,396 @@
+module fortplot_pdf_axes
+    !! PDF axes, grid, and tick drawing operations
+    !! Handles plot frame, axes, tick marks, and grid lines
+    
+    use iso_fortran_env, only: wp => real64
+    use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, PDF_PLOT_WIDTH, &
+                                PDF_PLOT_HEIGHT, PDF_TICK_SIZE, PDF_LABEL_SIZE, &
+                                PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
+    use fortplot_pdf_drawing, only: pdf_stream_writer
+    use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
+                                draw_mixed_font_text, draw_rotated_mixed_font_text
+    implicit none
+    private
+    
+    ! Public procedures
+    public :: draw_pdf_axes_and_labels
+    public :: draw_pdf_3d_axes_frame
+    public :: draw_pdf_grid_lines
+    public :: draw_pdf_frame
+    public :: draw_pdf_tick_marks
+    public :: draw_pdf_tick_labels
+    public :: draw_pdf_title_and_labels
+    public :: setup_axes_data_ranges
+    public :: generate_tick_data
+
+contains
+
+    subroutine setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
+                                     x_min_adj, x_max_adj, y_min_adj, y_max_adj, xscale, yscale)
+        !! Set up data ranges for axes with optional log scaling
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
+        real(wp), intent(out) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
+        character(len=*), intent(in), optional :: xscale, yscale
+        
+        real(wp) :: x_range, y_range
+        
+        ! Initialize adjusted values
+        x_min_adj = x_min_orig
+        x_max_adj = x_max_orig
+        y_min_adj = y_min_orig
+        y_max_adj = y_max_orig
+        
+        ! Apply log scaling if requested
+        if (present(xscale)) then
+            if (xscale == 'log' .and. x_min_adj > 0.0_wp) then
+                x_min_adj = log10(x_min_adj)
+                x_max_adj = log10(x_max_adj)
+            end if
+        end if
+        
+        if (present(yscale)) then
+            if (yscale == 'log' .and. y_min_adj > 0.0_wp) then
+                y_min_adj = log10(y_min_adj)
+                y_max_adj = log10(y_max_adj)
+            end if
+        end if
+        
+        ! Ensure valid ranges
+        x_range = x_max_adj - x_min_adj
+        y_range = y_max_adj - y_min_adj
+        
+        if (abs(x_range) < 1.0e-10_wp) then
+            x_min_adj = x_min_adj - 0.5_wp
+            x_max_adj = x_max_adj + 0.5_wp
+        end if
+        
+        if (abs(y_range) < 1.0e-10_wp) then
+            y_min_adj = y_min_adj - 0.5_wp
+            y_max_adj = y_max_adj + 0.5_wp
+        end if
+    end subroutine setup_axes_data_ranges
+
+    subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                 x_positions, y_positions, x_labels, y_labels, &
+                                 num_x_ticks, num_y_ticks, xscale, yscale)
+        !! Generate tick positions and labels for axes
+        type(pdf_context_core), intent(in) :: ctx
+        real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
+        real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
+        character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
+        integer, intent(out) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: xscale, yscale
+        
+        real(wp) :: x_range, y_range, x_step, y_step
+        real(wp) :: x_tick, y_tick
+        integer :: i
+        integer, parameter :: TARGET_TICKS = 8
+        
+        ! Calculate ranges
+        x_range = data_x_max - data_x_min
+        y_range = data_y_max - data_y_min
+        
+        ! Determine number of ticks
+        num_x_ticks = min(TARGET_TICKS, max(2, int(PDF_PLOT_WIDTH / 50.0_wp)))
+        num_y_ticks = min(TARGET_TICKS, max(2, int(PDF_PLOT_HEIGHT / 40.0_wp)))
+        
+        ! Allocate arrays
+        allocate(x_positions(num_x_ticks))
+        allocate(y_positions(num_y_ticks))
+        allocate(x_labels(num_x_ticks))
+        allocate(y_labels(num_y_ticks))
+        
+        ! Generate X ticks
+        x_step = x_range / real(num_x_ticks - 1, wp)
+        do i = 1, num_x_ticks
+            x_tick = data_x_min + real(i - 1, wp) * x_step
+            
+            ! Convert to plot coordinates
+            x_positions(i) = PDF_MARGIN + &
+                (x_tick - data_x_min) / x_range * PDF_PLOT_WIDTH
+            
+            ! Generate label
+            if (present(xscale)) then
+                if (xscale == 'log') then
+                    write(x_labels(i), '(ES10.2)') 10.0_wp ** x_tick
+                else
+                    write(x_labels(i), '(F10.2)') x_tick
+                end if
+            else
+                write(x_labels(i), '(F10.2)') x_tick
+            end if
+            x_labels(i) = adjustl(x_labels(i))
+        end do
+        
+        ! Generate Y ticks
+        y_step = y_range / real(num_y_ticks - 1, wp)
+        do i = 1, num_y_ticks
+            y_tick = data_y_min + real(i - 1, wp) * y_step
+            
+            ! Convert to plot coordinates
+            y_positions(i) = PDF_MARGIN + &
+                (y_tick - data_y_min) / y_range * PDF_PLOT_HEIGHT
+            
+            ! Generate label
+            if (present(yscale)) then
+                if (yscale == 'log') then
+                    write(y_labels(i), '(ES10.2)') 10.0_wp ** y_tick
+                else
+                    write(y_labels(i), '(F10.2)') y_tick
+                end if
+            else
+                write(y_labels(i), '(F10.2)') y_tick
+            end if
+            y_labels(i) = adjustl(y_labels(i))
+        end do
+    end subroutine generate_tick_data
+
+    subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
+                                       data_x_min, data_x_max, data_y_min, data_y_max, &
+                                       title, xlabel, ylabel, enable_grid)
+        !! Draw complete axes system with labels
+        type(pdf_context_core), intent(inout) :: ctx
+        character(len=*), intent(in), optional :: xscale, yscale
+        real(wp), intent(in), optional :: symlog_threshold
+        real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        logical, intent(in), optional :: enable_grid
+        
+        real(wp), allocatable :: x_positions(:), y_positions(:)
+        character(len=32), allocatable :: x_labels(:), y_labels(:)
+        integer :: num_x_ticks, num_y_ticks
+        real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
+        logical :: draw_grid
+        
+        ! Set default for grid
+        draw_grid = .false.
+        if (present(enable_grid)) draw_grid = enable_grid
+        
+        ! Setup data ranges
+        call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                   x_min_adj, x_max_adj, y_min_adj, y_max_adj, xscale, yscale)
+        
+        ! Generate tick data
+        call generate_tick_data(ctx, x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
+                               x_positions, y_positions, x_labels, y_labels, &
+                               num_x_ticks, num_y_ticks, xscale, yscale)
+        
+        ! Draw grid if enabled
+        if (draw_grid) then
+            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                    .true., .true.)
+        end if
+        
+        ! Draw frame
+        call draw_pdf_frame(ctx)
+        
+        ! Draw tick marks
+        call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
+        
+        ! Draw tick labels
+        call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, &
+                                 num_x_ticks, num_y_ticks)
+        
+        ! Draw title and axis labels
+        if (present(title) .or. present(xlabel) .or. present(ylabel)) then
+            call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+        end if
+    end subroutine draw_pdf_axes_and_labels
+
+    subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame (placeholder for future implementation)
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        
+        ! For now, just draw 2D frame
+        call draw_pdf_frame(ctx)
+        
+        ! TODO: Implement proper 3D axes projection
+    end subroutine draw_pdf_3d_axes_frame
+
+    subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                  draw_x_grid, draw_y_grid)
+        !! Draw grid lines at tick positions
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x_ticks, num_y_ticks
+        logical, intent(in) :: draw_x_grid, draw_y_grid
+        
+        real(wp) :: old_line_width
+        integer :: i
+        character(len=128) :: line_cmd
+        
+        ! Save current line width
+        old_line_width = ctx%current_line_width
+        
+        ! Set grid line style (thin, gray)
+        call ctx%set_line_width(0.5_wp)
+        call ctx%set_color(0.8_wp, 0.8_wp, 0.8_wp)
+        
+        ! Draw vertical grid lines
+        if (draw_x_grid) then
+            do i = 2, num_x_ticks - 1  ! Skip first and last (frame edges)
+                write(line_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                    x_positions(i), PDF_MARGIN, &
+                    x_positions(i), PDF_MARGIN + PDF_PLOT_HEIGHT
+                ctx%stream_data = ctx%stream_data // trim(adjustl(line_cmd)) // new_line('a')
+            end do
+        end if
+        
+        ! Draw horizontal grid lines
+        if (draw_y_grid) then
+            do i = 2, num_y_ticks - 1  ! Skip first and last (frame edges)
+                write(line_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                    PDF_MARGIN, y_positions(i), &
+                    PDF_MARGIN + PDF_PLOT_WIDTH, y_positions(i)
+                ctx%stream_data = ctx%stream_data // trim(adjustl(line_cmd)) // new_line('a')
+            end do
+        end if
+        
+        ! Restore line style
+        call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%set_line_width(old_line_width)
+    end subroutine draw_pdf_grid_lines
+
+    subroutine draw_pdf_frame(ctx)
+        !! Draw the plot frame (bounding box)
+        type(pdf_context_core), intent(inout) :: ctx
+        character(len=256) :: frame_cmd
+        real(wp) :: x1, y1, x2, y2
+        
+        x1 = PDF_MARGIN
+        y1 = PDF_MARGIN
+        x2 = PDF_MARGIN + PDF_PLOT_WIDTH
+        y2 = PDF_MARGIN + PDF_PLOT_HEIGHT
+        
+        ! Draw rectangle
+        write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') &
+            x1, y1, PDF_PLOT_WIDTH, PDF_PLOT_HEIGHT
+        ctx%stream_data = ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
+    end subroutine draw_pdf_frame
+
+    subroutine draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
+        !! Draw tick marks on axes
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        integer, intent(in) :: num_x, num_y
+        
+        integer :: i
+        character(len=256) :: tick_cmd
+        real(wp) :: tick_length
+        
+        tick_length = PDF_TICK_SIZE
+        
+        ! Draw X-axis ticks (bottom)
+        do i = 1, num_x
+            write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                x_positions(i), PDF_MARGIN, &
+                x_positions(i), PDF_MARGIN - tick_length
+            ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
+        end do
+        
+        ! Draw Y-axis ticks (left)
+        do i = 1, num_y
+            write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                PDF_MARGIN, y_positions(i), &
+                PDF_MARGIN - tick_length, y_positions(i)
+            ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
+        end do
+    end subroutine draw_pdf_tick_marks
+
+    subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
+        !! Draw tick labels on axes
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        character(len=*), intent(in) :: x_labels(:), y_labels(:)
+        integer, intent(in) :: num_x, num_y
+        
+        integer :: i
+        real(wp) :: label_x, label_y
+        real(wp) :: x_offset, y_offset
+        
+        x_offset = 5.0_wp   ! Offset for X labels below ticks
+        y_offset = 10.0_wp  ! Offset for Y labels left of ticks
+        
+        ! Draw X-axis labels
+        do i = 1, num_x
+            label_x = x_positions(i) - 15.0_wp  ! Center horizontally
+            label_y = PDF_MARGIN - PDF_TICK_SIZE - x_offset - 10.0_wp
+            call draw_pdf_text(ctx, label_x, label_y, trim(x_labels(i)))
+        end do
+        
+        ! Draw Y-axis labels with overlap detection
+        call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
+                                                     PDF_MARGIN - PDF_TICK_SIZE - y_offset)
+    end subroutine draw_pdf_tick_labels
+
+    subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+        !! Draw plot title and axis labels
+        type(pdf_context_core), intent(inout) :: ctx
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        
+        real(wp) :: title_x, title_y
+        real(wp) :: xlabel_x, xlabel_y
+        real(wp) :: ylabel_x, ylabel_y
+        
+        ! Draw title (centered at top)
+        if (present(title)) then
+            if (len_trim(title) > 0) then
+                title_x = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp - &
+                         real(len_trim(title), wp) * 3.5_wp
+                title_y = PDF_MARGIN + PDF_PLOT_HEIGHT + 20.0_wp
+                call draw_pdf_text_bold(ctx, title_x, title_y, trim(title))
+            end if
+        end if
+        
+        ! Draw X-axis label (centered at bottom)
+        if (present(xlabel)) then
+            if (len_trim(xlabel) > 0) then
+                xlabel_x = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp - &
+                          real(len_trim(xlabel), wp) * 3.0_wp
+                xlabel_y = PDF_MARGIN - 35.0_wp
+                call draw_mixed_font_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
+            end if
+        end if
+        
+        ! Draw Y-axis label (rotated on left)
+        if (present(ylabel)) then
+            if (len_trim(ylabel) > 0) then
+                ylabel_x = PDF_MARGIN - 45.0_wp
+                ylabel_y = PDF_MARGIN + PDF_PLOT_HEIGHT * 0.5_wp - &
+                          real(len_trim(ylabel), wp) * 3.0_wp
+                call draw_rotated_mixed_font_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
+            end if
+        end if
+    end subroutine draw_pdf_title_and_labels
+
+    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left)
+        !! Draw Y-axis labels with overlap detection to prevent clustering
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: y_positions(:)
+        character(len=*), intent(in) :: y_labels(:)
+        integer, intent(in) :: num_y
+        real(wp), intent(in) :: plot_left
+        
+        real(wp) :: last_y_drawn
+        real(wp) :: min_spacing
+        integer :: i
+        real(wp) :: label_x, label_y
+        
+        min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
+        last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn
+        
+        do i = 1, num_y
+            label_y = y_positions(i) - 3.0_wp  ! Vertically center
+            
+            ! Only draw if sufficient spacing from last label
+            if (abs(label_y - last_y_drawn) >= min_spacing) then
+                label_x = plot_left - real(len_trim(y_labels(i)), wp) * 5.0_wp
+                call draw_pdf_text(ctx, label_x, label_y, trim(y_labels(i)))
+                last_y_drawn = label_y
+            end if
+        end do
+    end subroutine draw_pdf_y_labels_with_overlap_detection
+
+end module fortplot_pdf_axes

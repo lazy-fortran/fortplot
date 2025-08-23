@@ -358,6 +358,19 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] **Text annotations** (`text`, `annotate`) with multi-coordinate systems and typography
 
 
+## Module Architecture
+
+Fortplot uses a modular architecture with focused modules under 1,000 lines each. The facade pattern maintains 100% backward compatibility:
+
+```fortran
+! Your existing code works unchanged
+use fortplot_pdf, only: pdf_context, create_pdf_canvas
+type(pdf_context) :: ctx
+call create_pdf_canvas(ctx, "plot.pdf", 800, 600)
+```
+
+See [Module Architecture Guide](doc/module_architecture.md) for developer guidelines and refactoring details.
+
 ## Testing
 
 ### Run Tests
