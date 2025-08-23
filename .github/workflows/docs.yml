@@ -38,6 +38,10 @@ jobs:
         run: |
           pip install ford
           
+          # Install ffmpeg for animation generation
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          
           # Install fpm (Fortran Package Manager) - same version as CI
           wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
           chmod +x fpm-0.12.0-linux-x86_64-gcc-12
@@ -54,6 +58,10 @@ jobs:
           
           # Run all examples to generate outputs
           make example
+          
+          # Build and run special examples (including animation)
+          chmod +x scripts/compile_special_examples.sh
+          ./scripts/compile_special_examples.sh || true
           
           # Copy generated outputs to media directory (preserving structure)
           for dir in output/example/fortran/*/; do
