@@ -429,7 +429,7 @@ author_description: Contributors to the fortplot project
 github: https://github.com/lazy-fortran
 website: https://lazy-fortran.github.io/fortplot/
 page_dir: ./doc
-media_dir: ./doc/media
+media_dir: ./media
 example_dir: ./example/fortran
 src_dir: ./src
 exclude_dir: ./build
