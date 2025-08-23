@@ -418,3 +418,29 @@ time make example_matplotlib
 time make example_python
 1.35s user 0.17s system 97% cpu 1.562 total
 ```
+
+---
+project: fortplot
+project_github: https://github.com/lazy-fortran/fortplot
+project_website: https://lazy-fortran.github.io/fortplot/
+summary: Fortran-native plotting library inspired by matplotlib
+author: lazy-fortran contributors
+author_description: Contributors to the fortplot project
+github: https://github.com/lazy-fortran
+website: https://lazy-fortran.github.io/fortplot/
+page_dir: ./doc
+media_dir: ./doc/media
+example_dir: ./example/fortran
+src_dir: ./src
+exclude_dir: ./build
+exclude: fortplot_c_bindings.f90
+         fortplot_python.f90
+extensions: f90
+             f95
+             f03
+             f08
+source: true
+graph: false
+search: true
+favicon: ./media/logo.jpg
+---

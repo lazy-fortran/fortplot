@@ -10,6 +10,9 @@ The only remaining library included is `stb_truetype`.
 
 # Documentation
 
+## [Examples Gallery](example/index.md)
+Complete working examples with source code and generated plots.
+
 ## Developer Guides
 - [Testing Guide](testing_guide.md) - Testing procedures and warning control
 - [Windows CI Performance](windows_ci_performance.md) - Windows CI optimization and troubleshooting
