@@ -1,0 +1,550 @@
+module fortplot_matplotlib
+    !! Matplotlib-compatible API wrapper functions for fortplot
+    !! Provides global figure management and pyplot-style interface
+    !!
+    !! This module contains the matplotlib.pyplot-style wrapper functions 
+    !! that operate on a global figure instance, providing simple access
+    !! to plotting functionality without explicit figure management.
+    
+    use iso_fortran_env, only: wp => real64
+    use fortplot_figure_core, only: figure_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_global, only: fig => global_figure
+    use fortplot_plotting, only: add_text_annotation, add_arrow_annotation, add_scatter_2d, &
+                                figure_add_plot => add_plot, figure_add_contour => add_contour, &
+                                figure_add_contour_filled => add_contour_filled, &
+                                figure_add_pcolormesh => add_pcolormesh, &
+                                figure_streamplot => streamplot, figure_bar => bar, figure_barh => barh, &
+                                figure_hist => hist, figure_errorbar => errorbar, &
+                                figure_add_3d_plot => add_3d_plot, figure_add_surface => add_surface
+    use fortplot_rendering, only: figure_legend, render_show => show, figure_savefig => savefig
+    use fortplot_logging, only: log_error, log_warning, log_info
+    use fortplot_security, only: safe_launch_viewer, safe_remove_file
+    
+    implicit none
+    private
+    
+    ! Export pyplot-style functions
+    public :: plot, contour, contour_filled, pcolormesh, streamplot
+    public :: hist, histogram, scatter, errorbar, boxplot
+    public :: bar, barh
+    public :: text, annotate
+    public :: xlabel, ylabel, title, legend
+    public :: savefig, figure, subplot
+    public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
+    public :: add_3d_plot, add_surface, add_scatter
+    public :: set_xscale, set_yscale, xlim, ylim
+    public :: set_line_width, set_ydata
+    public :: show, show_viewer
+    public :: ensure_global_figure_initialized, get_global_figure
+    
+    ! Overloaded show interface
+    interface show
+        module procedure show_data, show_figure
+    end interface show
+    
+contains
+
+    subroutine ensure_global_figure_initialized()
+        !! Ensure global figure is initialized before use (matplotlib compatibility)
+        !! Auto-initializes with default dimensions if not already initialized
+        if (.not. allocated(fig%backend)) then
+            call fig%initialize()
+        end if
+    end subroutine ensure_global_figure_initialized
+    
+    function get_global_figure() result(global_fig)
+        !! Get reference to the global figure for testing access to arrow data
+        !! This allows tests to access fig%arrow_data without making fig public
+        type(figure_t), pointer :: global_fig
+        global_fig => fig
+    end function get_global_figure
+
+    subroutine plot(x, y, label, linestyle)
+        !! Add a line plot to the global figure (pyplot-fortran compatible)
+        real(8), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: label, linestyle
+        
+        call ensure_global_figure_initialized()
+        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
+    end subroutine plot
+
+    subroutine contour(x, y, z, levels, label)
+        !! Add a contour plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        real(8), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: label
+        
+        call ensure_global_figure_initialized()
+        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
+    end subroutine contour
+
+    subroutine contour_filled(x, y, z, levels, colormap, show_colorbar, label)
+        !! Add a filled contour plot with color levels to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        real(8), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, label=label)
+    end subroutine contour_filled
+
+    subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
+        !! Add a pseudocolor mesh plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: shading, colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call figure_add_pcolormesh(fig, x, y, z)
+    end subroutine pcolormesh
+
+    subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
+        !! Add a streamline plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: u, v
+        real(8), intent(in), optional :: density, linewidth_scale, arrow_scale
+        character(len=*), intent(in), optional :: colormap, label
+        
+        call ensure_global_figure_initialized()
+        call figure_streamplot(fig, x, y, u, v)
+    end subroutine streamplot
+
+    subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
+        !! Add error bars to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        real(8), intent(in), optional :: capsize
+        real(8), dimension(3), intent(in), optional :: color
+        
+        call ensure_global_figure_initialized()
+        call figure_errorbar(fig, x, y, xerr, yerr, label=label)
+    end subroutine errorbar
+
+    subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
+        !! Add vertical bar plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, height
+        real(8), intent(in), optional :: width
+        real(8), dimension(:), intent(in), optional :: bottom
+        character(len=*), intent(in), optional :: label, align
+        real(8), dimension(3), intent(in), optional :: color, edgecolor
+        
+        call ensure_global_figure_initialized()
+        call figure_bar(fig, x, height, label=label)
+    end subroutine bar
+
+    subroutine barh(y, width, height, left, label, color, edgecolor, align)
+        !! Add horizontal bar plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: y, width
+        real(8), intent(in), optional :: height
+        real(8), dimension(:), intent(in), optional :: left
+        character(len=*), intent(in), optional :: label, align
+        real(8), dimension(3), intent(in), optional :: color, edgecolor
+        
+        call ensure_global_figure_initialized()
+        call figure_barh(fig, y, width, label=label)
+    end subroutine barh
+
+    subroutine hist(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+        
+        call ensure_global_figure_initialized()
+        call figure_hist(fig, data, label=label)
+    end subroutine hist
+
+    subroutine histogram(data, bins, density, label, color)
+        !! Add histogram plot to the global figure (pyplot-style)
+        !! Alias for hist() subroutine
+        real(8), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(8), intent(in), optional :: color(3)
+        
+        call ensure_global_figure_initialized()
+        call figure_hist(fig, data, label=label)
+    end subroutine histogram
+
+    subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
+        !! Add a box plot to the global figure (matplotlib-style)
+        real(wp), dimension(:), intent(in) :: data
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+        
+        ! TODO: Implement boxplot method in figure_core
+        call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
+    end subroutine boxplot
+
+    subroutine scatter(x, y, s, c, label, marker, markersize, color, &
+                      colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (pyplot-style)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call add_scatter_2d(fig, x, y, label=label)
+    end subroutine scatter
+
+    subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
+                          colormap, vmin, vmax, show_colorbar)
+        !! Add enhanced scatter plot to the global figure (wrapper for consistency)
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call add_scatter_2d(fig, x, y, label=label)
+    end subroutine add_scatter
+
+    subroutine text(x, y, text_content, coord_type, font_size, rotation, alignment, has_bbox)
+        !! Add text annotation to the global figure (matplotlib-style)
+        real(8), intent(in) :: x, y
+        character(len=*), intent(in) :: text_content
+        integer, intent(in), optional :: coord_type
+        real(8), intent(in), optional :: font_size, rotation
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        
+        call ensure_global_figure_initialized()
+        call add_text_annotation(fig, x, y, text_content)
+    end subroutine text
+
+    subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
+                       font_size, alignment, has_bbox)
+        !! Add arrow annotation to the global figure (matplotlib-style)
+        character(len=*), intent(in) :: text_content
+        real(8), intent(in) :: xy(2), xytext(2)
+        integer, intent(in), optional :: xy_coord_type, xytext_coord_type
+        real(8), intent(in), optional :: font_size
+        character(len=*), intent(in), optional :: alignment
+        logical, intent(in), optional :: has_bbox
+        
+        call ensure_global_figure_initialized()
+        call add_arrow_annotation(fig, text_content, xy, xytext)
+    end subroutine annotate
+
+    ! Additional wrappers for add_* functions
+    subroutine add_plot(x, y, label, linestyle)
+        !! Add a line plot to the global figure (fortplot_api compatible)
+        real(8), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: label, linestyle
+        
+        call ensure_global_figure_initialized()
+        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
+    end subroutine add_plot
+
+    subroutine add_contour(x, y, z, levels, label)
+        !! Add a contour plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        real(8), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: label
+        
+        call ensure_global_figure_initialized()
+        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
+    end subroutine add_contour
+
+    subroutine add_contour_filled(x, y, z, levels, colormap, show_colorbar, label)
+        !! Add a filled contour plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        real(8), dimension(:), intent(in), optional :: levels
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call figure_add_contour_filled(fig, x, y, z, levels=levels, label=label)
+    end subroutine add_contour_filled
+
+    subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
+        !! Add a pseudocolor mesh plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: shading, colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        call ensure_global_figure_initialized()
+        call figure_add_pcolormesh(fig, x, y, z)
+    end subroutine add_pcolormesh
+
+    subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
+        !! Add error bars to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:), intent(in), optional :: xerr, yerr
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        real(8), intent(in), optional :: capsize
+        real(8), dimension(3), intent(in), optional :: color
+        
+        call ensure_global_figure_initialized()
+        call figure_errorbar(fig, x, y, xerr, yerr, label=label)
+    end subroutine add_errorbar
+
+    subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, markersize)
+        !! Add 3D line plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y, z
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+        real(8), intent(in), optional :: linewidth, markersize
+        
+        call ensure_global_figure_initialized()
+        call figure_add_3d_plot(fig, x, y, z, label=label)
+    end subroutine add_3d_plot
+
+    subroutine add_surface(x, y, z, colormap, show_colorbar, alpha, edgecolor, linewidth, label)
+        !! Add 3D surface plot to the global figure
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        real(8), intent(in), optional :: alpha, linewidth
+        real(8), dimension(3), intent(in), optional :: edgecolor
+        
+        call ensure_global_figure_initialized()
+        call figure_add_surface(fig, x, y, z, label=label)
+    end subroutine add_surface
+
+    ! Figure management functions
+    subroutine figure(num, figsize, dpi)
+        !! Initialize or select a figure (matplotlib-style)
+        integer, intent(in), optional :: num
+        real(8), dimension(2), intent(in), optional :: figsize
+        integer, intent(in), optional :: dpi
+        
+        integer :: fig_width, fig_height
+        
+        fig_width = 800
+        fig_height = 600
+        
+        if (present(figsize)) then
+            fig_width = int(figsize(1) * 100)
+            fig_height = int(figsize(2) * 100)
+        end if
+        
+        call fig%initialize(fig_width, fig_height)
+    end subroutine figure
+
+    subroutine subplot(nrows, ncols, index)
+        !! Create subplot (placeholder for future implementation)
+        integer, intent(in) :: nrows, ncols, index
+        
+        call log_warning("subplot() is not yet fully implemented")
+        call ensure_global_figure_initialized()
+    end subroutine subplot
+
+    ! Axis configuration functions
+    subroutine xlabel(label_text)
+        !! Set the x-axis label for the global figure
+        character(len=*), intent(in) :: label_text
+        
+        call ensure_global_figure_initialized()
+        call fig%set_xlabel(label_text)
+    end subroutine xlabel
+
+    subroutine ylabel(label_text)
+        !! Set the y-axis label for the global figure
+        character(len=*), intent(in) :: label_text
+        
+        call ensure_global_figure_initialized()
+        call fig%set_ylabel(label_text)
+    end subroutine ylabel
+
+    subroutine title(title_text)
+        !! Set the title for the global figure
+        character(len=*), intent(in) :: title_text
+        
+        call ensure_global_figure_initialized()
+        call fig%set_title(title_text)
+    end subroutine title
+
+    subroutine legend(position, box, fontsize)
+        !! Add legend to the global figure
+        character(len=*), intent(in), optional :: position
+        logical, intent(in), optional :: box
+        real(8), intent(in), optional :: fontsize
+        
+        call ensure_global_figure_initialized()
+        call figure_legend(fig, location=position)
+    end subroutine legend
+
+    subroutine xlim(xmin, xmax)
+        !! Set x-axis limits for the global figure
+        real(8), intent(in) :: xmin, xmax
+        
+        call ensure_global_figure_initialized()
+        call fig%set_xlim(xmin, xmax)
+    end subroutine xlim
+
+    subroutine ylim(ymin, ymax)
+        !! Set y-axis limits for the global figure
+        real(8), intent(in) :: ymin, ymax
+        
+        call ensure_global_figure_initialized()
+        call fig%set_ylim(ymin, ymax)
+    end subroutine ylim
+
+    subroutine set_xscale(scale)
+        !! Set x-axis scale type (placeholder for future implementation)
+        character(len=*), intent(in) :: scale
+        
+        call log_warning("set_xscale() is not yet fully implemented")
+    end subroutine set_xscale
+
+    subroutine set_yscale(scale)
+        !! Set y-axis scale type (placeholder for future implementation)
+        character(len=*), intent(in) :: scale
+        
+        call log_warning("set_yscale() is not yet fully implemented")
+    end subroutine set_yscale
+
+    subroutine set_line_width(width)
+        !! Set line width for subsequent plots (placeholder)
+        real(8), intent(in) :: width
+        
+        call log_warning("set_line_width() is not yet fully implemented")
+    end subroutine set_line_width
+
+    subroutine set_ydata(ydata)
+        !! Update y data for existing plot (placeholder)
+        real(8), dimension(:), intent(in) :: ydata
+        
+        call log_warning("set_ydata() is not yet fully implemented")
+    end subroutine set_ydata
+
+    ! Output functions
+    subroutine savefig(filename, dpi, transparent, bbox_inches)
+        !! Save the global figure to file
+        character(len=*), intent(in) :: filename
+        integer, intent(in), optional :: dpi
+        logical, intent(in), optional :: transparent
+        character(len=*), intent(in), optional :: bbox_inches
+        
+        call ensure_global_figure_initialized()
+        call figure_savefig(fig, filename)
+    end subroutine savefig
+
+    ! Display functions
+    subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
+        !! Display a line plot in the terminal using ASCII graphics
+        real(8), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: label, title_text, xlabel_text, ylabel_text
+        logical, intent(in), optional :: blocking
+        
+        call fig%initialize()
+        
+        if (present(title_text)) call fig%set_title(title_text)
+        if (present(xlabel_text)) call fig%set_xlabel(xlabel_text)
+        if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
+        
+        call figure_add_plot(fig, x, y, label=label)
+        call render_show(fig)
+    end subroutine show_data
+
+    subroutine show_figure(blocking)
+        !! Display the global figure intelligently
+        logical, intent(in), optional :: blocking
+        
+        call ensure_global_figure_initialized()
+        if (is_gui_available()) then
+            call show_viewer_implementation(blocking=blocking)
+        else
+            call render_show(fig)
+        end if
+    end subroutine show_figure
+
+    subroutine show_viewer(blocking)
+        !! Display the current figure in the system's default viewer
+        logical, intent(in), optional :: blocking
+        
+        call ensure_global_figure_initialized()
+        call show_viewer_implementation(blocking=blocking)
+    end subroutine show_viewer
+
+    ! Internal utility functions
+    function is_gui_available() result(gui_available)
+        !! Check if GUI display is available for viewer output
+        logical :: gui_available
+        character(len=256) :: display_var
+        integer :: status
+        
+        gui_available = .false.
+        
+        call get_environment_variable('DISPLAY', display_var, status=status)
+        if (status == 0 .and. len_trim(display_var) > 0) then
+            gui_available = .true.
+        end if
+    end function is_gui_available
+
+    subroutine show_viewer_implementation(blocking)
+        !! Internal implementation for showing plot in system viewer
+        use iso_fortran_env, only: int64
+        
+        logical, intent(in), optional :: blocking
+        logical :: do_block, success
+        character(len=256) :: temp_filename
+        character(len=32) :: timestamp
+        integer :: stat
+        integer(int64) :: time_val
+        
+        do_block = .false.
+        if (present(blocking)) do_block = blocking
+        
+        call system_clock(time_val)
+        write(timestamp, '(I0)') time_val
+        
+        call get_environment_variable('WINDIR', temp_filename, status=stat)
+        if (stat == 0 .and. len_trim(temp_filename) > 0) then
+            temp_filename = 'fortplot_' // trim(timestamp) // '.png'
+        else
+            temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.png'
+        end if
+        
+        call figure_savefig(fig, temp_filename)
+        call safe_launch_viewer(temp_filename, success)
+        
+        if (success) then
+            stat = 0
+        else
+            stat = 1
+        end if
+        
+        if (stat /= 0) then
+            call log_warning('Failed to open plot viewer. Plot saved to: ' // trim(temp_filename))
+            call log_info('Please open the file manually with your preferred PDF viewer.')
+        else
+            call log_info('Plot opened in default viewer. File: ' // trim(temp_filename))
+        end if
+        
+        if (do_block) then
+            call log_info('Press Enter to continue and clean up temporary file...')
+            read(*,*)
+            
+            call safe_remove_file(temp_filename, success)
+            if (.not. success) then
+                call log_warning('Could not remove temporary file: ' // trim(temp_filename))
+            end if
+        else
+            call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
+        end if
+    end subroutine show_viewer_implementation
+
+end module fortplot_matplotlib

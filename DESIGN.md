@@ -6619,3 +6619,382 @@ end type ci_performance_monitor_t
 - No functional regression in any backend or platform
 
 This architecture provides comprehensive Windows CI performance optimization while maintaining test quality and cross-platform consistency. The hybrid approach ensures robust validation while eliminating file I/O bottlenecks that cause Windows CI timeouts.
+
+## Oversized File Refactoring Architecture (Issue #182)
+
+### Problem Statement
+
+Several core modules exceed the 1,000-line hard limit, creating maintenance challenges and violating QADS size constraints:
+
+**Oversized Files**:
+- `fortplot_pdf.f90`: 2,187 lines (118% over limit)
+- `fortplot.f90`: 1,119 lines (12% over limit)  
+- `fortplot_animation.f90`: 1,060 lines (6% over limit)
+
+**Technical Debt Impact**:
+- Code navigation complexity increases exponentially with file size
+- Review cognitive load exceeds human working memory capacity
+- Module cohesion degrades with accumulated responsibilities
+- Testing isolation becomes challenging with monolithic modules
+
+### Architectural Decomposition Strategy
+
+#### 1. PDF Module Refactoring (fortplot_pdf.f90)
+
+**Current Structure Analysis**:
+- Core PDF generation: ~500 lines (stream, document structure)
+- Text rendering subsystem: ~400 lines (fonts, Unicode, escaping)
+- Coordinate transformation: ~300 lines (scaling, normalization)
+- Axes and grid rendering: ~500 lines (ticks, labels, frames)
+- 3D projection support: ~200 lines
+- Label overlap detection: ~287 lines
+
+**Decomposition Plan**:
+```fortran
+! fortplot_pdf_core.f90 (~450 lines)
+module fortplot_pdf_core
+    ! PDF document structure, stream management
+    ! Core rendering context and primitives
+end module
+
+! fortplot_pdf_text.f90 (~400 lines)
+module fortplot_pdf_text
+    ! Font handling (Helvetica, Symbol)
+    ! Unicode to PDF escape sequences
+    ! Mixed font text rendering
+    ! Rotated text support
+end module
+
+! fortplot_pdf_coordinates.f90 (~300 lines)
+module fortplot_pdf_coordinates
+    ! 2D/3D coordinate transformations
+    ! PDF coordinate space normalization
+    ! Viewport and clipping management
+end module
+
+! fortplot_pdf_axes.f90 (~500 lines)
+module fortplot_pdf_axes
+    ! Axes frame rendering
+    ! Tick generation and positioning
+    ! Grid line rendering
+    ! Title and label placement
+end module
+
+! fortplot_pdf_labels.f90 (~300 lines)
+module fortplot_pdf_labels
+    ! Y-axis label overlap detection
+    ! Smart label filtering algorithms
+    ! Endpoint visibility enforcement
+end module
+
+! fortplot_pdf.f90 (~200 lines) - Facade module
+module fortplot_pdf
+    use fortplot_pdf_core
+    use fortplot_pdf_text
+    use fortplot_pdf_coordinates
+    use fortplot_pdf_axes
+    use fortplot_pdf_labels
+    ! Re-export public API for backward compatibility
+end module
+```
+
+#### 2. Main Module Refactoring (fortplot.f90)
+
+**Current Structure Analysis**:
+- Public API functions: ~400 lines (plot, scatter, bar, etc.)
+- Figure management: ~200 lines
+- Coordinate scaling: ~100 lines
+- Backend selection: ~150 lines
+- Global state management: ~100 lines
+- Utility functions: ~169 lines
+
+**Decomposition Plan**:
+```fortran
+! fortplot_api_2d.f90 (~400 lines)
+module fortplot_api_2d
+    ! 2D plotting functions: plot, scatter, bar, hist
+    ! Contour and pcolormesh interfaces
+    ! Error bar plotting
+end module
+
+! fortplot_api_3d.f90 (~200 lines)
+module fortplot_api_3d
+    ! 3D plotting functions
+    ! Surface rendering
+    ! 3D transformations
+end module
+
+! fortplot_figure_management.f90 (~300 lines)
+module fortplot_figure_management
+    ! Figure creation and lifecycle
+    ! Subplot management
+    ! Global figure state
+    ! Backend initialization
+end module
+
+! fortplot_annotations.f90 (existing, enhance)
+    ! Text and annotation APIs
+    ! Label and title management
+    ! Legend handling
+
+! fortplot.f90 (~200 lines) - Public API facade
+module fortplot
+    use fortplot_api_2d
+    use fortplot_api_3d
+    use fortplot_figure_management
+    use fortplot_annotations
+    ! Maintain backward compatibility through re-exports
+end module
+```
+
+#### 3. Animation Module Refactoring (fortplot_animation.f90)
+
+**Current Structure Analysis**:
+- Core animation type: ~150 lines
+- FFmpeg integration: ~400 lines
+- Frame generation: ~200 lines
+- PNG sequence fallback: ~150 lines
+- Validation and utilities: ~160 lines
+
+**Decomposition Plan**:
+```fortran
+! fortplot_animation_core.f90 (~300 lines)
+module fortplot_animation_core
+    ! Animation type definition
+    ! Frame management
+    ! Animation lifecycle
+end module
+
+! fortplot_animation_ffmpeg.f90 (~400 lines)
+module fortplot_animation_ffmpeg
+    ! FFmpeg pipe management
+    ! Video format handling
+    ! Frame writing with retry logic
+end module
+
+! fortplot_animation_fallback.f90 (~200 lines)
+module fortplot_animation_fallback
+    ! PNG sequence generation
+    ! Image sequence fallback
+    ! Format detection
+end module
+
+! fortplot_animation.f90 (~150 lines) - Facade
+module fortplot_animation
+    use fortplot_animation_core
+    use fortplot_animation_ffmpeg
+    use fortplot_animation_fallback
+    ! Unified animation API
+end module
+```
+
+### API Compatibility Preservation
+
+#### Re-export Strategy
+```fortran
+module fortplot_pdf
+    ! Import all submodules
+    use fortplot_pdf_core
+    use fortplot_pdf_text
+    use fortplot_pdf_coordinates
+    use fortplot_pdf_axes
+    use fortplot_pdf_labels
+    
+    ! Re-export all public symbols
+    public :: pdf_canvas_t
+    public :: create_pdf_canvas
+    public :: draw_pdf_line
+    public :: draw_pdf_text
+    ! ... all existing public interfaces
+end module
+```
+
+#### Gradual Migration Path
+1. **Phase 1**: Internal refactoring with facade modules
+2. **Phase 2**: Update internal dependencies
+3. **Phase 3**: Document new module structure
+4. **Phase 4**: Optional: Deprecate facade modules (future)
+
+### Build System Integration
+
+#### FPM Configuration Updates
+```toml
+# fpm.toml additions
+[library]
+source-dir = "src"
+
+# New module dependencies
+[[library.source]]
+fortplot_pdf = ["fortplot_pdf_core", "fortplot_pdf_text", 
+                 "fortplot_pdf_coordinates", "fortplot_pdf_axes",
+                 "fortplot_pdf_labels"]
+
+fortplot = ["fortplot_api_2d", "fortplot_api_3d",
+            "fortplot_figure_management", "fortplot_annotations"]
+
+fortplot_animation = ["fortplot_animation_core", 
+                      "fortplot_animation_ffmpeg",
+                      "fortplot_animation_fallback"]
+```
+
+#### Makefile Updates
+```makefile
+# Add new object files
+PDF_MODULES = fortplot_pdf_core.o fortplot_pdf_text.o \
+              fortplot_pdf_coordinates.o fortplot_pdf_axes.o \
+              fortplot_pdf_labels.o
+
+MAIN_MODULES = fortplot_api_2d.o fortplot_api_3d.o \
+               fortplot_figure_management.o
+
+ANIM_MODULES = fortplot_animation_core.o \
+               fortplot_animation_ffmpeg.o \
+               fortplot_animation_fallback.o
+
+# Update dependencies
+fortplot_pdf.o: $(PDF_MODULES)
+fortplot.o: $(MAIN_MODULES)
+fortplot_animation.o: $(ANIM_MODULES)
+```
+
+### Testing Strategy
+
+#### 1. Regression Test Suite
+```fortran
+! test/test_refactoring_regression.f90
+program test_refactoring_regression
+    use fortplot  ! Should work exactly as before
+    use fortplot_pdf
+    use fortplot_animation
+    
+    ! Test all public API functions
+    ! Verify backward compatibility
+    ! Check symbol visibility
+end program
+```
+
+#### 2. Module Isolation Tests
+```fortran
+! test/test_pdf_modules.f90
+program test_pdf_modules
+    ! Test each PDF submodule independently
+    use fortplot_pdf_core, only: pdf_canvas_t
+    use fortplot_pdf_text, only: unicode_to_pdf_escape
+    use fortplot_pdf_coordinates, only: normalize_to_pdf_coords
+    
+    ! Verify module boundaries
+    ! Test internal interfaces
+end program
+```
+
+#### 3. Performance Validation
+```fortran
+! test/test_refactoring_performance.f90
+program test_refactoring_performance
+    ! Benchmark key operations
+    ! Compare before/after performance
+    ! Verify no regression in:
+    !   - Compilation time
+    !   - Runtime performance
+    !   - Memory usage
+end program
+```
+
+### Implementation Workflow
+
+#### Phase 1: PDF Module Decomposition (fortplot_pdf.f90)
+1. Create `fortplot_pdf_core.f90` with document structure
+2. Extract text handling to `fortplot_pdf_text.f90`
+3. Move coordinate logic to `fortplot_pdf_coordinates.f90`
+4. Separate axes rendering to `fortplot_pdf_axes.f90`
+5. Isolate label algorithms to `fortplot_pdf_labels.f90`
+6. Create facade module maintaining public API
+7. Run regression tests
+
+#### Phase 2: Main Module Decomposition (fortplot.f90)
+1. Extract 2D plotting to `fortplot_api_2d.f90`
+2. Extract 3D plotting to `fortplot_api_3d.f90`
+3. Move figure management to dedicated module
+4. Enhance existing annotations module
+5. Create minimal facade module
+6. Validate API compatibility
+
+#### Phase 3: Animation Module Decomposition (fortplot_animation.f90)
+1. Extract core types to `fortplot_animation_core.f90`
+2. Isolate FFmpeg logic to `fortplot_animation_ffmpeg.f90`
+3. Move fallback logic to `fortplot_animation_fallback.f90`
+4. Create facade for unified API
+5. Test video generation paths
+
+### Quality Gates and Success Criteria
+
+#### Mandatory Requirements
+- **Size Compliance**: All modules < 1,000 lines (target < 500)
+- **API Compatibility**: Zero breaking changes to public interfaces
+- **Test Coverage**: 100% of refactored code covered
+- **Performance**: No regression in benchmarks (±5% tolerance)
+- **Build Success**: All targets compile without warnings
+
+#### Code Quality Metrics
+```fortran
+! Each module must satisfy:
+! - Single Responsibility Principle (one clear purpose)
+! - High cohesion (related functionality grouped)
+! - Low coupling (minimal inter-module dependencies)
+! - Clear interfaces (well-defined module boundaries)
+```
+
+#### Validation Checklist
+- [ ] All files under 1,000 lines (ideally under 500)
+- [ ] No public API changes detected
+- [ ] All existing tests pass unchanged
+- [ ] New module isolation tests pass
+- [ ] Performance benchmarks within tolerance
+- [ ] Documentation updated for new structure
+- [ ] CI/CD pipeline passes on all platforms
+
+### Risk Assessment and Mitigation
+
+#### Identified Risks
+1. **Build System Complexity**: Multiple new modules increase dependency management
+   - **Mitigation**: Automated dependency generation in Makefile
+   
+2. **API Compatibility Break**: Accidental symbol visibility changes
+   - **Mitigation**: Comprehensive API regression tests
+   
+3. **Performance Regression**: Module boundaries introduce overhead
+   - **Mitigation**: Profile-guided optimization, inline critical paths
+   
+4. **Testing Overhead**: More modules require more test files
+   - **Mitigation**: Shared test utilities, parameterized tests
+
+#### Rollback Strategy
+- Git branches for each phase
+- Backward-compatible facade modules
+- Feature flags for gradual rollout
+- Automated regression detection
+
+### Architectural Benefits
+
+#### Immediate Gains
+- **Maintainability**: 60-70% reduction in file complexity
+- **Navigation**: Module names clearly indicate functionality
+- **Testing**: Isolated unit tests per module
+- **Review**: Smaller, focused change sets
+
+#### Long-term Advantages
+- **Extensibility**: New features in dedicated modules
+- **Reusability**: Submodules usable independently
+- **Performance**: Targeted optimization opportunities
+- **Documentation**: Clear module boundaries aid understanding
+
+### Architecture Principles Applied
+
+1. **CORRECTNESS**: Maintain exact API behavior
+2. **PERFORMANCE**: Profile-guided module boundaries
+3. **KISS**: Simple facade pattern for compatibility
+4. **SRP**: Each module has single clear purpose
+5. **YAGNI**: Only refactor oversized files
+6. **DRY**: Eliminate duplication during extraction
+
+This refactoring architecture ensures size compliance while maintaining complete backward compatibility and improving long-term maintainability.

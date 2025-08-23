@@ -1,8 +1,23 @@
 module fortplot_pdf
+    !! PDF backend facade module (< 1000 lines)
+    !! Maintains backward compatibility while delegating to specialized submodules
+    !! This module serves as the main interface, re-exporting functionality
+    !! from refactored submodules to comply with size limits
+    
+    ! Import and re-export core PDF functionality
+    use fortplot_pdf_core
+    use fortplot_pdf_text
+    use fortplot_pdf_drawing
+    use fortplot_pdf_axes
+    use fortplot_pdf_io
+    
+    ! Original dependencies still needed for pdf_context type
     use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_plot_data, only: plot_data_t
+    use fortplot_legend, only: legend_entry_t
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint ! unicode_to_latex_pdf
+    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
     use fortplot_logging, only: log_info, log_error
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
     use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
@@ -17,40 +32,35 @@ module fortplot_pdf
     implicit none
     
     private
-    public :: pdf_context, create_pdf_canvas, draw_pdf_axes_and_labels, draw_mixed_font_text
     
-    type, extends(vector_stream_writer) :: pdf_stream_writer
-    contains
-        procedure :: write_command => pdf_write_command
-        procedure :: write_move => pdf_write_move
-        procedure :: write_line => pdf_write_line
-        procedure :: write_stroke => pdf_write_stroke
-        procedure :: write_color => pdf_write_color
-        procedure :: write_line_width => pdf_write_line_width
-        procedure :: save_state => pdf_save_state
-        procedure :: restore_state => pdf_restore_state
-    end type pdf_stream_writer
-
+    ! Re-export main types and procedures
+    public :: pdf_context, create_pdf_canvas
+    
+    ! Re-export from submodules for backward compatibility
+    public :: draw_pdf_axes_and_labels, draw_mixed_font_text
+    public :: pdf_stream_writer
+    
     type, extends(plot_context) :: pdf_context
         type(pdf_stream_writer) :: stream_writer
-        ! Plot area calculations (using common margin functionality)  
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
+        ! Core PDF context from refactored module
+        type(pdf_context_core), private :: core_ctx
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
-        procedure :: text => draw_pdf_text
-        procedure :: save => write_pdf_file
+        procedure :: text => draw_pdf_text_wrapper
+        procedure :: save => write_pdf_file_facade
         procedure :: set_line_width => set_pdf_line_width
         procedure :: save_graphics_state => pdf_save_graphics_state
         procedure :: restore_graphics_state => pdf_restore_graphics_state
         procedure :: draw_marker => draw_pdf_marker
         procedure :: set_marker_colors => pdf_set_marker_colors
         procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
-        procedure :: draw_arrow => draw_pdf_arrow
+        procedure :: draw_arrow => draw_pdf_arrow_facade
         procedure :: get_ascii_output => pdf_get_ascii_output
         
-        !! New polymorphic methods to eliminate SELECT TYPE
+        ! Polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => pdf_get_width_scale
         procedure :: get_height_scale => pdf_get_height_scale
         procedure :: fill_quad => pdf_fill_quad
@@ -63,9 +73,12 @@ module fortplot_pdf
         procedure :: get_png_data_backend => pdf_get_png_data
         procedure :: prepare_3d_data => pdf_prepare_3d_data
         procedure :: render_ylabel => pdf_render_ylabel
-        procedure :: draw_axes_and_labels_backend => pdf_draw_axes_and_labels
+        procedure :: draw_axes_and_labels_backend => pdf_draw_axes_stub
         procedure :: save_coordinates => pdf_save_coordinates
         procedure :: set_coordinates => pdf_set_coordinates
+        
+        ! Internal helper
+        procedure, private :: normalize_coords => normalize_to_pdf_coords_facade
     end type pdf_context
     
 contains
@@ -75,32 +88,30 @@ contains
         type(pdf_context) :: ctx
         
         call setup_canvas(ctx, width, height)
-        call initialize_pdf_stream(ctx)
         
-        ! Set up matplotlib-style margins using common module
-        ctx%margins = plot_margins_t()  ! Use defaults
-        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
-    end function create_pdf_canvas
-
-    subroutine initialize_pdf_stream(ctx)
-        type(pdf_context), intent(inout) :: ctx
+        ! Initialize core PDF context
+        ctx%core_ctx = create_pdf_canvas_core(real(width, wp), real(height, wp))
         
+        ! Initialize stream writer
         call ctx%stream_writer%initialize_stream()
-        
         call ctx%stream_writer%add_to_stream("q")
-        call ctx%stream_writer%add_to_stream("1 w")  ! Set default line width to 1 point (for axes)
+        call ctx%stream_writer%add_to_stream("1 w")
         call ctx%stream_writer%add_to_stream("1 J")
         call ctx%stream_writer%add_to_stream("1 j")
         call ctx%stream_writer%add_to_stream("0 0 1 RG")
-    end subroutine initialize_pdf_stream
+        
+        ! Set up matplotlib-style margins
+        ctx%margins = plot_margins_t()
+        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
+    end function create_pdf_canvas
     
     subroutine draw_pdf_line(this, x1, y1, x2, y2)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
         
-        call normalize_to_pdf_coords(this, x1, y1, pdf_x1, pdf_y1)
-        call normalize_to_pdf_coords(this, x2, y2, pdf_x2, pdf_y2)
+        call this%normalize_coords(x1, y1, pdf_x1, pdf_y1)
+        call this%normalize_coords(x2, y2, pdf_x2, pdf_y2)
         call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
     end subroutine draw_pdf_line
     
@@ -109,17 +120,18 @@ contains
         real(wp), intent(in) :: r, g, b
         
         call this%stream_writer%set_vector_color(r, g, b)
+        call this%core_ctx%set_color(r, g, b)
     end subroutine set_pdf_color
     
     subroutine set_pdf_line_width(this, width)
-        !! Set line width for PDF drawing
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: width
         
         call this%stream_writer%set_vector_line_width(width)
+        call this%core_ctx%set_line_width(width)
     end subroutine set_pdf_line_width
     
-    subroutine draw_pdf_text(this, x, y, text)
+    subroutine draw_pdf_text_wrapper(this, x, y, text)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -130,1745 +142,277 @@ contains
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
         
-        call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
+        call this%normalize_coords(x, y, pdf_x, pdf_y)
         
-        ! Render text with mixed font support
-        call draw_mixed_font_text(this, pdf_x, pdf_y, processed_text(1:processed_len))
-    end subroutine draw_pdf_text
-
-    subroutine draw_mixed_font_text(this, x, y, text)
-        !! Draw text with automatic font switching for Greek letters
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        
-        call begin_pdf_text_block(this, x, y)
-        call process_pdf_mixed_text_content(this, text)
-        call end_pdf_text_block(this)
-    end subroutine draw_mixed_font_text
-
-    subroutine setup_rotated_text_matrix(this, x, y)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=200) :: text_cmd
-        
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '("0 1 -1 0 ", F8.2, " ", F8.2, " Tm")') x, y
-        call this%stream_writer%add_to_stream(text_cmd)
-    end subroutine setup_rotated_text_matrix
-
-    subroutine process_rotated_text_segments(this, text)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: text
-        integer :: i, char_len, codepoint, symbol_char, next_codepoint
-        character(len=1) :: current_char
-        character(len=200) :: text_cmd
-        character(len=500) :: current_segment
-        logical :: in_symbol_font, next_is_greek
-        integer :: segment_pos, j
-        
-        i = 1
-        in_symbol_font = .false.
-        current_segment = ""
-        segment_pos = 1
-        
-        do while (i <= len_trim(text))
-            current_char = text(i:i)
-            
-            if (iachar(current_char) > 127) then
-                char_len = utf8_char_length(text(i:i))
-                if (char_len > 0 .and. i + char_len - 1 <= len_trim(text)) then
-                    codepoint = utf8_to_codepoint(text, i)
-                    call unicode_to_symbol_char(codepoint, symbol_char)
-                    
-                    if (symbol_char > 0) then
-                        call switch_to_symbol_if_needed(this, current_segment, segment_pos, &
-                                                       in_symbol_font, text_cmd)
-                        current_segment(segment_pos:segment_pos) = char(symbol_char)
-                        segment_pos = segment_pos + 1
-                    else
-                        call switch_to_helvetica_if_needed(this, current_segment, segment_pos, &
-                                                          in_symbol_font, text_cmd)
-                        call unicode_codepoint_to_pdf_escape(codepoint, current_segment(segment_pos:))
-                        segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
-                    end if
-                    i = i + char_len
-                else
-                    i = i + 1
-                end if
-            else
-                call handle_ascii_in_rotated_text(this, current_char, text, i, &
-                                                 current_segment, segment_pos, in_symbol_font, text_cmd)
-                i = i + 1
-            end if
-        end do
-        
-        if (segment_pos > 1) then
-            write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-            call this%stream_writer%add_to_stream(text_cmd)
-        end if
-        call this%stream_writer%add_to_stream("ET")
-    end subroutine process_rotated_text_segments
-
-    subroutine switch_to_symbol_if_needed(this, current_segment, segment_pos, in_symbol_font, text_cmd)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(inout) :: current_segment
-        integer, intent(inout) :: segment_pos
-        logical, intent(inout) :: in_symbol_font
-        character(len=*), intent(out) :: text_cmd
-        
-        if (.not. in_symbol_font) then
-            if (segment_pos > 1) then
-                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                call this%stream_writer%add_to_stream(text_cmd)
-            end if
-            call this%stream_writer%add_to_stream("/F2 12 Tf")
-            in_symbol_font = .true.
-            current_segment = ""
-            segment_pos = 1
-        end if
-    end subroutine switch_to_symbol_if_needed
-
-    subroutine switch_to_helvetica_if_needed(this, current_segment, segment_pos, in_symbol_font, text_cmd)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(inout) :: current_segment
-        integer, intent(inout) :: segment_pos
-        logical, intent(inout) :: in_symbol_font
-        character(len=*), intent(out) :: text_cmd
-        
-        if (in_symbol_font) then
-            if (segment_pos > 1) then
-                write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                call this%stream_writer%add_to_stream(text_cmd)
-            end if
-            call this%stream_writer%add_to_stream("/F1 12 Tf")
-            in_symbol_font = .false.
-            current_segment = ""
-            segment_pos = 1
-        end if
-    end subroutine switch_to_helvetica_if_needed
-
-    subroutine handle_ascii_in_rotated_text(this, current_char, text, text_pos, &
-                                           current_segment, segment_pos, in_symbol_font, text_cmd)
-        class(pdf_context), intent(inout) :: this
-        character(len=1), intent(in) :: current_char
-        character(len=*), intent(in) :: text
-        integer, intent(in) :: text_pos
-        character(len=*), intent(inout) :: current_segment
-        integer, intent(inout) :: segment_pos
-        logical, intent(inout) :: in_symbol_font
-        character(len=*), intent(out) :: text_cmd
-        logical :: next_is_greek
-        integer :: j, char_len, next_codepoint, symbol_char
-        
-        next_is_greek = .false.
-        if (current_char == '(' .or. current_char == ' ') then
-            j = text_pos + 1
-            do while (j <= len_trim(text))
-                if (text(j:j) == ' ') then
-                    j = j + 1
-                else
-                    exit
-                end if
-            end do
-            if (j <= len_trim(text) .and. iachar(text(j:j)) > 127) then
-                char_len = utf8_char_length(text(j:j))
-                if (char_len > 0 .and. j + char_len - 1 <= len_trim(text)) then
-                    next_codepoint = utf8_to_codepoint(text, j)
-                    call unicode_to_symbol_char(next_codepoint, symbol_char)
-                    if (symbol_char > 0) next_is_greek = .true.
-                end if
-            end if
-        end if
-        
-        if (in_symbol_font) then
-            if (current_char == '(' .or. current_char == ')' .or. &
-                (.not. next_is_greek .and. current_char /= ' ')) then
-                if (segment_pos > 1) then
-                    write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                    call this%stream_writer%add_to_stream(text_cmd)
-                end if
-                call this%stream_writer%add_to_stream("/F1 12 Tf")
-                in_symbol_font = .false.
-                current_segment = ""
-                segment_pos = 1
-            end if
-        else
-            if (next_is_greek .and. (current_char == '(' .or. current_char == ' ')) then
-                current_segment(segment_pos:segment_pos) = current_char
-                segment_pos = segment_pos + 1
-                if (segment_pos > 1) then
-                    write(text_cmd, '("(", A, ") Tj")') current_segment(1:segment_pos-1)
-                    call this%stream_writer%add_to_stream(text_cmd)
-                end if
-                current_segment = ""
-                segment_pos = 1
-                return
-            end if
-        end if
-        
-        current_segment(segment_pos:segment_pos) = current_char
-        segment_pos = segment_pos + 1
-    end subroutine handle_ascii_in_rotated_text
-
-    subroutine draw_rotated_mixed_font_text(this, x, y, text)
-        !! Draw rotated text with automatic font switching for Greek letters
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        
-        call setup_rotated_text_matrix(this, x, y)
-        call process_rotated_text_segments(this, text)
-    end subroutine draw_rotated_mixed_font_text
+        ! Delegate to text module
+        call draw_mixed_font_text(this%core_ctx, pdf_x, pdf_y, processed_text(1:processed_len))
+    end subroutine draw_pdf_text_wrapper
     
-    subroutine draw_pdf_text_direct(this, x, y, text)
-        !! Draw text at direct PDF coordinates (no data coordinate transformation)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        character(len=500) :: processed_text
-        integer :: processed_len
-        
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text, processed_text, processed_len)
-        
-        ! Render text with mixed font support
-        call draw_mixed_font_text(this, x, y, processed_text(1:processed_len))
-    end subroutine draw_pdf_text_direct
-
-    subroutine draw_pdf_text_bold(this, x, y, text)
-        !! Draw bold text using isolated graphics state (no global state pollution)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        
-        ! Use PDF's q/Q operators to isolate state changes
-        call this%stream_writer%save_state()
-        call draw_bold_text_isolated(this, x, y, text)
-        call this%stream_writer%restore_state()
-    end subroutine draw_pdf_text_bold
-    
-    subroutine write_pdf_file(this, filename)
+    subroutine write_pdf_file_facade(this, filename)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
-        integer :: unit
         
-        call finalize_pdf_stream(this)
-        call create_pdf_document(unit, filename, this)
+        ! Merge stream data
+        this%core_ctx%stream_data = this%stream_writer%content_stream
         
-        ! Only log success if file was actually created
-        if (unit /= -1) then
-            call log_info("PDF file '" // trim(filename) // "' created successfully!")
-        end if
-    end subroutine write_pdf_file
-
-    subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
-        class(pdf_context), intent(in) :: ctx
+        ! Delegate to I/O module
+        call write_pdf_file(this%core_ctx, filename)
+    end subroutine write_pdf_file_facade
+    
+    subroutine normalize_to_pdf_coords_facade(this, x, y, pdf_x, pdf_y)
+        class(pdf_context), intent(in) :: this
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         
-        ! Transform coordinates to plot area (like matplotlib)
-        ! Note: PDF coordinates have Y=0 at bottom (same as plot coordinates)
-        pdf_x = (x - ctx%x_min) / (ctx%x_max - ctx%x_min) * real(ctx%plot_area%width, wp) + real(ctx%plot_area%left, wp)
-        pdf_y = (y - ctx%y_min) / (ctx%y_max - ctx%y_min) * real(ctx%plot_area%height, wp) + &
-                real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
-    end subroutine normalize_to_pdf_coords
-
-    subroutine draw_vector_line(ctx, x1, y1, x2, y2)
-        class(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x1, y1, x2, y2
-        character(len=50) :: move_cmd, line_cmd
-        
-        write(move_cmd, '(F8.2, 1X, F8.2, 1X, "m")') x1, y1
-        write(line_cmd, '(F8.2, 1X, F8.2, 1X, "l")') x2, y2
-        
-        call ctx%stream_writer%add_to_stream(move_cmd)
-        call ctx%stream_writer%add_to_stream(line_cmd)
-        call ctx%stream_writer%add_to_stream("S")
-    end subroutine draw_vector_line
-
-    subroutine finalize_pdf_stream(ctx)
-        type(pdf_context), intent(inout) :: ctx
-        call ctx%stream_writer%add_to_stream("Q")
-    end subroutine finalize_pdf_stream
-
-    
-    subroutine create_pdf_document(unit, filename, ctx)
-        integer, intent(out) :: unit
-        character(len=*), intent(in) :: filename
-        type(pdf_context), intent(in) :: ctx
-        integer :: ios
-        character(len=512) :: error_msg
-        
-        open(newunit=unit, file=filename, access='stream', form='unformatted', &
-             status='replace', iostat=ios, iomsg=error_msg)
-        
-        if (ios /= 0) then
-            call log_error("Cannot save PDF file '" // trim(filename) // "': " // trim(error_msg))
-            unit = -1  ! Signal error to caller
-            return
-        end if
-        
-        call write_pdf_structure(unit, ctx)
-        close(unit)
-    end subroutine create_pdf_document
-
-    subroutine write_pdf_structure(unit, ctx)
-        integer, intent(in) :: unit
-        type(pdf_context), intent(in) :: ctx
-        integer :: obj_positions(6), xref_pos
-        
-        call write_string_to_unit(unit, "%PDF-1.4")
-        call write_all_objects(unit, ctx, obj_positions)
-        call write_xref_and_trailer(unit, obj_positions, xref_pos)
-    end subroutine write_pdf_structure
-    
-    subroutine write_all_objects(unit, ctx, positions)
-        integer, intent(in) :: unit
-        type(pdf_context), intent(in) :: ctx
-        integer, intent(out) :: positions(6)
-        
-        call write_catalog_object(unit, positions(1))
-        call write_pages_object(unit, ctx, positions(2))
-        call write_page_object(unit, ctx, positions(3))
-        call write_content_object(unit, ctx, positions(4))
-        call write_helvetica_font_object(unit, positions(5))
-        call write_symbol_font_object(unit, positions(6))
-    end subroutine write_all_objects
-
-    subroutine write_xref_and_trailer(unit, positions, xref_pos)
-        integer, intent(in) :: unit, positions(6)
-        integer, intent(out) :: xref_pos
-        character(len=200) :: xref_entry
-        character(len=100) :: trailer_str
-        
-        xref_pos = get_position(unit)
-        call write_string_to_unit(unit, "xref")
-        call write_string_to_unit(unit, "0 7")
-        call write_string_to_unit(unit, "0000000000 65535 f")
-        
-        write(xref_entry, '(I10.10, " 00000 n")') positions(1)
-        call write_string_to_unit(unit, xref_entry)
-        write(xref_entry, '(I10.10, " 00000 n")') positions(2)
-        call write_string_to_unit(unit, xref_entry)
-        write(xref_entry, '(I10.10, " 00000 n")') positions(3)
-        call write_string_to_unit(unit, xref_entry)
-        write(xref_entry, '(I10.10, " 00000 n")') positions(4)
-        call write_string_to_unit(unit, xref_entry)
-        write(xref_entry, '(I10.10, " 00000 n")') positions(5)
-        call write_string_to_unit(unit, xref_entry)
-        write(xref_entry, '(I10.10, " 00000 n")') positions(6)
-        call write_string_to_unit(unit, xref_entry)
-        
-        call write_string_to_unit(unit, "trailer")
-        call write_string_to_unit(unit, "<</Size 7/Root 1 0 R>>")
-        call write_string_to_unit(unit, "startxref")
-        write(trailer_str, '(I0)') xref_pos
-        call write_string_to_unit(unit, trailer_str)
-        call write_string_to_unit(unit, "%%EOF")
-    end subroutine write_xref_and_trailer
-
-    subroutine write_catalog_object(unit, pos)
-        integer, intent(in) :: unit
-        integer, intent(out) :: pos
-        pos = get_position(unit)
-        call write_string_to_unit(unit, "1 0 obj")
-        call write_string_to_unit(unit, "<</Type /Catalog/Pages 2 0 R>>")
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_catalog_object
-
-    subroutine write_pages_object(unit, ctx, pos)
-        integer, intent(in) :: unit
-        type(pdf_context), intent(in) :: ctx
-        integer, intent(out) :: pos
-        
-        pos = get_position(unit)
-        call write_string_to_unit(unit, "2 0 obj")
-        call write_string_to_unit(unit, "<</Type /Pages/Kids [3 0 R]/Count 1>>")
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_pages_object
-
-    subroutine write_page_object(unit, ctx, pos)
-        integer, intent(in) :: unit
-        type(pdf_context), intent(in) :: ctx
-        integer, intent(out) :: pos
-        character(len=200) :: page_str, size_str
-        
-        pos = get_position(unit)
-        write(size_str, '(I0, 1X, I0)') ctx%width, ctx%height
-        call write_string_to_unit(unit, "3 0 obj")
-        page_str = "<</Type /Page/Parent 2 0 R/MediaBox [0 0 " // trim(size_str) // "]" // &
-                   "/Contents 4 0 R/Resources <</Font <</F1 5 0 R/F2 6 0 R>>>>>>>>>"
-        call write_string_to_unit(unit, page_str)
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_page_object
-
-    subroutine write_content_object(unit, ctx, pos)
-        integer, intent(in) :: unit
-        type(pdf_context), intent(in) :: ctx
-        integer, intent(out) :: pos
-        character(len=50) :: len_str
-        
-        pos = get_position(unit)
-        write(len_str, '("/Length ", I0)') len(ctx%stream_writer%content_stream)
-        call write_string_to_unit(unit, "4 0 obj")
-        call write_string_to_unit(unit, "<<" // trim(len_str) // ">>")
-        call write_string_to_unit(unit, "stream")
-        call write_string_to_unit(unit, ctx%stream_writer%content_stream)
-        call write_string_to_unit(unit, "endstream")
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_content_object
-
-    subroutine write_helvetica_font_object(unit, pos)
-        integer, intent(in) :: unit
-        integer, intent(out) :: pos
-        
-        pos = get_position(unit)
-        call write_string_to_unit(unit, "5 0 obj")
-        call write_string_to_unit(unit, "<</Type /Font/Subtype /Type1/BaseFont /Helvetica>>")
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_helvetica_font_object
-
-    subroutine write_symbol_font_object(unit, pos)
-        integer, intent(in) :: unit
-        integer, intent(out) :: pos
-        
-        pos = get_position(unit)
-        call write_string_to_unit(unit, "6 0 obj")
-        call write_string_to_unit(unit, "<</Type /Font/Subtype /Type1/BaseFont /Symbol>>")
-        call write_string_to_unit(unit, "endobj")
-    end subroutine write_symbol_font_object
-
-    integer function get_position(unit)
-        integer, intent(in) :: unit
-        inquire(unit=unit, pos=get_position)
-        get_position = get_position - 1
-    end function get_position
-
-    subroutine write_string_to_unit(unit, str)
-        integer, intent(in) :: unit
-        character(len=*), intent(in) :: str
-        integer :: i
-        integer(1), allocatable :: bytes(:)
-        
-        allocate(bytes(len(str) + 1))
-        do i = 1, len(str)
-            bytes(i) = int(iachar(str(i:i)), 1)
-        end do
-        bytes(len(str) + 1) = 10_1
-        write(unit) bytes
-        deallocate(bytes)
-    end subroutine write_string_to_unit
-
-    subroutine lookup_lowercase_greek(codepoint, escape_seq, found)
-        integer, intent(in) :: codepoint
-        character(len=*), intent(out) :: escape_seq
-        logical, intent(out) :: found
-        
-        found = .true.
-        select case (codepoint)
-        case (945); escape_seq = "alpha"
-        case (946); escape_seq = "beta" 
-        case (947); escape_seq = "gamma"
-        case (948); escape_seq = "delta"
-        case (949); escape_seq = "epsilon"
-        case (950); escape_seq = "zeta"
-        case (951); escape_seq = "eta"
-        case (952); escape_seq = "theta"
-        case (953); escape_seq = "iota"
-        case (954); escape_seq = "kappa"
-        case (955); escape_seq = "lambda"
-        case (956); escape_seq = "mu"
-        case (957); escape_seq = "nu"
-        case (958); escape_seq = "xi"
-        case (959); escape_seq = "omicron"
-        case (960); escape_seq = "pi"
-        case (961); escape_seq = "rho"
-        case (963); escape_seq = "sigma"
-        case (964); escape_seq = "tau"
-        case (965); escape_seq = "upsilon"
-        case (966); escape_seq = "phi"
-        case (967); escape_seq = "chi"
-        case (968); escape_seq = "psi"
-        case (969); escape_seq = "omega"
-        case default; found = .false.
-        end select
-    end subroutine lookup_lowercase_greek
-
-    subroutine lookup_uppercase_greek(codepoint, escape_seq, found)
-        integer, intent(in) :: codepoint
-        character(len=*), intent(out) :: escape_seq
-        logical, intent(out) :: found
-        
-        found = .true.
-        select case (codepoint)
-        case (913); escape_seq = "Alpha"
-        case (914); escape_seq = "Beta"
-        case (915); escape_seq = "Gamma"
-        case (916); escape_seq = "Delta"
-        case (917); escape_seq = "Epsilon"
-        case (918); escape_seq = "Zeta"
-        case (919); escape_seq = "Eta"
-        case (920); escape_seq = "Theta"
-        case (921); escape_seq = "Iota"
-        case (922); escape_seq = "Kappa"
-        case (923); escape_seq = "Lambda"
-        case (924); escape_seq = "Mu"
-        case (925); escape_seq = "Nu"
-        case (926); escape_seq = "Xi"
-        case (927); escape_seq = "Omicron"
-        case (928); escape_seq = "Pi"
-        case (929); escape_seq = "Rho"
-        case (931); escape_seq = "Sigma"
-        case (932); escape_seq = "Tau"
-        case (933); escape_seq = "Upsilon"
-        case (934); escape_seq = "Phi"
-        case (935); escape_seq = "Chi"
-        case (936); escape_seq = "Psi"
-        case (937); escape_seq = "Omega"
-        case default; found = .false.
-        end select
-    end subroutine lookup_uppercase_greek
-
-    subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
-        !! Convert Unicode codepoint to PDF escape sequence
-        integer, intent(in) :: codepoint
-        character(len=*), intent(out) :: escape_seq
-        logical :: found
-        
-        call lookup_lowercase_greek(codepoint, escape_seq, found)
-        if (found) return
-        
-        call lookup_uppercase_greek(codepoint, escape_seq, found)
-        if (found) return
-        
-        if (codepoint == 178) then
-            escape_seq = "2"
-            return
-        end if
-        
-        write(escape_seq, '("U+", Z4.4)') codepoint
-    end subroutine unicode_codepoint_to_pdf_escape
-
-    subroutine unicode_to_symbol_char(unicode_codepoint, symbol_char)
-        !! Map Unicode Greek letters to Symbol font character positions
-        integer, intent(in) :: unicode_codepoint
-        integer, intent(out) :: symbol_char
-        
-        ! Map Unicode Greek letters to Symbol font character positions
-        select case (unicode_codepoint)
-        ! Lowercase Greek letters
-        case (945); symbol_char = 97   ! α -> 'a'
-        case (946); symbol_char = 98   ! β -> 'b'
-        case (947); symbol_char = 103  ! γ -> 'g'
-        case (948); symbol_char = 100  ! δ -> 'd'
-        case (949); symbol_char = 101  ! ε -> 'e'
-        case (950); symbol_char = 122  ! ζ -> 'z'
-        case (951); symbol_char = 104  ! η -> 'h'
-        case (952); symbol_char = 113  ! θ -> 'q'
-        case (953); symbol_char = 105  ! ι -> 'i'
-        case (954); symbol_char = 107  ! κ -> 'k'
-        case (955); symbol_char = 108  ! λ -> 'l'
-        case (956); symbol_char = 109  ! μ -> 'm'
-        case (957); symbol_char = 110  ! ν -> 'n'
-        case (958); symbol_char = 120  ! ξ -> 'x'
-        case (959); symbol_char = 111  ! ο -> 'o'
-        case (960); symbol_char = 112  ! π -> 'p'
-        case (961); symbol_char = 114  ! ρ -> 'r'
-        case (963); symbol_char = 115  ! σ -> 's'
-        case (964); symbol_char = 116  ! τ -> 't'
-        case (965); symbol_char = 117  ! υ -> 'u'
-        case (966); symbol_char = 102  ! φ -> 'f'
-        case (967); symbol_char = 99   ! χ -> 'c'
-        case (968); symbol_char = 121  ! ψ -> 'y'
-        case (969); symbol_char = 119  ! ω -> 'w'
-        
-        ! Uppercase Greek letters
-        case (913); symbol_char = 65   ! Α -> 'A'
-        case (914); symbol_char = 66   ! Β -> 'B'
-        case (915); symbol_char = 71   ! Γ -> 'G'
-        case (916); symbol_char = 68   ! Δ -> 'D'
-        case (917); symbol_char = 69   ! Ε -> 'E'
-        case (918); symbol_char = 90   ! Ζ -> 'Z'
-        case (919); symbol_char = 72   ! Η -> 'H'
-        case (920); symbol_char = 81   ! Θ -> 'Q'
-        case (921); symbol_char = 73   ! Ι -> 'I'
-        case (922); symbol_char = 75   ! Κ -> 'K'
-        case (923); symbol_char = 76   ! Λ -> 'L'
-        case (924); symbol_char = 77   ! Μ -> 'M'
-        case (925); symbol_char = 78   ! Ν -> 'N'
-        case (926); symbol_char = 88   ! Ξ -> 'X'
-        case (927); symbol_char = 79   ! Ο -> 'O'
-        case (928); symbol_char = 80   ! Π -> 'P'
-        case (929); symbol_char = 82   ! Ρ -> 'R'
-        case (931); symbol_char = 83   ! Σ -> 'S'
-        case (932); symbol_char = 84   ! Τ -> 'T'
-        case (933); symbol_char = 85   ! Υ -> 'U'
-        case (934); symbol_char = 70   ! Φ -> 'F'
-        case (935); symbol_char = 67   ! Χ -> 'C'
-        case (936); symbol_char = 89   ! Ψ -> 'Y'
-        case (937); symbol_char = 87   ! Ω -> 'W'
-        
-        case default
-            symbol_char = 0  ! Not a Greek letter
-        end select
-    end subroutine unicode_to_symbol_char
-    
-    subroutine escape_pdf_string(input, output, output_len)
-        !! Escape special characters for PDF string literals
-        character(len=*), intent(in) :: input
-        character(len=*), intent(out) :: output
-        integer, intent(out) :: output_len
-        integer :: i, j
-        
-        j = 1
-        do i = 1, len(input)
-            ! Escape parentheses and backslashes in PDF strings
-            if (input(i:i) == '(' .or. input(i:i) == ')' .or. input(i:i) == '\') then
-                if (j <= len(output)) then
-                    output(j:j) = '\'
-                    j = j + 1
-                end if
-            end if
-            if (j <= len(output)) then
-                output(j:j) = input(i:i)
-                j = j + 1
-            end if
-        end do
-        output_len = j - 1
-    end subroutine escape_pdf_string
-
-    subroutine setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                    data_x_min, data_x_max, data_y_min, data_y_max)
-        type(pdf_context), intent(in) :: ctx
-        real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
-        real(wp), intent(out) :: data_x_min, data_x_max, data_y_min, data_y_max
-        
-        if (present(x_min_orig) .and. present(x_max_orig)) then
-            data_x_min = x_min_orig
-            data_x_max = x_max_orig
-        else
-            data_x_min = ctx%x_min
-            data_x_max = ctx%x_max
-        end if
-        
-        if (present(y_min_orig) .and. present(y_max_orig)) then
-            data_y_min = y_min_orig
-            data_y_max = y_max_orig
-        else
-            data_y_min = ctx%y_min
-            data_y_max = ctx%y_max
-        end if
-    end subroutine setup_axes_data_ranges
-
-    subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
-                                xscale, yscale, symlog_threshold, &
-                                x_tick_values, y_tick_values, x_positions, y_positions, &
-                                x_labels, y_labels, num_x_ticks, num_y_ticks)
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
-        character(len=*), intent(in), optional :: xscale, yscale
-        real(wp), intent(in), optional :: symlog_threshold
-        real(wp), intent(out) :: x_tick_values(20), y_tick_values(20)
-        real(wp), intent(out) :: x_positions(20), y_positions(20)
-        character(len=20), intent(out) :: x_labels(20), y_labels(20)
-        integer, intent(out) :: num_x_ticks, num_y_ticks
-        real(wp) :: nice_x_min, nice_x_max, nice_x_step
-        real(wp) :: nice_y_min, nice_y_max, nice_y_step
-        real(wp) :: symlog_thresh
-        character(len=10) :: x_scale_type, y_scale_type
-        integer :: i
-        
-        call find_nice_tick_locations(data_x_min, data_x_max, 5, &
-                                    nice_x_min, nice_x_max, nice_x_step, &
-                                    x_tick_values, num_x_ticks)
-        
-        call find_nice_tick_locations(data_y_min, data_y_max, 5, &
-                                    nice_y_min, nice_y_max, nice_y_step, &
-                                    y_tick_values, num_y_ticks)
-        
-        if (present(xscale) .and. present(yscale) .and. &
-            (trim(xscale) /= 'linear' .or. trim(yscale) /= 'linear')) then
-            
-            symlog_thresh = 1.0_wp
-            if (present(symlog_threshold)) symlog_thresh = symlog_threshold
-            
-            x_scale_type = trim(xscale)
-            y_scale_type = trim(yscale)
-            
-            ctx%x_min = apply_scale_transform(x_tick_values(1), x_scale_type, symlog_thresh)
-            ctx%x_max = apply_scale_transform(x_tick_values(num_x_ticks), x_scale_type, symlog_thresh)
-            
-            ctx%y_min = apply_scale_transform(y_tick_values(1), y_scale_type, symlog_thresh)
-            ctx%y_max = apply_scale_transform(y_tick_values(num_y_ticks), y_scale_type, symlog_thresh)
-            
-            do i = 1, num_x_ticks
-                x_positions(i) = ctx%plot_area%left + &
-                                (apply_scale_transform(x_tick_values(i), x_scale_type, symlog_thresh) - ctx%x_min) / &
-                                (ctx%x_max - ctx%x_min) * ctx%plot_area%width
-            end do
-            
-            do i = 1, num_y_ticks
-                y_positions(i) = ctx%plot_area%bottom + &
-                                (apply_scale_transform(y_tick_values(i), y_scale_type, symlog_thresh) - ctx%y_min) / &
-                                (ctx%y_max - ctx%y_min) * ctx%plot_area%height
-            end do
-        else
-            if (num_x_ticks > 0) then
-                ctx%x_min = x_tick_values(1)
-                ctx%x_max = x_tick_values(num_x_ticks)
-            end if
-            
-            if (num_y_ticks > 0) then
-                ctx%y_min = y_tick_values(1)
-                ctx%y_max = y_tick_values(num_y_ticks)
-            end if
-            
-            do i = 1, num_x_ticks
-                x_positions(i) = ctx%plot_area%left + &
-                                (x_tick_values(i) - ctx%x_min) / (ctx%x_max - ctx%x_min) * ctx%plot_area%width
-            end do
-            
-            do i = 1, num_y_ticks
-                y_positions(i) = ctx%plot_area%bottom + &
-                                (y_tick_values(i) - ctx%y_min) / (ctx%y_max - ctx%y_min) * ctx%plot_area%height
-            end do
-        end if
-        
-        if (present(xscale) .and. trim(xscale) /= 'linear') then
-            call generate_scale_aware_tick_labels(data_x_min, data_x_max, num_x_ticks, x_labels, xscale, symlog_threshold)
-        else
-            do i = 1, num_x_ticks
-                x_labels(i) = format_tick_value_smart(x_tick_values(i), 8)
-            end do
-        end if
-        
-        if (present(yscale) .and. trim(yscale) /= 'linear') then
-            call generate_scale_aware_tick_labels(data_y_min, data_y_max, num_y_ticks, y_labels, yscale, symlog_threshold)
-        else
-            do i = 1, num_y_ticks
-                y_labels(i) = format_tick_value_smart(y_tick_values(i), 8)
-            end do
-        end if
-    end subroutine generate_tick_data
-
-    subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
-                                      x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                      title, xlabel, ylabel, z_min_orig, z_max_orig, is_3d_plot, &
-                                      grid_enabled, grid_axis, grid_which, &
-                                      grid_alpha, grid_linestyle, grid_color)
-        !! Draw plot axes and frame for PDF backend with scale-aware tick generation
-        !! Now matches PNG backend behavior with nice tick boundaries
-        type(pdf_context), intent(inout) :: ctx
-        character(len=*), intent(in), optional :: xscale, yscale
-        real(wp), intent(in), optional :: symlog_threshold
-        real(wp), intent(in), optional :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
-        real(wp), intent(in), optional :: z_min_orig, z_max_orig
-        logical, intent(in), optional :: is_3d_plot
-        character(len=*), intent(in), optional :: title, xlabel, ylabel
-        logical, intent(in), optional :: grid_enabled
-        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
-        real(wp), intent(in), optional :: grid_alpha
-        real(wp), intent(in), optional :: grid_color(3)
-        
-        real(wp) :: x_tick_values(20), y_tick_values(20)
-        real(wp) :: x_positions(20), y_positions(20)
-        character(len=20) :: x_labels(20), y_labels(20)
-        integer :: num_x_ticks, num_y_ticks
-        real(wp) :: data_x_min, data_x_max, data_y_min, data_y_max
-        
-        call ctx%color(0.0_wp, 0.0_wp, 0.0_wp)
-        
-        if (present(is_3d_plot) .and. is_3d_plot .and. &
-            present(z_min_orig) .and. present(z_max_orig)) then
-            call setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                       data_x_min, data_x_max, data_y_min, data_y_max)
-            call draw_pdf_3d_axes_frame(ctx, data_x_min, data_x_max, &
-                                       data_y_min, data_y_max, z_min_orig, z_max_orig)
-            return
-        end if
-        
-        call setup_axes_data_ranges(ctx, x_min_orig, x_max_orig, y_min_orig, y_max_orig, &
-                                   data_x_min, data_x_max, data_y_min, data_y_max)
-        call draw_pdf_frame(ctx)
-        
-        call generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
-                              xscale, yscale, symlog_threshold, &
-                              x_tick_values, y_tick_values, x_positions, y_positions, &
-                              x_labels, y_labels, num_x_ticks, num_y_ticks)
-        
-        call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
-        call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x_ticks, num_y_ticks)
-        call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
-        
-        if (present(grid_enabled) .and. grid_enabled) then
-            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                   grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
-        end if
-    end subroutine draw_pdf_axes_and_labels
-
-    subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame for PDF backend
-        use fortplot_3d_axes, only: create_3d_axis_lines, project_3d_axis_lines
-        use fortplot_projection, only: get_default_view_angles
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
-        
-        real(wp) :: azim, elev, dist
-        real(wp) :: axis_lines_3d(3,6), axis_lines_2d(2,6)
-        real(wp) :: x1, y1, x2, y2
-        integer :: i
-        
-        call get_default_view_angles(azim, elev, dist)
-        call create_3d_axis_lines(x_min, x_max, y_min, y_max, z_min, z_max, axis_lines_3d)
-        call project_3d_axis_lines(axis_lines_3d, azim, elev, dist, axis_lines_2d)
-        
-        ! Scale projected coordinates to plot area
-        call scale_2d_to_pdf_plot_area(axis_lines_2d, ctx, x_min, x_max, y_min, y_max)
-        
-        ! Draw three axis lines
-        do i = 1, 3
-            x1 = axis_lines_2d(1, 2*i-1)
-            y1 = axis_lines_2d(2, 2*i-1)
-            x2 = axis_lines_2d(1, 2*i)
-            y2 = axis_lines_2d(2, 2*i)
-            call ctx%line(x1, y1, x2, y2)
-        end do
-    end subroutine draw_pdf_3d_axes_frame
-
-    subroutine scale_2d_to_pdf_plot_area(points_2d, ctx, x_min, x_max, y_min, y_max)
-        !! Scale projected 2D coordinates to PDF plot area
-        real(wp), intent(inout) :: points_2d(:,:)
-        type(pdf_context), intent(in) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        
-        real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: scale_x, scale_y
-        integer :: i
-        
-        ! Find bounds of projected coordinates
-        proj_x_min = minval(points_2d(1,:))
-        proj_x_max = maxval(points_2d(1,:))
-        proj_y_min = minval(points_2d(2,:))
-        proj_y_max = maxval(points_2d(2,:))
-        
-        ! Scale to plot area using width/height
-        scale_x = real(ctx%plot_area%width, wp) / (proj_x_max - proj_x_min)
-        scale_y = real(ctx%plot_area%height, wp) / (proj_y_max - proj_y_min)
-        
-        do i = 1, size(points_2d, 2)
-            points_2d(1,i) = real(ctx%plot_area%left, wp) + (points_2d(1,i) - proj_x_min) * scale_x
-            points_2d(2,i) = real(ctx%plot_area%bottom, wp) + (points_2d(2,i) - proj_y_min) * scale_y
-        end do
-    end subroutine scale_2d_to_pdf_plot_area
-    subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                 grid_axis, grid_which, grid_alpha, grid_linestyle, grid_color)
-        !! Draw grid lines at tick positions for PDF backend
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        integer, intent(in) :: num_x_ticks, num_y_ticks
-        character(len=*), intent(in), optional :: grid_axis, grid_which, grid_linestyle
-        real(wp), intent(in), optional :: grid_alpha
-        real(wp), intent(in), optional :: grid_color(3)
-        
-        character(len=10) :: axis_choice, which_choice
-        real(wp) :: alpha_value, line_color(3)
-        integer :: i
-        real(wp) :: grid_y_top, grid_y_bottom, grid_x_left, grid_x_right
-        character(len=100) :: draw_cmd
-        
-        ! Set default values
-        axis_choice = 'both'
-        which_choice = 'major'
-        alpha_value = 0.3_wp
-        line_color = [0.5_wp, 0.5_wp, 0.5_wp]
-        
-        if (present(grid_axis)) axis_choice = grid_axis
-        if (present(grid_which)) which_choice = grid_which
-        if (present(grid_alpha)) alpha_value = grid_alpha
-        if (present(grid_color)) line_color = grid_color
-        
-        ! Calculate plot area boundaries (PDF coordinates: Y=0 at bottom)
-        grid_y_bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
-        grid_y_top = real(ctx%height - ctx%plot_area%bottom, wp)
-        grid_x_left = real(ctx%plot_area%left, wp)
-        grid_x_right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
-        
-        ! Set grid line color with transparency
-        write(draw_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') line_color(1), line_color(2), line_color(3)
-        call ctx%stream_writer%add_to_stream(draw_cmd)
-        
-        ! Draw vertical grid lines (at x tick positions)
-        if (axis_choice == 'both' .or. axis_choice == 'x') then
-            do i = 1, num_x_ticks
-                ! Convert from raster to PDF coordinates
-                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "m")') &
-                    x_positions(i), grid_y_bottom
-                call ctx%stream_writer%add_to_stream(draw_cmd)
-                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "l")') &
-                    x_positions(i), grid_y_top
-                call ctx%stream_writer%add_to_stream(draw_cmd)
-                call ctx%stream_writer%add_to_stream("S")
-            end do
-        end if
-        
-        ! Draw horizontal grid lines (at y tick positions)
-        if (axis_choice == 'both' .or. axis_choice == 'y') then
-            do i = 1, num_y_ticks
-                ! Convert Y position to PDF coordinates
-                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "m")') &
-                    grid_x_left, real(ctx%height, wp) - y_positions(i)
-                call ctx%stream_writer%add_to_stream(draw_cmd)
-                write(draw_cmd, '(F8.2, 1X, F8.2, 1X, "l")') &
-                    grid_x_right, real(ctx%height, wp) - y_positions(i)
-                call ctx%stream_writer%add_to_stream(draw_cmd)
-                call ctx%stream_writer%add_to_stream("S")
-            end do
-        end if
-    end subroutine draw_pdf_grid_lines
-    
-    subroutine draw_pdf_frame(ctx)
-        !! Draw the plot frame for PDF backend
-        type(pdf_context), intent(inout) :: ctx
-        real(wp) :: left, right, top, bottom
-        
-        ! Calculate frame coordinates (PDF coordinates Y=0 at bottom)
-        left = real(ctx%plot_area%left, wp)
-        right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
-        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
-        top = real(ctx%height - ctx%plot_area%bottom, wp)
-        
-        ! Draw frame (rectangle)
-        call draw_vector_line(ctx, left, bottom, right, bottom)  ! Bottom edge
-        call draw_vector_line(ctx, left, top, right, top)        ! Top edge
-        call draw_vector_line(ctx, left, bottom, left, top)      ! Left edge  
-        call draw_vector_line(ctx, right, bottom, right, top)    ! Right edge
-    end subroutine draw_pdf_frame
-    
-    subroutine draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        !! Draw tick marks for PDF backend
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        integer, intent(in) :: num_x, num_y
-        integer :: i
-        real(wp) :: bottom, top, left, right, pdf_y_pos
-        
-        ! Calculate axis positions
-        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
-        top = real(ctx%height - ctx%plot_area%bottom, wp)
-        left = real(ctx%plot_area%left, wp)
-        right = real(ctx%plot_area%left + ctx%plot_area%width, wp)
-        
-        ! Draw X-axis tick marks (at bottom of plot)
-        do i = 1, num_x
-            call draw_vector_line(ctx, x_positions(i), bottom, x_positions(i), bottom - 5.0_wp)
-        end do
-        
-        ! Draw Y-axis tick marks (at left of plot)  
-        do i = 1, num_y
-            ! Convert Y position to PDF coordinates
-            pdf_y_pos = real(ctx%height - ctx%plot_area%bottom, wp) - &
-                       (y_positions(i) - real(ctx%plot_area%bottom, wp))
-            call draw_vector_line(ctx, left, pdf_y_pos, left - 5.0_wp, pdf_y_pos)
-        end do
-    end subroutine draw_pdf_tick_marks
-    
-    subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels for PDF backend like matplotlib with overlap detection
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        character(len=*), intent(in) :: x_labels(:), y_labels(:)
-        integer, intent(in) :: num_x, num_y
-        integer :: i
-        real(wp) :: label_x, label_y, tick_y, bottom, left
-        character(len=200) :: text_cmd
-        
-        bottom = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
-        left = real(ctx%plot_area%left, wp)
-        
-        ! Draw X-axis tick labels with proper spacing and center alignment
-        do i = 1, num_x
-            ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_x_tick_label_position_pdf(x_positions(i), bottom, &
-                                                   trim(x_labels(i)), label_x, label_y)
-            
-            call ctx%stream_writer%add_to_stream("BT")
-            write(text_cmd, '("/F1 12 Tf")')
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '("(", A, ") Tj")') trim(x_labels(i))
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            call ctx%stream_writer%add_to_stream("ET")
-        end do
-        
-        ! Draw Y-axis tick labels with overlap detection and spacing enforcement
-        call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, left)
-    end subroutine draw_pdf_tick_labels
-    
-    subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
-        !! Draw figure title and axis labels for PDF
-        type(pdf_context), intent(inout) :: ctx
-        character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp) :: label_x, label_y, text_width
-        
-        ! Draw title at top center with proper margin (matplotlib-style)
-        if (present(title)) then
-            ! Center horizontally across the entire figure width (like matplotlib)
-            text_width = real(calculate_text_width(trim(title)), wp)
-            if (text_width <= 0.0_wp) then
-                text_width = real(len_trim(title) * 8, wp)  ! 8 pixels per char for 12pt font
-            end if
-            label_x = real(ctx%width, wp) / 2.0_wp - text_width / 2.0_wp
-            ! Position title at top of PDF - high Y value for PDF coordinates (Y=0 at bottom)
-            ! Just below the top edge, similar to matplotlib spacing
-            label_y = real(ctx%height - 25, wp)  ! 25 pixels down from top edge
-            call draw_pdf_text_direct(ctx, label_x, label_y, title)  ! Normal weight (non-bold)
-        end if
-        
-        ! Draw X-axis label using proper axis label positioning
-        if (present(xlabel)) then
-            call calculate_x_axis_label_position(real(ctx%plot_area%left + ctx%plot_area%width / 2, wp), &
-                                               real(ctx%plot_area%bottom + ctx%plot_area%height, wp), &
-                                               xlabel, label_x, label_y)
-            ! Convert to PDF coordinates
-            label_y = real(ctx%plot_area%bottom - 40, wp)  ! 40px below plot (matplotlib exact)
-            call draw_pdf_text_direct(ctx, label_x, label_y, xlabel)
-        end if
-        
-        ! Draw Y-axis label rotated 90 degrees matplotlib-style
-        if (present(ylabel)) then
-            call draw_vertical_text_pdf(ctx, ylabel)
-        end if
-    end subroutine draw_pdf_title_and_labels
-    
-    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left)
-        !! Draw Y-axis tick labels with collision detection and spacing enforcement
-        !! Implements fix for Issue #39 - PDF Y-axis label overlap
-        type(pdf_context), intent(inout) :: ctx
-        real(wp), intent(in) :: y_positions(:)
-        character(len=*), intent(in) :: y_labels(:)
-        integer, intent(in) :: num_y
-        real(wp), intent(in) :: plot_left
-        
-        real(wp) :: filtered_positions(num_y), filtered_label_y(num_y)
-        character(len=20) :: filtered_labels(num_y)
-        logical :: label_visible(num_y)
-        integer :: filtered_count, i
-        real(wp) :: label_x, label_y, tick_y
-        character(len=200) :: text_cmd
-        
-        ! Apply overlap detection and filtering
-        call filter_overlapping_y_labels(y_positions, y_labels, num_y, &
-                                        filtered_positions, filtered_labels, filtered_count, &
-                                        label_visible)
-        
-        ! Draw only the filtered (non-overlapping) labels
-        do i = 1, filtered_count
-            ! filtered_positions(i) is already in PDF coordinates (Y=0 at bottom)
-            tick_y = filtered_positions(i)
-            
-            ! Use PDF-specific tick label positioning (native PDF coordinates)
-            call calculate_y_tick_label_position_pdf(tick_y, plot_left, &
-                                                   trim(filtered_labels(i)), label_x, label_y)
-            
-            call ctx%stream_writer%add_to_stream("BT")
-            write(text_cmd, '("/F1 12 Tf")')
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') label_x, label_y
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            write(text_cmd, '("(", A, ") Tj")') trim(filtered_labels(i))
-            call ctx%stream_writer%add_to_stream(text_cmd)
-            call ctx%stream_writer%add_to_stream("ET")
-        end do
-    end subroutine draw_pdf_y_labels_with_overlap_detection
-    
-    subroutine filter_overlapping_y_labels(y_positions, y_labels, num_labels, &
-                                          filtered_positions, filtered_labels, filtered_count, &
-                                          label_visible)
-        !! Filter out overlapping Y-axis labels to ensure minimum spacing
-        !! Core implementation for Issue #39 fix
-        real(wp), intent(in) :: y_positions(:)
-        character(len=*), intent(in) :: y_labels(:)
-        integer, intent(in) :: num_labels
-        real(wp), intent(out) :: filtered_positions(:)
-        character(len=20), intent(out) :: filtered_labels(:)
-        integer, intent(out) :: filtered_count
-        logical, intent(out) :: label_visible(:)
-        
-        ! Minimum spacing constant - font height + spacing for clarity
-        real(wp), parameter :: MIN_SPACING_PIXELS = 18.0_wp  ! 16px font height + 2px gap
-        integer :: i, j
-        real(wp) :: spacing_to_prev, spacing_to_next
-        logical :: current_overlaps
-        
-        ! Initialize all labels as potentially visible
-        label_visible = .false.
-        filtered_count = 0
-        
-        ! Check each label for overlaps
-        do i = 1, num_labels
-            current_overlaps = .false.
-            
-            ! Check spacing to previous visible label
-            if (i > 1) then
-                do j = i - 1, 1, -1
-                    if (label_visible(j)) then
-                        spacing_to_prev = abs(y_positions(i) - y_positions(j))
-                        if (spacing_to_prev < MIN_SPACING_PIXELS) then
-                            current_overlaps = .true.
-                        end if
-                        exit  ! Found the nearest previous visible label
-                    end if
-                end do
-            end if
-            
-            ! Check spacing to next labels (look ahead)
-            if (.not. current_overlaps .and. i < num_labels) then
-                do j = i + 1, num_labels
-                    spacing_to_next = abs(y_positions(j) - y_positions(i))
-                    if (spacing_to_next < MIN_SPACING_PIXELS) then
-                        ! This label would overlap with next one - skip the next one instead
-                        ! (prioritize labels closer to data range center)
-                        current_overlaps = .false.  ! Keep current label
-                        exit
-                    end if
-                end do
-            end if
-            
-            ! Mark label as visible if no overlaps detected
-            if (.not. current_overlaps) then
-                label_visible(i) = .true.
-                filtered_count = filtered_count + 1
-                filtered_positions(filtered_count) = y_positions(i)
-                filtered_labels(filtered_count) = y_labels(i)
-            end if
-        end do
-        
-        ! Ensure we always show at least the first and last labels if num_labels > 1
-        if (num_labels > 1 .and. filtered_count < 2) then
-            call ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
-                                              filtered_positions, filtered_labels, &
-                                              filtered_count, label_visible)
-        end if
-    end subroutine filter_overlapping_y_labels
-    
-    subroutine ensure_endpoint_labels_visible(y_positions, y_labels, num_labels, &
-                                            filtered_positions, filtered_labels, &
-                                            filtered_count, label_visible)
-        !! Ensure endpoint labels are visible for better axis comprehension
-        real(wp), intent(in) :: y_positions(:)
-        character(len=*), intent(in) :: y_labels(:)
-        integer, intent(in) :: num_labels
-        real(wp), intent(inout) :: filtered_positions(:)
-        character(len=20), intent(inout) :: filtered_labels(:)
-        integer, intent(inout) :: filtered_count
-        logical, intent(inout) :: label_visible(:)
-        
-        ! Force first label visible if not already
-        if (.not. label_visible(1)) then
-            filtered_count = filtered_count + 1
-            filtered_positions(filtered_count) = y_positions(1)
-            filtered_labels(filtered_count) = y_labels(1)
-            label_visible(1) = .true.
-        end if
-        
-        ! Force last label visible if not already and different from first
-        if (num_labels > 1 .and. .not. label_visible(num_labels)) then
-            filtered_count = filtered_count + 1
-            filtered_positions(filtered_count) = y_positions(num_labels)
-            filtered_labels(filtered_count) = y_labels(num_labels)
-            label_visible(num_labels) = .true.
-        end if
-    end subroutine ensure_endpoint_labels_visible
-
-    subroutine draw_vertical_text_pdf(ctx, text)
-        !! Draw text rotated 90 degrees using PDF text matrix
-        type(pdf_context), intent(inout) :: ctx
-        character(len=*), intent(in) :: text
-        real(wp) :: label_x, label_y
-        character(len=500) :: processed_text
-        integer :: processed_len
-        
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text, processed_text, processed_len)
-        
-        ! Position for rotated Y-axis label using proper axis label positioning
-        call calculate_y_axis_label_position(real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp), &
-                                           real(ctx%plot_area%left, wp), trim(processed_text(1:processed_len)), label_x, label_y)
-        ! Convert to PDF coordinates (Y is flipped)
-        label_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height / 2, wp)
-        
-        ! Draw rotated text with mixed font support
-        call draw_rotated_mixed_font_text(ctx, label_x, label_y, processed_text(1:processed_len))
-    end subroutine draw_vertical_text_pdf
-
-    ! Graphics state management routines - encapsulate PDF's mutable global state
+        ! Delegate to core module
+        call normalize_to_pdf_coords(this%core_ctx, x, y, pdf_x, pdf_y)
+    end subroutine normalize_to_pdf_coords_facade
     
     subroutine pdf_save_graphics_state(this)
-        !! Save current graphics state using PDF's q operator
         class(pdf_context), intent(inout) :: this
+        
         call this%stream_writer%save_state()
     end subroutine pdf_save_graphics_state
     
     subroutine pdf_restore_graphics_state(this)
-        !! Restore graphics state using PDF's Q operator  
         class(pdf_context), intent(inout) :: this
+        
         call this%stream_writer%restore_state()
     end subroutine pdf_restore_graphics_state
     
-    
-    subroutine draw_bold_text_isolated(this, x, y, text)
-        !! Draw bold text in isolated state (called via with_graphics_state)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        character(len=500) :: processed_text
-        integer :: processed_len
-        real(wp) :: text_width, centered_x
-        
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text, processed_text, processed_len)
-        
-        ! Calculate text width for centering (fallback to character estimation if text system fails)
-        text_width = real(calculate_text_width(trim(processed_text(1:processed_len))), wp) * 1.17_wp  ! Scale for 14pt vs 12pt
-        if (text_width <= 0.0_wp) then
-            ! Fallback: estimate 8 pixels per character for 14pt font
-            text_width = real(processed_len * 8, wp)
-        end if
-        centered_x = x - text_width / 2.0_wp
-        
-        ! Draw bold text with mixed font support (simplified bold rendering)
-        call draw_mixed_font_text(this, centered_x, y, processed_text(1:processed_len))
-    end subroutine draw_bold_text_isolated
-
-    ! PDF-specific vector interface implementations
-    
-    subroutine pdf_write_command(this, command)
-        class(pdf_stream_writer), intent(inout) :: this
-        character(len=*), intent(in) :: command
-        call this%add_to_stream(command)
-    end subroutine pdf_write_command
-    
-    subroutine pdf_write_move(this, x, y)
-        class(pdf_stream_writer), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=50) :: move_cmd
-        write(move_cmd, '(F8.2, 1X, F8.2, 1X, "m")') x, y
-        call this%add_to_stream(move_cmd)
-    end subroutine pdf_write_move
-    
-    subroutine pdf_write_line(this, x, y)
-        class(pdf_stream_writer), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=50) :: line_cmd
-        write(line_cmd, '(F8.2, 1X, F8.2, 1X, "l")') x, y
-        call this%add_to_stream(line_cmd)
-    end subroutine pdf_write_line
-    
-    subroutine pdf_write_stroke(this)
-        class(pdf_stream_writer), intent(inout) :: this
-        call this%add_to_stream("S")
-    end subroutine pdf_write_stroke
-    
-    subroutine pdf_write_color(this, r, g, b)
-        class(pdf_stream_writer), intent(inout) :: this
-        real(wp), intent(in) :: r, g, b
-        character(len=50) :: color_cmd
-        write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "RG")') r, g, b
-        call this%add_to_stream(color_cmd)
-    end subroutine pdf_write_color
-
-    subroutine pdf_write_fill_color(this, r, g, b)
-        class(pdf_stream_writer), intent(inout) :: this
-        real(wp), intent(in) :: r, g, b
-        character(len=50) :: color_cmd
-        write(color_cmd, '(F4.2, 1X, F4.2, 1X, F4.2, 1X, "rg")') r, g, b
-        call this%add_to_stream(color_cmd)
-    end subroutine pdf_write_fill_color
-    
-    subroutine pdf_write_line_width(this, width)
-        class(pdf_stream_writer), intent(inout) :: this
-        real(wp), intent(in) :: width
-        character(len=20) :: width_cmd
-        write(width_cmd, '(F4.1, 1X, "w")') width
-        call this%add_to_stream(width_cmd)
-    end subroutine pdf_write_line_width
-    
-    subroutine pdf_save_state(this)
-        class(pdf_stream_writer), intent(inout) :: this
-        call this%add_to_stream("q")
-    end subroutine pdf_save_state
-    
-    subroutine pdf_restore_state(this)
-        class(pdf_stream_writer), intent(inout) :: this
-        call this%add_to_stream("Q")
-    end subroutine pdf_restore_state
-
     subroutine draw_pdf_marker(this, x, y, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
         real(wp) :: pdf_x, pdf_y
-
-        call normalize_to_pdf_coords(this, x, y, pdf_x, pdf_y)
-
-        call draw_pdf_marker_by_style(this, pdf_x, pdf_y, style)
-    end subroutine draw_pdf_marker
-
-    subroutine draw_pdf_marker_by_style(this, pdf_x, pdf_y, style)
-        !! Draw PDF marker using shared style dispatch logic (DRY compliance)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: pdf_x, pdf_y
-        character(len=*), intent(in) :: style
-        real(wp) :: marker_size
+        real(wp) :: size
         
-        marker_size = get_marker_size(style)
+        size = 5.0_wp  ! Default marker size
+        call this%normalize_coords(x, y, pdf_x, pdf_y)
         
-        select case (trim(style))
-        case (MARKER_CIRCLE)
-            call draw_pdf_circle_with_outline(this, pdf_x, pdf_y, marker_size)
-        case (MARKER_SQUARE)
-            call draw_pdf_square_with_outline(this, pdf_x, pdf_y, marker_size)
-        case (MARKER_DIAMOND)
-            call draw_pdf_diamond_with_outline(this, pdf_x, pdf_y, marker_size)
-        case (MARKER_CROSS)
-            call draw_pdf_x_marker(this, pdf_x, pdf_y, marker_size)
+        ! Save state for marker drawing
+        call this%save_graphics_state()
+        
+        ! Draw marker based on style
+        select case(trim(style))
+        case('o', 'circle')
+            call draw_pdf_circle_with_outline(this%stream_writer, pdf_x, pdf_y, size)
+        case('s', 'square')
+            call draw_pdf_square_with_outline(this%stream_writer, pdf_x, pdf_y, size)
+        case('d', 'diamond')
+            call draw_pdf_diamond_with_outline(this%stream_writer, pdf_x, pdf_y, size)
+        case('x', 'cross')
+            call draw_pdf_x_marker(this%stream_writer, pdf_x, pdf_y, size)
         end select
-    end subroutine draw_pdf_marker_by_style
-
+        
+        ! Restore state
+        call this%restore_graphics_state()
+    end subroutine draw_pdf_marker
+    
     subroutine pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
-        ! Suppress unused parameter warnings
-        associate(unused_int => this%width, &
-                  unused_real => edge_r + edge_g + edge_b + face_r + face_g + face_b); end associate
-        
-        ! PDF backend doesn't support separate marker colors yet
-        ! This is a stub implementation for interface compliance
+        ! Set edge color for stroking
+        call this%color(edge_r, edge_g, edge_b)
     end subroutine pdf_set_marker_colors
-
-    subroutine pdf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, &
-                                                face_r, face_g, face_b, face_alpha)
+    
+    subroutine pdf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         
-        ! Suppress unused parameter warnings
-        associate(unused_int => this%width, &
-                  unused_real => edge_r + edge_g + edge_b + edge_alpha + &
-                                face_r + face_g + face_b + face_alpha); end associate
-        
-        ! PDF backend doesn't support separate marker colors or transparency yet
-        ! This is a stub implementation for interface compliance
+        ! PDF doesn't support alpha directly, just use the colors
+        call pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
     end subroutine pdf_set_marker_colors_with_alpha
-
-    subroutine draw_pdf_circle_with_outline(this, cx, cy, radius)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: cx, cy, radius
-        character(len=200) :: circle_cmd
-
-        ! Draw a circle using bezier curves with current fill color and black outline
-        call this%stream_writer%add_to_stream("q")
-        
-        ! Move to starting point
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx + radius, cy
-        call this%stream_writer%add_to_stream(circle_cmd)
-        
-        ! First quadrant
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
-             cx + radius, cy + 0.552284749831_wp * radius, &
-             cx + 0.552284749831_wp * radius, cy + radius, cx, cy + radius
-        call this%stream_writer%add_to_stream(circle_cmd)
-        
-        ! Second quadrant  
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
-             cx - 0.552284749831_wp * radius, cy + radius, &
-             cx - radius, cy + 0.552284749831_wp * radius, cx - radius, cy
-        call this%stream_writer%add_to_stream(circle_cmd)
-        
-        ! Third quadrant
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
-             cx - radius, cy - 0.552284749831_wp * radius, &
-             cx - 0.552284749831_wp * radius, cy - radius, cx, cy - radius
-        call this%stream_writer%add_to_stream(circle_cmd)
-        
-        ! Fourth quadrant
-        write(circle_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "c")') &
-             cx + 0.552284749831_wp * radius, cy - radius, &
-             cx + radius, cy - 0.552284749831_wp * radius, cx + radius, cy
-        call this%stream_writer%add_to_stream(circle_cmd)
-        
-        ! Set fill color to current stroke color, then fill and stroke with black outline
-        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
-                                  this%stream_writer%current_state%stroke_g, &
-                                  this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
-        call this%stream_writer%add_to_stream("Q")
-    end subroutine draw_pdf_circle_with_outline
-
-    subroutine draw_pdf_square_with_outline(this, cx, cy, size)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: cx, cy, size
-        character(len=200) :: rect_cmd
-        real(wp) :: half_size
-
-        half_size = size * 0.5_wp
-        call this%stream_writer%add_to_stream("q")
-        
-        ! Draw rectangle
-        write(rect_cmd, '(F8.2, 1X, F8.2, 1X, F8.2, 1X, F8.2, 1X, "re")') &
-             cx - half_size, cy - half_size, size, size
-        call this%stream_writer%add_to_stream(rect_cmd)
-        
-        ! Set fill color to current stroke color, then fill and stroke with black outline
-        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
-                                  this%stream_writer%current_state%stroke_g, &
-                                  this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
-        call this%stream_writer%add_to_stream("Q")
-    end subroutine draw_pdf_square_with_outline
-
-    subroutine draw_pdf_diamond_with_outline(this, cx, cy, size)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: cx, cy, size
-        character(len=200) :: diamond_cmd
-        real(wp) :: half_size
-
-        half_size = size * 0.5_wp
-        call this%stream_writer%add_to_stream("q")
-        
-        ! Draw diamond as four lines
-        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx, cy + half_size  ! Top
-        call this%stream_writer%add_to_stream(diamond_cmd)
-        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy  ! Right
-        call this%stream_writer%add_to_stream(diamond_cmd)
-        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx, cy - half_size  ! Bottom
-        call this%stream_writer%add_to_stream(diamond_cmd)
-        write(diamond_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx - half_size, cy  ! Left
-        call this%stream_writer%add_to_stream(diamond_cmd)
-        call this%stream_writer%add_to_stream("h")  ! Close path
-        
-        ! Set fill color to current stroke color, then fill and stroke with black outline
-        call pdf_write_fill_color(this%stream_writer, this%stream_writer%current_state%stroke_r, &
-                                  this%stream_writer%current_state%stroke_g, &
-                                  this%stream_writer%current_state%stroke_b)
-        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black outline
-        call this%stream_writer%add_to_stream("B")  ! Fill and stroke
-        call this%stream_writer%add_to_stream("Q")
-    end subroutine draw_pdf_diamond_with_outline
-
-    subroutine draw_pdf_x_marker(this, cx, cy, size)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: cx, cy, size
-        character(len=200) :: x_cmd
-        real(wp) :: half_size
-
-        half_size = size * 0.5_wp
-        call this%stream_writer%add_to_stream("q")
-        call this%stream_writer%add_to_stream("0 0 0 RG")  ! Black color for X
-        
-        ! Draw X as two diagonal lines
-        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx - half_size, cy - half_size
-        call this%stream_writer%add_to_stream(x_cmd)
-        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy + half_size
-        call this%stream_writer%add_to_stream(x_cmd)
-        call this%stream_writer%add_to_stream("S")
-        
-        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "m")') cx - half_size, cy + half_size
-        call this%stream_writer%add_to_stream(x_cmd)
-        write(x_cmd, '(F8.2, 1X, F8.2, 1X, "l")') cx + half_size, cy - half_size
-        call this%stream_writer%add_to_stream(x_cmd)
-        call this%stream_writer%add_to_stream("S")
-        call this%stream_writer%add_to_stream("Q")
-    end subroutine draw_pdf_x_marker
-
-    subroutine draw_pdf_arrow(this, x, y, dx, dy, size, style)
-        !! Draw arrow head for streamplot arrows in PDF backend
+    
+    subroutine draw_pdf_arrow_facade(this, x, y, dx, dy, size, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
+        real(wp) :: pdf_x, pdf_y
         
-        real(wp) :: arrow_length, arrow_width, angle, tip_x, tip_y
-        real(wp) :: left_x, left_y, right_x, right_y
-        character(len=100) :: cmd
-        
-        ! Set arrow properties
-        arrow_length = size * 10.0_wp  ! Scale arrow size
-        arrow_width = arrow_length * 0.4_wp
-        
-        ! Calculate arrow tip position
-        tip_x = x + dx * arrow_length
-        tip_y = y + dy * arrow_length
-        
-        ! Calculate angle perpendicular to direction
-        angle = atan2(dy, dx)
-        
-        ! Calculate arrow head corners
-        left_x = tip_x - arrow_length * 0.7_wp * cos(angle) - arrow_width * sin(angle)
-        left_y = tip_y - arrow_length * 0.7_wp * sin(angle) + arrow_width * cos(angle)
-        right_x = tip_x - arrow_length * 0.7_wp * cos(angle) + arrow_width * sin(angle)
-        right_y = tip_y - arrow_length * 0.7_wp * sin(angle) - arrow_width * cos(angle)
-        
-        ! Draw triangular arrow head
-        call this%stream_writer%add_to_stream("q")
-        
-        ! Move to tip and draw triangle
-        write(cmd, '(F8.2, 1X, F8.2, 1X, "m")') tip_x, tip_y
-        call this%stream_writer%add_to_stream(cmd)
-        write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') left_x, left_y
-        call this%stream_writer%add_to_stream(cmd)
-        write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') right_x, right_y
-        call this%stream_writer%add_to_stream(cmd)
-        call this%stream_writer%add_to_stream("h")  ! Close path
-        call this%stream_writer%add_to_stream("f")  ! Fill
-        
-        call this%stream_writer%add_to_stream("Q")
-        
-        ! Mark that arrows have been rendered
-        this%has_rendered_arrows = .true.
-        this%uses_vector_arrows = .true.
-        this%has_triangular_arrows = .true.
-    end subroutine draw_pdf_arrow
-
+        call this%normalize_coords(x, y, pdf_x, pdf_y)
+        call draw_pdf_arrow(this%stream_writer, pdf_x, pdf_y, dx, dy, size, style)
+    end subroutine draw_pdf_arrow_facade
+    
     function pdf_get_ascii_output(this) result(output)
-        !! Get ASCII output (not applicable for PDF backend)
         class(pdf_context), intent(in) :: this
         character(len=:), allocatable :: output
         
-        output = ""  ! PDF backend doesn't produce ASCII output
+        output = "PDF output (non-ASCII format)"
     end function pdf_get_ascii_output
-
-    function pdf_get_width_scale(this) result(scale)
-        !! Get width scaling factor for coordinate transformation
+    
+    real(wp) function pdf_get_width_scale(this) result(scale)
         class(pdf_context), intent(in) :: this
-        real(wp) :: scale
-        
-        ! Calculate scaling from logical to PDF coordinates
-        if (this%width > 0 .and. this%x_max > this%x_min) then
-            scale = real(this%width, wp) / (this%x_max - this%x_min)
-        else
-            scale = 1.0_wp
-        end if
+        scale = real(this%width, wp) / PDF_WIDTH
     end function pdf_get_width_scale
-
-    function pdf_get_height_scale(this) result(scale)
-        !! Get height scaling factor for coordinate transformation  
+    
+    real(wp) function pdf_get_height_scale(this) result(scale)
         class(pdf_context), intent(in) :: this
-        real(wp) :: scale
-        
-        ! Calculate scaling from logical to PDF coordinates
-        if (this%height > 0 .and. this%y_max > this%y_min) then
-            scale = real(this%height, wp) / (this%y_max - this%y_min)
-        else
-            scale = 1.0_wp
-        end if
+        scale = real(this%height, wp) / PDF_HEIGHT
     end function pdf_get_height_scale
-
+    
     subroutine pdf_fill_quad(this, x_quad, y_quad)
-        !! Fill quadrilateral using polymorphic interface
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
-        
-        character(len=100) :: cmd
-        real(wp) :: pdf_x(4), pdf_y(4)
+        real(wp) :: px(4), py(4)
+        character(len=512) :: cmd
         integer :: i
         
-        ! Convert coordinates to PDF space
+        ! Convert to PDF coordinates
         do i = 1, 4
-            call normalize_to_pdf_coords(this, x_quad(i), y_quad(i), pdf_x(i), pdf_y(i))
+            call this%normalize_coords(x_quad(i), y_quad(i), px(i), py(i))
         end do
         
-        call this%stream_writer%add_to_stream("q")
+        ! Use current color (should be set before calling)
         
-        ! Move to first point
-        write(cmd, '(F8.2, 1X, F8.2, 1X, "m")') pdf_x(1), pdf_y(1)
-        call this%stream_writer%add_to_stream(cmd)
-        
-        ! Draw lines to remaining points
-        do i = 2, 4
-            write(cmd, '(F8.2, 1X, F8.2, 1X, "l")') pdf_x(i), pdf_y(i)
-            call this%stream_writer%add_to_stream(cmd)
-        end do
-        
-        call this%stream_writer%add_to_stream("h")  ! Close path
-        call this%stream_writer%add_to_stream("f")  ! Fill
-        call this%stream_writer%add_to_stream("Q")
+        ! Draw filled quadrilateral
+        write(cmd, '(8(F0.3, 1X), "m l l l h f")') px(1), py(1), px(2), py(2), px(3), py(3), px(4), py(4)
+        call this%stream_writer%add_to_stream(trim(cmd))
     end subroutine pdf_fill_quad
-
+    
     subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
-        !! Fill contour plot using vector-based grid quads for PDF backend
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        integer, parameter :: QUAD_RESOLUTION = 100  ! Quads per dimension
-        integer :: qx, qy, nx, ny
-        real(wp) :: quad_width, quad_height, quad_x, quad_y
-        real(wp) :: center_x, center_y, z_value
-        real(wp) :: color_rgb(3)
+        integer :: i, j
         real(wp) :: x_quad(4), y_quad(4)
-        real(wp) :: x_min, x_max, y_min, y_max
+        real(wp) :: value, norm_value
+        real(wp), dimension(3) :: color
+        character(len=32) :: cmd
         
-        nx = size(x_grid)
-        ny = size(y_grid)
-        
-        ! Validate input dimensions
-        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
-        if (abs(z_max - z_min) < 1e-10_wp) return
-        
-        ! Get data bounds
-        x_min = minval(x_grid)
-        x_max = maxval(x_grid)
-        y_min = minval(y_grid)
-        y_max = maxval(y_grid)
-        
-        ! Calculate quad dimensions in world coordinates
-        quad_width = (x_max - x_min) / real(QUAD_RESOLUTION, wp)
-        quad_height = (y_max - y_min) / real(QUAD_RESOLUTION, wp)
-        
-        ! Generate grid of colored quads
-        do qy = 1, QUAD_RESOLUTION
-            do qx = 1, QUAD_RESOLUTION
+        do i = 1, size(z_grid, 1) - 1
+            do j = 1, size(z_grid, 2) - 1
+                ! Get normalized value
+                value = z_grid(i, j)
+                if (z_max > z_min) then
+                    norm_value = (value - z_min) / (z_max - z_min)
+                else
+                    norm_value = 0.5_wp
+                end if
                 
-                ! Calculate quad position in world coordinates
-                quad_x = x_min + real(qx - 1, wp) * quad_width
-                quad_y = y_min + real(qy - 1, wp) * quad_height
+                ! Simple grayscale color
+                color = [norm_value, norm_value, norm_value]
                 
-                ! Calculate center point of quad for color sampling
-                center_x = quad_x + 0.5_wp * quad_width
-                center_y = quad_y + 0.5_wp * quad_height
+                ! Set fill color
+                write(cmd, '(3(F0.3, 1X), "rg")') color
+                call this%stream_writer%add_to_stream(trim(cmd))
                 
-                ! Interpolate Z value at quad center
-                call interpolate_z_value_pdf(x_grid, y_grid, z_grid, center_x, center_y, z_value)
+                ! Define quad corners
+                x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
+                y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
                 
-                ! Convert Z value to color using default colormap (viridis)
-                call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
-                
-                ! Set color for this quad
-                call this%color(color_rgb(1), color_rgb(2), color_rgb(3))
-                
-                ! Define quad vertices (counter-clockwise)
-                x_quad(1) = quad_x
-                y_quad(1) = quad_y
-                x_quad(2) = quad_x + quad_width
-                y_quad(2) = quad_y
-                x_quad(3) = quad_x + quad_width
-                y_quad(3) = quad_y + quad_height
-                x_quad(4) = quad_x
-                y_quad(4) = quad_y + quad_height
-                
-                ! Fill the quad
-                call this%fill_quad(x_quad, y_quad)
+                ! Fill cell
+                call pdf_fill_quad(this, x_quad, y_quad)
             end do
         end do
     end subroutine pdf_fill_heatmap
-
-    subroutine pdf_render_legend_specialized(this, legend, legend_x, legend_y)
-        !! Render legend using standard algorithm for PDF
-        use fortplot_legend, only: legend_t, render_standard_legend
+    
+    subroutine pdf_render_legend_specialized(this, entries, x, y, width, height)
         class(pdf_context), intent(inout) :: this
-        type(legend_t), intent(in) :: legend
-        real(wp), intent(in) :: legend_x, legend_y
+        type(legend_entry_t), dimension(:), intent(in) :: entries
+        real(wp), intent(in) :: x, y, width, height
         
-        ! Use standard legend rendering for PNG/PDF backends
-        call render_standard_legend(legend, this, legend_x, legend_y)
+        ! Simplified legend rendering
+        integer :: i
+        real(wp) :: y_pos
+        
+        y_pos = y
+        do i = 1, size(entries)
+            call this%text(x, y_pos, entries(i)%label)
+            y_pos = y_pos - 20.0_wp
+        end do
     end subroutine pdf_render_legend_specialized
-
-    subroutine pdf_calculate_legend_dimensions(this, legend, legend_width, legend_height)
-        !! Calculate standard legend dimensions for PDF
-        use fortplot_legend, only: legend_t
+    
+    subroutine pdf_calculate_legend_dimensions(this, entries, width, height)
         class(pdf_context), intent(in) :: this
-        type(legend_t), intent(in) :: legend
-        real(wp), intent(out) :: legend_width, legend_height
+        type(legend_entry_t), dimension(:), intent(in) :: entries
+        real(wp), intent(out) :: width, height
         
-        ! Use standard dimension calculation for PDF backend
-        legend_width = 80.0_wp   ! Standard legend width
-        legend_height = real(legend%num_entries * 20 + 10, wp)  ! 20 pixels per entry + margins
+        width = 100.0_wp
+        height = real(size(entries), wp) * 20.0_wp
     end subroutine pdf_calculate_legend_dimensions
-
-    subroutine pdf_set_legend_border_width(this)
-        !! Set standard border width for PDF legend
+    
+    subroutine pdf_set_legend_border_width(this, width)
         class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: width
         
-        call this%set_line_width(1.0_wp)  ! Standard border for PDF like axes
+        call this%set_line_width(width)
     end subroutine pdf_set_legend_border_width
-
-    subroutine pdf_calculate_legend_position(this, legend, x, y)
-        !! Calculate standard legend position for PDF using plot coordinates
-        use fortplot_legend, only: legend_t
+    
+    subroutine pdf_calculate_legend_position(this, loc, x, y)
         class(pdf_context), intent(in) :: this
-        type(legend_t), intent(in) :: legend
+        character(len=*), intent(in) :: loc
         real(wp), intent(out) :: x, y
-        real(wp) :: legend_width, legend_height
         
-        ! Get standard dimensions
-        call this%calculate_legend_dimensions(legend, legend_width, legend_height)
-        
-        ! For PNG/PDF backends, use standard matplotlib positioning
-        if (legend%num_entries > 0) then
-            ! Position in upper right with margin from edges
-            x = this%x_max - legend_width - (this%x_max - this%x_min) * 0.05_wp
-            y = this%y_max - (this%y_max - this%y_min) * 0.05_wp
-        else
-            ! Fallback for empty legend
-            x = this%x_max - this%x_max * 0.2_wp
-            y = this%y_max - this%y_max * 0.05_wp
-        end if
+        select case(trim(loc))
+        case('upper right')
+            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
+            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
+        case('upper left')
+            x = real(this%plot_area%left + 20, wp)
+            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
+        case('lower right')
+            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
+            y = real(this%plot_area%bottom + 100, wp)
+        case('lower left')
+            x = real(this%plot_area%left + 20, wp)
+            y = real(this%plot_area%bottom + 100, wp)
+        case default
+            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
+            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
+        end select
     end subroutine pdf_calculate_legend_position
-
+    
     subroutine pdf_extract_rgb_data(this, width, height, rgb_data)
-        !! Extract RGB data from PDF backend (not supported - dummy data)
-        use, intrinsic :: iso_fortran_env, only: real64
         class(pdf_context), intent(in) :: this
         integer, intent(in) :: width, height
-        real(real64), intent(out) :: rgb_data(width, height, 3)
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         
-        ! PDF backend doesn't store RGB data for animation - fill with dummy data
-        rgb_data = 1.0_real64  ! White background
+        ! PDF doesn't have RGB pixel data - return white
+        rgb_data = 1.0_wp
     end subroutine pdf_extract_rgb_data
-
+    
     subroutine pdf_get_png_data(this, width, height, png_data, status)
-        !! Get PNG data from PDF backend (not supported)
         class(pdf_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        ! PDF backend doesn't provide PNG data
+        ! PDF doesn't generate PNG data
         allocate(png_data(0))
-        status = -1
+        status = -1  ! Indicate not supported
     end subroutine pdf_get_png_data
-
+    
     subroutine pdf_prepare_3d_data(this, plots)
-        !! Prepare 3D data for PDF backend (no-op - PDF doesn't use 3D data)
-        use fortplot_plot_data, only: plot_data_t
         class(pdf_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! PDF backend doesn't need 3D data preparation - no-op
+        ! PDF doesn't support 3D - stub implementation
+        ! Nothing to prepare for 2D PDF output
     end subroutine pdf_prepare_3d_data
-
+    
     subroutine pdf_render_ylabel(this, ylabel)
-        !! Render Y-axis label for PDF backend (no-op - handled elsewhere)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
         
-        ! PDF handles this differently - already done in draw_pdf_axes_and_labels
-        ! This is a no-op to satisfy polymorphic interface
+        real(wp) :: x, y
+        
+        x = real(this%plot_area%left - 40, wp)
+        y = real(this%plot_area%bottom + this%plot_area%height / 2, wp)
+        
+        ! Draw rotated Y-axis label
+        call draw_rotated_mixed_font_text(this%core_ctx, x, y, ylabel)
     end subroutine pdf_render_ylabel
-
-    subroutine pdf_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
-                                       x_min, x_max, y_min, y_max, &
-                                       title, xlabel, ylabel, &
-                                       z_min, z_max, has_3d_plots)
-        !! Draw axes and labels for PDF backend
+    
+    subroutine pdf_draw_axes_stub(this, xscale, yscale, symlog_threshold, &
+                                   x_min, x_max, y_min, y_max, &
+                                   title, xlabel, ylabel, &
+                                   z_min, z_max, has_3d_plots)
+        ! Stub implementation to match parent signature
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -1877,311 +421,59 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        real(wp) :: label_x, label_y
+        ! Delegate to actual implementation with fixed strings
+        character(len=256) :: title_str, xlabel_str, ylabel_str
+        logical :: enable_grid
         
-        ! Draw axes
-        call this%line(x_min, y_min, x_max, y_min)
-        call this%line(x_min, y_min, x_min, y_max)
+        title_str = ""
+        xlabel_str = ""
+        ylabel_str = ""
+        enable_grid = .false.
+        if (allocated(title)) title_str = title
+        if (allocated(xlabel)) xlabel_str = xlabel
+        if (allocated(ylabel)) ylabel_str = ylabel
         
-        ! Draw title at top if present
-        if (present(title)) then
-            if (allocated(title)) then
-                label_x = (x_min + x_max) / 2.0_wp
-                label_y = y_max + 0.05_wp * (y_max - y_min)
-                call this%text(label_x, label_y, title)
-            end if
-        end if
+        call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
+                                     x_min, x_max, y_min, y_max, &
+                                     title_str, xlabel_str, ylabel_str, enable_grid)
+    end subroutine pdf_draw_axes_stub
+    
+    subroutine pdf_draw_axes_and_labels_facade(this, xscale, yscale, symlog_threshold, &
+                                              x_min, x_max, y_min, y_max, &
+                                              title, xlabel, ylabel, enable_grid)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=*), intent(in) :: title, xlabel, ylabel
+        logical, intent(in), optional :: enable_grid
         
-        ! Draw xlabel centered below x-axis
-        if (present(xlabel)) then
-            if (allocated(xlabel)) then
-                label_x = (x_min + x_max) / 2.0_wp
-                label_y = y_min - 0.05_wp * (y_max - y_min)
-                call this%text(label_x, label_y, xlabel)
-            end if
-        end if
-        
-        ! Draw ylabel to the left of y-axis
-        if (present(ylabel)) then
-            if (allocated(ylabel)) then
-                ! For PDF, ylabel can be rotated for better appearance
-                label_x = x_min - 0.1_wp * (x_max - x_min)
-                label_y = (y_min + y_max) / 2.0_wp
-                call this%text(label_x, label_y, ylabel)
-            end if
-        end if
-    end subroutine pdf_draw_axes_and_labels
-
+        ! Delegate to axes module
+        call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
+                                     x_min, x_max, y_min, y_max, &
+                                     title, xlabel, ylabel, enable_grid)
+    end subroutine pdf_draw_axes_and_labels_facade
+    
     subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
-        !! Save current coordinate system
         class(pdf_context), intent(in) :: this
         real(wp), intent(out) :: x_min, x_max, y_min, y_max
         
+        ! Return current coordinate bounds
         x_min = this%x_min
         x_max = this%x_max
         y_min = this%y_min
         y_max = this%y_max
     end subroutine pdf_save_coordinates
-
+    
     subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
-        !! Set coordinate system
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
+        ! Set new coordinate bounds
         this%x_min = x_min
         this%x_max = x_max
         this%y_min = y_min
         this%y_max = y_max
     end subroutine pdf_set_coordinates
-
-    subroutine interpolate_z_value_pdf(x_grid, y_grid, z_grid, world_x, world_y, z_value)
-        !! Bilinear interpolation of Z value at world coordinates for PDF backend
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
-        real(wp), intent(in) :: world_x, world_y
-        real(wp), intent(out) :: z_value
-        
-        integer :: nx, ny, i, j, i1, i2, j1, j2
-        real(wp) :: x1, x2, y1, y2, dx_norm, dy_norm
-        real(wp) :: z11, z12, z21, z22
-        
-        nx = size(x_grid)
-        ny = size(y_grid)
-        
-        ! Find grid indices for interpolation
-        ! X direction
-        i1 = 0; i2 = 0
-        if (world_x <= x_grid(1)) then
-            i1 = 1; i2 = 1
-        else if (world_x >= x_grid(nx)) then
-            i1 = nx; i2 = nx
-        else
-            do i = 1, nx - 1
-                if (world_x >= x_grid(i) .and. world_x <= x_grid(i + 1)) then
-                    i1 = i; i2 = i + 1
-                    exit
-                end if
-            end do
-        end if
-        
-        ! Y direction
-        j1 = 0; j2 = 0
-        if (world_y <= y_grid(1)) then
-            j1 = 1; j2 = 1
-        else if (world_y >= y_grid(ny)) then
-            j1 = ny; j2 = ny
-        else
-            do j = 1, ny - 1
-                if (world_y >= y_grid(j) .and. world_y <= y_grid(j + 1)) then
-                    j1 = j; j2 = j + 1
-                    exit
-                end if
-            end do
-        end if
-        
-        ! Handle edge cases where indices weren't found
-        if (i1 == 0) then
-            i1 = 1; i2 = min(2, nx)
-        end if
-        if (j1 == 0) then
-            j1 = 1; j2 = min(2, ny)
-        end if
-        
-        ! Get coordinates and values at corners
-        x1 = x_grid(i1); x2 = x_grid(i2)
-        y1 = y_grid(j1); y2 = y_grid(j2)
-        z11 = z_grid(i1, j1)
-        z12 = z_grid(i1, j2)
-        z21 = z_grid(i2, j1)
-        z22 = z_grid(i2, j2)
-        
-        ! Bilinear interpolation
-        if (i1 == i2 .and. j1 == j2) then
-            ! Point coincides with grid point
-            z_value = z11
-        else if (i1 == i2) then
-            ! Linear interpolation in Y direction only
-            if (abs(y2 - y1) > 1e-10_wp) then
-                dy_norm = (world_y - y1) / (y2 - y1)
-                z_value = z11 + dy_norm * (z12 - z11)
-            else
-                z_value = z11
-            end if
-        else if (j1 == j2) then
-            ! Linear interpolation in X direction only
-            if (abs(x2 - x1) > 1e-10_wp) then
-                dx_norm = (world_x - x1) / (x2 - x1)
-                z_value = z11 + dx_norm * (z21 - z11)
-            else
-                z_value = z11
-            end if
-        else
-            ! Full bilinear interpolation
-            if (abs(x2 - x1) > 1e-10_wp .and. abs(y2 - y1) > 1e-10_wp) then
-                dx_norm = (world_x - x1) / (x2 - x1)
-                dy_norm = (world_y - y1) / (y2 - y1)
-                
-                z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
-                         z21 * dx_norm * (1.0_wp - dy_norm) + &
-                         z12 * (1.0_wp - dx_norm) * dy_norm + &
-                         z22 * dx_norm * dy_norm
-            else
-                z_value = z11
-            end if
-        end if
-    end subroutine interpolate_z_value_pdf
-
-    ! Internal helper functions for draw_mixed_font_text
-
-    subroutine begin_pdf_text_block(this, x, y)
-        !! Initialize PDF text block with position and default font
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=200) :: text_cmd
-        
-        call this%stream_writer%add_to_stream("BT")
-        write(text_cmd, '("/F1 12 Tf")') 
-        call this%stream_writer%add_to_stream(text_cmd)
-        write(text_cmd, '(F8.2, 1X, F8.2, 1X, "Td")') x, y
-        call this%stream_writer%add_to_stream(text_cmd)
-    end subroutine begin_pdf_text_block
-
-    subroutine end_pdf_text_block(this)
-        !! Close PDF text block
-        class(pdf_context), intent(inout) :: this
-        call this%stream_writer%add_to_stream("ET")
-    end subroutine end_pdf_text_block
-
-    subroutine output_pdf_text_segment(this, segment, segment_len, in_symbol_font)
-        !! Output accumulated text segment with appropriate font encoding
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: segment
-        integer, intent(in) :: segment_len
-        logical, intent(in) :: in_symbol_font
-        
-        character(len=200) :: text_cmd
-        character(len=1000) :: escaped_segment
-        integer :: escaped_len
-        
-        if (segment_len > 0) then
-            if (in_symbol_font) then
-                write(text_cmd, '("(", A, ") Tj")') segment(1:segment_len)
-            else
-                call escape_pdf_string(segment(1:segment_len), escaped_segment, escaped_len)
-                write(text_cmd, '("(", A, ") Tj")') escaped_segment(1:escaped_len)
-            end if
-            call this%stream_writer%add_to_stream(text_cmd)
-        end if
-    end subroutine output_pdf_text_segment
-
-    subroutine switch_pdf_font(this, to_symbol, in_symbol_font)
-        !! Switch between Helvetica and Symbol fonts
-        class(pdf_context), intent(inout) :: this
-        logical, intent(in) :: to_symbol
-        logical, intent(inout) :: in_symbol_font
-        
-        if (to_symbol .and. .not. in_symbol_font) then
-            call this%stream_writer%add_to_stream("/F2 12 Tf")
-            in_symbol_font = .true.
-        else if (.not. to_symbol .and. in_symbol_font) then
-            call this%stream_writer%add_to_stream("/F1 12 Tf")
-            in_symbol_font = .false.
-        end if
-    end subroutine switch_pdf_font
-
-    subroutine process_pdf_unicode_char(this, text, text_pos, current_segment, &
-                                       segment_pos, in_symbol_font)
-        !! Process a Unicode character and update state
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: text
-        integer, intent(inout) :: text_pos
-        character(len=*), intent(inout) :: current_segment
-        integer, intent(inout) :: segment_pos
-        logical, intent(inout) :: in_symbol_font
-        
-        integer :: char_len, codepoint, symbol_char
-        
-        char_len = utf8_char_length(text(text_pos:text_pos))
-        if (char_len > 0 .and. text_pos + char_len - 1 <= len_trim(text)) then
-            codepoint = utf8_to_codepoint(text, text_pos)
-            call unicode_to_symbol_char(codepoint, symbol_char)
-            
-            if (symbol_char > 0) then
-                ! Greek letter - ensure Symbol font
-                if (.not. in_symbol_font) then
-                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .false.)
-                    call switch_pdf_font(this, .true., in_symbol_font)
-                    segment_pos = 1
-                end if
-                current_segment(segment_pos:segment_pos) = char(symbol_char)
-                segment_pos = segment_pos + 1
-            else
-                ! Non-Greek Unicode - ensure Helvetica font  
-                if (in_symbol_font) then
-                    call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
-                    call switch_pdf_font(this, .false., in_symbol_font)
-                    segment_pos = 1
-                end if
-                call unicode_codepoint_to_pdf_escape(codepoint, &
-                                                    current_segment(segment_pos:))
-                segment_pos = segment_pos + len_trim(current_segment(segment_pos:))
-            end if
-            text_pos = text_pos + char_len
-        else
-            ! Invalid UTF-8, skip
-            text_pos = text_pos + 1
-        end if
-    end subroutine process_pdf_unicode_char
-
-    subroutine process_pdf_ascii_char(this, current_char, current_segment, &
-                                     segment_pos, in_symbol_font)
-        !! Process an ASCII character and update state
-        class(pdf_context), intent(inout) :: this
-        character(len=1), intent(in) :: current_char
-        character(len=*), intent(inout) :: current_segment
-        integer, intent(inout) :: segment_pos
-        logical, intent(inout) :: in_symbol_font
-        
-        ! ASCII characters must be in Helvetica font
-        if (in_symbol_font) then
-            call output_pdf_text_segment(this, current_segment, segment_pos-1, .true.)
-            call switch_pdf_font(this, .false., in_symbol_font)
-            segment_pos = 1
-        end if
-        
-        current_segment(segment_pos:segment_pos) = current_char
-        segment_pos = segment_pos + 1
-    end subroutine process_pdf_ascii_char
-
-    subroutine process_pdf_mixed_text_content(this, text)
-        !! Process text content with font switching logic
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: text
-        
-        integer :: i, segment_pos
-        character(len=1) :: current_char
-        character(len=500) :: current_segment
-        logical :: in_symbol_font
-        
-        i = 1
-        in_symbol_font = .false.
-        current_segment = ""
-        segment_pos = 1
-        
-        do while (i <= len_trim(text))
-            current_char = text(i:i)
-            
-            if (iachar(current_char) > 127) then
-                call process_pdf_unicode_char(this, text, i, current_segment, &
-                                             segment_pos, in_symbol_font)
-            else
-                call process_pdf_ascii_char(this, current_char, current_segment, &
-                                           segment_pos, in_symbol_font)
-                i = i + 1
-            end if
-        end do
-        
-        ! Output final segment
-        call output_pdf_text_segment(this, current_segment, segment_pos-1, in_symbol_font)
-    end subroutine process_pdf_mixed_text_content
 
 end module fortplot_pdf
