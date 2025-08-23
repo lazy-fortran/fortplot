@@ -196,11 +196,11 @@ contains
         end if
         
         ! Create test animation
-        test_x(1:5) = [(real(i, real64), i=1,5)]
-        test_y(1:5) = test_x(1:5)**2
+        test_x = [(real(i, real64), i=1,5)]
+        test_y = test_x**2
         
         call test_fig%initialize(width=400, height=300)
-        call test_fig%add_plot(test_x(1:5), test_y(1:5))
+        call test_fig%add_plot(test_x, test_y)
         
         anim = FuncAnimation(update_accessibility_test, &
                             frames=3, interval=100, fig=test_fig)
@@ -248,8 +248,8 @@ contains
 
     subroutine update_accessibility_test(frame)
         integer, intent(in) :: frame
-        test_y(1:5) = test_x(1:5)**2 + real(frame, real64) * 0.1_real64
-        call test_fig%set_ydata(1, test_y(1:5))
+        test_y = test_x**2 + real(frame, real64) * 0.1_real64
+        call test_fig%set_ydata(1, test_y)
     end subroutine update_accessibility_test
 
     subroutine test_documentation_link_validation()
@@ -334,19 +334,19 @@ contains
         end if
         
         ! Create first test animation
-        test_x(1:8) = [(real(i, real64), i=1,8)]
-        test_y(1:8) = cos(test_x(1:8))
+        test_x = [(real(i, real64), i=1,8)]
+        test_y = cos(test_x)
         
         call test_fig%initialize(width=600, height=400)
-        call test_fig%add_plot(test_x(1:8), test_y(1:8), label='Demo 1')
+        call test_fig%add_plot(test_x, test_y, label='Demo 1')
         
         anim1 = FuncAnimation(update_demo1, frames=5, interval=80, fig=test_fig)
         call anim1%save(file1)
         
         ! Create second test animation  
-        test_y(1:8) = sin(test_x(1:8) * 2.0_real64)
+        test_y = sin(test_x * 2.0_real64)
         call test_fig%clear()
-        call test_fig%add_plot(test_x(1:8), test_y(1:8), label='Demo 2')
+        call test_fig%add_plot(test_x, test_y, label='Demo 2')
         
         anim2 = FuncAnimation(update_demo2, frames=5, interval=80, fig=test_fig)
         call anim2%save(file2)
@@ -386,16 +386,16 @@ contains
         integer, intent(in) :: frame
         real(real64) :: shift
         shift = real(frame, real64) * 0.3_real64
-        test_y(1:8) = cos(test_x(1:8) + shift)
-        call test_fig%set_ydata(1, test_y(1:8))
+        test_y = cos(test_x + shift)
+        call test_fig%set_ydata(1, test_y)
     end subroutine update_demo1
 
     subroutine update_demo2(frame)
         integer, intent(in) :: frame
         real(real64) :: amplitude
         amplitude = 1.0_real64 + real(frame, real64) * 0.2_real64
-        test_y(1:8) = sin(test_x(1:8) * 2.0_real64) * amplitude
-        call test_fig%set_ydata(1, test_y(1:8))
+        test_y = sin(test_x * 2.0_real64) * amplitude
+        call test_fig%set_ydata(1, test_y)
     end subroutine update_demo2
 
 end program test_animation_github_pages_integration
