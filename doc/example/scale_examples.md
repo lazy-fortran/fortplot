@@ -89,7 +89,7 @@ end program scale_examples
 ASCII output:
 ```
 %PDF-1.4
-%????
+%[binary]
 2 0 obj
 <<
 /Type /Catalog
@@ -173,7 +173,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%????
+%[binary]
 2 0 obj
 <<
 /Type /Catalog
