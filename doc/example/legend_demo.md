@@ -24,6 +24,7 @@ program legend_demo
     call basic_legend_example()
     call positioned_legend_example()
     call multi_function_legend_example()
+    call legend_box_styling_example()
 
 contains
 
@@ -40,21 +41,21 @@ contains
         y1 = sin(x)
         y2 = cos(x)
 
-        call fig%initialize(640, 480)
-        call fig%set_title("Basic Legend Demo")
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("Basic Legend Demo")
+        call xlabel("x")
+        call ylabel("y")
 
         ! Add labeled plots
-        call fig%add_plot(x, y1, label="sin(x)")
-        call fig%add_plot(x, y2, label="cos(x)")
+        call add_plot(x, y1, label="sin(x)")
+        call add_plot(x, y2, label="cos(x)")
 
         ! Add legend with default position (upper right)
-        call fig%legend()
+        call legend()
 
-        call fig%savefig('output/example/fortran/legend_demo/basic_legend.png')
-        call fig%savefig('output/example/fortran/legend_demo/basic_legend.pdf')
-        call fig%savefig('output/example/fortran/legend_demo/basic_legend.txt')
+        call savefig('output/example/fortran/legend_demo/basic_legend.png')
+        call savefig('output/example/fortran/legend_demo/basic_legend.pdf')
+        call savefig('output/example/fortran/legend_demo/basic_legend.txt')
 
         print *, "Created: basic_legend.png/pdf/txt"
     end subroutine basic_legend_example
@@ -73,44 +74,44 @@ contains
         y2 = log(x)
 
         ! Upper left position
-        call fig1%initialize(640, 480)
-        call fig1%set_title("Legend: Upper Left")
-        call fig1%add_plot(x, y1, label="‚àöx")
-        call fig1%add_plot(x, y2, label="ln(x)")
-        call fig1%legend(location="upper left")
-        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.png')
-        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.pdf')
-        call fig1%savefig('output/example/fortran/legend_demo/legend_upper_left.txt')
+        call figure(figsize=[640.0_wp, 480.0_wp])
+        call title("Legend: Upper Left")
+        call add_plot(x, y1, label="‚àöx")
+        call add_plot(x, y2, label="ln(x)")
+        call legend(position="upper left")
+        call savefig('output/example/fortran/legend_demo/legend_upper_left.png')
+        call savefig('output/example/fortran/legend_demo/legend_upper_left.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_upper_left.txt')
 
         ! Upper right position (default)
-        call fig2%initialize(640, 480)
-        call fig2%set_title("Legend: Upper Right")
-        call fig2%add_plot(x, y1, label="‚àöx")
-        call fig2%add_plot(x, y2, label="ln(x)")
-        call fig2%legend(location="upper right")
-        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.png')
-        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.pdf')
-        call fig2%savefig('output/example/fortran/legend_demo/legend_upper_right.txt')
+        call figure(figsize=[640.0_wp, 480.0_wp])
+        call title("Legend: Upper Right")
+        call add_plot(x, y1, label="‚àöx")
+        call add_plot(x, y2, label="ln(x)")
+        call legend(position="upper right")
+        call savefig('output/example/fortran/legend_demo/legend_upper_right.png')
+        call savefig('output/example/fortran/legend_demo/legend_upper_right.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_upper_right.txt')
 
         ! Lower left position
-        call fig3%initialize(640, 480)
-        call fig3%set_title("Legend: Lower Left")
-        call fig3%add_plot(x, y1, label="‚àöx")
-        call fig3%add_plot(x, y2, label="ln(x)")
-        call fig3%legend(location="lower left")
-        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.png')
-        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.pdf')
-        call fig3%savefig('output/example/fortran/legend_demo/legend_lower_left.txt')
+        call figure(figsize=[640.0_wp, 480.0_wp])
+        call title("Legend: Lower Left")
+        call add_plot(x, y1, label="‚àöx")
+        call add_plot(x, y2, label="ln(x)")
+        call legend(position="lower left")
+        call savefig('output/example/fortran/legend_demo/legend_lower_left.png')
+        call savefig('output/example/fortran/legend_demo/legend_lower_left.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_lower_left.txt')
 
         ! Lower right position
-        call fig4%initialize(640, 480)
-        call fig4%set_title("Legend: Lower Right")
-        call fig4%add_plot(x, y1, label="‚àöx")
-        call fig4%add_plot(x, y2, label="ln(x)")
-        call fig4%legend(location="lower right")
-        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.png')
-        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.pdf')
-        call fig4%savefig('output/example/fortran/legend_demo/legend_lower_right.txt')
+        call figure(figsize=[640.0_wp, 480.0_wp])
+        call title("Legend: Lower Right")
+        call add_plot(x, y1, label="‚àöx")
+        call add_plot(x, y2, label="ln(x)")
+        call legend(position="lower right")
+        call savefig('output/example/fortran/legend_demo/legend_lower_right.png')
+        call savefig('output/example/fortran/legend_demo/legend_lower_right.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_lower_right.txt')
 
         print *, "Created: legend_upper_left/right.png/pdf/txt, legend_lower_left/right.png/pdf/txt"
     end subroutine positioned_legend_example
@@ -130,26 +131,72 @@ contains
         y3 = sin(x) / x
         y4 = x**2 * exp(-x)
 
-        call fig%initialize(800, 600)
-        call fig%set_title("Mathematical Functions with Legend")
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("f(x)")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("Mathematical Functions with Legend")
+        call xlabel("x")
+        call ylabel("f(x)")
 
         ! Add multiple labeled functions
-        call fig%add_plot(x, y1, label="e^(-x/2)cos(x)")
-        call fig%add_plot(x, y2, label="xe^(-x/3)")
-        call fig%add_plot(x, y3, label="sin(x)/x")
-        call fig%add_plot(x, y4, label="x¬≤e^(-x)")
+        call add_plot(x, y1, label="e^(-x/2)cos(x)")
+        call add_plot(x, y2, label="xe^(-x/3)")
+        call add_plot(x, y3, label="sin(x)/x")
+        call add_plot(x, y4, label="x¬≤e^(-x)")
 
         ! Add legend
-        call fig%legend()
+        call legend()
 
-        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.png')
-        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.pdf')
-        call fig%savefig('output/example/fortran/legend_demo/multi_function_legend.txt')
+        call savefig('output/example/fortran/legend_demo/multi_function_legend.png')
+        call savefig('output/example/fortran/legend_demo/multi_function_legend.pdf')
+        call savefig('output/example/fortran/legend_demo/multi_function_legend.txt')
 
         print *, "Created: multi_function_legend.png/pdf/txt"
     end subroutine multi_function_legend_example
+
+    subroutine legend_box_styling_example()
+        !! Demonstrate legend box styling and multiple entries
+        type(figure_t) :: fig
+        real(wp), dimension(50) :: x, y1, y2, y3, y4
+        integer :: i
+
+        print *, "=== Legend Box Styling Example ==="
+
+        ! Generate test data with multiple functions
+        x = [(real(i-1, wp) / 49.0_wp * 2.0_wp * 3.14159_wp, i=1, 50)]
+        y1 = sin(x)
+        y2 = y1 * 0.5_wp
+        y3 = cos(x) * 0.7_wp
+        y4 = -y1 * 0.3_wp
+
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("Legend Box Styling Demo")
+        call xlabel("x")
+        call ylabel("y")
+
+        ! Add multiple plots to test legend box styling
+        call add_plot(x, y1, label="sin(x)")
+        call add_plot(x, y2, label="0.5 sin(x)")
+        call add_plot(x, y3, label="0.7 cos(x)")
+        call add_plot(x, y4, label="-0.3 sin(x)")
+
+        ! Test legend box with default styling
+        call legend()
+        call savefig('output/example/fortran/legend_demo/legend_box_default.png')
+        call savefig('output/example/fortran/legend_demo/legend_box_default.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_box_default.txt')
+
+        ! Test legend box in different positions
+        call legend(position="upper left")
+        call savefig('output/example/fortran/legend_demo/legend_box_upper_left.png')
+        call savefig('output/example/fortran/legend_demo/legend_box_upper_left.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_box_upper_left.txt')
+
+        call legend(position="lower right")
+        call savefig('output/example/fortran/legend_demo/legend_box_lower_right.png')
+        call savefig('output/example/fortran/legend_demo/legend_box_lower_right.pdf')
+        call savefig('output/example/fortran/legend_demo/legend_box_lower_right.txt')
+
+        print *, "Created: legend_box_default.png/pdf/txt, legend_box_upper_left.png/pdf/txt, legend_box_lower_right.png/pdf/txt"
+    end subroutine legend_box_styling_example
 
 end program legend_demo
 ```
@@ -160,6 +207,9 @@ end program legend_demo
 - **Manual placement**: Specify corner positions
 - **Multi-line legends**: Handle multiple labeled plots
 - **Smart positioning**: Avoids overlapping with data
+- **Box styling**: Legend boxes with frames and backgrounds
+- **Multiple entries**: Complex legends with 4+ labeled plots
+- **Multi-format output**: PNG, PDF, and ASCII text versions
 
 ## Legend Locations
 
@@ -175,7 +225,506 @@ end program legend_demo
 
 ![basic_legend.png](../../media/examples/legend_demo/basic_legend.png)
 
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
 [Download PDF](../../media/examples/legend_demo/basic_legend.pdf                                                                                                                                                                                                                                                )
+
+### Legend Upper Left
+
+![legend_upper_left.png](../../media/examples/legend_demo/legend_upper_left.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/legend_demo/legend_upper_left.pdf                                                                                                                                                                                                                                           )
+
+### Legend Upper Right
+
+![legend_upper_right.png](../../media/examples/legend_demo/legend_upper_right.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/legend_demo/legend_upper_right.pdf                                                                                                                                                                                                                                          )
+
+### Legend Lower Left
+
+![legend_lower_left.png](../../media/examples/legend_demo/legend_lower_left.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/legend_demo/legend_lower_left.pdf                                                                                                                                                                                                                                           )
+
+### Legend Lower Right
+
+![legend_lower_right.png](../../media/examples/legend_demo/legend_lower_right.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/legend_demo/legend_lower_right.pdf                                                                                                                                                                                                                                          )
+
+### Multi Function Legend
+
+![multi_function_legend.png](../../media/examples/legend_demo/multi_function_legend.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/legend_demo/multi_function_legend.pdf                                                                                                                                                                                                                                       )
 
 ### Basic Legend
 ### Multi-function Legend
+### Legend Box Styling

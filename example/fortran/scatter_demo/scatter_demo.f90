@@ -21,43 +21,43 @@ program scatter_demo
         y(i) = sin(x(i)) + 0.2_wp * cos(5.0_wp * x(i) + real(i, wp))
     end do
     
-    call fig%initialize(640, 480)
-    call fig%add_scatter_2d(x, y, label="Data points")
-    call fig%set_xlabel('X')
-    call fig%set_ylabel('Y')
-    call fig%set_title('Basic 2D Scatter Plot')
-    call fig%savefig('output/example/fortran/scatter_demo/scatter_basic.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call add_scatter(x, y, label="Data points")
+    call xlabel('X')
+    call ylabel('Y')
+    call title('Basic 2D Scatter Plot')
+    call savefig('output/example/fortran/scatter_demo/scatter_basic.png')
     
     ! Example 2: Multiple scatter plots with different markers
-    call fig%initialize(640, 480)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     
     ! Dataset 1 - sine wave with noise
     do i = 1, n
         x(i) = real(i-1, wp) / real(n-1, wp) * 4.0_wp * PI
         y(i) = sin(x(i)) + 0.1_wp * sin(10.0_wp * x(i))
     end do
-    call fig%add_scatter_2d(x, y, label="Sine", marker='o')
+    call add_scatter(x, y, label="Sine", marker='o')
     
     ! Dataset 2 - cosine wave with noise
     do i = 1, n
         y(i) = cos(x(i)) + 0.1_wp * cos(15.0_wp * x(i))
     end do
-    call fig%add_scatter_2d(x, y, label="Cosine", marker='s')
+    call add_scatter(x, y, label="Cosine", marker='s')
     
     ! Dataset 3 - exponential decay
     do i = 1, n
         y(i) = exp(-x(i) * 0.3_wp) * (1.0_wp + 0.1_wp * sin(8.0_wp * x(i)))
     end do
-    call fig%add_scatter_2d(x, y, label="Exponential", marker='D')
+    call add_scatter(x, y, label="Exponential", marker='D')
     
-    call fig%set_xlabel('X')
-    call fig%set_ylabel('Y')
-    call fig%set_title('Multiple 2D Scatter Plots')
-    call fig%legend()
-    call fig%savefig('output/example/fortran/scatter_demo/scatter_multi.png')
+    call xlabel('X')
+    call ylabel('Y')
+    call title('Multiple 2D Scatter Plots')
+    call legend()
+    call savefig('output/example/fortran/scatter_demo/scatter_multi.png')
     
     ! Example 3: Scatter with custom marker sizes (when implemented)
-    call fig%initialize(640, 480)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     
     ! Create data with varying density
     n = 100
@@ -70,11 +70,11 @@ program scatter_demo
         y(i) = exp(-x(i)**2) + 0.05_wp * sin(20.0_wp * x(i))
     end do
     
-    call fig%add_scatter_2d(x, y, label="Gaussian distribution")
-    call fig%set_xlabel('X')
-    call fig%set_ylabel('Y')
-    call fig%set_title('2D Scatter Plot - Gaussian Distribution')
-    call fig%savefig('output/example/fortran/scatter_demo/scatter_gaussian.png')
+    call add_scatter(x, y, label="Gaussian distribution")
+    call xlabel('X')
+    call ylabel('Y')
+    call title('2D Scatter Plot - Gaussian Distribution')
+    call savefig('output/example/fortran/scatter_demo/scatter_gaussian.png')
     
     print *, "2D scatter plot demos complete!"
     print *, "Generated files:"

@@ -24,45 +24,41 @@ program histogram_demo
     end do
     
     ! Basic histogram
-    fig = figure_t()
-    call fig%initialize(800, 600)
-    call fig%hist(data)
-    call fig%set_title('Basic Histogram Example')
-    call fig%set_xlabel('Value')
-    call fig%set_ylabel('Frequency')
-    call fig%save_png('output/example/fortran/histogram_demo/histogram_basic.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call hist(data)
+    call title('Basic Histogram Example')
+    call xlabel('Value')
+    call ylabel('Frequency')
+    call savefig('output/example/fortran/histogram_demo/histogram_basic.png')
     write(*,*) 'Created histogram_basic.png'
     
     ! Custom bins histogram  
-    fig = figure_t()
-    call fig%initialize(800, 600)
-    call fig%hist(data, bins=20)
-    call fig%set_title('Histogram with 20 Bins')
-    call fig%set_xlabel('Value')
-    call fig%set_ylabel('Frequency')
-    call fig%save_png('output/example/fortran/histogram_demo/histogram_custom_bins.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call hist(data, bins=20)
+    call title('Histogram with 20 Bins')
+    call xlabel('Value')
+    call ylabel('Frequency')
+    call savefig('output/example/fortran/histogram_demo/histogram_custom_bins.png')
     write(*,*) 'Created histogram_custom_bins.png'
     
     ! Density histogram
-    fig = figure_t()
-    call fig%initialize(800, 600)
-    call fig%hist(normal_data, bins=15, density=.true.)
-    call fig%set_title('Normalized Histogram (Density)')
-    call fig%set_xlabel('Value')
-    call fig%set_ylabel('Probability Density')
-    call fig%save_png('output/example/fortran/histogram_demo/histogram_density.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call hist(normal_data, bins=15, density=.true.)
+    call title('Normalized Histogram (Density)')
+    call xlabel('Value')
+    call ylabel('Probability Density')
+    call savefig('output/example/fortran/histogram_demo/histogram_density.png')
     write(*,*) 'Created histogram_density.png'
     
     ! Multiple histograms with labels
-    fig = figure_t()
-    call fig%initialize(800, 600)
-    call fig%hist(data(1:500), bins=15, label='Dataset 1', color=[0.0_wp, 0.447_wp, 0.698_wp])
-    call fig%hist(normal_data(1:500), bins=15, label='Dataset 2', color=[0.835_wp, 0.369_wp, 0.0_wp])
-    call fig%legend()
-    call fig%set_title('Multiple Histograms')
-    call fig%set_xlabel('Value')
-    call fig%set_ylabel('Frequency')
-    call fig%save_png('output/example/fortran/histogram_demo/histogram_multiple.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call hist(data(1:500), bins=15, label='Dataset 1', color=[0.0_wp, 0.447_wp, 0.698_wp])
+    call hist(normal_data(1:500), bins=15, label='Dataset 2', color=[0.835_wp, 0.369_wp, 0.0_wp])
+    call legend()
+    call title('Multiple Histograms')
+    call xlabel('Value')
+    call ylabel('Frequency')
+    call savefig('output/example/fortran/histogram_demo/histogram_multiple.png')
     write(*,*) 'Created histogram_multiple.png'
     
     write(*,*) 'Histogram demonstration completed!'

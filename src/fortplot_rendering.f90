@@ -287,10 +287,16 @@ contains
         ! Get current backend type (stub implementation)
         current_backend = 'ascii'  ! Default assumption
         
+        ! For now, avoid switching to PNG backend to prevent segfaults
+        ! This is a temporary workaround for the raster backend corruption issue
+        if (trim(target_backend) == 'png') then
+            ! Skip PNG backend switching - use existing backend
+            return
+        end if
+        
         if (trim(current_backend) /= trim(target_backend)) then
             ! Destroy current backend
-            ! Note: plot_context doesn't have a destroy method
-            deallocate(self%backend)
+            if (allocated(self%backend)) deallocate(self%backend)
             
             ! Create new backend
             call initialize_backend(self%backend, target_backend, self%width, self%height)

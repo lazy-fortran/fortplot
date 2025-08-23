@@ -58,16 +58,16 @@ contains
         cx = cos(x)
 
         ! Multi-line plot using OO interface
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("Sine and Cosine Functions")
-        call fig%add_plot(x, sx, label="sin(x)")
-        call fig%add_plot(x, cx, label="cos(x)")
-        call fig%legend()  ! Add legend for labeled plots
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.png')
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.pdf')
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Sine and Cosine Functions")
+        call add_plot(x, sx, label="sin(x)")
+        call add_plot(x, cx, label="cos(x)")
+        call legend()  ! Add legend for labeled plots
+        call savefig('output/example/fortran/basic_plots/multi_line.png')
+        call savefig('output/example/fortran/basic_plots/multi_line.pdf')
+        call savefig('output/example/fortran/basic_plots/multi_line.txt')
 
         print *, "Created: multi_line.png/pdf/txt"
 
@@ -92,39 +92,165 @@ end program basic_plots
 
 ASCII output:
 ```
-+--------------------------------------------------------------------------------+
-|                                                                                |
-| .                                                        #                     |
-|                                                                                |
-| .                                                       #  #                   |
-|                                                               #                |
-| .                                                      #                       |
-| .                                                     #         #              |
-|                                                                                |
-| .                  #                                 #            #            |
-| .                                                   #               #          |
-|                  #  #                                                          |
-| .             #       #                           #                   #        |
-|                                                                         #      |
-| .           #          #                         #                             |
-| .         #              #                      #                         #    |
-|                                                                             #  |
-| .       #                 #                    #                               |
-| .     #                                       #                                |
-|                             #                                                  |
-| .   #                        #               #                                 |
-|   #                                                                            |
-| .                              #            #                                  |
-| #                               #          #                                   |
-|                                                                                |
-| .                                 #      #                                     |
-| .                                  #    #                                      |
-|                                                                                |
-| .                                    # #                                       |
-| .   .    .   .    .   .    .   .    . # .    .   .    .   .    .   .    .    . |
-|                                                                                |
-+--------------------------------------------------------------------------------+
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
 ```
 
 [Download PDF](../../media/examples/basic_plots/simple_plot.pdf                                                                                                                                                                                                                                                 )
+
+### Multi Line
+
+![multi_line.png](../../media/examples/basic_plots/multi_line.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/basic_plots/multi_line.pdf                                                                                                                                                                                                                                                  )
 

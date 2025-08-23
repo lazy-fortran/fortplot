@@ -30,21 +30,21 @@ contains
             y(i) = sin(x(i)) + 0.1_wp * real(i - 10, wp) / 10.0_wp  ! Sine wave with trend
         end do
         
-        call fig%initialize(600, 450)
-        call fig%set_title("Scatter Plot with Antialiased Markers")
-        call fig%set_xlabel("X Values")
-        call fig%set_ylabel("Y Values")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("Scatter Plot with Antialiased Markers")
+        call xlabel("X Values")
+        call ylabel("Y Values")
         
         ! Scatter plot with markers (pyplot-fortran style)
-        call fig%add_plot(x, y, linestyle='o', label='Data Points')
+        call add_plot(x, y, linestyle='o', label='Data Points')
         
         ! Add trend line for context
-        call fig%add_plot(x, sin(x), linestyle='-', label='Sin(x) Reference')
+        call add_plot(x, sin(x), linestyle='-', label='Sin(x) Reference')
         
-        call fig%legend()
-        call fig%savefig('output/example/fortran/marker_demo/scatter_plot.png')
-        call fig%savefig('output/example/fortran/marker_demo/scatter_plot.pdf')
-        call fig%savefig('output/example/fortran/marker_demo/scatter_plot.txt')
+        call legend()
+        call savefig('output/example/fortran/marker_demo/scatter_plot.png')
+        call savefig('output/example/fortran/marker_demo/scatter_plot.pdf')
+        call savefig('output/example/fortran/marker_demo/scatter_plot.txt')
     end subroutine demo_scatter_plot
 
     subroutine demo_all_marker_types()
@@ -65,21 +65,21 @@ contains
             y4(i) = cos(x4(i) * 1.5_wp)
         end do
         
-        call fig%initialize(600, 400)
-        call fig%set_title("All Marker Types")
-        call fig%set_xlabel("X Values")
-        call fig%set_ylabel("Y Values")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("All Marker Types")
+        call xlabel("X Values")
+        call ylabel("Y Values")
         
         ! Draw each marker type with data (pyplot-fortran style)
-        call fig%add_plot(x1, y1, linestyle='o', label='Circle')
-        call fig%add_plot(x2, y2, linestyle='s', label='Square')
-        call fig%add_plot(x3, y3, linestyle='D', label='Diamond')
-        call fig%add_plot(x4, y4, linestyle='x', label='Cross')
+        call add_plot(x1, y1, linestyle='o', label='Circle')
+        call add_plot(x2, y2, linestyle='s', label='Square')
+        call add_plot(x3, y3, linestyle='D', label='Diamond')
+        call add_plot(x4, y4, linestyle='x', label='Cross')
         
-        call fig%legend()
-        call fig%savefig('output/example/fortran/marker_demo/all_marker_types.png')
-        call fig%savefig('output/example/fortran/marker_demo/all_marker_types.pdf')
-        call fig%savefig('output/example/fortran/marker_demo/all_marker_types.txt')
+        call legend()
+        call savefig('output/example/fortran/marker_demo/all_marker_types.png')
+        call savefig('output/example/fortran/marker_demo/all_marker_types.pdf')
+        call savefig('output/example/fortran/marker_demo/all_marker_types.txt')
     end subroutine demo_all_marker_types
 
     subroutine demo_marker_colors()
@@ -98,20 +98,20 @@ contains
             y3(i) = exp(-x3(i) * 0.4_wp) * sin(x3(i) * 1.5_wp) + 0.5_wp
         end do
         
-        call fig%initialize(500, 400)
-        call fig%set_title("Marker Colors and Styles")
-        call fig%set_xlabel("X Position")
-        call fig%set_ylabel("Y Position")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call title("Marker Colors and Styles")
+        call xlabel("X Position")
+        call ylabel("Y Position")
         
         ! Different marker types with automatic color cycling (pyplot-fortran style)
-        call fig%add_plot(x1, y1, linestyle='o', label='Blue circles')
-        call fig%add_plot(x2, y2, linestyle='s', label='Green squares')
-        call fig%add_plot(x3, y3, linestyle='D', label='Orange diamonds')
+        call add_plot(x1, y1, linestyle='o', label='Blue circles')
+        call add_plot(x2, y2, linestyle='s', label='Green squares')
+        call add_plot(x3, y3, linestyle='D', label='Orange diamonds')
         
-        call fig%legend()
-        call fig%savefig('output/example/fortran/marker_demo/marker_colors.png')
-        call fig%savefig('output/example/fortran/marker_demo/marker_colors.pdf')
-        call fig%savefig('output/example/fortran/marker_demo/marker_colors.txt')
+        call legend()
+        call savefig('output/example/fortran/marker_demo/marker_colors.png')
+        call savefig('output/example/fortran/marker_demo/marker_colors.pdf')
+        call savefig('output/example/fortran/marker_demo/marker_colors.txt')
     end subroutine demo_marker_colors
 
 end program marker_demo

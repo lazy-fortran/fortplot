@@ -18,13 +18,13 @@ program save_animation_demo
     ! Initial y data
     y = sin(x)
     
-    call fig%initialize(width=800, height=600)
-    call fig%add_plot(x, y, label='animated wave')
-    call fig%set_title('Animation Save Demo')
-    call fig%set_xlabel('x')
-    call fig%set_ylabel('y')
-    call fig%set_xlim(0.0_wp, 2.0_wp * 3.14159_wp)
-    call fig%set_ylim(-1.5_wp, 1.5_wp)
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call add_plot(x, y, label='animated wave')
+    call title('Animation Save Demo')
+    call xlabel('x')
+    call ylabel('y')
+    call xlim(0.0_wp, 2.0_wp * 3.14159_wp)
+    call ylim(-1.5_wp, 1.5_wp)
     
     ! Create animation with figure reference
     anim = FuncAnimation(update_wave, frames=NFRAMES, interval=50, fig=fig)
@@ -47,7 +47,7 @@ contains
         y = sin(x + phase) * cos(phase * 0.5_wp)
         
         ! Update plot data
-        call fig%set_ydata(1, y)
+        call set_ydata(y)  ! Note: plot index parameter not supported in pyplot API
     end subroutine update_wave
     
     subroutine save_animation_with_error_handling(anim, filename, fps)

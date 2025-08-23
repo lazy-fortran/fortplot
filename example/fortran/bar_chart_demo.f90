@@ -25,53 +25,53 @@ program bar_chart_demo
     end do
     
     ! Basic vertical bar chart
-    call fig%initialize(800, 600)
-    call fig%bar(categories, sales_q1)
-    call fig%set_title('Basic Vertical Bar Chart')
-    call fig%set_xlabel('Categories')
-    call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_basic.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call bar(categories, sales_q1)
+    call title('Basic Vertical Bar Chart')
+    call xlabel('Categories')
+    call ylabel('Sales ($k)')
+    call savefig('output/example/fortran/bar_chart_demo/bar_chart_basic.png')
     write(*,*) 'Created bar_chart_basic.png'
     
     ! Horizontal bar chart
-    call fig%initialize(800, 600)
-    call fig%barh(products, revenues)
-    call fig%set_title('Horizontal Bar Chart')
-    call fig%set_xlabel('Revenue ($k)')
-    call fig%set_ylabel('Products')
-    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_horizontal.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call barh(products, revenues)
+    call title('Horizontal Bar Chart')
+    call xlabel('Revenue ($k)')
+    call ylabel('Products')
+    call savefig('output/example/fortran/bar_chart_demo/bar_chart_horizontal.png')
     write(*,*) 'Created bar_chart_horizontal.png'
     
     ! Custom width bar chart
-    call fig%initialize(800, 600)
-    call fig%bar(categories, sales_q1, width=0.5_wp)
-    call fig%set_title('Bar Chart with Custom Width (0.5)')
-    call fig%set_xlabel('Categories')
-    call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_custom_width.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call bar(categories, sales_q1, width=0.5_wp)
+    call title('Bar Chart with Custom Width (0.5)')
+    call xlabel('Categories')
+    call ylabel('Sales ($k)')
+    call savefig('output/example/fortran/bar_chart_demo/bar_chart_custom_width.png')
     write(*,*) 'Created bar_chart_custom_width.png'
     
     ! Grouped bar charts
-    call fig%initialize(800, 600)
-    call fig%bar(categories - 0.2_wp, sales_q1, width=0.35_wp, &
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call bar(categories - 0.2_wp, sales_q1, width=0.35_wp, &
                 label='Q1 Sales', color=[0.0_wp, 0.447_wp, 0.698_wp])
-    call fig%bar(categories + 0.2_wp, sales_q2, width=0.35_wp, &
+    call bar(categories + 0.2_wp, sales_q2, width=0.35_wp, &
                 label='Q2 Sales', color=[0.835_wp, 0.369_wp, 0.0_wp])
-    call fig%legend()
-    call fig%set_title('Grouped Bar Chart - Quarterly Sales')
-    call fig%set_xlabel('Categories')
-    call fig%set_ylabel('Sales ($k)')
-    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_grouped.png')
+    call legend()
+    call title('Grouped Bar Chart - Quarterly Sales')
+    call xlabel('Categories')
+    call ylabel('Sales ($k)')
+    call savefig('output/example/fortran/bar_chart_demo/bar_chart_grouped.png')
     write(*,*) 'Created bar_chart_grouped.png'
     
     ! Mixed positive and negative values
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     sales_q1(1:5) = [15.0_wp, -8.0_wp, 22.0_wp, -5.0_wp, 18.0_wp]
-    call fig%bar(categories, sales_q1, label='Profit/Loss')
-    call fig%set_title('Bar Chart with Positive and Negative Values')
-    call fig%set_xlabel('Categories')
-    call fig%set_ylabel('Profit/Loss ($k)')
-    call fig%savefig('output/example/fortran/bar_chart_demo/bar_chart_mixed_values.png')
+    call bar(categories, sales_q1, label='Profit/Loss')
+    call title('Bar Chart with Positive and Negative Values')
+    call xlabel('Categories')
+    call ylabel('Profit/Loss ($k)')
+    call savefig('output/example/fortran/bar_chart_demo/bar_chart_mixed_values.png')
     write(*,*) 'Created bar_chart_mixed_values.png'
     
     write(*,*) 'Bar chart demonstration completed!'

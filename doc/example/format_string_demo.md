@@ -34,21 +34,21 @@ program format_string_demo
         y4(i) = cos(x(i) * 0.5_wp) * 0.6_wp
     end do
 
-    call fig%initialize(800, 600)
-    call fig%set_title('Matplotlib-style Format Strings Demo')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call title('Matplotlib-style Format Strings Demo')
+    call xlabel('X values')
+    call ylabel('Y values')
 
     ! Different format strings using linestyle parameter (pyplot-fortran style)
-    call fig%add_plot(x, y1, label='sin(x) - solid line', linestyle='-')
-    call fig%add_plot(x, y2, label='cos(x) - dashed line', linestyle='--')
-    call fig%add_plot(x, y3, label='sin(x/2) - circles only', linestyle='o')
-    call fig%add_plot(x, y4, label='cos(x/2) - x markers with line', linestyle='x-')
+    call add_plot(x, y1, label='sin(x) - solid line', linestyle='-')
+    call add_plot(x, y2, label='cos(x) - dashed line', linestyle='--')
+    call add_plot(x, y3, label='sin(x/2) - circles only', linestyle='o')
+    call add_plot(x, y4, label='cos(x/2) - x markers with line', linestyle='x-')
 
-    call fig%legend()
-    call fig%savefig('output/example/fortran/format_string_demo/format_string_demo.png')
-    call fig%savefig('output/example/fortran/format_string_demo/format_string_demo.pdf')
-    call fig%savefig('output/example/fortran/format_string_demo/format_string_demo.txt')
+    call legend()
+    call savefig('output/example/fortran/format_string_demo/format_string_demo.png')
+    call savefig('output/example/fortran/format_string_demo/format_string_demo.pdf')
+    call savefig('output/example/fortran/format_string_demo/format_string_demo.txt')
 
     write(*, '(A)') 'Format string demo saved to format_string_demo.png/pdf/txt'
 

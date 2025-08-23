@@ -58,7 +58,7 @@ contains
 
         call figure()
         call plot(x_exp, y_symlog)
-        call set_yscale('symlog', 10.0_wp)
+        call set_yscale('symlog')  ! threshold parameter not supported yet
         call title('Symlog Scale Example')
         call xlabel('x')
         call ylabel('x¬≥ - 50x')
@@ -81,4 +81,172 @@ end program scale_examples
 - **Automatic tick generation**: Smart tick placement for non-linear scales
 
 ## Output
+
+### Log Scale
+
+![log_scale.png](../../media/examples/scale_examples/log_scale.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/scale_examples/log_scale.pdf                                                                                                                                                                                                                                                   )
+
+### Symlog Scale
+
+![symlog_scale.png](../../media/examples/scale_examples/symlog_scale.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/scale_examples/symlog_scale.pdf                                                                                                                                                                                                                                                )
 

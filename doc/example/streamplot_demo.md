@@ -44,18 +44,18 @@ program streamplot_demo
     end do
 
     ! Create figure and add streamplot
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     ! Try with broken_streamlines=False to allow circles to complete
     ! (This parameter doesn't exist yet in our API, so let's just use default for now)
-    call fig%streamplot(x, y, u, v, density=1.0_real64)
-    call fig%set_xlabel('X')
-    call fig%set_ylabel('Y')
-    call fig%set_title('Streamline Plot Demo - Circular Flow')
+    call streamplot(x, y, u, v, density=1.0_real64)
+    call xlabel('X')
+    call ylabel('Y')
+    call title('Streamline Plot Demo - Circular Flow')
 
     ! Save figure
-    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.png')
-    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.pdf')
-    call fig%savefig('output/example/fortran/streamplot_demo/streamplot_demo.txt')
+    call savefig('output/example/fortran/streamplot_demo/streamplot_demo.png')
+    call savefig('output/example/fortran/streamplot_demo/streamplot_demo.pdf')
+    call savefig('output/example/fortran/streamplot_demo/streamplot_demo.txt')
 
     print *, 'Streamplot demo completed!'
 

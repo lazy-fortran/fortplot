@@ -41,7 +41,7 @@ program stateful_streamplot
     end do
 
     ! Create streamplot using stateful interface
-    call figure(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call streamplot(x, y, u, v, density=1.0_real64)
     call xlabel('X')
     call ylabel('Y')

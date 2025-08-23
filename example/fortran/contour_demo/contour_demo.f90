@@ -29,14 +29,14 @@ contains
             end do
         end do
 
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("2D Gaussian Function")
-        call fig%add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
-        call fig%savefig('output/example/fortran/contour_demo/contour_gaussian.png')
-        call fig%savefig('output/example/fortran/contour_demo/contour_gaussian.pdf')
-        call fig%savefig('output/example/fortran/contour_demo/contour_gaussian.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("2D Gaussian Function")
+        call add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
+        call savefig('output/example/fortran/contour_demo/contour_gaussian.png')
+        call savefig('output/example/fortran/contour_demo/contour_gaussian.pdf')
+        call savefig('output/example/fortran/contour_demo/contour_gaussian.txt')
         
         print *, "Created: contour_gaussian.png/pdf/txt"
         
@@ -63,15 +63,15 @@ contains
         end do
 
         custom_levels = [-4.0_wp, -2.0_wp, 0.0_wp, 2.0_wp, 4.0_wp]
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("Mixed Plot: Contour + Line")
-        call fig%add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="x²-y²")
-        call fig%add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
-        call fig%savefig('output/example/fortran/contour_demo/mixed_plot.png')
-        call fig%savefig('output/example/fortran/contour_demo/mixed_plot.pdf')
-        call fig%savefig('output/example/fortran/contour_demo/mixed_plot.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Mixed Plot: Contour + Line")
+        call add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="x²-y²")
+        call add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
+        call savefig('output/example/fortran/contour_demo/mixed_plot.png')
+        call savefig('output/example/fortran/contour_demo/mixed_plot.pdf')
+        call savefig('output/example/fortran/contour_demo/mixed_plot.txt')
         
         print *, "Created: mixed_plot.png/pdf/txt"
         
