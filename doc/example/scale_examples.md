@@ -9,9 +9,9 @@ This example demonstrates different axis scaling options including logarithmic a
 
 ## Source Code
 
-**Python:**· **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
+**Python:**??? **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
 
-**Python:** **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
+**Python:**??? **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
 
 ```fortran
 program scale_examples
@@ -89,7 +89,7 @@ end program scale_examples
 ASCII output:
 ```
 %PDF-1.4
-%
+%????
 2 0 obj
 <<
 /Type /Catalog
@@ -173,7 +173,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%
+%????
 2 0 obj
 <<
 /Type /Catalog

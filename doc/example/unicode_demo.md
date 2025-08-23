@@ -9,7 +9,7 @@ This example demonstrates mathematical symbols and Unicode support in plots.
 
 ## Source Code
 
-**Python:**· **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
+**Python:**??? **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
 
 ```fortran
 program unicode_demo
@@ -108,7 +108,7 @@ program unicode_demo
 
     ! Create a second figure showing common mathematical expressions
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call title("Common Physics: E = mc^2, \Delta E = h\nu, F = q(E + vÃB)")
+    call title("Common Physics: E = mc^2, \Delta E = h\nu, F = q(E + vx?B)")
     call xlabel("Parameter \xi")
     call ylabel("Observable \Theta")
 
@@ -136,10 +136,10 @@ end program unicode_demo
 
 ## Features Demonstrated
 
-- **Greek letters**: Î±, Î², Î³, Î´, Ï, Î¸, Ï, Ï, Ï
-- **Mathematical symbols**: →, →, →, →«, →, →
+- **Greek letters**: ?+/-, ?^2, ?^3, ??, ??, ??, ??, ??, ??
+- **Mathematical symbols**:  -> ??,  -> ??,  -> ??,  -> ??,  -> ??,  -> ??
 - **Subscripts/Superscripts**: Via LaTeX-like syntax
-- **Special characters**: °, ±, →¤, →¥, → 
+- **Special characters**:  degrees, +/-,  -> ??,  -> ??,  -> ??
 
 ## Unicode Support
 
@@ -149,11 +149,11 @@ end program unicode_demo
 - ASCII backend shows approximations
 
 ### LaTeX-like Commands
-- `\alpha` → Î±
-- `\beta` → Î²
-- `\pi` → Ï
-- `\infty` → →
-- `\sum` → →
+- `\alpha`  -> ?? ?+/-
+- `\beta`  -> ?? ?^2
+- `\pi`  -> ?? ??
+- `\infty`  -> ??  -> ??
+- `\sum`  -> ??  -> ??
 
 ## Output
 
@@ -164,7 +164,7 @@ end program unicode_demo
 ASCII output:
 ```
 %PDF-1.4
-%
+%????
 2 0 obj
 <<
 /Type /Catalog
@@ -248,7 +248,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%
+%????
 2 0 obj
 <<
 /Type /Catalog
