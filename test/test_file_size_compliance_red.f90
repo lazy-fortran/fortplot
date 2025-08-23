@@ -14,8 +14,7 @@ program test_file_size_compliance_red
     !! - Hard limit: ALL files < 1000 lines
     !! - Target: ALL files < 500 lines (preferred)
     
-    use fortplot_testing, only: assert_true, assert_false, assert_equal, &
-                               test_start, test_end
+    use fortplot_testing, only: assert_true, test_result_t
     implicit none
     
     logical :: all_tests_passed = .true.
