@@ -18,6 +18,10 @@ build:
 # Build and run the examples
 example: create_build_dirs
 	fpm run --example $(FPM_FLAGS_TEST) $(ARGS)
+	# Build and run special examples that need manual compilation
+	@if [ -z "$(ARGS)" ]; then \
+		./scripts/compile_special_examples.sh 2>/dev/null || true; \
+	fi
 
 # Build and run the apps for debugging
 debug:
@@ -89,7 +93,19 @@ doc:
 	ford README.md
 	# Copy example media files to doc build directory for proper linking
 	mkdir -p build/doc/media/examples
+	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
 	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; fi
+	# Also copy directly from output directory if available (for local builds)
+	for dir in output/example/fortran/*/; do \
+		if [ -d "$$dir" ]; then \
+			example_name=$$(basename "$$dir"); \
+			mkdir -p "build/doc/media/examples/$$example_name"; \
+			cp "$$dir"*.png "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.txt "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.pdf "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+		fi; \
+	done
 
 # Generate coverage report
 coverage:
