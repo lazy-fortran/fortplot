@@ -81,9 +81,8 @@ jobs:
           # Run make doc (which runs FORD then copies media)
           make doc
           
-          # Copy example documentation pages to build directory
-          mkdir -p build/doc/page/example
-          cp -r doc/example/*.md build/doc/page/example/ 2>/dev/null || true
+          # FORD already generated HTML files from doc/example/*.md
+          # No need to copy markdown files - they overwrite the generated HTML
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
