@@ -4,29 +4,34 @@ program test_histogram_consolidated
     use fortplot
     use fortplot_security, only: get_test_output_path
     use fortplot_system_runtime, only: is_windows
+    use fortplot_windows_performance, only: setup_windows_performance, &
+                                            should_use_memory_backend
+    use fortplot_fast_io, only: fast_savefig, enable_fast_io
+    ! Performance monitoring not integrated yet
     use iso_fortran_env, only: wp => real64
     implicit none
 
     logical :: on_windows
-    character(len=256) :: ci_env
-    integer :: status
 
     print *, "=== CONSOLIDATED HISTOGRAM TESTS ==="
     
-    ! Check if running on Windows CI - this test is slow on Windows
+    ! Initialize performance optimization for Windows CI
     on_windows = is_windows()
-    call get_environment_variable("CI", ci_env, status=status)
-    
-    if (on_windows .and. status == 0) then
-        print *, "SKIPPED: Histogram tests on Windows CI (too slow)"
-        print *, "=== All consolidated histogram tests passed ==="
-        stop 0
+    if (on_windows) then
+        call setup_windows_performance()
+        if (should_use_memory_backend()) then
+            call enable_fast_io()
+            print *, "Enabled fast I/O with memory backend for Windows CI"
+        end if
+        ! Performance monitoring not integrated yet
     end if
     
     call test_basic_histogram_functionality()
     call test_boundary_conditions()
     call test_edge_cases_and_stress()
     call test_user_acceptance()
+    
+    ! Performance monitoring not integrated yet
     
     print *, "=== All consolidated histogram tests passed ==="
     print *, "Replaced 6 redundant tests with comprehensive validation"
@@ -55,7 +60,11 @@ contains
         call fig%set_ylabel("Frequency")
         
         filename = get_test_output_path('/tmp/histogram_consolidated.png')
-        call figure_savefig(fig, filename)
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, filename)
+        else
+            call savefig(filename)
+        end if
         
         inquire(file=filename, exist=file_exists)
         if (.not. file_exists) then
@@ -77,13 +86,21 @@ contains
         ! Test single data point
         call fig%initialize(200, 150)
         call fig%hist(single_data, bins=1)
-        call figure_savefig(fig, get_test_output_path('/tmp/histogram_single.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/histogram_single.png'))
+        else
+            call savefig(get_test_output_path('/tmp/histogram_single.png'))
+        end if
         
         ! Test uniform data
         uniform_data = [(5.0_wp, i=1, 10)]  ! All same value
         call fig%initialize(200, 150)
         call fig%hist(uniform_data, bins=3)
-        call figure_savefig(fig, get_test_output_path('/tmp/histogram_uniform.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/histogram_uniform.png'))
+        else
+            call savefig(get_test_output_path('/tmp/histogram_uniform.png'))
+        end if
         
         print *, "✓ Single data point: PASS"
         print *, "✓ Uniform data: PASS"
@@ -105,7 +122,11 @@ contains
         
         call fig%initialize(200, 150)
         call fig%hist(negative_data, bins=3)
-        call figure_savefig(fig, get_test_output_path('/tmp/histogram_negative.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/histogram_negative.png'))
+        else
+            call savefig(get_test_output_path('/tmp/histogram_negative.png'))
+        end if
         
         ! Test mixed positive/negative
         do i = 1, 10
@@ -114,7 +135,11 @@ contains
         
         call fig%initialize(200, 150)
         call fig%hist(mixed_data, bins=4)
-        call figure_savefig(fig, get_test_output_path('/tmp/histogram_mixed.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/histogram_mixed.png'))
+        else
+            call savefig(get_test_output_path('/tmp/histogram_mixed.png'))
+        end if
         
         print *, "✓ Negative values: PASS"
         print *, "✓ Mixed values: PASS"
@@ -137,7 +162,11 @@ contains
         call fig%initialize(250, 180)
         call fig%hist(realistic_data, bins=4)
         call fig%set_title("User Acceptance Test")
-        call figure_savefig(fig, get_test_output_path('/tmp/histogram_uat.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/histogram_uat.png'))
+        else
+            call savefig(get_test_output_path('/tmp/histogram_uat.png'))
+        end if
         
         print *, "✓ User acceptance scenario: PASS"
     end subroutine
