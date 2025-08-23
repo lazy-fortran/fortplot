@@ -9,7 +9,7 @@ This example shows advanced legend styling with boxes and frames.
 
 ## Source Code
 
-🔷 **Fortran:** [legend_box_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_box_demo/legend_box_demo.f90)
+**Fortran:** [legend_box_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_box_demo/legend_box_demo.f90)
 
 ```fortran
 program legend_box_demo

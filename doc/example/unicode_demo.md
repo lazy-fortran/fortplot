@@ -9,7 +9,7 @@ This example demonstrates mathematical symbols and Unicode support in plots.
 
 ## Source Code
 
-ð· **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
+**Python:**· **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
 
 ```fortran
 program unicode_demo
