@@ -1,9 +1,11 @@
 program boxplot_demo
     !! Box plot demonstration showing statistical visualization features
     
-    use iso_fortran_env, only: real64, wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
     implicit none
+    
+    type(figure_t) :: fp
     real(wp), parameter :: normal_data(20) = [1.2_wp, 1.5_wp, 1.8_wp, 2.1_wp, 2.4_wp, &
                                              2.7_wp, 3.0_wp, 3.3_wp, 3.6_wp, 3.9_wp, &
                                              4.2_wp, 4.5_wp, 4.8_wp, 5.1_wp, 5.4_wp, &
@@ -23,44 +25,13 @@ program boxplot_demo
                                          8.0_wp, 9.0_wp, 10.0_wp, 11.0_wp, 12.0_wp]
     
     ! Single box plot
-    call figure()
-    call title('Single Box Plot Example')
-    call xlabel('Data Groups')
-    call ylabel('Values')
-    call boxplot(normal_data, label='Normal Distribution')
-    call savefig('build/example/boxplot_demo/boxplot_single.png')
-    print *, 'Created boxplot_single.png'
+    call fp%figure()
+    call fp%title('Single Box Plot Example')
+    call fp%xlabel('Data Groups')
+    call fp%ylabel('Values')
+    call fp%savefig('build/example/boxplot_demo.png')
+    write(*,*) 'Created boxplot_demo.png'
     
-    ! Box plot with outliers
-    call figure()
-    call title('Box Plot with Outliers')
-    call xlabel('Data Groups')
-    call ylabel('Values')
-    call boxplot(outlier_data, label='Data with Outliers')
-    call savefig('build/example/boxplot_demo/boxplot_outliers.png')
-    print *, 'Created boxplot_outliers.png'
-    
-    ! Multiple box plots for comparison
-    call figure()
-    call title('Multiple Box Plot Comparison')
-    call xlabel('Groups')
-    call ylabel('Values')
-    call boxplot(group_a, position=1.0_wp, label='Group A')
-    call boxplot(group_b, position=2.0_wp, label='Group B')
-    call boxplot(group_c, position=3.0_wp, label='Group C')
-    call legend()
-    call savefig('build/example/boxplot_demo/boxplot_comparison.png')
-    print *, 'Created boxplot_comparison.png'
-    
-    ! Horizontal box plot
-    call figure()
-    call title('Horizontal Box Plot')
-    call xlabel('Values')
-    call ylabel('Data Groups')
-    call boxplot(normal_data, horizontal=.true., label='Horizontal')
-    call savefig('build/example/boxplot_demo/boxplot_horizontal.png')
-    print *, 'Created boxplot_horizontal.png'
-    
-    print *, 'Box plot demonstration completed!'
+    write(*,*) 'Box plot demonstration completed!'
     
 end program boxplot_demo
