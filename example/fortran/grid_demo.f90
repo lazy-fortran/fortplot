@@ -24,9 +24,9 @@ program grid_demo
     call xlabel('Time (s)')
     call ylabel('Amplitude')
     ! Note: Grid functionality is not available in current API
-    call savefig('output/example/fortran/grid_demo.png')
-    call savefig('output/example/fortran/grid_demo.pdf')
-    call savefig('output/example/fortran/grid_demo.txt')
+    call savefig('output/example/fortran/grid_demo/grid_demo.png')
+    call savefig('output/example/fortran/grid_demo/grid_demo.pdf')
+    call savefig('output/example/fortran/grid_demo/grid_demo.txt')
     write(*,*) 'Created grid_demo outputs'
     
     write(*,*) 'Grid demonstration completed!'

@@ -44,9 +44,9 @@ program boxplot_demo
     call plot(x_c, group_c, label='Group C')
     call legend()
     
-    call savefig('output/example/fortran/boxplot_demo.png')
-    call savefig('output/example/fortran/boxplot_demo.pdf')
-    call savefig('output/example/fortran/boxplot_demo.txt')
+    call savefig('output/example/fortran/boxplot_demo/boxplot_demo.png')
+    call savefig('output/example/fortran/boxplot_demo/boxplot_demo.pdf')
+    call savefig('output/example/fortran/boxplot_demo/boxplot_demo.txt')
     write(*,*) 'Created boxplot_demo outputs'
     
     write(*,*) 'Box plot demonstration completed!'
