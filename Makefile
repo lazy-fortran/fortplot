@@ -90,6 +90,9 @@ run-release:
 
 # Build documentation with FORD
 doc:
+	# Generate ALL example outputs first
+	@echo "Generating all example outputs for documentation..."
+	@make example 2>/dev/null || true
 	# Copy example media files to doc build directory BEFORE running FORD for proper linking
 	mkdir -p build/doc/media/examples
 	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
