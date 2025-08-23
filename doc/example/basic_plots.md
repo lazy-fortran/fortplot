@@ -9,9 +9,9 @@ This example demonstrates the fundamental plotting capabilities of fortplot usin
 
 ## Source Code
 
-**Python:**· **Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
+**Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
 
-**Python:** **Python:** [basic_plots.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/basic_plots/basic_plots.py)
+**Python:** [basic_plots.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/basic_plots/basic_plots.py)
 
 ```fortran
 program basic_plots
@@ -30,7 +30,7 @@ contains
 
         print *, "=== Basic Plots ==="
 
-        ! Generate simple sine data - show 2 complete periods (0 to 4Ï)
+        ! Generate simple sine data - show 2 complete periods (0 to 4π)
         x = [(real(i-1, wp) * 4.0_wp * 3.141592653589793_wp / 49.0_wp, i=1, 50)]
         y = sin(x)
 
@@ -39,7 +39,8 @@ contains
         call plot(x, y, label='sin(x)')
         call title('Simple Sine Wave')
         call xlabel('x')
-        call ylabel('sin(x)')
+        call ylabel('y')
+        call legend()
         call savefig('output/example/fortran/basic_plots/simple_plot.png')
         call savefig('output/example/fortran/basic_plots/simple_plot.pdf')
         call savefig('output/example/fortran/basic_plots/simple_plot.txt')
@@ -49,7 +50,7 @@ contains
     end subroutine simple_plots
 
     subroutine multi_line_plot()
-        real(wp), dimension(100) :: x, sx, cx
+        real(wp), dimension(50) :: x, sx, cx
         type(figure_t) :: fig
         integer :: i
 
@@ -78,8 +79,9 @@ end program basic_plots
 
 ## Features Demonstrated
 
-- **Functional API**: Simple, matplotlib-like interface with global figure management
-- **Object-Oriented API**: More control through `figure_t` type
+- **Simple plotting**: Basic sine wave using functional API
+- **Multi-line plots**: Multiple data series with legends
+- **Object-oriented interface**: Using `figure_t` type for advanced control
 - **Multiple output formats**: PNG, PDF, and ASCII text
 - **Line labeling**: Automatic legend generation
 - **Axis labeling**: Clear axis titles and labels
@@ -93,7 +95,7 @@ end program basic_plots
 ASCII output:
 ```
 %PDF-1.4
-%
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -168,7 +170,7 @@ startxref
 %%EOF
 ```
 
-[Download PDF](../../media/examples/basic_plots/simple_plot.pdf                                                                                                                                                                                                                                                 )
+[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)
 
 ### Multi Line
 
@@ -177,7 +179,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -252,5 +254,4 @@ startxref
 %%EOF
 ```
 
-[Download PDF](../../media/examples/basic_plots/multi_line.pdf                                                                                                                                                                                                                                                  )
-
+[Download PDF](../../media/examples/basic_plots/multi_line.pdf)
