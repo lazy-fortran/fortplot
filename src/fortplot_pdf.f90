@@ -13,6 +13,8 @@ module fortplot_pdf
     
     ! Original dependencies still needed for pdf_context type
     use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_plot_data, only: plot_data_t
+    use fortplot_legend, only: legend_entry_t
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
@@ -37,14 +39,6 @@ module fortplot_pdf
     ! Re-export from submodules for backward compatibility
     public :: draw_pdf_axes_and_labels, draw_mixed_font_text
     public :: pdf_stream_writer
-    
-    ! Temporary type definition (should be imported from proper module)
-    type :: legend_entry_t
-        character(len=100) :: label
-        real(wp), dimension(3) :: color
-        character(len=20) :: linestyle
-        character(len=10) :: marker
-    end type legend_entry_t
     
     type, extends(plot_context) :: pdf_context
         type(pdf_stream_writer) :: stream_writer
@@ -186,25 +180,21 @@ contains
         call this%stream_writer%restore_state()
     end subroutine pdf_restore_graphics_state
     
-    subroutine draw_pdf_marker(this, x, y, marker_type, size, fill_color, edge_color)
+    subroutine draw_pdf_marker(this, x, y, style)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x, y, size
-        character(len=*), intent(in) :: marker_type
-        real(wp), dimension(3), intent(in), optional :: fill_color, edge_color
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: style
         real(wp) :: pdf_x, pdf_y
+        real(wp) :: size
         
+        size = 5.0_wp  ! Default marker size
         call this%normalize_coords(x, y, pdf_x, pdf_y)
         
         ! Save state for marker drawing
         call this%save_graphics_state()
         
-        ! Set colors if provided
-        if (present(fill_color)) then
-            call pdf_set_marker_colors(this, fill_color, edge_color)
-        end if
-        
-        ! Draw marker based on type
-        select case(trim(marker_type))
+        ! Draw marker based on style
+        select case(trim(style))
         case('o', 'circle')
             call draw_pdf_circle_with_outline(this%stream_writer, pdf_x, pdf_y, size)
         case('s', 'square')
@@ -219,26 +209,22 @@ contains
         call this%restore_graphics_state()
     end subroutine draw_pdf_marker
     
-    subroutine pdf_set_marker_colors(this, fill_color, edge_color)
+    subroutine pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(pdf_context), intent(inout) :: this
-        real(wp), dimension(3), intent(in) :: fill_color
-        real(wp), dimension(3), intent(in), optional :: edge_color
+        real(wp), intent(in) :: edge_r, edge_g, edge_b
+        real(wp), intent(in) :: face_r, face_g, face_b
         
-        if (present(edge_color)) then
-            call this%color(edge_color(1), edge_color(2), edge_color(3))
-        else
-            call this%color(fill_color(1), fill_color(2), fill_color(3))
-        end if
+        ! Set edge color for stroking
+        call this%color(edge_r, edge_g, edge_b)
     end subroutine pdf_set_marker_colors
     
-    subroutine pdf_set_marker_colors_with_alpha(this, fill_color, edge_color, alpha)
+    subroutine pdf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
         class(pdf_context), intent(inout) :: this
-        real(wp), dimension(3), intent(in) :: fill_color
-        real(wp), dimension(3), intent(in), optional :: edge_color
-        real(wp), intent(in) :: alpha
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
+        real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         
         ! PDF doesn't support alpha directly, just use the colors
-        call pdf_set_marker_colors(this, fill_color, edge_color)
+        call pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
     end subroutine pdf_set_marker_colors_with_alpha
     
     subroutine draw_pdf_arrow_facade(this, x, y, dx, dy, size, style)
@@ -268,58 +254,59 @@ contains
         scale = real(this%height, wp) / PDF_HEIGHT
     end function pdf_get_height_scale
     
-    subroutine pdf_fill_quad(this, x1, y1, x2, y2, x3, y3, x4, y4, color)
+    subroutine pdf_fill_quad(this, x_quad, y_quad)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x1, y1, x2, y2, x3, y3, x4, y4
-        real(wp), dimension(3), intent(in) :: color
-        real(wp) :: px1, py1, px2, py2, px3, py3, px4, py4
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        real(wp) :: px(4), py(4)
         character(len=512) :: cmd
+        integer :: i
         
         ! Convert to PDF coordinates
-        call this%normalize_coords(x1, y1, px1, py1)
-        call this%normalize_coords(x2, y2, px2, py2)
-        call this%normalize_coords(x3, y3, px3, py3)
-        call this%normalize_coords(x4, y4, px4, py4)
+        do i = 1, 4
+            call this%normalize_coords(x_quad(i), y_quad(i), px(i), py(i))
+        end do
         
-        ! Set fill color
-        write(cmd, '(3(F0.3, 1X), "rg")') color
-        call this%stream_writer%add_to_stream(trim(cmd))
+        ! Use current color (should be set before calling)
         
         ! Draw filled quadrilateral
-        write(cmd, '(8(F0.3, 1X), "m l l l h f")') px1, py1, px2, py2, px3, py3, px4, py4
+        write(cmd, '(8(F0.3, 1X), "m l l l h f")') px(1), py(1), px(2), py(2), px(3), py(3), px(4), py(4)
         call this%stream_writer%add_to_stream(trim(cmd))
     end subroutine pdf_fill_quad
     
-    subroutine pdf_fill_heatmap(this, data, x_min, x_max, y_min, y_max, colormap_name)
+    subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
         class(pdf_context), intent(inout) :: this
-        real(wp), dimension(:,:), intent(in) :: data
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=*), intent(in) :: colormap_name
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: z_min, z_max
         
         integer :: i, j
-        real(wp) :: cell_width, cell_height
-        real(wp) :: x, y, value
+        real(wp) :: x_quad(4), y_quad(4)
+        real(wp) :: value, norm_value
         real(wp), dimension(3) :: color
+        character(len=32) :: cmd
         
-        cell_width = (x_max - x_min) / real(size(data, 1), wp)
-        cell_height = (y_max - y_min) / real(size(data, 2), wp)
-        
-        do i = 1, size(data, 1)
-            do j = 1, size(data, 2)
-                x = x_min + (i - 0.5_wp) * cell_width
-                y = y_min + (j - 0.5_wp) * cell_height
-                value = data(i, j)
+        do i = 1, size(z_grid, 1) - 1
+            do j = 1, size(z_grid, 2) - 1
+                ! Get normalized value
+                value = z_grid(i, j)
+                if (z_max > z_min) then
+                    norm_value = (value - z_min) / (z_max - z_min)
+                else
+                    norm_value = 0.5_wp
+                end if
                 
-                ! Get color from colormap
-                call colormap_value_to_color(value, colormap_name, color)
+                ! Simple grayscale color
+                color = [norm_value, norm_value, norm_value]
+                
+                ! Set fill color
+                write(cmd, '(3(F0.3, 1X), "rg")') color
+                call this%stream_writer%add_to_stream(trim(cmd))
+                
+                ! Define quad corners
+                x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
+                y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
                 
                 ! Fill cell
-                call pdf_fill_quad(this, &
-                    x - cell_width/2, y - cell_height/2, &
-                    x + cell_width/2, y - cell_height/2, &
-                    x + cell_width/2, y + cell_height/2, &
-                    x - cell_width/2, y + cell_height/2, &
-                    color)
+                call pdf_fill_quad(this, x_quad, y_quad)
             end do
         end do
     end subroutine pdf_fill_heatmap
@@ -380,36 +367,32 @@ contains
         end select
     end subroutine pdf_calculate_legend_position
     
-    subroutine pdf_extract_rgb_data(this, rgb_data)
+    subroutine pdf_extract_rgb_data(this, width, height, rgb_data)
         class(pdf_context), intent(in) :: this
-        integer, dimension(:,:,:), allocatable, intent(out) :: rgb_data
+        integer, intent(in) :: width, height
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         
-        ! PDF doesn't have RGB pixel data
-        allocate(rgb_data(1, 1, 3))
-        rgb_data = 255
+        ! PDF doesn't have RGB pixel data - return white
+        rgb_data = 1.0_wp
     end subroutine pdf_extract_rgb_data
     
-    subroutine pdf_get_png_data(this, png_data)
+    subroutine pdf_get_png_data(this, width, height, png_data, status)
         class(pdf_context), intent(in) :: this
-        integer(1), dimension(:), allocatable, intent(out) :: png_data
+        integer, intent(in) :: width, height
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
         
         ! PDF doesn't generate PNG data
         allocate(png_data(0))
+        status = -1  ! Indicate not supported
     end subroutine pdf_get_png_data
     
-    subroutine pdf_prepare_3d_data(this, x, y, z, points_2d)
-        class(pdf_context), intent(in) :: this
-        real(wp), dimension(:), intent(in) :: x, y, z
-        real(wp), dimension(:,:), allocatable, intent(out) :: points_2d
+    subroutine pdf_prepare_3d_data(this, plots)
+        class(pdf_context), intent(inout) :: this
+        type(plot_data_t), intent(in) :: plots(:)
         
-        integer :: n
-        
-        n = size(x)
-        allocate(points_2d(2, n))
-        
-        ! Simple orthographic projection
-        points_2d(1, :) = x - 0.3_wp * y
-        points_2d(2, :) = z - 0.3_wp * y
+        ! PDF doesn't support 3D - stub implementation
+        ! Nothing to prepare for 2D PDF output
     end subroutine pdf_prepare_3d_data
     
     subroutine pdf_render_ylabel(this, ylabel)
@@ -427,21 +410,25 @@ contains
     
     subroutine pdf_draw_axes_stub(this, xscale, yscale, symlog_threshold, &
                                    x_min, x_max, y_min, y_max, &
-                                   title, xlabel, ylabel, enable_grid)
+                                   title, xlabel, ylabel, &
+                                   z_min, z_max, has_3d_plots)
         ! Stub implementation to match parent signature
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
-        logical, intent(in) :: enable_grid
+        real(wp), intent(in), optional :: z_min, z_max
+        logical, intent(in) :: has_3d_plots
         
         ! Delegate to actual implementation with fixed strings
         character(len=256) :: title_str, xlabel_str, ylabel_str
+        logical :: enable_grid
         
         title_str = ""
         xlabel_str = ""
         ylabel_str = ""
+        enable_grid = .false.
         if (allocated(title)) title_str = title
         if (allocated(xlabel)) xlabel_str = xlabel
         if (allocated(ylabel)) ylabel_str = ylabel
@@ -467,24 +454,26 @@ contains
                                      title, xlabel, ylabel, enable_grid)
     end subroutine pdf_draw_axes_and_labels_facade
     
-    subroutine pdf_save_coordinates(this)
-        class(pdf_context), intent(inout) :: this
+    subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
+        class(pdf_context), intent(in) :: this
+        real(wp), intent(out) :: x_min, x_max, y_min, y_max
         
-        ! Save current transformation matrix
-        call this%save_graphics_state()
+        ! Return current coordinate bounds
+        x_min = this%x_min
+        x_max = this%x_max
+        y_min = this%y_min
+        y_max = this%y_max
     end subroutine pdf_save_coordinates
     
-    subroutine pdf_set_coordinates(this, x_offset, y_offset, x_scale, y_scale)
+    subroutine pdf_set_coordinates(this, x_min, x_max, y_min, y_max)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_offset, y_offset, x_scale, y_scale
-        character(len=256) :: transform_cmd
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
-        ! Apply coordinate transformation
-        write(transform_cmd, '(4(F0.3, 1X), "0 0 cm")') x_scale, 0.0_wp, 0.0_wp, y_scale
-        call this%stream_writer%add_to_stream(trim(transform_cmd))
-        
-        write(transform_cmd, '("1 0 0 1 ", 2(F0.3, 1X), "cm")') x_offset, y_offset
-        call this%stream_writer%add_to_stream(trim(transform_cmd))
+        ! Set new coordinate bounds
+        this%x_min = x_min
+        this%x_max = x_max
+        this%y_min = y_min
+        this%y_max = y_max
     end subroutine pdf_set_coordinates
 
 end module fortplot_pdf
