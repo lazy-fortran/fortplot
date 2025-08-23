@@ -42,7 +42,7 @@ contains
         
         call figure()
         call plot(x_exp, y_symlog)
-        call set_yscale('symlog', 10.0_wp)
+        call set_yscale('symlog')  ! threshold parameter not supported yet
         call title('Symlog Scale Example')
         call xlabel('x') 
         call ylabel('x³ - 50x')

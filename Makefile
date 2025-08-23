@@ -172,6 +172,8 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/bar_chart_demo
 	@mkdir -p output/example/fortran/errorbar_demo
 	@mkdir -p output/example/fortran/disconnected_lines
+	@mkdir -p output/example/fortran/boxplot_demo
+	@mkdir -p output/example/fortran/grid_demo
 
 # Help target
 help:

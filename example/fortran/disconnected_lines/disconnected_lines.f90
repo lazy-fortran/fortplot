@@ -11,7 +11,7 @@ program disconnected_lines
     ! Get NaN value
     nan = ieee_value(nan, ieee_quiet_nan)
     
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     
     ! Create data with three disconnected segments using NaN as separator
     ! First segment: sine wave from 0 to pi
@@ -39,21 +39,21 @@ program disconnected_lines
     y(11) = 0.5_8
     
     ! Plot disconnected segments with markers and lines
-    call fig%add_plot(x, y, label='Disconnected segments', linestyle='o-')
+    call add_plot(x, y, label='Disconnected segments', linestyle='o-')
     
     ! Add single point (will be disconnected from the line)
-    call fig%add_plot([8.0_8], [-0.5_8], linestyle='rs', label='Single point')
+    call add_plot([8.0_8], [-0.5_8], linestyle='rs', label='Single point')
     
     ! Configure plot
-    call fig%set_title('Disconnected Line Segments Example')
-    call fig%set_xlabel('x')
-    call fig%set_ylabel('y')
-    call fig%legend()
+    call title('Disconnected Line Segments Example')
+    call xlabel('x')
+    call ylabel('y')
+    call legend()
     
     ! Save in multiple formats
-    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.png')
-    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.pdf')
-    call fig%savefig('output/example/fortran/disconnected_lines/disconnected_lines.txt')
+    call savefig('output/example/fortran/disconnected_lines/disconnected_lines.png')
+    call savefig('output/example/fortran/disconnected_lines/disconnected_lines.pdf')
+    call savefig('output/example/fortran/disconnected_lines/disconnected_lines.txt')
     
     print *, "Disconnected lines example saved to:"
     print *, "  - output/example/fortran/disconnected_lines/disconnected_lines.png"

@@ -38,10 +38,10 @@ contains
             z(i) = real(i-1, wp) * 0.05_wp
         end do
         
-        call fig%initialize(800, 600)
-        call fig%add_3d_plot(x, y, z, label="3D Helix")
-        call fig%set_title("3D Line Plot - Helix")
-        call fig%savefig('output/example/fortran/3d_plotting/3d_helix.png')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_3d_plot(x, y, z, label="3D Helix")
+        call title("3D Line Plot - Helix")
+        call savefig('output/example/fortran/3d_plotting/3d_helix.png')
         
         ! Parametric spiral curve
         deallocate(x, y, z)
@@ -55,10 +55,10 @@ contains
             z(i) = theta * 0.1_wp
         end do
         
-        call fig%initialize(800, 600)
-        call fig%add_3d_plot(x, y, z, label="Parametric spiral", linestyle='-')
-        call fig%set_title("3D Parametric Curve")
-        call fig%savefig('output/example/fortran/3d_plotting/parametric_curve.png')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_3d_plot(x, y, z, label="Parametric spiral", linestyle='-')
+        call title("3D Parametric Curve")
+        call savefig('output/example/fortran/3d_plotting/parametric_curve.png')
         
         print *, "Created: 3d_helix.png, parametric_curve.png"
         deallocate(x, y, z)
@@ -87,13 +87,13 @@ contains
             z(i) = sin(phi) * (1.0_wp + 0.2_wp * sin(3.0_wp * phi))
         end do
         
-        call fig%initialize(800, 600)
-        call fig%add_scatter_3d(x, y, z, label="Distorted sphere")
-        call fig%set_title("3D Scatter Plot - Sphere Pattern")
-        call fig%savefig('output/example/fortran/3d_plotting/scatter_sphere.png')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_scatter(x, y, z, label="Distorted sphere")
+        call title("3D Scatter Plot - Sphere Pattern")
+        call savefig('output/example/fortran/3d_plotting/scatter_sphere.png')
         
         ! Multiple scatter patterns
-        call fig%initialize(800, 600)
+        call figure(figsize=[8.0_wp, 6.0_wp])
         
         ! First pattern - spiral
         deallocate(x, y, z)
@@ -106,7 +106,7 @@ contains
             y(i) = sin(theta) * real(i-1, wp) / real(n-1, wp)
             z(i) = real(i-1, wp) / real(n-1, wp)
         end do
-        call fig%add_scatter_3d(x, y, z, label="Spiral", marker='o')
+        call add_scatter(x, y, z, label="Spiral", marker='o')
         
         ! Second pattern - cluster
         do i = 1, n
@@ -114,7 +114,7 @@ contains
             y(i) = 0.5_wp + 0.3_wp * sin(real(i, wp) * 0.7_wp) 
             z(i) = 0.5_wp + 0.2_wp * sin(real(i, wp) * 0.3_wp)
         end do
-        call fig%add_scatter_3d(x, y, z, label="Cluster", marker='s')
+        call add_scatter(x, y, z, label="Cluster", marker='s')
         
         ! Third pattern - grid
         do i = 1, n
@@ -122,11 +122,11 @@ contains
             y(i) = real((i-1)/7, wp) / 7.0_wp - 0.5_wp
             z(i) = 0.1_wp * sin(x(i) * 10.0_wp) * cos(y(i) * 10.0_wp)
         end do
-        call fig%add_scatter_3d(x, y, z, label="Grid", marker='D')
+        call add_scatter(x, y, z, label="Grid", marker='D')
         
-        call fig%set_title("Multiple 3D Scatter Patterns")
-        call fig%legend()
-        call fig%savefig('output/example/fortran/3d_plotting/scatter_multiple.png')
+        call title("Multiple 3D Scatter Patterns")
+        call legend()
+        call savefig('output/example/fortran/3d_plotting/scatter_multiple.png')
         
         print *, "Created: scatter_sphere.png, scatter_multiple.png"
         deallocate(x, y, z)
@@ -155,10 +155,10 @@ contains
             end do
         end do
         
-        call fig%initialize(800, 600)
-        call fig%add_surface(x_grid, y_grid, z_grid, label="Paraboloid")
-        call fig%set_title("3D Surface Plot - Paraboloid")
-        call fig%savefig('output/example/fortran/3d_plotting/surface_paraboloid.png')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, label="Paraboloid")
+        call title("3D Surface Plot - Paraboloid")
+        call savefig('output/example/fortran/3d_plotting/surface_paraboloid.png')
         
         ! Gaussian surface
         do i = 1, n
@@ -167,10 +167,10 @@ contains
             end do
         end do
         
-        call fig%initialize(800, 600)
-        call fig%add_surface(x_grid, y_grid, z_grid, label="Gaussian")
-        call fig%set_title("3D Surface Plot - Gaussian")
-        call fig%savefig('output/example/fortran/3d_plotting/surface_gaussian.png')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, label="Gaussian")
+        call title("3D Surface Plot - Gaussian")
+        call savefig('output/example/fortran/3d_plotting/surface_gaussian.png')
         
         print *, "Created: surface_paraboloid.png, surface_gaussian.png"
         deallocate(x_grid, y_grid, z_grid)
@@ -198,14 +198,14 @@ contains
         end do
         
         ! Export helix as GLTF (text format)
-        call fig%initialize(800, 600)
-        call fig%add_3d_plot(x, y, z, label="Helix")
-        call fig%savefig('output/example/fortran/3d_plotting/helix_demo.gltf')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_3d_plot(x, y, z, label="Helix")
+        call savefig('output/example/fortran/3d_plotting/helix_demo.gltf')
         
         ! Export helix as GLB (binary format)
-        call fig%initialize(800, 600)
-        call fig%add_3d_plot(x, y, z, label="Helix")
-        call fig%savefig('output/example/fortran/3d_plotting/helix_demo.glb')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_3d_plot(x, y, z, label="Helix")
+        call savefig('output/example/fortran/3d_plotting/helix_demo.glb')
         
         deallocate(x, y, z)
         
@@ -225,13 +225,13 @@ contains
         end do
         
         ! Export surface as GLTF and GLB
-        call fig%initialize(800, 600)
-        call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
-        call fig%savefig('output/example/fortran/3d_plotting/surface_demo.gltf')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, label="Surface")
+        call savefig('output/example/fortran/3d_plotting/surface_demo.gltf')
         
-        call fig%initialize(800, 600)
-        call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
-        call fig%savefig('output/example/fortran/3d_plotting/surface_demo.glb')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, label="Surface")
+        call savefig('output/example/fortran/3d_plotting/surface_demo.glb')
         
         print *, "Created: helix_demo.gltf/.glb, surface_demo.gltf/.glb"
         print *, "View with: https://gltf-viewer.donmccurdy.com/"
@@ -249,14 +249,14 @@ contains
         n = 50
         allocate(x(n), y(n), z(n))
         
-        call fig%initialize(800, 600)
+        call figure(figsize=[8.0_wp, 6.0_wp])
         
         ! Add 2D plot
         do i = 1, n
             x(i) = real(i-1, wp) * 0.1_wp
             y(i) = sin(x(i))
         end do
-        call fig%add_plot(x, y, label="2D sine wave")
+        call add_plot(x, y, label="2D sine wave")
         
         ! Add 3D plot
         do i = 1, n
@@ -264,14 +264,14 @@ contains
             y(i) = cos(x(i))
             z(i) = x(i) * 0.2_wp
         end do
-        call fig%add_3d_plot(x, y, z, label="3D cosine")
+        call add_3d_plot(x, y, z, label="3D cosine")
         
-        call fig%set_title("Mixed 2D and 3D Plots")
-        call fig%legend()
-        call fig%savefig('output/example/fortran/3d_plotting/mixed_plots.png')
+        call title("Mixed 2D and 3D Plots")
+        call legend()
+        call savefig('output/example/fortran/3d_plotting/mixed_plots.png')
         
         ! Combination of 3D scatter and line plots
-        call fig%initialize(800, 600)
+        call figure(figsize=[8.0_wp, 6.0_wp])
         
         ! First add scatter points
         n = 20
@@ -283,7 +283,7 @@ contains
             y(i) = sin(real(i-1, wp) * 0.3_wp) * exp(-real(i-1, wp) * 0.05_wp)
             z(i) = real(i-1, wp) * 0.05_wp
         end do
-        call fig%add_scatter_3d(x, y, z, label="Sample points", marker='o')
+        call add_scatter(x, y, z, label="Sample points", marker='o')
         
         ! Then add continuous curve
         n = 200
@@ -295,11 +295,11 @@ contains
             y(i) = sin(real(i-1, wp) * 0.03_wp) * exp(-real(i-1, wp) * 0.005_wp)
             z(i) = real(i-1, wp) * 0.005_wp
         end do
-        call fig%add_3d_plot(x, y, z, label="Continuous curve", linestyle='-')
+        call add_3d_plot(x, y, z, label="Continuous curve", linestyle='-')
         
-        call fig%set_title("3D Scatter + Line Combination")
-        call fig%legend()
-        call fig%savefig('output/example/fortran/3d_plotting/scatter_line_combo.png')
+        call title("3D Scatter + Line Combination")
+        call legend()
+        call savefig('output/example/fortran/3d_plotting/scatter_line_combo.png')
         
         print *, "Created: mixed_plots.png, scatter_line_combo.png"
         deallocate(x, y, z)

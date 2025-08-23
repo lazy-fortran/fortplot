@@ -27,7 +27,7 @@ program line_styles
     end do
 
     ! Comprehensive line style demonstration
-    call figure(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call plot(x, y1, label='Solid (-)', linestyle=LINESTYLE_SOLID)
     call plot(x, y2, label='Dashed (--)', linestyle=LINESTYLE_DASHED)
     call plot(x, y3, label='Dotted (:)', linestyle=LINESTYLE_DOTTED)

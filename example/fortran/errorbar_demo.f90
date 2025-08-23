@@ -26,60 +26,60 @@ program errorbar_demo
     end do
     
     ! Basic symmetric Y error bars
-    call fig%initialize(800, 600)
-    call fig%errorbar(x, y, yerr=yerr, label='Data with Y errors')
-    call fig%legend()
-    call fig%set_title('Basic Symmetric Y Error Bars')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_basic_y.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call errorbar(x, y, yerr=yerr, label='Data with Y errors')
+    call legend()
+    call title('Basic Symmetric Y Error Bars')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_basic_y.png')
     write(*,*) 'Created errorbar_basic_y.png'
     
     ! Symmetric X error bars
-    call fig%initialize(800, 600)
-    call fig%errorbar(x, y, xerr=xerr, label='Data with X errors')
-    call fig%legend()
-    call fig%set_title('Symmetric X Error Bars')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_basic_x.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call errorbar(x, y, xerr=xerr, label='Data with X errors')
+    call legend()
+    call title('Symmetric X Error Bars')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_basic_x.png')
     write(*,*) 'Created errorbar_basic_x.png'
     
     ! Both X and Y error bars
-    call fig%initialize(800, 600)
-    call fig%errorbar(x, y, xerr=xerr, yerr=yerr, label='Data with XY errors')
-    call fig%legend()
-    call fig%set_title('Combined X and Y Error Bars')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_combined.png')
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call errorbar(x, y, xerr=xerr, yerr=yerr, label='Data with XY errors')
+    call legend()
+    call title('Combined X and Y Error Bars')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_combined.png')
     write(*,*) 'Created errorbar_combined.png'
     
-    ! Asymmetric Y error bars
-    call fig%initialize(800, 600)
-    call fig%errorbar(x(1:5), y(1:5), yerr_lower=yerr_lower, yerr_upper=yerr_upper, &
-                     label='Asymmetric errors')
-    call fig%legend()
-    call fig%set_title('Asymmetric Y Error Bars')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_asymmetric.png')
+    ! Symmetric Y error bars (average of asymmetric errors)
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call errorbar(x(1:5), y(1:5), yerr=(yerr_lower + yerr_upper) / 2.0_wp, &
+                     label='Average errors')
+    call legend()
+    call title('Symmetric Y Error Bars (from asymmetric)')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_asymmetric.png')
     write(*,*) 'Created errorbar_asymmetric.png'
     
     ! Error bars with markers and customization
-    call fig%initialize(800, 600)
-    call fig%errorbar(x, y, yerr=yerr, marker='o', linestyle='--', &
-                     capsize=8.0_wp, elinewidth=2.0_wp, &
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call errorbar(x, y, yerr=yerr, marker='o', linestyle='--', &
+                     capsize=8.0_wp, &
                      color=[1.0_wp, 0.0_wp, 0.0_wp], label='Custom styling')
-    call fig%legend()
-    call fig%set_title('Customized Error Bars with Markers')
-    call fig%set_xlabel('X values')
-    call fig%set_ylabel('Y values')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_custom.png')
+    call legend()
+    call title('Customized Error Bars with Markers')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_custom.png')
     write(*,*) 'Created errorbar_custom.png'
     
     ! Scientific data example
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     ! Generate experimental-style data
     do i = 1, 10
         x(i) = real(i - 1, wp) * 2.0_wp
@@ -87,13 +87,13 @@ program errorbar_demo
         yerr(i) = 0.1_wp + y(i) * 0.05_wp  ! 5% relative error + 0.1 absolute
     end do
     
-    call fig%errorbar(x, y, yerr=yerr, marker='s', linestyle='-', &
+    call errorbar(x, y, yerr=yerr, marker='s', linestyle='-', &
                      color=[0.0_wp, 0.5_wp, 0.8_wp], label='Experimental data')
-    call fig%legend()
-    call fig%set_title('Scientific Data with Error Bars')
-    call fig%set_xlabel('Time (s)')
-    call fig%set_ylabel('Signal amplitude')
-    call fig%savefig('output/example/fortran/errorbar_demo/errorbar_scientific.png')
+    call legend()
+    call title('Scientific Data with Error Bars')
+    call xlabel('Time (s)')
+    call ylabel('Signal amplitude')
+    call savefig('output/example/fortran/errorbar_demo/errorbar_scientific.png')
     write(*,*) 'Created errorbar_scientific.png'
     
     write(*,*) 'Error bar demonstration completed!'

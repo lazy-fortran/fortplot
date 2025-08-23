@@ -30,14 +30,14 @@ contains
             end do
         end do
 
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("2D Gaussian - Default Colorblind-Safe Colormap")
-        call fig%add_contour_filled(x_grid, y_grid, z_grid)  ! Uses default 'crest' colormap
-        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.png')
-        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.pdf')
-        call fig%savefig('output/example/fortran/colored_contours/gaussian_default.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("2D Gaussian - Default Colorblind-Safe Colormap")
+        call add_contour_filled(x_grid, y_grid, z_grid)  ! Uses default 'crest' colormap
+        call savefig('output/example/fortran/colored_contours/gaussian_default.png')
+        call savefig('output/example/fortran/colored_contours/gaussian_default.pdf')
+        call savefig('output/example/fortran/colored_contours/gaussian_default.txt')
         
         print *, "Created: gaussian_default.png/pdf/txt"
     end subroutine default_gaussian_example
@@ -67,14 +67,14 @@ contains
         ! Custom contour levels
         custom_levels = [-6.0_wp, -4.0_wp, -2.0_wp, -1.0_wp, 1.0_wp, 2.0_wp, 4.0_wp, 6.0_wp]
 
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("Saddle Function - Plasma Colormap")
-        call fig%add_contour_filled(x_grid, y_grid, z_grid, levels=custom_levels, colormap="plasma")
-        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.png')
-        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.pdf')
-        call fig%savefig('output/example/fortran/colored_contours/saddle_plasma.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Saddle Function - Plasma Colormap")
+        call add_contour_filled(x_grid, y_grid, z_grid, levels=custom_levels, colormap="plasma")
+        call savefig('output/example/fortran/colored_contours/saddle_plasma.png')
+        call savefig('output/example/fortran/colored_contours/saddle_plasma.pdf')
+        call savefig('output/example/fortran/colored_contours/saddle_plasma.txt')
         
         print *, "Created: saddle_plasma.png/pdf/txt"
     end subroutine plasma_saddle_example
@@ -101,34 +101,34 @@ contains
         end do
 
         ! Inferno colormap
-        call fig1%initialize(640, 480)
-        call fig1%set_xlabel("x")
-        call fig1%set_ylabel("y")
-        call fig1%set_title("Ripple Function - Inferno Colormap")
-        call fig1%add_contour_filled(x_grid, y_grid, z_grid, colormap="inferno")
-        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.png')
-        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.pdf')
-        call fig1%savefig('output/example/fortran/colored_contours/ripple_inferno.txt')
+        call figure(figsize=[6.4_wp, 4.8_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Ripple Function - Inferno Colormap")
+        call add_contour_filled(x_grid, y_grid, z_grid, colormap="inferno")
+        call savefig('output/example/fortran/colored_contours/ripple_inferno.png')
+        call savefig('output/example/fortran/colored_contours/ripple_inferno.pdf')
+        call savefig('output/example/fortran/colored_contours/ripple_inferno.txt')
 
         ! Coolwarm colormap
-        call fig2%initialize(640, 480)
-        call fig2%set_xlabel("x")
-        call fig2%set_ylabel("y")
-        call fig2%set_title("Ripple Function - Coolwarm Colormap")
-        call fig2%add_contour_filled(x_grid, y_grid, z_grid, colormap="coolwarm")
-        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.png')
-        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.pdf')
-        call fig2%savefig('output/example/fortran/colored_contours/ripple_coolwarm.txt')
+        call figure(figsize=[6.4_wp, 4.8_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Ripple Function - Coolwarm Colormap")
+        call add_contour_filled(x_grid, y_grid, z_grid, colormap="coolwarm")
+        call savefig('output/example/fortran/colored_contours/ripple_coolwarm.png')
+        call savefig('output/example/fortran/colored_contours/ripple_coolwarm.pdf')
+        call savefig('output/example/fortran/colored_contours/ripple_coolwarm.txt')
 
         ! Jet colormap
-        call fig3%initialize(640, 480)
-        call fig3%set_xlabel("x")
-        call fig3%set_ylabel("y")
-        call fig3%set_title("Ripple Function - Jet Colormap")
-        call fig3%add_contour_filled(x_grid, y_grid, z_grid, colormap="jet")
-        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.png')
-        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.pdf')
-        call fig3%savefig('output/example/fortran/colored_contours/ripple_jet.txt')
+        call figure(figsize=[6.4_wp, 4.8_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Ripple Function - Jet Colormap")
+        call add_contour_filled(x_grid, y_grid, z_grid, colormap="jet")
+        call savefig('output/example/fortran/colored_contours/ripple_jet.png')
+        call savefig('output/example/fortran/colored_contours/ripple_jet.pdf')
+        call savefig('output/example/fortran/colored_contours/ripple_jet.txt')
         
         print *, "Created: ripple_inferno.png/pdf/txt, ripple_coolwarm.png/pdf/txt, ripple_jet.png/pdf/txt"
         print *, "Colormap comparison complete!"

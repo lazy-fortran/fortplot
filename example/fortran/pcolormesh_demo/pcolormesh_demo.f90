@@ -33,7 +33,7 @@ contains
         end do
         
         ! Create pcolormesh plot
-        call figure(640, 480)
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title('Basic Pcolormesh - Linear Gradient')
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
@@ -69,7 +69,7 @@ contains
             end do
         end do
         
-        call figure(640, 480)
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title('Pcolormesh - Sinusoidal Pattern')
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
@@ -104,7 +104,7 @@ contains
             end do
         end do
         
-        call figure(640, 480)
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title('Pcolormesh - Radial Pattern (Plasma)')
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
