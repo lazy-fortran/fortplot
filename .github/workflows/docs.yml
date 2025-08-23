@@ -38,9 +38,9 @@ jobs:
         run: |
           pip install ford
           
-          # Install ffmpeg for animation generation and imagemagick for placeholder images
+          # Install ffmpeg for animation generation
           sudo apt-get update
-          sudo apt-get install -y ffmpeg imagemagick
+          sudo apt-get install -y ffmpeg
           
           # Install fpm (Fortran Package Manager) - same version as CI
           wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
@@ -71,38 +71,6 @@ jobs:
             cp -r "${dir}"*.txt "doc/media/examples/${example_name}/" 2>/dev/null || true
             cp -r "${dir}"*.pdf "doc/media/examples/${example_name}/" 2>/dev/null || true
             cp -r "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
-          done
-          
-          # Create placeholder files for missing example outputs
-          # This ensures documentation links don't break when examples fail to generate outputs
-          
-          # Extract expected image files from documentation
-          expected_files=$(grep -roh '../../media/examples/[^)]*\.\(png\|pdf\)' doc/example/ | sed 's|../../media/examples/||' | sort -u)
-          
-          for file_path in $expected_files; do
-            full_path="doc/media/examples/$file_path"
-            if [ ! -f "$full_path" ]; then
-              echo "Creating placeholder for missing file: $file_path"
-              mkdir -p "$(dirname "$full_path")"
-              
-              # Create different placeholders based on file extension
-              if [[ "$file_path" == *.png ]]; then
-                # Create a placeholder PNG using ImageMagick or a simple text file if not available
-                if command -v convert >/dev/null 2>&1; then
-                  convert -size 640x480 xc:lightgray -pointsize 24 -draw "gravity center fill black text 0,0 'Example output not available'" "$full_path"
-                else
-                  # Fallback: create a text file that can serve as placeholder
-                  echo "Example output not available - check repository for source code" > "$full_path"
-                fi
-              elif [[ "$file_path" == *.pdf ]]; then
-                # Create a placeholder PDF or text file
-                if command -v convert >/dev/null 2>&1; then
-                  convert -size 640x480 xc:white -pointsize 20 -draw "gravity center fill black text 0,0 'PDF Example not available'" "$full_path"
-                else
-                  echo "PDF Example output not available - check repository for source code" > "$full_path"
-                fi
-              fi
-            fi
           done
           
           # Generate example documentation from README files
