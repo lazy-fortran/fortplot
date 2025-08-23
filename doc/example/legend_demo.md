@@ -9,9 +9,9 @@ This example demonstrates legend placement and customization options.
 
 ## Source Code
 
-🔷 **Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
+ð· **Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
 
-🐍 **Python:** [legend_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/legend_demo/legend_demo.py)
+ð **Python:** [legend_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/legend_demo/legend_demo.py)
 
 ```fortran
 program legend_demo
@@ -76,7 +76,7 @@ contains
         ! Upper left position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Upper Left")
-        call add_plot(x, y1, label="√x")
+        call add_plot(x, y1, label="âx")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="upper left")
         call savefig('output/example/fortran/legend_demo/legend_upper_left.png')
@@ -86,7 +86,7 @@ contains
         ! Upper right position (default)
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Upper Right")
-        call add_plot(x, y1, label="√x")
+        call add_plot(x, y1, label="âx")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="upper right")
         call savefig('output/example/fortran/legend_demo/legend_upper_right.png')
@@ -96,7 +96,7 @@ contains
         ! Lower left position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Lower Left")
-        call add_plot(x, y1, label="√x")
+        call add_plot(x, y1, label="âx")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="lower left")
         call savefig('output/example/fortran/legend_demo/legend_lower_left.png')
@@ -106,7 +106,7 @@ contains
         ! Lower right position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Lower Right")
-        call add_plot(x, y1, label="√x")
+        call add_plot(x, y1, label="âx")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="lower right")
         call savefig('output/example/fortran/legend_demo/legend_lower_right.png')
@@ -140,7 +140,7 @@ contains
         call add_plot(x, y1, label="e^(-x/2)cos(x)")
         call add_plot(x, y2, label="xe^(-x/3)")
         call add_plot(x, y3, label="sin(x)/x")
-        call add_plot(x, y4, label="x²e^(-x)")
+        call add_plot(x, y4, label="xÂ²e^(-x)")
 
         ! Add legend
         call legend()
@@ -228,7 +228,7 @@ end program legend_demo
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -312,7 +312,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -396,7 +396,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -480,7 +480,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -564,7 +564,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -648,7 +648,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog

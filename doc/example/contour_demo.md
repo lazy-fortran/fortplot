@@ -9,9 +9,9 @@ This example demonstrates contour plotting capabilities, including basic contour
 
 ## Source Code
 
-🔷 **Fortran:** [contour_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/contour_demo/contour_demo.f90)
+ð· **Fortran:** [contour_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/contour_demo/contour_demo.f90)
 
-🐍 **Python:** [contour_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/contour_demo/contour_demo.py)
+ð **Python:** [contour_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/contour_demo/contour_demo.py)
 
 ```fortran
 program contour_demo
@@ -49,7 +49,7 @@ contains
         call xlabel("x")
         call ylabel("y")
         call title("2D Gaussian Function")
-        call add_contour(x_grid, y_grid, z_grid, label="exp(-(x²+y²))")
+        call add_contour(x_grid, y_grid, z_grid, label="exp(-(xÂ²+yÂ²))")
         call savefig('output/example/fortran/contour_demo/contour_gaussian.png')
         call savefig('output/example/fortran/contour_demo/contour_gaussian.pdf')
         call savefig('output/example/fortran/contour_demo/contour_gaussian.txt')
@@ -83,7 +83,7 @@ contains
         call xlabel("x")
         call ylabel("y")
         call title("Mixed Plot: Contour + Line")
-        call add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="x²-y²")
+        call add_contour(x_grid, y_grid, z_grid, levels=custom_levels, label="xÂ²-yÂ²")
         call add_plot(x_grid, exp(-x_grid**2), label="Cross-section at y=0")
         call savefig('output/example/fortran/contour_demo/mixed_plot.png')
         call savefig('output/example/fortran/contour_demo/mixed_plot.pdf')
@@ -112,7 +112,7 @@ end program contour_demo
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -196,7 +196,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog

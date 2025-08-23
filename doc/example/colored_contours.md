@@ -9,9 +9,9 @@ This example shows filled contour plots with customizable colormaps for visualiz
 
 ## Source Code
 
-ğŸ”· **Fortran:** [colored_contours.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/colored_contours/colored_contours.f90)
+Ã°ÂŸÂ”Â· **Fortran:** [colored_contours.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/colored_contours/colored_contours.f90)
 
-ğŸ **Python:** [colored_contours.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/colored_contours/colored_contours.py)
+Ã°ÂŸÂÂ **Python:** [colored_contours.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/colored_contours/colored_contours.py)
 
 ```fortran
 program colored_contours_example
@@ -177,7 +177,7 @@ end program colored_contours_example
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -261,7 +261,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -345,7 +345,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -429,7 +429,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -513,7 +513,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog

@@ -103,7 +103,7 @@ The annotation system is optimized for practical use:
 
 ## Source Code
 
-🔷 **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
+ð· **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
 
 ```fortran
 program annotation_demo
@@ -213,10 +213,10 @@ program annotation_demo
 
     ! === DEMONSTRATION 7: Mathematical expressions ===
     ! Add mathematical annotations using Unicode
-    call text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4} - ¼sin(x)e^{-x/4}", &
+    call text(3.0_wp, 0.5_wp, "âf/âx = cos(x)e^{-x/4} - Â¼sin(x)e^{-x/4}", &
                   coord_type=COORD_DATA, font_size=9.0_wp, alignment="center")
 
-    call text(5.0_wp, -0.2_wp, "lim_{x→∞} e^{-x} = 0", &
+    call text(5.0_wp, -0.2_wp, "lim_{xââ} e^{-x} = 0", &
                   coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
 
     ! Add legend
@@ -226,28 +226,28 @@ program annotation_demo
     print *, "Saving annotation demonstration to multiple formats:"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.png')
-    print *, "  ✓ PNG: annotation_demo.png (high-quality with antialiased text)"
+    print *, "  â PNG: annotation_demo.png (high-quality with antialiased text)"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.pdf')
-    print *, "  ✓ PDF: annotation_demo.pdf (vector graphics, perfect scaling)"
+    print *, "  â PDF: annotation_demo.pdf (vector graphics, perfect scaling)"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.txt')
-    print *, "  ✓ ASCII: annotation_demo.txt (terminal-friendly text output)"
+    print *, "  â ASCII: annotation_demo.txt (terminal-friendly text output)"
 
     print *, ""
     print *, "=== Annotation Features Demonstrated ==="
-    print *, "✓ Basic text placement at data coordinates"
-    print *, "✓ Arrow annotations pointing to specific data points"
-    print *, "✓ Multiple font sizes (8pt to 16pt)"
-    print *, "✓ Text alignment options (left, center, right)"
-    print *, "✓ Text rotation (90° vertical text)"
-    print *, "✓ Background boxes for emphasis"
-    print *, "✓ Three coordinate systems:"
+    print *, "â Basic text placement at data coordinates"
+    print *, "â Arrow annotations pointing to specific data points"
+    print *, "â Multiple font sizes (8pt to 16pt)"
+    print *, "â Text alignment options (left, center, right)"
+    print *, "â Text rotation (90Â° vertical text)"
+    print *, "â Background boxes for emphasis"
+    print *, "â Three coordinate systems:"
     print *, "  - COORD_DATA: Position relative to plot data"
     print *, "  - COORD_FIGURE: Position relative to entire figure (0-1)"
     print *, "  - COORD_AXIS: Position relative to plot area (0-1)"
-    print *, "✓ Mathematical expressions with Unicode symbols"
-    print *, "✓ Multi-backend support (PNG, PDF, ASCII)"
+    print *, "â Mathematical expressions with Unicode symbols"
+    print *, "â Multi-backend support (PNG, PDF, ASCII)"
     print *, ""
     print *, "This example demonstrates all key features needed for:"
     print *, "- Scientific figure preparation and publication"
@@ -280,7 +280,7 @@ end program annotation_demo
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog

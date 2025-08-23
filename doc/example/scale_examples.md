@@ -9,9 +9,9 @@ This example demonstrates different axis scaling options including logarithmic a
 
 ## Source Code
 
-🔷 **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
+ð· **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
 
-🐍 **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
+ð **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
 
 ```fortran
 program scale_examples
@@ -61,7 +61,7 @@ contains
         call set_yscale('symlog')  ! threshold parameter not supported yet
         call title('Symlog Scale Example')
         call xlabel('x')
-        call ylabel('x³ - 50x')
+        call ylabel('xÂ³ - 50x')
         call savefig('output/example/fortran/scale_examples/symlog_scale.png')
         call savefig('output/example/fortran/scale_examples/symlog_scale.pdf')
         call savefig('output/example/fortran/scale_examples/symlog_scale.txt')
@@ -89,7 +89,7 @@ end program scale_examples
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -173,7 +173,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
