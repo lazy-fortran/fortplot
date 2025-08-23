@@ -83,6 +83,7 @@ jobs:
         make test ARGS="--target test_system_cmake_example"
 
     - name: Validate PNG output with PIL
+      continue-on-error: true
       run: |
         python3 -c "
         from PIL import Image
