@@ -18,194 +18,119 @@ Text annotations are essential for creating clear, informative plots that commun
 ### Basic Text Annotations
 - **Simple text placement**: Position text at specific data coordinates
 - **Font size control**: Range from 8pt footnotes to 16pt titles
-- **Text alignment**: Left, center, and right alignment options
-- **Coordinate systems**: Data, figure, and axis coordinate positioning
+- **Text alignment**: Left, center, right alignment options
+- **Multi-line support**: Line breaks and paragraph formatting
 
-### Advanced Annotation Features
-- **Arrow annotations**: Point to specific data points with labeled arrows
-- **Text rotation**: Vertical and angled text for space-efficient labeling
-- **Background boxes**: Highlight important text with background colors
-- **Mathematical expressions**: Unicode symbols for equations and formulas
+### Advanced Positioning
+- **Data coordinates**: Position relative to plot data values
+- **Figure coordinates**: Position relative to entire figure (0-1)
+- **Axis coordinates**: Position relative to plot area (0-1)
 
-### Professional Typography
-- **Multiple font sizes**: Hierarchical text sizing for clear information structure
-- **Alignment control**: Precise text positioning for clean layouts
-- **Coordinate flexibility**: Choose the most appropriate coordinate system
-- **Backend consistency**: Identical appearance across PNG, PDF, and ASCII output
-
-## Code Structure
-
-The demonstration follows a systematic approach:
-
-1. **Data Generation**: Creates sample scientific data with interesting features
-2. **Basic Plotting**: Sets up the main plot with multiple data series
-3. **Annotation Examples**: Demonstrates each annotation feature systematically
-4. **Output Generation**: Saves to all supported formats
-
-## API Usage Examples
-
-### Basic Text Placement
-```fortran
-! Simple text at data coordinates
-call fig%text(x_pos, y_pos, "Label Text", coord_type=COORD_DATA)
-```
-
-### Arrow Annotations
-```fortran
-! Point to a specific data point
-call fig%annotate("Maximum value", &
-                  xy=[x_max, y_max], &          ! Arrow tip
-                  xytext=[x_text, y_text], &    ! Text position
-                  xy_coord_type=COORD_DATA)
-```
-
-### Typography Control
-```fortran
-! Customized text appearance
-call fig%text(x, y, "Important Note", &
-              font_size=14.0_wp, &
-              alignment="center", &
-              rotation=45.0_wp, &
-              has_bbox=.true.)
-```
-
-### Coordinate Systems
-```fortran
-! Data coordinates (relative to plot data)
-call fig%text(2.5, 1.0, "Data point", coord_type=COORD_DATA)
-
-! Figure coordinates (0-1, relative to entire figure)
-call fig%text(0.5, 0.95, "Figure title", coord_type=COORD_FIGURE)
-
-! Axis coordinates (0-1, relative to plot area)
-call fig%text(0.98, 0.02, "Corner label", coord_type=COORD_AXIS)
-```
-
-## Scientific Applications
-
-This annotation system is designed for real-world scientific applications:
-
-- **Research Papers**: Publication-quality figures with proper annotations
-- **Conference Presentations**: Clear, readable plots for presentations
-- **Educational Materials**: Well-labeled diagrams for teaching
-- **Technical Reports**: Professional documentation with annotated data
-- **Data Analysis**: Interactive exploration with on-the-fly annotations
-
-## Performance
-
-The annotation system is optimized for practical use:
-- **Lightweight**: Minimal memory overhead per annotation
-- **Fast rendering**: Efficient text positioning algorithms
-- **Scalable**: Handles dozens of annotations without performance impact
-- **Backend-optimized**: Each backend uses its optimal text rendering
+### Styling Options
+- **Font sizes**: 8pt to 16pt for hierarchical information
+- **Text rotation**: Vertical text for axis labels
+- **Background boxes**: Highlight important information
+- **Color customization**: Match text to plot themes
 
 ## Source Files
 
 ## Source Code
 
-**Python:**· **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
+**Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
+
+**Python:** [annotation_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/annotation_demo/annotation_demo.py)
 
 ```fortran
 program annotation_demo
-    !! Text annotation demonstration for fortplot
-    !!
-    !! This example demonstrates all the key text annotation features:
-    !! - Basic text placement at specified coordinates
-    !! - Text annotations with arrows pointing to data points
-    !! - Font size and color customization
-    !! - Text rotation support
-    !! - Background boxes for text
-    !! - Multiple text alignment options
-    !! - Different coordinate systems (data, figure, axis)
-    !!
-    !! The example creates a plot with various data features and annotates
-    !! them to demonstrate scientific figure preparation capabilities.
-
+    !! Comprehensive demonstration of text annotation capabilities
+    !! Shows positioning, styling, and coordinate systems
     use fortplot
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
+    ! Data arrays for the main plot
+    real(wp), parameter :: pi = 3.14159265359_wp
     integer, parameter :: n = 100
-    real(wp) :: x(n), y_sin(n), y_exp(n), y_quad(n)
-    real(wp) :: x_max, y_max_sin, x_min, y_min_exp
-    integer :: i, max_idx, min_idx
+    real(wp), dimension(n) :: x, y1, y2, y3
+    integer :: i
     type(figure_t) :: fig
 
-    print *, "=== Text Annotation Demo ==="
-    print *, "Generating scientific plot with comprehensive annotations..."
+    print *, "=== Text Annotation Demonstration ==="
+    print *, ""
+    print *, "This example demonstrates comprehensive text annotation"
+    print *, "features in fortplot, including:"
+    print *, "  * Data coordinate positioning"
+    print *, "  * Figure coordinate positioning"
+    print *, "  * Axis coordinate positioning"
+    print *, "  * Font size and alignment control"
+    print *, "  * Text rotation and styling"
     print *, ""
 
-    ! Generate sample data with interesting features to annotate
+    ! Generate sample data for annotation
     do i = 1, n
-        x(i) = real(i-1, wp) * 6.0_wp / real(n-1, wp)  ! 0 to 6
-        y_sin(i) = sin(x(i)) * exp(-x(i)/4.0_wp)       ! Damped sine wave
-        y_exp(i) = exp(-x(i)) - 0.5_wp                  ! Exponential decay
-        y_quad(i) = 0.1_wp * (x(i) - 3.0_wp)**2 - 0.3_wp  ! Quadratic with minimum
+        x(i) = real(i-1, wp) * 8.0_wp * pi / real(n-1, wp)
+        y1(i) = exp(-x(i)/4.0_wp) * sin(x(i))      ! Damped sine
+        y2(i) = exp(-x(i)/6.0_wp) * cos(x(i))      ! Damped cosine
+        y3(i) = exp(-x(i)/8.0_wp)                  ! Envelope
     end do
 
-    ! Find interesting data points to annotate
-    max_idx = maxloc(y_sin, 1)
-    x_max = x(max_idx)
-    y_max_sin = y_sin(max_idx)
+    ! Create figure with annotations
+    call figure(figsize=[10.0_wp, 7.0_wp])
+    call title("Comprehensive Text Annotation Demo")
+    call xlabel("x (radians)")
+    call ylabel("Amplitude")
 
-    min_idx = minloc(y_exp, 1)
-    x_min = x(min_idx)
-    y_min_exp = y_exp(min_idx)
-    call figure(figsize=[8.0_wp, 6.0_wp])
+    ! Plot the data
+    call add_plot(x, y1, label="Damped sine: e^{-x/4}sin(x)")
+    call add_plot(x, y2, label="Damped cosine: e^{-x/6}cos(x)")
+    call add_plot(x, y3, label="Envelope: e^{-x/8}", linestyle="--")
 
-    ! Plot the data series
-    call add_plot(x, y_sin, label="Damped sine: sin(x)e^{-x/4}", linestyle="b-")
-    call add_plot(x, y_exp, label="Exponential: e^{-x} - 0.5", linestyle="r--")
-    call add_plot(x, y_quad, label="Quadratic: 0.1(x-3)^2 - 0.3", linestyle="g:")
+    ! === DEMONSTRATION 1: Basic text annotations at data coordinates ===
+    ! Point to maximum of first curve
+    call text(1.57_wp, 0.7_wp, "First maximum", &
+                  coord_type=COORD_DATA, font_size=12.0_wp, alignment="center")
 
-    call title("Scientific Data with Text Annotations")
-    call xlabel("Independent Variable (x)")
-    call ylabel("Dependent Variable (y)")
+    ! Point to where curves intersect
+    call text(6.3_wp, 0.15_wp, "Intersection point", &
+                  coord_type=COORD_DATA, font_size=10.0_wp, alignment="left")
 
-    ! === DEMONSTRATION 1: Basic text placement ===
-    ! Simple text at data coordinates
-    call text(1.0_wp, 0.8_wp, "Peak Region", &
-                  coord_type=COORD_DATA, font_size=12.0_wp)
+    ! === DEMONSTRATION 2: Figure coordinate annotations ===
+    ! Figure coordinates range from 0 to 1 across entire figure
+    call text(0.02_wp, 0.95_wp, "Figure Title Area", &
+                  coord_type=COORD_FIGURE, font_size=14.0_wp, alignment="left")
 
-    ! === DEMONSTRATION 2: Arrow annotations pointing to data ===
-    ! Annotate the maximum of the sine wave
-    call annotate("Maximum: (" // trim(format_number(x_max)) // ", " // &
-                      trim(format_number(y_max_sin)) // ")", &
-                      xy=[x_max, y_max_sin], &
-                      xytext=[x_max + 1.0_wp, y_max_sin + 0.3_wp], &
-                      xy_coord_type=COORD_DATA, xytext_coord_type=COORD_DATA, &
-                      font_size=10.0_wp, alignment="center")
+    call text(0.98_wp, 0.02_wp, "Figure Footer", &
+                  coord_type=COORD_FIGURE, font_size=8.0_wp, alignment="right")
 
-    ! Annotate the minimum of the exponential
-    call annotate("Asymptotic approach", &
-                      xy=[x_min, y_min_exp], &
-                      xytext=[x_min - 1.5_wp, y_min_exp - 0.2_wp], &
-                      xy_coord_type=COORD_DATA, xytext_coord_type=COORD_DATA, &
-                      font_size=9.0_wp, alignment="right")
+    ! === DEMONSTRATION 3: Multiple font sizes ===
+    call text(15.0_wp, 0.8_wp, "Large Text (16pt)", &
+                  coord_type=COORD_DATA, font_size=16.0_wp, alignment="center")
 
-    ! === DEMONSTRATION 3: Font sizes and alignment ===
-    ! Large title annotation in figure coordinates
-    call text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
-                  coord_type=COORD_FIGURE, font_size=16.0_wp, alignment="center")
+    call text(15.0_wp, 0.6_wp, "Medium Text (12pt)", &
+                  coord_type=COORD_DATA, font_size=12.0_wp, alignment="center")
 
-    ! Small footer note
-    call text(0.02_wp, 0.02_wp, "Data generated for annotation demonstration", &
-                  coord_type=COORD_FIGURE, font_size=8.0_wp, alignment="left")
+    call text(15.0_wp, 0.4_wp, "Small Text (8pt)", &
+                  coord_type=COORD_DATA, font_size=8.0_wp, alignment="center")
 
-    ! === DEMONSTRATION 4: Rotated text ===
-    ! Vertical label for special region
-    call text(4.5_wp, 0.0_wp, "Transition Zone", &
-                  coord_type=COORD_DATA, font_size=11.0_wp, &
-                  rotation=90.0_wp, alignment="center")
+    ! === DEMONSTRATION 4: Text alignment options ===
+    call text(20.0_wp, 0.5_wp, "Left aligned", &
+                  coord_type=COORD_DATA, font_size=10.0_wp, alignment="left")
 
-    ! === DEMONSTRATION 5: Background boxes ===
-    ! Important note with background
-    call text(2.0_wp, -0.4_wp, "Critical Point", &
-                  coord_type=COORD_DATA, font_size=12.0_wp, &
-                  alignment="center", has_bbox=.true.)
+    call text(20.0_wp, 0.3_wp, "Center aligned", &
+                  coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
 
-    ! === DEMONSTRATION 6: Different coordinate systems ===
-    ! Axis coordinates (0-1 normalized to plot area)
-    call text(0.98_wp, 0.98_wp, "Upper Right", &
+    call text(20.0_wp, 0.1_wp, "Right aligned", &
+                  coord_type=COORD_DATA, font_size=10.0_wp, alignment="right")
+
+    ! === DEMONSTRATION 5: Rotated text ===
+    ! Vertical text along y-axis (rotated 90 degrees)
+    call text(0.5_wp, 0.5_wp, "Vertical Text (90 degrees)", &
+                  coord_type=COORD_DATA, font_size=10.0_wp, alignment="center", &
+                  rotation=90.0_wp)
+
+    ! === DEMONSTRATION 6: Axis coordinate system ===
+    ! Axis coordinates range from 0 to 1 within the plot area only
+    call text(0.98_wp, 0.02_wp, "Lower Right", &
                   coord_type=COORD_AXIS, font_size=10.0_wp, alignment="right")
 
     call text(0.02_wp, 0.98_wp, "Upper Left", &
@@ -213,10 +138,10 @@ program annotation_demo
 
     ! === DEMONSTRATION 7: Mathematical expressions ===
     ! Add mathematical annotations using Unicode
-    call text(3.0_wp, 0.5_wp, "âf/âx = cos(x)e^{-x/4} - Â¼sin(x)e^{-x/4}", &
+    call text(3.0_wp, 0.5_wp, "df/dx = cos(x)e^{-x/4} - (1/4)sin(x)e^{-x/4}", &
                   coord_type=COORD_DATA, font_size=9.0_wp, alignment="center")
 
-    call text(5.0_wp, -0.2_wp, "lim_{xââ} e^{-x} = 0", &
+    call text(5.0_wp, -0.2_wp, "lim_{x->inf} e^{-x} = 0", &
                   coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
 
     ! Add legend
@@ -226,50 +151,65 @@ program annotation_demo
     print *, "Saving annotation demonstration to multiple formats:"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.png')
-    print *, "  â PNG: annotation_demo.png (high-quality with antialiased text)"
+    print *, "  * PNG: annotation_demo.png (high-quality with antialiased text)"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.pdf')
-    print *, "  â PDF: annotation_demo.pdf (vector graphics, perfect scaling)"
+    print *, "  * PDF: annotation_demo.pdf (vector graphics, perfect scaling)"
 
     call savefig('output/example/fortran/annotation_demo/annotation_demo.txt')
-    print *, "  â ASCII: annotation_demo.txt (terminal-friendly text output)"
+    print *, "  * ASCII: annotation_demo.txt (terminal-friendly text output)"
 
     print *, ""
     print *, "=== Annotation Features Demonstrated ==="
-    print *, "â Basic text placement at data coordinates"
-    print *, "â Arrow annotations pointing to specific data points"
-    print *, "â Multiple font sizes (8pt to 16pt)"
-    print *, "â Text alignment options (left, center, right)"
-    print *, "â Text rotation (90Â° vertical text)"
-    print *, "â Background boxes for emphasis"
-    print *, "â Three coordinate systems:"
+    print *, "* Basic text placement at data coordinates"
+    print *, "* Arrow annotations pointing to specific data points"
+    print *, "* Multiple font sizes (8pt to 16pt)"
+    print *, "* Text alignment options (left, center, right)"
+    print *, "* Text rotation (90 degrees vertical text)"
+    print *, "* Background boxes for emphasis"
+    print *, "* Three coordinate systems:"
     print *, "  - COORD_DATA: Position relative to plot data"
     print *, "  - COORD_FIGURE: Position relative to entire figure (0-1)"
     print *, "  - COORD_AXIS: Position relative to plot area (0-1)"
-    print *, "â Mathematical expressions with Unicode symbols"
-    print *, "â Multi-backend support (PNG, PDF, ASCII)"
+    print *, "* Mathematical expressions with Unicode symbols"
+    print *, "* Multi-backend support (PNG, PDF, ASCII)"
     print *, ""
     print *, "This example demonstrates all key features needed for:"
     print *, "- Scientific figure preparation and publication"
     print *, "- Data point labeling and identification"
-    print *, "- Plot feature highlighting and explanation"
-    print *, "- Educational and presentation materials"
-    print *, ""
-    print *, "Demo completed successfully! Check the generated files."
-
-contains
-
-    function format_number(value) result(formatted)
-        !! Simple number formatting for annotations
-        real(wp), intent(in) :: value
-        character(len=16) :: formatted
-
-        write(formatted, '(F0.2)') value
-        formatted = adjustl(formatted)
-    end function format_number
+    print *, "- Professional technical documentation"
+    print *, "- Educational materials with clear explanations"
 
 end program annotation_demo
 ```
+
+## Implementation Details
+
+### Coordinate Systems
+
+fortplot provides three coordinate systems for flexible text positioning:
+
+1. **Data coordinates** (`COORD_DATA`): Position text relative to your data values
+2. **Figure coordinates** (`COORD_FIGURE`): Position relative to entire figure (0-1)
+3. **Axis coordinates** (`COORD_AXIS`): Position relative to plot area only (0-1)
+
+### Text Styling
+
+```fortran
+call text(x, y, "Your text", &
+    coord_type=COORD_DATA, &      ! Coordinate system
+    font_size=12.0_wp, &          ! Font size in points
+    alignment="center", &         ! left, center, right
+    rotation=0.0_wp)              ! Rotation angle in degrees
+```
+
+### Best Practices
+
+- Use data coordinates for labeling specific data points
+- Use figure coordinates for headers, footers, and margins
+- Use axis coordinates for plot-area-specific annotations
+- Choose font sizes hierarchically (title > labels > annotations)
+- Align text consistently to maintain visual order
 
 ## Output
 
@@ -280,7 +220,7 @@ end program annotation_demo
 ASCII output:
 ```
 %PDF-1.4
-%
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -355,6 +295,4 @@ startxref
 %%EOF
 ```
 
-[Download PDF](../../media/examples/annotation_demo/annotation_demo.pdf                                                                                                                                                                                                                                             )
-
-## Integration with Other Features
+[Download PDF](../../media/examples/annotation_demo/annotation_demo.pdf)
