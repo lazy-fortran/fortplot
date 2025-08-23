@@ -9,7 +9,7 @@ This example demonstrates all available line styles in fortplot, showing how to 
 
 ## Source Code
 
-**Python:**· **Fortran:** [line_styles.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/line_styles/line_styles.f90)
+**Fortran:** [line_styles.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/line_styles/line_styles.f90)
 
 **Python:** **Python:** [line_styles.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/line_styles/line_styles.py)
 

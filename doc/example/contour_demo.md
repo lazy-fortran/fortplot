@@ -9,7 +9,7 @@ This example demonstrates contour plotting capabilities, including basic contour
 
 ## Source Code
 
-**Python:**· **Fortran:** [contour_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/contour_demo/contour_demo.f90)
+**Fortran:** [contour_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/contour_demo/contour_demo.f90)
 
 **Python:** **Python:** [contour_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/contour_demo/contour_demo.py)
 

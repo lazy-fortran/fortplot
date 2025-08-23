@@ -9,7 +9,7 @@ This example demonstrates legend placement and customization options.
 
 ## Source Code
 
-**Python:**· **Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
+**Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
 
 **Python:** **Python:** [legend_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/legend_demo/legend_demo.py)
 

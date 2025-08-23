@@ -9,7 +9,7 @@ This example demonstrates the fundamental plotting capabilities of fortplot usin
 
 ## Source Code
 
-**Python:**· **Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
+**Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
 
 **Python:** **Python:** [basic_plots.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/basic_plots/basic_plots.py)
 

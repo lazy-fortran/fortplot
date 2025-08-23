@@ -9,7 +9,7 @@ This example demonstrates pseudocolor plots for efficient 2D data visualization.
 
 ## Source Code
 
-**Python:**· **Fortran:** [pcolormesh_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
+**Fortran:** [pcolormesh_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
 
 **Python:** **Python:** [pcolormesh_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/pcolormesh_demo/pcolormesh_demo.py)
 
