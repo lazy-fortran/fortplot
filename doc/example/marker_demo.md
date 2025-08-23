@@ -9,9 +9,9 @@ This example showcases various marker types and scatter plot capabilities in for
 
 ## Source Code
 
-ð· **Fortran:** [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
+**Python:**· **Fortran:** [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
 
-ð **Python:** [marker_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/marker_demo/marker_demo.py)
+**Python:** **Python:** [marker_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/marker_demo/marker_demo.py)
 
 ```fortran
 program marker_demo

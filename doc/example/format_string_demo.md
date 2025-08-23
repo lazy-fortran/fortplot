@@ -9,9 +9,9 @@ This example demonstrates matplotlib-style format strings for quick and intuitiv
 
 ## Source Code
 
-🔷 **Fortran:** [format_string_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/format_string_demo/format_string_demo.f90)
+**Fortran:** [format_string_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/format_string_demo/format_string_demo.f90)
 
-🐍 **Python:** [format_string_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/format_string_demo/format_string_demo.py)
+**Python:** [format_string_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/format_string_demo/format_string_demo.py)
 
 ```fortran
 program format_string_demo

@@ -103,7 +103,7 @@ The annotation system is optimized for practical use:
 
 ## Source Code
 
-ð· **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
+**Python:**· **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
 
 ```fortran
 program annotation_demo

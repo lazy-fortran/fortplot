@@ -9,7 +9,7 @@ This example demonstrates using the built-in viewer for interactive display.
 
 ## Source Code
 
-🔷 **Fortran:** [show_viewer_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/show_viewer_demo/show_viewer_demo.f90)
+**Fortran:** [show_viewer_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/show_viewer_demo/show_viewer_demo.f90)
 
 ```fortran
 program show_viewer_demo

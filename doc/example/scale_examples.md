@@ -9,9 +9,9 @@ This example demonstrates different axis scaling options including logarithmic a
 
 ## Source Code
 
-ð· **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
+**Python:**· **Fortran:** [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
 
-ð **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
+**Python:** **Python:** [scale_examples.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/scale_examples/scale_examples.py)
 
 ```fortran
 program scale_examples
