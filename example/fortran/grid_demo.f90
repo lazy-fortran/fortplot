@@ -2,11 +2,9 @@ program grid_demo
     !! Example demonstrating grid line capabilities
     !! Shows basic grids, customization, and axis-specific grids
     
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
     implicit none
     
-    type(figure_t) :: fp
     real(wp) :: x(20), y1(20), y2(20)
     integer :: i
     
@@ -18,26 +16,18 @@ program grid_demo
     end do
     
     ! Basic plot (PNG)
-    call fp%figure(figsize=[8.0_wp, 6.0_wp])
-    call fp%add_plot(x, y1, label='Damped sine')
-    call fp%add_plot(x, y2, label='Cosine')
-    call fp%legend()
-    call fp%title('Basic Plot')
-    call fp%xlabel('Time (s)')
-    call fp%ylabel('Amplitude')
-    call fp%savefig('build/example/grid_demo/grid_basic.png')
-    write(*,*) 'Created grid_basic.png'
-    
-    ! Basic plot (PDF)
-    call fp%figure(figsize=[8.0_wp, 6.0_wp])
-    call fp%add_plot(x, y1, label='Damped sine')
-    call fp%add_plot(x, y2, label='Cosine')
-    call fp%legend()
-    call fp%title('Basic Plot')
-    call fp%xlabel('Time (s)')
-    call fp%ylabel('Amplitude')
-    call fp%savefig('build/example/grid_demo/grid_basic.pdf')
-    write(*,*) 'Created grid_basic.pdf'
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call plot(x, y1, label='Damped sine')
+    call plot(x, y2, label='Cosine')
+    call legend()
+    call title('Basic Plot - Grid Demo')
+    call xlabel('Time (s)')
+    call ylabel('Amplitude')
+    ! Note: Grid functionality is not available in current API
+    call savefig('output/example/fortran/grid_demo.png')
+    call savefig('output/example/fortran/grid_demo.pdf')
+    call savefig('output/example/fortran/grid_demo.txt')
+    write(*,*) 'Created grid_demo outputs'
     
     write(*,*) 'Grid demonstration completed!'
     
