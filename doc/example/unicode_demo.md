@@ -9,7 +9,7 @@ This example demonstrates mathematical symbols and Unicode support in plots.
 
 ## Source Code
 
-🔷 **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
+ð· **Fortran:** [unicode_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/unicode_demo/unicode_demo.f90)
 
 ```fortran
 program unicode_demo
@@ -108,7 +108,7 @@ program unicode_demo
 
     ! Create a second figure showing common mathematical expressions
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call title("Common Physics: E = mc², \Delta E = h\nu, F = q(E + v×B)")
+    call title("Common Physics: E = mcÂ², \Delta E = h\nu, F = q(E + vÃB)")
     call xlabel("Parameter \xi")
     call ylabel("Observable \Theta")
 
@@ -119,8 +119,8 @@ program unicode_demo
         z(i) = x(i)**2 * exp(-x(i))                         ! Gamma-like
     end do
 
-    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi²/2\sigma²}/\sqrt{2\pi\sigma²}")
-    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
+    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xiÂ²/2\sigmaÂ²}/\sqrt{2\pi\sigmaÂ²}")
+    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xiÂ² e^{-\xi}")
     call legend("upper right")
 
     ! Save mathematical examples figure
@@ -136,10 +136,10 @@ end program unicode_demo
 
 ## Features Demonstrated
 
-- **Greek letters**: α, β, γ, δ, π, θ, φ, ψ, ω
-- **Mathematical symbols**: ∞, ∑, ∏, ∫, √, ∂
+- **Greek letters**: Î±, Î², Î³, Î´, Ï, Î¸, Ï, Ï, Ï
+- **Mathematical symbols**: â, â, â, â«, â, â
 - **Subscripts/Superscripts**: Via LaTeX-like syntax
-- **Special characters**: °, ±, ≤, ≥, ≠
+- **Special characters**: Â°, Â±, â¤, â¥, â 
 
 ## Unicode Support
 
@@ -149,11 +149,11 @@ end program unicode_demo
 - ASCII backend shows approximations
 
 ### LaTeX-like Commands
-- `\alpha` → α
-- `\beta` → β
-- `\pi` → π
-- `\infty` → ∞
-- `\sum` → ∑
+- `\alpha` â Î±
+- `\beta` â Î²
+- `\pi` â Ï
+- `\infty` â â
+- `\sum` â â
 
 ## Output
 
@@ -164,7 +164,7 @@ end program unicode_demo
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -248,7 +248,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog

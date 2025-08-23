@@ -9,9 +9,9 @@ This example demonstrates all available line styles in fortplot, showing how to 
 
 ## Source Code
 
-🔷 **Fortran:** [line_styles.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/line_styles/line_styles.f90)
+ð· **Fortran:** [line_styles.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/line_styles/line_styles.f90)
 
-🐍 **Python:** [line_styles.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/line_styles/line_styles.py)
+ð **Python:** [line_styles.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/line_styles/line_styles.py)
 
 ```fortran
 program line_styles
@@ -89,7 +89,7 @@ end program line_styles
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog

@@ -9,9 +9,9 @@ This example showcases various marker types and scatter plot capabilities in for
 
 ## Source Code
 
-ğŸ”· **Fortran:** [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
+Ã°ÂŸÂ”Â· **Fortran:** [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
 
-ğŸ **Python:** [marker_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/marker_demo/marker_demo.py)
+Ã°ÂŸÂÂ **Python:** [marker_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/marker_demo/marker_demo.py)
 
 ```fortran
 program marker_demo
@@ -162,7 +162,7 @@ end program marker_demo
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -246,7 +246,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog
@@ -330,7 +330,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%€‚ƒ
+%Â€ÂÂ‚Âƒ
 2 0 obj
 <<
 /Type /Catalog

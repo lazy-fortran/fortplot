@@ -9,9 +9,9 @@ This example demonstrates the fundamental plotting capabilities of fortplot usin
 
 ## Source Code
 
-🔷 **Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
+ð· **Fortran:** [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
 
-🐍 **Python:** [basic_plots.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/basic_plots/basic_plots.py)
+ð **Python:** [basic_plots.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/basic_plots/basic_plots.py)
 
 ```fortran
 program basic_plots
@@ -30,7 +30,7 @@ contains
 
         print *, "=== Basic Plots ==="
 
-        ! Generate simple sine data - show 2 complete periods (0 to 4π)
+        ! Generate simple sine data - show 2 complete periods (0 to 4Ï)
         x = [(real(i-1, wp) * 4.0_wp * 3.141592653589793_wp / 49.0_wp, i=1, 50)]
         y = sin(x)
 
@@ -93,7 +93,7 @@ end program basic_plots
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -177,7 +177,7 @@ startxref
 ASCII output:
 ```
 %PDF-1.4
-%����
+%
 2 0 obj
 <<
 /Type /Catalog
