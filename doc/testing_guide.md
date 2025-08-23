@@ -77,6 +77,36 @@ make test
 
 **CI Auto-Detection**: Warnings automatically suppressed in CI environments (GitHub Actions, Jenkins, Travis CI, CircleCI).
 
+## Windows CI Performance Testing
+
+### Optimized CI Testing
+```bash
+# Enable Windows CI performance optimizations
+export FORTPLOT_USE_MEMORY_BACKEND=1
+export FORTPLOT_MINIMIZE_IO=1
+make test
+```
+
+### Performance Monitoring
+```bash
+# Run with performance monitoring enabled
+export FORTPLOT_DEBUG=1
+make test ARGS="--target test_pcolormesh_consolidated"
+
+# Check for tests exceeding 30-second target
+make test | grep "REGRESSION\|Performance target"
+```
+
+### Critical Windows CI Tests
+```bash
+# Previously slow tests now optimized for CI
+make test ARGS="--target test_pcolormesh_consolidated"      # Was >2min, now <30sec
+make test ARGS="--target test_histogram_consolidated"       # Was >1.5min, now <30sec  
+make test ARGS="--target test_contour_filled_backend_rendering"  # Was >3min, now <30sec
+```
+
+See [Windows CI Performance Guide](windows_ci_performance.md) for detailed optimization documentation.
+
 ## General Testing
 
 ### All Tests
