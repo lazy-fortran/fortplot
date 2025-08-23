@@ -3,7 +3,7 @@ title: Animation
 
 # Animation
 
-Create animated plots with enhanced FFmpeg pipe reliability and comprehensive error recovery.
+Create animated plots with enhanced FFmpeg pipe reliability and GitHub Pages integration.
 
 ## Quick Start
 
@@ -18,14 +18,38 @@ integer :: status
 ! Create animation
 anim = FuncAnimation(update_func, frames=60, interval=50, fig=fig)
 
-! Save with enhanced error handling  
-call anim%save("animation.mp4", fps=24, status=status)
+! Save to GitHub Pages structure
+call create_output_directory()
+call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
 if (status /= 0) print *, "Enhanced error recovery available"
 ```
 
-## Enhanced FFmpeg Integration (Issue #186)
+## GitHub Pages Integration
+
+**Download Animation**: [animation.mp4](../media/examples/animation/animation.mp4)
+
+The animation example generates MP4 files in a structured directory:
+
+```
+output/example/fortran/animation/animation.mp4
+```
+
+This path integrates seamlessly with GitHub Pages documentation, making animated examples directly accessible via web links.
+
+### Output Structure
+
+```fortran
+! Create directory and save animation
+call create_output_directory()
+call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
+```
+
+**Result**: Animation saved to `output/example/fortran/animation/animation.mp4` for GitHub Pages access.
+
+## Enhanced FFmpeg Integration
 
 **Latest Improvements:**
+- GitHub Pages MP4 download integration
 - Enhanced pipe reliability with robust error recovery
 - Cross-platform file validation and error diagnostics
 - Improved Windows binary pipe handling
@@ -74,9 +98,10 @@ program save_animation_demo
     ! Create animation with figure reference
     anim = FuncAnimation(update_wave, frames=NFRAMES, interval=50, fig=fig)
 
-    ! Save as MP4 video with 24 fps
+    ! Save as MP4 video with 24 fps to GitHub Pages structure
     print *, "Saving animation as MP4..."
-    call save_animation_with_error_handling(anim, "animation.mp4", 24)
+    call create_output_directory()
+    call save_animation_with_error_handling(anim, "output/example/fortran/animation/animation.mp4", 24)
 
 contains
 
@@ -100,7 +125,7 @@ contains
         integer, intent(in) :: fps
         integer :: status
 
-        call anim%save(filename, fps, status)
+        call save_animation(anim, filename, fps, status)
 
         select case (status)
         case (0)
@@ -121,6 +146,17 @@ contains
             print *, "✗ Unknown error (status:", status, ") - check system diagnostics"
         end select
     end subroutine save_animation_with_error_handling
+    
+    subroutine create_output_directory()
+        integer :: mkdir_status
+        
+        ! Create directory structure for GitHub Pages integration
+        call execute_command_line("mkdir -p output/example/fortran/animation", &
+                                 exitstat=mkdir_status)
+        if (mkdir_status /= 0) then
+            print *, "Warning: Could not create output directory structure"
+        end if
+    end subroutine create_output_directory
 
 end program save_animation_demo
 ```
@@ -176,37 +212,13 @@ ffprobe -v error -show_format animation.mp4
 file animation.mp4  # Should show: ISO Media, MP4 v2
 ```
 
-## Example Code Structure
-
-```fortran
-! Initialize animation
-call anim%init(fps=30, duration=5.0)
-
-! Generate frames
-do i = 1, n_frames
-    ! Update data
-    call update_data(t)
-
-    ! Plot frame
-    call fig%clear()
-    call fig%add_plot(x, y)
-
-    ! Add frame
-    call anim%add_frame(fig)
-end do
-
-! Save video
-call anim%save('animation.mp4')
-```
 
 ## Windows-Specific Examples
 
-### Handling Paths with Spaces
+### Cross-Platform Paths
 ```fortran
-! Windows paths with spaces work automatically
-character(len=256) :: output_file
-output_file = "C:\Users\User Name\Documents\animation.mp4"
-call anim%save(output_file, fps=24, status=status)
+! GitHub Pages structure works on all platforms
+call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
 ```
 
 ### Error Handling for Windows
@@ -221,19 +233,17 @@ else if (status == -1) then
 end if
 ```
 
-### Directory Creation
-```fortran
-! Create output directory on Windows
-character(len=256) :: output_dir
-output_dir = "animations"
-if (is_windows()) then
-    call system('mkdir "' // trim(output_dir) // '" 2>NUL')
-else
-    call system('mkdir -p "' // trim(output_dir) // '"')
-end if
-```
 
-## Output
+## Accessing Animation Files
+
+**Local Development**:
+- Generated file: `output/example/fortran/animation/animation.mp4`
+- Use any video player to view locally
+
+**GitHub Pages**:
+- Download link: `[animation.mp4](../media/examples/animation/animation.mp4)`
+- Direct browser access from documentation
+- Integrated with example documentation workflow
 
 ## Troubleshooting (Enhanced)
 
