@@ -9,9 +9,9 @@ This example demonstrates legend placement and customization options.
 
 ## Source Code
 
-**Python:**· **Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
+**Fortran:** [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
 
-**Python:** **Python:** [legend_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/legend_demo/legend_demo.py)
+**Python:** [legend_demo.py](https://github.com/lazy-fortran/fortplot/blob/main/example/python/legend_demo/legend_demo.py)
 
 ```fortran
 program legend_demo
@@ -76,7 +76,7 @@ contains
         ! Upper left position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Upper Left")
-        call add_plot(x, y1, label="âx")
+        call add_plot(x, y1, label="sqrt(x)")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="upper left")
         call savefig('output/example/fortran/legend_demo/legend_upper_left.png')
@@ -86,7 +86,7 @@ contains
         ! Upper right position (default)
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Upper Right")
-        call add_plot(x, y1, label="âx")
+        call add_plot(x, y1, label="sqrt(x)")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="upper right")
         call savefig('output/example/fortran/legend_demo/legend_upper_right.png')
@@ -96,7 +96,7 @@ contains
         ! Lower left position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Lower Left")
-        call add_plot(x, y1, label="âx")
+        call add_plot(x, y1, label="sqrt(x)")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="lower left")
         call savefig('output/example/fortran/legend_demo/legend_lower_left.png')
@@ -106,7 +106,7 @@ contains
         ! Lower right position
         call figure(figsize=[640.0_wp, 480.0_wp])
         call title("Legend: Lower Right")
-        call add_plot(x, y1, label="âx")
+        call add_plot(x, y1, label="sqrt(x)")
         call add_plot(x, y2, label="ln(x)")
         call legend(position="lower right")
         call savefig('output/example/fortran/legend_demo/legend_lower_right.png')
@@ -140,7 +140,7 @@ contains
         call add_plot(x, y1, label="e^(-x/2)cos(x)")
         call add_plot(x, y2, label="xe^(-x/3)")
         call add_plot(x, y3, label="sin(x)/x")
-        call add_plot(x, y4, label="xÂ²e^(-x)")
+        call add_plot(x, y4, label="x^2*e^(-x)")
 
         ! Add legend
         call legend()
@@ -228,7 +228,7 @@ end program legend_demo
 ASCII output:
 ```
 %PDF-1.4
-%
+%
 2 0 obj
 <<
 /Type /Catalog
@@ -303,428 +303,24 @@ startxref
 %%EOF
 ```
 
-[Download PDF](../../media/examples/legend_demo/basic_legend.pdf                                                                                                                                                                                                                                                )
+[Download PDF](../../media/examples/legend_demo/basic_legend.pdf)
 
 ### Legend Upper Left
 
 ![legend_upper_left.png](../../media/examples/legend_demo/legend_upper_left.png)
 
-ASCII output:
-```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
-
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
-```
-
-[Download PDF](../../media/examples/legend_demo/legend_upper_left.pdf                                                                                                                                                                                                                                           )
-
 ### Legend Upper Right
 
 ![legend_upper_right.png](../../media/examples/legend_demo/legend_upper_right.png)
-
-ASCII output:
-```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
-
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
-```
-
-[Download PDF](../../media/examples/legend_demo/legend_upper_right.pdf                                                                                                                                                                                                                                          )
 
 ### Legend Lower Left
 
 ![legend_lower_left.png](../../media/examples/legend_demo/legend_lower_left.png)
 
-ASCII output:
-```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
-
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
-```
-
-[Download PDF](../../media/examples/legend_demo/legend_lower_left.pdf                                                                                                                                                                                                                                           )
-
 ### Legend Lower Right
 
 ![legend_lower_right.png](../../media/examples/legend_demo/legend_lower_right.png)
 
-ASCII output:
-```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
-
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
-```
-
-[Download PDF](../../media/examples/legend_demo/legend_lower_right.pdf                                                                                                                                                                                                                                          )
-
 ### Multi Function Legend
 
 ![multi_function_legend.png](../../media/examples/legend_demo/multi_function_legend.png)
-
-ASCII output:
-```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
-
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
-```
-
-[Download PDF](../../media/examples/legend_demo/multi_function_legend.pdf                                                                                                                                                                                                                                       )
-
-### Basic Legend
-### Multi-function Legend
-### Legend Box Styling
