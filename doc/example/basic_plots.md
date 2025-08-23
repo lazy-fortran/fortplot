@@ -30,7 +30,7 @@ contains
 
         print *, "=== Basic Plots ==="
 
-        ! Generate simple sine data - show 2 complete periods (0 to 4π)
+        ! Generate simple sine data - show 2 complete periods (0 to 4pi)
         x = [(real(i-1, wp) * 4.0_wp * 3.141592653589793_wp / 49.0_wp, i=1, 50)]
         y = sin(x)
 
