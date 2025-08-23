@@ -42,7 +42,7 @@ program smart_show_demo
     call title('Smart Show Demo - Damped Oscillation')
     call xlabel('Time')
     call ylabel('Amplitude')
-    call plot(x, y, label='exp(-t)*cos(2πt)', linestyle='b-o')
+    call plot(x, y, label='exp(-t)*cos(2t)', linestyle='b-o')
     call legend()
 
     ! Display using intelligent show()
@@ -75,9 +75,9 @@ end program smart_show_demo
    - SSH session detection
 
 2. **Select backend**:
-   - GUI available → PNG viewer
-   - Terminal only → ASCII output
-   - File output → User specified
+   - GUI available  PNG viewer
+   - Terminal only  ASCII output
+   - File output  User specified
 
 3. **Fallback chain**:
    - Try PNG viewer
@@ -109,5 +109,5 @@ Smart Plot Display
          |           *
     -1.0 |            **
          +---------------
-         0              2π
+         0              2
 ```
