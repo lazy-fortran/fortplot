@@ -1,9 +1,7 @@
 program ascii_heatmap_demo
     !! Demonstrate ASCII heatmap visualization with various 2D functions
-    use fortplot, only: figure_t, wp
+    use fortplot
     implicit none
-    
-    type(figure_t) :: fig
     real(wp), allocatable :: x(:), y(:), z1(:,:), z2(:,:), z3(:,:)
     integer :: i, j, nx, ny
     real(wp) :: r
@@ -42,9 +40,9 @@ program ascii_heatmap_demo
     end do
     
     ! Demo 1: Circular ripples with contour_filled
-    call fig%initialize(80, 25)
-    call fig%add_contour_filled(x, y, z1, label="Ripples")
-    call fig%set_title("ASCII Heatmap: Circular Ripples")
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call add_contour_filled(x, y, z1, label="Ripples")
+    call title("ASCII Heatmap: Circular Ripples")
     
     ! Demo 2: Saddle point with pcolormesh
     block
@@ -60,15 +58,15 @@ program ascii_heatmap_demo
             y_edges(j) = -2.05_wp + 4.1_wp * (j - 1) / real(ny, wp)
         end do
         
-        call fig%initialize(80, 25)
-        call fig%add_pcolormesh(x_edges, y_edges, transpose(z2))
-        call fig%set_title("ASCII Heatmap: Saddle Point")
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_pcolormesh(x_edges, y_edges, transpose(z2))
+        call title("ASCII Heatmap: Saddle Point")
     end block
     
     ! Demo 3: Four peaks
-    call fig%initialize(80, 25)
-    call fig%add_contour_filled(x, y, z3, label="Four Peaks")
-    call fig%set_title("ASCII Heatmap: Four Gaussian Peaks")
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call add_contour_filled(x, y, z3, label="Four Peaks")
+    call title("ASCII Heatmap: Four Gaussian Peaks")
     
     print *, "ASCII heatmap demos saved:"
     

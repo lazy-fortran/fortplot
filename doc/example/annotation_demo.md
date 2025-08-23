@@ -99,6 +99,8 @@ The annotation system is optimized for practical use:
 - **Scalable**: Handles dozens of annotations without performance impact
 - **Backend-optimized**: Each backend uses its optimal text rendering
 
+## Source Files
+
 ## Source Code
 
 🔷 **Fortran:** [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
@@ -148,25 +150,25 @@ program annotation_demo
     min_idx = minloc(y_exp, 1)
     x_min = x(min_idx)
     y_min_exp = y_exp(min_idx)
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
 
     ! Plot the data series
-    call fig%add_plot(x, y_sin, label="Damped sine: sin(x)e^{-x/4}", linestyle="b-")
-    call fig%add_plot(x, y_exp, label="Exponential: e^{-x} - 0.5", linestyle="r--")
-    call fig%add_plot(x, y_quad, label="Quadratic: 0.1(x-3)^2 - 0.3", linestyle="g:")
+    call add_plot(x, y_sin, label="Damped sine: sin(x)e^{-x/4}", linestyle="b-")
+    call add_plot(x, y_exp, label="Exponential: e^{-x} - 0.5", linestyle="r--")
+    call add_plot(x, y_quad, label="Quadratic: 0.1(x-3)^2 - 0.3", linestyle="g:")
 
-    call fig%set_title("Scientific Data with Text Annotations")
-    call fig%set_xlabel("Independent Variable (x)")
-    call fig%set_ylabel("Dependent Variable (y)")
+    call title("Scientific Data with Text Annotations")
+    call xlabel("Independent Variable (x)")
+    call ylabel("Dependent Variable (y)")
 
     ! === DEMONSTRATION 1: Basic text placement ===
     ! Simple text at data coordinates
-    call fig%text(1.0_wp, 0.8_wp, "Peak Region", &
+    call text(1.0_wp, 0.8_wp, "Peak Region", &
                   coord_type=COORD_DATA, font_size=12.0_wp)
 
     ! === DEMONSTRATION 2: Arrow annotations pointing to data ===
     ! Annotate the maximum of the sine wave
-    call fig%annotate("Maximum: (" // trim(format_number(x_max)) // ", " // &
+    call annotate("Maximum: (" // trim(format_number(x_max)) // ", " // &
                       trim(format_number(y_max_sin)) // ")", &
                       xy=[x_max, y_max_sin], &
                       xytext=[x_max + 1.0_wp, y_max_sin + 0.3_wp], &
@@ -174,7 +176,7 @@ program annotation_demo
                       font_size=10.0_wp, alignment="center")
 
     ! Annotate the minimum of the exponential
-    call fig%annotate("Asymptotic approach", &
+    call annotate("Asymptotic approach", &
                       xy=[x_min, y_min_exp], &
                       xytext=[x_min - 1.5_wp, y_min_exp - 0.2_wp], &
                       xy_coord_type=COORD_DATA, xytext_coord_type=COORD_DATA, &
@@ -182,54 +184,54 @@ program annotation_demo
 
     ! === DEMONSTRATION 3: Font sizes and alignment ===
     ! Large title annotation in figure coordinates
-    call fig%text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
+    call text(0.5_wp, 0.95_wp, "SCIENTIFIC ANALYSIS", &
                   coord_type=COORD_FIGURE, font_size=16.0_wp, alignment="center")
 
     ! Small footer note
-    call fig%text(0.02_wp, 0.02_wp, "Data generated for annotation demonstration", &
+    call text(0.02_wp, 0.02_wp, "Data generated for annotation demonstration", &
                   coord_type=COORD_FIGURE, font_size=8.0_wp, alignment="left")
 
     ! === DEMONSTRATION 4: Rotated text ===
     ! Vertical label for special region
-    call fig%text(4.5_wp, 0.0_wp, "Transition Zone", &
+    call text(4.5_wp, 0.0_wp, "Transition Zone", &
                   coord_type=COORD_DATA, font_size=11.0_wp, &
                   rotation=90.0_wp, alignment="center")
 
     ! === DEMONSTRATION 5: Background boxes ===
     ! Important note with background
-    call fig%text(2.0_wp, -0.4_wp, "Critical Point", &
+    call text(2.0_wp, -0.4_wp, "Critical Point", &
                   coord_type=COORD_DATA, font_size=12.0_wp, &
                   alignment="center", has_bbox=.true.)
 
     ! === DEMONSTRATION 6: Different coordinate systems ===
     ! Axis coordinates (0-1 normalized to plot area)
-    call fig%text(0.98_wp, 0.98_wp, "Upper Right", &
+    call text(0.98_wp, 0.98_wp, "Upper Right", &
                   coord_type=COORD_AXIS, font_size=10.0_wp, alignment="right")
 
-    call fig%text(0.02_wp, 0.98_wp, "Upper Left", &
+    call text(0.02_wp, 0.98_wp, "Upper Left", &
                   coord_type=COORD_AXIS, font_size=10.0_wp, alignment="left")
 
     ! === DEMONSTRATION 7: Mathematical expressions ===
     ! Add mathematical annotations using Unicode
-    call fig%text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4} - ¼sin(x)e^{-x/4}", &
+    call text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4} - ¼sin(x)e^{-x/4}", &
                   coord_type=COORD_DATA, font_size=9.0_wp, alignment="center")
 
-    call fig%text(5.0_wp, -0.2_wp, "lim_{x→∞} e^{-x} = 0", &
+    call text(5.0_wp, -0.2_wp, "lim_{x→∞} e^{-x} = 0", &
                   coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
 
     ! Add legend
-    call fig%legend("upper right")
+    call legend("upper right")
 
     ! Save to all supported formats
     print *, "Saving annotation demonstration to multiple formats:"
 
-    call fig%savefig('output/example/fortran/annotation_demo/annotation_demo.png')
+    call savefig('output/example/fortran/annotation_demo/annotation_demo.png')
     print *, "  ✓ PNG: annotation_demo.png (high-quality with antialiased text)"
 
-    call fig%savefig('output/example/fortran/annotation_demo/annotation_demo.pdf')
+    call savefig('output/example/fortran/annotation_demo/annotation_demo.pdf')
     print *, "  ✓ PDF: annotation_demo.pdf (vector graphics, perfect scaling)"
 
-    call fig%savefig('output/example/fortran/annotation_demo/annotation_demo.txt')
+    call savefig('output/example/fortran/annotation_demo/annotation_demo.txt')
     print *, "  ✓ ASCII: annotation_demo.txt (terminal-friendly text output)"
 
     print *, ""
@@ -269,3 +271,90 @@ contains
 end program annotation_demo
 ```
 
+## Output
+
+### Annotation Demo
+
+![annotation_demo.png](../../media/examples/annotation_demo/annotation_demo.png)
+
+ASCII output:
+```
+%PDF-1.4
+%����
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/annotation_demo/annotation_demo.pdf                                                                                                                                                                                                                                             )
+
+## Integration with Other Features

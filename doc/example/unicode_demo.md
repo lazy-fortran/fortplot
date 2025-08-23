@@ -50,35 +50,35 @@ program unicode_demo
     print *, ""
 
     ! Create figure with Unicode-rich content
-    call fig%initialize(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
 
     ! Title with Greek letters and mathematical notation
-    call fig%set_title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t + \phi)")
+    call title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t + \phi)")
 
     ! Axis labels with Greek letters and units
-    call fig%set_xlabel("Time \tau (normalized: \tau = \omega t / 2\pi)")
-    call fig%set_ylabel("Amplitude \Psi (V)")
+    call xlabel("Time \tau (normalized: \tau = \omega t / 2\pi)")
+    call ylabel("Amplitude \Psi (V)")
 
     ! Add plots with Greek letter labels
-    call fig%add_plot(t, x, label="\alpha damped: sin(\omega t)e^{-\lambda\tau}")
-    call fig%add_plot(t, y, label="\beta damped: cos(\omega t)e^{-\mu\tau}")
-    call fig%add_plot(t, z, label="\gamma oscillation: sin(2\omega t)")
+    call add_plot(t, x, label="\alpha damped: sin(\omega t)e^{-\lambda\tau}")
+    call add_plot(t, y, label="\beta damped: cos(\omega t)e^{-\mu\tau}")
+    call add_plot(t, z, label="\gamma oscillation: sin(2\omega t)")
 
     ! Show legend with Unicode content
-    call fig%legend("upper right")
+    call legend("upper right")
 
     ! Save to all three backends to demonstrate Unicode support
 
     ! 1. PNG - High quality with antialiased Unicode
-    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.png')
+    call savefig('output/example/fortran/unicode_demo/unicode_demo.png')
     print *, "  (High-quality antialiased Greek letters via STB TrueType)"
 
     ! 2. PDF - Vector graphics with Unicode
-    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.pdf')
+    call savefig('output/example/fortran/unicode_demo/unicode_demo.pdf')
     print *, "  (Vector Unicode characters, scalable and professional)"
 
     ! 3. ASCII - Terminal output with Unicode
-    call fig%savefig('output/example/fortran/unicode_demo/unicode_demo.txt')
+    call savefig('output/example/fortran/unicode_demo/unicode_demo.txt')
     print *, "  (Terminal-friendly Unicode display)"
 
     print *, ""
@@ -96,9 +96,9 @@ program unicode_demo
     print *, ""
     print *, "In your Fortran code, simply use LaTeX-style commands:"
     print *, ""
-    print *, '  call fig%set_title("Wave: \psi = A sin(\omega t)")'
-    print *, '  call fig%set_xlabel("Frequency \nu (Hz)")'
-    print *, '  call fig%add_plot(x, y, label="\alpha decay")'
+    print *, '  call title("Wave: \psi = A sin(\omega t)")'
+    print *, '  call xlabel("Frequency \nu (Hz)")'
+    print *, '  call add_plot(x, y, label="\alpha decay")'
     print *, ""
     print *, "The library automatically converts LaTeX commands to Unicode"
     print *, "characters in all backends (PNG, PDF, ASCII)."
@@ -107,10 +107,10 @@ program unicode_demo
     print *, ""
 
     ! Create a second figure showing common mathematical expressions
-    call fig%initialize(800, 600)
-    call fig%set_title("Common Physics: E = mc¬≤, \Delta E = h\nu, F = q(E + v√óB)")
-    call fig%set_xlabel("Parameter \xi")
-    call fig%set_ylabel("Observable \Theta")
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call title("Common Physics: E = mc¬≤, \Delta E = h\nu, F = q(E + v√óB)")
+    call xlabel("Parameter \xi")
+    call ylabel("Observable \Theta")
 
     ! Generate data for common mathematical functions
     do i = 1, n_points
@@ -119,14 +119,14 @@ program unicode_demo
         z(i) = x(i)**2 * exp(-x(i))                         ! Gamma-like
     end do
 
-    call fig%add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi¬≤/2\sigma¬≤}/\sqrt{2\pi\sigma¬≤}")
-    call fig%add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi¬≤ e^{-\xi}")
-    call fig%legend("upper right")
+    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi¬≤/2\sigma¬≤}/\sqrt{2\pi\sigma¬≤}")
+    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi¬≤ e^{-\xi}")
+    call legend("upper right")
 
     ! Save mathematical examples figure
-    call fig%savefig('output/example/fortran/unicode_demo/math_examples.png')
-    call fig%savefig('output/example/fortran/unicode_demo/math_examples.pdf')
-    call fig%savefig('output/example/fortran/unicode_demo/math_examples.txt')
+    call savefig('output/example/fortran/unicode_demo/math_examples.png')
+    call savefig('output/example/fortran/unicode_demo/math_examples.pdf')
+    call savefig('output/example/fortran/unicode_demo/math_examples.txt')
 
     print *, ""
     print *, "Demo completed! Check the generated files to see Unicode rendering."
@@ -156,6 +156,174 @@ end program unicode_demo
 - `\sum` ‚Üí ‚àë
 
 ## Output
+
+### Unicode Demo
+
+![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/unicode_demo/unicode_demo.pdf                                                                                                                                                                                                                                                )
+
+### Math Examples
+
+![math_examples.png](../../media/examples/unicode_demo/math_examples.png)
+
+ASCII output:
+```
+%PDF-1.4
+%ÄÅÇÉ
+2 0 obj
+<<
+/Type /Catalog
+/Pages 3 0 R
+>>
+endobj
+3 0 obj
+<<
+/Type /Pages
+/Kids [4 0 R]
+/Count 1
+>>
+endobj
+4 0 obj
+<<
+/Type /Page
+/Parent 3 0 R
+/MediaBox [0 0 595.0 842.0]
+/Resources <<
+  /Font <<
+    /F5 5 0 R
+    /F6 6 0 R
+  >>
+>>
+/Contents 7 0 R
+>>
+endobj
+5 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+endobj
+6 0 obj
+<<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Symbol
+>>
+endobj
+7 0 obj
+<<
+/Length 23
+>>
+stream
+q
+1 w
+1 J
+1 j
+0 0 1 RG
+
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f
+0000000000 00000 n
+0000000013 00000 n
+0000000056 00000 n
+0000000106 00000 n
+0000000244 00000 n
+0000000307 00000 n
+0000000367 00000 n
+trailer
+<<
+/Size 8
+/Root 2 0 R
+>>
+startxref
+432
+%%EOF
+```
+
+[Download PDF](../../media/examples/unicode_demo/math_examples.pdf                                                                                                                                                                                                                                               )
 
 ### Unicode Demo
 ### Math Examples

@@ -1,66 +1,11 @@
 title: Animation
 ---
 
-# Animation
+# Animation Example
 
-Create animated plots with enhanced FFmpeg pipe reliability and GitHub Pages integration.
+Creates animated plots and saves to video files with cross-platform support.
 
-## Quick Start
-
-```fortran
-use fortplot
-use fortplot_animation
-
-type(figure_t) :: fig
-type(animation_t) :: anim
-integer :: status
-
-! Create animation
-anim = FuncAnimation(update_func, frames=60, interval=50, fig=fig)
-
-! Save to GitHub Pages structure
-call create_output_directory()
-call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
-if (status /= 0) print *, "Enhanced error recovery available"
-```
-
-## GitHub Pages Integration
-
-**Download Animation**: [animation.mp4](../media/examples/animation/animation.mp4)
-
-The animation example generates MP4 files in a structured directory:
-
-```
-output/example/fortran/animation/animation.mp4
-```
-
-This path integrates seamlessly with GitHub Pages documentation, making animated examples directly accessible via web links.
-
-### Output Structure
-
-```fortran
-! Create directory and save animation
-call create_output_directory()
-call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
-```
-
-**Result**: Animation saved to `output/example/fortran/animation/animation.mp4` for GitHub Pages access.
-
-## Enhanced FFmpeg Integration
-
-**Latest Improvements:**
-- GitHub Pages MP4 download integration
-- Enhanced pipe reliability with robust error recovery
-- Cross-platform file validation and error diagnostics
-- Improved Windows binary pipe handling
-- Better status codes for precise troubleshooting
-
-### Installation
-
-**Windows:** `choco install ffmpeg`  
-**Ubuntu/Debian:** `sudo apt install ffmpeg`  
-**macOS:** `brew install ffmpeg`  
-**Arch Linux:** `sudo pacman -S ffmpeg`
+## Source Files
 
 ## Source Code
 
@@ -87,13 +32,13 @@ program save_animation_demo
     ! Initial y data
     y = sin(x)
 
-    call fig%initialize(width=800, height=600)
-    call fig%add_plot(x, y, label='animated wave')
-    call fig%set_title('Animation Save Demo')
-    call fig%set_xlabel('x')
-    call fig%set_ylabel('y')
-    call fig%set_xlim(0.0_wp, 2.0_wp * 3.14159_wp)
-    call fig%set_ylim(-1.5_wp, 1.5_wp)
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call add_plot(x, y, label='animated wave')
+    call title('Animation Save Demo')
+    call xlabel('x')
+    call ylabel('y')
+    call xlim(0.0_wp, 2.0_wp * 3.14159_wp)
+    call ylim(-1.5_wp, 1.5_wp)
 
     ! Create animation with figure reference
     anim = FuncAnimation(update_wave, frames=NFRAMES, interval=50, fig=fig)
@@ -116,7 +61,7 @@ contains
         y = sin(x + phase) * cos(phase * 0.5_wp)
 
         ! Update plot data
-        call fig%set_ydata(1, y)
+        call set_ydata(y)  ! Note: plot index parameter not supported in pyplot API
     end subroutine update_wave
 
     subroutine save_animation_with_error_handling(anim, filename, fps)
@@ -129,27 +74,29 @@ contains
 
         select case (status)
         case (0)
-            print *, "✓ Animation saved successfully to '", trim(filename), "'"
+            print *, "Animation saved successfully to '", trim(filename), "'"
         case (-1)
-            print *, "✗ FFmpeg not found - install: choco install ffmpeg (Windows) or apt install ffmpeg"
+            print *, "ERROR: ffmpeg not found. Please install ffmpeg to save animations."
+            print *, "Install with: sudo pacman -S ffmpeg (Arch Linux)"
+            print *, "Or visit: https://ffmpeg.org/download.html"
         case (-3)
-            print *, "✗ Invalid format - use .mp4, .avi, or .mkv extension"
+            print *, "ERROR: Unsupported file format. Use .mp4, .avi, or .mkv"
         case (-4)
-            print *, "✗ Pipe connection failed - check FFmpeg installation and permissions"
+            print *, "ERROR: Could not open pipe to ffmpeg. Check ffmpeg installation."
         case (-5)
-            print *, "✗ Frame generation failed - reduce resolution or complexity"
+            print *, "ERROR: Failed to generate animation frames."
         case (-6)
             print *, "✗ Pipe write failed - enhanced recovery attempted (Issue #186: exponential backoff exhausted)"
         case (-7)
-            print *, "✗ Video validation failed - check output file integrity"
+            print *, "ERROR: Generated video failed validation. Check ffmpeg version."
         case default
-            print *, "✗ Unknown error (status:", status, ") - check system diagnostics"
+            print *, "ERROR: Unknown error occurred while saving animation. Status:", status
         end select
     end subroutine save_animation_with_error_handling
-    
+
     subroutine create_output_directory()
         integer :: mkdir_status
-        
+
         ! Create directory structure for GitHub Pages integration
         call execute_command_line("mkdir -p output/example/fortran/animation", &
                                  exitstat=mkdir_status)
@@ -161,119 +108,53 @@ contains
 end program save_animation_demo
 ```
 
-## Enhanced Reliability Features
+## Quick Start
 
-- **Robust pipe communication**: Enhanced error detection and recovery
-- **Cross-platform reliability**: Improved Windows/Unix pipe handling
-- **Comprehensive validation**: Multi-stage file and format verification
-- **Detailed diagnostics**: Precise error codes and recovery suggestions
-- **Automatic fallbacks**: PNG sequence generation when video fails
-
-## Pipe Reliability Improvements (Issue #186)
-
-### Enhanced Error Recovery
-- **Status -6 fixes**: Improved pipe write reliability with retry mechanisms
-- **File validation**: Better detection of "File exists: F" and "File size: -1" issues
-- **Cross-platform consistency**: Unified behavior across Windows, Linux, macOS
-- **Diagnostic output**: Detailed error reporting for troubleshooting
-
-### Automatic Features
-- **Binary mode pipes**: Platform-appropriate handling
-- **Error state recovery**: Clean pipe closure on failures
-- **Format validation**: Pre and post-processing verification
-- **Fallback mechanisms**: PNG sequence when video encoding fails
-
-## Status Code Reference (Issue #186 Enhanced)
-
-| Code | Meaning | Enhanced Recovery |
-|------|---------|------------------|
-| 0 | Success | File validated and playable |
-| -1 | FFmpeg missing | Clear installation instructions |
-| -3 | Invalid format | Format validation before processing |
-| -4 | Pipe open failed | Enhanced permission and path checking |
-| -5 | Frame generation failed | Memory and resolution diagnostics |
-| -6 | **Pipe write failed** | **Exponential backoff retry exhausted (recovery attempted)** |
-| -7 | Video validation failed | Comprehensive file integrity checking |
-
-## Enhanced Validation Framework
-
-**Automatic Validation**:
-- **Size validation**: Minimum thresholds based on frame count and resolution
-- **Header validation**: MP4 format signatures (`ftyp`, `mdat`, `moov`)
-- **Content validation**: Frame integrity and encoding verification
-- **Playback validation**: Optional external tool verification with FFprobe
-
-**Manual Verification**:
 ```bash
-# Validate video file
-ffprobe -v error -show_format animation.mp4
+# Install FFmpeg first
+# Windows: choco install ffmpeg
+# Linux: sudo apt install ffmpeg
+# macOS: brew install ffmpeg
 
-# Check file integrity
-file animation.mp4  # Should show: ISO Media, MP4 v2
+# Run example
+make example ARGS="save_animation_demo"
 ```
 
+## Windows Support (Issue #189 Fixed)
 
-## Windows-Specific Examples
+Windows FFmpeg animation export now works correctly with:
+- Binary pipe handling for PNG data
+- Automatic path escaping for special characters
+- Windows-specific error reporting
 
-### Cross-Platform Paths
-```fortran
-! GitHub Pages structure works on all platforms
-call save_animation(anim, "output/example/fortran/animation/animation.mp4", 24, status)
+## Platform-Specific Setup
+
+### Windows
+```powershell
+# Install FFmpeg
+choco install ffmpeg
+
+# Verify installation
+ffmpeg -version
 ```
 
-### Error Handling for Windows
-```fortran
-use fortplot_system_runtime, only: is_windows
+### Linux/macOS
+```bash
+# Ubuntu/Debian
+sudo apt install ffmpeg
 
-if (is_windows() .and. status == -4) then
-    print *, "Windows pipe error - check antivirus settings"
-    print *, "Try adding FFmpeg to antivirus exclusions"
-else if (status == -1) then
-    print *, "FFmpeg not found in PATH"
-end if
+# macOS
+brew install ffmpeg
 ```
 
+## Complete Documentation
 
-## Accessing Animation Files
+For comprehensive documentation including:
+- Cross-platform installation guides
+- Windows-specific troubleshooting
+- Error handling examples
+- Path and filename handling
 
-**Local Development**:
-- Generated file: `output/example/fortran/animation/animation.mp4`
-- Use any video player to view locally
+See: [Animation Documentation](../../../doc/example/animation.md)
 
-**GitHub Pages**:
-- Download link: `[animation.mp4](../media/examples/animation/animation.mp4)`
-- Direct browser access from documentation
-- Integrated with example documentation workflow
-
-## Troubleshooting (Enhanced)
-
-### Status -6 Pipe Write Issues (Issue #186 Fixed)
-**Error**: "Failed to write frame to pipe"  
-**Enhanced Recovery**: 
-- Automatic retry with exponential backoff
-- Improved cross-platform pipe handling
-- Better error diagnostics and user feedback
-- Fallback to PNG sequence generation
-
-### File Existence Issues
-**Error**: "File exists: F" or "File size: -1"  
-**Enhanced Detection**:
-- Multi-stage file validation
-- Better file system consistency checking  
-- Improved error reporting with actionable steps
-
-### General Issues
-1. **FFmpeg detection**: `ffmpeg -version` must work
-2. **Permissions**: Ensure write access to output directory
-3. **Antivirus**: Add FFmpeg to exclusions if needed
-4. **Memory**: Reduce resolution for large animations
-
-### Advanced Diagnostics
-```fortran
-! Enable detailed logging
-use fortplot_logging, only: set_log_level, LOG_LEVEL_DEBUG
-call set_log_level(LOG_LEVEL_DEBUG)
-
-! Generate diagnostic report
-call anim%save("test.mp4", fps=24, status=status)
-```
+**Windows Users**: See [Windows FFmpeg Setup Guide](../../../doc/windows_ffmpeg_setup.md) for detailed installation and troubleshooting.

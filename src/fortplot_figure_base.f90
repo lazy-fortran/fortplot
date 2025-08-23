@@ -131,10 +131,12 @@ contains
         backend_type = 'ascii'
         if (present(backend)) backend_type = trim(backend)
         
-        ! Create backend
+        ! Create backend (deallocate first if already allocated)
+        if (allocated(self%backend)) deallocate(self%backend)
         call initialize_backend(self%backend, backend_type, self%width, self%height)
         
-        ! Initialize plot storage
+        ! Initialize plot storage (deallocate first if already allocated)
+        if (allocated(self%plots)) deallocate(self%plots)
         allocate(self%plots(self%max_plots))
         
         ! Initialize subplot system

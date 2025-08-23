@@ -49,7 +49,7 @@ program subplot_demo
     end do
 
     ! Example 1: 2x2 subplot grid
-    call figure(FIG_2X2_WIDTH, FIG_2X2_HEIGHT)
+    call figure(figsize=[real(FIG_2X2_WIDTH, wp), real(FIG_2X2_HEIGHT, wp)])
     
     print *, 'Creating 2x2 subplot example...'
     
@@ -84,7 +84,7 @@ program subplot_demo
     call savefig('output/example/fortran/subplot_demo/subplot_2x2_demo.png')
 
     ! Example 2: 1x3 subplot layout
-    call figure(FIG_1X3_WIDTH, FIG_1X3_HEIGHT)
+    call figure(figsize=[real(FIG_1X3_WIDTH, wp), real(FIG_1X3_HEIGHT, wp)])
     
     print *, 'Creating 1x3 subplot example...'
     

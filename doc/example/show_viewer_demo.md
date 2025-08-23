@@ -40,7 +40,7 @@ program show_viewer_demo
     end do
 
     ! Create figure and add plots
-    call figure(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call title('Show Viewer Demo - Sine and Cosine Functions')
     call xlabel('x (radians)')
     call ylabel('y')

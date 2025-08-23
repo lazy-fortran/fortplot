@@ -42,16 +42,16 @@ contains
         cx = cos(x)
         
         ! Multi-line plot using OO interface
-        call fig%initialize(640, 480)
-        call fig%set_xlabel("x")
-        call fig%set_ylabel("y")
-        call fig%set_title("Sine and Cosine Functions")
-        call fig%add_plot(x, sx, label="sin(x)")
-        call fig%add_plot(x, cx, label="cos(x)")
-        call fig%legend()  ! Add legend for labeled plots
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.png')
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.pdf')
-        call fig%savefig('output/example/fortran/basic_plots/multi_line.txt')
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call xlabel("x")
+        call ylabel("y")
+        call title("Sine and Cosine Functions")
+        call add_plot(x, sx, label="sin(x)")
+        call add_plot(x, cx, label="cos(x)")
+        call legend()  ! Add legend for labeled plots
+        call savefig('output/example/fortran/basic_plots/multi_line.png')
+        call savefig('output/example/fortran/basic_plots/multi_line.pdf')
+        call savefig('output/example/fortran/basic_plots/multi_line.txt')
         
         print *, "Created: multi_line.png/pdf/txt"
         
