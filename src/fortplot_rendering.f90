@@ -279,13 +279,36 @@ contains
     subroutine switch_backend_if_needed(self, target_backend)
         !! Switch backend if current doesn't match target
         use fortplot_utils, only: initialize_backend
+        use fortplot_ascii, only: ascii_context
+        use fortplot_pdf, only: pdf_context
+        use fortplot_png, only: png_context
+        use fortplot_raster, only: raster_context
+        use fortplot_gltf, only: gltf_context
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: target_backend
         
         character(len=20) :: current_backend
         
-        ! Get current backend type (stub implementation)
-        current_backend = 'ascii'  ! Default assumption
+        ! Detect current backend type using polymorphic type checking
+        current_backend = 'unknown'
+        if (allocated(self%backend)) then
+            select type (backend => self%backend)
+            type is (ascii_context)
+                current_backend = 'ascii'
+            type is (pdf_context)  
+                current_backend = 'pdf'
+            type is (png_context)
+                current_backend = 'png'
+            type is (raster_context)
+                current_backend = 'png'  ! Treat base raster as PNG
+            type is (gltf_context)
+                current_backend = 'gltf'
+            class default
+                current_backend = 'ascii'  ! Default fallback
+            end select
+        else
+            current_backend = 'ascii'  ! Default for unallocated backend
+        end if
         
         ! For now, avoid switching to PNG backend to prevent segfaults
         ! This is a temporary workaround for the raster backend corruption issue
