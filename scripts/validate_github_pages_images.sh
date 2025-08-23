@@ -56,10 +56,15 @@ fi
 
 # Test 3: Check workflow and Makefile for proper media staging
 if [ -f ".github/workflows/docs.yml" ]; then
-    if grep -A 5 -B 5 "make doc" .github/workflows/docs.yml | grep -q "cp -r doc/media/examples"; then
+    # Get lines around 'make doc' and check if cp comes BEFORE (which is correct)
+    context=$(grep -B 5 -A 5 "make doc" .github/workflows/docs.yml)
+    # Check if cp appears BEFORE make doc (in the -B 5 lines)
+    if echo "$context" | grep -B 5 "make doc" | grep -q "cp -r doc/media/examples"; then
+        test_result "Workflow media staging" "PASS" "Media copied before 'make doc' - paths will work correctly"
+    elif echo "$context" | grep -A 5 "make doc" | grep -q "cp -r doc/media/examples"; then
         test_result "Workflow media staging" "CRITICAL" "Media copied after 'make doc' - will break image paths"
     else
-        test_result "Workflow media staging" "PASS" "Media staging appears correct in workflow"
+        test_result "Workflow media staging" "PASS" "No media copy found near 'make doc'"
     fi
 else
     test_result "Workflow file" "FAIL" "GitHub Actions workflow not found"
@@ -67,10 +72,20 @@ fi
 
 if [ -f "Makefile" ]; then
     doc_section=$(sed -n '/^doc:/,/^[a-zA-Z]/p' Makefile)
-    if echo "$doc_section" | grep -n -E "(ford|cp.*doc/media)" | head -2 | tail -1 | grep -q "cp"; then
-        test_result "Makefile media staging" "CRITICAL" "Media copied after FORD - will break image paths"
+    # Check if ford comes BEFORE any cp commands (which would be wrong)
+    ford_line=$(echo "$doc_section" | grep -n "ford" | cut -d: -f1)
+    first_cp_line=$(echo "$doc_section" | grep -n "cp.*doc/media" | head -1 | cut -d: -f1)
+    
+    if [ -n "$ford_line" ] && [ -n "$first_cp_line" ]; then
+        if [ "$ford_line" -lt "$first_cp_line" ]; then
+            test_result "Makefile media staging" "CRITICAL" "FORD runs before media copy - will break image paths"
+        else
+            test_result "Makefile media staging" "PASS" "Media copied before FORD - paths will work correctly"
+        fi
+    elif [ -n "$ford_line" ]; then
+        test_result "Makefile media staging" "PASS" "FORD found, no media copy needed"
     else
-        test_result "Makefile media staging" "PASS" "Media staging appears correct in Makefile"
+        test_result "Makefile media staging" "FAIL" "FORD command not found in doc target"
     fi
 else
     test_result "Makefile" "FAIL" "Makefile not found"
