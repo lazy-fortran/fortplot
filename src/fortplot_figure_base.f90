@@ -105,6 +105,7 @@ module fortplot_figure_base
         procedure :: initialize_default_subplot
         procedure :: set_ydata
         procedure :: add_plot
+        procedure :: clear
     end type figure_t
 
 contains
@@ -403,5 +404,35 @@ contains
         end if
     end subroutine add_plot
     
+    subroutine clear(self)
+        !! Clear all plots and reset figure to initial state
+        class(figure_t), intent(inout) :: self
+        integer :: i
+        
+        ! Clear all plots
+        self%plot_count = 0
+        self%rendered = .false.
+        
+        ! Reset subplot plots
+        if (allocated(self%subplots)) then
+            do i = 1, size(self%subplots)
+                self%subplots(i)%plot_count = 0
+            end do
+        end if
+        
+        ! Clear streamlines and annotations if allocated
+        if (allocated(self%streamlines)) then
+            deallocate(self%streamlines)
+        end if
+        
+        if (allocated(self%annotations)) then
+            deallocate(self%annotations)
+            self%annotation_count = 0
+        end if
+        
+        if (allocated(self%arrow_data)) then
+            deallocate(self%arrow_data)
+        end if
+    end subroutine clear
 
 end module fortplot_figure_base

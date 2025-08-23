@@ -31,10 +31,27 @@ module fortplot_animation_core
         procedure :: set_save_frames
         procedure :: save_frame_sequence
         procedure :: set_figure
+        procedure :: save
     end type animation_t
+
+    ! Animation save interface to avoid circular dependency
+    abstract interface
+        subroutine save_animation_interface(anim, filename, fps, status)
+            import :: animation_t
+            class(animation_t), intent(inout) :: anim
+            character(len=*), intent(in) :: filename
+            integer, intent(in), optional :: fps
+            integer, intent(out), optional :: status
+        end subroutine save_animation_interface
+    end interface
+
+    ! External save implementation procedure pointer
+    procedure(save_animation_interface), pointer :: save_animation_impl => null()
 
     public :: FuncAnimation
     public :: animate_interface
+    public :: save_animation_interface
+    public :: save_animation_impl
 
 contains
 
@@ -146,6 +163,33 @@ contains
             if (current_time - start_time >= seconds) exit
         end do
     end subroutine cpu_time_delay
+
+    subroutine save(self, filename, fps, status)
+        !! Save animation to video file - delegates to full pipeline implementation
+        class(animation_t), intent(inout) :: self
+        character(len=*), intent(in) :: filename
+        integer, intent(in), optional :: fps
+        integer, intent(out), optional :: status
+        
+        ! Attempt to register implementation if not done
+        call try_register_save_implementation()
+        
+        if (.not. associated(save_animation_impl)) then
+            if (present(status)) status = -1
+            call log_error_with_remediation("Animation save implementation not initialized", &
+                                           "Import fortplot_animation module to register the save implementation")
+            return
+        end if
+        
+        ! Call the facade save_animation wrapper to avoid circular dependency
+        call save_animation_impl(self, filename, fps, status)
+    end subroutine save
+
+    subroutine try_register_save_implementation()
+        !! Attempt to register save implementation (will be set by facade module)
+        !! This is a no-op if the facade module hasn't been imported
+        continue
+    end subroutine try_register_save_implementation
 
     subroutine log_error_with_remediation(error_msg, remediation_msg)
         character(len=*), intent(in) :: error_msg, remediation_msg

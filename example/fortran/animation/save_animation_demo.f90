@@ -29,9 +29,10 @@ program save_animation_demo
     ! Create animation with figure reference
     anim = FuncAnimation(update_wave, frames=NFRAMES, interval=50, fig=fig)
     
-    ! Save as MP4 video with 24 fps
+    ! Save as MP4 video with 24 fps to GitHub Pages structure
     print *, "Saving animation as MP4..."
-    call save_animation_with_error_handling(anim, "animation.mp4", 24)
+    call create_output_directory()
+    call save_animation_with_error_handling(anim, "output/example/fortran/animation/animation.mp4", 24)
     
 contains
 
@@ -55,7 +56,7 @@ contains
         integer, intent(in) :: fps
         integer :: status
         
-        call anim%save(filename, fps, status)
+        call save_animation(anim, filename, fps, status)
         
         select case (status)
         case (0)
@@ -78,5 +79,16 @@ contains
             print *, "ERROR: Unknown error occurred while saving animation. Status:", status
         end select
     end subroutine save_animation_with_error_handling
+    
+    subroutine create_output_directory()
+        integer :: mkdir_status
+        
+        ! Create directory structure for GitHub Pages integration
+        call execute_command_line("mkdir -p output/example/fortran/animation", &
+                                 exitstat=mkdir_status)
+        if (mkdir_status /= 0) then
+            print *, "Warning: Could not create output directory structure"
+        end if
+    end subroutine create_output_directory
     
 end program save_animation_demo
