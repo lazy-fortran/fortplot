@@ -14,20 +14,23 @@ program test_contour_filled_backend_rendering
     use fortplot, only: figure_t
     use fortplot_security, only: get_test_output_path
     use fortplot_system_runtime, only: is_windows
+    use fortplot_windows_performance, only: setup_windows_performance, &
+                                            should_use_memory_backend
+    use fortplot_fast_io, only: fast_savefig, enable_fast_io
+    ! Performance monitoring not integrated yet
     implicit none
     
     logical :: on_windows
-    character(len=256) :: ci_env
-    integer :: status
     
-    ! Check if running on Windows CI
+    ! Initialize performance optimization for Windows CI
     on_windows = is_windows()
-    call get_environment_variable("CI", ci_env, status=status)
-    
-    if (on_windows .and. status == 0) then
-        print *, "SKIPPED: Contour filled tests on Windows CI (known issue)"
-        print *, "All contour filled backend rendering tests completed!"
-        stop 0
+    if (on_windows) then
+        call setup_windows_performance()
+        if (should_use_memory_backend()) then
+            call enable_fast_io()
+            print *, "Enabled fast I/O with memory backend for Windows CI"
+        end if
+        ! Performance monitoring not integrated yet
     end if
     
     call test_contour_filled_png_backend()
@@ -36,6 +39,8 @@ program test_contour_filled_backend_rendering
     call test_backend_consistency_comparison()
     call test_color_interpolation_bands()
     call test_complex_contour_regions()
+    
+    ! Performance monitoring not integrated yet
     
     print *, "All contour filled backend rendering tests completed!"
     
@@ -68,9 +73,13 @@ contains
         
         ! Act - Render PNG with filled contours
         call fig%initialize(400, 300)
-        call figure_add_contour_filled(fig, x, y, z, colormap='viridis')
+        call add_contour_filled(x, y, z, colormap='viridis')
         call fig%set_title("Contour Filled PNG Test")
-        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_png_issue177.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/test_contour_filled_png_issue177.png'))
+        else
+            call savefig(get_test_output_path('/tmp/test_contour_filled_png_issue177.png'))
+        end if
         
         ! Assert - File should exist (basic check)
         inquire(file=get_test_output_path('/tmp/test_contour_filled_png_issue177.png'), exist=file_exists)
@@ -110,11 +119,15 @@ contains
         
         ! Act - Render PDF with filled contours
         call fig%initialize(600, 400)
-        call figure_add_contour_filled(fig, x, y, z, colormap='plasma')
+        call add_contour_filled(x, y, z, colormap='plasma')
         call fig%set_title("Contour Filled PDF Test")
         call fig%set_xlabel("X coordinate")
         call fig%set_ylabel("Y coordinate")
-        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'))
+        else
+            call savefig(get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'))
+        end if
         
         ! Assert - File should exist (basic check)
         inquire(file=get_test_output_path('/tmp/test_contour_filled_pdf_issue177.pdf'), exist=file_exists)
@@ -154,9 +167,13 @@ contains
         
         ! Act - Render ASCII with filled contours
         call fig%initialize(60, 30)
-        call figure_add_contour_filled(fig, x, y, z)
+        call add_contour_filled(x, y, z)
         call fig%set_title("Contour Filled ASCII Test")
-        call figure_savefig(fig, get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'))
+        else
+            call savefig(get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'))
+        end if
         
         ! Assert - File should exist and contain non-space characters
         inquire(file=get_test_output_path('/tmp/test_contour_filled_ascii_issue177.txt'), exist=file_exists)
@@ -196,19 +213,31 @@ contains
         
         ! Act - Render through all backends with identical settings
         call fig_png%initialize(400, 400)
-        call fig_png%add_contour_filled(x, y, z, colormap='coolwarm')
+        call add_contour_filled(x, y, z, colormap='coolwarm')
         call fig_png%set_title("Backend Consistency - PNG")
-        call fig_png%savefig(get_test_output_path('/tmp/test_backend_consistency_png_issue177.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig_png, get_test_output_path('/tmp/test_backend_consistency_png_issue177.png'))
+        else
+            call fig_png%savefig(get_test_output_path('/tmp/test_backend_consistency_png_issue177.png'))
+        end if
         
         call fig_pdf%initialize(400, 400)  
-        call fig_pdf%add_contour_filled(x, y, z, colormap='coolwarm')
+        call add_contour_filled(x, y, z, colormap='coolwarm')
         call fig_pdf%set_title("Backend Consistency - PDF")
-        call fig_pdf%savefig(get_test_output_path('/tmp/test_backend_consistency_pdf_issue177.pdf'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig_pdf, get_test_output_path('/tmp/test_backend_consistency_pdf_issue177.pdf'))
+        else
+            call fig_pdf%savefig(get_test_output_path('/tmp/test_backend_consistency_pdf_issue177.pdf'))
+        end if
         
         call fig_ascii%initialize(80, 40)
-        call fig_ascii%add_contour_filled(x, y, z)
+        call add_contour_filled(x, y, z)
         call fig_ascii%set_title("Backend Consistency - ASCII")
-        call fig_ascii%savefig(get_test_output_path('/tmp/test_backend_consistency_ascii_issue177.txt'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig_ascii, get_test_output_path('/tmp/test_backend_consistency_ascii_issue177.txt'))
+        else
+            call fig_ascii%savefig(get_test_output_path('/tmp/test_backend_consistency_ascii_issue177.txt'))
+        end if
         
         ! Assert - All files should exist
         inquire(file=get_test_output_path('/tmp/test_backend_consistency_png_issue177.png'), exist=png_exists)
@@ -256,9 +285,13 @@ contains
         
         ! Act - Render with specific levels and colormap
         call fig%initialize(500, 400)
-        call figure_add_contour_filled(fig, x, y, z, levels=levels, colormap='jet')
+        call add_contour_filled(x, y, z, levels=levels, colormap='jet')
         call fig%set_title("Color Interpolation Test")
-        call figure_savefig(fig, get_test_output_path('/tmp/test_color_interpolation_issue177.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/test_color_interpolation_issue177.png'))
+        else
+            call savefig(get_test_output_path('/tmp/test_color_interpolation_issue177.png'))
+        end if
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_color_interpolation_issue177.png'), exist=file_exists)
@@ -300,9 +333,13 @@ contains
         
         ! Act - Render complex pattern
         call fig%initialize(600, 600)
-        call figure_add_contour_filled(fig, x, y, z, colormap='viridis')
+        call add_contour_filled(x, y, z, colormap='viridis')
         call fig%set_title("Complex Contour Regions Test")
-        call figure_savefig(fig, get_test_output_path('/tmp/test_complex_regions_issue177.png'))
+        if (should_use_memory_backend()) then
+            call fast_savefig(fig, get_test_output_path('/tmp/test_complex_regions_issue177.png'))
+        else
+            call figure_savefig(fig, get_test_output_path('/tmp/test_complex_regions_issue177.png'))
+        end if
         
         ! Assert - File should exist
         inquire(file=get_test_output_path('/tmp/test_complex_regions_issue177.png'), exist=file_exists)

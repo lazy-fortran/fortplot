@@ -12,6 +12,7 @@ The only remaining library included is `stb_truetype`.
 
 ## Developer Guides
 - [Testing Guide](testing_guide.md) - Testing procedures and warning control
+- [Windows CI Performance](windows_ci_performance.md) - Windows CI optimization and troubleshooting
 - [Warning System](warning_system.md) - Environment variable-based warning suppression
 - [Security](security.md) - Security features and compliance
 - [Unicode Support](unicode_support.md) - Unicode and Greek letter support
