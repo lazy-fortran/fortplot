@@ -14,7 +14,6 @@ module fortplot_pdf_core
     public :: create_pdf_canvas_core
     public :: initialize_pdf_stream
     public :: finalize_pdf_stream
-    public :: normalize_to_pdf_coords
 
     ! PDF-specific constants
     real(wp), parameter, public :: PDF_WIDTH = 595.0_wp   ! US Letter width in points
@@ -91,23 +90,6 @@ contains
         this%stream_data = this%stream_data // trim(adjustl(width_cmd)) // new_line('a')
     end subroutine set_pdf_line_width
 
-    subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
-        !! Convert data coordinates to PDF page coordinates
-        !! This function expects the plot_context fields to be properly set
-        type(pdf_context_core), intent(in) :: ctx
-        real(wp), intent(in) :: x, y
-        real(wp), intent(out) :: pdf_x, pdf_y
-        
-        ! CRITICAL: This function needs access to plot bounds and context
-        ! The current implementation is broken because pdf_context_core
-        ! doesn't have access to x_min, x_max, y_min, y_max, plot_area
-        ! This should be called through the main pdf_context facade
-        
-        ! Temporary fallback - assume normalized coordinates for now
-        ! This will be fixed in the facade wrapper
-        pdf_x = PDF_MARGIN + x * PDF_PLOT_WIDTH
-        pdf_y = PDF_MARGIN + y * PDF_PLOT_HEIGHT
-    end subroutine normalize_to_pdf_coords
 
     subroutine finalize_pdf_stream(ctx)
         type(pdf_context_core), intent(inout) :: ctx
