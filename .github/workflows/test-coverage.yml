@@ -42,7 +42,7 @@ jobs:
         sudo apt-get update
         # Install with retry mechanism for package failures
         for i in 1 2; do
-          if sudo apt-get install -y gfortran gcovr cmake ffmpeg python3-pil pngcheck; then
+          if sudo apt-get install -y gfortran gcovr cmake ffmpeg python3-pil pngcheck imagemagick; then
             echo "Package installation successful"
             break
           else
@@ -55,6 +55,7 @@ jobs:
         gfortran --version
         gcovr --version
         python3 -c "from PIL import Image; print('PIL available')"
+        magick -version || convert -version
 
     - name: Set compiler
       run: |
@@ -73,6 +74,17 @@ jobs:
       run: |
         mkdir -p /tmp/test
         timeout 15m make test-ci ARGS="--flag '-fprofile-arcs -ftest-coverage'" || echo "Some CI tests may have timed out"
+    
+    - name: Run antialiasing quality tests with ImageMagick
+      run: |
+        # Verify ImageMagick is available
+        if magick -version > /dev/null 2>&1; then
+          echo "ImageMagick found - running graphics quality tests"
+          fpm test test_antialiasing_restoration --flag '-fprofile-arcs -ftest-coverage'
+          fpm test test_antialiasing_comprehensive --flag '-fprofile-arcs -ftest-coverage'
+        else
+          echo "ImageMagick not found - skipping graphics quality tests"
+        fi
 
     - name: Test FPM example build
       run: |
