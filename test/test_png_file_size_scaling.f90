@@ -1,6 +1,6 @@
 program test_png_file_size_scaling
     !! Test that PNG files scale appropriately with content complexity
-    use fortplot_png, only: png_context, create_png_canvas
+    use fortplot, only: figure_t, wp
     use fortplot_logging, only: set_log_level, LOG_LEVEL_ERROR
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -63,27 +63,27 @@ contains
     
     subroutine test_empty_plot(file_size)
         integer, intent(out) :: file_size
-        type(png_context) :: plt
+        type(figure_t) :: plt
         
-        plt = create_png_canvas(800, 600)
-        call plt%save('test_empty.png')
+        call plt%initialize(800, 600)
+        call plt%savefig('test_empty.png')
         
         file_size = get_file_size('test_empty.png')
     end subroutine test_empty_plot
     
     subroutine test_simple_plot(file_size)
         integer, intent(out) :: file_size
-        type(png_context) :: plt
+        type(figure_t) :: plt
         real(real64), allocatable :: x(:), y(:)
         
-        plt = create_png_canvas(800, 600)
+        call plt%initialize(800, 600)
         
         x = create_linspace(0.0_real64, 10.0_real64, 10)
         allocate(y(10))
         y = x
         
-        call plt%line(x, y)
-        call plt%save('test_simple.png')
+        call plt%add_plot(x, y)
+        call plt%savefig('test_simple.png')
         
         file_size = get_file_size('test_simple.png')
         
@@ -92,11 +92,11 @@ contains
     
     subroutine test_complex_plot(file_size)
         integer, intent(out) :: file_size
-        type(png_context) :: plt
+        type(figure_t) :: plt
         real(real64), allocatable :: x(:), y1(:), y2(:), y3(:)
         integer :: i
         
-        plt = create_png_canvas(800, 600)
+        call plt%initialize(800, 600)
         
         x = create_linspace(0.0_real64, 10.0_real64, 1000)
         allocate(y1(1000), y2(1000), y3(1000))
@@ -108,16 +108,16 @@ contains
             y3(i) = x(i)**2 / 100.0_real64 + sin(10*x(i))
         end do
         
-        call plt%line(x, y1)
-        call plt%line(x, y2)
-        call plt%line(x, y3)
+        call plt%add_plot(x, y1, label='sin(x)*cos(2x)')
+        call plt%add_plot(x, y2, label='exp(-x/5)*sin(5x)')
+        call plt%add_plot(x, y3, label='x^2/100 + sin(10x)')
         
         ! Add labels
-        call plt%xlabel('X Axis with Long Label')
-        call plt%ylabel('Y Axis with Long Label')
-        call plt%title('Complex Plot with Multiple Lines and Labels')
+        call plt%set_xlabel('X Axis with Long Label')
+        call plt%set_ylabel('Y Axis with Long Label')
+        call plt%set_title('Complex Plot with Multiple Lines and Labels')
         
-        call plt%save('test_complex.png')
+        call plt%savefig('test_complex.png')
         
         file_size = get_file_size('test_complex.png')
         
