@@ -473,10 +473,15 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=*), intent(in) :: title, xlabel, ylabel
         
-        ! Delegate to axes module
+        ! Delegate to axes module with actual plot area coordinates
         call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
                                      x_min, x_max, y_min, y_max, &
-                                     title, xlabel, ylabel)
+                                     title, xlabel, ylabel, &
+                                     real(this%plot_area%left, wp), &
+                                     real(this%plot_area%bottom, wp), &
+                                     real(this%plot_area%width, wp), &
+                                     real(this%plot_area%height, wp), &
+                                     real(this%height, wp))
     end subroutine pdf_draw_axes_and_labels_facade
     
     subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
