@@ -1,6 +1,7 @@
 # Development Backlog
 
 ## TODO (Ordered by Priority)
+- [ ] #227: PNG backend generates ASCII text instead of binary PNG data
 
 ## DOING (Current Work)
 
