@@ -100,9 +100,11 @@ contains
         
         idx = (iy - 1) * img_w * 3 + (ix - 1) * 3 + 1
         
-        old_r = real(image_data(idx), wp) / 255.0_wp
-        old_g = real(image_data(idx + 1), wp) / 255.0_wp
-        old_b = real(image_data(idx + 2), wp) / 255.0_wp
+        ! Convert signed bytes to unsigned range [0, 255] then to [0, 1]
+        ! Negative values in signed bytes represent values > 127
+        old_r = real(iand(int(image_data(idx)), 255), wp) / 255.0_wp
+        old_g = real(iand(int(image_data(idx + 1)), 255), wp) / 255.0_wp
+        old_b = real(iand(int(image_data(idx + 2)), 255), wp) / 255.0_wp
         
         blend_r = old_r * (1.0_wp - clamped_alpha) + new_r * clamped_alpha
         blend_g = old_g * (1.0_wp - clamped_alpha) + new_g * clamped_alpha
