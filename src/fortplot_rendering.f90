@@ -54,8 +54,7 @@ contains
         
         ! Render legend if present
         if (self%legend_added) then
-            ! Note: render_figure_legend would be implemented in full version
-            ! call render_figure_legend(self)
+            call render_figure_legend(self)
         end if
         
         self%rendered = .true.
@@ -272,6 +271,55 @@ contains
         
         self%legend_added = .true.
     end subroutine figure_legend
+
+    subroutine render_figure_legend(self)
+        !! Render legend following SOLID principles
+        !! Populate legend with labeled plots and render it
+        class(figure_t), intent(inout) :: self
+        integer :: i, subplot_idx
+        
+        ! Initialize legend if not already done
+        if (.not. allocated(self%legend_data%entries)) then
+            allocate(self%legend_data%entries(0))
+            self%legend_data%num_entries = 0
+        end if
+        
+        ! Set legend position based on legend_location
+        select case(self%legend_location)
+        case(1)
+            self%legend_data%position = LEGEND_UPPER_RIGHT
+        case(2)
+            self%legend_data%position = LEGEND_UPPER_LEFT
+        case(3)
+            self%legend_data%position = LEGEND_LOWER_RIGHT
+        case(4)
+            self%legend_data%position = LEGEND_LOWER_LEFT
+        case default
+            self%legend_data%position = LEGEND_UPPER_RIGHT
+        end select
+        
+        ! Get current subplot (default to 1)
+        subplot_idx = max(1, self%current_subplot)
+        if (.not. allocated(self%subplots)) return
+        if (subplot_idx > size(self%subplots)) return
+        
+        ! Populate legend with labeled plots from current subplot (DRY principle)
+        do i = 1, self%subplots(subplot_idx)%plot_count
+            if (allocated(self%subplots(subplot_idx)%plots(i)%label)) then
+                if (len_trim(self%subplots(subplot_idx)%plots(i)%label) > 0) then
+                    call self%legend_data%add_entry(self%subplots(subplot_idx)%plots(i)%label, &
+                                             self%subplots(subplot_idx)%plots(i)%color, &
+                                             self%subplots(subplot_idx)%plots(i)%linestyle, &
+                                             self%subplots(subplot_idx)%plots(i)%marker)
+                end if
+            end if
+        end do
+        
+        ! Render legend if we have entries
+        if (self%legend_data%num_entries > 0) then
+            call legend_render(self%legend_data, self%backend)
+        end if
+    end subroutine render_figure_legend
 
     subroutine clear_streamlines(self)
         !! Clear streamline data
