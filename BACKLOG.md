@@ -10,7 +10,6 @@
 - [ ] #292: regression: legend placement does not work
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #270: Broken example output documentation - fix PDF binary content display (PR #290 blocked by CI)
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
 - [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
@@ -43,6 +42,7 @@
 
 ## DONE (Completed)
 - [x] #277: PDF page size still completely broken - FIXED: proper A4 dimensions and coordinate system (PR #294 merged)
+- [x] #269: Incomplete scale system implementation - finish logarithmic scales (branch: fix-incomplete-scale-system-269)
 - [x] #268: PNG dimension overflow errors - fix 64000x48000 dimension calculations (branch: fix-png-dimension-overflow-268)
 - [x] #267: Dead code cleanup - remove unused imports and unreachable code paths (branch: cleanup-dead-code-267)
 - [x] #266: Missing advertised features - implement or remove 5+ unimplemented functions (branch: fix-missing-advertised-features-266)

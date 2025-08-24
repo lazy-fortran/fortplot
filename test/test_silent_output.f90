@@ -19,7 +19,7 @@ program test_silent_output
     end do
     
     ! Create plot - should produce no console output
-    call figure(400, 300)
+    call figure(figsize=[400.0d0, 300.0d0])
     call plot(x, y)
     call savefig(get_test_output_path('/tmp/silent_test.png'))
     
