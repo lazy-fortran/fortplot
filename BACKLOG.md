@@ -1,6 +1,8 @@
 # Development Backlog
 
 ## TODO (Ordered by Priority)
+- [ ] #231: PDF scaling regression - plots extend out of page, no axes/text visible
+- [ ] #232: PNG regression - axes/text blue, antialiasing and line styles broken
 
 ## DOING (Current Work)
 
