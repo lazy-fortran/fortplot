@@ -1,7 +1,6 @@
 program test_png_file_size_scaling
     !! Test that PNG files scale appropriately with content complexity
     use fortplot_png, only: png_context, create_png_canvas
-    use fortplot_utils, only: linspace
     use fortplot_logging, only: set_log_level, LOG_LEVEL_ERROR
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -79,7 +78,7 @@ contains
         
         plt = create_png_canvas(800, 600)
         
-        x = linspace(0.0_real64, 10.0_real64, 10)
+        x = create_linspace(0.0_real64, 10.0_real64, 10)
         allocate(y(10))
         y = x
         
@@ -99,7 +98,7 @@ contains
         
         plt = create_png_canvas(800, 600)
         
-        x = linspace(0.0_real64, 10.0_real64, 1000)
+        x = create_linspace(0.0_real64, 10.0_real64, 1000)
         allocate(y1(1000), y2(1000), y3(1000))
         
         ! Add multiple complex lines
@@ -144,5 +143,25 @@ contains
             end if
         end if
     end function get_file_size
+    
+    function create_linspace(start, stop, n) result(arr)
+        !! Create linearly spaced array from start to stop with n points
+        real(real64), intent(in) :: start, stop
+        integer, intent(in) :: n
+        real(real64), allocatable :: arr(:)
+        integer :: i
+        real(real64) :: dx
+        
+        allocate(arr(n))
+        
+        if (n == 1) then
+            arr(1) = start
+        else
+            dx = (stop - start) / real(n - 1, real64)
+            do i = 1, n
+                arr(i) = start + real(i - 1, real64) * dx
+            end do
+        end if
+    end function create_linspace
     
 end program test_png_file_size_scaling
