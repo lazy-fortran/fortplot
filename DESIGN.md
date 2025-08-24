@@ -6998,3 +6998,51 @@ end program
 6. **DRY**: Eliminate duplication during extraction
 
 This refactoring architecture ensures size compliance while maintaining complete backward compatibility and improving long-term maintainability.
+
+## Rendering Quality Architecture Requirements
+
+### Quality Standards (Based on Commit 690b98341bd351a5bbea431d6af08fb36ff216f7)
+
+**PNG Backend Quality Requirements**:
+- **Antialiasing**: All lines must render with smooth antialiasing for publication quality
+- **Line styles**: Dashed, dotted, and custom patterns must be clearly visible and consistent
+- **Markers**: All marker types (circles, squares, triangles, etc.) must render with crisp edges
+- **Color accuracy**: Exact color reproduction without unintended color shifts
+- **Text clarity**: Axes labels, titles, and legends must be crisp and readable
+
+**PDF Backend Quality Requirements**:
+- **Coordinate system**: Plots must render within page boundaries with correct scaling
+- **Vector accuracy**: True vector graphics for infinite scalability
+- **Layout precision**: Axes, labels, and titles positioned exactly as specified
+- **Page margins**: Consistent margins and proper page utilization
+- **Multi-element coordination**: Legends, axes, and plots properly integrated
+
+**Legend System Requirements**:
+- **Visibility**: Legends must be clearly visible with proper background contrast
+- **Positioning**: Consistent positioning algorithms across backends
+- **Text rendering**: Legend entries must be readable with correct styling
+- **Background handling**: Proper background and border rendering for clarity
+
+### Rendering Architecture Principles
+
+1. **CORRECTNESS > PERFORMANCE**: Quality rendering takes precedence over speed
+2. **Backend consistency**: Same visual result across PNG and PDF backends
+3. **Reference implementation**: Commit 690b98341bd351a5bbea431d6af08fb36ff216f7 defines quality baseline
+4. **Regression prevention**: Automated testing to prevent quality degradation
+5. **Incremental restoration**: Systematic fix approach to restore each quality aspect
+
+### Quality Assurance Framework
+
+**Forensic Analysis Protocol**:
+- Compare current rendering against working commit reference
+- Identify specific degradation points in rendering pipeline
+- Document architectural decisions affecting rendering quality
+- Create restoration roadmap with measurable success criteria
+
+**Testing Strategy**:
+- Visual regression testing against reference outputs
+- Quality metrics for antialiasing, positioning, and clarity
+- Cross-backend consistency validation
+- Performance impact measurement for quality improvements
+
+This rendering architecture ensures fortplot maintains publication-quality output across all supported backends.
