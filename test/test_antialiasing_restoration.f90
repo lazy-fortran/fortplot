@@ -149,9 +149,15 @@ contains
         
         if (exit_code /= 0) then
             print *, "WARNING: Failed to generate reference image with ImageMagick"
-            ! Create a simple fallback
-            write(command, '(A)') 'touch "' // trim(filename) // '"'
-            call execute_command_line(trim(command))
+            print *, "Command was: ", trim(command)
+            ! Create a simple fallback using a simpler command
+            write(command, '(A)') &
+                'magick -size 800x600 xc:white -stroke black -strokewidth 2 ' // &
+                '-draw "line 100,100 700,500" "' // trim(filename) // '"'
+            call execute_command_line(trim(command), exitstat=exit_code)
+            if (exit_code /= 0) then
+                print *, "ERROR: Even fallback command failed"
+            end if
         end if
     end subroutine generate_reference_antialiased_plot
     
@@ -207,12 +213,12 @@ contains
             print *, "  WARNING: Could not extract channel statistics"
         end if
         
-        ! Clean up
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-        call execute_command_line('del /Q "' // trim(stats_file) // '" 2>NUL')
-#else
-        call execute_command_line('rm -f "' // trim(stats_file) // '"')
-#endif
+        ! Clean up with Fortran file operations
+        open(newunit=unit_id, file=stats_file, status='old', iostat=ios)
+        if (ios == 0) then
+            close(unit_id, status='delete', iostat=ios)
+            ! Ignore errors in deletion - not critical
+        end if
         
     end subroutine validate_byte_conversion_visual
     
@@ -270,14 +276,16 @@ contains
             print *, "  WARNING: Could not perform edge analysis"
         end if
         
-        ! Clean up temporary files
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-        call execute_command_line('del /Q "' // trim(edge_file) // '" "' // &
-                                 trim(stats_file) // '" 2>NUL')
-#else
-        call execute_command_line('rm -f "' // trim(edge_file) // '" "' // &
-                                 trim(stats_file) // '"')
-#endif
+        ! Clean up temporary files with Fortran file operations
+        open(newunit=unit_id, file=edge_file, status='old', iostat=ios)
+        if (ios == 0) then
+            close(unit_id, status='delete', iostat=ios)
+        end if
+        open(newunit=unit_id, file=stats_file, status='old', iostat=ios)
+        if (ios == 0) then
+            close(unit_id, status='delete', iostat=ios)
+        end if
+        ! Ignore errors in deletion - not critical
         
     end subroutine check_staircase_artifacts
     
