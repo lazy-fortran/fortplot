@@ -15,9 +15,9 @@ module fortplot_pdf_axes
     ! Public procedures
     public :: draw_pdf_axes_and_labels
     public :: draw_pdf_3d_axes_frame
-    public :: draw_pdf_frame, draw_pdf_frame_with_area
-    public :: draw_pdf_tick_marks, draw_pdf_tick_marks_with_area
-    public :: draw_pdf_tick_labels, draw_pdf_tick_labels_with_area
+    public :: draw_pdf_frame_with_area
+    public :: draw_pdf_tick_marks_with_area
+    public :: draw_pdf_tick_labels_with_area
     public :: draw_pdf_title_and_labels
     public :: setup_axes_data_ranges
     public :: generate_tick_data
@@ -173,26 +173,20 @@ contains
         
         ! Grid functionality removed - PDF plots now display without grid lines
         
-        ! Draw frame with actual plot area
-        if (present(plot_area_left) .and. present(plot_area_bottom) .and. &
-            present(plot_area_width) .and. present(plot_area_height) .and. present(canvas_height)) then
-            call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
-                                         plot_area_width, plot_area_height, canvas_height)
-            
-            ! Draw tick marks with actual plot area
-            call draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                              plot_area_left, plot_area_bottom, canvas_height)
-            
-            ! Draw tick labels with actual plot area  
-            call draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, y_labels, &
-                                               num_x_ticks, num_y_ticks, plot_area_left, plot_area_bottom, canvas_height)
-        else
-            ! Fallback to old hardcoded margins
-            call draw_pdf_frame(ctx)
-            call draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks)
-            call draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, &
-                                     num_x_ticks, num_y_ticks)
+        ! Plot area parameters are now mandatory - no fallback paths
+        if (.not. (present(plot_area_left) .and. present(plot_area_bottom) .and. &
+                   present(plot_area_width) .and. present(plot_area_height) .and. present(canvas_height))) then
+            error stop "draw_pdf_axes_and_labels: plot area parameters are mandatory"
         end if
+        
+        call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
+                                     plot_area_width, plot_area_height, canvas_height)
+        
+        call draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
+                                          plot_area_left, plot_area_bottom, canvas_height)
+        
+        call draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, y_labels, &
+                                           num_x_ticks, num_y_ticks, plot_area_left, plot_area_bottom, canvas_height)
         
         ! Draw title and axis labels
         if (present(title) .or. present(xlabel) .or. present(ylabel)) then
@@ -205,29 +199,9 @@ contains
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        ! For now, just draw 2D frame
-        call draw_pdf_frame(ctx)
-        
+        ! For now, 3D not supported - just return
         ! TODO: Implement proper 3D axes projection
     end subroutine draw_pdf_3d_axes_frame
-
-
-    subroutine draw_pdf_frame(ctx)
-        !! Draw the plot frame (bounding box) - fallback with hardcoded margins
-        type(pdf_context_core), intent(inout) :: ctx
-        character(len=256) :: frame_cmd
-        real(wp) :: x1, y1, x2, y2
-        
-        x1 = PDF_MARGIN
-        y1 = PDF_MARGIN
-        x2 = PDF_MARGIN + PDF_PLOT_WIDTH
-        y2 = PDF_MARGIN + PDF_PLOT_HEIGHT
-        
-        ! Draw rectangle
-        write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') &
-            x1, y1, PDF_PLOT_WIDTH, PDF_PLOT_HEIGHT
-        ctx%stream_data = ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
-    end subroutine draw_pdf_frame
 
     subroutine draw_pdf_frame_with_area(ctx, plot_left, plot_bottom, plot_width, plot_height, canvas_height)
         !! Draw the plot frame using actual plot area coordinates (FIXED version)
@@ -246,34 +220,6 @@ contains
         ctx%stream_data = ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
     end subroutine draw_pdf_frame_with_area
 
-    subroutine draw_pdf_tick_marks(ctx, x_positions, y_positions, num_x, num_y)
-        !! Draw tick marks on axes
-        type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        integer, intent(in) :: num_x, num_y
-        
-        integer :: i
-        character(len=256) :: tick_cmd
-        real(wp) :: tick_length
-        
-        tick_length = PDF_TICK_SIZE
-        
-        ! Draw X-axis ticks (bottom)
-        do i = 1, num_x
-            write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                x_positions(i), PDF_MARGIN, &
-                x_positions(i), PDF_MARGIN - tick_length
-            ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
-        end do
-        
-        ! Draw Y-axis ticks (left)
-        do i = 1, num_y
-            write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                PDF_MARGIN, y_positions(i), &
-                PDF_MARGIN - tick_length, y_positions(i)
-            ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
-        end do
-    end subroutine draw_pdf_tick_marks
 
     subroutine draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x, num_y, &
                                            plot_left, plot_bottom, canvas_height)
@@ -307,31 +253,6 @@ contains
         end do
     end subroutine draw_pdf_tick_marks_with_area
 
-    subroutine draw_pdf_tick_labels(ctx, x_positions, y_positions, x_labels, y_labels, num_x, num_y)
-        !! Draw tick labels on axes
-        type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        character(len=*), intent(in) :: x_labels(:), y_labels(:)
-        integer, intent(in) :: num_x, num_y
-        
-        integer :: i
-        real(wp) :: label_x, label_y
-        real(wp) :: x_offset, y_offset
-        
-        x_offset = 5.0_wp   ! Offset for X labels below ticks
-        y_offset = 10.0_wp  ! Offset for Y labels left of ticks
-        
-        ! Draw X-axis labels
-        do i = 1, num_x
-            label_x = x_positions(i) - 15.0_wp  ! Center horizontally
-            label_y = PDF_MARGIN - PDF_TICK_SIZE - x_offset - 10.0_wp
-            call draw_pdf_text(ctx, label_x, label_y, trim(x_labels(i)))
-        end do
-        
-        ! Draw Y-axis labels with overlap detection
-        call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
-                                                     PDF_MARGIN - PDF_TICK_SIZE - y_offset)
-    end subroutine draw_pdf_tick_labels
 
     subroutine draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, y_labels, &
                                             num_x, num_y, plot_left, plot_bottom, canvas_height)

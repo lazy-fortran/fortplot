@@ -1,42 +1,27 @@
 module fortplot_pdf
-    !! PDF backend facade module (< 1000 lines)
-    !! Maintains backward compatibility while delegating to specialized submodules
-    !! This module serves as the main interface, re-exporting functionality
-    !! from refactored submodules to comply with size limits
+    !! PDF backend main interface - consolidated single coordinate system
+    !! Eliminates dual coordinate systems and function duplication
+    !! Uses plot area approach consistently throughout
     
-    ! Import and re-export core PDF functionality
     use fortplot_pdf_core
     use fortplot_pdf_text
     use fortplot_pdf_drawing
     use fortplot_pdf_axes
     use fortplot_pdf_io
+    use fortplot_pdf_coordinate
+    use fortplot_pdf_markers
     
-    ! Original dependencies still needed for pdf_context type
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_plot_data, only: plot_data_t
     use fortplot_legend, only: legend_entry_t
-    use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_latex_parser, only: process_latex_in_text
-    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
-    use fortplot_logging, only: log_info, log_error
-    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
-    use fortplot_ticks, only: generate_scale_aware_tick_labels, find_nice_tick_locations, format_tick_value_smart
-    use fortplot_scales, only: apply_scale_transform
-    use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
-                                         calculate_x_axis_label_position, calculate_y_axis_label_position, &
-                                         calculate_x_tick_label_position_pdf, calculate_y_tick_label_position_pdf
-    use fortplot_text, only: calculate_text_width
-    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
-    use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     
-    ! Re-export main types and procedures
     public :: pdf_context, create_pdf_canvas
-    
-    ! Re-export from submodules for backward compatibility
     public :: draw_pdf_axes_and_labels, draw_mixed_font_text
     public :: pdf_stream_writer
     
@@ -44,44 +29,42 @@ module fortplot_pdf
         type(pdf_stream_writer) :: stream_writer
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
-        ! Core PDF context from refactored module
         type(pdf_context_core), private :: core_ctx
-        ! Tick count configuration (Issue #238)
-        integer :: x_tick_count = 0  ! 0 means use dynamic calculation
-        integer :: y_tick_count = 0  ! 0 means use dynamic calculation
+        type(pdf_context_handle), private :: coord_ctx
+        integer :: x_tick_count = 0
+        integer :: y_tick_count = 0
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
         procedure :: text => draw_pdf_text_wrapper
         procedure :: save => write_pdf_file_facade
         procedure :: set_line_width => set_pdf_line_width
-        procedure :: save_graphics_state => pdf_save_graphics_state
-        procedure :: restore_graphics_state => pdf_restore_graphics_state
-        procedure :: draw_marker => draw_pdf_marker
-        procedure :: set_marker_colors => pdf_set_marker_colors
-        procedure :: set_marker_colors_with_alpha => pdf_set_marker_colors_with_alpha
-        procedure :: draw_arrow => draw_pdf_arrow_facade
+        procedure :: save_graphics_state => save_graphics_state_wrapper
+        procedure :: restore_graphics_state => restore_graphics_state_wrapper
+        procedure :: draw_marker => draw_pdf_marker_wrapper
+        procedure :: set_marker_colors => set_marker_colors_wrapper
+        procedure :: set_marker_colors_with_alpha => set_marker_colors_with_alpha_wrapper
+        procedure :: draw_arrow => draw_pdf_arrow_wrapper
         procedure :: get_ascii_output => pdf_get_ascii_output
         
-        ! Polymorphic methods to eliminate SELECT TYPE
-        procedure :: get_width_scale => pdf_get_width_scale
-        procedure :: get_height_scale => pdf_get_height_scale
-        procedure :: fill_quad => pdf_fill_quad
-        procedure :: fill_heatmap => pdf_fill_heatmap
-        procedure :: render_legend_specialized => pdf_render_legend_specialized
-        procedure :: calculate_legend_dimensions => pdf_calculate_legend_dimensions
-        procedure :: set_legend_border_width => pdf_set_legend_border_width
-        procedure :: calculate_legend_position_backend => pdf_calculate_legend_position
-        procedure :: extract_rgb_data => pdf_extract_rgb_data
-        procedure :: get_png_data_backend => pdf_get_png_data
-        procedure :: prepare_3d_data => pdf_prepare_3d_data
-        procedure :: render_ylabel => pdf_render_ylabel
-        procedure :: draw_axes_and_labels_backend => pdf_draw_axes_stub
+        procedure :: get_width_scale => get_width_scale_wrapper
+        procedure :: get_height_scale => get_height_scale_wrapper
+        procedure :: fill_quad => fill_quad_wrapper
+        procedure :: fill_heatmap => fill_heatmap_wrapper
+        procedure :: render_legend_specialized => render_legend_specialized_wrapper
+        procedure :: calculate_legend_dimensions => calculate_legend_dimensions_wrapper
+        procedure :: set_legend_border_width => set_legend_border_width_wrapper
+        procedure :: calculate_legend_position_backend => calculate_legend_position_wrapper
+        procedure :: extract_rgb_data => extract_rgb_data_wrapper
+        procedure :: get_png_data_backend => get_png_data_wrapper
+        procedure :: prepare_3d_data => prepare_3d_data_wrapper
+        procedure :: render_ylabel => render_ylabel_wrapper
+        procedure :: draw_axes_and_labels_backend => draw_axes_and_labels_backend_wrapper
         procedure :: save_coordinates => pdf_save_coordinates
         procedure :: set_coordinates => pdf_set_coordinates
         
-        ! Internal helper
-        procedure, private :: normalize_coords => normalize_to_pdf_coords_facade
+        procedure, private :: update_coord_context
+        procedure, private :: make_coord_context
     end type pdf_context
     
 contains
@@ -92,10 +75,8 @@ contains
         
         call setup_canvas(ctx, width, height)
         
-        ! Initialize core PDF context
         ctx%core_ctx = create_pdf_canvas_core(real(width, wp), real(height, wp))
         
-        ! Initialize stream writer
         call ctx%stream_writer%initialize_stream()
         call ctx%stream_writer%add_to_stream("q")
         call ctx%stream_writer%add_to_stream("1 w")
@@ -103,9 +84,10 @@ contains
         call ctx%stream_writer%add_to_stream("1 j")
         call ctx%stream_writer%add_to_stream("0 0 1 RG")
         
-        ! Set up matplotlib-style margins
         ctx%margins = plot_margins_t()
         call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
+        
+        call ctx%update_coord_context()
     end function create_pdf_canvas
     
     subroutine draw_pdf_line(this, x1, y1, x2, y2)
@@ -113,8 +95,8 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
         
-        call this%normalize_coords(x1, y1, pdf_x1, pdf_y1)
-        call this%normalize_coords(x2, y2, pdf_x2, pdf_y2)
+        call normalize_to_pdf_coords(this%coord_ctx, x1, y1, pdf_x1, pdf_y1)
+        call normalize_to_pdf_coords(this%coord_ctx, x2, y2, pdf_x2, pdf_y2)
         call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
     end subroutine draw_pdf_line
     
@@ -142,12 +124,8 @@ contains
         character(len=500) :: processed_text
         integer :: processed_len
         
-        ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
-        
-        call this%normalize_coords(x, y, pdf_x, pdf_y)
-        
-        ! Delegate to text module
+        call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
         call draw_mixed_font_text(this%core_ctx, pdf_x, pdf_y, processed_text(1:processed_len))
     end subroutine draw_pdf_text_wrapper
     
@@ -155,152 +133,122 @@ contains
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        ! Merge stream data
         this%core_ctx%stream_data = this%stream_writer%content_stream
-        
-        ! Delegate to I/O module
         call write_pdf_file(this%core_ctx, filename)
     end subroutine write_pdf_file_facade
     
-    subroutine normalize_to_pdf_coords_facade(this, x, y, pdf_x, pdf_y)
+    subroutine update_coord_context(this)
+        class(pdf_context), intent(inout) :: this
+        
+        this%coord_ctx%x_min = this%x_min
+        this%coord_ctx%x_max = this%x_max
+        this%coord_ctx%y_min = this%y_min
+        this%coord_ctx%y_max = this%y_max
+        this%coord_ctx%width = this%width
+        this%coord_ctx%height = this%height
+        this%coord_ctx%plot_area = this%plot_area
+        this%coord_ctx%core_ctx = this%core_ctx
+    end subroutine update_coord_context
+    
+    function make_coord_context(this) result(ctx)
         class(pdf_context), intent(in) :: this
-        real(wp), intent(in) :: x, y
-        real(wp), intent(out) :: pdf_x, pdf_y
-        real(wp) :: x_range, y_range
-        real(wp), parameter :: EPSILON = 1.0e-10_wp
+        type(pdf_context_handle) :: ctx
         
-        ! Calculate data ranges with epsilon protection for division by zero
-        x_range = this%x_max - this%x_min
-        y_range = this%y_max - this%y_min
-        
-        ! Transform X coordinate with zero-range protection
-        if (abs(x_range) < EPSILON) then
-            ! Zero or near-zero X range: place at center of plot area
-            pdf_x = real(this%plot_area%left, wp) + real(this%plot_area%width, wp) * 0.5_wp
-        else
-            ! Normal transformation for X
-            pdf_x = (x - this%x_min) / x_range * real(this%plot_area%width, wp) + &
-                    real(this%plot_area%left, wp)
-        end if
-        
-        ! Transform Y coordinate with zero-range protection
-        if (abs(y_range) < EPSILON) then
-            ! Zero or near-zero Y range: place at center of plot area
-            pdf_y = real(this%height - this%plot_area%bottom - this%plot_area%height, wp) + &
-                    real(this%plot_area%height, wp) * 0.5_wp
-        else
-            ! Normal transformation for Y
-            pdf_y = (y - this%y_min) / y_range * real(this%plot_area%height, wp) + &
-                    real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
-        end if
-    end subroutine normalize_to_pdf_coords_facade
+        ctx%x_min = this%x_min
+        ctx%x_max = this%x_max
+        ctx%y_min = this%y_min
+        ctx%y_max = this%y_max
+        ctx%width = this%width
+        ctx%height = this%height
+        ctx%plot_area = this%plot_area
+        ctx%core_ctx = this%core_ctx
+    end function make_coord_context
     
-    subroutine pdf_save_graphics_state(this)
+    subroutine save_graphics_state_wrapper(this)
         class(pdf_context), intent(inout) :: this
-        
-        call this%stream_writer%save_state()
-    end subroutine pdf_save_graphics_state
+        call pdf_save_graphics_state(this%stream_writer)
+    end subroutine save_graphics_state_wrapper
     
-    subroutine pdf_restore_graphics_state(this)
+    subroutine restore_graphics_state_wrapper(this)
         class(pdf_context), intent(inout) :: this
-        
-        call this%stream_writer%restore_state()
-    end subroutine pdf_restore_graphics_state
+        call pdf_restore_graphics_state(this%stream_writer)
+    end subroutine restore_graphics_state_wrapper
     
-    subroutine draw_pdf_marker(this, x, y, style)
+    subroutine draw_pdf_marker_wrapper(this, x, y, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        real(wp) :: pdf_x, pdf_y
-        real(wp) :: size
         
-        size = 5.0_wp  ! Default marker size
-        call this%normalize_coords(x, y, pdf_x, pdf_y)
-        
-        ! Save state for marker drawing
-        call this%save_graphics_state()
-        
-        ! Draw marker based on style
-        select case(trim(style))
-        case('o', 'circle')
-            call draw_pdf_circle_with_outline(this%stream_writer, pdf_x, pdf_y, size)
-        case('s', 'square')
-            call draw_pdf_square_with_outline(this%stream_writer, pdf_x, pdf_y, size)
-        case('d', 'diamond')
-            call draw_pdf_diamond_with_outline(this%stream_writer, pdf_x, pdf_y, size)
-        case('x', 'cross')
-            call draw_pdf_x_marker(this%stream_writer, pdf_x, pdf_y, size)
-        end select
-        
-        ! Restore state
-        call this%restore_graphics_state()
-    end subroutine draw_pdf_marker
+        call this%update_coord_context()
+        call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, style)
+    end subroutine draw_pdf_marker_wrapper
     
-    subroutine pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: edge_r, edge_g, edge_b
-        real(wp), intent(in) :: face_r, face_g, face_b
+        real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
         
-        ! Set edge color for stroking
-        call this%color(edge_r, edge_g, edge_b)
-    end subroutine pdf_set_marker_colors
+        call pdf_set_marker_colors(this%core_ctx, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+    end subroutine set_marker_colors_wrapper
     
-    subroutine pdf_set_marker_colors_with_alpha(this, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
+    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, edge_alpha, &
+                                                   face_r, face_g, face_b, face_alpha)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         
-        ! PDF doesn't support alpha directly, just use the colors
-        call pdf_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
-    end subroutine pdf_set_marker_colors_with_alpha
+        call pdf_set_marker_colors_with_alpha(this%core_ctx, edge_r, edge_g, edge_b, edge_alpha, &
+                                             face_r, face_g, face_b, face_alpha)
+    end subroutine set_marker_colors_with_alpha_wrapper
     
-    subroutine draw_pdf_arrow_facade(this, x, y, dx, dy, size, style)
+    subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
-        real(wp) :: pdf_x, pdf_y
         
-        call this%normalize_coords(x, y, pdf_x, pdf_y)
-        call draw_pdf_arrow(this%stream_writer, pdf_x, pdf_y, dx, dy, size, style)
-    end subroutine draw_pdf_arrow_facade
+        call this%update_coord_context()
+        call draw_pdf_arrow_at_coords(this%coord_ctx, this%stream_writer, x, y, dx, dy, size, style)
+    end subroutine draw_pdf_arrow_wrapper
     
     function pdf_get_ascii_output(this) result(output)
         class(pdf_context), intent(in) :: this
         character(len=:), allocatable :: output
-        
         output = "PDF output (non-ASCII format)"
     end function pdf_get_ascii_output
     
-    real(wp) function pdf_get_width_scale(this) result(scale)
+    real(wp) function get_width_scale_wrapper(this) result(scale)
         class(pdf_context), intent(in) :: this
-        scale = real(this%width, wp) / PDF_WIDTH
-    end function pdf_get_width_scale
+        type(pdf_context_handle) :: local_ctx
+        local_ctx = this%make_coord_context()
+        scale = pdf_get_width_scale(local_ctx)
+    end function get_width_scale_wrapper
     
-    real(wp) function pdf_get_height_scale(this) result(scale)
+    real(wp) function get_height_scale_wrapper(this) result(scale)
         class(pdf_context), intent(in) :: this
-        scale = real(this%height, wp) / PDF_HEIGHT
-    end function pdf_get_height_scale
+        type(pdf_context_handle) :: local_ctx
+        local_ctx = this%make_coord_context()
+        scale = pdf_get_height_scale(local_ctx)
+    end function get_height_scale_wrapper
     
-    subroutine pdf_fill_quad(this, x_quad, y_quad)
+    subroutine fill_quad_wrapper(this, x_quad, y_quad)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
         real(wp) :: px(4), py(4)
         character(len=512) :: cmd
         integer :: i
         
+        call this%update_coord_context()
+        
         ! Convert to PDF coordinates
         do i = 1, 4
-            call this%normalize_coords(x_quad(i), y_quad(i), px(i), py(i))
+            call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), px(i), py(i))
         end do
-        
-        ! Use current color (should be set before calling)
         
         ! Draw filled quadrilateral
         write(cmd, '(8(F0.3, 1X), "m l l l h f")') px(1), py(1), px(2), py(2), px(3), py(3), px(4), py(4)
         call this%stream_writer%add_to_stream(trim(cmd))
-    end subroutine pdf_fill_quad
+    end subroutine fill_quad_wrapper
     
-    subroutine pdf_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
+    subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
@@ -310,6 +258,8 @@ contains
         real(wp) :: value, norm_value
         real(wp), dimension(3) :: color
         character(len=32) :: cmd
+        
+        call this%update_coord_context()
         
         do i = 1, size(z_grid, 1) - 1
             do j = 1, size(z_grid, 2) - 1
@@ -333,113 +283,89 @@ contains
                 y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
                 
                 ! Fill cell
-                call pdf_fill_quad(this, x_quad, y_quad)
+                call this%fill_quad(x_quad, y_quad)
             end do
         end do
-    end subroutine pdf_fill_heatmap
+    end subroutine fill_heatmap_wrapper
     
-    subroutine pdf_render_legend_specialized(this, entries, x, y, width, height)
+    subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)
         class(pdf_context), intent(inout) :: this
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(in) :: x, y, width, height
         
-        ! Simplified legend rendering
-        integer :: i
-        real(wp) :: y_pos
-        
-        y_pos = y
-        do i = 1, size(entries)
-            call this%text(x, y_pos, entries(i)%label)
-            y_pos = y_pos - 20.0_wp
-        end do
-    end subroutine pdf_render_legend_specialized
+        call this%update_coord_context()
+        call pdf_render_legend_specialized(this%coord_ctx, entries, x, y, width, height)
+    end subroutine render_legend_specialized_wrapper
     
-    subroutine pdf_calculate_legend_dimensions(this, entries, width, height)
+    subroutine calculate_legend_dimensions_wrapper(this, entries, width, height)
         class(pdf_context), intent(in) :: this
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(out) :: width, height
+        type(pdf_context_handle) :: local_ctx
         
-        width = 100.0_wp
-        height = real(size(entries), wp) * 20.0_wp
-    end subroutine pdf_calculate_legend_dimensions
+        local_ctx = this%make_coord_context()
+        call pdf_calculate_legend_dimensions(local_ctx, entries, width, height)
+    end subroutine calculate_legend_dimensions_wrapper
     
-    subroutine pdf_set_legend_border_width(this, width)
+    subroutine set_legend_border_width_wrapper(this, width)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: width
         
-        call this%set_line_width(width)
-    end subroutine pdf_set_legend_border_width
+        call this%update_coord_context()
+        call pdf_set_legend_border_width(this%coord_ctx, width)
+    end subroutine set_legend_border_width_wrapper
     
-    subroutine pdf_calculate_legend_position(this, loc, x, y)
+    subroutine calculate_legend_position_wrapper(this, loc, x, y)
         class(pdf_context), intent(in) :: this
         character(len=*), intent(in) :: loc
         real(wp), intent(out) :: x, y
+        type(pdf_context_handle) :: local_ctx
         
-        select case(trim(loc))
-        case('upper right')
-            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
-            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
-        case('upper left')
-            x = real(this%plot_area%left + 20, wp)
-            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
-        case('lower right')
-            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
-            y = real(this%plot_area%bottom + 100, wp)
-        case('lower left')
-            x = real(this%plot_area%left + 20, wp)
-            y = real(this%plot_area%bottom + 100, wp)
-        case default
-            x = real(this%plot_area%left + this%plot_area%width - 100, wp)
-            y = real(this%plot_area%bottom + this%plot_area%height - 20, wp)
-        end select
-    end subroutine pdf_calculate_legend_position
+        local_ctx = this%make_coord_context()
+        call pdf_calculate_legend_position(local_ctx, loc, x, y)
+    end subroutine calculate_legend_position_wrapper
     
-    subroutine pdf_extract_rgb_data(this, width, height, rgb_data)
+    subroutine extract_rgb_data_wrapper(this, width, height, rgb_data)
         class(pdf_context), intent(in) :: this
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
+        type(pdf_context_handle) :: local_ctx
         
-        ! PDF doesn't have RGB pixel data - return white
-        rgb_data = 1.0_wp
-    end subroutine pdf_extract_rgb_data
+        local_ctx = this%make_coord_context()
+        call pdf_extract_rgb_data(local_ctx, width, height, rgb_data)
+    end subroutine extract_rgb_data_wrapper
     
-    subroutine pdf_get_png_data(this, width, height, png_data, status)
+    subroutine get_png_data_wrapper(this, width, height, png_data, status)
         class(pdf_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
+        type(pdf_context_handle) :: local_ctx
         
-        ! PDF doesn't generate PNG data
-        allocate(png_data(0))
-        status = -1  ! Indicate not supported
-    end subroutine pdf_get_png_data
+        local_ctx = this%make_coord_context()
+        call pdf_get_png_data(local_ctx, width, height, png_data, status)
+    end subroutine get_png_data_wrapper
     
-    subroutine pdf_prepare_3d_data(this, plots)
+    subroutine prepare_3d_data_wrapper(this, plots)
         class(pdf_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! PDF doesn't support 3D - stub implementation
-        ! Nothing to prepare for 2D PDF output
-    end subroutine pdf_prepare_3d_data
+        call this%update_coord_context()
+        call pdf_prepare_3d_data(this%coord_ctx, plots)
+    end subroutine prepare_3d_data_wrapper
     
-    subroutine pdf_render_ylabel(this, ylabel)
+    subroutine render_ylabel_wrapper(this, ylabel)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
         
-        real(wp) :: x, y
-        
-        x = real(this%plot_area%left - 40, wp)
-        y = real(this%plot_area%bottom + this%plot_area%height / 2, wp)
-        
-        ! Draw rotated Y-axis label
-        call draw_rotated_mixed_font_text(this%core_ctx, x, y, ylabel)
-    end subroutine pdf_render_ylabel
+        call this%update_coord_context()
+        call pdf_render_ylabel(this%coord_ctx, ylabel)
+    end subroutine render_ylabel_wrapper
     
-    subroutine pdf_draw_axes_stub(this, xscale, yscale, symlog_threshold, &
-                                   x_min, x_max, y_min, y_max, &
-                                   title, xlabel, ylabel, &
-                                   z_min, z_max, has_3d_plots)
-        ! Implementation that properly handles plot area for axes drawing
+    subroutine draw_axes_and_labels_backend_wrapper(this, xscale, yscale, symlog_threshold, &
+                                                   x_min, x_max, y_min, y_max, &
+                                                   title, xlabel, ylabel, &
+                                                   z_min, z_max, has_3d_plots)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -448,41 +374,22 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        ! Draw axes using the full PDF context with proper plot area
         character(len=256) :: title_str, xlabel_str, ylabel_str
         
-        title_str = ""
-        xlabel_str = ""
-        ylabel_str = ""
+        title_str = ""; xlabel_str = ""; ylabel_str = ""
         if (allocated(title)) title_str = title
         if (allocated(xlabel)) xlabel_str = xlabel
         if (allocated(ylabel)) ylabel_str = ylabel
         
-        ! Use the proper plot area-aware axes drawing
-        call pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
-                                         x_min, x_max, y_min, y_max, &
-                                         title_str, xlabel_str, ylabel_str)
-    end subroutine pdf_draw_axes_stub
-    
-    subroutine pdf_draw_axes_and_labels_facade(this, xscale, yscale, symlog_threshold, &
-                                              x_min, x_max, y_min, y_max, &
-                                              title, xlabel, ylabel)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: xscale, yscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=*), intent(in) :: title, xlabel, ylabel
-        
-        ! Delegate to axes module with actual plot area coordinates
         call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
                                      x_min, x_max, y_min, y_max, &
-                                     title, xlabel, ylabel, &
+                                     title_str, xlabel_str, ylabel_str, &
                                      real(this%plot_area%left, wp), &
                                      real(this%plot_area%bottom, wp), &
                                      real(this%plot_area%width, wp), &
                                      real(this%plot_area%height, wp), &
                                      real(this%height, wp))
-    end subroutine pdf_draw_axes_and_labels_facade
+    end subroutine draw_axes_and_labels_backend_wrapper
     
     subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
         class(pdf_context), intent(in) :: this
@@ -499,184 +406,10 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
-        ! Set new coordinate bounds
         this%x_min = x_min
         this%x_max = x_max
         this%y_min = y_min
         this%y_max = y_max
     end subroutine pdf_set_coordinates
-    
-    subroutine pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
-                                           x_min, x_max, y_min, y_max, &
-                                           title, xlabel, ylabel)
-        !! Draw axes using the actual plot area from the PDF context
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: xscale, yscale
-        real(wp), intent(in) :: symlog_threshold
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=*), intent(in) :: title, xlabel, ylabel
-        
-        ! Draw plot frame using actual plot area
-        call pdf_draw_plot_frame(this)
-        
-        ! Draw tick marks and labels using data coordinates and plot area  
-        call pdf_draw_ticks_and_labels(this, x_min, x_max, y_min, y_max, xscale, yscale)
-        
-        ! Draw title and axis labels if provided
-        if (len_trim(title) > 0) call pdf_draw_title(this, title)
-        if (len_trim(xlabel) > 0) call pdf_draw_xlabel(this, xlabel) 
-        if (len_trim(ylabel) > 0) call pdf_draw_ylabel(this, ylabel)
-    end subroutine pdf_draw_axes_with_plot_area
-    
-    subroutine pdf_draw_plot_frame(this)
-        !! Draw plot frame using the actual plot area
-        class(pdf_context), intent(inout) :: this
-        character(len=256) :: frame_cmd
-        real(wp) :: x1, y1, width, height
-        
-        x1 = real(this%plot_area%left, wp)
-        y1 = real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
-        width = real(this%plot_area%width, wp)
-        height = real(this%plot_area%height, wp)
-        
-        ! Set line color to black
-        call this%core_ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call this%core_ctx%set_line_width(1.0_wp)
-        
-        ! Draw rectangle frame
-        write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') x1, y1, width, height
-        this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
-    end subroutine pdf_draw_plot_frame
-    
-    function calculate_dynamic_tick_count(plot_dimension) result(tick_count)
-        !! Calculate optimal tick count based on plot dimension (Issue #238)
-        !! Uses a formula that considers plot size for readable tick density
-        real(wp), intent(in) :: plot_dimension  ! Width or height in pixels
-        integer :: tick_count
-        
-        ! Dynamic formula: base on dimension with reasonable bounds
-        ! Small plots (<200px): 4-5 ticks
-        ! Medium plots (200-600px): 6-8 ticks
-        ! Large plots (>600px): 8-12 ticks
-        if (plot_dimension < 200.0_wp) then
-            tick_count = 4
-        else if (plot_dimension < 400.0_wp) then
-            tick_count = 6
-        else if (plot_dimension < 600.0_wp) then
-            tick_count = 8
-        else if (plot_dimension < 1000.0_wp) then
-            tick_count = 10
-        else
-            tick_count = 12
-        end if
-        
-        ! Ensure within reasonable bounds
-        tick_count = max(3, min(15, tick_count))
-    end function calculate_dynamic_tick_count
-    
-    subroutine pdf_draw_ticks_and_labels(this, x_min, x_max, y_min, y_max, xscale, yscale)
-        !! Draw tick marks and labels using proper coordinate transformation
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        character(len=*), intent(in) :: xscale, yscale
-        
-        real(wp) :: x_range, y_range, x_step, y_step
-        real(wp) :: tick_x, tick_y, pdf_x, pdf_y
-        integer :: i, num_ticks_x, num_ticks_y
-        character(len=32) :: tick_label
-        character(len=256) :: tick_cmd, text_cmd
-        real(wp), parameter :: TICK_LENGTH = 5.0_wp
-        
-        x_range = x_max - x_min
-        y_range = y_max - y_min
-        
-        ! Determine tick counts (Issue #238)
-        ! Use configured value if set, otherwise calculate dynamically
-        if (this%x_tick_count > 0) then
-            num_ticks_x = this%x_tick_count
-        else
-            num_ticks_x = calculate_dynamic_tick_count(real(this%plot_area%width, wp))
-        end if
-        
-        if (this%y_tick_count > 0) then
-            num_ticks_y = this%y_tick_count
-        else
-            num_ticks_y = calculate_dynamic_tick_count(real(this%plot_area%height, wp))
-        end if
-        
-        ! Draw X-axis ticks and labels
-        if (x_range > 0.0_wp) then
-            x_step = x_range / real(num_ticks_x - 1, wp)
-            do i = 1, num_ticks_x
-                tick_x = x_min + real(i - 1, wp) * x_step
-                call this%normalize_coords(tick_x, y_min, pdf_x, pdf_y)
-                
-                ! Draw tick mark
-                write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                    pdf_x, pdf_y, pdf_x, pdf_y - TICK_LENGTH
-                this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
-                
-                ! Draw tick label
-                write(tick_label, '(F0.1)') tick_x
-                tick_label = adjustl(tick_label)
-                call draw_mixed_font_text(this%core_ctx, pdf_x - 10.0_wp, pdf_y - 20.0_wp, trim(tick_label))
-            end do
-        end if
-        
-        ! Draw Y-axis ticks and labels
-        if (y_range > 0.0_wp) then
-            y_step = y_range / real(num_ticks_y - 1, wp)
-            do i = 1, num_ticks_y
-                tick_y = y_min + real(i - 1, wp) * y_step
-                call this%normalize_coords(x_min, tick_y, pdf_x, pdf_y)
-                
-                ! Draw tick mark
-                write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                    pdf_x, pdf_y, pdf_x - TICK_LENGTH, pdf_y
-                this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
-                
-                ! Draw tick label
-                write(tick_label, '(F0.1)') tick_y
-                tick_label = adjustl(tick_label)
-                call draw_mixed_font_text(this%core_ctx, pdf_x - 30.0_wp, pdf_y - 5.0_wp, trim(tick_label))
-            end do
-        end if
-    end subroutine pdf_draw_ticks_and_labels
-    
-    subroutine pdf_draw_title(this, title)
-        !! Draw plot title
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: title
-        real(wp) :: x, y
-        
-        x = real(this%plot_area%left + this%plot_area%width / 2, wp)
-        y = real(this%height - this%plot_area%bottom - this%plot_area%height - 30, wp)
-        
-        call draw_mixed_font_text(this%core_ctx, x - 50.0_wp, y, title)
-    end subroutine pdf_draw_title
-    
-    subroutine pdf_draw_xlabel(this, xlabel)
-        !! Draw X-axis label
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: xlabel
-        real(wp) :: x, y
-        
-        x = real(this%plot_area%left + this%plot_area%width / 2, wp)
-        y = real(this%height - this%plot_area%bottom + 50, wp)
-        
-        call draw_mixed_font_text(this%core_ctx, x - 30.0_wp, y, xlabel)
-    end subroutine pdf_draw_xlabel
-    
-    subroutine pdf_draw_ylabel(this, ylabel)
-        !! Draw Y-axis label (rotated)
-        class(pdf_context), intent(inout) :: this
-        character(len=*), intent(in) :: ylabel
-        real(wp) :: x, y
-        
-        x = real(this%plot_area%left - 60, wp)
-        y = real(this%height - this%plot_area%bottom - this%plot_area%height / 2, wp)
-        
-        call draw_rotated_mixed_font_text(this%core_ctx, x, y, ylabel)
-    end subroutine pdf_draw_ylabel
     
 end module fortplot_pdf
