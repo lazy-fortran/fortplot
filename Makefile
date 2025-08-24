@@ -90,7 +90,9 @@ run-release:
 
 # Build documentation with FORD
 doc:
-	# Copy example media files to doc build directory BEFORE running FORD for proper linking
+	# Run FORD first to generate documentation structure
+	ford README.md
+	# Copy example media files to doc build directory AFTER running FORD
 	mkdir -p build/doc/media/examples
 	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
 	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; fi
@@ -105,8 +107,6 @@ doc:
 			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
 		fi; \
 	done
-	# Now run FORD after media files are in place
-	ford README.md
 
 # Generate coverage report
 coverage:
