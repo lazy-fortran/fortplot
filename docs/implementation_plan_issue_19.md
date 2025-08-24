@@ -190,14 +190,13 @@ subroutine savefig(filename, blocking)
     !! Save the global figure to file (backend auto-detected from extension)
     !!
     !! Automatically selects the appropriate backend based on file extension.
-    !! Supports PNG, PDF, ASCII text, and GLTF 3D formats.
+    !! Supports PNG, PDF, and ASCII text formats.
     !!
     !! Arguments:
     !!   filename: Output filename with extension
     !!            '.png' - Raster image (default)
     !!            '.pdf' - Vector graphics
-    !!            '.txt' - ASCII art representation  
-    !!            '.gltf'/'.glb' - 3D model format
+    !!            '.txt' - ASCII art representation
     !!   blocking: Wait for user input after save (optional, default: false)
     !!            Useful for keeping plot windows open
     !!

@@ -3,16 +3,16 @@
 ## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
 
 Critical issues requiring immediate attention based on comprehensive audit findings:  
-- [ ] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
 - [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions
 - [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths
 - [ ] #268: PNG dimension overflow errors - fix 64000x48000 dimension calculations
 - [ ] #269: Incomplete scale system implementation - finish logarithmic scales
 - [ ] #270: Broken example output documentation - fix PDF binary content display
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
+- [ ] #285: refactor: remove hist() and bar() stub implementations
 
 ## DOING (Current Work)
-- [ ] #264: PNG backend regression - fix fixed-size file generation issue
+- [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions (branch: fix-missing-advertised-features-266)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -37,6 +37,8 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy (branch: fix-documentation-inconsistency-265)
+- [x] #264: PNG backend regression - fix fixed-size file generation issue (branch: fix-png-backend-regression-264)
 - [x] #263: Test suite infrastructure broken - restore automated testing capability (branch: fix-test-infrastructure-263)
 - [x] #262: Python interface completely fake/mock - implement actual F2PY bindings (branch: fix-python-interface-262)
 - [x] #236: Add division by zero protection in PDF coordinate transformation (branch: fix-division-by-zero-236)

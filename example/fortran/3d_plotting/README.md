@@ -7,7 +7,6 @@ This comprehensive example demonstrates all 3D plotting capabilities in fortplot
 - **3D Line Plots**: Helices and parametric curves
 - **3D Scatter Plots**: Multiple patterns and marker types
 - **3D Surface Plots**: Mathematical functions and meshes
-- **GLTF/GLB Export**: Text and binary 3D format export
 - **Mixed Plots**: Combining 2D and 3D in single figures
 - **Plot Combinations**: Multiple 3D plot types together
 
@@ -29,19 +28,6 @@ make example ARGS="3d_plotting"
 - `mixed_plots.png` - Combined 2D and 3D plots
 - `scatter_line_combo.png` - 3D scatter + line combination
 
-### 3D Export Formats
-- `helix_demo.gltf` - Helix in text GLTF format
-- `helix_demo.glb` - Helix in binary GLB format  
-- `surface_demo.gltf` - Surface in text GLTF format
-- `surface_demo.glb` - Surface in binary GLB format
-
-## Viewing 3D Files
-
-GLTF and GLB files can be viewed in:
-- Online: [GLTF Viewer](https://gltf-viewer.donmccurdy.com/)
-- Windows 3D Viewer (Windows 10/11)
-- Blender (import GLTF)
-- Any GLTF-compatible 3D viewer
 
 ## API Usage Examples
 
@@ -58,12 +44,6 @@ call fig%add_scatter_3d(x, y, z, label="Scatter", marker='o')
 ### 3D Surface Plot
 ```fortran
 call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
-```
-
-### GLTF Export
-```fortran
-call fig%savefig('output.gltf')  ! Text format
-call fig%savefig('output.glb')   ! Binary format
 ```
 
 ## Technical Notes
