@@ -264,19 +264,42 @@ contains
         !! Add legend to figure
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in), optional :: location
+        integer :: i
         
         if (present(location)) then
             call parse_legend_location(location, self%legend_location)
         end if
         
         self%legend_added = .true.
+        
+        ! Gather subplot plots into main plots array first
+        call gather_subplot_plots(self)
+        
+        ! Initialize legend data immediately
+        if (.not. allocated(self%legend_data%entries)) then
+            allocate(self%legend_data%entries(0))
+            self%legend_data%num_entries = 0
+        end if
+        
+        ! Populate legend with labeled plots from main plots array
+        ! Normal figures store plots in self%plots with self%plot_count
+        do i = 1, self%plot_count
+            if (allocated(self%plots(i)%label)) then
+                if (len_trim(self%plots(i)%label) > 0) then
+                    call self%legend_data%add_entry(self%plots(i)%label, &
+                                             self%plots(i)%color, &
+                                             self%plots(i)%linestyle, &
+                                             self%plots(i)%marker)
+                end if
+            end if
+        end do
     end subroutine figure_legend
 
     subroutine render_figure_legend(self)
         !! Render legend following SOLID principles
-        !! Populate legend with labeled plots and render it
+        !! Position and render the pre-populated legend
         class(figure_t), intent(inout) :: self
-        integer :: i, subplot_idx
+        integer :: i
         
         ! Initialize legend if not already done
         if (.not. allocated(self%legend_data%entries)) then
@@ -285,32 +308,29 @@ contains
         end if
         
         ! Set legend position based on legend_location
+        ! Match actual constants: LEGEND_UPPER_LEFT=1, LEGEND_UPPER_RIGHT=2, etc.
         select case(self%legend_location)
         case(1)
-            self%legend_data%position = LEGEND_UPPER_RIGHT
-        case(2)
             self%legend_data%position = LEGEND_UPPER_LEFT
+        case(2)
+            self%legend_data%position = LEGEND_UPPER_RIGHT
         case(3)
-            self%legend_data%position = LEGEND_LOWER_RIGHT
-        case(4)
             self%legend_data%position = LEGEND_LOWER_LEFT
+        case(4)
+            self%legend_data%position = LEGEND_LOWER_RIGHT
         case default
             self%legend_data%position = LEGEND_UPPER_RIGHT
         end select
         
-        ! Get current subplot (default to 1)
-        subplot_idx = max(1, self%current_subplot)
-        if (.not. allocated(self%subplots)) return
-        if (subplot_idx > size(self%subplots)) return
-        
-        ! Populate legend with labeled plots from current subplot (DRY principle)
-        do i = 1, self%subplots(subplot_idx)%plot_count
-            if (allocated(self%subplots(subplot_idx)%plots(i)%label)) then
-                if (len_trim(self%subplots(subplot_idx)%plots(i)%label) > 0) then
-                    call self%legend_data%add_entry(self%subplots(subplot_idx)%plots(i)%label, &
-                                             self%subplots(subplot_idx)%plots(i)%color, &
-                                             self%subplots(subplot_idx)%plots(i)%linestyle, &
-                                             self%subplots(subplot_idx)%plots(i)%marker)
+        ! Populate legend with labeled plots from main plots array
+        ! Normal figures store plots in self%plots with self%plot_count
+        do i = 1, self%plot_count
+            if (allocated(self%plots(i)%label)) then
+                if (len_trim(self%plots(i)%label) > 0) then
+                    call self%legend_data%add_entry(self%plots(i)%label, &
+                                             self%plots(i)%color, &
+                                             self%plots(i)%linestyle, &
+                                             self%plots(i)%marker)
                 end if
             end if
         end do
