@@ -897,13 +897,46 @@ contains
 
     subroutine raster_render_ylabel(this, ylabel)
         !! Render rotated Y-axis label for PNG backend
+        use fortplot_text, only: calculate_text_width, calculate_text_height
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
         
-        ! TODO: Implement proper rotated text rendering
-        ! For now, this is a placeholder that does nothing
-        associate(this => this, ylabel => ylabel)
-        end associate
+        integer :: text_width, text_height
+        integer :: rotated_width, rotated_height
+        integer :: x_pos, y_pos
+        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        
+        ! Calculate text dimensions
+        text_width = calculate_text_width(ylabel)
+        text_height = calculate_text_height(ylabel)
+        
+        ! Allocate bitmap for horizontal text
+        allocate(text_bitmap(text_width, text_height, 3))
+        text_bitmap = -1_1  ! Initialize to white
+        
+        ! Render text horizontally to bitmap (at origin)
+        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, 0, ylabel)
+        
+        ! Allocate rotated bitmap (dimensions swapped for 90° rotation)
+        rotated_width = text_height
+        rotated_height = text_width
+        allocate(rotated_bitmap(rotated_width, rotated_height, 3))
+        
+        ! Rotate the text 90 degrees counter-clockwise
+        call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, text_width, text_height)
+        
+        ! Calculate position for rotated text (left of plot area, centered vertically)
+        x_pos = this%plot_area%left - 40 - rotated_width / 2
+        y_pos = this%plot_area%bottom + this%plot_area%height / 2 - rotated_height / 2
+        
+        ! Composite the rotated text onto the main raster
+        call composite_bitmap_to_raster(this%raster%image_data, this%raster%width, &
+                                       this%raster%height, rotated_bitmap, &
+                                       rotated_width, rotated_height, x_pos, y_pos)
+        
+        ! Clean up
+        deallocate(text_bitmap)
+        deallocate(rotated_bitmap)
     end subroutine raster_render_ylabel
 
     subroutine raster_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
