@@ -5,15 +5,21 @@ program test_pdf_coordinate_accuracy
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_pdf_coordinate, only: pdf_context_handle, normalize_to_pdf_coords
+    use fortplot_test_utils, only: get_platform_tolerance
     implicit none
 
     type(pdf_context) :: ctx
     real(wp) :: test_x, test_y, pdf_x, pdf_y
     real(wp) :: expected_x, expected_y
     logical :: test_passed = .true.
-    real(wp), parameter :: TOLERANCE = 1.0e-5_wp  ! Windows-compatible tolerance
+    real(wp), parameter :: BASE_TOLERANCE = 1.0e-6_wp  ! Base precision requirement
+    real(wp) :: TOLERANCE
 
     write(*, '(A)') "=== PDF Coordinate Accuracy Test ==="
+
+    ! Initialize platform-appropriate tolerance
+    TOLERANCE = get_platform_tolerance(BASE_TOLERANCE)
+    write(*, '(A, ES10.3)') "Using tolerance: ", TOLERANCE
 
     ! Test square figure coordinate mapping
     write(*, '(A)') "Test: Square figure (800x800) coordinate accuracy"
