@@ -1,6 +1,6 @@
 program test_pdf_division_zero
     !! Test division by zero protection in PDF coordinate transformation
-    !! Issue #237: Add division by zero protection when data ranges are zero
+    !! Issue #236: Add division by zero protection when data ranges are zero
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -187,7 +187,8 @@ contains
     subroutine safe_coordinate_transform(x, y, x_min, x_max, y_min, y_max, &
                                         plot_left, plot_width, plot_bottom, plot_height, &
                                         pdf_x, pdf_y)
-        !! Simulates the coordinate transformation with division by zero protection
+        !! Safe coordinate transformation with division by zero protection
+        !! Tests the same logic implemented in the fortplot_pdf_coordinate module
         real(wp), intent(in) :: x, y
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: plot_left, plot_width, plot_bottom, plot_height
@@ -199,7 +200,7 @@ contains
         x_range = x_max - x_min
         y_range = y_max - y_min
         
-        ! Handle X coordinate
+        ! Handle X coordinate with zero-range protection
         if (abs(x_range) < EPSILON) then
             ! Zero or near-zero range: place at center of plot area
             pdf_x = plot_left + plot_width * 0.5_wp
@@ -208,7 +209,7 @@ contains
             pdf_x = plot_left + (x - x_min) / x_range * plot_width
         end if
         
-        ! Handle Y coordinate
+        ! Handle Y coordinate with zero-range protection
         if (abs(y_range) < EPSILON) then
             ! Zero or near-zero range: place at center of plot area
             pdf_y = plot_bottom + plot_height * 0.5_wp
