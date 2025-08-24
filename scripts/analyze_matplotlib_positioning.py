@@ -5,7 +5,6 @@ Following TDD: First understand what matplotlib actually does
 """
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
 import numpy as np
 
 def analyze_matplotlib_positioning():
