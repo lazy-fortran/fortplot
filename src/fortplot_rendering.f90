@@ -132,9 +132,10 @@ contains
         class(figure_t), intent(inout) :: self
         integer :: subplot_idx, plot_idx, total_idx
         
-        if (self%subplot_rows > 1 .or. self%subplot_cols > 1) then
-            ! Multiple subplots - gather all plots
-            total_idx = 0
+        ! Always gather plots from subplots into main plots array
+        total_idx = 0
+        
+        if (allocated(self%subplots)) then
             do subplot_idx = 1, self%subplot_rows * self%subplot_cols
                 do plot_idx = 1, self%subplots(subplot_idx)%plot_count
                     total_idx = total_idx + 1
@@ -143,8 +144,9 @@ contains
                     end if
                 end do
             end do
-            self%plot_count = total_idx
         end if
+        
+        self%plot_count = total_idx
     end subroutine gather_subplot_plots
 
     subroutine calculate_figure_data_ranges(self)
@@ -211,9 +213,15 @@ contains
     subroutine render_all_plots(self)
         !! Render all plots in the figure
         class(figure_t), intent(inout) :: self
-        integer :: i
+        integer :: i, subplot_idx
         
-        do i = 1, self%plot_count
+        ! Get current subplot (default to 1)
+        subplot_idx = max(1, self%current_subplot)
+        if (.not. allocated(self%subplots)) return
+        if (subplot_idx > size(self%subplots)) return
+        
+        ! Render all plots in the current subplot
+        do i = 1, self%subplots(subplot_idx)%plot_count
             call render_single_plot(self, i)
         end do
     end subroutine render_all_plots
@@ -275,6 +283,19 @@ contains
 
     ! Private implementation subroutines
 
+    function symlog_transform(x, threshold) result(transformed)
+        !! Apply symlog transformation
+        real(wp), intent(in) :: x, threshold
+        real(wp) :: transformed
+        
+        if (abs(x) <= threshold) then
+            transformed = x
+        else if (x > 0) then
+            transformed = threshold * (1.0_wp + log10(x / threshold))
+        else
+            transformed = -threshold * (1.0_wp + log10(-x / threshold))
+        end if
+    end function symlog_transform
 
     subroutine switch_backend_if_needed(self, target_backend)
         !! Switch backend if current doesn't match target
@@ -363,8 +384,15 @@ contains
         integer, intent(in) :: plot_idx
         
         type(plot_data_t) :: plot
+        integer :: subplot_idx
         
-        plot = self%plots(plot_idx)
+        ! Get current subplot (default to 1)
+        subplot_idx = max(1, self%current_subplot)
+        if (.not. allocated(self%subplots)) return
+        if (subplot_idx > size(self%subplots)) return
+        if (plot_idx < 1 .or. plot_idx > self%subplots(subplot_idx)%plot_count) return
+        
+        plot = self%subplots(subplot_idx)%plots(plot_idx)
         
         select case (plot%plot_type)
         case (PLOT_TYPE_LINE)
@@ -467,11 +495,34 @@ contains
 
 
     subroutine update_ranges_from_line_plot(self, plot, first_plot)
-        !! Stub: Update ranges from line plot
+        !! Update data ranges from line plot data
         class(figure_t), intent(inout) :: self
         type(plot_data_t), intent(in) :: plot
         logical, intent(in) :: first_plot
-        ! Stub implementation
+        
+        real(wp) :: x_min_local, x_max_local, y_min_local, y_max_local
+        
+        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
+        if (size(plot%x) == 0) return
+        
+        ! Calculate local ranges
+        x_min_local = minval(plot%x)
+        x_max_local = maxval(plot%x)
+        y_min_local = minval(plot%y)
+        y_max_local = maxval(plot%y)
+        
+        ! Update global ranges
+        if (first_plot) then
+            self%x_min = x_min_local
+            self%x_max = x_max_local
+            self%y_min = y_min_local
+            self%y_max = y_max_local
+        else
+            self%x_min = min(self%x_min, x_min_local)
+            self%x_max = max(self%x_max, x_max_local)
+            self%y_min = min(self%y_min, y_min_local)
+            self%y_max = max(self%y_max, y_max_local)
+        end if
     end subroutine update_ranges_from_line_plot
 
     subroutine update_ranges_from_contour_plot(self, plot, first_plot)
@@ -498,10 +549,58 @@ contains
     end subroutine render_3d_line_plot
 
     subroutine render_line_plot(self, plot_idx)
-        !! Stub: Render line plot
+        !! Render line plot by drawing lines between consecutive points
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
-        ! Stub implementation
+        
+        type(plot_data_t) :: plot
+        integer :: i, subplot_idx
+        real(wp) :: x1, y1, x2, y2
+        
+        ! Get current subplot (default to 1)
+        subplot_idx = max(1, self%current_subplot)
+        if (.not. allocated(self%subplots)) return
+        if (subplot_idx > size(self%subplots)) return
+        
+        ! Get the plot data from the subplot
+        if (plot_idx < 1 .or. plot_idx > self%subplots(subplot_idx)%plot_count) return
+        plot = self%subplots(subplot_idx)%plots(plot_idx)
+        
+        ! Skip if not a line plot or insufficient data
+        if (plot%plot_type /= PLOT_TYPE_LINE) return
+        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
+        if (size(plot%x) < 2) return
+        
+        ! Set the plot color
+        call self%backend%color(plot%color(1), plot%color(2), plot%color(3))
+        
+        ! Draw lines between consecutive points
+        do i = 1, size(plot%x) - 1
+            x1 = plot%x(i)
+            y1 = plot%y(i)
+            x2 = plot%x(i + 1)
+            y2 = plot%y(i + 1)
+            
+            ! Apply scale transformations if needed
+            if (self%xscale == 'log') then
+                if (x1 > 0.0_wp) x1 = log10(x1)
+                if (x2 > 0.0_wp) x2 = log10(x2)
+            else if (self%xscale == 'symlog') then
+                x1 = symlog_transform(x1, self%symlog_threshold)
+                x2 = symlog_transform(x2, self%symlog_threshold)
+            end if
+            
+            if (self%yscale == 'log') then
+                if (y1 > 0.0_wp) y1 = log10(y1)
+                if (y2 > 0.0_wp) y2 = log10(y2)
+            else if (self%yscale == 'symlog') then
+                y1 = symlog_transform(y1, self%symlog_threshold)
+                y2 = symlog_transform(y2, self%symlog_threshold)
+            end if
+            
+            ! Draw the line segment
+            call self%backend%line(x1, y1, x2, y2)
+        end do
     end subroutine render_line_plot
 
     subroutine render_scatter_plot(self, plot_idx)
@@ -559,9 +658,25 @@ contains
     end subroutine update_data_ranges_boxplot
 
     subroutine transform_axis_ranges(self)
-        !! Stub: Transform axis ranges
+        !! Transform axis ranges based on scale settings
         class(figure_t), intent(inout) :: self
-        ! Stub implementation
+        
+        ! For now, simple linear transformation (identity)
+        self%x_min_transformed = self%x_min
+        self%x_max_transformed = self%x_max
+        self%y_min_transformed = self%y_min
+        self%y_max_transformed = self%y_max
+        
+        ! Add small padding if ranges are identical
+        if (self%x_min_transformed == self%x_max_transformed) then
+            self%x_min_transformed = self%x_min_transformed - 0.5_wp
+            self%x_max_transformed = self%x_max_transformed + 0.5_wp
+        end if
+        
+        if (self%y_min_transformed == self%y_max_transformed) then
+            self%y_min_transformed = self%y_min_transformed - 0.5_wp
+            self%y_max_transformed = self%y_max_transformed + 0.5_wp
+        end if
     end subroutine transform_axis_ranges
 
 end module fortplot_rendering
