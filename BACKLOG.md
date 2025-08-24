@@ -3,7 +3,6 @@
 ## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
 
 Critical issues requiring immediate attention based on comprehensive audit findings:  
-- [ ] #264: PNG backend regression - fix fixed-size file generation issue
 - [ ] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
 - [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions
 - [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths
@@ -13,7 +12,7 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 
 ## DOING (Current Work)
-- [ ] #263: Test suite infrastructure broken - restore automated testing capability
+- [ ] #264: PNG backend regression - fix fixed-size file generation issue
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -38,6 +37,7 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #263: Test suite infrastructure broken - restore automated testing capability (branch: fix-test-infrastructure-263)
 - [x] #262: Python interface completely fake/mock - implement actual F2PY bindings (branch: fix-python-interface-262)
 - [x] #236: Add division by zero protection in PDF coordinate transformation (branch: fix-division-by-zero-236)
 - [x] #251: Legend rendering system not visible (branch: fix-legend-visibility-251)
