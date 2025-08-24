@@ -40,7 +40,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil
+        sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
 
     - name: Build project
       run: |
@@ -60,6 +60,17 @@ jobs:
         export OMP_NUM_THREADS=2
         mkdir -p /tmp/test
         timeout 10m make test-ci
+    
+    - name: Run antialiasing quality tests with ImageMagick
+      run: |
+        # Verify ImageMagick is available
+        if magick -version > /dev/null 2>&1; then
+          echo "ImageMagick found - running graphics quality tests"
+          fpm test test_antialiasing_restoration
+          fpm test test_antialiasing_comprehensive
+        else
+          echo "ImageMagick not found - skipping graphics quality tests"
+        fi
 
     - name: Test FPM example
       run: |

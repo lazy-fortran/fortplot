@@ -46,3 +46,13 @@ main = "test_forensic_comparison.f90"
 name = "test_comprehensive_rendering_comparison"
 source-dir = "test"
 main = "test_comprehensive_rendering_comparison.f90"
+
+[[test]]
+name = "test_antialiasing_restoration"
+source-dir = "test"
+main = "test_antialiasing_restoration.f90"
+
+[[test]]
+name = "test_antialiasing_comprehensive"
+source-dir = "test"
+main = "test_antialiasing_comprehensive.f90"
