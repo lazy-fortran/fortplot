@@ -20,7 +20,6 @@ module fortplot_rendering
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_pdf, only: pdf_context
-    use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_security, only: is_safe_path
     use fortplot_logging, only: log_error, log_info, log_warning
@@ -373,7 +372,6 @@ contains
         use fortplot_pdf, only: pdf_context
         use fortplot_png, only: png_context
         use fortplot_raster, only: raster_context
-        use fortplot_gltf, only: gltf_context
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: target_backend
         
@@ -391,8 +389,6 @@ contains
                 current_backend = 'png'
             type is (raster_context)
                 current_backend = 'png'  ! Treat base raster as PNG
-            type is (gltf_context)
-                current_backend = 'gltf'
             class default
                 current_backend = 'ascii'  ! Default fallback
             end select

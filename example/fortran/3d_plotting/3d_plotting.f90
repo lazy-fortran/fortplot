@@ -1,6 +1,6 @@
 program comprehensive_3d_demo
     !! Comprehensive 3D plotting demonstration consolidating multiple 3D features
-    !! Shows line plots, scatter plots, surfaces, and GLTF/GLB export
+    !! Shows line plots, scatter plots, and surfaces
     
     use iso_fortran_env, only: wp => real64
     use fortplot
@@ -11,7 +11,6 @@ program comprehensive_3d_demo
     call demo_3d_line_plots()
     call demo_3d_scatter_plots()
     call demo_3d_surface_plots()
-    call demo_gltf_export()
     call demo_mixed_plots()
     
     print *, "All 3D plotting demonstrations completed!"
@@ -176,67 +175,6 @@ contains
         deallocate(x_grid, y_grid, z_grid)
     end subroutine demo_3d_surface_plots
 
-    subroutine demo_gltf_export()
-        !! Demonstrate GLTF and GLB export formats for 3D plots
-        type(figure_t) :: fig
-        real(wp), allocatable :: x(:), y(:), z(:), x_grid(:), y_grid(:), z_grid(:,:)
-        real(wp) :: t, pi
-        integer :: i, j, n
-        
-        print *, "=== GLTF/GLB Export Demo ==="
-        pi = 4.0_wp * atan(1.0_wp)
-        
-        ! Create helix for GLTF/GLB export
-        n = 100
-        allocate(x(n), y(n), z(n))
-        
-        do i = 1, n
-            t = real(i-1, wp) / real(n-1, wp) * 4.0_wp * pi
-            x(i) = cos(t)
-            y(i) = sin(t)
-            z(i) = t / (4.0_wp * pi)
-        end do
-        
-        ! Export helix as GLTF (text format)
-        call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_3d_plot(x, y, z, label="Helix")
-        call savefig('output/example/fortran/3d_plotting/helix_demo.gltf')
-        
-        ! Export helix as GLB (binary format)
-        call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_3d_plot(x, y, z, label="Helix")
-        call savefig('output/example/fortran/3d_plotting/helix_demo.glb')
-        
-        deallocate(x, y, z)
-        
-        ! Create surface for GLTF/GLB export
-        n = 20
-        allocate(x_grid(n), y_grid(n), z_grid(n,n))
-        
-        do i = 1, n
-            x_grid(i) = -2.0_wp + 4.0_wp * real(i-1, wp) / real(n-1, wp)
-            y_grid(i) = -2.0_wp + 4.0_wp * real(i-1, wp) / real(n-1, wp)
-        end do
-        
-        do i = 1, n
-            do j = 1, n
-                z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
-            end do
-        end do
-        
-        ! Export surface as GLTF and GLB
-        call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_surface(x_grid, y_grid, z_grid, label="Surface")
-        call savefig('output/example/fortran/3d_plotting/surface_demo.gltf')
-        
-        call figure(figsize=[8.0_wp, 6.0_wp])
-        call add_surface(x_grid, y_grid, z_grid, label="Surface")
-        call savefig('output/example/fortran/3d_plotting/surface_demo.glb')
-        
-        print *, "Created: helix_demo.gltf/.glb, surface_demo.gltf/.glb"
-        print *, "View with: https://gltf-viewer.donmccurdy.com/"
-        deallocate(x_grid, y_grid, z_grid)
-    end subroutine demo_gltf_export
 
     subroutine demo_mixed_plots()
         !! Demonstrate mixing 2D and 3D plots, and combining different 3D types

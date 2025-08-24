@@ -120,7 +120,7 @@ contains
         !! 
         !! Arguments:
         !!   width, height: Figure dimensions in pixels
-        !!   backend: Rendering backend name ('ascii', 'png', 'pdf', 'gltf')
+        !!   backend: Rendering backend name ('ascii', 'png', 'pdf')
         use fortplot_utils, only: initialize_backend
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: width, height
