@@ -3,14 +3,13 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**  
-- [ ] #296: regression: PDF plot strangely stretched  
-- [ ] #291: regression: y text not rotated in PNGs
 - [ ] #276: Markers dont work - PNG examples completely broken
 - [ ] #278: Line styles dont work - all styling broken since 690b9834
 - [ ] #280: regression: contours dont work  
 - [ ] #292: regression: legend placement does not work
 
 **Infrastructure & Documentation Issues (Lower Priority)**
+- [ ] #300: fix: comprehensive Windows CI environment compatibility (created today)
 - [ ] #297: Windows test failures on PR #290 - precision and directory issues
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
@@ -18,6 +17,10 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
+- [ ] #291: regression: y text not rotated in PNGs
+
+## BLOCKED (Infrastructure Issues)  
+- [⚠️] #296: regression: PDF plot strangely stretched - FUNCTIONALLY COMPLETE, blocked by Windows CI infrastructure issue #300
 
 ## FUTURE SPRINTS - Systematic Restoration
 
