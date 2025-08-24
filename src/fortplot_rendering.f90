@@ -617,13 +617,14 @@ contains
     end subroutine render_3d_line_plot
 
     subroutine render_line_plot(self, plot_idx)
-        !! Render line plot by drawing lines between consecutive points
+        !! Render line plot by drawing lines between consecutive points and markers
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         
         type(plot_data_t) :: plot
         integer :: i, subplot_idx
-        real(wp) :: x1, y1, x2, y2
+        real(wp) :: x1, y1, x2, y2, x_trans, y_trans
+        logical :: draw_lines
         
         ! Get current subplot (default to 1)
         subplot_idx = max(1, self%current_subplot)
@@ -634,41 +635,76 @@ contains
         if (plot_idx < 1 .or. plot_idx > self%subplots(subplot_idx)%plot_count) return
         plot = self%subplots(subplot_idx)%plots(plot_idx)
         
-        ! Skip if not a line plot or insufficient data
+        ! Skip if not a line plot
         if (plot%plot_type /= PLOT_TYPE_LINE) return
         if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
-        if (size(plot%x) < 2) return
         
         ! Set the plot color
         call self%backend%color(plot%color(1), plot%color(2), plot%color(3))
         
-        ! Draw lines between consecutive points
-        do i = 1, size(plot%x) - 1
-            x1 = plot%x(i)
-            y1 = plot%y(i)
-            x2 = plot%x(i + 1)
-            y2 = plot%y(i + 1)
-            
-            ! Apply scale transformations if needed
-            if (self%xscale == 'log') then
-                if (x1 > 0.0_wp) x1 = log10(x1)
-                if (x2 > 0.0_wp) x2 = log10(x2)
-            else if (self%xscale == 'symlog') then
-                x1 = symlog_transform(x1, self%symlog_threshold)
-                x2 = symlog_transform(x2, self%symlog_threshold)
+        ! Determine if we should draw lines
+        draw_lines = .true.
+        if (allocated(plot%linestyle)) then
+            if (plot%linestyle == 'None' .or. plot%linestyle == '') then
+                draw_lines = .false.
             end if
-            
-            if (self%yscale == 'log') then
-                if (y1 > 0.0_wp) y1 = log10(y1)
-                if (y2 > 0.0_wp) y2 = log10(y2)
-            else if (self%yscale == 'symlog') then
-                y1 = symlog_transform(y1, self%symlog_threshold)
-                y2 = symlog_transform(y2, self%symlog_threshold)
+        end if
+        
+        ! Draw lines between consecutive points if we have at least 2 points and linestyle is not 'None'
+        if (draw_lines .and. size(plot%x) >= 2) then
+            do i = 1, size(plot%x) - 1
+                x1 = plot%x(i)
+                y1 = plot%y(i)
+                x2 = plot%x(i + 1)
+                y2 = plot%y(i + 1)
+                
+                ! Apply scale transformations if needed
+                if (self%xscale == 'log') then
+                    if (x1 > 0.0_wp) x1 = log10(x1)
+                    if (x2 > 0.0_wp) x2 = log10(x2)
+                else if (self%xscale == 'symlog') then
+                    x1 = symlog_transform(x1, self%symlog_threshold)
+                    x2 = symlog_transform(x2, self%symlog_threshold)
+                end if
+                
+                if (self%yscale == 'log') then
+                    if (y1 > 0.0_wp) y1 = log10(y1)
+                    if (y2 > 0.0_wp) y2 = log10(y2)
+                else if (self%yscale == 'symlog') then
+                    y1 = symlog_transform(y1, self%symlog_threshold)
+                    y2 = symlog_transform(y2, self%symlog_threshold)
+                end if
+                
+                ! Draw the line segment
+                call self%backend%line(x1, y1, x2, y2)
+            end do
+        end if
+        
+        ! Draw markers at each data point if marker is specified
+        if (allocated(plot%marker)) then
+            if (plot%marker /= 'None' .and. plot%marker /= '') then
+                do i = 1, size(plot%x)
+                    x_trans = plot%x(i)
+                    y_trans = plot%y(i)
+                    
+                    ! Apply scale transformations if needed
+                    if (self%xscale == 'log') then
+                        if (x_trans > 0.0_wp) x_trans = log10(x_trans)
+                    else if (self%xscale == 'symlog') then
+                        x_trans = symlog_transform(x_trans, self%symlog_threshold)
+                    end if
+                    
+                    if (self%yscale == 'log') then
+                        if (y_trans > 0.0_wp) y_trans = log10(y_trans)
+                    else if (self%yscale == 'symlog') then
+                        y_trans = symlog_transform(y_trans, self%symlog_threshold)
+                    end if
+                    
+                    ! Draw the marker
+                    call self%backend%draw_marker(x_trans, y_trans, plot%marker)
+                end do
             end if
-            
-            ! Draw the line segment
-            call self%backend%line(x1, y1, x2, y2)
-        end do
+        end if
     end subroutine render_line_plot
 
     subroutine render_scatter_plot(self, plot_idx)
