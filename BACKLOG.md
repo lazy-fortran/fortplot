@@ -9,6 +9,7 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - [ ] #269: Incomplete scale system implementation - finish logarithmic scales
 - [ ] #270: Broken example output documentation - fix PDF binary content display
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
+- [ ] #285: refactor: remove hist() and bar() stub implementations
 
 ## DOING (Current Work)
 - [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions (branch: fix-missing-advertised-features-266)
