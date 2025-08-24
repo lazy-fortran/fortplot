@@ -8,14 +8,14 @@ Fortplot's module architecture follows the Single Responsibility Principle (SRP)
 
 ### PDF Backend Module Hierarchy
 
-The original `fortplot_pdf.f90` (2,178 lines) was refactored into focused submodules:
+The original `fortplot_pdf.f90` (415 lines) was refactored into focused submodules:
 
 ```fortran
-fortplot_pdf.f90                     (489 lines) - Main facade module
-├── fortplot_pdf_core.f90            (122 lines) - Core types and constants  
+fortplot_pdf.f90                     (415 lines) - Main facade module
+├── fortplot_pdf_core.f90            (110 lines) - Core types and constants  
 ├── fortplot_pdf_text.f90            (498 lines) - Text rendering and fonts
 ├── fortplot_pdf_drawing.f90         (232 lines) - Drawing primitives
-├── fortplot_pdf_axes.f90            (395 lines) - Axes and tick rendering
+├── fortplot_pdf_axes.f90            (392 lines) - Axes and tick rendering
 └── fortplot_pdf_io.f90              (261 lines) - Stream I/O operations
 ```
 
@@ -30,7 +30,7 @@ call create_pdf_canvas(ctx, "output.pdf", 800, 600)
 
 ### Animation Module (Simplified)
 
-`fortplot_animation.f90` reduced from 1,060 lines through dependency injection:
+`fortplot_animation.f90` reduced to 48 lines through dependency injection:
 
 ```fortran
 ! Core animation type with minimal dependencies
@@ -46,7 +46,7 @@ end type animation_t
 
 ### Main Module Structure
 
-`fortplot.f90` (1,119 lines) maintains comprehensive API through selective imports:
+`fortplot.f90` (233 lines) maintains comprehensive API through selective imports:
 
 ```fortran
 module fortplot
@@ -234,7 +234,7 @@ Facade pattern adds minimal overhead:
 Monitor these files approaching size limits:
 
 - `fortplot_figure_core.f90`: Currently 49 lines (safe)
-- `fortplot.f90`: 1,119 lines (needs attention if growth continues)
-- `fortplot_animation.f90`: 1,060 lines (monitor closely)
+- `fortplot.f90`: 233 lines (well within limits)
+- `fortplot_animation.f90`: 48 lines (excellent modularization)
 
 Apply same facade pattern when limits approached.
