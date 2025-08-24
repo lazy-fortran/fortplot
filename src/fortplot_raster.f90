@@ -34,7 +34,7 @@ module fortplot_raster
     type :: raster_image_t
         integer(1), allocatable :: image_data(:)
         integer :: width, height
-        real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 1.0_wp
+        real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 0.0_wp
         real(wp) :: current_line_width = 1.0_wp
         ! Marker colors - separate edge and face colors with alpha
         real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp, marker_edge_alpha = 1.0_wp
@@ -887,6 +887,9 @@ contains
         logical, intent(in) :: has_3d_plots
         
         real(wp) :: label_x, label_y
+        
+        ! Set color to black for axes and text
+        call this%color(0.0_wp, 0.0_wp, 0.0_wp)
         
         ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
