@@ -3,7 +3,6 @@
 ## TODO (Ordered by Priority)
 
 ### CURRENT SPRINT - Forensic Analysis & Restoration Framework
-- [ ] #248: PNG antialiasing quality degradation since 690b9834
 - [ ] #249: PDF coordinate system and scaling fundamental issues
 - [ ] #250: PNG line styles and markers rendering pipeline degradation
 - [ ] #251: Legend rendering system not visible
@@ -31,9 +30,10 @@
 - Performance impact validation
 
 ## DOING (Current Work)
-- [ ] #252: Create comprehensive rendering comparison framework (branch: enhance-rendering-comparison-252)
+- [ ] #248: PNG antialiasing quality degradation since 690b9834 (branch: fix-png-antialiasing-248)
 
 ## DONE (Completed)
+- [x] #252: Create comprehensive rendering comparison framework (branch: enhance-rendering-comparison-252)
 - [x] #254: Emergency rescue commits from main branch protection (branch: fix/rescue-main-commits)
 - [x] #239: Complete PDF grid functionality or remove stub
 - [x] #238: Make PDF tick count configurable instead of hardcoded
