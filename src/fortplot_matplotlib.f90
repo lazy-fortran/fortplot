@@ -331,13 +331,38 @@ contains
         integer, intent(in), optional :: dpi
         
         integer :: fig_width, fig_height
+        integer :: actual_dpi
+        real(8) :: width_val, height_val
+        
+        ! Default DPI (matches matplotlib default)
+        actual_dpi = 100
+        if (present(dpi)) then
+            actual_dpi = dpi
+        end if
         
         fig_width = 800
         fig_height = 600
         
         if (present(figsize)) then
-            fig_width = int(figsize(1) * 100)
-            fig_height = int(figsize(2) * 100)
+            width_val = figsize(1)
+            height_val = figsize(2)
+            
+            ! Smart interpretation: values > 100 are likely pixels, not inches
+            ! Standard figure sizes in inches are typically 6-20 inches
+            if (width_val > 100.0d0 .or. height_val > 100.0d0) then
+                ! Interpret as pixels directly
+                fig_width = int(width_val)
+                fig_height = int(height_val)
+            else
+                ! Interpret as inches, convert to pixels using DPI
+                fig_width = int(width_val * real(actual_dpi, 8))
+                fig_height = int(height_val * real(actual_dpi, 8))
+            end if
+            
+            ! Apply reasonable limits to prevent overflow
+            ! Maximum 10000x10000 pixels for safety
+            fig_width = min(max(fig_width, 100), 10000)
+            fig_height = min(max(fig_height, 100), 10000)
         end if
         
         call fig%initialize(fig_width, fig_height)
@@ -402,18 +427,50 @@ contains
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
 
-    subroutine set_xscale(scale)
-        !! Set x-axis scale type (placeholder for future implementation)
+    subroutine set_xscale(scale, threshold)
+        !! Set x-axis scale type
+        !! @param scale Scale type: 'linear', 'log', or 'symlog'
+        !! @param threshold Optional threshold for symlog scale
         character(len=*), intent(in) :: scale
+        real(8), intent(in), optional :: threshold
         
-        call log_warning("set_xscale() is not yet fully implemented")
+        call ensure_global_figure_initialized()
+        
+        ! Validate scale type
+        select case (trim(scale))
+        case ('linear', 'log', 'symlog')
+            if (present(threshold)) then
+                call fig%set_xscale(scale, threshold)
+            else
+                call fig%set_xscale(scale)
+            end if
+        case default
+            call log_warning("Unknown scale type: " // trim(scale) // ". Using 'linear'.")
+            call fig%set_xscale('linear')
+        end select
     end subroutine set_xscale
 
-    subroutine set_yscale(scale)
-        !! Set y-axis scale type (placeholder for future implementation)
+    subroutine set_yscale(scale, threshold)
+        !! Set y-axis scale type
+        !! @param scale Scale type: 'linear', 'log', or 'symlog'
+        !! @param threshold Optional threshold for symlog scale
         character(len=*), intent(in) :: scale
+        real(8), intent(in), optional :: threshold
         
-        call log_warning("set_yscale() is not yet fully implemented")
+        call ensure_global_figure_initialized()
+        
+        ! Validate scale type
+        select case (trim(scale))
+        case ('linear', 'log', 'symlog')
+            if (present(threshold)) then
+                call fig%set_yscale(scale, threshold)
+            else
+                call fig%set_yscale(scale)
+            end if
+        case default
+            call log_warning("Unknown scale type: " // trim(scale) // ". Using 'linear'.")
+            call fig%set_yscale('linear')
+        end select
     end subroutine set_yscale
 
     subroutine set_line_width(width)
