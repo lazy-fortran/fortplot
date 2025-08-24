@@ -86,3 +86,13 @@ main = "test_legend_minimal.f90"
 name = "test_pdf_division_zero"
 source-dir = "test"
 main = "test_pdf_division_zero.f90"
+
+[[test]]
+name = "test_scale_implementation"
+source-dir = "test"
+main = "test_scale_implementation.f90"
+
+[[test]]
+name = "test_scaling"
+source-dir = "test"
+main = "test_scaling.f90"
