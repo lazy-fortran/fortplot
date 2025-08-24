@@ -94,80 +94,41 @@ end program basic_plots
 
 ASCII output:
 ```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
 
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
+                                Simple Sine Wave
++--------------------------------------------------------------------------------+
+|     Simple Sine Wave                                                           |
+| *        #                                                                     |
+|        ## ##                                  #####                            |
+|       ##    #                                #     #                           |
+|              #                              #      #                           |
+| *    #        #                                     #                          |
+|     #         #                            #         #                         |
+|    #                                      #                                    |
+| *  #           #                         #            #                        |
+|                 #                                     #                       |
+|   #                                     #                                      |
+|                  #                                     #                       |
+| *#                #                     #               #                      |
+| #                                      #                                       |
+|                   #                                      #                     |
+| %                                     #                                      # |
+|                    #                                      #                    |
+|                                      #                                      #  |
+| *                   #               #                     #                #   |
+|                      #                                     #                   |
+|                                     #                                     #    |
+|                       #                                     #                  |
+| *                     #            #                         #           #     |
+|                                   #                                      #     |
+|                        #         #                            #         #      |
+| *                       #                                     #        #       |
+|                          #      ##                             #               |
+|                          #     #                                #    ##        |
+| ** ** ** ** ** ** ** ** **#%%#%* ** ** ** ** ** ** ** ** ** ** **#%%#%* ** ** |
+|                                                                                |
++--------------------------------------------------------------------------------+
+                                       x
 ```
 
 [Download PDF](../../media/examples/basic_plots/simple_plot.pdf)
@@ -178,80 +139,41 @@ startxref
 
 ASCII output:
 ```
-%PDF-1.4
-%
-2 0 obj
-<<
-/Type /Catalog
-/Pages 3 0 R
->>
-endobj
-3 0 obj
-<<
-/Type /Pages
-/Kids [4 0 R]
-/Count 1
->>
-endobj
-4 0 obj
-<<
-/Type /Page
-/Parent 3 0 R
-/MediaBox [0 0 595.0 842.0]
-/Resources <<
-  /Font <<
-    /F5 5 0 R
-    /F6 6 0 R
-  >>
->>
-/Contents 7 0 R
->>
-endobj
-5 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Helvetica
->>
-endobj
-6 0 obj
-<<
-/Type /Font
-/Subtype /Type1
-/BaseFont /Symbol
->>
-endobj
-7 0 obj
-<<
-/Length 23
->>
-stream
-q
-1 w
-1 J
-1 j
-0 0 1 RG
 
-endstream
-endobj
-xref
-0 8
-0000000000 65535 f
-0000000000 00000 n
-0000000013 00000 n
-0000000056 00000 n
-0000000106 00000 n
-0000000244 00000 n
-0000000307 00000 n
-0000000367 00000 n
-trailer
-<<
-/Size 8
-/Root 2 0 R
->>
-startxref
-432
-%%EOF
+                           Sine and Cosine Functions
++--------------------------------------------------------------------------------+
+|         Sine and Cosine Functions                                              |
+| % sin(x)                                                                       |
+| #:cos(x)::::           ###   ###               ###   ####               ###    |
+| ####:::#::::          #   # #   #                 # #   #              #   #   |
+| ::sin(x)#:::                #                 #    #     #            #      # |
+| %###::::::::         #     #     #           #      #                       #  |
+| ##c#s(x):#::         #     #                 #      #     #           #     #  |
+| ::sin(x):#::              # #     #          #     ##     #          #     # # |
+| %###::::::#:        #     # #     #               # #      #         #     #   |
+| ##c#s(x)::#:        #       #      #        #     #  #                     #   |
+| :#::#:::::#:       #      #  #              #              #        #     #    |
+| ##sin(x)::::       #     #         #       #      #  #     #        #          |
+| %###:::::::#       #     #   #     #       #     #    #     #       #     #    |
+| ::cos(x):::#            #    #      #            #    #            #     #     |
+| ####:#::::::#     #           #            #                #            #     |
+| %     #           #     #           #     #      #    #      #     #           |
+|             #           #     #     #     #     #      #     #    #      #     |
+|       #     #    #     #       #     #          #      #          #     #      |
+| *      #     #   #             #          #                  #          #      |
+|        #         #     #             #   #     #        #     #   #            |
+|              #  #     #        #      #  #     #        #     #  #     #       |
+|        #      #       #         #     # #      #        #     ## #     #       |
+| *       #     # #     #         #     #       #          #     ##      #       |
+|         #     ##                 #     ##     #          #      #     #        |
+|                #     #           #     ##    #                 #               |
+| *        #     #     #                 #                  #    #      #        |
+|               #                   #   # #    #                  #              |
+|           #   # #   #              #     #  #              #  #  #   #         |
+| **********%%%%***%%%***************%%%%***%%***************%%%%***%%%******** |
+|                                                                                |
++--------------------------------------------------------------------------------+
+                                       x
 ```
 
 [Download PDF](../../media/examples/basic_plots/multi_line.pdf)

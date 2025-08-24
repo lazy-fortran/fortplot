@@ -97,3 +97,8 @@ main = "test_scale_implementation.f90"
 name = "test_scaling"
 source-dir = "test"
 main = "test_scaling.f90"
+
+[[test]]
+name = "test_doc_ascii_output"
+source-dir = "test"
+main = "test_doc_ascii_output.f90"
