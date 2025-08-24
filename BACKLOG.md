@@ -3,7 +3,6 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**  
-- [ ] #276: Markers dont work - PNG examples completely broken
 - [ ] #278: Line styles dont work - all styling broken since 690b9834
 - [ ] #280: regression: contours dont work  
 - [ ] #292: regression: legend placement does not work
@@ -17,6 +16,7 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
+- [ ] #276: Markers dont work - PNG examples completely broken
 
 ## BLOCKED (Infrastructure Issues)
 
