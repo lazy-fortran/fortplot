@@ -370,7 +370,7 @@ end program
 
 - **Buffer Management**: Dynamic allocation with LRU eviction when memory limits exceeded
 - **Transparent Fallback**: Automatically falls back to disk I/O when memory backend unavailable
-- **Format Support**: Full support for PNG, PDF, ASCII, GLTF formats in memory
+- **Format Support**: Full support for PNG, PDF, ASCII formats in memory
 - **Thread Safety**: Designed for single-threaded test execution (CI standard)
 
 ### Performance Monitoring Features

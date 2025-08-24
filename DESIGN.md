@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, GLTF, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
+**fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
 
 ## FFmpeg Pipe Output and Format Problem (Issue #186)
 
@@ -680,7 +680,6 @@ subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
 - colored_contours - Filled contour plots with colormaps
 - contour_demo - Basic contour line plots
 - format_string_demo - Matplotlib-style format strings
-- gltf_glb_demo - GLTF/GLB 3D output
 - legend_box_demo - Legend positioning and styling
 - legend_demo - Basic legend functionality
 - line_styles - Line style options

@@ -12,8 +12,6 @@ build*
 *.txt
 !CMakeLists.txt
 *.mod
-*.gltf
-*.glb
 
 # Output directory for all generated files
 output/

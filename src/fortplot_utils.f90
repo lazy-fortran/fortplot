@@ -10,7 +10,6 @@ module fortplot_utils
     use fortplot_png, only: create_png_canvas
     use fortplot_pdf, only: create_pdf_canvas
     use fortplot_ascii, only: create_ascii_canvas
-    use fortplot_gltf, only: create_gltf_canvas
     implicit none
     
     private
@@ -42,10 +41,6 @@ contains
                 backend_type = 'pdf'
             case ('txt')
                 backend_type = 'ascii'
-            case ('gltf')
-                backend_type = 'gltf'
-            case ('glb')
-                backend_type = 'glb'
             case default
                 backend_type = 'png'  ! Default fallback
             end select
@@ -80,8 +75,6 @@ contains
             allocate(backend, source=create_pdf_canvas(width, height))
         case ('ascii')
             allocate(backend, source=create_ascii_canvas(width, height))
-        case ('gltf', 'glb')
-            allocate(backend, source=create_gltf_canvas(width, height))
         case default
             ! Default to PNG with dimension validation
             if (width > 5000 .or. height > 5000 .or. width <= 0 .or. height <= 0) then
