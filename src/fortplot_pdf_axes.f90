@@ -85,8 +85,9 @@ contains
         real(wp) :: x_tick, y_tick
         integer :: i
         integer, parameter :: TARGET_TICKS = 8
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
         
-        ! Calculate ranges
+        ! Calculate ranges with epsilon protection
         x_range = data_x_max - data_x_min
         y_range = data_y_max - data_y_min
         
@@ -100,14 +101,33 @@ contains
         allocate(x_labels(num_x_ticks))
         allocate(y_labels(num_y_ticks))
         
-        ! Generate X ticks
-        x_step = x_range / real(num_x_ticks - 1, wp)
+        ! Generate X ticks with zero-range protection
+        if (abs(x_range) < EPSILON) then
+            ! Zero or near-zero X range: distribute evenly across plot area
+            x_step = 0.0_wp
+            do i = 1, num_x_ticks
+                x_tick = data_x_min  ! All ticks at same data value
+                x_positions(i) = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp  ! Center position
+            end do
+        else
+            ! Normal X range calculation
+            x_step = x_range / real(num_x_ticks - 1, wp)
+            do i = 1, num_x_ticks
+                x_tick = data_x_min + real(i - 1, wp) * x_step
+                
+                ! Convert to plot coordinates
+                x_positions(i) = PDF_MARGIN + &
+                    (x_tick - data_x_min) / x_range * PDF_PLOT_WIDTH
+            end do
+        end if
+        
+        ! Generate X tick labels
         do i = 1, num_x_ticks
-            x_tick = data_x_min + real(i - 1, wp) * x_step
-            
-            ! Convert to plot coordinates
-            x_positions(i) = PDF_MARGIN + &
-                (x_tick - data_x_min) / x_range * PDF_PLOT_WIDTH
+            if (abs(x_range) < EPSILON) then
+                x_tick = data_x_min
+            else
+                x_tick = data_x_min + real(i - 1, wp) * x_step
+            end if
             
             ! Generate label
             if (present(xscale)) then
@@ -122,14 +142,33 @@ contains
             x_labels(i) = adjustl(x_labels(i))
         end do
         
-        ! Generate Y ticks
-        y_step = y_range / real(num_y_ticks - 1, wp)
+        ! Generate Y ticks with zero-range protection
+        if (abs(y_range) < EPSILON) then
+            ! Zero or near-zero Y range: distribute evenly across plot area
+            y_step = 0.0_wp
+            do i = 1, num_y_ticks
+                y_tick = data_y_min  ! All ticks at same data value
+                y_positions(i) = PDF_MARGIN + PDF_PLOT_HEIGHT * 0.5_wp  ! Center position
+            end do
+        else
+            ! Normal Y range calculation
+            y_step = y_range / real(num_y_ticks - 1, wp)
+            do i = 1, num_y_ticks
+                y_tick = data_y_min + real(i - 1, wp) * y_step
+                
+                ! Convert to plot coordinates
+                y_positions(i) = PDF_MARGIN + &
+                    (y_tick - data_y_min) / y_range * PDF_PLOT_HEIGHT
+            end do
+        end if
+        
+        ! Generate Y tick labels
         do i = 1, num_y_ticks
-            y_tick = data_y_min + real(i - 1, wp) * y_step
-            
-            ! Convert to plot coordinates
-            y_positions(i) = PDF_MARGIN + &
-                (y_tick - data_y_min) / y_range * PDF_PLOT_HEIGHT
+            if (abs(y_range) < EPSILON) then
+                y_tick = data_y_min
+            else
+                y_tick = data_y_min + real(i - 1, wp) * y_step
+            end if
             
             ! Generate label
             if (present(yscale)) then
