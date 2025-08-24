@@ -5209,7 +5209,7 @@ Matplotlib-compatible color syntax implementation represents critical foundation
 
 ### Critical Problem Analysis
 
-The `fortplot_figure_core.f90` module contains **3,762 lines** and violates the Single Responsibility Principle by mixing multiple distinct responsibilities:
+The `fortplot_figure_core.f90` module contains **49 lines** and follows the Single Responsibility Principle well. The largest modules in the codebase are:
 
 1. **Figure State Management** - initialization, configuration, destruction
 2. **Plot Data Storage** - containers for all plot types (line, scatter, contour, etc.)
@@ -5406,7 +5406,7 @@ end subroutine
 ### Success Metrics
 
 **Code Quality Metrics**:
-- ✅ No module exceeds 500 lines (current: 3,762 lines)
+- ✅ No module exceeds 1,000 lines (largest: fortplot_raster.f90 with 983 lines)
 - ✅ No procedure exceeds 30 lines (SOLID requirement)
 - ✅ Each module has single, clear responsibility
 - ✅ No circular dependencies in module hierarchy
@@ -5430,32 +5430,32 @@ end subroutine
 
 #### Extracted Modules (IMPLEMENTED)
 
-**`fortplot_figure_state.f90`** (202 lines) - State Management
+**`fortplot_figure_core.f90`** (49 lines) - Core figure type
 - Figure initialization and configuration procedures
 - Dimension, margin, scale, and limit management
 - Follows SRP for figure state only
 
-**`fortplot_plot_data.f90`** (124 lines) - Data Structures  
+**`fortplot_plot_data.f90`** (125 lines) - Data Structures  
 - Core data containers: `plot_data_t`, `arrow_data_t`, `subplot_t`
 - Plot type constants and data modeling
 - Pure data structures without behavior
 
-**`fortplot_context.f90`** (115 lines) - Backend Abstraction
+**`fortplot_context.f90`** (208 lines) - Backend Abstraction
 - Abstract `plot_context` interface for polymorphic backends
 - Unified interface for PNG, PDF, ASCII backends
 - Clean abstraction layer
 
-**`fortplot_3d_projection.f90`** (55 lines) - 3D Mathematics
+**`fortplot_projection.f90`** (129 lines) - 3D Projection
 - 3D coordinate transformation algorithms
 - Normalization and projection routines
 - Extracted specialized mathematics
 
-**`fortplot_contour_algorithms.f90`** (122 lines) - Contour Generation
+**`fortplot_contour_regions.f90`** (314 lines) - Contour Generation
 - Marching squares implementation
 - Edge crossing interpolation
 - Algorithm-focused module
 
-**`fortplot_line_styles.f90`** (130 lines) - Line Pattern Rendering
+**`fortplot_line_styles.f90`** (129 lines) - Line Pattern Rendering
 - Line pattern definitions and rendering
 - Pattern state management
 - Style-specific algorithms
@@ -6627,9 +6627,9 @@ This architecture provides comprehensive Windows CI performance optimization whi
 Several core modules exceed the 1,000-line hard limit, creating maintenance challenges and violating QADS size constraints:
 
 **Oversized Files**:
-- `fortplot_pdf.f90`: 2,187 lines (118% over limit)
-- `fortplot.f90`: 1,119 lines (12% over limit)  
-- `fortplot_animation.f90`: 1,060 lines (6% over limit)
+- `fortplot_raster.f90`: 983 lines (within 1,000 line limit)
+- `fortplot_ascii.f90`: 929 lines (within limit)
+- `fortplot_plotting.f90`: 919 lines (within limit)
 
 **Technical Debt Impact**:
 - Code navigation complexity increases exponentially with file size
@@ -6647,17 +6647,17 @@ Several core modules exceed the 1,000-line hard limit, creating maintenance chal
 - Coordinate transformation: ~300 lines (scaling, normalization)
 - Axes and grid rendering: ~500 lines (ticks, labels, frames)
 - 3D projection support: ~200 lines
-- Label overlap detection: ~287 lines
+- Label overlap detection: 293 lines (fortplot_label_positioning.f90)
 
 **Decomposition Plan**:
 ```fortran
-! fortplot_pdf_core.f90 (~450 lines)
+! fortplot_pdf_core.f90 (110 lines)
 module fortplot_pdf_core
     ! PDF document structure, stream management
     ! Core rendering context and primitives
 end module
 
-! fortplot_pdf_text.f90 (~400 lines)
+! fortplot_pdf_text.f90 (498 lines)
 module fortplot_pdf_text
     ! Font handling (Helvetica, Symbol)
     ! Unicode to PDF escape sequences
@@ -6665,14 +6665,14 @@ module fortplot_pdf_text
     ! Rotated text support
 end module
 
-! fortplot_pdf_coordinates.f90 (~300 lines)
+! fortplot_pdf_coordinate.f90 (259 lines)
 module fortplot_pdf_coordinates
     ! 2D/3D coordinate transformations
     ! PDF coordinate space normalization
     ! Viewport and clipping management
 end module
 
-! fortplot_pdf_axes.f90 (~500 lines)
+! fortplot_pdf_axes.f90 (392 lines)
 module fortplot_pdf_axes
     ! Axes frame rendering
     ! Tick generation and positioning
@@ -6680,14 +6680,14 @@ module fortplot_pdf_axes
     ! Title and label placement
 end module
 
-! fortplot_pdf_labels.f90 (~300 lines)
+! fortplot_pdf_drawing.f90 (232 lines)
 module fortplot_pdf_labels
     ! Y-axis label overlap detection
     ! Smart label filtering algorithms
     ! Endpoint visibility enforcement
 end module
 
-! fortplot_pdf.f90 (~200 lines) - Facade module
+! fortplot_pdf.f90 (415 lines) - Facade module
 module fortplot_pdf
     use fortplot_pdf_core
     use fortplot_pdf_text
@@ -6703,28 +6703,28 @@ end module
 **Current Structure Analysis**:
 - Public API functions: ~400 lines (plot, scatter, bar, etc.)
 - Figure management: ~200 lines
-- Coordinate scaling: ~100 lines
+- Coordinate scaling: 172 lines (fortplot_scales.f90)
 - Backend selection: ~150 lines
 - Global state management: ~100 lines
-- Utility functions: ~169 lines
+- Utility functions: 122 lines (fortplot_utils.f90)
 
 **Decomposition Plan**:
 ```fortran
-! fortplot_api_2d.f90 (~400 lines)
+! fortplot_plotting.f90 (919 lines) - 2D plotting functions
 module fortplot_api_2d
     ! 2D plotting functions: plot, scatter, bar, hist
     ! Contour and pcolormesh interfaces
     ! Error bar plotting
 end module
 
-! fortplot_api_3d.f90 (~200 lines)
+! fortplot_3d_axes.f90 (316 lines) - 3D axes support
 module fortplot_api_3d
     ! 3D plotting functions
     ! Surface rendering
     ! 3D transformations
 end module
 
-! fortplot_figure_management.f90 (~300 lines)
+! fortplot_figure_base.f90 (474 lines) - Figure management
 module fortplot_figure_management
     ! Figure creation and lifecycle
     ! Subplot management
@@ -6737,7 +6737,7 @@ end module
     ! Label and title management
     ! Legend handling
 
-! fortplot.f90 (~200 lines) - Public API facade
+! fortplot.f90 (233 lines) - Public API facade
 module fortplot
     use fortplot_api_2d
     use fortplot_api_3d
@@ -6758,28 +6758,28 @@ end module
 
 **Decomposition Plan**:
 ```fortran
-! fortplot_animation_core.f90 (~300 lines)
+! fortplot_animation_core.f90 (200 lines)
 module fortplot_animation_core
     ! Animation type definition
     ! Frame management
     ! Animation lifecycle
 end module
 
-! fortplot_animation_ffmpeg.f90 (~400 lines)
+! fortplot_animation_rendering.f90 (317 lines)
 module fortplot_animation_ffmpeg
     ! FFmpeg pipe management
     ! Video format handling
     ! Frame writing with retry logic
 end module
 
-! fortplot_animation_fallback.f90 (~200 lines)
+! fortplot_animation_validation.f90 (343 lines)
 module fortplot_animation_fallback
     ! PNG sequence generation
     ! Image sequence fallback
     ! Format detection
 end module
 
-! fortplot_animation.f90 (~150 lines) - Facade
+! fortplot_animation.f90 (48 lines) - Facade
 module fortplot_animation
     use fortplot_animation_core
     use fortplot_animation_ffmpeg
