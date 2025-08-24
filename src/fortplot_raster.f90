@@ -20,6 +20,7 @@ module fortplot_raster
                                        draw_circle_antialiased, draw_circle_outline_antialiased, &
                                        draw_circle_with_edge_face, draw_square_with_edge_face, &
                                        draw_diamond_with_edge_face, draw_x_marker, draw_filled_quad_raster
+    use fortplot_line_styles, only: get_line_pattern, get_pattern_length, should_draw_at_distance
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -36,12 +37,19 @@ module fortplot_raster
         integer :: width, height
         real(wp) :: current_r = 0.0_wp, current_g = 0.0_wp, current_b = 0.0_wp
         real(wp) :: current_line_width = 1.0_wp
+        ! Line style pattern support
+        character(len=10) :: line_style = '-'
+        real(wp) :: line_pattern(20)
+        integer :: pattern_size = 1
+        real(wp) :: pattern_length = 1000.0_wp
+        real(wp) :: pattern_distance = 0.0_wp
         ! Marker colors - separate edge and face colors with alpha
         real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp, marker_edge_alpha = 1.0_wp
         real(wp) :: marker_face_r = 1.0_wp, marker_face_g = 0.0_wp, marker_face_b = 0.0_wp, marker_face_alpha = 1.0_wp
     contains
         procedure :: set_color => raster_set_color
         procedure :: get_color_bytes => raster_get_color_bytes
+        procedure :: set_line_style => raster_set_line_style
     end type raster_image_t
 
     ! Raster plotting context - backend-agnostic bitmap operations
@@ -55,6 +63,7 @@ module fortplot_raster
         procedure :: color => raster_set_color_context
         procedure :: text => raster_draw_text
         procedure :: set_line_width => raster_set_line_width
+        procedure :: set_line_style => raster_set_line_style_context
         procedure :: save => raster_save_dummy
         procedure :: draw_marker => raster_draw_marker
         procedure :: set_marker_colors => raster_set_marker_colors
@@ -90,6 +99,9 @@ contains
         image%height = height
         allocate(image%image_data(width * height * 3))
         call initialize_white_background(image%image_data, width, height)
+        
+        ! Initialize line style to solid
+        call image%set_line_style('-')
     end function create_raster_image
 
     subroutine destroy_raster_image(image)
@@ -304,10 +316,8 @@ contains
         py2 = real(this%plot_area%bottom + this%plot_area%height, wp) - &
               (y2 - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
 
-        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
-                                    px1, py1, px2, py2, &
-                                    this%raster%current_r, this%raster%current_g, this%raster%current_b, &
-                                    this%raster%current_line_width)
+        ! Draw line with pattern support
+        call draw_styled_line(this%raster, px1, py1, px2, py2, this%width, this%height)
     end subroutine raster_draw_line
 
     subroutine raster_set_color_context(this, r, g, b)
@@ -318,20 +328,39 @@ contains
     end subroutine raster_set_color_context
 
     subroutine raster_set_line_width(this, width)
-        !! Set line width for raster drawing with automatic scaling for pixel rendering
+        !! Set line width for raster drawing with proper pixel scaling
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: width
 
-        ! Raster needs specific line widths due to pixel-based rendering
-        ! Map common width values to appropriate pixel thickness
-        if (abs(width - 2.0_wp) < 1e-6_wp) then
-            ! Plot data lines: use 0.5 for main plot visibility
-            this%raster%current_line_width = 0.5_wp
+        ! Map line width to pixel thickness with reasonable scaling
+        ! Use linear scaling: 1 point = 1 pixel for good visibility
+        if (width <= 0.0_wp) then
+            this%raster%current_line_width = 1.0_wp  ! Minimum visible width
+        else if (width >= 10.0_wp) then
+            this%raster%current_line_width = 10.0_wp  ! Maximum reasonable width
         else
-            ! Axes and other elements: use 0.1 for fine lines
-            this%raster%current_line_width = 0.1_wp
+            this%raster%current_line_width = width  ! Direct 1:1 mapping
         end if
     end subroutine raster_set_line_width
+
+    subroutine raster_set_line_style(this, style)
+        !! Set line style pattern for raster image
+        class(raster_image_t), intent(inout) :: this
+        character(len=*), intent(in) :: style
+        
+        this%line_style = trim(style)
+        call get_line_pattern(style, this%line_pattern, this%pattern_size)
+        this%pattern_length = get_pattern_length(this%line_pattern, this%pattern_size)
+        this%pattern_distance = 0.0_wp  ! Reset pattern distance
+    end subroutine raster_set_line_style
+
+    subroutine raster_set_line_style_context(this, style)
+        !! Set line style for raster context
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: style
+        
+        call this%raster%set_line_style(style)
+    end subroutine raster_set_line_style_context
 
     subroutine escape_unicode_for_raster(input_text, escaped_text)
         !! Pass through Unicode for raster rendering (STB TrueType supports Unicode)
@@ -947,5 +976,74 @@ contains
         this%y_max = y_max
     end subroutine raster_set_coordinates
 
+    subroutine draw_styled_line(raster, px1, py1, px2, py2, img_w, img_h)
+        !! Draw line with pattern support (dashed, dotted, etc.)
+        type(raster_image_t), intent(inout) :: raster
+        real(wp), intent(in) :: px1, py1, px2, py2
+        integer, intent(in) :: img_w, img_h
+        
+        real(wp) :: dx, dy, line_length, segment_length
+        real(wp) :: unit_x, unit_y, current_x, current_y, next_x, next_y
+        real(wp) :: distance_remaining, segment_distance
+        integer :: num_segments, i
+        
+        ! Calculate line geometry
+        dx = px2 - px1
+        dy = py2 - py1
+        line_length = sqrt(dx * dx + dy * dy)
+        
+        ! Handle degenerate case
+        if (line_length < 1e-6_wp) return
+        
+        ! Unit direction vector
+        unit_x = dx / line_length
+        unit_y = dy / line_length
+        
+        ! For solid lines, draw the whole line at once
+        if (trim(raster%line_style) == '-' .or. trim(raster%line_style) == 'solid') then
+            call draw_line_distance_aa(raster%image_data, img_w, img_h, &
+                                      px1, py1, px2, py2, &
+                                      raster%current_r, raster%current_g, raster%current_b, &
+                                      raster%current_line_width)
+            return
+        end if
+        
+        ! For patterned lines, break into small segments
+        segment_length = 2.0_wp  ! Draw in 2-pixel segments for good pattern resolution
+        num_segments = max(1, int(line_length / segment_length))
+        segment_length = line_length / real(num_segments, wp)  ! Adjust to exact segments
+        
+        current_x = px1
+        current_y = py1
+        
+        do i = 1, num_segments
+            ! Calculate segment endpoints
+            if (i == num_segments) then
+                ! Last segment goes exactly to end point
+                next_x = px2
+                next_y = py2
+            else
+                next_x = current_x + segment_length * unit_x
+                next_y = current_y + segment_length * unit_y
+            end if
+            
+            ! Check if this segment should be drawn according to pattern
+            if (should_draw_at_distance(raster%pattern_distance, raster%line_pattern, &
+                                       raster%pattern_size, raster%pattern_length)) then
+                call draw_line_distance_aa(raster%image_data, img_w, img_h, &
+                                          current_x, current_y, next_x, next_y, &
+                                          raster%current_r, raster%current_g, raster%current_b, &
+                                          raster%current_line_width)
+            end if
+            
+            ! Advance pattern state
+            segment_distance = sqrt((next_x - current_x)**2 + (next_y - current_y)**2)
+            raster%pattern_distance = raster%pattern_distance + segment_distance * 5.0_wp  ! Scale pattern
+            
+            current_x = next_x
+            current_y = next_y
+        end do
+        
+    end subroutine draw_styled_line
 
 end module fortplot_raster
