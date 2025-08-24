@@ -2,6 +2,34 @@
 
 ## TODO (Ordered by Priority)
 
+### CURRENT SPRINT - Forensic Analysis & Restoration Framework
+- [ ] #252: Create comprehensive rendering comparison framework
+- [ ] #248: PNG antialiasing quality degradation since 690b9834
+- [ ] #249: PDF coordinate system and scaling fundamental issues
+- [ ] #250: PNG line styles and markers rendering pipeline degradation
+- [ ] #251: Legend rendering system not visible
+
+### FUTURE SPRINTS - Systematic Restoration
+**Sprint 2: PNG Rendering Quality Restoration**
+- PNG antialiasing system restoration
+- Line styles and markers pipeline fixes
+- Color accuracy improvements
+
+**Sprint 3: PDF Coordinate System Overhaul**
+- Coordinate transformation restoration
+- Scaling and positioning fixes
+- Page layout system improvements
+
+**Sprint 4: Cross-Backend Integration**
+- Legend system restoration
+- Consistent rendering across backends
+- Text and label positioning fixes
+
+**Sprint 5: Quality Assurance & Testing**
+- Visual regression testing framework
+- Automated quality metrics
+- Performance impact validation
+
 ## DOING (Current Work)
 
 ## DONE (Completed)
