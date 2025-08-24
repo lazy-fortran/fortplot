@@ -15,7 +15,6 @@ module fortplot_pdf_axes
     ! Public procedures
     public :: draw_pdf_axes_and_labels
     public :: draw_pdf_3d_axes_frame
-    public :: draw_pdf_grid_lines
     public :: draw_pdf_frame
     public :: draw_pdf_tick_marks
     public :: draw_pdf_tick_labels
@@ -148,24 +147,18 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                        data_x_min, data_x_max, data_y_min, data_y_max, &
-                                       title, xlabel, ylabel, enable_grid)
+                                       title, xlabel, ylabel)
         !! Draw complete axes system with labels
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        logical, intent(in), optional :: enable_grid
         
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=32), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
-        logical :: draw_grid
-        
-        ! Set default for grid
-        draw_grid = .false.
-        if (present(enable_grid)) draw_grid = enable_grid
         
         ! Setup data ranges
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
@@ -176,11 +169,7 @@ contains
                                x_positions, y_positions, x_labels, y_labels, &
                                num_x_ticks, num_y_ticks, xscale, yscale)
         
-        ! Draw grid if enabled
-        if (draw_grid) then
-            call draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                    .true., .true.)
-        end if
+        ! Grid functionality removed - PDF plots now display without grid lines
         
         ! Draw frame
         call draw_pdf_frame(ctx)
@@ -209,49 +198,6 @@ contains
         ! TODO: Implement proper 3D axes projection
     end subroutine draw_pdf_3d_axes_frame
 
-    subroutine draw_pdf_grid_lines(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
-                                  draw_x_grid, draw_y_grid)
-        !! Draw grid lines at tick positions
-        type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: x_positions(:), y_positions(:)
-        integer, intent(in) :: num_x_ticks, num_y_ticks
-        logical, intent(in) :: draw_x_grid, draw_y_grid
-        
-        real(wp) :: old_line_width
-        integer :: i
-        character(len=128) :: line_cmd
-        
-        ! Save current line width
-        old_line_width = ctx%current_line_width
-        
-        ! Set grid line style (thin, gray)
-        call ctx%set_line_width(0.5_wp)
-        call ctx%set_color(0.8_wp, 0.8_wp, 0.8_wp)
-        
-        ! Draw vertical grid lines
-        if (draw_x_grid) then
-            do i = 2, num_x_ticks - 1  ! Skip first and last (frame edges)
-                write(line_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                    x_positions(i), PDF_MARGIN, &
-                    x_positions(i), PDF_MARGIN + PDF_PLOT_HEIGHT
-                ctx%stream_data = ctx%stream_data // trim(adjustl(line_cmd)) // new_line('a')
-            end do
-        end if
-        
-        ! Draw horizontal grid lines
-        if (draw_y_grid) then
-            do i = 2, num_y_ticks - 1  ! Skip first and last (frame edges)
-                write(line_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                    PDF_MARGIN, y_positions(i), &
-                    PDF_MARGIN + PDF_PLOT_WIDTH, y_positions(i)
-                ctx%stream_data = ctx%stream_data // trim(adjustl(line_cmd)) // new_line('a')
-            end do
-        end if
-        
-        ! Restore line style
-        call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
-        call ctx%set_line_width(old_line_width)
-    end subroutine draw_pdf_grid_lines
 
     subroutine draw_pdf_frame(ctx)
         !! Draw the plot frame (bounding box)
