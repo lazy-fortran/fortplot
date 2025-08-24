@@ -56,3 +56,18 @@ main = "test_antialiasing_restoration.f90"
 name = "test_antialiasing_comprehensive"
 source-dir = "test"
 main = "test_antialiasing_comprehensive.f90"
+
+[[test]]
+name = "test_png_line_styles_regression"
+source-dir = "test"
+main = "test_png_line_styles_regression.f90"
+
+[[test]]
+name = "test_simple_line_debug"
+source-dir = "test"
+main = "test_simple_line_debug.f90"
+
+[[test]]
+name = "test_line_styles_comprehensive"
+source-dir = "test"
+main = "test_line_styles_comprehensive.f90"

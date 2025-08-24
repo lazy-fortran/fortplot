@@ -3,7 +3,6 @@
 ## TODO (Ordered by Priority)
 
 ### CURRENT SPRINT - Forensic Analysis & Restoration Framework
-- [ ] #250: PNG line styles and markers rendering pipeline degradation
 - [ ] #251: Legend rendering system not visible
 - [ ] #236: Add division by zero protection in PDF coordinate transformation
 
@@ -29,9 +28,10 @@
 - Performance impact validation
 
 ## DOING (Current Work)
-- [ ] #249: PDF coordinate system and scaling fundamental issues (branch: fix-pdf-coordinate-system-249)
+- [ ] #250: PNG line styles and markers rendering pipeline degradation
 
 ## DONE (Completed)
+- [x] #249: PDF coordinate system and scaling fundamental issues (branch: fix-pdf-coordinate-system-249)
 - [x] #248: PNG antialiasing quality degradation since 690b9834 (branch: fix-png-antialiasing-248)
 - [x] #252: Create comprehensive rendering comparison framework (branch: enhance-rendering-comparison-252)
 - [x] #254: Emergency rescue commits from main branch protection (branch: fix/rescue-main-commits)
