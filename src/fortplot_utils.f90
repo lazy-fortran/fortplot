@@ -64,7 +64,8 @@ contains
         select case (trim(backend_type))
         case ('png')
             ! Validate dimensions to prevent raster backend crashes
-            if (width > 5000 .or. height > 5000 .or. width <= 0 .or. height <= 0) then
+            ! Allow up to 10000x10000 pixels (matches matplotlib figure limits)
+            if (width > 10000 .or. height > 10000 .or. width <= 0 .or. height <= 0) then
                 print *, "WARNING: PNG backend dimensions invalid or too large:", width, "x", height
                 print *, "Falling back to PDF backend for this file"
                 allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
@@ -77,7 +78,7 @@ contains
             allocate(backend, source=create_ascii_canvas(width, height))
         case default
             ! Default to PNG with dimension validation
-            if (width > 5000 .or. height > 5000 .or. width <= 0 .or. height <= 0) then
+            if (width > 10000 .or. height > 10000 .or. width <= 0 .or. height <= 0) then
                 allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
             else
                 allocate(backend, source=create_png_canvas(width, height))
