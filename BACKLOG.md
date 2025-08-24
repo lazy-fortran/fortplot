@@ -10,7 +10,6 @@
 - [ ] #292: regression: legend placement does not work
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #270: Broken example output documentation - fix PDF binary content display (PR #290 blocked by CI)
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
 - [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
