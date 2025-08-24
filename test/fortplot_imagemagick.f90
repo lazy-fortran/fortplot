@@ -18,15 +18,26 @@ contains
         !! Check if ImageMagick is available on the system
         logical :: available
         integer :: exit_code
+        character(len=256) :: cmd
         
-        call execute_command_line("magick -version > /dev/null 2>&1", &
-                                 exitstat=exit_code)
+        ! Platform-specific command redirection
+#ifdef _WIN32
+        cmd = "magick -version > NUL 2>&1"
+#else
+        cmd = "magick -version > /dev/null 2>&1"
+#endif
+        
+        call execute_command_line(trim(cmd), exitstat=exit_code)
         available = (exit_code == 0)
         
         if (.not. available) then
             ! Try legacy ImageMagick command
-            call execute_command_line("convert -version > /dev/null 2>&1", &
-                                     exitstat=exit_code)
+#ifdef _WIN32
+            cmd = "convert -version > NUL 2>&1"
+#else
+            cmd = "convert -version > /dev/null 2>&1"
+#endif
+            call execute_command_line(trim(cmd), exitstat=exit_code)
             available = (exit_code == 0)
         end if
     end function check_imagemagick_available
@@ -44,9 +55,15 @@ contains
         output_file = trim(image1) // "_rmse.txt"
         
         ! Build ImageMagick compare command
+#ifdef _WIN32
+        write(command, '(A)') 'magick compare -metric RMSE "' // &
+                             trim(image1) // '" "' // trim(image2) // &
+                             '" NUL 2> "' // trim(output_file) // '"'
+#else
         write(command, '(A)') 'magick compare -metric RMSE "' // &
                              trim(image1) // '" "' // trim(image2) // &
                              '" /dev/null 2> "' // trim(output_file) // '"'
+#endif
         
         ! Execute comparison
         call execute_command_line(trim(command), exitstat=exit_code)
@@ -66,7 +83,11 @@ contains
         end if
         
         ! Clean up temp file
+#ifdef _WIN32
+        call execute_command_line('del /Q "' // trim(output_file) // '" 2>NUL')
+#else
         call execute_command_line('rm -f "' // trim(output_file) // '"')
+#endif
         
     end function compare_images_rmse
     
@@ -83,9 +104,15 @@ contains
         output_file = trim(image1) // "_psnr.txt"
         
         ! Build ImageMagick compare command
+#ifdef _WIN32
+        write(command, '(A)') 'magick compare -metric PSNR "' // &
+                             trim(image1) // '" "' // trim(image2) // &
+                             '" NUL 2> "' // trim(output_file) // '"'
+#else
         write(command, '(A)') 'magick compare -metric PSNR "' // &
                              trim(image1) // '" "' // trim(image2) // &
                              '" /dev/null 2> "' // trim(output_file) // '"'
+#endif
         
         ! Execute comparison
         call execute_command_line(trim(command), exitstat=exit_code)
@@ -112,7 +139,11 @@ contains
         end if
         
         ! Clean up temp file
+#ifdef _WIN32
+        call execute_command_line('del /Q "' // trim(output_file) // '" 2>NUL')
+#else
         call execute_command_line('rm -f "' // trim(output_file) // '"')
+#endif
         
     end function compare_images_psnr
     

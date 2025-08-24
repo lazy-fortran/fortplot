@@ -153,10 +153,16 @@ contains
         stats_file = trim(filename) // "_stats.txt"
         
         ! Get image statistics
+#ifdef _WIN32
+        write(command, '(A)') &
+            'magick identify -verbose "' // trim(filename) // &
+            '" > "' // trim(stats_file) // '" 2>NUL'
+#else
         write(command, '(A)') &
             'magick identify -verbose "' // trim(filename) // &
             '" | grep -A 10 "Channel statistics" > "' // &
             trim(stats_file) // '" 2>/dev/null'
+#endif
         
         call execute_command_line(trim(command), exitstat=exit_code)
         
@@ -170,8 +176,13 @@ contains
                 '" -format "%[fx:minima] %[fx:maxima]" info:'
             
             ! For now, just verify the command works
+#ifdef _WIN32
+            call execute_command_line(trim(command) // ' > NUL 2>&1', &
+                                     exitstat=exit_code)
+#else
             call execute_command_line(trim(command) // ' > /dev/null 2>&1', &
                                      exitstat=exit_code)
+#endif
             
             if (exit_code == 0) then
                 print *, "  PASS: Image has valid byte range"
@@ -184,7 +195,11 @@ contains
         end if
         
         ! Clean up
+#ifdef _WIN32
+        call execute_command_line('del /Q "' // trim(stats_file) // '" 2>NUL')
+#else
         call execute_command_line('rm -f "' // trim(stats_file) // '"')
+#endif
         
     end subroutine validate_byte_conversion_visual
     
@@ -243,8 +258,13 @@ contains
         end if
         
         ! Clean up temporary files
+#ifdef _WIN32
+        call execute_command_line('del /Q "' // trim(edge_file) // '" "' // &
+                                 trim(stats_file) // '" 2>NUL')
+#else
         call execute_command_line('rm -f "' // trim(edge_file) // '" "' // &
                                  trim(stats_file) // '"')
+#endif
         
     end subroutine check_staircase_artifacts
     
