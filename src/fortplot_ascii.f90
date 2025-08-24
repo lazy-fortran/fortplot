@@ -114,13 +114,18 @@ contains
         real(wp) :: dx, dy, length, step_x, step_y, x, y
         integer :: steps, i, px, py
         character(len=1) :: line_char
+        real(wp) :: luminance
         
+        ! Calculate luminance for better character selection
+        ! Using standard luminance formula
+        luminance = 0.299_wp * this%current_r + 0.587_wp * this%current_g + 0.114_wp * this%current_b
         
-        if (this%current_r > 0.8_wp .and. this%current_g > 0.8_wp .and. this%current_b > 0.8_wp) then
-            return
-        end if
-        
-        if (this%current_g > 0.7_wp) then
+        ! Select character based on color dominance and luminance
+        ! Don't skip any colors - render everything
+        if (luminance > 0.9_wp) then
+            ! Very bright colors still get rendered with lighter characters
+            line_char = ':'
+        else if (this%current_g > 0.7_wp) then
             line_char = '@'
         else if (this%current_g > 0.3_wp) then
             line_char = '#'
