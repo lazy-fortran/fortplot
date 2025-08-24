@@ -54,7 +54,7 @@ module fortplot
     use iso_fortran_env, only: wp => real64
     
     ! Core types and constants
-    use fortplot_figure_core, only: figure_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_figure_core, only: figure_t
     
     ! Animation functionality
     use fortplot_animation, only: animation_t, FuncAnimation
@@ -98,7 +98,7 @@ module fortplot
     
     ! Core types and constants
     public :: figure_t, wp
-    public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
+    ! TODO: Coordinate constants not available in working figure core
     
     ! Matplotlib-compatible plotting functions
     public :: plot, contour, contour_filled, pcolormesh, streamplot

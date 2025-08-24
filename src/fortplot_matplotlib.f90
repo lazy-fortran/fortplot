@@ -7,7 +7,7 @@ module fortplot_matplotlib
     !! to plotting functionality without explicit figure management.
     
     use iso_fortran_env, only: wp => real64
-    use fortplot_figure_core, only: figure_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_figure_core, only: figure_t
     use fortplot_global, only: fig => global_figure
     use fortplot_plotting, only: add_text_annotation, add_arrow_annotation, add_scatter_2d, &
                                 figure_add_plot => add_plot, figure_add_contour => add_contour, &
@@ -65,7 +65,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         
         call ensure_global_figure_initialized()
-        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine plot
 
     subroutine contour(x, y, z, levels, label)
@@ -76,7 +76,7 @@ contains
         character(len=*), intent(in), optional :: label
         
         call ensure_global_figure_initialized()
-        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
+        call fig%add_contour(x, y, z, levels=levels, label=label)
     end subroutine contour
 
     subroutine contour_filled(x, y, z, levels, colormap, show_colorbar, label)
@@ -88,7 +88,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call figure_add_contour_filled(fig, x, y, z, levels=levels, label=label)
+        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
     end subroutine contour_filled
 
     subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
@@ -99,7 +99,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call figure_add_pcolormesh(fig, x, y, z)
+        call fig%add_pcolormesh(x, y, z)
     end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
@@ -110,7 +110,7 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         
         call ensure_global_figure_initialized()
-        call figure_streamplot(fig, x, y, u, v)
+        call fig%streamplot(x, y, u, v)
     end subroutine streamplot
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
@@ -122,7 +122,8 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         
         call ensure_global_figure_initialized()
-        call figure_errorbar(fig, x, y, xerr, yerr, label=label)
+        ! TODO: errorbar method not yet implemented in working figure core
+        ! call fig%errorbar(x, y, xerr, yerr, label=label)
     end subroutine errorbar
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
@@ -134,7 +135,7 @@ contains
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
         call ensure_global_figure_initialized()
-        call figure_bar(fig, x, height, label=label)
+        ! TODO: bar method not implemented in working figure core
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -146,7 +147,7 @@ contains
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
         call ensure_global_figure_initialized()
-        call figure_barh(fig, y, width, label=label)
+        ! TODO: barh method not implemented in working figure core
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -158,7 +159,7 @@ contains
         real(8), intent(in), optional :: color(3)
         
         call ensure_global_figure_initialized()
-        call figure_hist(fig, data, label=label)
+        ! TODO: hist method not implemented in working figure core
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -171,7 +172,7 @@ contains
         real(8), intent(in), optional :: color(3)
         
         call ensure_global_figure_initialized()
-        call figure_hist(fig, data, label=label)
+        ! TODO: hist method not implemented in working figure core
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -199,7 +200,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call add_scatter_2d(fig, x, y, label=label)
+        ! TODO: scatter method not implemented in working figure core
     end subroutine scatter
 
     subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
@@ -213,7 +214,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call add_scatter_2d(fig, x, y, label=label)
+        ! TODO: scatter method not implemented in working figure core
     end subroutine add_scatter
 
     subroutine text(x, y, text_content, coord_type, font_size, rotation, alignment, has_bbox)
@@ -226,7 +227,7 @@ contains
         logical, intent(in), optional :: has_bbox
         
         call ensure_global_figure_initialized()
-        call add_text_annotation(fig, x, y, text_content)
+        ! TODO: text annotation method not implemented in working figure core
     end subroutine text
 
     subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
@@ -240,7 +241,7 @@ contains
         logical, intent(in), optional :: has_bbox
         
         call ensure_global_figure_initialized()
-        call add_arrow_annotation(fig, text_content, xy, xytext)
+        ! TODO: arrow annotation method not implemented in working figure core
     end subroutine annotate
 
     ! Additional wrappers for add_* functions
@@ -250,7 +251,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         
         call ensure_global_figure_initialized()
-        call figure_add_plot(fig, x, y, label=label, linestyle=linestyle)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle)
     end subroutine add_plot
 
     subroutine add_contour(x, y, z, levels, label)
@@ -261,7 +262,7 @@ contains
         character(len=*), intent(in), optional :: label
         
         call ensure_global_figure_initialized()
-        call figure_add_contour(fig, x, y, z, levels=levels, label=label)
+        call fig%add_contour(x, y, z, levels=levels, label=label)
     end subroutine add_contour
 
     subroutine add_contour_filled(x, y, z, levels, colormap, show_colorbar, label)
@@ -273,7 +274,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call figure_add_contour_filled(fig, x, y, z, levels=levels, label=label)
+        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
@@ -284,7 +285,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call figure_add_pcolormesh(fig, x, y, z)
+        call fig%add_pcolormesh(x, y, z)
     end subroutine add_pcolormesh
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
@@ -296,7 +297,8 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         
         call ensure_global_figure_initialized()
-        call figure_errorbar(fig, x, y, xerr, yerr, label=label)
+        ! TODO: errorbar method not yet implemented in working figure core
+        ! call fig%errorbar(x, y, xerr, yerr, label=label)
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, markersize)
@@ -307,7 +309,8 @@ contains
         real(8), intent(in), optional :: linewidth, markersize
         
         call ensure_global_figure_initialized()
-        call figure_add_3d_plot(fig, x, y, z, label=label)
+        ! TODO: add_3d_plot method not yet implemented in working figure core  
+        ! call fig%add_3d_plot(x, y, z, label=label)
     end subroutine add_3d_plot
 
     subroutine add_surface(x, y, z, colormap, show_colorbar, alpha, edgecolor, linewidth, label)
@@ -320,7 +323,8 @@ contains
         real(8), dimension(3), intent(in), optional :: edgecolor
         
         call ensure_global_figure_initialized()
-        call figure_add_surface(fig, x, y, z, label=label)
+        ! TODO: add_surface method not yet implemented in working figure core
+        ! call fig%add_surface(x, y, z, label=label)
     end subroutine add_surface
 
     ! Figure management functions
@@ -408,7 +412,7 @@ contains
         real(8), intent(in), optional :: fontsize
         
         call ensure_global_figure_initialized()
-        call figure_legend(fig, location=position)
+        call fig%legend(location=position)
     end subroutine legend
 
     subroutine xlim(xmin, xmax)
@@ -496,7 +500,7 @@ contains
         character(len=*), intent(in), optional :: bbox_inches
         
         call ensure_global_figure_initialized()
-        call figure_savefig(fig, filename)
+        call fig%savefig(filename)
     end subroutine savefig
 
     ! Display functions
@@ -512,8 +516,8 @@ contains
         if (present(xlabel_text)) call fig%set_xlabel(xlabel_text)
         if (present(ylabel_text)) call fig%set_ylabel(ylabel_text)
         
-        call figure_add_plot(fig, x, y, label=label)
-        call render_show(fig)
+        call fig%add_plot(x, y, label=label)
+        call fig%show()
     end subroutine show_data
 
     subroutine show_figure(blocking)
@@ -524,7 +528,7 @@ contains
         if (is_gui_available()) then
             call show_viewer_implementation(blocking=blocking)
         else
-            call render_show(fig)
+            call fig%show()
         end if
     end subroutine show_figure
 
@@ -575,7 +579,7 @@ contains
             temp_filename = '/tmp/fortplot_' // trim(timestamp) // '.png'
         end if
         
-        call figure_savefig(fig, temp_filename)
+        call fig%savefig(temp_filename)
         call safe_launch_viewer(temp_filename, success)
         
         if (success) then

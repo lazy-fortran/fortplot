@@ -2,10 +2,10 @@ module fortplot_animation_core
     use iso_fortran_env, only: real64, wp => real64
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_animation_constants
-    use fortplot_figure_core, only: figure_t, plot_data_t, ensure_directory_exists
+    use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_rendering, only: savefig
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
-    use fortplot_utils, only: initialize_backend
+    use fortplot_utils, only: initialize_backend, ensure_directory_exists
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
@@ -24,7 +24,7 @@ module fortplot_animation_core
         integer :: interval_ms = DEFAULT_FRAME_INTERVAL_MS
         logical :: save_frames = .false.
         character(len=:), allocatable :: frame_pattern
-        type(figure_t), pointer :: fig => null()
+        class(figure_t), pointer :: fig => null()
     contains
         procedure :: run
         procedure :: save_png_sequence
@@ -130,7 +130,7 @@ contains
             write(filename, '(A,I0,A)') trim(pattern), i, ".png"
             call self%animate_func(i + 1)
             if (associated(self%fig)) then
-                call savefig(self%fig, trim(filename))
+                call self%fig%savefig(trim(filename))
             end if
         end do
         
@@ -139,7 +139,7 @@ contains
 
     subroutine set_figure(self, fig)
         class(animation_t), intent(inout) :: self
-        type(figure_t), target, intent(in) :: fig
+        class(figure_t), target, intent(in) :: fig
         
         self%fig => fig
     end subroutine set_figure

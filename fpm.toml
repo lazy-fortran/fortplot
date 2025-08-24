@@ -7,8 +7,8 @@ copyright = "Copyright 2025, Christopher Albert"
 
 [build]
 auto-executables = true
-auto-tests = false
-auto-examples = true
+auto-tests = true
+auto-examples = false
 module-naming = false
 
 [install]
@@ -31,69 +31,4 @@ output_dir = "build/doc"
 page_dir = "doc"
 exclude = "fortplot_pdf_text.f90"
 
-# Test definitions for rendering comparison framework
-[[test]]
-name = "test_rendering_comparison"
-source-dir = "test"
-main = "test_rendering_comparison.f90"
-
-[[test]]
-name = "test_forensic_comparison"
-source-dir = "test"
-main = "test_forensic_comparison.f90"
-
-[[test]]
-name = "test_comprehensive_rendering_comparison"
-source-dir = "test"
-main = "test_comprehensive_rendering_comparison.f90"
-
-[[test]]
-name = "test_antialiasing_restoration"
-source-dir = "test"
-main = "test_antialiasing_restoration.f90"
-
-[[test]]
-name = "test_antialiasing_comprehensive"
-source-dir = "test"
-main = "test_antialiasing_comprehensive.f90"
-
-[[test]]
-name = "test_png_line_styles_regression"
-source-dir = "test"
-main = "test_png_line_styles_regression.f90"
-
-[[test]]
-name = "test_simple_line_debug"
-source-dir = "test"
-main = "test_simple_line_debug.f90"
-
-[[test]]
-name = "test_line_styles_comprehensive"
-source-dir = "test"
-main = "test_line_styles_comprehensive.f90"
-
-[[test]]
-name = "test_legend"
-source-dir = "test"
-main = "test_legend.f90"
-
-[[test]]
-name = "test_legend_minimal"
-source-dir = "test"
-main = "test_legend_minimal.f90"
-
-[[test]]
-name = "test_pdf_division_zero"
-source-dir = "test"
-main = "test_pdf_division_zero.f90"
-
-
-[[test]]
-name = "test_scale_implementation"
-source-dir = "test"
-main = "test_scale_implementation.f90"
-
-[[test]]
-name = "test_scaling"
-source-dir = "test"
-main = "test_scaling.f90"
+# Tests are auto-discovered from test/ directory

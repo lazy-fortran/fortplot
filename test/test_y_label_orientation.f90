@@ -45,7 +45,7 @@ contains
             y(i) = real(i, wp) ** 2
         end do
         
-        call figure(400, 300)
+        call figure(figsize=[400.0_wp, 300.0_wp])
         call plot(x, y)
         call title('Y Values Label Test')
         call xlabel('X axis')
@@ -72,7 +72,7 @@ contains
         end do
         
         ! Test 1: Problematic 'l' characters
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y1)
         call title('L Test')
         call xlabel('X')
@@ -80,7 +80,7 @@ contains
         call savefig(get_test_output_path('build/test/test_label_lllll.png'))
         
         ! Test 2: Mixed case
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y2)
         call title('Mixed Case')
         call xlabel('X')
@@ -88,7 +88,7 @@ contains
         call savefig(get_test_output_path('build/test/test_label_values.png'))
         
         ! Test 3: All caps
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y3)
         call title('All Caps')
         call xlabel('X')
@@ -96,7 +96,7 @@ contains
         call savefig(get_test_output_path('build/test/test_label_voltage.png'))
         
         ! Test 4: Numbers and letters
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y4)
         call title('Mixed')
         call xlabel('X')
@@ -117,14 +117,14 @@ contains
         y = [1.0_wp, 4.0_wp]
         
         ! Test problematic character combinations
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y)
         call title('Spacing Test')
         call xlabel('X')
         call ylabel('Will Wall')  ! 'l' next to 'l' and 'W'
         call savefig(get_test_output_path('build/test/test_spacing_will_wall.png'))
         
-        call figure(200, 300)
+        call figure(figsize=[200.0_wp, 300.0_wp])
         call plot(x, y)
         call title('Spacing Test 2')
         call xlabel('X')
@@ -145,7 +145,7 @@ contains
         y = [0.0_wp, 1.0_wp]
         
         ! Single character
-        call figure(150, 200)
+        call figure(figsize=[150.0_wp, 200.0_wp])
         call plot(x, y)
         call title('Single Char')
         call xlabel('X')
@@ -153,7 +153,7 @@ contains
         call savefig(get_test_output_path('build/test/test_simple_y.png'))
         
         ! Two characters
-        call figure(150, 200)
+        call figure(figsize=[150.0_wp, 200.0_wp])
         call plot(x, y)
         call title('Two Chars')
         call xlabel('X')
@@ -161,7 +161,7 @@ contains
         call savefig(get_test_output_path('build/test/test_simple_ab.png'))
         
         ! Three characters
-        call figure(150, 200)
+        call figure(figsize=[150.0_wp, 200.0_wp])
         call plot(x, y)
         call title('Three Chars')
         call xlabel('X')
