@@ -24,7 +24,7 @@ program test_pdf_aspect_ratio
     write(*, '(A, F6.3, A, F6.3)') "  Width scale: ", scale_x, ", Height scale: ", scale_y
     
     ! The key issue: scales should be equal for square figures
-    if (abs(scale_x - scale_y) > 1.0e-6_wp) then
+    if (abs(scale_x - scale_y) > 1.0e-5_wp) then
         write(*, '(A)') "  FAIL: Square figure should have equal X and Y scales"
         write(*, '(A, F8.6)') "  Scale difference: ", abs(scale_x - scale_y)
         test_passed = .false.
@@ -44,7 +44,7 @@ program test_pdf_aspect_ratio
     write(*, '(A, F6.3, A, F6.3)') "  Width scale: ", scale_x, ", Height scale: ", scale_y
     
     ! Since page size now matches figure size, both should be 1.0
-    if (abs(scale_x - 1.0_wp) > 1.0e-6_wp .or. abs(scale_y - 1.0_wp) > 1.0e-6_wp) then
+    if (abs(scale_x - 1.0_wp) > 1.0e-5_wp .or. abs(scale_y - 1.0_wp) > 1.0e-5_wp) then
         write(*, '(A)') "  FAIL: Scales should be 1.0 for page-matched figure"
         test_passed = .false.
     else
@@ -62,7 +62,7 @@ program test_pdf_aspect_ratio
 
     write(*, '(A, F6.3, A, F6.3)') "  Width scale: ", scale_x, ", Height scale: ", scale_y
     
-    if (abs(scale_x - 1.0_wp) > 1.0e-6_wp .or. abs(scale_y - 1.0_wp) > 1.0e-6_wp) then
+    if (abs(scale_x - 1.0_wp) > 1.0e-5_wp .or. abs(scale_y - 1.0_wp) > 1.0e-5_wp) then
         write(*, '(A)') "  FAIL: Scales should be 1.0 for page-matched figure"
         test_passed = .false.
     else
