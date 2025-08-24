@@ -1,10 +1,10 @@
 # Development Backlog
 
 ## TODO (Ordered by Priority)
-- [ ] #231: PDF scaling regression - plots extend out of page, no axes/text visible
 - [ ] #232: PNG regression - axes/text blue, antialiasing and line styles broken
 
 ## DOING (Current Work)
+- [ ] #231: PDF scaling regression - plots extend out of page, no axes/text visible
 
 ## DONE (Completed)
 - [x] #227: PNG backend generates ASCII text instead of binary PNG data (branch: fix-png-backend-227)
