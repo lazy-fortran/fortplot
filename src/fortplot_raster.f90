@@ -116,26 +116,23 @@ contains
     end subroutine raster_get_color_bytes
 
     subroutine initialize_white_background(image_data, w, h)
-        integer(1), intent(out) :: image_data(*)
+        integer(1), intent(out) :: image_data(:)
         integer, intent(in) :: w, h
-        integer :: i, j, k, expected_size
+        integer :: expected_size
 
         ! Validate inputs
         if (w <= 0 .or. h <= 0) return
         
         expected_size = w * h * 3
-        k = 1
-        do i = 1, h
-            do j = 1, w
-                ! Bounds check to prevent segfault
-                if (k + 2 > expected_size) return
-                
-                image_data(k) = -1_1     ! R (white = 255 = -1 in signed byte)
-                image_data(k+1) = -1_1   ! G
-                image_data(k+2) = -1_1   ! B
-                k = k + 3
-            end do
-        end do
+        
+        ! Validate array size matches expected size
+        if (size(image_data) < expected_size) then
+            return
+        end if
+        
+        ! Use intrinsic assignment to initialize entire array at once - safer
+        image_data = -1_1  ! White = 255 = -1 in signed byte
+        
     end subroutine initialize_white_background
 
 
