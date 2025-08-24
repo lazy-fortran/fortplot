@@ -17,7 +17,8 @@ module fortplot_python_interface
                                   mpl_contour => contour, mpl_contour_filled => contour_filled, &
                                   mpl_pcolormesh => pcolormesh, mpl_streamplot => streamplot, &
                                   mpl_legend => legend, mpl_set_xscale => set_xscale, &
-                                  mpl_set_yscale => set_yscale, mpl_xlim => xlim, mpl_ylim => ylim
+                                  mpl_set_yscale => set_yscale, mpl_xlim => xlim, mpl_ylim => ylim, &
+                                  mpl_scatter => scatter, mpl_histogram => histogram
     implicit none
 
     private
@@ -25,7 +26,7 @@ module fortplot_python_interface
     ! Export functions for F2PY - use simple names for Python access
     public :: show_figure, show_viewer, figure, plot, savefig
     public :: title, xlabel, ylabel, contour, contour_filled
-    public :: pcolormesh, streamplot, legend
+    public :: pcolormesh, streamplot, legend, scatter, histogram
     public :: set_xscale, set_yscale, xlim, ylim
 
 contains
@@ -205,5 +206,55 @@ contains
         real(wp), intent(in) :: ymin, ymax
         call mpl_ylim(ymin, ymax)
     end subroutine ylim
+
+    subroutine scatter(x, y, n, s, c, label, marker, markersize, color, &
+                      colormap, vmin, vmax, show_colorbar)
+        !! Python-accessible scatter plot function
+        !!
+        !! Arguments:
+        !!   x, y: Data arrays for scatter plot points
+        !!   n: Array size
+        !!   s: Optional marker sizes
+        !!   c: Optional color values
+        !!   label: Optional label for legend
+        !!   marker: Optional marker style
+        !!   markersize: Optional marker size
+        !!   color: Optional RGB color
+        !!   colormap: Optional colormap name
+        !!   vmin, vmax: Optional color scale limits
+        !!   show_colorbar: Optional colorbar display flag
+        integer, intent(in) :: n
+        real(wp), dimension(n), intent(in) :: x, y
+        real(wp), dimension(:), intent(in), optional :: s, c
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(wp), intent(in), optional :: markersize, vmin, vmax
+        real(wp), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
+        
+        call mpl_scatter(x, y, s=s, c=c, label=label, marker=marker, &
+                        markersize=markersize, color=color, &
+                        colormap=colormap, vmin=vmin, vmax=vmax, &
+                        show_colorbar=show_colorbar)
+    end subroutine scatter
+
+    subroutine histogram(data, n, bins, density, label, color)
+        !! Python-accessible histogram function
+        !!
+        !! Arguments:
+        !!   data: Data array for histogram
+        !!   n: Array size
+        !!   bins: Optional number of bins
+        !!   density: Optional density normalization
+        !!   label: Optional label for legend
+        !!   color: Optional RGB color
+        integer, intent(in) :: n
+        real(wp), dimension(n), intent(in) :: data
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), dimension(3), intent(in), optional :: color
+        
+        call mpl_histogram(data, bins=bins, density=density, label=label, color=color)
+    end subroutine histogram
 
 end module fortplot_python_interface
