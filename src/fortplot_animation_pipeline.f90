@@ -16,7 +16,7 @@ contains
 
     subroutine save_animation_full(anim, filename, fps, status)
         use fortplot_animation_validation, only: is_supported_video_format
-        use fortplot_figure_core, only: ensure_directory_exists
+        use fortplot_utils, only: ensure_directory_exists
         
         class(animation_t), intent(inout) :: anim
         character(len=*), intent(in) :: filename
