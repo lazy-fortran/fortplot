@@ -17,10 +17,8 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #291: regression: y text not rotated in PNGs
 
-## BLOCKED (Infrastructure Issues)  
-- [⚠️] #296: regression: PDF plot strangely stretched - FUNCTIONALLY COMPLETE, blocked by Windows CI infrastructure issue #300
+## BLOCKED (Infrastructure Issues)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -45,6 +43,8 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #296: regression: PDF plot strangely stretched - FIXED: PDF coordinate transformation preserves aspect ratios (PR #298 merged)
+- [x] #291: regression: y text not rotated in PNGs - FIXED: raster_render_ylabel implementation with bitmap rotation (PR #301 merged)
 - [x] #270: Broken example output documentation - fix PDF binary content display (PR #290 merged)
 - [x] #277: PDF page size still completely broken - FIXED: proper A4 dimensions and coordinate system (PR #294 merged)
 - [x] #269: Incomplete scale system implementation - finish logarithmic scales (branch: fix-incomplete-scale-system-269)
