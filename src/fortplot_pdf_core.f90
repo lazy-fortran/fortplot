@@ -92,13 +92,19 @@ contains
     end subroutine set_pdf_line_width
 
     subroutine normalize_to_pdf_coords(ctx, x, y, pdf_x, pdf_y)
-        !! Convert normalized coordinates (0-1) to PDF coordinates
+        !! Convert data coordinates to PDF page coordinates
+        !! This function expects the plot_context fields to be properly set
         type(pdf_context_core), intent(in) :: ctx
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         
-        ! Convert from normalized (0-1) to PDF coordinates
-        ! PDF origin is bottom-left, with margins
+        ! CRITICAL: This function needs access to plot bounds and context
+        ! The current implementation is broken because pdf_context_core
+        ! doesn't have access to x_min, x_max, y_min, y_max, plot_area
+        ! This should be called through the main pdf_context facade
+        
+        ! Temporary fallback - assume normalized coordinates for now
+        ! This will be fixed in the facade wrapper
         pdf_x = PDF_MARGIN + x * PDF_PLOT_WIDTH
         pdf_y = PDF_MARGIN + y * PDF_PLOT_HEIGHT
     end subroutine normalize_to_pdf_coords

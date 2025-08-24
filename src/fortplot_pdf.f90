@@ -164,8 +164,15 @@ contains
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         
-        ! Delegate to core module
-        call normalize_to_pdf_coords(this%core_ctx, x, y, pdf_x, pdf_y)
+        ! Proper data coordinate to PDF coordinate transformation
+        ! This restores the original algorithm from before the refactoring
+        
+        ! Transform coordinates to plot area (like matplotlib)
+        ! Note: PDF coordinates have Y=0 at bottom (same as plot coordinates)
+        pdf_x = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + &
+                real(this%plot_area%left, wp)
+        pdf_y = (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp) + &
+                real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
     end subroutine normalize_to_pdf_coords_facade
     
     subroutine pdf_save_graphics_state(this)
@@ -412,7 +419,7 @@ contains
                                    x_min, x_max, y_min, y_max, &
                                    title, xlabel, ylabel, &
                                    z_min, z_max, has_3d_plots)
-        ! Stub implementation to match parent signature
+        ! Implementation that properly handles plot area for axes drawing
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -421,7 +428,7 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        ! Delegate to actual implementation with fixed strings
+        ! Draw axes using the full PDF context with proper plot area
         character(len=256) :: title_str, xlabel_str, ylabel_str
         logical :: enable_grid
         
@@ -433,9 +440,10 @@ contains
         if (allocated(xlabel)) xlabel_str = xlabel
         if (allocated(ylabel)) ylabel_str = ylabel
         
-        call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
-                                     x_min, x_max, y_min, y_max, &
-                                     title_str, xlabel_str, ylabel_str, enable_grid)
+        ! Use the proper plot area-aware axes drawing
+        call pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
+                                         x_min, x_max, y_min, y_max, &
+                                         title_str, xlabel_str, ylabel_str, enable_grid)
     end subroutine pdf_draw_axes_stub
     
     subroutine pdf_draw_axes_and_labels_facade(this, xscale, yscale, symlog_threshold, &
@@ -475,5 +483,152 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine pdf_set_coordinates
+    
+    subroutine pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
+                                           x_min, x_max, y_min, y_max, &
+                                           title, xlabel, ylabel, enable_grid)
+        !! Draw axes using the actual plot area from the PDF context
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=*), intent(in) :: title, xlabel, ylabel
+        logical, intent(in) :: enable_grid
+        
+        ! Draw plot frame using actual plot area
+        call pdf_draw_plot_frame(this)
+        
+        ! Draw tick marks and labels using data coordinates and plot area  
+        call pdf_draw_ticks_and_labels(this, x_min, x_max, y_min, y_max, xscale, yscale)
+        
+        ! Draw title and axis labels if provided
+        if (len_trim(title) > 0) call pdf_draw_title(this, title)
+        if (len_trim(xlabel) > 0) call pdf_draw_xlabel(this, xlabel) 
+        if (len_trim(ylabel) > 0) call pdf_draw_ylabel(this, ylabel)
+        
+        ! Draw grid if enabled
+        if (enable_grid) call pdf_draw_grid(this, x_min, x_max, y_min, y_max)
+    end subroutine pdf_draw_axes_with_plot_area
+    
+    subroutine pdf_draw_plot_frame(this)
+        !! Draw plot frame using the actual plot area
+        class(pdf_context), intent(inout) :: this
+        character(len=256) :: frame_cmd
+        real(wp) :: x1, y1, width, height
+        
+        x1 = real(this%plot_area%left, wp)
+        y1 = real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
+        width = real(this%plot_area%width, wp)
+        height = real(this%plot_area%height, wp)
+        
+        ! Set line color to black
+        call this%core_ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        call this%core_ctx%set_line_width(1.0_wp)
+        
+        ! Draw rectangle frame
+        write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') x1, y1, width, height
+        this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
+    end subroutine pdf_draw_plot_frame
+    
+    subroutine pdf_draw_ticks_and_labels(this, x_min, x_max, y_min, y_max, xscale, yscale)
+        !! Draw tick marks and labels using proper coordinate transformation
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=*), intent(in) :: xscale, yscale
+        
+        real(wp) :: x_range, y_range, x_step, y_step
+        real(wp) :: tick_x, tick_y, pdf_x, pdf_y
+        integer :: i, num_ticks
+        character(len=32) :: tick_label
+        character(len=256) :: tick_cmd, text_cmd
+        real(wp), parameter :: TICK_LENGTH = 5.0_wp
+        
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        num_ticks = 6
+        
+        ! Draw X-axis ticks and labels
+        if (x_range > 0.0_wp) then
+            x_step = x_range / real(num_ticks - 1, wp)
+            do i = 1, num_ticks
+                tick_x = x_min + real(i - 1, wp) * x_step
+                call this%normalize_coords(tick_x, y_min, pdf_x, pdf_y)
+                
+                ! Draw tick mark
+                write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                    pdf_x, pdf_y, pdf_x, pdf_y - TICK_LENGTH
+                this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
+                
+                ! Draw tick label
+                write(tick_label, '(F0.1)') tick_x
+                tick_label = adjustl(tick_label)
+                call draw_mixed_font_text(this%core_ctx, pdf_x - 10.0_wp, pdf_y - 20.0_wp, trim(tick_label))
+            end do
+        end if
+        
+        ! Draw Y-axis ticks and labels
+        if (y_range > 0.0_wp) then
+            y_step = y_range / real(num_ticks - 1, wp)
+            do i = 1, num_ticks
+                tick_y = y_min + real(i - 1, wp) * y_step
+                call this%normalize_coords(x_min, tick_y, pdf_x, pdf_y)
+                
+                ! Draw tick mark
+                write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                    pdf_x, pdf_y, pdf_x - TICK_LENGTH, pdf_y
+                this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
+                
+                ! Draw tick label
+                write(tick_label, '(F0.1)') tick_y
+                tick_label = adjustl(tick_label)
+                call draw_mixed_font_text(this%core_ctx, pdf_x - 30.0_wp, pdf_y - 5.0_wp, trim(tick_label))
+            end do
+        end if
+    end subroutine pdf_draw_ticks_and_labels
+    
+    subroutine pdf_draw_title(this, title)
+        !! Draw plot title
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: title
+        real(wp) :: x, y
+        
+        x = real(this%plot_area%left + this%plot_area%width / 2, wp)
+        y = real(this%height - this%plot_area%bottom - this%plot_area%height - 30, wp)
+        
+        call draw_mixed_font_text(this%core_ctx, x - 50.0_wp, y, title)
+    end subroutine pdf_draw_title
+    
+    subroutine pdf_draw_xlabel(this, xlabel)
+        !! Draw X-axis label
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: xlabel
+        real(wp) :: x, y
+        
+        x = real(this%plot_area%left + this%plot_area%width / 2, wp)
+        y = real(this%height - this%plot_area%bottom + 50, wp)
+        
+        call draw_mixed_font_text(this%core_ctx, x - 30.0_wp, y, xlabel)
+    end subroutine pdf_draw_xlabel
+    
+    subroutine pdf_draw_ylabel(this, ylabel)
+        !! Draw Y-axis label (rotated)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: ylabel
+        real(wp) :: x, y
+        
+        x = real(this%plot_area%left - 60, wp)
+        y = real(this%height - this%plot_area%bottom - this%plot_area%height / 2, wp)
+        
+        call draw_rotated_mixed_font_text(this%core_ctx, x, y, ylabel)
+    end subroutine pdf_draw_ylabel
+    
+    subroutine pdf_draw_grid(this, x_min, x_max, y_min, y_max)
+        !! Draw grid lines (stub for now)
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        ! Grid implementation can be added later if needed
+        ! For now, just a stub to satisfy the interface
+    end subroutine pdf_draw_grid
 
 end module fortplot_pdf
