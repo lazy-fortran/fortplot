@@ -1,17 +1,30 @@
 # Development Backlog
 
-## TODO (Ordered by Priority)
+## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
 
-### CURRENT SPRINT - Forensic Analysis & Restoration Framework
-*Sprint completed - all critical rendering issues resolved*
+Critical issues requiring immediate attention based on comprehensive audit findings:
 
-### FUTURE SPRINTS - Systematic Restoration
+- [ ] #TBD: Python interface completely fake/mock - implement actual F2PY bindings
+- [ ] #TBD: Test suite infrastructure broken - restore automated testing capability  
+- [ ] #TBD: PNG backend regression - fix fixed-size file generation issue
+- [ ] #TBD: Documentation false advertising - align docs with actual implementation
+- [ ] #TBD: Dead code cleanup - remove unused imports and unreachable code paths
+- [ ] #TBD: Missing advertised features - implement or remove 5+ unimplemented functions
+- [ ] #TBD: PNG line rendering quality regression - restore antialiasing and styling
+- [ ] #TBD: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
+- [ ] #TBD: PDF output documentation broken - fix rendering examples
+- [ ] #TBD: Duplicate test configurations - consolidate redundant test setups
+
+## DOING (Current Work)
+
+## FUTURE SPRINTS - Systematic Restoration
+
 **Sprint 2: PNG Rendering Quality Restoration**
 - PNG antialiasing system restoration
 - Line styles and markers pipeline fixes
 - Color accuracy improvements
 
-**Sprint 3: PDF Coordinate System Overhaul**
+**Sprint 3: PDF Coordinate System Overhaul**  
 - Coordinate transformation restoration
 - Scaling and positioning fixes
 - Page layout system improvements
@@ -25,8 +38,6 @@
 - Visual regression testing framework
 - Automated quality metrics
 - Performance impact validation
-
-## DOING (Current Work)
 
 ## DONE (Completed)
 - [x] #236: Add division by zero protection in PDF coordinate transformation (branch: fix-division-by-zero-236)
