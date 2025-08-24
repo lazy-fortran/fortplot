@@ -15,12 +15,8 @@ module fortplot_pdf_core
     public :: initialize_pdf_stream
     public :: finalize_pdf_stream
 
-    ! PDF-specific constants
-    real(wp), parameter, public :: PDF_WIDTH = 595.0_wp   ! US Letter width in points
-    real(wp), parameter, public :: PDF_HEIGHT = 842.0_wp  ! A4 height in points  
+    ! PDF-specific constants (margins and sizes)
     real(wp), parameter, public :: PDF_MARGIN = 50.0_wp   ! Margin in points
-    real(wp), parameter, public :: PDF_PLOT_WIDTH = PDF_WIDTH - 2.0_wp * PDF_MARGIN
-    real(wp), parameter, public :: PDF_PLOT_HEIGHT = PDF_HEIGHT - 2.0_wp * PDF_MARGIN
     real(wp), parameter, public :: PDF_TICK_SIZE = 5.0_wp
     real(wp), parameter, public :: PDF_TITLE_SIZE = 14.0_wp
     real(wp), parameter, public :: PDF_LABEL_SIZE = 12.0_wp

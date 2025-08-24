@@ -3,8 +3,8 @@ module fortplot_pdf_axes
     !! Handles plot frame, axes, tick marks, and grid lines
     
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, PDF_PLOT_WIDTH, &
-                                PDF_PLOT_HEIGHT, PDF_TICK_SIZE, PDF_LABEL_SIZE, &
+    use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
+                                PDF_TICK_SIZE, PDF_LABEL_SIZE, &
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
@@ -72,7 +72,8 @@ contains
 
     subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                  x_positions, y_positions, x_labels, y_labels, &
-                                 num_x_ticks, num_y_ticks, xscale, yscale)
+                                 num_x_ticks, num_y_ticks, xscale, yscale, &
+                                 plot_area_left, plot_area_bottom, plot_area_width, plot_area_height)
         !! Generate tick positions and labels for axes
         type(pdf_context_core), intent(in) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
@@ -80,6 +81,7 @@ contains
         character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
         integer, intent(out) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: xscale, yscale
+        real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
         
         real(wp) :: x_range, y_range, x_step, y_step
         real(wp) :: x_tick, y_tick
@@ -91,9 +93,9 @@ contains
         x_range = data_x_max - data_x_min
         y_range = data_y_max - data_y_min
         
-        ! Determine number of ticks
-        num_x_ticks = min(TARGET_TICKS, max(2, int(PDF_PLOT_WIDTH / 50.0_wp)))
-        num_y_ticks = min(TARGET_TICKS, max(2, int(PDF_PLOT_HEIGHT / 40.0_wp)))
+        ! Determine number of ticks using actual plot area dimensions
+        num_x_ticks = min(TARGET_TICKS, max(2, int(plot_area_width / 50.0_wp)))
+        num_y_ticks = min(TARGET_TICKS, max(2, int(plot_area_height / 40.0_wp)))
         
         ! Allocate arrays
         allocate(x_positions(num_x_ticks))
@@ -107,7 +109,7 @@ contains
             x_step = 0.0_wp
             do i = 1, num_x_ticks
                 x_tick = data_x_min  ! All ticks at same data value
-                x_positions(i) = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp  ! Center position
+                x_positions(i) = plot_area_left + plot_area_width * 0.5_wp  ! Center position
             end do
         else
             ! Normal X range calculation
@@ -116,8 +118,8 @@ contains
                 x_tick = data_x_min + real(i - 1, wp) * x_step
                 
                 ! Convert to plot coordinates
-                x_positions(i) = PDF_MARGIN + &
-                    (x_tick - data_x_min) / x_range * PDF_PLOT_WIDTH
+                x_positions(i) = plot_area_left + &
+                    (x_tick - data_x_min) / x_range * plot_area_width
             end do
         end if
         
@@ -148,7 +150,7 @@ contains
             y_step = 0.0_wp
             do i = 1, num_y_ticks
                 y_tick = data_y_min  ! All ticks at same data value
-                y_positions(i) = PDF_MARGIN + PDF_PLOT_HEIGHT * 0.5_wp  ! Center position
+                y_positions(i) = plot_area_bottom + plot_area_height * 0.5_wp  ! Center position
             end do
         else
             ! Normal Y range calculation
@@ -157,8 +159,8 @@ contains
                 y_tick = data_y_min + real(i - 1, wp) * y_step
                 
                 ! Convert to plot coordinates
-                y_positions(i) = PDF_MARGIN + &
-                    (y_tick - data_y_min) / y_range * PDF_PLOT_HEIGHT
+                y_positions(i) = plot_area_bottom + &
+                    (y_tick - data_y_min) / y_range * plot_area_height
             end do
         end if
         
@@ -194,7 +196,7 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        real(wp), intent(in), optional :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, canvas_height
+        real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, canvas_height
         
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=32), allocatable :: x_labels(:), y_labels(:)
@@ -208,15 +210,12 @@ contains
         ! Generate tick data
         call generate_tick_data(ctx, x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
                                x_positions, y_positions, x_labels, y_labels, &
-                               num_x_ticks, num_y_ticks, xscale, yscale)
+                               num_x_ticks, num_y_ticks, xscale, yscale, &
+                               plot_area_left, plot_area_bottom, plot_area_width, plot_area_height)
         
         ! Grid functionality removed - PDF plots now display without grid lines
         
-        ! Plot area parameters are now mandatory - no fallback paths
-        if (.not. (present(plot_area_left) .and. present(plot_area_bottom) .and. &
-                   present(plot_area_width) .and. present(plot_area_height) .and. present(canvas_height))) then
-            error stop "draw_pdf_axes_and_labels: plot area parameters are mandatory"
-        end if
+        ! Plot area parameters are now mandatory (non-optional)
         
         call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
                                      plot_area_width, plot_area_height, canvas_height)
@@ -229,7 +228,9 @@ contains
         
         ! Draw title and axis labels
         if (present(title) .or. present(xlabel) .or. present(ylabel)) then
-            call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+            call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
+                                      plot_area_left, plot_area_bottom, &
+                                      plot_area_width, plot_area_height)
         end if
     end subroutine draw_pdf_axes_and_labels
 
@@ -322,10 +323,13 @@ contains
                                                      plot_left - PDF_TICK_SIZE - y_offset)
     end subroutine draw_pdf_tick_labels_with_area
 
-    subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel)
+    subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
+                                         plot_area_left, plot_area_bottom, &
+                                         plot_area_width, plot_area_height)
         !! Draw plot title and axis labels
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
         
         real(wp) :: title_x, title_y
         real(wp) :: xlabel_x, xlabel_y
@@ -334,9 +338,9 @@ contains
         ! Draw title (centered at top)
         if (present(title)) then
             if (len_trim(title) > 0) then
-                title_x = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp - &
+                title_x = plot_area_left + plot_area_width * 0.5_wp - &
                          real(len_trim(title), wp) * 3.5_wp
-                title_y = PDF_MARGIN + PDF_PLOT_HEIGHT + 20.0_wp
+                title_y = plot_area_bottom + plot_area_height + 20.0_wp
                 call draw_pdf_text_bold(ctx, title_x, title_y, trim(title))
             end if
         end if
@@ -344,9 +348,9 @@ contains
         ! Draw X-axis label (centered at bottom)
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
-                xlabel_x = PDF_MARGIN + PDF_PLOT_WIDTH * 0.5_wp - &
+                xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
                           real(len_trim(xlabel), wp) * 3.0_wp
-                xlabel_y = PDF_MARGIN - 35.0_wp
+                xlabel_y = plot_area_bottom - 35.0_wp
                 call draw_mixed_font_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if
@@ -354,8 +358,8 @@ contains
         ! Draw Y-axis label (rotated on left)
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
-                ylabel_x = PDF_MARGIN - 45.0_wp
-                ylabel_y = PDF_MARGIN + PDF_PLOT_HEIGHT * 0.5_wp - &
+                ylabel_x = plot_area_left - 45.0_wp
+                ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
                           real(len_trim(ylabel), wp) * 3.0_wp
                 call draw_rotated_mixed_font_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
             end if
