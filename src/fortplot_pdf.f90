@@ -450,12 +450,10 @@ contains
         
         ! Draw axes using the full PDF context with proper plot area
         character(len=256) :: title_str, xlabel_str, ylabel_str
-        logical :: enable_grid
         
         title_str = ""
         xlabel_str = ""
         ylabel_str = ""
-        enable_grid = .false.
         if (allocated(title)) title_str = title
         if (allocated(xlabel)) xlabel_str = xlabel
         if (allocated(ylabel)) ylabel_str = ylabel
@@ -463,23 +461,22 @@ contains
         ! Use the proper plot area-aware axes drawing
         call pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
                                          x_min, x_max, y_min, y_max, &
-                                         title_str, xlabel_str, ylabel_str, enable_grid)
+                                         title_str, xlabel_str, ylabel_str)
     end subroutine pdf_draw_axes_stub
     
     subroutine pdf_draw_axes_and_labels_facade(this, xscale, yscale, symlog_threshold, &
                                               x_min, x_max, y_min, y_max, &
-                                              title, xlabel, ylabel, enable_grid)
+                                              title, xlabel, ylabel)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=*), intent(in) :: title, xlabel, ylabel
-        logical, intent(in), optional :: enable_grid
         
         ! Delegate to axes module
         call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
                                      x_min, x_max, y_min, y_max, &
-                                     title, xlabel, ylabel, enable_grid)
+                                     title, xlabel, ylabel)
     end subroutine pdf_draw_axes_and_labels_facade
     
     subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)
@@ -506,14 +503,13 @@ contains
     
     subroutine pdf_draw_axes_with_plot_area(this, xscale, yscale, symlog_threshold, &
                                            x_min, x_max, y_min, y_max, &
-                                           title, xlabel, ylabel, enable_grid)
+                                           title, xlabel, ylabel)
         !! Draw axes using the actual plot area from the PDF context
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=*), intent(in) :: title, xlabel, ylabel
-        logical, intent(in) :: enable_grid
         
         ! Draw plot frame using actual plot area
         call pdf_draw_plot_frame(this)
@@ -525,9 +521,6 @@ contains
         if (len_trim(title) > 0) call pdf_draw_title(this, title)
         if (len_trim(xlabel) > 0) call pdf_draw_xlabel(this, xlabel) 
         if (len_trim(ylabel) > 0) call pdf_draw_ylabel(this, ylabel)
-        
-        ! Draw grid if enabled
-        if (enable_grid) call pdf_draw_grid(this, x_min, x_max, y_min, y_max)
     end subroutine pdf_draw_axes_with_plot_area
     
     subroutine pdf_draw_plot_frame(this)
@@ -681,13 +674,4 @@ contains
         call draw_rotated_mixed_font_text(this%core_ctx, x, y, ylabel)
     end subroutine pdf_draw_ylabel
     
-    subroutine pdf_draw_grid(this, x_min, x_max, y_min, y_max)
-        !! Draw grid lines (stub for now)
-        class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max
-        
-        ! Grid implementation can be added later if needed
-        ! For now, just a stub to satisfy the interface
-    end subroutine pdf_draw_grid
-
 end module fortplot_pdf
