@@ -8,6 +8,7 @@
 - [ ] #249: PDF coordinate system and scaling fundamental issues
 - [ ] #250: PNG line styles and markers rendering pipeline degradation
 - [ ] #251: Legend rendering system not visible
+- [ ] #236: Add division by zero protection in PDF coordinate transformation
 
 ### FUTURE SPRINTS - Systematic Restoration
 **Sprint 2: PNG Rendering Quality Restoration**
@@ -31,6 +32,7 @@
 - Performance impact validation
 
 ## DOING (Current Work)
+- [x] #254: Emergency rescue commits from main branch protection (branch: fix/rescue-main-commits)
 
 ## DONE (Completed)
 - [x] #239: Complete PDF grid functionality or remove stub
