@@ -35,7 +35,6 @@ program test_figure_core_regression
     call test_bar_chart_functionality()
     call test_horizontal_bar_chart()
     call test_histogram_functionality()
-    ! call test_boxplot_functionality()  ! Disabled due to memory issues in current implementation
     call test_streamplot_functionality()
     
     ! Axis and scaling tests
@@ -409,28 +408,6 @@ contains
         
         call end_test()
     end subroutine test_histogram_functionality
-
-!    subroutine test_boxplot_functionality()
-!        type(figure_t) :: fig
-!        real(wp) :: data(5)
-!        
-!        call start_test("Boxplot functionality")
-!        
-!        call fig%initialize()
-!        
-!        data = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
-!        
-!        ! GIVEN: Data for boxplot
-!        ! WHEN: Boxplot is created
-!        call fig%boxplot(data, label="box_test")
-!        
-!        ! THEN: Boxplot data should be stored
-!        call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Boxplot count")
-!        call assert_equal(real(fig%plots(1)%plot_type, wp), real(PLOT_TYPE_BOXPLOT, wp), "Boxplot plot type")
-!        call assert_true(allocated(fig%plots(1)%box_data), "Boxplot data allocated")
-!        
-!        call end_test()
-!    end subroutine test_boxplot_functionality
 
     subroutine test_streamplot_functionality()
         type(figure_t) :: fig
