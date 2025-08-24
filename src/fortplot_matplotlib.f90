@@ -427,18 +427,50 @@ contains
         call fig%set_ylim(ymin, ymax)
     end subroutine ylim
 
-    subroutine set_xscale(scale)
-        !! Set x-axis scale type (placeholder for future implementation)
+    subroutine set_xscale(scale, threshold)
+        !! Set x-axis scale type
+        !! @param scale Scale type: 'linear', 'log', or 'symlog'
+        !! @param threshold Optional threshold for symlog scale
         character(len=*), intent(in) :: scale
+        real(8), intent(in), optional :: threshold
         
-        call log_warning("set_xscale() is not yet fully implemented")
+        call ensure_global_figure_initialized()
+        
+        ! Validate scale type
+        select case (trim(scale))
+        case ('linear', 'log', 'symlog')
+            if (present(threshold)) then
+                call fig%set_xscale(scale, threshold)
+            else
+                call fig%set_xscale(scale)
+            end if
+        case default
+            call log_warning("Unknown scale type: " // trim(scale) // ". Using 'linear'.")
+            call fig%set_xscale('linear')
+        end select
     end subroutine set_xscale
 
-    subroutine set_yscale(scale)
-        !! Set y-axis scale type (placeholder for future implementation)
+    subroutine set_yscale(scale, threshold)
+        !! Set y-axis scale type
+        !! @param scale Scale type: 'linear', 'log', or 'symlog'
+        !! @param threshold Optional threshold for symlog scale
         character(len=*), intent(in) :: scale
+        real(8), intent(in), optional :: threshold
         
-        call log_warning("set_yscale() is not yet fully implemented")
+        call ensure_global_figure_initialized()
+        
+        ! Validate scale type
+        select case (trim(scale))
+        case ('linear', 'log', 'symlog')
+            if (present(threshold)) then
+                call fig%set_yscale(scale, threshold)
+            else
+                call fig%set_yscale(scale)
+            end if
+        case default
+            call log_warning("Unknown scale type: " // trim(scale) // ". Using 'linear'.")
+            call fig%set_yscale('linear')
+        end select
     end subroutine set_yscale
 
     subroutine set_line_width(width)

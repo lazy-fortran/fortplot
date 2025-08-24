@@ -35,6 +35,7 @@ contains
     subroutine symlog_scale_demo()
         real(wp), dimension(50) :: x_exp, y_symlog
         integer :: i
+        real(wp), parameter :: threshold = 10.0_wp
         
         ! Generate data that goes through zero for symlog
         x_exp = [(real(i, wp), i=1, 50)]
@@ -42,7 +43,7 @@ contains
         
         call figure()
         call plot(x_exp, y_symlog)
-        call set_yscale('symlog')  ! threshold parameter not supported yet
+        call set_yscale('symlog', threshold)  ! Now with threshold support
         call title('Symlog Scale Example')
         call xlabel('x') 
         call ylabel('x³ - 50x')
@@ -50,7 +51,7 @@ contains
         call savefig('output/example/fortran/scale_examples/symlog_scale.pdf')
         call savefig('output/example/fortran/scale_examples/symlog_scale.txt')
         
-        print *, "Created: symlog_scale.png/pdf/txt"
+        print *, "Created: symlog_scale.png/pdf/txt with threshold=", threshold
         
     end subroutine symlog_scale_demo
 
