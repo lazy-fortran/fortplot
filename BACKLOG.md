@@ -1,9 +1,9 @@
 # Development Backlog
 
 ## TODO (Ordered by Priority)
-- [ ] #227: PNG backend generates ASCII text instead of binary PNG data
 
 ## DOING (Current Work)
+- [x] #227: PNG backend generates ASCII text instead of binary PNG data (branch: fix-png-backend-227)
 
 ## DONE (Completed)
 - [x] #224: PDF files not deployed to GitHub Pages (404 errors)

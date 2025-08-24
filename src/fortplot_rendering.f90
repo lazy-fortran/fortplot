@@ -331,12 +331,8 @@ contains
             current_backend = 'ascii'  ! Default for unallocated backend
         end if
         
-        ! For now, avoid switching to PNG backend to prevent segfaults
-        ! This is a temporary workaround for the raster backend corruption issue
-        if (trim(target_backend) == 'png') then
-            ! Skip PNG backend switching - use existing backend
-            return
-        end if
+        ! PNG backend switching is now enabled
+        ! Previous workaround for raster backend corruption has been resolved
         
         if (trim(current_backend) /= trim(target_backend)) then
             ! Destroy current backend

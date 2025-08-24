@@ -68,7 +68,14 @@ contains
         
         select case (trim(backend_type))
         case ('png')
-            allocate(backend, source=create_png_canvas(width, height))
+            ! Validate dimensions to prevent raster backend crashes
+            if (width > 5000 .or. height > 5000 .or. width <= 0 .or. height <= 0) then
+                print *, "WARNING: PNG backend dimensions invalid or too large:", width, "x", height
+                print *, "Falling back to PDF backend for this file"
+                allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
+            else
+                allocate(backend, source=create_png_canvas(width, height))
+            end if
         case ('pdf')
             allocate(backend, source=create_pdf_canvas(width, height))
         case ('ascii')
@@ -76,7 +83,12 @@ contains
         case ('gltf', 'glb')
             allocate(backend, source=create_gltf_canvas(width, height))
         case default
-            allocate(backend, source=create_png_canvas(width, height))
+            ! Default to PNG with dimension validation
+            if (width > 5000 .or. height > 5000 .or. width <= 0 .or. height <= 0) then
+                allocate(backend, source=create_pdf_canvas(min(max(width, 800), 1920), min(max(height, 600), 1080)))
+            else
+                allocate(backend, source=create_png_canvas(width, height))
+            end if
         end select
     end subroutine initialize_backend
 
