@@ -163,16 +163,33 @@ contains
         class(pdf_context), intent(in) :: this
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
+        real(wp) :: x_range, y_range
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
         
-        ! Proper data coordinate to PDF coordinate transformation
-        ! This restores the original algorithm from before the refactoring
+        ! Calculate data ranges with epsilon protection for division by zero
+        x_range = this%x_max - this%x_min
+        y_range = this%y_max - this%y_min
         
-        ! Transform coordinates to plot area (like matplotlib)
-        ! Note: PDF coordinates have Y=0 at bottom (same as plot coordinates)
-        pdf_x = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + &
-                real(this%plot_area%left, wp)
-        pdf_y = (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp) + &
-                real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
+        ! Transform X coordinate with zero-range protection
+        if (abs(x_range) < EPSILON) then
+            ! Zero or near-zero X range: place at center of plot area
+            pdf_x = real(this%plot_area%left, wp) + real(this%plot_area%width, wp) * 0.5_wp
+        else
+            ! Normal transformation for X
+            pdf_x = (x - this%x_min) / x_range * real(this%plot_area%width, wp) + &
+                    real(this%plot_area%left, wp)
+        end if
+        
+        ! Transform Y coordinate with zero-range protection
+        if (abs(y_range) < EPSILON) then
+            ! Zero or near-zero Y range: place at center of plot area
+            pdf_y = real(this%height - this%plot_area%bottom - this%plot_area%height, wp) + &
+                    real(this%plot_area%height, wp) * 0.5_wp
+        else
+            ! Normal transformation for Y
+            pdf_y = (y - this%y_min) / y_range * real(this%plot_area%height, wp) + &
+                    real(this%height - this%plot_area%bottom - this%plot_area%height, wp)
+        end if
     end subroutine normalize_to_pdf_coords_facade
     
     subroutine pdf_save_graphics_state(this)
