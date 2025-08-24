@@ -1,17 +1,30 @@
 # Development Backlog
 
-## TODO (Ordered by Priority)
+## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
 
-### CURRENT SPRINT - Forensic Analysis & Restoration Framework
-*Sprint completed - all critical rendering issues resolved*
+Critical issues requiring immediate attention based on comprehensive audit findings:
 
-### FUTURE SPRINTS - Systematic Restoration
+- [ ] #262: Python interface completely fake/mock - implement actual F2PY bindings
+- [ ] #263: Test suite infrastructure broken - restore automated testing capability  
+- [ ] #264: PNG backend regression - fix fixed-size file generation issue
+- [ ] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
+- [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions
+- [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths
+- [ ] #268: PNG dimension overflow errors - fix 64000x48000 dimension calculations
+- [ ] #269: Incomplete scale system implementation - finish logarithmic scales
+- [ ] #270: Broken example output documentation - fix PDF binary content display
+- [ ] #271: Consolidate duplicate documentation content - remove redundant sections
+
+## DOING (Current Work)
+
+## FUTURE SPRINTS - Systematic Restoration
+
 **Sprint 2: PNG Rendering Quality Restoration**
 - PNG antialiasing system restoration
 - Line styles and markers pipeline fixes
 - Color accuracy improvements
 
-**Sprint 3: PDF Coordinate System Overhaul**
+**Sprint 3: PDF Coordinate System Overhaul**  
 - Coordinate transformation restoration
 - Scaling and positioning fixes
 - Page layout system improvements
@@ -26,10 +39,8 @@
 - Automated quality metrics
 - Performance impact validation
 
-## DOING (Current Work)
-- [ ] #236: Add division by zero protection in PDF coordinate transformation
-
 ## DONE (Completed)
+- [x] #236: Add division by zero protection in PDF coordinate transformation (branch: fix-division-by-zero-236)
 - [x] #251: Legend rendering system not visible (branch: fix-legend-visibility-251)
 - [x] #250: PNG line styles and markers rendering pipeline degradation (branch: fix-png-line-styles-250)
 - [x] #249: PDF coordinate system and scaling fundamental issues (branch: fix-pdf-coordinate-system-249)
