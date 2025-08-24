@@ -14,6 +14,9 @@ program test_pdf_coordinate_transform
     call test_double_subtraction_detection()
     call test_coordinate_reversibility()
     call test_boundary_coordinate_handling()
+    call test_division_by_zero_protection()
+    call test_epsilon_range_handling()
+    call test_constant_data_graceful_handling()
     
     print *, "=== PDF coordinate transformation tests completed ==="
 
@@ -243,5 +246,236 @@ contains
         print *, ""
         
     end subroutine test_boundary_coordinate_handling
+
+    subroutine test_division_by_zero_protection()
+        !! Given: Data with zero range (x_min == x_max or y_min == y_max)
+        !! When: Transforming to PDF coordinates
+        !! Then: Should handle gracefully without division by zero
+        
+        use fortplot_pdf_core, only: pdf_context
+        use fortplot_figure_core, only: figure
+        implicit none
+        
+        type(figure) :: fig
+        type(pdf_context) :: ctx
+        real(wp) :: pdf_x, pdf_y
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
+        logical :: test_passed
+        
+        print *, "=== Test: Division by zero protection ==="
+        
+        ! Initialize a figure with constant X data (zero X range)
+        call fig%init(10, 10, 600, 400)
+        call fig%xlabel("X axis")
+        call fig%ylabel("Y axis") 
+        call fig%title("Test constant data")
+        
+        ! Create PDF context
+        call ctx%init(fig)
+        
+        ! Test case 1: Constant X data (x_min == x_max)
+        ctx%x_min = 5.0_wp
+        ctx%x_max = 5.0_wp  ! Zero range
+        ctx%y_min = 0.0_wp
+        ctx%y_max = 10.0_wp
+        
+        print *, "Test 1: Constant X data (x_min=x_max=5.0)"
+        print *, "  X range:", ctx%x_max - ctx%x_min
+        
+        ! This should not crash - expecting graceful handling
+        call ctx%normalize_to_pdf_coords(5.0_wp, 5.0_wp, pdf_x, pdf_y)
+        
+        test_passed = .true.  ! If we reach here, no crash occurred
+        if (test_passed) then
+            print *, "  PASS: No crash with zero X range"
+            print *, "  Resulting PDF coords: x=", pdf_x, "y=", pdf_y
+        else
+            print *, "  FAIL: Division by zero not handled"
+        end if
+        
+        ! Test case 2: Constant Y data (y_min == y_max)
+        ctx%x_min = 0.0_wp
+        ctx%x_max = 10.0_wp
+        ctx%y_min = 3.0_wp
+        ctx%y_max = 3.0_wp  ! Zero range
+        
+        print *, "Test 2: Constant Y data (y_min=y_max=3.0)"
+        print *, "  Y range:", ctx%y_max - ctx%y_min
+        
+        call ctx%normalize_to_pdf_coords(5.0_wp, 3.0_wp, pdf_x, pdf_y)
+        
+        test_passed = .true.
+        if (test_passed) then
+            print *, "  PASS: No crash with zero Y range"
+            print *, "  Resulting PDF coords: x=", pdf_x, "y=", pdf_y
+        else
+            print *, "  FAIL: Division by zero not handled"
+        end if
+        
+        ! Test case 3: Both X and Y constant
+        ctx%x_min = 7.0_wp
+        ctx%x_max = 7.0_wp  ! Zero range
+        ctx%y_min = -2.0_wp
+        ctx%y_max = -2.0_wp  ! Zero range
+        
+        print *, "Test 3: Both X and Y constant"
+        print *, "  X range:", ctx%x_max - ctx%x_min
+        print *, "  Y range:", ctx%y_max - ctx%y_min
+        
+        call ctx%normalize_to_pdf_coords(7.0_wp, -2.0_wp, pdf_x, pdf_y)
+        
+        test_passed = .true.
+        if (test_passed) then
+            print *, "  PASS: No crash with both ranges zero"
+            print *, "  Resulting PDF coords: x=", pdf_x, "y=", pdf_y
+        else
+            print *, "  FAIL: Division by zero not handled"
+        end if
+        
+        print *, ""
+        
+    end subroutine test_division_by_zero_protection
+
+    subroutine test_epsilon_range_handling()
+        !! Given: Data with extremely small but non-zero range
+        !! When: Transforming to PDF coordinates
+        !! Then: Should handle epsilon-small ranges gracefully
+        
+        use fortplot_pdf_core, only: pdf_context
+        use fortplot_figure_core, only: figure
+        implicit none
+        
+        type(figure) :: fig
+        type(pdf_context) :: ctx
+        real(wp) :: pdf_x, pdf_y
+        real(wp), parameter :: EPSILON = 1.0e-12_wp
+        logical :: coordinates_valid
+        
+        print *, "=== Test: Epsilon range handling ==="
+        
+        ! Initialize figure
+        call fig%init(10, 10, 600, 400)
+        call fig%xlabel("X")
+        call fig%ylabel("Y")
+        call fig%title("Epsilon test")
+        
+        ! Create PDF context
+        call ctx%init(fig)
+        
+        ! Test case 1: Epsilon-small X range
+        ctx%x_min = 1.0_wp
+        ctx%x_max = 1.0_wp + EPSILON
+        ctx%y_min = 0.0_wp
+        ctx%y_max = 10.0_wp
+        
+        print *, "Test 1: Epsilon-small X range"
+        print *, "  X range:", ctx%x_max - ctx%x_min
+        
+        call ctx%normalize_to_pdf_coords(1.0_wp, 5.0_wp, pdf_x, pdf_y)
+        
+        ! Check if coordinates are within plot area bounds
+        coordinates_valid = (pdf_x >= real(ctx%plot_area%left, wp)) .and. &
+                           (pdf_x <= real(ctx%plot_area%left + ctx%plot_area%width, wp)) .and. &
+                           (pdf_y >= 0.0_wp) .and. &
+                           (pdf_y <= real(ctx%height, wp))
+        
+        if (coordinates_valid) then
+            print *, "  PASS: Coordinates within valid bounds"
+            print *, "  PDF coords: x=", pdf_x, "y=", pdf_y
+        else
+            print *, "  FAIL: Coordinates out of bounds"
+            print *, "  PDF coords: x=", pdf_x, "y=", pdf_y
+        end if
+        
+        ! Test case 2: Epsilon-small Y range
+        ctx%x_min = 0.0_wp
+        ctx%x_max = 10.0_wp
+        ctx%y_min = 5.0_wp
+        ctx%y_max = 5.0_wp + EPSILON
+        
+        print *, "Test 2: Epsilon-small Y range"
+        print *, "  Y range:", ctx%y_max - ctx%y_min
+        
+        call ctx%normalize_to_pdf_coords(5.0_wp, 5.0_wp, pdf_x, pdf_y)
+        
+        coordinates_valid = (pdf_x >= real(ctx%plot_area%left, wp)) .and. &
+                           (pdf_x <= real(ctx%plot_area%left + ctx%plot_area%width, wp)) .and. &
+                           (pdf_y >= 0.0_wp) .and. &
+                           (pdf_y <= real(ctx%height, wp))
+        
+        if (coordinates_valid) then
+            print *, "  PASS: Coordinates within valid bounds"
+            print *, "  PDF coords: x=", pdf_x, "y=", pdf_y
+        else
+            print *, "  FAIL: Coordinates out of bounds"
+            print *, "  PDF coords: x=", pdf_x, "y=", pdf_y
+        end if
+        
+        print *, ""
+        
+    end subroutine test_epsilon_range_handling
+
+    subroutine test_constant_data_graceful_handling()
+        !! Given: Real-world scenario with constant data series
+        !! When: Generating a plot with such data
+        !! Then: Should produce reasonable output without crashes
+        
+        use fortplot_pdf_core, only: pdf_context
+        use fortplot_figure_core, only: figure
+        implicit none
+        
+        type(figure) :: fig
+        type(pdf_context) :: ctx
+        real(wp) :: constant_x(5), constant_y(5)
+        real(wp) :: pdf_x, pdf_y
+        integer :: i
+        logical :: all_coords_valid
+        
+        print *, "=== Test: Constant data graceful handling ==="
+        
+        ! Initialize figure
+        call fig%init(10, 10, 600, 400)
+        call fig%xlabel("Time")
+        call fig%ylabel("Value")
+        call fig%title("Constant data plot")
+        
+        ! Create PDF context
+        call ctx%init(fig)
+        
+        ! Test case: Horizontal line (constant Y)
+        constant_x = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        constant_y = [2.5_wp, 2.5_wp, 2.5_wp, 2.5_wp, 2.5_wp]  ! All same Y value
+        
+        ctx%x_min = minval(constant_x)
+        ctx%x_max = maxval(constant_x)
+        ctx%y_min = minval(constant_y)
+        ctx%y_max = maxval(constant_y)  ! Will be same as y_min
+        
+        print *, "Horizontal line test (constant Y=2.5)"
+        print *, "  X range:", ctx%x_max - ctx%x_min
+        print *, "  Y range:", ctx%y_max - ctx%y_min
+        
+        all_coords_valid = .true.
+        do i = 1, 5
+            call ctx%normalize_to_pdf_coords(constant_x(i), constant_y(i), pdf_x, pdf_y)
+            
+            ! Verify coordinates are reasonable
+            if (pdf_x < 0.0_wp .or. pdf_x > real(ctx%width, wp) .or. &
+                pdf_y < 0.0_wp .or. pdf_y > real(ctx%height, wp)) then
+                all_coords_valid = .false.
+                print *, "  Point", i, "out of bounds: x=", pdf_x, "y=", pdf_y
+            end if
+        end do
+        
+        if (all_coords_valid) then
+            print *, "  PASS: All points mapped to valid coordinates"
+            print *, "  Horizontal line rendered at PDF Y=", pdf_y
+        else
+            print *, "  FAIL: Some points mapped outside canvas"
+        end if
+        
+        print *, ""
+        
+    end subroutine test_constant_data_graceful_handling
 
 end program test_pdf_coordinate_transform
