@@ -30,3 +30,19 @@ src_dir = "src"
 output_dir = "build/doc"
 page_dir = "doc"
 exclude = "fortplot_pdf_text.f90"
+
+# Test definitions for rendering comparison framework
+[[test]]
+name = "test_rendering_comparison"
+source-dir = "test"
+main = "test_rendering_comparison.f90"
+
+[[test]]
+name = "test_forensic_comparison"
+source-dir = "test"
+main = "test_forensic_comparison.f90"
+
+[[test]]
+name = "test_comprehensive_rendering_comparison"
+source-dir = "test"
+main = "test_comprehensive_rendering_comparison.f90"
