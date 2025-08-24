@@ -2,6 +2,7 @@ program test_legend
     !! Unit tests for legend functionality following TDD approach
     !! Tests both API design and rendering across backends
     use fortplot
+    use fortplot_rendering, only: figure_legend, render_savefig => savefig
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_security, only: get_test_output_path
     implicit none
@@ -35,8 +36,8 @@ contains
         call figure_legend(fig)
         
         ! Save to test rendering
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_basic.png'))
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_basic.png'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_basic.png'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_basic.png'))
         
         print *, "PASS: Legend API tests completed"
     end subroutine test_legend_api
@@ -55,14 +56,14 @@ contains
         
         ! Test different legend positions
         call figure_legend(fig)
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_upper_left.png'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_upper_left.png'))
         
         call figure_legend(fig)  
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_lower_right.png'))
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_upper_left.png'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_lower_right.png'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_upper_left.png'))
         
         call figure_legend(fig)  
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_lower_right.png'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_lower_right.png'))
         
         print *, "PASS: Legend positioning tests completed"
     end subroutine test_legend_positioning
@@ -87,12 +88,12 @@ contains
         call figure_legend(fig)
         
         ! Test all backends render legends correctly
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.png'))
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.pdf'))
-        call figure_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.txt'))
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.png'))
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.pdf'))
-        call figure_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.txt'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.png'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.pdf'))
+        call render_savefig(fig, get_test_output_path('output/test/test_legend/test_legend_render.txt'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.png'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.pdf'))
+        call render_savefig(fig, get_test_output_path('/tmp/test/test_legend_render.txt'))
         
         print *, "PASS: Legend rendering tests completed"
     end subroutine test_legend_rendering

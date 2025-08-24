@@ -71,3 +71,13 @@ main = "test_simple_line_debug.f90"
 name = "test_line_styles_comprehensive"
 source-dir = "test"
 main = "test_line_styles_comprehensive.f90"
+
+[[test]]
+name = "test_legend"
+source-dir = "test"
+main = "test_legend.f90"
+
+[[test]]
+name = "test_legend_minimal"
+source-dir = "test"
+main = "test_legend_minimal.f90"
