@@ -3,7 +3,7 @@ module fortplot_pdf_io
     !! Handles PDF document structure, writing, and file management
     
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_WIDTH, PDF_HEIGHT
+    use fortplot_pdf_core, only: pdf_context_core
     implicit none
     private
     
@@ -173,7 +173,7 @@ contains
         write(unit, '(A)') '<<'
         write(unit, '(A)') '/Type /Page'
         write(unit, '(A, I0, A)') '/Parent ', PDF_PAGES_OBJ, ' 0 R'
-        write(unit, '(A, F0.1, 1X, F0.1, A)') '/MediaBox [0 0 ', PDF_WIDTH, PDF_HEIGHT, ']'
+        write(unit, '(A, F0.1, 1X, F0.1, A)') '/MediaBox [0 0 ', ctx%width, ctx%height, ']'
         write(unit, '(A)') '/Resources <<'
         write(unit, '(A)') '  /Font <<'
         write(unit, '(A, I0, A, I0, A)') '    /F', PDF_HELVETICA_OBJ, ' ', PDF_HELVETICA_OBJ, ' 0 R'

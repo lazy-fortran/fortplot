@@ -1,14 +1,23 @@
 # Development Backlog
 
-## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
+## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
-Critical issues requiring immediate attention based on comprehensive audit findings:  
-- [ ] #270: Broken example output documentation - fix PDF binary content display
+**🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**  
+- [ ] #291: regression: y text not rotated in PNGs
+- [ ] #276: Markers dont work - PNG examples completely broken
+- [ ] #278: Line styles dont work - all styling broken since 690b9834
+- [ ] #280: regression: contours dont work  
+- [ ] #292: regression: legend placement does not work
+
+**Infrastructure & Documentation Issues (Lower Priority)**
+- [ ] #270: Broken example output documentation - fix PDF binary content display (PR #290 blocked by CI)
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
+- [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
+- [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #269: Incomplete scale system implementation - finish logarithmic scales
+- [ ] #277: PDF page size still completely broken - HIGHEST PRIORITY
 
 ## FUTURE SPRINTS - Systematic Restoration
 

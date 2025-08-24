@@ -3,7 +3,7 @@ module fortplot_pdf_coordinate
     !! Handles coordinate normalization and backend-specific method implementations
     
     use iso_fortran_env, only: wp => real64
-    use fortplot_pdf_core, only: pdf_context_core, PDF_WIDTH, PDF_HEIGHT
+    use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text
     use fortplot_pdf_drawing, only: draw_pdf_arrow, draw_pdf_circle_with_outline, &
                                    draw_pdf_square_with_outline, draw_pdf_diamond_with_outline, &
@@ -64,13 +64,15 @@ contains
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
+        !! Get width scale - now returns 1.0 since page size matches figure size
         type(pdf_context_handle), intent(in) :: ctx
-        scale = real(ctx%width, wp) / PDF_WIDTH
+        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
     end function pdf_get_width_scale
     
     real(wp) function pdf_get_height_scale(ctx) result(scale)
+        !! Get height scale - now returns 1.0 since page size matches figure size
         type(pdf_context_handle), intent(in) :: ctx
-        scale = real(ctx%height, wp) / PDF_HEIGHT
+        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
     end function pdf_get_height_scale
     
     subroutine pdf_fill_quad(ctx, stream_writer, x_quad, y_quad)
