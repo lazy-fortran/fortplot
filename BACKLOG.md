@@ -3,7 +3,6 @@
 ## CURRENT SPRINT (Critical Infrastructure & False Advertising Fixes)
 
 Critical issues requiring immediate attention based on comprehensive audit findings:  
-- [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions
 - [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths
 - [ ] #268: PNG dimension overflow errors - fix 64000x48000 dimension calculations
 - [ ] #269: Incomplete scale system implementation - finish logarithmic scales
@@ -12,7 +11,7 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - [ ] #285: refactor: remove hist() and bar() stub implementations
 
 ## DOING (Current Work)
-- [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions (branch: fix-missing-advertised-features-266)
+- [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths (branch: cleanup-dead-code-267)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -37,6 +36,7 @@ Critical issues requiring immediate attention based on comprehensive audit findi
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #266: Missing advertised features - implement or remove 5+ unimplemented functions (branch: fix-missing-advertised-features-266)
 - [x] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy (branch: fix-documentation-inconsistency-265)
 - [x] #264: PNG backend regression - fix fixed-size file generation issue (branch: fix-png-backend-regression-264)
 - [x] #263: Test suite infrastructure broken - restore automated testing capability (branch: fix-test-infrastructure-263)
