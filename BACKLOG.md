@@ -4,16 +4,16 @@
 
 Critical issues requiring immediate attention based on comprehensive audit findings:
 
-- [ ] #TBD: Python interface completely fake/mock - implement actual F2PY bindings
-- [ ] #TBD: Test suite infrastructure broken - restore automated testing capability  
-- [ ] #TBD: PNG backend regression - fix fixed-size file generation issue
-- [ ] #TBD: Documentation false advertising - align docs with actual implementation
-- [ ] #TBD: Dead code cleanup - remove unused imports and unreachable code paths
-- [ ] #TBD: Missing advertised features - implement or remove 5+ unimplemented functions
-- [ ] #TBD: PNG line rendering quality regression - restore antialiasing and styling
-- [ ] #TBD: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
-- [ ] #TBD: PDF output documentation broken - fix rendering examples
-- [ ] #TBD: Duplicate test configurations - consolidate redundant test setups
+- [ ] #262: Python interface completely fake/mock - implement actual F2PY bindings
+- [ ] #263: Test suite infrastructure broken - restore automated testing capability  
+- [ ] #264: PNG backend regression - fix fixed-size file generation issue
+- [ ] #265: Documentation line count inconsistency - fix 1,119 vs 233 line discrepancy
+- [ ] #266: Missing advertised features - implement or remove 5+ unimplemented functions
+- [ ] #267: Dead code cleanup - remove unused imports and unreachable code paths
+- [ ] #268: PNG dimension overflow errors - fix 64000x48000 dimension calculations
+- [ ] #269: Incomplete scale system implementation - finish logarithmic scales
+- [ ] #270: Broken example output documentation - fix PDF binary content display
+- [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 
 ## DOING (Current Work)
 
