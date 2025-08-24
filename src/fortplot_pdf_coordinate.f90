@@ -24,7 +24,7 @@ module fortplot_pdf_coordinate
     end type pdf_context_handle
     
     public :: pdf_context_handle
-    public :: normalize_to_pdf_coords
+    public :: normalize_to_pdf_coords, safe_coordinate_transform
     public :: pdf_get_width_scale, pdf_get_height_scale
     public :: pdf_fill_quad, pdf_fill_heatmap
     public :: pdf_render_legend_specialized, pdf_calculate_legend_dimensions
@@ -220,5 +220,41 @@ contains
         
         call draw_rotated_mixed_font_text(ctx%core_ctx, x, y, ylabel)
     end subroutine pdf_render_ylabel
+    
+    subroutine safe_coordinate_transform(x, y, x_min, x_max, y_min, y_max, &
+                                        plot_left, plot_width, plot_bottom, plot_height, &
+                                        pdf_x, pdf_y)
+        !! Safe coordinate transformation with division by zero protection
+        !! Provides the same interface as expected by test_pdf_division_zero.f90
+        real(wp), intent(in) :: x, y
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp), intent(in) :: plot_left, plot_width, plot_bottom, plot_height
+        real(wp), intent(out) :: pdf_x, pdf_y
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
+        real(wp) :: x_range, y_range
+        
+        ! Calculate ranges with epsilon protection
+        x_range = x_max - x_min
+        y_range = y_max - y_min
+        
+        ! Handle X coordinate with zero-range protection
+        if (abs(x_range) < EPSILON) then
+            ! Zero or near-zero range: place at center of plot area
+            pdf_x = plot_left + plot_width * 0.5_wp
+        else
+            ! Normal transformation
+            pdf_x = plot_left + (x - x_min) / x_range * plot_width
+        end if
+        
+        ! Handle Y coordinate with zero-range protection
+        if (abs(y_range) < EPSILON) then
+            ! Zero or near-zero range: place at center of plot area
+            pdf_y = plot_bottom + plot_height * 0.5_wp
+        else
+            ! Normal transformation
+            pdf_y = plot_bottom + (y - y_min) / y_range * plot_height
+        end if
+        
+    end subroutine safe_coordinate_transform
     
 end module fortplot_pdf_coordinate
