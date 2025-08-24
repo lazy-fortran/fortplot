@@ -30,6 +30,7 @@ module fortplot_rendering_comparison
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_validation, only: validation_result_t
+    use fortplot_security, only: safe_create_directory
     implicit none
     
     private
@@ -466,12 +467,13 @@ contains
         integer :: file_unit, ios
         character(len=256) :: dir_path
         integer :: last_slash
+        logical :: success
         
         ! Extract directory path and create it
         last_slash = index(output_path, '/', back=.true.)
         if (last_slash > 0) then
             dir_path = output_path(1:last_slash-1)
-            call execute_command_line("mkdir -p " // trim(dir_path))
+            call safe_create_directory(trim(dir_path), success)
         end if
         
         ! Create minimal placeholder file

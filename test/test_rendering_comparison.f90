@@ -670,7 +670,14 @@ contains
         integer :: exit_code
         
         ! Create directory using system command
+        ! Cross-platform directory creation
+#ifdef _WIN32
+        ! Windows - use mkdir without -p flag
+        call execute_command_line("mkdir """ // trim(dirname) // """ 2>NUL", exitstat=exit_code)
+#else
+        ! Unix/Linux/macOS - use mkdir with -p flag
         call execute_command_line("mkdir -p " // trim(dirname), exitstat=exit_code)
+#endif
         
         ! If mkdir fails, skip creating test files for now
         if (exit_code /= 0) then

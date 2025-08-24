@@ -29,6 +29,7 @@ module fortplot_forensic_comparison
     
     use fortplot_rendering_comparison
     use fortplot_validation, only: validation_result_t
+    use fortplot_security, only: safe_create_directory
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -142,7 +143,7 @@ contains
         
         character(len=512) :: command, current_branch
         integer :: i, exit_code
-        logical :: dir_exists
+        logical :: dir_exists, success
         
         print *, "=== Generating Reference Outputs from Working Commit ==="
         print *, "Working commit: ", trim(config%working_commit)
@@ -161,9 +162,8 @@ contains
         ! Create reference output directory
         inquire(file=trim(config%reference_dir), exist=dir_exists)
         if (.not. dir_exists) then
-            call execute_command_line("mkdir -p " // trim(config%reference_dir), &
-                                     exitstat=exit_code)
-            if (exit_code /= 0) then
+            call safe_create_directory(trim(config%reference_dir), success)
+            if (.not. success) then
                 error stop "Failed to create reference directory"
             end if
         end if
@@ -219,7 +219,7 @@ contains
         
         type(forensic_test_case_t) :: test_cases(N_FORENSIC_TESTS)
         integer :: i, passed_count, failed_count
-        logical :: dir_exists
+        logical :: dir_exists, success
         
         print *, "=== Running Comprehensive Forensic Analysis ==="
         
@@ -230,13 +230,13 @@ contains
         ! Create current output directory
         inquire(file=trim(config%current_dir), exist=dir_exists)
         if (.not. dir_exists) then
-            call execute_command_line("mkdir -p " // trim(config%current_dir))
+            call safe_create_directory(trim(config%current_dir), success)
         end if
         
         ! Create diff output directory
         inquire(file=trim(config%diff_dir), exist=dir_exists)
         if (.not. dir_exists) then
-            call execute_command_line("mkdir -p " // trim(config%diff_dir))
+            call safe_create_directory(trim(config%diff_dir), success)
         end if
         
         ! Initialize test cases
@@ -292,6 +292,7 @@ contains
         character(len=512) :: ref_path, cur_path, diff_path
         character(len=512) :: report_path, html_report
         integer :: report_unit
+        logical :: success
         
         ! Construct file paths
         ref_path = trim(config%reference_dir) // trim(test_case%output_basename) // ".png"
@@ -303,7 +304,7 @@ contains
         call generate_diff_image(ref_path, cur_path, diff_path)
         
         ! Create report directory if it doesn't exist
-        call execute_command_line("mkdir -p " // trim(config%report_dir))
+        call safe_create_directory(trim(config%report_dir), success)
         
         ! Create HTML report with side-by-side comparison
         open(newunit=report_unit, file=report_path)
@@ -470,12 +471,12 @@ contains
         integer, intent(in) :: passed, failed
         
         character(len=512) :: report_file
-        logical :: dir_exists
+        logical :: dir_exists, success
         
         ! Create report directory
         inquire(file=trim(config%report_dir), exist=dir_exists)
         if (.not. dir_exists) then
-            call execute_command_line("mkdir -p " // trim(config%report_dir))
+            call safe_create_directory(trim(config%report_dir), success)
         end if
         
         report_file = trim(config%report_dir) // "forensic_analysis_summary.md"
