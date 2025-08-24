@@ -21,7 +21,7 @@ contains
         character(len=256) :: cmd
         
         ! Platform-specific command redirection
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         cmd = "magick -version > NUL 2>&1"
 #else
         cmd = "magick -version > /dev/null 2>&1"
@@ -32,7 +32,7 @@ contains
         
         if (.not. available) then
             ! Try legacy ImageMagick command
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
             cmd = "convert -version > NUL 2>&1"
 #else
             cmd = "convert -version > /dev/null 2>&1"
@@ -55,7 +55,7 @@ contains
         output_file = trim(image1) // "_rmse.txt"
         
         ! Build ImageMagick compare command
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         write(command, '(A)') 'magick compare -metric RMSE "' // &
                              trim(image1) // '" "' // trim(image2) // &
                              '" NUL 2> "' // trim(output_file) // '"'
@@ -83,7 +83,7 @@ contains
         end if
         
         ! Clean up temp file
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         call execute_command_line('del /Q "' // trim(output_file) // '" 2>NUL')
 #else
         call execute_command_line('rm -f "' // trim(output_file) // '"')
@@ -104,7 +104,7 @@ contains
         output_file = trim(image1) // "_psnr.txt"
         
         ! Build ImageMagick compare command
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         write(command, '(A)') 'magick compare -metric PSNR "' // &
                              trim(image1) // '" "' // trim(image2) // &
                              '" NUL 2> "' // trim(output_file) // '"'
@@ -139,7 +139,7 @@ contains
         end if
         
         ! Clean up temp file
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         call execute_command_line('del /Q "' // trim(output_file) // '" 2>NUL')
 #else
         call execute_command_line('rm -f "' // trim(output_file) // '"')

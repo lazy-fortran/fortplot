@@ -20,7 +20,7 @@ program test_antialiasing_restoration
     ! Check if ImageMagick is available
     magick_available = check_imagemagick_available()
     if (.not. magick_available) then
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         print *, "WARNING: ImageMagick not detected on Windows."
         print *, "  This is a known issue with path detection in execute_command_line."
         print *, "  Skipping ImageMagick-based validation tests on Windows."
@@ -161,7 +161,7 @@ contains
         stats_file = trim(filename) // "_stats.txt"
         
         ! Get image statistics
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         write(command, '(A)') &
             'magick identify -verbose "' // trim(filename) // &
             '" > "' // trim(stats_file) // '" 2>NUL'
@@ -184,7 +184,7 @@ contains
                 '" -format "%[fx:minima] %[fx:maxima]" info:'
             
             ! For now, just verify the command works
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
             call execute_command_line(trim(command) // ' > NUL 2>&1', &
                                      exitstat=exit_code)
 #else
@@ -203,7 +203,7 @@ contains
         end if
         
         ! Clean up
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         call execute_command_line('del /Q "' // trim(stats_file) // '" 2>NUL')
 #else
         call execute_command_line('rm -f "' // trim(stats_file) // '"')
@@ -266,7 +266,7 @@ contains
         end if
         
         ! Clean up temporary files
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         call execute_command_line('del /Q "' // trim(edge_file) // '" "' // &
                                  trim(stats_file) // '" 2>NUL')
 #else

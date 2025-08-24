@@ -17,7 +17,7 @@ program test_antialiasing_comprehensive
     ! Check ImageMagick availability
     magick_available = check_imagemagick_available()
     if (.not. magick_available) then
-#ifdef _WIN32
+#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
         print *, "WARNING: ImageMagick not detected on Windows."
         print *, "  This is a known issue with path detection in execute_command_line."
         print *, "  Skipping comprehensive ImageMagick validation tests on Windows."
