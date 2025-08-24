@@ -19,6 +19,7 @@ module fortplot_rendering
     use fortplot_raster, only: raster_render_ylabel
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_pdf, only: pdf_context
     use fortplot_gltf, only: gltf_context
     use fortplot_colormap
     use fortplot_security, only: is_safe_path
@@ -431,6 +432,13 @@ contains
                 end if
             end do
         end if
+        
+        ! Pass tick configuration to backend if it's a PDF context (Issue #238)
+        select type (backend => self%backend)
+        type is (pdf_context)
+            backend%x_tick_count = self%x_tick_count
+            backend%y_tick_count = self%y_tick_count
+        end select
         
         ! Call backend to draw axes and labels
         call self%backend%draw_axes_and_labels_backend( &

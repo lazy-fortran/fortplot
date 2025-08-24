@@ -46,6 +46,9 @@ module fortplot_pdf
         type(plot_area_t) :: plot_area
         ! Core PDF context from refactored module
         type(pdf_context_core), private :: core_ctx
+        ! Tick count configuration (Issue #238)
+        integer :: x_tick_count = 0  ! 0 means use dynamic calculation
+        integer :: y_tick_count = 0  ! 0 means use dynamic calculation
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
@@ -547,6 +550,32 @@ contains
         this%core_ctx%stream_data = this%core_ctx%stream_data // trim(adjustl(frame_cmd)) // new_line('a')
     end subroutine pdf_draw_plot_frame
     
+    function calculate_dynamic_tick_count(plot_dimension) result(tick_count)
+        !! Calculate optimal tick count based on plot dimension (Issue #238)
+        !! Uses a formula that considers plot size for readable tick density
+        real(wp), intent(in) :: plot_dimension  ! Width or height in pixels
+        integer :: tick_count
+        
+        ! Dynamic formula: base on dimension with reasonable bounds
+        ! Small plots (<200px): 4-5 ticks
+        ! Medium plots (200-600px): 6-8 ticks
+        ! Large plots (>600px): 8-12 ticks
+        if (plot_dimension < 200.0_wp) then
+            tick_count = 4
+        else if (plot_dimension < 400.0_wp) then
+            tick_count = 6
+        else if (plot_dimension < 600.0_wp) then
+            tick_count = 8
+        else if (plot_dimension < 1000.0_wp) then
+            tick_count = 10
+        else
+            tick_count = 12
+        end if
+        
+        ! Ensure within reasonable bounds
+        tick_count = max(3, min(15, tick_count))
+    end function calculate_dynamic_tick_count
+    
     subroutine pdf_draw_ticks_and_labels(this, x_min, x_max, y_min, y_max, xscale, yscale)
         !! Draw tick marks and labels using proper coordinate transformation
         class(pdf_context), intent(inout) :: this
@@ -555,19 +584,32 @@ contains
         
         real(wp) :: x_range, y_range, x_step, y_step
         real(wp) :: tick_x, tick_y, pdf_x, pdf_y
-        integer :: i, num_ticks
+        integer :: i, num_ticks_x, num_ticks_y
         character(len=32) :: tick_label
         character(len=256) :: tick_cmd, text_cmd
         real(wp), parameter :: TICK_LENGTH = 5.0_wp
         
         x_range = x_max - x_min
         y_range = y_max - y_min
-        num_ticks = 6
+        
+        ! Determine tick counts (Issue #238)
+        ! Use configured value if set, otherwise calculate dynamically
+        if (this%x_tick_count > 0) then
+            num_ticks_x = this%x_tick_count
+        else
+            num_ticks_x = calculate_dynamic_tick_count(real(this%plot_area%width, wp))
+        end if
+        
+        if (this%y_tick_count > 0) then
+            num_ticks_y = this%y_tick_count
+        else
+            num_ticks_y = calculate_dynamic_tick_count(real(this%plot_area%height, wp))
+        end if
         
         ! Draw X-axis ticks and labels
         if (x_range > 0.0_wp) then
-            x_step = x_range / real(num_ticks - 1, wp)
-            do i = 1, num_ticks
+            x_step = x_range / real(num_ticks_x - 1, wp)
+            do i = 1, num_ticks_x
                 tick_x = x_min + real(i - 1, wp) * x_step
                 call this%normalize_coords(tick_x, y_min, pdf_x, pdf_y)
                 
@@ -585,8 +627,8 @@ contains
         
         ! Draw Y-axis ticks and labels
         if (y_range > 0.0_wp) then
-            y_step = y_range / real(num_ticks - 1, wp)
-            do i = 1, num_ticks
+            y_step = y_range / real(num_ticks_y - 1, wp)
+            do i = 1, num_ticks_y
                 tick_y = y_min + real(i - 1, wp) * y_step
                 call this%normalize_coords(x_min, tick_y, pdf_x, pdf_y)
                 

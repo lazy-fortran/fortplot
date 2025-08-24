@@ -89,6 +89,10 @@ module fortplot_figure_base
         
         ! Plot limits
         integer :: max_plots = 50
+        
+        ! Tick count configuration (Issue #238)
+        integer :: x_tick_count = 0  ! 0 means use dynamic calculation
+        integer :: y_tick_count = 0  ! 0 means use dynamic calculation
 
     contains
         procedure :: initialize
@@ -106,6 +110,7 @@ module fortplot_figure_base
         procedure :: set_ydata
         procedure :: add_plot
         procedure :: clear
+        procedure :: set_tick_count
     end type figure_t
 
 contains
@@ -436,5 +441,35 @@ contains
             deallocate(self%arrow_data)
         end if
     end subroutine clear
+    
+    subroutine set_tick_count(self, x_ticks, y_ticks)
+        !! Set explicit tick count for axes (Issue #238)
+        !! Values are clamped to valid range [3, 15]
+        !! 0 means use dynamic calculation
+        class(figure_t), intent(inout) :: self
+        integer, intent(in) :: x_ticks, y_ticks
+        
+        ! Validate and clamp X tick count
+        if (x_ticks == 0) then
+            self%x_tick_count = 0  ! Use dynamic calculation
+        else if (x_ticks < 3) then
+            self%x_tick_count = 3  ! Minimum
+        else if (x_ticks > 15) then
+            self%x_tick_count = 15  ! Maximum
+        else
+            self%x_tick_count = x_ticks
+        end if
+        
+        ! Validate and clamp Y tick count
+        if (y_ticks == 0) then
+            self%y_tick_count = 0  ! Use dynamic calculation
+        else if (y_ticks < 3) then
+            self%y_tick_count = 3  ! Minimum
+        else if (y_ticks > 15) then
+            self%y_tick_count = 15  ! Maximum
+        else
+            self%y_tick_count = y_ticks
+        end if
+    end subroutine set_tick_count
 
 end module fortplot_figure_base
