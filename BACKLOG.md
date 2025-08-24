@@ -3,7 +3,6 @@
 ## TODO (Ordered by Priority)
 
 ### CURRENT SPRINT - Forensic Analysis & Restoration Framework
-- [ ] #252: Create comprehensive rendering comparison framework
 - [ ] #248: PNG antialiasing quality degradation since 690b9834
 - [ ] #249: PDF coordinate system and scaling fundamental issues
 - [ ] #250: PNG line styles and markers rendering pipeline degradation
@@ -31,6 +30,7 @@
 - Performance impact validation
 
 ## DOING (Current Work)
+- [x] #252: Create comprehensive rendering comparison framework (branch: feature-252)
 
 ## DONE (Completed)
 - [x] #239: Complete PDF grid functionality or remove stub
