@@ -27,21 +27,11 @@ program test_pdf_coordinate_accuracy
     ctx%x_min = 0.0_wp; ctx%x_max = 10.0_wp
     ctx%y_min = 0.0_wp; ctx%y_max = 10.0_wp
 
-    ! Test center point (5,5) should map to center of plot area
-    test_x = 5.0_wp; test_y = 5.0_wp
-    
-    ! Manual coordinate transformation using same logic as normalize_to_pdf_coords
-    expected_x = real(ctx%plot_area%left, wp) + real(ctx%plot_area%width, wp) * 0.5_wp
-    expected_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + &
-                 real(ctx%plot_area%height, wp) * 0.5_wp
-
     write(*, '(A)') "Plot area details:"
     write(*, '(A, I0, A, I0, A, I0, A, I0)') &
         "  Left: ", ctx%plot_area%left, ", Bottom: ", ctx%plot_area%bottom, &
         ", Width: ", ctx%plot_area%width, ", Height: ", ctx%plot_area%height
     write(*, '(A, I0, A, I0)') "  Canvas: ", ctx%width, " x ", ctx%height
-
-    write(*, '(A, F8.2, A, F8.2)') "  Expected center PDF coords: (", expected_x, ", ", expected_y, ")"
 
     ! Test coordinate transformation consistency
     write(*, '(A)') ""
@@ -92,23 +82,31 @@ contains
         logical, intent(inout) :: passed
         
         real(wp) :: pdf_x, pdf_y
-        real(wp) :: expected_x, expected_y
-        real(wp) :: x_range, y_range
+        type(pdf_context_handle) :: ctx_handle
         
-        ! Calculate expected PDF coordinates manually
-        x_range = ctx%x_max - ctx%x_min
-        y_range = ctx%y_max - ctx%y_min
+        ! Set up context handle for coordinate transformation
+        ctx_handle%x_min = ctx%x_min
+        ctx_handle%x_max = ctx%x_max
+        ctx_handle%y_min = ctx%y_min
+        ctx_handle%y_max = ctx%y_max
+        ctx_handle%plot_area = ctx%plot_area
+        ctx_handle%width = ctx%width
+        ctx_handle%height = ctx%height
         
-        expected_x = (x - ctx%x_min) / x_range * real(ctx%plot_area%width, wp) + &
-                     real(ctx%plot_area%left, wp)
-        expected_y = (y - ctx%y_min) / y_range * real(ctx%plot_area%height, wp) + &
-                     real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
+        ! Use actual coordinate transformation function
+        call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
         
-        ! Test internal consistency of coordinate logic
-        
-        ! For now, test that the logic is internally consistent
-        write(*, '(A, A, A, F6.1, A, F6.1, A, F8.2, A, F8.2, A)') &
-            "  ", label, ": (", x, ", ", y, ") -> (", expected_x, ", ", expected_y, ")"
+        ! Test that coordinates are within expected bounds
+        if (pdf_x < real(ctx%plot_area%left, wp) - 1.0_wp .or. &
+            pdf_x > real(ctx%plot_area%left + ctx%plot_area%width, wp) + 1.0_wp .or. &
+            pdf_y < real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) - 1.0_wp .or. &
+            pdf_y > real(ctx%height - ctx%plot_area%bottom, wp) + 1.0_wp) then
+            write(*, '(A, A, A)') "  ERROR: ", label, " coordinates out of bounds"
+            passed = .false.
+        else
+            write(*, '(A, A, A, F6.1, A, F6.1, A, F8.2, A, F8.2, A)') &
+                "  ", label, ": (", x, ", ", y, ") -> (", pdf_x, ", ", pdf_y, ")"
+        end if
     end subroutine test_coordinate_mapping
 
     subroutine test_aspect_ratio_preservation(ctx, passed)
