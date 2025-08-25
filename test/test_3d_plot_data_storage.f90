@@ -4,6 +4,7 @@ program test_3d_plot_data_storage
     
     use iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: plot_data_t, PLOT_TYPE_LINE
+    use fortplot_windows_test_helper, only: get_windows_safe_tolerance
     implicit none
     
     call test_3d_line_plot_storage()
@@ -56,8 +57,8 @@ contains
         !     error stop "z coordinate value mismatch"
         ! end if
         
-        ! Current working assertions
-        if (abs(plot_data%x(3) - 3.0_wp) > 1e-10_wp) then
+        ! Current working assertions with platform-safe tolerance
+        if (abs(plot_data%x(3) - 3.0_wp) > get_windows_safe_tolerance(1e-10_wp)) then
             error stop "x coordinate value mismatch"
         end if
         
