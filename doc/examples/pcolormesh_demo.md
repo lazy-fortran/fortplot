@@ -33,3 +33,141 @@ make example ARGS="pcolormesh_demo"
 
 ## Output
 
+### Basic Linear Gradient
+
+![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
+
+ASCII output:
+```
+
+                       Basic Pcolormesh - Linear Gradient
++--------------------------------------------------------------------------------+
+|1.20                                                                            |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|1.00                                                                            |
+|        +               *              #              %               @         |
+|                                                                                |
+| .                                                                              |
+|                                                                                |
+|.800                                                                            |
+|                                                                                |
+|                                                                                |
+| .      -               =              +              *               #         |
+|                                                                                |
+|.600                                                                            |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .      .               :              -              =               +         |
+|.400                                                                            |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+| .                                                                              |
+|.200                                                                            |
+|                                       .              :               -         |
+|                                                                                |
+|                                                                                |
+| .       .        .       .        .       .        .       .        .        . |
+|0                  .500                1.00                1.50            2.00 |
++--------------------------------------------------------------------------------+
+                                  X coordinate
+Y coordinate
+```
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
+
+### Sinusoidal Pattern
+
+![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
+
+ASCII output:
+```
+
+                        Pcolormesh - Sinusoidal Pattern
++--------------------------------------------------------------------------------+
+|1.20                                                                            |
+| .                                                                              |
+|                                                                                |
+|    =       =       =      =       =       =       =      =                     |
+|1.00                                                                            |
+|        +               *              #              %               @         |
+|                                                                                |
+| .  #       :              +       %       =              :                     |
+|                                                                                |
+|.800                                                                            |
+|    *       -       .      +       #       =       .      -                     |
+|                                                                                |
+| .      -               =              +              *               #         |
+|    :       +       #      -       .       =       #      +                     |
+|.600                                                                            |
+|                                                                                |
+|                                                                                |
+|    .       *       %      -               =       %      *                     |
+| .      .               :              -              =               +         |
+|.400                                                                            |
+|    =       =       =      =       =       =       =      =                     |
+|                                                                                |
+|                                                                                |
+| .  #       :              +       @       =              :                     |
+|.200                                                                            |
+|                                       .              :               -         |
+|                                                                                |
+|    *       -       .      +       #       =       .      -                     |
+| .       .        .       .        .       .        .       .        .        . |
+|0                  .500                1.00                1.50            2.00 |
++--------------------------------------------------------------------------------+
+                                  X coordinate
+Y coordinate
+```
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
+
+### Radial Pattern with Plasma Colormap
+
+![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
+
+ASCII output:
+```
+
+                      Pcolormesh - Radial Pattern (Plasma)
++--------------------------------------------------------------------------------+
+|1.20                                                                            |
+| .                                                                              |
+|                                                                                |
+|                                                                                |
+|    = -     =     + =      = #     =     # =       =+     =                     |
+|1.00                                                                            |
+| .      +               *              #              %               @         |
+|    #       :              +       %       =              :                     |
+|                                                                                |
+|                                                                                |
+|.800  -           *          @           %          +                           |
+|    *       -       .      +       #       =       .      -                     |
+|        -               =              +              *               #         |
+|                                                                                |
+|    :       +       #      -       .       =       #      +                     |
+|.600  :           =          +           +          =                           |
+|                                                                                |
+|    .       *       %      -               =       %      *                     |
+|                                                                                |
+|.400    .               :              -              =               +         |
+|    = .     =     : =      = :     =     : =       =:     =                     |
+|                                                                                |
+|                                                                                |
+|                                                                                |
+|.200#       :              +       @       =              :                     |
+|                                       .              :               -         |
+|                                                                                |
+|    *       -       .      +       #       =       .      -                     |
+| .       .        .       .        .       .        .       .        .        . |
+|0                  .500                1.00                1.50            2.00 |
++--------------------------------------------------------------------------------+
+                                  X coordinate
+Y coordinate
+```
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
+
