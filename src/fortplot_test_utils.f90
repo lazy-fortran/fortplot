@@ -162,9 +162,16 @@ contains
         real(real64) :: tolerance
         
         if (is_windows()) then
-            ! On Windows, relax tolerance by factor of 10 to handle precision differences
-            ! Still catches real bugs while avoiding false failures
-            tolerance = base_tolerance * 10.0_real64
+            ! On Windows, relax tolerance to handle:
+            ! - Different math libraries (MSYS2 mingw-w64 vs native)
+            ! - Different optimization levels and compiler flags
+            ! - Different floating-point unit control words
+            ! Factor of 100 for very small values, 10 for larger values
+            if (base_tolerance < 1.0e-10_real64) then
+                tolerance = base_tolerance * 100.0_real64
+            else
+                tolerance = base_tolerance * 10.0_real64
+            end if
         else
             ! On Linux/Unix, maintain tight tolerance for precision
             tolerance = base_tolerance

@@ -10,6 +10,7 @@
     #include <fcntl.h>
     #define popen _popen
     #define pclose _pclose
+    #define access _access
     typedef HANDLE timeout_handle_t;
     // Binary mode flag for Windows
     #ifndef _O_BINARY
@@ -97,7 +98,16 @@ int check_ffmpeg_available_timeout_c(void) {
     const char* test_command;
     
 #ifdef _WIN32
-    test_command = "ffmpeg -version >NUL 2>&1";
+    // On Windows CI with MSYS2, use full path if available
+    // Check MSYS2 paths first
+    if (access("C:\\msys64\\mingw64\\bin\\ffmpeg.exe", 0) == 0) {
+        test_command = "C:\\msys64\\mingw64\\bin\\ffmpeg.exe -version >NUL 2>&1";
+    } else if (access("ffmpeg.exe", 0) == 0) {
+        test_command = "ffmpeg -version >NUL 2>&1";
+    } else {
+        // FFmpeg not found in expected locations
+        return 0;
+    }
 #else
     test_command = "ffmpeg -version >/dev/null 2>&1";
 #endif
