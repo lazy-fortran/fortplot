@@ -16,7 +16,7 @@ module fortplot_matplotlib
                                 figure_streamplot => streamplot, figure_bar => bar, figure_barh => barh, &
                                 figure_hist => hist, figure_errorbar => errorbar, &
                                 figure_add_3d_plot => add_3d_plot, figure_add_surface => add_surface
-    use fortplot_rendering, only: figure_legend, render_show => show, figure_savefig => savefig
+    ! Type-bound procedures from figure_t are used directly through fig%method() calls
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_security, only: safe_launch_viewer, safe_remove_file
     

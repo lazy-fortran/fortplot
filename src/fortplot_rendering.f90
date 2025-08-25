@@ -1,786 +1,512 @@
 module fortplot_rendering
-    !! Rendering pipeline for figure (SOLID principles compliance)
+    !! Figure rendering pipeline module
     !! 
-    !! This module contains all rendering-related methods, separated from
-    !! figure base and plot addition for better modularity.
+    !! This module handles the rendering pipeline for all plot types,
+    !! including coordinate transformations and drawing operations.
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
-    use fortplot_figure_base, only: figure_t
-    use fortplot_plot_data, only: plot_data_t, &
-                                    PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-                                    PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
-                                    PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
-    use fortplot_scales
-    use fortplot_axes
-    use fortplot_legend
-    use fortplot_pcolormesh
-    use fortplot_format_parser, only: parse_format_string, contains_format_chars
-    use fortplot_raster, only: raster_render_ylabel
-    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
-    use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
-    use fortplot_pdf, only: pdf_context
+    use fortplot_context
+    use fortplot_scales, only: apply_scale_transform
+    use fortplot_utils
     use fortplot_colormap
-    use fortplot_security, only: is_safe_path
-    use fortplot_logging, only: log_error, log_info, log_warning
-    use fortplot_utils, only: get_backend_from_filename, to_lowercase
-
+    use fortplot_contour_algorithms
+    use fortplot_plot_data
+    use fortplot_format_parser, only: parse_format_string
     implicit none
-
+    
     private
-    public :: render_figure, savefig, show, figure_legend, render_annotations
-    public :: clear_streamlines, gather_subplot_plots
-
+    public :: render_line_plot
+    public :: render_contour_plot
+    public :: render_pcolormesh_plot
+    public :: render_markers
+    public :: draw_line_with_style
+    public :: render_solid_line
+    public :: render_patterned_line
+    public :: transform_quad_to_screen
+    public :: draw_filled_quad
+    public :: draw_quad_edges
+    
 contains
-
-    subroutine render_figure(self)
-        !! Main figure rendering pipeline (follows Template Method pattern)
-        class(figure_t), intent(inout) :: self
+    
+    subroutine render_line_plot(backend, plot_data, plot_idx, x_min_t, x_max_t, y_min_t, y_max_t, xscale, yscale, symlog_threshold)
+        !! Render a line plot with proper scaling and clipping
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        integer, intent(in) :: plot_idx
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
         
-        if (self%rendered) return
+        real(wp), allocatable :: x_scaled(:), y_scaled(:)
+        integer :: i, n
         
-        ! Calculate data ranges and setup coordinate system
-        call calculate_figure_data_ranges(self)
-        call setup_coordinate_system(self)
+        n = size(plot_data%x)
+        allocate(x_scaled(n), y_scaled(n))
         
-        ! Render figure components in order
-        call render_figure_background(self)
-        call render_figure_axes(self)
-        call render_all_plots(self)
-        call render_arrows(self)
-        call render_streamlines(self)
-        call render_annotations(self)
+        ! Transform coordinates based on scale
+        do i = 1, n
+            x_scaled(i) = apply_scale_transform(plot_data%x(i), xscale, symlog_threshold)
+            y_scaled(i) = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
+        end do
         
-        ! Render legend if present
-        if (self%legend_added) then
-            call render_figure_legend(self)
-        end if
+        ! Set color
+        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
         
-        self%rendered = .true.
-    end subroutine render_figure
-
-    subroutine savefig(self, filename, blocking)
-        !! Save figure to file with backend auto-detection
-        use fortplot_utils, only: initialize_backend
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: filename
-        logical, intent(in), optional :: blocking
+        ! Draw the line segments
+        do i = 1, n-1
+            call backend%line(x_scaled(i), y_scaled(i), x_scaled(i+1), y_scaled(i+1))
+        end do
         
-        character(len=20) :: backend_type
-        logical :: do_block
+        deallocate(x_scaled, y_scaled)
+    end subroutine render_line_plot
+    
+    subroutine render_markers(backend, plot_data, x_min_t, x_max_t, y_min_t, y_max_t, xscale, yscale, symlog_threshold)
+        !! Render markers for a plot
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
         
-        ! Validate filename security (Issue #135)
-        if (.not. is_safe_path(filename)) then
-            call log_error("Unsafe filename rejected: " // trim(filename))
-            return
-        end if
+        real(wp) :: x_scaled, y_scaled
+        integer :: i
         
-        ! Default to non-blocking
-        do_block = .false.
-        if (present(blocking)) do_block = blocking
+        if (.not. allocated(plot_data%marker)) return
+        if (len_trim(plot_data%marker) == 0) return
         
-        ! Create output directory if needed
-        ! Note: ensure_directory_exists would be implemented in full version
-        ! call ensure_directory_exists(filename)
+        ! Draw markers
+        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
         
-        ! Auto-detect backend from filename extension
-        backend_type = get_backend_from_filename(filename)
+        do i = 1, size(plot_data%x)
+            x_scaled = apply_scale_transform(plot_data%x(i), xscale, symlog_threshold)
+            y_scaled = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
+            call backend%draw_marker(x_scaled, y_scaled, plot_data%marker)
+        end do
+    end subroutine render_markers
+    
+    subroutine render_contour_plot(backend, plot_data, x_min_t, x_max_t, y_min_t, y_max_t, &
+                                  xscale, yscale, symlog_threshold, width, height, &
+                                  margin_left, margin_right, margin_bottom, margin_top)
+        !! Render a contour plot
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
         
-        ! Switch backend if needed
-        call switch_backend_if_needed(self, backend_type)
+        real(wp) :: z_min, z_max
+        real(wp), dimension(3) :: level_color
+        integer :: i, j, nx, ny, nlev
+        real(wp) :: level
         
-        ! Render figure
-        call render_figure(self)
+        ! Get data ranges
+        z_min = minval(plot_data%z_grid)
+        z_max = maxval(plot_data%z_grid)
         
-        ! Save to file
-        call self%backend%save(filename)
+        nx = size(plot_data%x_grid)
+        ny = size(plot_data%y_grid)
         
-        call log_info("Figure saved to: " // trim(filename))
-        
-        ! Handle blocking behavior
-        if (do_block) then
-            call wait_for_user_input()
-        end if
-    end subroutine savefig
-
-    subroutine show(self, blocking)
-        !! Display figure using current backend
-        class(figure_t), intent(inout) :: self
-        logical, intent(in), optional :: blocking
-        
-        logical :: do_block
-        
-        ! Default to non-blocking
-        do_block = .false.
-        if (present(blocking)) do_block = blocking
-        
-        ! Render figure
-        call render_figure(self)
-        
-        ! Display the figure (save to ASCII output for terminal display)
-        call self%backend%save('fortplot_output.txt')
-        
-        ! Handle blocking behavior
-        if (do_block) then
-            call wait_for_user_input()
-        end if
-    end subroutine show
-
-    subroutine gather_subplot_plots(self)
-        !! Gather all subplot plots into main plots array for rendering
-        class(figure_t), intent(inout) :: self
-        integer :: subplot_idx, plot_idx, total_idx
-        
-        ! Always gather plots from subplots into main plots array
-        total_idx = 0
-        
-        if (allocated(self%subplots)) then
-            do subplot_idx = 1, self%subplot_rows * self%subplot_cols
-                do plot_idx = 1, self%subplots(subplot_idx)%plot_count
-                    total_idx = total_idx + 1
-                    if (total_idx <= self%max_plots) then
-                        self%plots(total_idx) = self%subplots(subplot_idx)%plots(plot_idx)
-                    end if
-                end do
+        ! Render contour levels
+        if (allocated(plot_data%contour_levels)) then
+            nlev = size(plot_data%contour_levels)
+            do i = 1, nlev
+                level = plot_data%contour_levels(i)
+                
+                ! Set color based on contour level if using color levels
+                if (plot_data%use_color_levels) then
+                    call colormap_value_to_color(level, z_min, z_max, &
+                                               plot_data%colormap, level_color)
+                    call backend%color(level_color(1), level_color(2), level_color(3))
+                else
+                    call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+                end if
+                
+                ! Trace this contour level
+                call trace_contour_level(backend, plot_data, level, xscale, yscale, &
+                                       symlog_threshold, x_min_t, x_max_t, y_min_t, y_max_t)
             end do
-        end if
-        
-        self%plot_count = total_idx
-    end subroutine gather_subplot_plots
-
-    subroutine calculate_figure_data_ranges(self)
-        !! Calculate overall data ranges from all plots
-        class(figure_t), intent(inout) :: self
-        integer :: i
-        logical :: first_plot
-        
-        ! Gather subplot data if needed
-        call gather_subplot_plots(self)
-        
-        if (self%plot_count == 0) return
-        
-        first_plot = .true.
-        
-        do i = 1, self%plot_count
-            call update_ranges_from_plot(self, i, first_plot)
-            first_plot = .false.
-        end do
-        
-        ! Handle pcolormesh data ranges separately
-        call update_data_ranges_pcolormesh(self)
-        call update_data_ranges_boxplot(self)
-        
-        ! Transform ranges based on scale settings
-        call transform_axis_ranges(self)
-    end subroutine calculate_figure_data_ranges
-
-    subroutine setup_coordinate_system(self)
-        !! Setup backend coordinate system
-        class(figure_t), intent(inout) :: self
-        
-        call self%backend%set_coordinates(self%x_min_transformed, self%x_max_transformed, &
-                                         self%y_min_transformed, self%y_max_transformed)
-    end subroutine setup_coordinate_system
-
-    subroutine render_figure_background(self)
-        !! Render figure background
-        class(figure_t), intent(inout) :: self
-        
-        ! Backend initialization handles clearing
-        ! No explicit clear needed as setup_canvas initializes clean backend
-    end subroutine render_figure_background
-
-    subroutine render_figure_axes(self)
-        !! Render figure axes, labels, and title
-        class(figure_t), intent(inout) :: self
-        
-        ! Render axes with ticks
-        call render_axis_framework(self)
-        
-        ! Render labels
-        call render_axis_labels(self)
-        
-        ! Render title using text method
-        if (allocated(self%title)) then
-            ! Place title at top center of the plot area
-            call self%backend%text((self%x_min_transformed + self%x_max_transformed) / 2.0_wp, &
-                                  self%y_max_transformed + 0.05_wp * (self%y_max_transformed - self%y_min_transformed), &
-                                  self%title)
-        end if
-    end subroutine render_figure_axes
-
-    subroutine render_all_plots(self)
-        !! Render all plots in the figure
-        class(figure_t), intent(inout) :: self
-        integer :: i, subplot_idx
-        
-        ! Get current subplot (default to 1)
-        subplot_idx = max(1, self%current_subplot)
-        if (.not. allocated(self%subplots)) return
-        if (subplot_idx > size(self%subplots)) return
-        
-        ! Render all plots in the current subplot
-        do i = 1, self%subplots(subplot_idx)%plot_count
-            call render_single_plot(self, i)
-        end do
-    end subroutine render_all_plots
-
-    subroutine render_arrows(self)
-        !! Render arrow annotations
-        class(figure_t), intent(inout) :: self
-        integer :: i
-        
-        if (.not. allocated(self%arrow_data)) return
-        
-        do i = 1, size(self%arrow_data)
-            call render_single_arrow(self, i)
-        end do
-    end subroutine render_arrows
-
-    subroutine render_streamlines(self)
-        !! Render streamline data
-        class(figure_t), intent(inout) :: self
-        integer :: i
-        
-        if (.not. allocated(self%streamlines)) return
-        
-        do i = 1, size(self%streamlines)
-            call render_streamline(self, i)
-        end do
-    end subroutine render_streamlines
-
-    subroutine render_annotations(self)
-        !! Render text annotations (Issue #184)
-        class(figure_t), intent(inout) :: self
-        
-        ! Note: Full annotation rendering would be implemented in complete version
-        ! For now, just stub to satisfy interface
-        if (.not. allocated(self%annotations)) return
-        ! Stub: annotation rendering logic would go here
-    end subroutine render_annotations
-
-    subroutine figure_legend(self, location)
-        !! Add legend to figure
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in), optional :: location
-        integer :: i
-        
-        if (present(location)) then
-            call parse_legend_location(location, self%legend_location)
-        end if
-        
-        self%legend_added = .true.
-        
-        ! Gather subplot plots into main plots array first
-        call gather_subplot_plots(self)
-        
-        ! Initialize legend data immediately
-        if (.not. allocated(self%legend_data%entries)) then
-            allocate(self%legend_data%entries(0))
-            self%legend_data%num_entries = 0
-        end if
-        
-        ! Populate legend with labeled plots from main plots array
-        ! Normal figures store plots in self%plots with self%plot_count
-        do i = 1, self%plot_count
-            if (allocated(self%plots(i)%label)) then
-                if (len_trim(self%plots(i)%label) > 0) then
-                    call self%legend_data%add_entry(self%plots(i)%label, &
-                                             self%plots(i)%color, &
-                                             self%plots(i)%linestyle, &
-                                             self%plots(i)%marker)
-                end if
-            end if
-        end do
-    end subroutine figure_legend
-
-    subroutine render_figure_legend(self)
-        !! Render legend following SOLID principles
-        !! Position and render the pre-populated legend
-        class(figure_t), intent(inout) :: self
-        integer :: i
-        
-        ! Initialize legend if not already done
-        if (.not. allocated(self%legend_data%entries)) then
-            allocate(self%legend_data%entries(0))
-            self%legend_data%num_entries = 0
-        end if
-        
-        ! Set legend position based on legend_location
-        ! Match actual constants: LEGEND_UPPER_LEFT=1, LEGEND_UPPER_RIGHT=2, etc.
-        select case(self%legend_location)
-        case(1)
-            self%legend_data%position = LEGEND_UPPER_LEFT
-        case(2)
-            self%legend_data%position = LEGEND_UPPER_RIGHT
-        case(3)
-            self%legend_data%position = LEGEND_LOWER_LEFT
-        case(4)
-            self%legend_data%position = LEGEND_LOWER_RIGHT
-        case default
-            self%legend_data%position = LEGEND_UPPER_RIGHT
-        end select
-        
-        ! Populate legend with labeled plots from main plots array
-        ! Normal figures store plots in self%plots with self%plot_count
-        do i = 1, self%plot_count
-            if (allocated(self%plots(i)%label)) then
-                if (len_trim(self%plots(i)%label) > 0) then
-                    call self%legend_data%add_entry(self%plots(i)%label, &
-                                             self%plots(i)%color, &
-                                             self%plots(i)%linestyle, &
-                                             self%plots(i)%marker)
-                end if
-            end if
-        end do
-        
-        ! Render legend if we have entries
-        if (self%legend_data%num_entries > 0) then
-            call legend_render(self%legend_data, self%backend)
-        end if
-    end subroutine render_figure_legend
-
-    subroutine clear_streamlines(self)
-        !! Clear streamline data
-        class(figure_t), intent(inout) :: self
-        
-        if (allocated(self%streamlines)) then
-            deallocate(self%streamlines)
-        end if
-    end subroutine clear_streamlines
-
-    ! Private implementation subroutines
-
-    function symlog_transform(x, threshold) result(transformed)
-        !! Apply symlog transformation
-        real(wp), intent(in) :: x, threshold
-        real(wp) :: transformed
-        
-        if (abs(x) <= threshold) then
-            transformed = x
-        else if (x > 0) then
-            transformed = threshold * (1.0_wp + log10(x / threshold))
         else
-            transformed = -threshold * (1.0_wp + log10(-x / threshold))
+            ! Use default 3 levels
+            call render_default_contour_levels(backend, plot_data, z_min, z_max, &
+                                             xscale, yscale, symlog_threshold, &
+                                             x_min_t, x_max_t, y_min_t, y_max_t)
         end if
-    end function symlog_transform
-
-    subroutine switch_backend_if_needed(self, target_backend)
-        !! Switch backend if current doesn't match target
-        use fortplot_utils, only: initialize_backend
-        use fortplot_ascii, only: ascii_context
-        use fortplot_pdf, only: pdf_context
-        use fortplot_png, only: png_context
-        use fortplot_raster, only: raster_context
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: target_backend
         
-        character(len=20) :: current_backend
+        ! Colorbar rendering handled elsewhere if needed
+    end subroutine render_contour_plot
+    
+    subroutine render_default_contour_levels(backend, plot_data, z_min, z_max, &
+                                           xscale, yscale, symlog_threshold, &
+                                           x_min_t, x_max_t, y_min_t, y_max_t)
+        !! Render default contour levels
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
         
-        ! Detect current backend type using polymorphic type checking
-        current_backend = 'unknown'
-        if (allocated(self%backend)) then
-            select type (backend => self%backend)
-            type is (ascii_context)
-                current_backend = 'ascii'
-            type is (pdf_context)  
-                current_backend = 'pdf'
-            type is (png_context)
-                current_backend = 'png'
-            type is (raster_context)
-                current_backend = 'png'  ! Treat base raster as PNG
-            class default
-                current_backend = 'ascii'  ! Default fallback
+        real(wp), dimension(3) :: level_color
+        real(wp) :: level_values(3)
+        integer :: i
+        
+        level_values = [z_min + 0.2_wp * (z_max - z_min), &
+                       z_min + 0.5_wp * (z_max - z_min), &
+                       z_min + 0.8_wp * (z_max - z_min)]
+        
+        do i = 1, 3
+            if (plot_data%use_color_levels) then
+                call colormap_value_to_color(level_values(i), z_min, z_max, &
+                                           plot_data%colormap, level_color)
+                call backend%color(level_color(1), level_color(2), level_color(3))
+            end if
+            
+            call trace_contour_level(backend, plot_data, level_values(i), &
+                                   xscale, yscale, symlog_threshold, &
+                                   x_min_t, x_max_t, y_min_t, y_max_t)
+        end do
+    end subroutine render_default_contour_levels
+    
+    subroutine trace_contour_level(backend, plot_data, level, xscale, yscale, &
+                                  symlog_threshold, x_min_t, x_max_t, y_min_t, y_max_t)
+        !! Trace a single contour level using marching squares
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: level
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        
+        integer :: nx, ny, i, j
+        
+        nx = size(plot_data%x_grid)
+        ny = size(plot_data%y_grid)
+        
+        do i = 1, nx-1
+            do j = 1, ny-1
+                call process_contour_cell(backend, plot_data, i, j, level, &
+                                        xscale, yscale, symlog_threshold)
+            end do
+        end do
+    end subroutine trace_contour_level
+    
+    subroutine process_contour_cell(backend, plot_data, i, j, level, xscale, yscale, symlog_threshold)
+        !! Process a single grid cell for contour extraction
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        integer, intent(in) :: i, j
+        real(wp), intent(in) :: level
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        
+        real(wp) :: x1, y1, x2, y2, x3, y3, x4, y4
+        real(wp) :: z1, z2, z3, z4
+        integer :: config
+        real(wp), dimension(8) :: line_points
+        integer :: num_lines
+        
+        ! Get cell coordinates and values
+        x1 = plot_data%x_grid(i)
+        y1 = plot_data%y_grid(j)
+        x2 = plot_data%x_grid(i+1)
+        y2 = plot_data%y_grid(j)
+        x3 = plot_data%x_grid(i+1)
+        y3 = plot_data%y_grid(j+1)
+        x4 = plot_data%x_grid(i)
+        y4 = plot_data%y_grid(j+1)
+        
+        z1 = plot_data%z_grid(i, j)
+        z2 = plot_data%z_grid(i+1, j)
+        z3 = plot_data%z_grid(i+1, j+1)
+        z4 = plot_data%z_grid(i, j+1)
+        
+        call calculate_marching_squares_config(z1, z2, z3, z4, level, config)
+        call get_contour_lines(config, x1, y1, x2, y2, x3, y3, x4, y4, &
+                             z1, z2, z3, z4, level, line_points, num_lines)
+        
+        ! Draw contour lines
+        if (num_lines > 0) then
+            call draw_contour_lines(backend, line_points, num_lines, xscale, yscale, symlog_threshold)
+        end if
+    end subroutine process_contour_cell
+    
+    subroutine draw_contour_lines(backend, line_points, num_lines, xscale, yscale, symlog_threshold)
+        !! Draw contour line segments
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: line_points(8)
+        integer, intent(in) :: num_lines
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        
+        real(wp) :: x1, y1, x2, y2
+        
+        if (num_lines >= 1) then
+            x1 = apply_scale_transform(line_points(1), xscale, symlog_threshold)
+            y1 = apply_scale_transform(line_points(2), yscale, symlog_threshold)
+            x2 = apply_scale_transform(line_points(3), xscale, symlog_threshold)
+            y2 = apply_scale_transform(line_points(4), yscale, symlog_threshold)
+            
+            call backend%line(x1, y1, x2, y2)
+        end if
+        
+        if (num_lines >= 2) then
+            x1 = apply_scale_transform(line_points(5), xscale, symlog_threshold)
+            y1 = apply_scale_transform(line_points(6), yscale, symlog_threshold)
+            x2 = apply_scale_transform(line_points(7), xscale, symlog_threshold)
+            y2 = apply_scale_transform(line_points(8), yscale, symlog_threshold)
+            
+            call backend%line(x1, y1, x2, y2)
+        end if
+    end subroutine draw_contour_lines
+    
+    subroutine render_pcolormesh_plot(backend, plot_data, x_min_t, x_max_t, y_min_t, y_max_t, &
+                                     xscale, yscale, symlog_threshold, width, height, margin_right)
+        !! Render a pcolormesh plot
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: margin_right
+        
+        real(wp) :: x_quad(4), y_quad(4), x_screen(4), y_screen(4)
+        real(wp), dimension(3) :: quad_color
+        real(wp) :: c_value, vmin, vmax
+        integer :: i, j, nx, ny
+        
+        nx = size(plot_data%pcolormesh_data%c_values, 2)
+        ny = size(plot_data%pcolormesh_data%c_values, 1)
+        
+        vmin = plot_data%pcolormesh_data%vmin
+        vmax = plot_data%pcolormesh_data%vmax
+        
+        ! Render each quad
+        do i = 1, nx
+            do j = 1, ny
+                ! Get quad corners from vertices arrays
+                x_quad = [plot_data%pcolormesh_data%x_vertices(j, i), &
+                         plot_data%pcolormesh_data%x_vertices(j, i+1), &
+                         plot_data%pcolormesh_data%x_vertices(j+1, i+1), &
+                         plot_data%pcolormesh_data%x_vertices(j+1, i)]
+                         
+                y_quad = [plot_data%pcolormesh_data%y_vertices(j, i), &
+                         plot_data%pcolormesh_data%y_vertices(j, i+1), &
+                         plot_data%pcolormesh_data%y_vertices(j+1, i+1), &
+                         plot_data%pcolormesh_data%y_vertices(j+1, i)]
+                
+                ! Transform to screen coordinates
+                call transform_quad_to_screen(x_quad, y_quad, x_screen, y_screen, &
+                                            xscale, yscale, symlog_threshold)
+                
+                ! Get color for this quad
+                c_value = plot_data%pcolormesh_data%c_values(j, i)
+                call colormap_value_to_color(c_value, vmin, vmax, &
+                                           plot_data%pcolormesh_data%colormap_name, quad_color)
+                
+                ! Draw filled quad
+                call backend%color(quad_color(1), quad_color(2), quad_color(3))
+                call draw_filled_quad(backend, x_screen, y_screen)
+                
+                ! Draw edges if requested
+                if (plot_data%pcolormesh_data%show_edges) then
+                    call backend%color(plot_data%pcolormesh_data%edge_color(1), &
+                                     plot_data%pcolormesh_data%edge_color(2), &
+                                     plot_data%pcolormesh_data%edge_color(3))
+                    call draw_quad_edges(backend, x_screen, y_screen, &
+                                       plot_data%pcolormesh_data%edge_width)
+                end if
+            end do
+        end do
+        
+        ! Colorbar rendering handled elsewhere if needed
+    end subroutine render_pcolormesh_plot
+    
+    subroutine draw_line_with_style(backend, x, y, linestyle, color)
+        !! Draw a line with the specified style
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: linestyle
+        real(wp), intent(in), optional :: color(3)
+        
+        if (present(color)) then
+            call backend%color(color(1), color(2), color(3))
+        end if
+        
+        if (present(linestyle)) then
+            select case (trim(linestyle))
+            case ('--', 'dashed')
+                call render_patterned_line(backend, x, y, '--')
+            case (':', 'dotted')
+                call render_patterned_line(backend, x, y, ':')
+            case ('-.', 'dashdot')
+                call render_patterned_line(backend, x, y, '-.')
+            case default
+                call render_solid_line(backend, x, y)
             end select
         else
-            current_backend = 'ascii'  ! Default for unallocated backend
+            call render_solid_line(backend, x, y)
         end if
-        
-        ! PNG backend switching is now enabled
-        ! Previous workaround for raster backend corruption has been resolved
-        
-        if (trim(current_backend) /= trim(target_backend)) then
-            ! Destroy current backend
-            if (allocated(self%backend)) deallocate(self%backend)
-            
-            ! Create new backend
-            call initialize_backend(self%backend, target_backend, self%width, self%height)
-            
-            ! Reset rendered flag
-            self%rendered = .false.
-        end if
-    end subroutine switch_backend_if_needed
-
-    subroutine wait_for_user_input()
-        !! Wait for user input when blocking
-        character(len=1) :: dummy
-        
-        write(*,'(A)', advance='no') 'Press Enter to continue...'
-        read(*,'(A)') dummy
-    end subroutine wait_for_user_input
-
-    subroutine update_ranges_from_plot(self, plot_idx, first_plot)
-        !! Update figure ranges from single plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        logical, intent(in) :: first_plot
-        
-        type(plot_data_t) :: plot
-        
-        plot = self%plots(plot_idx)
-        
-        select case (plot%plot_type)
-        case (PLOT_TYPE_LINE, PLOT_TYPE_SCATTER)
-            call update_ranges_from_line_plot(self, plot, first_plot)
-        case (PLOT_TYPE_CONTOUR)
-            call update_ranges_from_contour_plot(self, plot, first_plot)
-        case (PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM)
-            call update_ranges_from_bar_plot(self, plot, first_plot)
-        end select
-    end subroutine update_ranges_from_plot
-
-    subroutine render_single_plot(self, plot_idx)
-        !! Render a single plot based on its type
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        
-        type(plot_data_t) :: plot
-        integer :: subplot_idx
-        
-        ! Get current subplot (default to 1)
-        subplot_idx = max(1, self%current_subplot)
-        if (.not. allocated(self%subplots)) return
-        if (subplot_idx > size(self%subplots)) return
-        if (plot_idx < 1 .or. plot_idx > self%subplots(subplot_idx)%plot_count) return
-        
-        plot = self%subplots(subplot_idx)%plots(plot_idx)
-        
-        select case (plot%plot_type)
-        case (PLOT_TYPE_LINE)
-            if (allocated(plot%z)) then
-                call render_3d_line_plot(self, plot_idx)
-            else
-                call render_line_plot(self, plot_idx)
-            end if
-        case (PLOT_TYPE_SCATTER)
-            call render_scatter_plot(self, plot_idx)
-        case (PLOT_TYPE_CONTOUR)
-            call render_contour_plot(self, plot_idx)
-        case (PLOT_TYPE_PCOLORMESH)
-            call render_pcolormesh_plot(self, plot_idx)
-        case (PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM)
-            call render_bar_plot(self, plot_idx)
-        case (PLOT_TYPE_ERRORBAR)
-            call render_errorbar_plot(self, plot_idx)
-        case (PLOT_TYPE_BOXPLOT)
-            call render_boxplot(self, plot_idx)
-        end select
-    end subroutine render_single_plot
-
-    ! Stub implementations for missing subroutines
-    ! Note: These would contain full implementations in the complete version
-
-    subroutine render_axis_framework(self)
-        !! Render axis framework (axes, ticks, grid)
-        class(figure_t), intent(inout) :: self
-        logical :: has_3d
+    end subroutine draw_line_with_style
+    
+    subroutine render_solid_line(backend, x, y)
+        !! Render a solid line
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x(:), y(:)
         integer :: i
         
-        ! Determine if we have any 3D plots
-        has_3d = .false.
-        if (allocated(self%plots)) then
-            do i = 1, self%plot_count
-                if (self%plots(i)%is_3d()) then
-                    has_3d = .true.
-                    exit
-                end if
-            end do
-        end if
+        if (size(x) < 2) return
         
-        ! Pass tick configuration to backend if it's a PDF context (Issue #238)
-        select type (backend => self%backend)
-        type is (pdf_context)
-            backend%x_tick_count = self%x_tick_count
-            backend%y_tick_count = self%y_tick_count
+        do i = 1, size(x)-1
+            call backend%line(x(i), y(i), x(i+1), y(i+1))
+        end do
+    end subroutine render_solid_line
+    
+    subroutine render_patterned_line(backend, x, y, pattern)
+        !! Render a line with dash patterns
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in) :: pattern
+        
+        real(wp) :: dash_length, gap_length, dot_length
+        real(wp) :: segment_length, accumulated_length
+        real(wp) :: dx, dy, x1, y1, x2, y2
+        logical :: drawing
+        integer :: i
+        
+        ! Define pattern parameters
+        select case (trim(pattern))
+        case ('--', 'dashed')
+            dash_length = 6.0_wp
+            gap_length = 4.0_wp
+            dot_length = 0.0_wp
+        case (':', 'dotted')
+            dash_length = 2.0_wp
+            gap_length = 2.0_wp
+            dot_length = 0.0_wp
+        case ('-.', 'dashdot')
+            dash_length = 6.0_wp
+            gap_length = 2.0_wp
+            dot_length = 2.0_wp
+        case default
+            call render_solid_line(backend, x, y)
+            return
         end select
         
-        ! Call backend to draw axes and labels
-        call self%backend%draw_axes_and_labels_backend( &
-            self%xscale, self%yscale, self%symlog_threshold, &
-            self%x_min, self%x_max, self%y_min, self%y_max, &
-            self%title, self%xlabel, self%ylabel, &
-            self%z_min, self%z_max, has_3d)
-    end subroutine render_axis_framework
-
-    subroutine render_axis_labels(self)
-        !! Render axis labels (xlabel, ylabel, title)
-        !! Note: Labels are now rendered as part of draw_axes_and_labels_backend
-        !! This method is kept for interface compatibility but the actual
-        !! rendering happens in render_axis_framework
-        class(figure_t), intent(inout) :: self
+        ! Render with pattern
+        drawing = .true.
+        accumulated_length = 0.0_wp
         
-        ! Labels are already rendered in render_axis_framework
-        ! via the backend's draw_axes_and_labels_backend method
-        ! This stub is kept for backward compatibility
-    end subroutine render_axis_labels
-
-    subroutine render_single_arrow(self, arrow_idx)
-        !! Stub: Render single arrow
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: arrow_idx
-        ! Stub implementation
-    end subroutine render_single_arrow
-
-    subroutine render_streamline(self, streamline_idx)
-        !! Stub: Render single streamline
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: streamline_idx
-        ! Stub implementation
-    end subroutine render_streamline
-
-    subroutine render_annotation_text(self, annotation_idx, pixel_x, pixel_y)
-        !! Stub: Render annotation text
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: annotation_idx
-        real(wp), intent(in) :: pixel_x, pixel_y
-        ! Stub implementation
-    end subroutine render_annotation_text
-
-    subroutine render_annotation_arrow(self, annotation_idx, pixel_x, pixel_y)
-        !! Stub: Render annotation arrow
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: annotation_idx
-        real(wp), intent(in) :: pixel_x, pixel_y
-        ! Stub implementation
-    end subroutine render_annotation_arrow
-
-    subroutine parse_legend_location(location, legend_location)
-        !! Stub: Parse legend location string
-        character(len=*), intent(in) :: location
-        integer, intent(out) :: legend_location
-        legend_location = 1  ! Default: upper right
-    end subroutine parse_legend_location
-
-
-    subroutine update_ranges_from_line_plot(self, plot, first_plot)
-        !! Update data ranges from line plot data
-        class(figure_t), intent(inout) :: self
-        type(plot_data_t), intent(in) :: plot
-        logical, intent(in) :: first_plot
+        do i = 1, size(x) - 1
+            dx = x(i+1) - x(i)
+            dy = y(i+1) - y(i)
+            segment_length = sqrt(dx**2 + dy**2)
+            
+            call render_segment_with_pattern(backend, x(i), y(i), x(i+1), y(i+1), &
+                                           segment_length, accumulated_length, &
+                                           dash_length, gap_length, drawing)
+        end do
+    end subroutine render_patterned_line
+    
+    subroutine render_segment_with_pattern(backend, x1, y1, x2, y2, segment_length, &
+                                         accumulated_length, dash_length, gap_length, drawing)
+        !! Render a single line segment with pattern
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x1, y1, x2, y2, segment_length
+        real(wp), intent(inout) :: accumulated_length
+        real(wp), intent(in) :: dash_length, gap_length
+        logical, intent(inout) :: drawing
         
-        real(wp) :: x_min_local, x_max_local, y_min_local, y_max_local
+        real(wp) :: remaining, pattern_period, t, x_start, y_start, x_end, y_end
+        real(wp) :: dx, dy
         
-        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
-        if (size(plot%x) == 0) return
+        pattern_period = dash_length + gap_length
+        remaining = segment_length
+        dx = x2 - x1
+        dy = y2 - y1
         
-        ! Calculate local ranges
-        x_min_local = minval(plot%x)
-        x_max_local = maxval(plot%x)
-        y_min_local = minval(plot%y)
-        y_max_local = maxval(plot%y)
+        x_start = x1
+        y_start = y1
         
-        ! Update global ranges
-        if (first_plot) then
-            self%x_min = x_min_local
-            self%x_max = x_max_local
-            self%y_min = y_min_local
-            self%y_max = y_max_local
-        else
-            self%x_min = min(self%x_min, x_min_local)
-            self%x_max = max(self%x_max, x_max_local)
-            self%y_min = min(self%y_min, y_min_local)
-            self%y_max = max(self%y_max, y_max_local)
-        end if
-    end subroutine update_ranges_from_line_plot
-
-    subroutine update_ranges_from_contour_plot(self, plot, first_plot)
-        !! Stub: Update ranges from contour plot
-        class(figure_t), intent(inout) :: self
-        type(plot_data_t), intent(in) :: plot
-        logical, intent(in) :: first_plot
-        ! Stub implementation
-    end subroutine update_ranges_from_contour_plot
-
-    subroutine update_ranges_from_bar_plot(self, plot, first_plot)
-        !! Stub: Update ranges from bar plot
-        class(figure_t), intent(inout) :: self
-        type(plot_data_t), intent(in) :: plot
-        logical, intent(in) :: first_plot
-        ! Stub implementation
-    end subroutine update_ranges_from_bar_plot
-
-    subroutine render_3d_line_plot(self, plot_idx)
-        !! Stub: Render 3D line plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_3d_line_plot
-
-    subroutine render_line_plot(self, plot_idx)
-        !! Render line plot by drawing lines between consecutive points and markers
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        
-        type(plot_data_t) :: plot
-        integer :: i, subplot_idx
-        real(wp) :: x1, y1, x2, y2, x_trans, y_trans
-        logical :: draw_lines
-        
-        ! Get current subplot (default to 1)
-        subplot_idx = max(1, self%current_subplot)
-        if (.not. allocated(self%subplots)) return
-        if (subplot_idx > size(self%subplots)) return
-        
-        ! Get the plot data from the subplot
-        if (plot_idx < 1 .or. plot_idx > self%subplots(subplot_idx)%plot_count) return
-        plot = self%subplots(subplot_idx)%plots(plot_idx)
-        
-        ! Skip if not a line plot
-        if (plot%plot_type /= PLOT_TYPE_LINE) return
-        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
-        
-        ! Set the plot color
-        call self%backend%color(plot%color(1), plot%color(2), plot%color(3))
-        
-        ! Determine if we should draw lines
-        draw_lines = .true.
-        if (allocated(plot%linestyle)) then
-            if (plot%linestyle == 'None' .or. plot%linestyle == '') then
-                draw_lines = .false.
-            end if
-        end if
-        
-        ! Draw lines between consecutive points if we have at least 2 points and linestyle is not 'None'
-        if (draw_lines .and. size(plot%x) >= 2) then
-            do i = 1, size(plot%x) - 1
-                x1 = plot%x(i)
-                y1 = plot%y(i)
-                x2 = plot%x(i + 1)
-                y2 = plot%y(i + 1)
-                
-                ! Apply scale transformations if needed
-                if (self%xscale == 'log') then
-                    if (x1 > 0.0_wp) x1 = log10(x1)
-                    if (x2 > 0.0_wp) x2 = log10(x2)
-                else if (self%xscale == 'symlog') then
-                    x1 = symlog_transform(x1, self%symlog_threshold)
-                    x2 = symlog_transform(x2, self%symlog_threshold)
+        do while (remaining > epsilon(1.0_wp))
+            if (drawing) then
+                ! Currently drawing
+                if (accumulated_length + remaining <= dash_length) then
+                    ! Can draw entire remaining segment
+                    call backend%line(x_start, y_start, x2, y2)
+                    accumulated_length = accumulated_length + remaining
+                    remaining = 0.0_wp
+                else
+                    ! Draw partial segment
+                    t = (dash_length - accumulated_length) / segment_length
+                    x_end = x_start + t * dx
+                    y_end = y_start + t * dy
+                    
+                    call backend%line(x_start, y_start, x_end, y_end)
+                    
+                    remaining = remaining - (dash_length - accumulated_length)
+                    x_start = x_end
+                    y_start = y_end
+                    accumulated_length = 0.0_wp
+                    drawing = .false.
                 end if
-                
-                if (self%yscale == 'log') then
-                    if (y1 > 0.0_wp) y1 = log10(y1)
-                    if (y2 > 0.0_wp) y2 = log10(y2)
-                else if (self%yscale == 'symlog') then
-                    y1 = symlog_transform(y1, self%symlog_threshold)
-                    y2 = symlog_transform(y2, self%symlog_threshold)
+            else
+                ! Currently in gap
+                if (accumulated_length + remaining <= gap_length) then
+                    ! Entire remaining segment is in gap
+                    accumulated_length = accumulated_length + remaining
+                    remaining = 0.0_wp
+                else
+                    ! Skip gap portion
+                    t = (gap_length - accumulated_length) / segment_length
+                    x_start = x_start + t * dx
+                    y_start = y_start + t * dy
+                    
+                    remaining = remaining - (gap_length - accumulated_length)
+                    accumulated_length = 0.0_wp
+                    drawing = .true.
                 end if
-                
-                ! Draw the line segment
-                call self%backend%line(x1, y1, x2, y2)
-            end do
-        end if
-        
-        ! Draw markers at each data point if marker is specified
-        if (allocated(plot%marker)) then
-            if (plot%marker /= 'None' .and. plot%marker /= '') then
-                do i = 1, size(plot%x)
-                    x_trans = plot%x(i)
-                    y_trans = plot%y(i)
-                    
-                    ! Apply scale transformations if needed
-                    if (self%xscale == 'log') then
-                        if (x_trans > 0.0_wp) x_trans = log10(x_trans)
-                    else if (self%xscale == 'symlog') then
-                        x_trans = symlog_transform(x_trans, self%symlog_threshold)
-                    end if
-                    
-                    if (self%yscale == 'log') then
-                        if (y_trans > 0.0_wp) y_trans = log10(y_trans)
-                    else if (self%yscale == 'symlog') then
-                        y_trans = symlog_transform(y_trans, self%symlog_threshold)
-                    end if
-                    
-                    ! Draw the marker
-                    call self%backend%draw_marker(x_trans, y_trans, plot%marker)
-                end do
             end if
-        end if
-    end subroutine render_line_plot
-
-    subroutine render_scatter_plot(self, plot_idx)
-        !! Stub: Render scatter plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_scatter_plot
-
-    subroutine render_contour_plot(self, plot_idx)
-        !! Stub: Render contour plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_contour_plot
-
-    subroutine render_pcolormesh_plot(self, plot_idx)
-        !! Stub: Render pcolormesh plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_pcolormesh_plot
-
-    subroutine render_bar_plot(self, plot_idx)
-        !! Stub: Render bar plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_bar_plot
-
-    subroutine render_errorbar_plot(self, plot_idx)
-        !! Stub: Render error bar plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_errorbar_plot
-
-    subroutine render_boxplot(self, plot_idx)
-        !! Stub: Render box plot
-        class(figure_t), intent(inout) :: self
-        integer, intent(in) :: plot_idx
-        ! Stub implementation
-    end subroutine render_boxplot
-
-    subroutine update_data_ranges_pcolormesh(self)
-        !! Stub: Update pcolormesh data ranges
-        class(figure_t), intent(inout) :: self
-        ! Stub implementation
-    end subroutine update_data_ranges_pcolormesh
-
-    subroutine update_data_ranges_boxplot(self)
-        !! Stub: Update boxplot data ranges
-        class(figure_t), intent(inout) :: self
-        ! Stub implementation
-    end subroutine update_data_ranges_boxplot
-
-    subroutine transform_axis_ranges(self)
-        !! Transform axis ranges based on scale settings
-        class(figure_t), intent(inout) :: self
+        end do
+    end subroutine render_segment_with_pattern
+    
+    subroutine transform_quad_to_screen(x_quad, y_quad, x_screen, y_screen, &
+                                       xscale, yscale, symlog_threshold)
+        !! Transform quad coordinates to screen space
+        real(wp), intent(in) :: x_quad(4), y_quad(4)
+        real(wp), intent(out) :: x_screen(4), y_screen(4)
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        integer :: i
         
-        ! For now, simple linear transformation (identity)
-        self%x_min_transformed = self%x_min
-        self%x_max_transformed = self%x_max
-        self%y_min_transformed = self%y_min
-        self%y_max_transformed = self%y_max
+        do i = 1, 4
+            x_screen(i) = apply_scale_transform(x_quad(i), xscale, symlog_threshold)
+            y_screen(i) = apply_scale_transform(y_quad(i), yscale, symlog_threshold)
+        end do
+    end subroutine transform_quad_to_screen
+    
+    subroutine draw_filled_quad(backend, x_screen, y_screen)
+        !! Draw a filled quadrilateral
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
         
-        ! Add small padding if ranges are identical
-        if (self%x_min_transformed == self%x_max_transformed) then
-            self%x_min_transformed = self%x_min_transformed - 0.5_wp
-            self%x_max_transformed = self%x_max_transformed + 0.5_wp
-        end if
+        ! Use fill_quad if available
+        call backend%fill_quad(x_screen, y_screen)
+    end subroutine draw_filled_quad
+    
+    subroutine draw_quad_edges(backend, x_screen, y_screen, line_width)
+        !! Draw quadrilateral edges
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x_screen(4), y_screen(4)
+        real(wp), intent(in) :: line_width
         
-        if (self%y_min_transformed == self%y_max_transformed) then
-            self%y_min_transformed = self%y_min_transformed - 0.5_wp
-            self%y_max_transformed = self%y_max_transformed + 0.5_wp
-        end if
-    end subroutine transform_axis_ranges
-
+        call backend%set_line_width(line_width)
+        call backend%line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+        call backend%line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+        call backend%line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+        call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+    end subroutine draw_quad_edges
+    
 end module fortplot_rendering

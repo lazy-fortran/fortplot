@@ -10,7 +10,6 @@
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
 - [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
-- [ ] #355: Fix - First plot is empty (likely from figure CLEAR logic regression)
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 - [ ] #327: Fix - MP4 link not showing on animation.html
 - [ ] #336: Fix - Streamplot and stateful streamplot example redundant
@@ -24,8 +23,10 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 - [ ] #357: Docs - standardize colormap documentation across examples
 - [ ] #358: Refactor - consolidate ASCII output formatting in example docs
+- [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
+- [ ] #355: Fix - First plot is empty (likely from figure CLEAR logic regression)
 
 ## BLOCKED (Infrastructure Issues)
 
