@@ -5,6 +5,9 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
+- [ ] #319: Refactor - investigate source of invalid RGB values in contour color mapping
+- [ ] #320: Feature - add debug logging for invalid color value corrections  
+- [ ] #321: Refactor - apply consistent validation pattern to other PDF write functions
 
 ## DOING (Current Work)
 - [ ] #317: Fix GitHub Pages deployment failure - colored_contours PDF runtime crash in pdf_write_color
