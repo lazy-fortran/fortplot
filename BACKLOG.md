@@ -5,9 +5,12 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
+- [ ] #319: Refactor - investigate source of invalid RGB values in contour color mapping
+- [ ] #320: Feature - add debug logging for invalid color value corrections  
+- [ ] #321: Refactor - apply consistent validation pattern to other PDF write functions
 
 ## DOING (Current Work)
-- [ ] Fix GitHub Pages deployment failure - colored_contours example crashes with "End of record" error at fortplot_pdf_drawing.f90:69 in pdf_write_color subroutine
+- [ ] #317: Fix GitHub Pages deployment failure - colored_contours PDF runtime crash in pdf_write_color
 
 ## BLOCKED (Infrastructure Issues)
 

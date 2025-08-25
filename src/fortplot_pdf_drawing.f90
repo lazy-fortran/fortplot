@@ -7,6 +7,7 @@ module fortplot_pdf_drawing
     !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     implicit none
@@ -62,11 +63,37 @@ contains
     end subroutine pdf_write_stroke
 
     subroutine pdf_write_color(this, r, g, b)
-        !! Write PDF color command
+        !! Write PDF color command with robust validation
+        !! Validates and clamps RGB values to [0.0, 1.0] range
+        !! Handles NaN, infinity, and out-of-range values gracefully
         class(pdf_stream_writer), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
+        real(wp) :: r_safe, g_safe, b_safe
         character(len=64) :: cmd
-        write(cmd, '(F0.3,1X,F0.3,1X,F0.3," RG")') r, g, b
+        
+        ! Validate and clamp R component
+        if (ieee_is_nan(r) .or. .not. ieee_is_finite(r)) then
+            r_safe = 0.0_wp  ! Default to black for invalid values
+        else
+            r_safe = max(0.0_wp, min(1.0_wp, r))  ! Clamp to [0, 1]
+        end if
+        
+        ! Validate and clamp G component
+        if (ieee_is_nan(g) .or. .not. ieee_is_finite(g)) then
+            g_safe = 0.0_wp  ! Default to black for invalid values
+        else
+            g_safe = max(0.0_wp, min(1.0_wp, g))  ! Clamp to [0, 1]
+        end if
+        
+        ! Validate and clamp B component
+        if (ieee_is_nan(b) .or. .not. ieee_is_finite(b)) then
+            b_safe = 0.0_wp  ! Default to black for invalid values
+        else
+            b_safe = max(0.0_wp, min(1.0_wp, b))  ! Clamp to [0, 1]
+        end if
+        
+        ! Write validated color values
+        write(cmd, '(F0.3,1X,F0.3,1X,F0.3," RG")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
     end subroutine pdf_write_color
 
