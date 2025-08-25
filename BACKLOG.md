@@ -5,13 +5,12 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #320: Feature - add debug logging for invalid color value corrections  
 - [ ] #321: Refactor - apply consistent validation pattern to other PDF write functions
 - [ ] #323: Test - add edge case tests for PDF heatmap color validation
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 
 ## DOING (Current Work)
-- [x] #319: Refactor - investigate source of invalid RGB values in contour color mapping (branch: refactor-invalid-rgb-source-319)
+- [x] #320: Feature - add debug logging for invalid color value corrections (branch: feature-debug-logging-320)
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -38,6 +37,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #319: Refactor - investigate source of invalid RGB values in contour color mapping - FIXED: Replaced direct color writing with validated pdf_write_color method, added proper edge case handling for division by zero scenarios (PR #322 merged)
 - [x] #317: Fix GitHub Pages deployment failure - colored_contours PDF runtime crash in pdf_write_color - FIXED: Added robust RGB validation to prevent PDF color crashes, restored visual showcase (PR #318 merged)
 - [x] #312: Legend Demo plots dont show up on github pages - FIXED: GitHub Pages examples not generating due to auto-examples=false in fpm.toml, enabled automatic example discovery (PR #316 merged)  
 - [x] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content - FIXED: PNG data rendering regression caused by figure initialization resetting plot_count (PR #315 merged)
