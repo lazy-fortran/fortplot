@@ -5,7 +5,6 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #300: fix: comprehensive Windows CI environment compatibility (created today)
 - [ ] #297: Windows test failures on PR #290 - precision and directory issues
 - [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
@@ -13,7 +12,7 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #292: regression: legend placement does not work
+- [ ] #300: fix: comprehensive Windows CI environment compatibility
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -40,6 +39,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #292: regression: legend placement does not work - FIXED: legend positioning uses data coordinates (PR #305 merged)
 - [x] #278: Line styles dont work - all styling broken since 690b9834 - FIXED: partial fix for line styles in PNG backend (PR #303 merged)
 - [x] #280: regression: contours dont work - FIXED: contour functionality restored with coordinate constants (PR #304 merged)
 - [x] #276: Markers dont work - PNG examples completely broken - FIXED: marker rendering restored in PNG backend (PR #302 merged)
