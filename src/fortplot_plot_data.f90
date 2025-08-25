@@ -93,7 +93,7 @@ module fortplot_plot_data
         real(wp) :: scatter_vmax = 1.0_wp            ! Color scale maximum
         logical :: scatter_vrange_set = .false.      ! Whether vmin/vmax are manually set
         ! Common properties
-        real(wp), dimension(3) :: color
+        real(wp), dimension(3) :: color = [0.0_wp, 0.447_wp, 0.698_wp]  ! Default to blue
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
