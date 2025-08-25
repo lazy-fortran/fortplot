@@ -14,21 +14,21 @@ program test_line_styles_278
     end do
     
     ! Create figure
-    call figure(fig)
+    call fig%initialize(640, 480)
     
     ! Test different line styles
-    call fig%plot(x, y, linestyle='-', label='solid')
-    call fig%plot(x, y + 1.0, linestyle='--', label='dashed')
-    call fig%plot(x, y + 2.0, linestyle=':', label='dotted')
-    call fig%plot(x, y + 3.0, linestyle='-.', label='dashdot')
+    call fig%add_plot(x, y, linestyle='-', label='solid')
+    call fig%add_plot(x, y + 1.0, linestyle='--', label='dashed')
+    call fig%add_plot(x, y + 2.0, linestyle=':', label='dotted')
+    call fig%add_plot(x, y + 3.0, linestyle='-.', label='dashdot')
     
-    call fig%xlabel('X')
-    call fig%ylabel('Y')
-    call fig%title('Line Styles Test - Issue #278')
+    call fig%set_xlabel('X')
+    call fig%set_ylabel('Y')
+    call fig%set_title('Line Styles Test - Issue #278')
     call fig%legend()
     
     ! Save to PNG to verify line styles render correctly
-    call fig%save('test_line_styles_278.png')
+    call fig%savefig('test_line_styles_278.png')
     
     print *, "Test complete - check test_line_styles_278.png for line styles"
     
