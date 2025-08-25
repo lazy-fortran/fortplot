@@ -7,44 +7,48 @@ Modern Fortran plotting library inspired by matplotlib. No external dependencies
 
 ## Getting Started
 
-### [Quick Start Guide](../README.md#usage)
+### [Quick Start Guide](https://github.com/lazy-fortran/fortplot#usage)
 Basic usage patterns for both stateful and object-oriented APIs.
 
-### [Setup Instructions](../README.md#setup)
+### [Setup Instructions](https://github.com/lazy-fortran/fortplot#setup)
 Installation with fpm, CMake, or pip for Python projects.
 
 ## Examples Gallery
 
-### [Fortran Examples](../example/fortran/README.md)
+### [Fortran Examples](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran)
 Complete working examples with source code and generated plots.
 
 **Featured Examples:**
-- [Basic Plots](../example/fortran/basic_plots/README.md) - Line plots with both APIs
-- [3D Plotting](../example/fortran/3d_plotting/README.md) - Surface and 3D line plots
-- [Contours](../example/fortran/contour_demo/README.md) - Contour and filled contour plots
-- [Animations](../example/fortran/animation/README.md) - Animated plots with FFmpeg
-- [Unicode Support](../example/fortran/unicode_demo/README.md) - Greek letters and LaTeX math
+- [Basic Plots](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/basic_plots) - Line plots with both APIs
+- [3D Plotting](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/3d_plotting) - Surface and 3D line plots
+- [Contours](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/contour_demo) - Contour and filled contour plots
+- [Animations](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/animation) - Animated plots with FFmpeg
+- [Unicode Support](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/unicode_demo) - Greek letters and LaTeX math
 
 **All Examples:**
-- [Animation](../example/fortran/animation/README.md) - Creating MP4 animations
-- [Annotations](../example/fortran/annotation_demo/README.md) - Text and arrow annotations
-- [ASCII Heatmaps](../example/fortran/ascii_heatmap/README.md) - Terminal visualization
-- [Basic Plots](../example/fortran/basic_plots/README.md) - Fundamental plotting
-- [Colored Contours](../example/fortran/colored_contours/README.md) - Filled contour plots
-- [Contour Demo](../example/fortran/contour_demo/README.md) - Contour line plots
-- [Disconnected Lines](../example/fortran/disconnected_lines/README.md) - Multi-segment plots
-- [Format Strings](../example/fortran/format_string_demo/README.md) - Matplotlib-style strings
-- [Legend Demo](../example/fortran/legend_demo/README.md) - Legend positioning
-- [Line Styles](../example/fortran/line_styles/README.md) - Line and marker styles
-- [Marker Demo](../example/fortran/marker_demo/README.md) - Scatter plot markers
-- [Pcolormesh](../example/fortran/pcolormesh_demo/README.md) - 2D color mesh plots
-- [Scale Examples](../example/fortran/scale_examples/README.md) - Log and symlog scales
-- [Show Viewer](../example/fortran/show_viewer_demo/README.md) - Interactive display
-- [Smart Show](../example/fortran/smart_show_demo/README.md) - Intelligent display
-- [Stateful Streamplot](../example/fortran/stateful_streamplot/README.md) - Vector field evolution
-- [Streamplot](../example/fortran/streamplot_demo/README.md) - Vector field visualization
-- [Subplot Demo](../example/fortran/subplot_demo/README.md) - Multiple plot grids
-- [Unicode Demo](../example/fortran/unicode_demo/README.md) - Mathematical symbols
+- [Animation](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/animation) - Creating MP4 animations
+- [Annotations](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/annotation_demo) - Text and arrow annotations
+- [ASCII Heatmaps](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/ascii_heatmap) - Terminal visualization
+- [Basic Plots](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/basic_plots) - Fundamental plotting
+- [Boxplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/boxplot_demo) - Box and whisker plots
+- [Colored Contours](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/colored_contours) - Filled contour plots
+- [Contour Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/contour_demo) - Contour line plots
+- [Disconnected Lines](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/disconnected_lines) - Multi-segment plots
+- [Errorbar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/errorbar_demo) - Error bars and uncertainty
+- [Format Strings](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/format_string_demo) - Matplotlib-style strings
+- [Grid Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/grid_demo) - Grid line control
+- [Legend Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/legend_demo) - Legend positioning
+- [Line Styles](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/line_styles) - Line and marker styles
+- [Marker Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/marker_demo) - Scatter plot markers
+- [Pcolormesh](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pcolormesh_demo) - 2D color mesh plots
+- [Scale Examples](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scale_examples) - Log and symlog scales
+- [Scatter Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scatter_demo) - Scatter plot basics
+- [Show Viewer](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/show_viewer_demo) - Interactive display
+- [Smart Show](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/smart_show_demo) - Intelligent display
+- [Stateful Streamplot](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/stateful_streamplot) - Vector field evolution
+- [Streamplot](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/streamplot_demo) - Vector field visualization
+- [Subplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/subplot_demo) - Multiple plot grids
+- [Unicode Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/unicode_demo) - Mathematical symbols
 
 ## Technical Guides
 
@@ -68,7 +72,7 @@ Complete working examples with source code and generated plots.
 
 ## API Reference
 
-### [Core Interface](../src/fortplot.f90)
+### [Core Interface](https://github.com/lazy-fortran/fortplot/blob/main/src/fortplot.f90)
 Main module with stateful plotting functions.
 
 ### [Figure Management](design/figure_management.md)
