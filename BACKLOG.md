@@ -3,8 +3,8 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
-- [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (moved to DOING)
-- [x] #337: Fix - Title too far right in PNGs - check matplotlib placement (moved to DOING)
+- [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (COMPLETED)
+- [x] #337: Fix - Title too far right in PNGs - check matplotlib placement (COMPLETED)
 - [ ] #335: Fix - Axes wrong and no labels visible on scale_examples.html
 - [ ] #334: Fix - No output visible on pcolormesh_demo.html
 - [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html
@@ -21,7 +21,7 @@
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 
 ## DOING (Current Work)
-- [ ] #337: Fix - Title too far right in PNGs - check matplotlib placement
+- [ ] #335: Fix - Axes wrong and no labels visible on scale_examples.html
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -48,6 +48,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #337: Fix - Title too far right in PNGs - check matplotlib placement - FIXED: Centered PNG titles over plot area instead of data coordinates through corrected matplotlib placement (PR #340 merged)
 - [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF - FIXED: Restored PDF axes visibility and prevented plot stretching/shifting through corrected coordinate transformation and scaling (PR #339 merged)
 - [x] #321: Refactor - apply consistent validation pattern to other PDF write functions - FIXED: Extended robust validation pattern to pdf_write_move, pdf_write_line, and pdf_write_line_width with comprehensive test coverage and zero performance impact (PR #326 merged)
 - [x] #320: Feature - add debug logging for invalid color value corrections - FIXED: Implemented debug logging for RGB color corrections in PDF output with zero performance impact and comprehensive test coverage (PR #325 merged)
