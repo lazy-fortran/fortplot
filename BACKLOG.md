@@ -21,7 +21,6 @@
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 
 ## DOING (Current Work)
-- [ ] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -48,6 +47,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF - FIXED: Restored PDF axes visibility and prevented plot stretching/shifting through corrected coordinate transformation and scaling (PR #339 merged)
 - [x] #321: Refactor - apply consistent validation pattern to other PDF write functions - FIXED: Extended robust validation pattern to pdf_write_move, pdf_write_line, and pdf_write_line_width with comprehensive test coverage and zero performance impact (PR #326 merged)
 - [x] #320: Feature - add debug logging for invalid color value corrections - FIXED: Implemented debug logging for RGB color corrections in PDF output with zero performance impact and comprehensive test coverage (PR #325 merged)
 - [x] #319: Refactor - investigate source of invalid RGB values in contour color mapping - FIXED: Replaced direct color writing with validated pdf_write_color method, added proper edge case handling for division by zero scenarios (PR #322 merged)
