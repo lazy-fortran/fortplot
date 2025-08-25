@@ -4,7 +4,7 @@
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 - [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (moved to DOING)
-- [ ] #337: Fix - Title too far right in PNGs - check matplotlib placement
+- [x] #337: Fix - Title too far right in PNGs - check matplotlib placement (moved to DOING)
 - [ ] #335: Fix - Axes wrong and no labels visible on scale_examples.html
 - [ ] #334: Fix - No output visible on pcolormesh_demo.html
 - [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html
@@ -21,6 +21,7 @@
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 
 ## DOING (Current Work)
+- [ ] #337: Fix - Title too far right in PNGs - check matplotlib placement
 
 ## BLOCKED (Infrastructure Issues)
 
