@@ -22,6 +22,7 @@
 - [ ] #342: Refactor - complete symlog tick generation implementation
 - [ ] #343: Refactor - extract label positioning constants
 - [ ] #344: Refactor - add format threshold constants in axes module
+- [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## DOING (Current Work)
 - [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html

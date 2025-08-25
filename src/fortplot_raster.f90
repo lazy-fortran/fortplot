@@ -537,7 +537,9 @@ contains
 
         call this%raster%get_color_bytes(r, g, b)
 
-        call draw_raster_marker_by_style(this, px, py, style)
+        ! Fixed marker centering for Issue #333: align markers with line centers
+        ! Apply sub-pixel adjustment to match line drawing coordinate conventions
+        call draw_raster_marker_by_style(this, px - 0.5_wp, py - 0.5_wp, style)
     end subroutine raster_draw_marker
 
     subroutine draw_raster_marker_by_style(this, px, py, style)
