@@ -25,6 +25,7 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## DOING (Current Work)
+- [ ] #334: Fix - No output visible on pcolormesh_demo.html (REOPENED - issue persists)
 
 ## BLOCKED (Infrastructure Issues)
 
