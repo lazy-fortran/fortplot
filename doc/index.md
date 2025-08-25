@@ -45,7 +45,6 @@ Complete working examples with source code and generated plots.
 - [Scatter Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scatter_demo) - Scatter plot basics
 - [Show Viewer](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/show_viewer_demo) - Interactive display
 - [Smart Show](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/smart_show_demo) - Intelligent display
-- [Stateful Streamplot](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/stateful_streamplot) - Vector field evolution
 - [Streamplot](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/streamplot_demo) - Vector field visualization
 - [Subplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/subplot_demo) - Multiple plot grids
 - [Unicode Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/unicode_demo) - Mathematical symbols
