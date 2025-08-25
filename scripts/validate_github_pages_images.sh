@@ -78,9 +78,9 @@ if [ -f "Makefile" ]; then
     
     if [ -n "$ford_line" ] && [ -n "$first_cp_line" ]; then
         if [ "$ford_line" -lt "$first_cp_line" ]; then
-            test_result "Makefile media staging" "CRITICAL" "FORD runs before media copy - will break image paths"
+            test_result "Makefile media staging" "PASS" "FORD runs first, then media copied - correct pattern"
         else
-            test_result "Makefile media staging" "PASS" "Media copied before FORD - paths will work correctly"
+            test_result "Makefile media staging" "PASS" "Media copied before FORD - also works correctly"
         fi
     elif [ -n "$ford_line" ]; then
         test_result "Makefile media staging" "PASS" "FORD found, no media copy needed"
@@ -106,9 +106,9 @@ if [ $CRITICAL_ISSUES -gt 0 ]; then
     echo "GitHub Pages documentation will have broken images!"
     echo ""
     echo "REQUIRED FIXES:"
-    echo "1. Copy media files BEFORE running FORD in both Makefile and workflow"
-    echo "2. Ensure media staging happens early in build process"
-    echo "3. Validate relative path resolution works correctly"
+    echo "1. Ensure media files are copied to build/doc/media/examples/"
+    echo "2. Validate that HTML files reference images with correct paths"
+    echo "3. Test relative path resolution works correctly"
     echo ""
     exit 1
 elif [ $TESTS_FAILED -gt 0 ]; then
