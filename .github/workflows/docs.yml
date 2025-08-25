@@ -64,12 +64,14 @@ jobs:
           
           # Copy generated outputs to media directory (preserving structure)
           for dir in output/example/fortran/*/; do
-            example_name=$(basename "$dir")
-            mkdir -p "doc/media/examples/${example_name}"
-            cp -r "${dir}"*.png "doc/media/examples/${example_name}/" 2>/dev/null || true
-            cp -r "${dir}"*.txt "doc/media/examples/${example_name}/" 2>/dev/null || true
-            cp -r "${dir}"*.pdf "doc/media/examples/${example_name}/" 2>/dev/null || true
-            cp -r "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
+            if [ -d "$dir" ]; then
+              example_name=$(basename "$dir")
+              mkdir -p "doc/media/examples/${example_name}"
+              cp "${dir}"*.png "doc/media/examples/${example_name}/" 2>/dev/null || true
+              cp "${dir}"*.txt "doc/media/examples/${example_name}/" 2>/dev/null || true
+              cp "${dir}"*.pdf "doc/media/examples/${example_name}/" 2>/dev/null || true
+              cp "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
+            fi
           done
           
           # Documentation now consolidated in example/fortran/*/README.md - no generation needed
