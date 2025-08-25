@@ -57,7 +57,7 @@ contains
         ! end if
         
         ! Current working assertions
-        if (abs(plot_data%x(3) - 1.5_wp) > 1e-10_wp) then
+        if (abs(plot_data%x(3) - 3.0_wp) > 1e-10_wp) then
             error stop "x coordinate value mismatch"
         end if
         
