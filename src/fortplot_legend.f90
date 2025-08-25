@@ -289,12 +289,17 @@ contains
         character(len=:), allocatable :: labels(:)
         integer :: i
         
+        ! Get data coordinate ranges
+        data_width = backend%x_max - backend%x_min
+        data_height = backend%y_max - backend%y_min
+        
         ! Calculate position based on backend dimensions
         ! ASCII backends have different positioning logic
         if (backend%width <= 80 .and. backend%height <= 24) then
-            ! ASCII-like dimensions, position at top-right corner
-            x = 0.8_wp
-            y = 0.95_wp
+            ! ASCII-like dimensions, position at top-right corner in data coords
+            ! Use proportional positioning in data space
+            x = backend%x_min + 0.8_wp * data_width
+            y = backend%y_min + 0.95_wp * data_height
         else
             ! Standard backends with margin support
             allocate(character(len=20) :: labels(legend%num_entries))
@@ -302,32 +307,14 @@ contains
                 labels(i) = legend%entries(i)%label
             end do
             
-            box = calculate_legend_box(labels, real(backend%width, wp), &
-                                     real(backend%height, wp), &
+            ! Pass data coordinate dimensions, not pixel dimensions
+            box = calculate_legend_box(labels, data_width, data_height, &
                                      legend%num_entries, legend%position)
             
-            ! Convert box dimensions to normalized coordinates
-            legend_width = box%width / real(backend%width, wp)
-            legend_height = box%height / real(backend%height, wp)
-            
-            ! Position based on legend setting
-            select case(legend%position)
-            case (LEGEND_UPPER_RIGHT)
-                x = 0.98_wp - legend_width
-                y = 0.98_wp
-            case (LEGEND_UPPER_LEFT)
-                x = 0.02_wp
-                y = 0.98_wp
-            case (LEGEND_LOWER_RIGHT)
-                x = 0.98_wp - legend_width
-                y = 0.02_wp + legend_height
-            case (LEGEND_LOWER_LEFT)
-                x = 0.02_wp
-                y = 0.02_wp + legend_height
-            case default
-                x = 0.98_wp - legend_width
-                y = 0.98_wp
-            end select
+            ! Box positions are already in data coordinates relative to origin
+            ! Need to add the backend's minimum values to get absolute positions
+            x = backend%x_min + box%x
+            y = backend%y_min + box%y
             
             deallocate(labels)
         end if
