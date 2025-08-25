@@ -146,8 +146,8 @@ contains
         
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%max_plots))
+            self%plot_count = 0  ! Only reset plot count when allocating plots array
         end if
-        self%plot_count = 0
         self%rendered = .false.
         
         ! Initialize legend following SOLID principles  
@@ -1452,6 +1452,7 @@ contains
             y1_screen = apply_scale_transform(self%plots(plot_idx)%y(i), self%yscale, self%symlog_threshold)
             x2_screen = apply_scale_transform(self%plots(plot_idx)%x(i+1), self%xscale, self%symlog_threshold)
             y2_screen = apply_scale_transform(self%plots(plot_idx)%y(i+1), self%yscale, self%symlog_threshold)
+            
             
             call self%backend%line(x1_screen, y1_screen, x2_screen, y2_screen)
         end do

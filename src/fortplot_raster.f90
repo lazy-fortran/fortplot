@@ -307,6 +307,7 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: px1, py1, px2, py2
 
+
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
         px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
