@@ -1,5 +1,6 @@
 ! test_example_output_structure.f90 - Tests for example output directory structure validation
 program test_example_output_structure
+    use iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_validation
     use fortplot_system_runtime, only: is_windows
