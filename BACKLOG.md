@@ -9,7 +9,6 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #285: refactor: remove hist() and bar() stub implementations
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -36,6 +35,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #285: refactor: remove hist() and bar() stub implementations - FIXED: replaced broken stubs with clear error messages and TODO comments (PR #310 merged)
 - [x] #271: Consolidate duplicate documentation content - remove redundant sections - FIXED: consolidated duplicate docs, updated configurations (PR #309 merged)
 - [x] #299: Regression: https://lazy-fortran.github.io/fortplot/ examples broken - FIXED: replaced PDF content with ASCII visualizations (PR #308 merged)
 - [x] #297: Windows test failures on PR #290 - precision and directory issues - FIXED: Windows-safe tolerances applied to failing tests (PR #307 merged)
