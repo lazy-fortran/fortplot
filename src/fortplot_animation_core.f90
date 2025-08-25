@@ -3,7 +3,7 @@ module fortplot_animation_core
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_animation_constants
     use fortplot_figure_core, only: figure_t, plot_data_t
-    use fortplot_rendering, only: savefig
+    ! savefig is part of figure_t, not rendering module
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
     use fortplot_utils, only: initialize_backend, ensure_directory_exists
     use fortplot_logging, only: log_error, log_info, log_warning
