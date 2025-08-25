@@ -39,28 +39,48 @@ contains
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         real(wp) :: x_range, y_range
+        real(wp) :: x_scale, y_scale, common_scale
+        real(wp) :: effective_width, effective_height
+        real(wp) :: x_offset, y_offset
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         
         ! Calculate data ranges with epsilon protection
         x_range = ctx%x_max - ctx%x_min
         y_range = ctx%y_max - ctx%y_min
         
-        ! Transform X coordinate with zero-range protection
+        ! Handle degenerate cases first
         if (abs(x_range) < EPSILON) then
             pdf_x = real(ctx%plot_area%left, wp) + real(ctx%plot_area%width, wp) * 0.5_wp
-        else
-            pdf_x = (x - ctx%x_min) / x_range * real(ctx%plot_area%width, wp) + &
-                    real(ctx%plot_area%left, wp)
         end if
         
-        ! Transform Y coordinate with zero-range protection
         if (abs(y_range) < EPSILON) then
             pdf_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + &
                     real(ctx%plot_area%height, wp) * 0.5_wp
-        else
-            pdf_y = (y - ctx%y_min) / y_range * real(ctx%plot_area%height, wp) + &
-                    real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp)
         end if
+        
+        if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
+        
+        ! Calculate potential scales for each axis
+        x_scale = real(ctx%plot_area%width, wp) / x_range
+        y_scale = real(ctx%plot_area%height, wp) / y_range
+        
+        ! Use the smaller scale to preserve aspect ratio
+        common_scale = min(x_scale, y_scale)
+        
+        ! Calculate effective dimensions using common scale
+        effective_width = x_range * common_scale
+        effective_height = y_range * common_scale
+        
+        ! Center the plot within the plot area
+        x_offset = (real(ctx%plot_area%width, wp) - effective_width) * 0.5_wp
+        y_offset = (real(ctx%plot_area%height, wp) - effective_height) * 0.5_wp
+        
+        ! Transform coordinates with aspect ratio preservation
+        pdf_x = (x - ctx%x_min) * common_scale + &
+                real(ctx%plot_area%left, wp) + x_offset
+        
+        pdf_y = (y - ctx%y_min) * common_scale + &
+                real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + y_offset
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
@@ -226,36 +246,51 @@ contains
     subroutine safe_coordinate_transform(x, y, x_min, x_max, y_min, y_max, &
                                         plot_left, plot_width, plot_bottom, plot_height, &
                                         pdf_x, pdf_y)
-        !! Safe coordinate transformation with division by zero protection
-        !! Provides the same interface as expected by test_pdf_division_zero.f90
+        !! Safe coordinate transformation with aspect ratio preservation
+        !! Updated to maintain correct aspect ratios like normalize_to_pdf_coords
         real(wp), intent(in) :: x, y
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: plot_left, plot_width, plot_bottom, plot_height
         real(wp), intent(out) :: pdf_x, pdf_y
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         real(wp) :: x_range, y_range
+        real(wp) :: x_scale, y_scale, common_scale
+        real(wp) :: effective_width, effective_height
+        real(wp) :: x_offset, y_offset
         
         ! Calculate ranges with epsilon protection
         x_range = x_max - x_min
         y_range = y_max - y_min
         
-        ! Handle X coordinate with zero-range protection
+        ! Handle degenerate cases
         if (abs(x_range) < EPSILON) then
-            ! Zero or near-zero range: place at center of plot area
             pdf_x = plot_left + plot_width * 0.5_wp
-        else
-            ! Normal transformation
-            pdf_x = plot_left + (x - x_min) / x_range * plot_width
         end if
         
-        ! Handle Y coordinate with zero-range protection
         if (abs(y_range) < EPSILON) then
-            ! Zero or near-zero range: place at center of plot area
             pdf_y = plot_bottom + plot_height * 0.5_wp
-        else
-            ! Normal transformation
-            pdf_y = plot_bottom + (y - y_min) / y_range * plot_height
         end if
+        
+        if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
+        
+        ! Calculate potential scales for each axis
+        x_scale = plot_width / x_range
+        y_scale = plot_height / y_range
+        
+        ! Use the smaller scale to preserve aspect ratio
+        common_scale = min(x_scale, y_scale)
+        
+        ! Calculate effective dimensions using common scale
+        effective_width = x_range * common_scale
+        effective_height = y_range * common_scale
+        
+        ! Center the plot within the plot area
+        x_offset = (plot_width - effective_width) * 0.5_wp
+        y_offset = (plot_height - effective_height) * 0.5_wp
+        
+        ! Transform coordinates with aspect ratio preservation
+        pdf_x = (x - x_min) * common_scale + plot_left + x_offset
+        pdf_y = (y - y_min) * common_scale + plot_bottom + y_offset
         
     end subroutine safe_coordinate_transform
     
