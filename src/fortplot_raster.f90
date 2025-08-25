@@ -947,6 +947,7 @@ contains
                                           z_min, z_max, has_3d_plots)
         !! Draw axes and labels for raster backends
         use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        use fortplot_text, only: calculate_text_width, calculate_text_height
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -959,38 +960,78 @@ contains
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         integer :: num_x_ticks, num_y_ticks, i
         character(len=50) :: tick_label
-        real(wp) :: tick_length, tick_x, tick_y
+        real(wp) :: tick_x, tick_y
+        integer :: tick_length  ! Tick length in pixels
+        integer :: px, py, text_width, text_height
+        real(wp) :: line_r, line_g, line_b
+        integer(1) :: text_r, text_g, text_b
+        real(wp) :: dummy_pattern(1)  ! Dummy pattern for solid lines
+        real(wp) :: pattern_dist  ! Pattern distance (mutable)
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
         
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
+        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color for lines
+        text_r = 0; text_g = 0; text_b = 0  ! Black color for text
         
         ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
         
         ! Generate and draw tick marks and labels
-        tick_length = 0.02_wp * (y_max - y_min)  ! 2% of plot height
+        tick_length = 5  ! Tick length in pixels
         
         ! X-axis ticks
         call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
-            ! Draw tick mark
-            call this%line(tick_x, y_min, tick_x, y_min - tick_length)
+            ! Transform tick position to pixel coordinates
+            px = int((tick_x - x_min) / (x_max - x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp))
+            py = this%plot_area%bottom + this%plot_area%height  ! Bottom of plot area
+            
+            ! Draw tick mark down from axis
+            dummy_pattern = 0.0_wp
+            pattern_dist = 0.0_wp
+            call draw_styled_line(this%raster%image_data, this%width, this%height, &
+                                 real(px, wp), real(py, wp), real(px, wp), real(py + tick_length, wp), &
+                                 line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
+            
             ! Draw tick label below tick mark
             tick_label = format_tick_label(tick_x, xscale)
-            call this%text(tick_x, y_min - 2.0_wp * tick_length, trim(tick_label))
+            call process_latex_in_text(trim(tick_label), processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            text_width = calculate_text_width(trim(escaped_text))
+            ! Center the label horizontally under the tick
+            call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                    px - text_width/2, py + tick_length + 5, trim(escaped_text), text_r, text_g, text_b)
         end do
         
         ! Y-axis ticks
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
-            ! Draw tick mark
-            call this%line(x_min, tick_y, x_min - tick_length, tick_y)
+            ! Transform tick position to pixel coordinates
+            px = this%plot_area%left  ! Left edge of plot area
+            py = int(real(this%plot_area%bottom + this%plot_area%height, wp) - &
+                    (tick_y - y_min) / (y_max - y_min) * real(this%plot_area%height, wp))
+            
+            ! Draw tick mark to the left from axis
+            dummy_pattern = 0.0_wp
+            pattern_dist = 0.0_wp
+            call draw_styled_line(this%raster%image_data, this%width, this%height, &
+                                 real(px - tick_length, wp), real(py, wp), real(px, wp), real(py, wp), &
+                                 line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
+            
             ! Draw tick label to the left of tick mark
             tick_label = format_tick_label(tick_y, yscale)
-            call this%text(x_min - 2.0_wp * tick_length, tick_y, trim(tick_label))
+            call process_latex_in_text(trim(tick_label), processed_text, processed_len)
+            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            text_width = calculate_text_width(trim(escaped_text))
+            text_height = calculate_text_height(trim(escaped_text))
+            ! Right-align the label to the left of the tick
+            call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                    px - tick_length - text_width - 5, py - text_height/2, trim(escaped_text), text_r, text_g, text_b)
         end do
         
         ! Draw title at top if present
@@ -1002,23 +1043,32 @@ contains
             end if
         end if
         
-        ! Draw xlabel centered below x-axis
+        ! Draw xlabel centered below x-axis (below tick labels)
         if (present(xlabel)) then
             if (allocated(xlabel)) then
-                label_x = (x_min + x_max) / 2.0_wp
-                label_y = y_min - 0.05_wp * (y_max - y_min)
-                call this%text(label_x, label_y, xlabel)
+                call process_latex_in_text(xlabel, processed_text, processed_len)
+                call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+                text_width = calculate_text_width(trim(escaped_text))
+                ! Center horizontally in plot area, position below tick labels
+                px = this%plot_area%left + this%plot_area%width / 2 - text_width / 2
+                py = this%plot_area%bottom + this%plot_area%height + 30  ! 30 pixels below plot area
+                call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                        px, py, trim(escaped_text), text_r, text_g, text_b)
             end if
         end if
         
-        ! Draw ylabel to the left of y-axis
+        ! Draw ylabel to the left of y-axis (rotated would be better, but for now horizontal)
         if (present(ylabel)) then
             if (allocated(ylabel)) then
-                ! For raster, ylabel needs special handling for rotation
-                ! For now, just place it horizontally
-                label_x = x_min - 0.1_wp * (x_max - x_min)
-                label_y = (y_min + y_max) / 2.0_wp
-                call this%text(label_x, label_y, ylabel)
+                call process_latex_in_text(ylabel, processed_text, processed_len)
+                call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+                text_width = calculate_text_width(trim(escaped_text))
+                text_height = calculate_text_height(trim(escaped_text))
+                ! Position to the left of plot area, centered vertically
+                px = 10  ! 10 pixels from left edge
+                py = this%plot_area%bottom + this%plot_area%height / 2 - text_height / 2
+                call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                        px, py, trim(escaped_text), text_r, text_g, text_b)
             end if
         end if
     end subroutine raster_draw_axes_and_labels
