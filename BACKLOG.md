@@ -5,11 +5,11 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #319: Refactor - investigate source of invalid RGB values in contour color mapping
 - [ ] #320: Feature - add debug logging for invalid color value corrections  
 - [ ] #321: Refactor - apply consistent validation pattern to other PDF write functions
 
 ## DOING (Current Work)
+- [x] #319: Refactor - investigate source of invalid RGB values in contour color mapping (branch: refactor-invalid-rgb-source-319)
 
 ## BLOCKED (Infrastructure Issues)
 
