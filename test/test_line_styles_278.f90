@@ -1,15 +1,16 @@
 program test_line_styles_278
     !! Test to verify line styles work correctly in PNG backend (issue #278)
     use fortplot
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     type(figure_t) :: fig
-    real :: x(100), y(100)
+    real(wp) :: x(100), y(100)
     integer :: i
     
     ! Generate test data
     do i = 1, 100
-        x(i) = real(i-1) / 99.0 * 10.0
+        x(i) = real(i-1, wp) / 99.0_wp * 10.0_wp
         y(i) = sin(x(i))
     end do
     
@@ -18,9 +19,9 @@ program test_line_styles_278
     
     ! Test different line styles
     call fig%add_plot(x, y, linestyle='-', label='solid')
-    call fig%add_plot(x, y + 1.0, linestyle='--', label='dashed')
-    call fig%add_plot(x, y + 2.0, linestyle=':', label='dotted')
-    call fig%add_plot(x, y + 3.0, linestyle='-.', label='dashdot')
+    call fig%add_plot(x, y + 1.0_wp, linestyle='--', label='dashed')
+    call fig%add_plot(x, y + 2.0_wp, linestyle=':', label='dotted')
+    call fig%add_plot(x, y + 3.0_wp, linestyle='-.', label='dashdot')
     
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
