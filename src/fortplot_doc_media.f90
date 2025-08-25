@@ -43,8 +43,6 @@ contains
             call add_streamplot_files(dir, media_files, n_media)
         case('output/example/fortran/unicode_demo')
             call add_unicode_files(dir, media_files, n_media)
-        case('output/example/fortran/stateful_streamplot')
-            call add_stateful_streamplot_files(dir, media_files, n_media)
         case('output/example/fortran/annotation_demo')
             call add_annotation_demo_files(dir, media_files, n_media)
         case default
@@ -175,13 +173,6 @@ contains
         call add_if_exists(dir, 'math_examples.png', media_files, n_media)
     end subroutine add_unicode_files
     
-    subroutine add_stateful_streamplot_files(dir, media_files, n_media)
-        character(len=*), intent(in) :: dir
-        character(len=*), intent(out) :: media_files(:)
-        integer, intent(out) :: n_media
-        
-        call add_if_exists(dir, 'stateful_streamplot.png', media_files, n_media)
-    end subroutine add_stateful_streamplot_files
     
     subroutine add_annotation_demo_files(dir, media_files, n_media)
         character(len=*), intent(in) :: dir
