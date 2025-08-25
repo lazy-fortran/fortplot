@@ -146,8 +146,8 @@ contains
         
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%max_plots))
-            self%plot_count = 0  ! Only reset plot count when allocating plots array
         end if
+        self%plot_count = 0  ! Reset plot count on every figure() call
         self%rendered = .false.
         
         ! Preserve existing legend settings during re-initialization

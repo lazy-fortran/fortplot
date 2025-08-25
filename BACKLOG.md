@@ -9,7 +9,7 @@
 - [x] #334: Fix - No output visible on pcolormesh_demo.html (COMPLETED - PR #351)
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
 - [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
-- [ ] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html
+- [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
 - [ ] #329: Fix - No output visible on colored_contours.html
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 - [ ] #327: Fix - MP4 link not showing on animation.html
@@ -24,6 +24,7 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## DOING (Current Work)
+- [ ] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html
 
 ## BLOCKED (Infrastructure Issues)
 
