@@ -62,6 +62,7 @@ module fortplot_ascii
         procedure :: draw_axes_and_labels_backend => ascii_draw_axes_and_labels
         procedure :: save_coordinates => ascii_save_coordinates
         procedure :: set_coordinates => ascii_set_coordinates
+        procedure :: render_axes => ascii_render_axes
     end type ascii_context
     
     ! ASCII plotting constants
@@ -926,5 +927,14 @@ contains
         this%y_min = y_min
         this%y_max = y_max
     end subroutine ascii_set_coordinates
+
+    subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
+        !! Render axes for ASCII context (stub implementation)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        
+        ! ASCII axes are rendered as part of draw_axes_and_labels_backend
+        ! This is a stub to satisfy the interface
+    end subroutine ascii_render_axes
 
 end module fortplot_ascii
