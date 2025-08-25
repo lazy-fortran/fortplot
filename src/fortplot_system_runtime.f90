@@ -89,6 +89,13 @@ contains
             return
         end if
         
+        ! Check for MSYS or MinGW environment (Windows with Unix-like tools)
+        call get_environment_variable("MSYSTEM", os_name, status=status)
+        if (status == 0 .and. len_trim(os_name) > 0) then
+            windows = .true.
+            return
+        end if
+        
         ! Check path separator convention
         call get_environment_variable("PATH", os_name, status=status)
         if (status == 0) then
@@ -107,13 +114,33 @@ contains
         !! Map Unix-style /tmp paths to Windows-compatible paths
         character(len=*), intent(in) :: path
         character(len=:), allocatable :: mapped_path
+        character(len=512) :: temp_dir
+        integer :: status
         
-        if (path == "/tmp") then
-            mapped_path = "tmp"
-        else if (len(path) >= 5 .and. path(1:5) == "/tmp/") then
-            ! Map /tmp/filename to tmp/filename
-            mapped_path = "tmp" // path(5:)
+        if (is_windows()) then
+            if (path == "/tmp") then
+                ! Use Windows TEMP directory
+                call get_environment_variable("TEMP", temp_dir, status=status)
+                if (status == 0 .and. len_trim(temp_dir) > 0) then
+                    mapped_path = trim(temp_dir)
+                else
+                    ! Fallback to local tmp directory
+                    mapped_path = "tmp"
+                end if
+            else if (len(path) >= 5 .and. path(1:5) == "/tmp/") then
+                ! Map /tmp/filename to TEMP/filename or tmp/filename
+                call get_environment_variable("TEMP", temp_dir, status=status)
+                if (status == 0 .and. len_trim(temp_dir) > 0) then
+                    mapped_path = trim(temp_dir) // "\" // path(6:)
+                else
+                    ! Fallback to local tmp directory
+                    mapped_path = "tmp" // path(5:)
+                end if
+            else
+                mapped_path = path
+            end if
         else
+            ! On Unix/Linux, keep paths as-is
             mapped_path = path
         end if
     end function map_unix_to_windows_path
@@ -307,13 +334,20 @@ contains
         character(len=:), allocatable :: command
         character(len=256) :: cmdmsg
         integer :: exitstat, cmdstat
+        logical :: debug_enabled
         
         available = .false.
+        debug_enabled = is_debug_enabled()
         
         if (is_windows()) then
-            command = 'where "' // trim(command_name) // '" >nul 2>&1'
+            ! Use 'where' command on Windows, handling both CMD and PowerShell
+            command = 'where ' // trim(command_name) // ' >NUL 2>&1'
         else
             command = 'which "' // trim(command_name) // '" >/dev/null 2>&1'
+        end if
+        
+        if (debug_enabled) then
+            write(*,'(A,A)') 'DEBUG: [check_command] Testing: ', trim(command_name)
         end if
         
         if (is_windows()) then
@@ -321,7 +355,12 @@ contains
         else
             call execute_command_line(command, exitstat=exitstat, cmdstat=cmdstat)
         end if
+        
         available = (exitstat == 0 .and. cmdstat == 0)
+        
+        if (debug_enabled) then
+            write(*,'(A,L1)') 'DEBUG: [check_command] Available: ', available
+        end if
     end subroutine check_command_available_runtime
 
 end module fortplot_system_runtime
