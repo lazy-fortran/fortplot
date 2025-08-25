@@ -24,6 +24,6 @@ program test_silent_output
     call savefig(get_test_output_path('/tmp/silent_test.png'))
     
     ! This print should still work (it's not going through logging)
-    print *, "Silent test completed - check /tmp/silent_test.png"
+    print *, "Silent test completed - output saved"
 
 end program test_silent_output

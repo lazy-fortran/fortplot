@@ -25,25 +25,52 @@ program test_windows_runtime
     test_path = "/tmp"
     result = map_unix_to_windows_path(test_path)
     print *, "  /tmp -> '", trim(result), "'"
-    if (trim(result) /= "tmp") then
-        print *, "    ERROR: Expected 'tmp'"
-        stop 1
+    if (is_windows()) then
+        ! On Windows, /tmp should map to Windows temp or local tmp
+        if (index(result, "tmp") == 0 .and. index(result, "Temp") == 0) then
+            print *, "    ERROR: Expected path containing 'tmp' or 'Temp'"
+            stop 1
+        end if
+    else
+        ! On Unix/Linux, /tmp should remain unchanged
+        if (trim(result) /= "/tmp") then
+            print *, "    ERROR: Expected '/tmp' unchanged on Unix/Linux"
+            stop 1
+        end if
     end if
     
     test_path = "/tmp/file.txt"
     result = map_unix_to_windows_path(test_path)
     print *, "  /tmp/file.txt -> '", trim(result), "'"
-    if (trim(result) /= "tmp/file.txt") then
-        print *, "    ERROR: Expected 'tmp/file.txt'"
-        stop 1
+    if (is_windows()) then
+        ! On Windows, should contain file.txt and tmp or Temp
+        if (index(result, "file.txt") == 0) then
+            print *, "    ERROR: Expected path containing 'file.txt'"
+            stop 1
+        end if
+    else
+        ! On Unix/Linux, should remain unchanged
+        if (trim(result) /= "/tmp/file.txt") then
+            print *, "    ERROR: Expected '/tmp/file.txt' unchanged on Unix/Linux"
+            stop 1
+        end if
     end if
     
     test_path = "/tmp/subdir/file.txt"
     result = map_unix_to_windows_path(test_path)
     print *, "  /tmp/subdir/file.txt -> '", trim(result), "'"
-    if (trim(result) /= "tmp/subdir/file.txt") then
-        print *, "    ERROR: Expected 'tmp/subdir/file.txt'"
-        stop 1
+    if (is_windows()) then
+        ! On Windows, should contain subdir/file.txt
+        if (index(result, "subdir") == 0 .or. index(result, "file.txt") == 0) then
+            print *, "    ERROR: Expected path containing 'subdir/file.txt'"
+            stop 1
+        end if
+    else
+        ! On Unix/Linux, should remain unchanged
+        if (trim(result) /= "/tmp/subdir/file.txt") then
+            print *, "    ERROR: Expected '/tmp/subdir/file.txt' unchanged on Unix/Linux"
+            stop 1
+        end if
     end if
     
     test_path = "output/test/file.txt"

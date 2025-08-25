@@ -679,23 +679,24 @@ contains
         integer :: last_slash, i
         
         ! Handle /tmp paths by mapping to Windows-compatible paths
-        if (relative_path(1:5) == '/tmp/') then
+        if (len_trim(relative_path) >= 5 .and. relative_path(1:5) == '/tmp/') then
             ! Map /tmp paths using our runtime system
             full_path = map_unix_to_windows_path(relative_path)
+        else if (len_trim(relative_path) >= 1 .and. relative_path(1:1) == '/') then
+            ! Absolute path starting with / - make it relative for Windows compatibility
+            full_path = '.' // relative_path
         else
-            ! For output/test paths, ensure they're relative to current directory
-            if (relative_path(1:1) == '/') then
-                ! Absolute path starting with / - make it relative
-                full_path = '.' // relative_path
-            else
-                ! Already relative path
-                full_path = relative_path
-            end if
+            ! Already relative path
+            full_path = relative_path
         end if
         
-        ! Convert path separators for Windows if needed
+        ! Normalize path separators based on platform
         if (is_windows()) then
+            ! Windows: ensure proper separators
             full_path = normalize_path_separators(full_path, .true.)
+        else
+            ! Unix: ensure forward slashes
+            full_path = normalize_path_separators(full_path, .false.)
         end if
         
         ! Extract directory part and ensure it exists
