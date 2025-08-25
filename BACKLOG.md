@@ -5,10 +5,10 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
+- [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
 
 ## BLOCKED (Infrastructure Issues)
 
