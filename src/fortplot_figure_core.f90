@@ -47,7 +47,7 @@ module fortplot_figure_core
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
         ! Common properties
-        real(wp), dimension(3) :: color
+        real(wp), dimension(3) :: color = [0.0_wp, 0.447_wp, 0.698_wp]  ! Default to blue
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
@@ -152,9 +152,14 @@ contains
         
         ! Preserve existing legend settings during re-initialization
         
-        ! Initialize backend if specified
+        ! Initialize backend if specified, or use default PNG backend
         if (present(backend)) then
             call initialize_backend(self%backend, backend, self%width, self%height)
+        else
+            ! Initialize default PNG backend if not already allocated
+            if (.not. allocated(self%backend)) then
+                call initialize_backend(self%backend, 'png', self%width, self%height)
+            end if
         end if
     end subroutine initialize
 
@@ -949,8 +954,15 @@ contains
         class(figure_t), intent(inout) :: self
         integer :: i
         
+        
         ! Render regular plots
         do i = 1, self%plot_count
+            ! Ensure plots array is allocated and has data
+            if (.not. allocated(self%plots)) then
+                ! This shouldn't happen, but guard against it
+                return
+            end if
+            
             ! Set color for this plot
             call self%backend%color(self%plots(i)%color(1), self%plots(i)%color(2), self%plots(i)%color(3))
             
