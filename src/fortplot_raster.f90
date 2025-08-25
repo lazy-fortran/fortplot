@@ -966,9 +966,9 @@ contains
         ! Draw title at top if present
         if (present(title)) then
             if (allocated(title)) then
-                label_x = (x_min + x_max) / 2.0_wp
-                label_y = y_max + 0.05_wp * (y_max - y_min)
-                call this%text(label_x, label_y, title)
+                ! Position title centered horizontally over plot area (like matplotlib)
+                ! Use plot area center instead of data coordinate center for proper positioning
+                call render_title_centered(this, title)
             end if
         end if
         
@@ -1023,5 +1023,33 @@ contains
         ! Raster axes are rendered as part of draw_axes_and_labels_backend
         ! This is a stub to satisfy the interface
     end subroutine raster_render_axes
+
+    subroutine render_title_centered(this, title_text)
+        !! Render title centered horizontally over plot area (matplotlib-style positioning)
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: title_text
+        
+        real(wp) :: title_px, title_py
+        integer(1) :: r, g, b
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        ! Process LaTeX commands and Unicode
+        call process_latex_in_text(title_text, processed_text, processed_len)
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+        
+        ! Calculate title position centered over plot area
+        ! X position: center of plot area horizontally
+        title_px = real(this%plot_area%left + this%plot_area%width / 2, wp)
+        
+        ! Y position: above plot area (like matplotlib)  
+        ! Place title approximately 30 pixels above the plot area
+        title_py = real(this%plot_area%bottom - 30, wp)
+        
+        ! Get current color and render title directly in pixel coordinates
+        call this%raster%get_color_bytes(r, g, b)
+        call render_text_to_image(this%raster%image_data, this%width, this%height, &
+                                 int(title_px), int(title_py), trim(escaped_text), r, g, b)
+    end subroutine render_title_centered
 
 end module fortplot_raster
