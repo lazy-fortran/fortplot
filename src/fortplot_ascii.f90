@@ -309,6 +309,11 @@ contains
         if (allocated(this%xlabel_text)) then
             call print_centered_title(this%xlabel_text, this%plot_width)
         end if
+        
+        ! Print ylabel (simple horizontal placement for now)
+        if (allocated(this%ylabel_text)) then
+            print '(A)', this%ylabel_text
+        end if
     end subroutine output_to_terminal
     
     subroutine output_to_file(this, unit)
@@ -338,6 +343,11 @@ contains
         ! Write xlabel below the plot if present
         if (allocated(this%xlabel_text)) then
             call write_centered_title(unit, this%xlabel_text, this%plot_width)
+        end if
+        
+        ! Write ylabel to the left side of the plot if present
+        if (allocated(this%ylabel_text)) then
+            write(unit, '(A)') this%ylabel_text
         end if
     end subroutine output_to_file
 
@@ -871,6 +881,7 @@ contains
                                          title, xlabel, ylabel, &
                                          z_min, z_max, has_3d_plots)
         !! Draw axes and labels for ASCII backend
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -880,6 +891,10 @@ contains
         logical, intent(in) :: has_3d_plots
         
         real(wp) :: label_x, label_y
+        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
+        integer :: num_x_ticks, num_y_ticks, i
+        character(len=50) :: tick_label
+        real(wp) :: tick_x, tick_y
         
         ! ASCII backend: explicitly set title and draw simple axes
         if (present(title)) then
@@ -891,6 +906,24 @@ contains
         ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
+        
+        ! Generate tick marks and labels for ASCII
+        ! X-axis ticks (drawn as characters along bottom axis)
+        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
+        do i = 1, num_x_ticks
+            tick_x = x_tick_positions(i)
+            ! For ASCII, draw tick marks as characters in the text output
+            tick_label = format_tick_label(tick_x, xscale)
+            call this%text(tick_x, y_min - 0.05_wp * (y_max - y_min), trim(tick_label))
+        end do
+        
+        ! Y-axis ticks (drawn as characters along left axis)
+        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+        do i = 1, num_y_ticks
+            tick_y = y_tick_positions(i)
+            tick_label = format_tick_label(tick_y, yscale)
+            call this%text(x_min - 0.1_wp * (x_max - x_min), tick_y, trim(tick_label))
+        end do
         
         ! Store xlabel and ylabel for rendering outside the plot frame
         if (present(xlabel)) then

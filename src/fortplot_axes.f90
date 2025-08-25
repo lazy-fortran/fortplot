@@ -11,7 +11,7 @@ module fortplot_axes
     implicit none
     
     private
-    public :: compute_scale_ticks, format_tick_label
+    public :: compute_scale_ticks, format_tick_label, MAX_TICKS
     
     integer, parameter :: MAX_TICKS = 20
     
@@ -141,14 +141,33 @@ contains
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: scale_type
         character(len=20) :: label
+        real(wp) :: abs_value
         
-        if (abs(value) < 1.0e-10_wp) then
+        abs_value = abs(value)
+        
+        if (abs_value < 1.0e-10_wp) then
             label = '0'
         else if (trim(scale_type) == 'log' .and. is_power_of_ten(value)) then
             label = format_power_of_ten(value)
+        else if (abs_value >= 1000.0_wp .or. abs_value < 0.01_wp) then
+            ! Use scientific notation for very large or very small values
+            write(label, '(ES10.2)') value
+            label = adjustl(label)
+        else if (abs_value >= 100.0_wp) then
+            ! No decimal places for values >= 100
+            write(label, '(F0.0)') value
+        else if (abs_value >= 10.0_wp) then
+            ! One decimal place for values >= 10
+            write(label, '(F0.1)') value
+        else if (abs_value >= 1.0_wp) then
+            ! Two decimal places for values >= 1
+            write(label, '(F0.2)') value
         else
-            write(label, '(G0)') value
+            ! Three decimal places for small values
+            write(label, '(F0.3)') value
         end if
+        
+        label = adjustl(label)
     end function format_tick_label
 
 
