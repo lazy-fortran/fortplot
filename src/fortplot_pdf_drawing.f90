@@ -10,6 +10,7 @@ module fortplot_pdf_drawing
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     use fortplot_vector, only: vector_stream_writer, vector_graphics_state
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
+    use fortplot_logging, only: log_debug
     implicit none
     
     private
@@ -66,30 +67,77 @@ contains
         !! Write PDF color command with robust validation
         !! Validates and clamps RGB values to [0.0, 1.0] range
         !! Handles NaN, infinity, and out-of-range values gracefully
+        !! Logs debug information when corrections are applied
         class(pdf_stream_writer), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
         real(wp) :: r_safe, g_safe, b_safe
         character(len=64) :: cmd
+        character(len=256) :: debug_msg
+        logical :: r_corrected, g_corrected, b_corrected
+        
+        r_corrected = .false.
+        g_corrected = .false.
+        b_corrected = .false.
         
         ! Validate and clamp R component
         if (ieee_is_nan(r) .or. .not. ieee_is_finite(r)) then
             r_safe = 0.0_wp  ! Default to black for invalid values
-        else
+            r_corrected = .true.
+            call log_debug("RGB correction: R=invalid -> 0.000")
+        else if (r < 0.0_wp .or. r > 1.0_wp) then
             r_safe = max(0.0_wp, min(1.0_wp, r))  ! Clamp to [0, 1]
+            r_corrected = .true.
+            if (abs(r) > 999.0_wp) then
+                call log_debug("RGB correction: R=out-of-range (large) -> clamped")
+            else
+                write(debug_msg, '("RGB correction: R=", F0.3, " (out-of-range) -> ", F0.3)') r, r_safe
+                call log_debug(trim(debug_msg))
+            end if
+        else
+            r_safe = r
         end if
         
         ! Validate and clamp G component
         if (ieee_is_nan(g) .or. .not. ieee_is_finite(g)) then
             g_safe = 0.0_wp  ! Default to black for invalid values
-        else
+            g_corrected = .true.
+            call log_debug("RGB correction: G=invalid -> 0.000")
+        else if (g < 0.0_wp .or. g > 1.0_wp) then
             g_safe = max(0.0_wp, min(1.0_wp, g))  ! Clamp to [0, 1]
+            g_corrected = .true.
+            if (abs(g) > 999.0_wp) then
+                call log_debug("RGB correction: G=out-of-range (large) -> clamped")
+            else
+                write(debug_msg, '("RGB correction: G=", F0.3, " (out-of-range) -> ", F0.3)') g, g_safe
+                call log_debug(trim(debug_msg))
+            end if
+        else
+            g_safe = g
         end if
         
         ! Validate and clamp B component
         if (ieee_is_nan(b) .or. .not. ieee_is_finite(b)) then
             b_safe = 0.0_wp  ! Default to black for invalid values
-        else
+            b_corrected = .true.
+            call log_debug("RGB correction: B=invalid -> 0.000")
+        else if (b < 0.0_wp .or. b > 1.0_wp) then
             b_safe = max(0.0_wp, min(1.0_wp, b))  ! Clamp to [0, 1]
+            b_corrected = .true.
+            if (abs(b) > 999.0_wp) then
+                call log_debug("RGB correction: B=out-of-range (large) -> clamped")
+            else
+                write(debug_msg, '("RGB correction: B=", F0.3, " (out-of-range) -> ", F0.3)') b, b_safe
+                call log_debug(trim(debug_msg))
+            end if
+        else
+            b_safe = b
+        end if
+        
+        ! Log summary if any corrections were made
+        if (r_corrected .or. g_corrected .or. b_corrected) then
+            write(debug_msg, '("Final RGB: (", F0.3, ", ", F0.3, ", ", F0.3, ")")') &
+                r_safe, g_safe, b_safe
+            call log_debug(trim(debug_msg))
         end if
         
         ! Write validated color values
