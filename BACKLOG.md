@@ -7,6 +7,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
+- [ ] Fix GitHub Pages deployment failure - colored_contours example crashes with "End of record" error at fortplot_pdf_drawing.f90:69 in pdf_write_color subroutine
 
 ## BLOCKED (Infrastructure Issues)
 
