@@ -21,6 +21,8 @@
 - [ ] #343: Refactor - extract label positioning constants
 - [ ] #344: Refactor - add format threshold constants in axes module
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
+- [ ] #357: Docs - standardize colormap documentation across examples
+- [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 
 ## DOING (Current Work)
 - [ ] #329: Fix - No output visible on colored_contours.html
