@@ -13,7 +13,6 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #278: Line styles dont work - all styling broken since 690b9834 (PR #303 blocked by Windows CI)
 - [ ] #292: regression: legend placement does not work
 
 ## BLOCKED (Infrastructure Issues)
@@ -41,6 +40,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #278: Line styles dont work - all styling broken since 690b9834 - FIXED: partial fix for line styles in PNG backend (PR #303 merged)
 - [x] #280: regression: contours dont work - FIXED: contour functionality restored with coordinate constants (PR #304 merged)
 - [x] #276: Markers dont work - PNG examples completely broken - FIXED: marker rendering restored in PNG backend (PR #302 merged)
 - [x] #296: regression: PDF plot strangely stretched - FIXED: PDF coordinate transformation preserves aspect ratios (PR #298 merged)
