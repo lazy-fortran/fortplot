@@ -17,9 +17,9 @@ program test_png_data_rendering_regression
     x = [(real(i-1, wp) * 2.0_wp * pi / 9.0_wp, i=1, 10)]
     y = sin(x)
     
-    ! Generate unique test filenames with platform-independent paths
-    test_png = 'output' // char(47) // 'test' // char(47) // 'png_regression_test.png'
-    test_txt = 'output' // char(47) // 'test' // char(47) // 'png_regression_test.txt'
+    ! Generate unique test filenames - use current directory for Windows compatibility
+    test_png = 'png_regression_test.png'
+    test_txt = 'png_regression_test.txt'
     
     ! Create plot and save to both formats
     call figure()
