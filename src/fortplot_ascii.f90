@@ -575,7 +575,8 @@ contains
         nx = size(x_grid)
         ny = size(y_grid)
         
-        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        ! z_grid should have dimensions (ny, nx) - rows by columns
+        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         
         x_min = minval(x_grid)
         x_max = maxval(x_grid)
@@ -594,8 +595,9 @@ contains
                 ! Check bounds
                 if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
                     ! Normalize z value to character index
+                    ! z_grid is (ny, nx) so access as z_grid(j, i)
                     if (abs(z_max - z_min) > 1e-10_wp) then
-                        z_normalized = (z_grid(i, j) - z_min) / (z_max - z_min)
+                        z_normalized = (z_grid(j, i) - z_min) / (z_max - z_min)
                     else
                         z_normalized = 0.5_wp
                     end if

@@ -752,8 +752,8 @@ contains
         nx = size(x_grid)
         ny = size(y_grid)
         
-        ! Validate input dimensions
-        if (size(z_grid, 1) /= nx .or. size(z_grid, 2) /= ny) return
+        ! Validate input dimensions - z_grid should be (ny, nx)
+        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         if (abs(z_max - z_min) < 1e-10_wp) return
         
         ! Get data bounds
