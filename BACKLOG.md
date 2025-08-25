@@ -7,7 +7,6 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [ ] #312: Legend Demo plots dont show up on github pages
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -34,6 +33,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #312: Legend Demo plots dont show up on github pages - FIXED: GitHub Pages examples not generating due to auto-examples=false in fpm.toml, enabled automatic example discovery (PR #316 merged)  
 - [x] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content - FIXED: PNG data rendering regression caused by figure initialization resetting plot_count (PR #315 merged)
 - [x] #272: fix: rescue BACKLOG.md commits from main branch protection - RESCUED: Historical PLAY workflow planning commits (c610cce, ad82dbc) documenting issues #262-271 (PR #314 merged)
 - [x] #293: fix: rescue BACKLOG.md update commit from main branch protection - FIXED: comprehensive rescue procedure with prevention safeguards (PR #313 merged)
