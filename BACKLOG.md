@@ -10,7 +10,6 @@
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
 - [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
-- [ ] #329: Fix - No output visible on colored_contours.html
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 - [ ] #327: Fix - MP4 link not showing on animation.html
 - [ ] #336: Fix - Streamplot and stateful streamplot example redundant
@@ -24,7 +23,7 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## DOING (Current Work)
-- [ ] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html
+- [ ] #329: Fix - No output visible on colored_contours.html
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -51,6 +50,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html - FIXED: Implemented unconditional plot_count reset during figure initialization to ensure proper plot isolation between figure() calls and prevent overlapping contours (PR #354 merged)
 - [x] #331: Fix - No legend visible in format_string_demo.html - FIXED: Restored legend visibility by removing automatic reset of show_legend during figure re-initialization, allowing user legend settings to persist across plot operations (PR #353 merged)
 - [x] #334: Fix - No output visible on pcolormesh_demo.html - FIXED: Added comprehensive documentation content with PNG images, ASCII outputs, and PDF download links to resolve GitHub Pages visibility issue (PR #351 merged)
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html - FIXED: Resolved marker centering coordinate consistency through sub-pixel adjustment (-0.5, -0.5) to align markers with line drawing pixel centers (PR #346 merged)
