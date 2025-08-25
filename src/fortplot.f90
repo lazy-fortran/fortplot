@@ -76,6 +76,9 @@ module fortplot
     ! Contour extraction functionality
     use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
     
+    ! Annotation functionality with coordinate constants
+    use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
+    
     ! Matplotlib-compatible API (all pyplot-style functions)
     use fortplot_matplotlib, only: plot, contour, contour_filled, pcolormesh, streamplot, &
                                    hist, histogram, scatter, errorbar, boxplot, &
@@ -98,7 +101,9 @@ module fortplot
     
     ! Core types and constants
     public :: figure_t, wp
-    ! TODO: Coordinate constants not available in working figure core
+    
+    ! Coordinate system constants for annotations
+    public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
     
     ! Matplotlib-compatible plotting functions
     public :: plot, contour, contour_filled, pcolormesh, streamplot
