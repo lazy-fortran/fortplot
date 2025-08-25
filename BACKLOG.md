@@ -2,8 +2,7 @@
 
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
-**🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**  
-- [ ] #292: regression: legend placement does not work
+**🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #300: fix: comprehensive Windows CI environment compatibility (created today)
@@ -15,7 +14,7 @@
 
 ## DOING (Current Work)
 - [ ] #278: Line styles dont work - all styling broken since 690b9834 (PR #303 blocked by Windows CI)
-- [ ] #280: regression: contours dont work
+- [ ] #292: regression: legend placement does not work
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -42,6 +41,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #280: regression: contours dont work - FIXED: contour functionality restored with coordinate constants (PR #304 merged)
 - [x] #276: Markers dont work - PNG examples completely broken - FIXED: marker rendering restored in PNG backend (PR #302 merged)
 - [x] #296: regression: PDF plot strangely stretched - FIXED: PDF coordinate transformation preserves aspect ratios (PR #298 merged)
 - [x] #291: regression: y text not rotated in PNGs - FIXED: raster_render_ylabel implementation with bitmap rotation (PR #301 merged)
