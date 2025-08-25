@@ -19,6 +19,7 @@ module fortplot_test_utils
     public :: end_performance_test
     public :: assert_performance_target
     public :: int_to_str
+    public :: get_platform_tolerance
     
 contains
     
@@ -143,5 +144,32 @@ contains
         str = adjustl(str)
         
     end function int_to_str
+    
+    function get_platform_tolerance(base_tolerance) result(tolerance)
+        !! Get platform-appropriate tolerance for numerical comparisons
+        !! Addresses Issue #297: Windows CI precision differences
+        !!
+        !! On Windows, floating-point precision can vary due to:
+        !! - Different compiler optimization flags
+        !! - Different math libraries (MSYS2 vs native)
+        !! - Different CPU instruction sets
+        !!
+        !! This function provides a systematic way to handle platform
+        !! precision differences while maintaining test accuracy.
+        
+        use iso_fortran_env, only: real64
+        real(real64), intent(in) :: base_tolerance
+        real(real64) :: tolerance
+        
+        if (is_windows()) then
+            ! On Windows, relax tolerance by factor of 10 to handle precision differences
+            ! Still catches real bugs while avoiding false failures
+            tolerance = base_tolerance * 10.0_real64
+        else
+            ! On Linux/Unix, maintain tight tolerance for precision
+            tolerance = base_tolerance
+        end if
+        
+    end function get_platform_tolerance
     
 end module fortplot_test_utils
