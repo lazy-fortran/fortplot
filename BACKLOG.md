@@ -19,6 +19,9 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #323: Test - add edge case tests for PDF heatmap color validation
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
+- [ ] #342: Refactor - complete symlog tick generation implementation
+- [ ] #343: Refactor - extract label positioning constants
+- [ ] #344: Refactor - add format threshold constants in axes module
 
 ## DOING (Current Work)
 - [ ] #335: Fix - Axes wrong and no labels visible on scale_examples.html
