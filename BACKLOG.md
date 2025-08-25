@@ -3,12 +3,11 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
-- [ ] #312: Legend Demo plots dont show up on github pages
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [ ] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content
+- [ ] #312: Legend Demo plots dont show up on github pages
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -35,6 +34,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content - FIXED: PNG data rendering regression caused by figure initialization resetting plot_count (PR #315 merged)
 - [x] #272: fix: rescue BACKLOG.md commits from main branch protection - RESCUED: Historical PLAY workflow planning commits (c610cce, ad82dbc) documenting issues #262-271 (PR #314 merged)
 - [x] #293: fix: rescue BACKLOG.md update commit from main branch protection - FIXED: comprehensive rescue procedure with prevention safeguards (PR #313 merged)
 - [x] #285: refactor: remove hist() and bar() stub implementations - FIXED: replaced broken stubs with clear error messages and TODO comments (PR #310 merged)
