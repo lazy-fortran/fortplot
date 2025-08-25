@@ -20,25 +20,38 @@ make example ARGS="example_name"
 - [line_styles](./line_styles/) - Different line styles and customization
 - [marker_demo](./marker_demo/) - Marker types and scatter plots
 - [format_string_demo](./format_string_demo/) - Matplotlib-style format strings
+- [scatter_demo](./scatter_demo/) - Enhanced scatter plots with color mapping
+
+### Statistical and Categorical
+- [errorbar_demo](./errorbar_demo/) - Error bars for scientific data
+- [bar_chart_demo](./bar_chart_demo/) - Bar charts for categorical data
+- [boxplot_demo](./boxplot_demo/) - Box-and-whisker plots
+- [histogram_demo](./histogram_demo/) - Data distribution histograms
 
 ### Advanced Plotting
+- [3d_plotting](./3d_plotting/) - 3D surface and line plots
 - [contour_demo](./contour_demo/) - Contour plots with levels
 - [colored_contours](./colored_contours/) - Filled contours with colormaps
 - [pcolormesh_demo](./pcolormesh_demo/) - Pseudocolor mesh plots
 - [streamplot_demo](./streamplot_demo/) - Vector field visualization
+- [stateful_streamplot](./stateful_streamplot/) - Time-evolving fields
 
 ### Scaling and Styling
 - [scale_examples](./scale_examples/) - Log and symlog scales
 - [legend_demo](./legend_demo/) - Legend placement options
-- [legend_box_demo](./legend_box_demo/) - Advanced legend styling
 - [unicode_demo](./unicode_demo/) - Mathematical symbols
+- [grid_demo](./grid_demo/) - Grid lines and formatting
+
+### Annotations and Layout
+- [annotation_demo](./annotation_demo/) - Text and arrow annotations
+- [subplot_demo](./subplot_demo/) - Multiple plot grids
+- [disconnected_lines](./disconnected_lines/) - Multi-segment plots
 
 ### Special Features
+- [animation](./animation/) - Animated plots with FFmpeg
 - [ascii_heatmap](./ascii_heatmap/) - Terminal-based visualization
 - [show_viewer_demo](./show_viewer_demo/) - Interactive display
 - [smart_show_demo](./smart_show_demo/) - Intelligent display mode
-- [animation](./animation/) - Animated plots
-- [stateful_streamplot](./stateful_streamplot/) - Time-evolving fields
 
 ## Output Formats
 

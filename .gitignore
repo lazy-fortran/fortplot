@@ -33,7 +33,7 @@ __pycache__/
 *.mov
 *.flv
 
-# doc/example - removed to allow documentation files to be tracked
+# Documentation consolidated to example/fortran/*/README.md - no duplicates
 
 # Coverage files - comprehensive patterns
 *.gcno*

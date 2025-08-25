@@ -52,11 +52,9 @@ brew install ffmpeg
 ## Complete Documentation
 
 For comprehensive documentation including:
-- Cross-platform installation guides
+- Cross-platform installation guides  
 - Windows-specific troubleshooting
 - Error handling examples
 - Path and filename handling
-
-See: [Animation Documentation](../../../doc/example/animation.md)
 
 **Windows Users**: See [Windows FFmpeg Setup Guide](../../../doc/windows_ffmpeg_setup.md) for detailed installation and troubleshooting.
