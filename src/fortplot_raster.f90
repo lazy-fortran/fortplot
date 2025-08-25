@@ -1031,7 +1031,8 @@ contains
             text_height = calculate_text_height(trim(escaped_text))
             ! Right-align the label to the left of the tick
             call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                    px - tick_length - text_width - 5, py - text_height/2, trim(escaped_text), text_r, text_g, text_b)
+                px - tick_length - text_width - 5, py - text_height/2, &
+                trim(escaped_text), text_r, text_g, text_b)
         end do
         
         ! Draw title at top if present
