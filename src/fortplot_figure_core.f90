@@ -1402,18 +1402,34 @@ contains
     end subroutine draw_contour_lines
 
     subroutine draw_line_with_style(self, plot_idx, linestyle)
-        !! Draw line segments with specified linestyle pattern using continuous pattern approach
+        !! Draw line segments with specified linestyle pattern
+        use fortplot_raster, only: raster_context
+        use fortplot_png, only: png_context
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_idx
         character(len=*), intent(in) :: linestyle
         
-        if (linestyle == '-' .or. linestyle == 'solid') then
-            ! Solid line - draw all segments normally
+        ! For raster-based backends (PNG, raster), set the line style to enable pattern support
+        select type (backend => self%backend)
+        type is (png_context)
+            ! PNG backend inherits from raster_context and has pattern support
+            call backend%set_line_style(linestyle)
+            ! Just draw the segments - the backend will handle patterns
             call render_solid_line(self, plot_idx)
-        else
-            ! Patterned line - render with continuous pattern
-            call render_patterned_line(self, plot_idx, linestyle)
-        end if
+        type is (raster_context)
+            ! Base raster backend has built-in pattern support via draw_styled_line
+            call backend%set_line_style(linestyle)
+            ! Just draw the segments - the backend will handle patterns
+            call render_solid_line(self, plot_idx)
+        class default
+            ! Other backends (PDF, ASCII): use manual pattern implementation
+            ! since they don't have set_line_style method
+            if (linestyle == '-' .or. linestyle == 'solid') then
+                call render_solid_line(self, plot_idx)
+            else
+                call render_patterned_line(self, plot_idx, linestyle)
+            end if
+        end select
     end subroutine draw_line_with_style
 
     subroutine render_solid_line(self, plot_idx)
