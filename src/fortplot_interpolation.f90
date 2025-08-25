@@ -81,10 +81,10 @@ contains
         ! Get coordinates and values at corners
         x1 = x_grid(i1); x2 = x_grid(i2)
         y1 = y_grid(j1); y2 = y_grid(j2)
-        z11 = z_grid(i1, j1)
-        z12 = z_grid(i1, j2)
-        z21 = z_grid(i2, j1)
-        z22 = z_grid(i2, j2)
+        z11 = z_grid(j1, i1)
+        z12 = z_grid(j2, i1)
+        z21 = z_grid(j1, i2)
+        z22 = z_grid(j2, i2)
         
         ! Bilinear interpolation with special cases
         if (i1 == i2 .and. j1 == j2) then
