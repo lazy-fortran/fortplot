@@ -1119,6 +1119,11 @@ contains
         c_min = self%plots(plot_idx)%pcolormesh_data%vmin
         c_max = self%plots(plot_idx)%pcolormesh_data%vmax
         
+        ! Debug output
+        ! print *, "DEBUG: render_pcolormesh_plot - nx=", self%plots(plot_idx)%pcolormesh_data%nx
+        ! print *, "DEBUG: render_pcolormesh_plot - ny=", self%plots(plot_idx)%pcolormesh_data%ny
+        ! print *, "DEBUG: render_pcolormesh_plot - vmin=", c_min, " vmax=", c_max
+        
         ! For ASCII backend, render as heatmap
         select type (backend => self%backend)
         type is (ascii_context)
