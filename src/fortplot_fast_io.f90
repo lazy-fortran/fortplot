@@ -32,8 +32,8 @@ contains
     
     subroutine fast_savefig(fig, filename, use_memory_override)
         !! Fast savefig that can use memory backend when appropriate
-        use fortplot_figure_base, only: figure_t
-        use fortplot_rendering, only: render_figure
+        use fortplot_figure_core, only: figure_t
+        ! render_figure is a type-bound procedure, not needed in import
         use fortplot_utils, only: get_backend_from_filename
         
         class(figure_t), intent(inout) :: fig
@@ -57,38 +57,10 @@ contains
         
         call cpu_time(start_time)
         
-        if (use_memory) then
-            ! Use memory backend for fast operation
-            mem_backend => get_memory_backend()
-            
-            ! Render the figure
-            call render_figure(fig)
-            
-            ! Get rendered data from backend
-            backend_type = get_backend_from_filename(filename)
-            
-            ! Convert rendered figure to byte buffer
-            call figure_to_buffer(fig, backend_type, buffer_data, buffer_size)
-            
-            if (buffer_size > 0) then
-                ! Save to memory backend
-                call mem_backend%save(filename, buffer_data(1:buffer_size), backend_type)
-                
-                call log_debug("Fast I/O: Saved to memory backend: " // trim(filename))
-                memory_saves = memory_saves + 1
-            else
-                ! Fallback to disk if buffer creation failed
-                call savefig_disk(fig, filename)
-                disk_saves = disk_saves + 1
-            end if
-            
-            if (allocated(buffer_data)) deallocate(buffer_data)
-            
-        else
-            ! Use standard disk-based savefig
-            call savefig_disk(fig, filename)
-            disk_saves = disk_saves + 1
-        end if
+        ! For now, always use disk-based savefig since render_figure is private
+        ! Memory backend optimization needs to be reworked after refactoring
+        call savefig_disk(fig, filename)
+        disk_saves = disk_saves + 1
         
         call cpu_time(end_time)
         
@@ -102,19 +74,19 @@ contains
     
     subroutine savefig_disk(fig, filename)
         !! Standard disk-based savefig (wrapper for original)
-        use fortplot_rendering, only: savefig
-        use fortplot_figure_base, only: figure_t
+        ! savefig is a type-bound procedure, not needed in import
+        use fortplot_figure_core, only: figure_t
         
         class(figure_t), intent(inout) :: fig
         character(len=*), intent(in) :: filename
         
-        call savefig(fig, filename)
+        call fig%savefig(filename)
         
     end subroutine savefig_disk
     
     subroutine figure_to_buffer(fig, backend_type, buffer_data, buffer_size)
         !! Convert rendered figure to byte buffer
-        use fortplot_figure_base, only: figure_t
+        use fortplot_figure_core, only: figure_t
         
         class(figure_t), intent(inout) :: fig
         character(len=*), intent(in) :: backend_type
@@ -142,7 +114,7 @@ contains
     
     subroutine extract_png_buffer(fig, buffer_data, buffer_size)
         !! Extract PNG data from figure backend
-        use fortplot_figure_base, only: figure_t
+        use fortplot_figure_core, only: figure_t
         
         class(figure_t), intent(inout) :: fig
         integer(int8), dimension(:), allocatable, intent(out) :: buffer_data
@@ -163,7 +135,7 @@ contains
     
     subroutine extract_pdf_buffer(fig, buffer_data, buffer_size)
         !! Extract PDF data from figure backend
-        use fortplot_figure_base, only: figure_t
+        use fortplot_figure_core, only: figure_t
         
         class(figure_t), intent(inout) :: fig
         integer(int8), dimension(:), allocatable, intent(out) :: buffer_data
@@ -186,7 +158,7 @@ contains
     
     subroutine extract_ascii_buffer(fig, buffer_data, buffer_size)
         !! Extract ASCII data from figure backend
-        use fortplot_figure_base, only: figure_t
+        use fortplot_figure_core, only: figure_t
         
         class(figure_t), intent(inout) :: fig
         integer(int8), dimension(:), allocatable, intent(out) :: buffer_data
