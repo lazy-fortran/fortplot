@@ -44,6 +44,7 @@ module fortplot_context
         procedure(draw_axes_and_labels_interface), deferred :: draw_axes_and_labels_backend
         procedure(save_coordinates_interface), deferred :: save_coordinates
         procedure(set_coordinates_interface), deferred :: set_coordinates
+        procedure(render_axes_interface), deferred :: render_axes
     end type plot_context
     
     abstract interface
@@ -190,6 +191,12 @@ module fortplot_context
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: x_min, x_max, y_min, y_max
         end subroutine set_coordinates_interface
+
+        subroutine render_axes_interface(this, title_text, xlabel_text, ylabel_text)
+            import :: plot_context
+            class(plot_context), intent(inout) :: this
+            character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        end subroutine render_axes_interface
     end interface
 
 contains
