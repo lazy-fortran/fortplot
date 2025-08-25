@@ -2,12 +2,13 @@ program test_png_data_rendering_regression
     !! Test for PNG data rendering regression (issue #311)
     !! Ensures that plot data is properly rendered and not just axes
     use fortplot
+    use, intrinsic :: iso_fortran_env, only: error_unit
     implicit none
 
     real(wp), parameter :: pi = 3.141592653589793_wp
     real(wp), dimension(10) :: x, y
     character(len=100) :: test_png, test_txt
-    integer :: i
+    integer :: i, ios_png, ios_txt
     logical :: png_exists, txt_exists
     
     print *, "=== PNG Data Rendering Regression Test (Issue #311) ==="
@@ -16,9 +17,9 @@ program test_png_data_rendering_regression
     x = [(real(i-1, wp) * 2.0_wp * pi / 9.0_wp, i=1, 10)]
     y = sin(x)
     
-    ! Generate unique test filenames
-    test_png = 'output/test/png_regression_test.png'
-    test_txt = 'output/test/png_regression_test.txt'
+    ! Generate unique test filenames with platform-independent paths
+    test_png = 'output' // char(47) // 'test' // char(47) // 'png_regression_test.png'
+    test_txt = 'output' // char(47) // 'test' // char(47) // 'png_regression_test.txt'
     
     ! Create plot and save to both formats
     call figure()
@@ -34,17 +35,22 @@ program test_png_data_rendering_regression
     inquire(file=test_txt, exist=txt_exists)
     
     if (.not. png_exists) then
-        print *, "ERROR: PNG file was not created"
+        write(error_unit, *) "ERROR: PNG file was not created: ", trim(test_png)
         stop 1
     end if
     
     if (.not. txt_exists) then
-        print *, "ERROR: ASCII file was not created"  
+        write(error_unit, *) "ERROR: ASCII file was not created: ", trim(test_txt)
         stop 1
     end if
     
-    ! Clean up test files
-    call system('rm -f ' // trim(test_png) // ' ' // trim(test_txt))
+    ! Clean up test files using Fortran's portable approach
+    ! Use open/close with status='delete' for portable file deletion
+    open(newunit=ios_png, file=test_png, status='old', iostat=i)
+    if (i == 0) close(ios_png, status='delete')
+    
+    open(newunit=ios_txt, file=test_txt, status='old', iostat=i)  
+    if (i == 0) close(ios_txt, status='delete')
     
     print *, "SUCCESS: PNG data rendering regression test passed"
     print *, "Both PNG and ASCII files created successfully with plot data"
