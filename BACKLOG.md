@@ -23,6 +23,7 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 - [ ] #357: Docs - standardize colormap documentation across examples
 - [ ] #358: Refactor - consolidate ASCII output formatting in example docs
+- [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
 - [ ] #355: Fix - First plot is empty (likely from figure CLEAR logic regression)
