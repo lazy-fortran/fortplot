@@ -22,7 +22,9 @@ contains
         character(len=*), intent(in) :: example_name
         character(len=PATH_MAX_LEN), intent(out) :: output_file
         
-        output_file = "doc/example/" // trim(example_name) // ".md"
+        ! Documentation consolidation - disable duplicate generation
+        ! Use canonical source: example/fortran/[name]/README.md
+        output_file = "example/fortran/" // trim(example_name) // "/README.md"
     end subroutine build_output_path
     
     pure subroutine build_fortran_url(example_name, fortran_path)

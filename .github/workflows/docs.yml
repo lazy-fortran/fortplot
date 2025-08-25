@@ -54,7 +54,6 @@ jobs:
         run: |
           # Create output directories
           mkdir -p doc/media/examples
-          mkdir -p doc/example
           
           # Run all examples to generate outputs
           make example
@@ -73,16 +72,14 @@ jobs:
             cp -r "${dir}"*.mp4 "doc/media/examples/${example_name}/" 2>/dev/null || true
           done
           
-          # Generate example documentation from README files
-          make example ARGS="generate_example_docs"
+          # Documentation now consolidated in example/fortran/*/README.md - no generation needed
         
       - name: Build documentation
         run: |
           # Run make doc (which runs FORD then copies media)
           make doc
           
-          # FORD already generated HTML files from doc/example/*.md
-          # No need to copy markdown files - they overwrite the generated HTML
+          # Documentation consolidated to example/fortran/*/README.md files
         
       - name: Setup Pages
         uses: actions/configure-pages@v5

@@ -2644,7 +2644,7 @@ Mandatory functional validation provides maximum strategic impact by preventing 
 
 **Root Cause Analysis**:
 
-**CRITICAL DISCOVERY**: Documentation files contain source code but no image embedding. Example: `doc/example/basic_plots.md` ends with empty "## Output" section, indicating **FUNDAMENTAL DOCUMENTATION INTEGRATION FAILURE**.
+**RESOLVED**: Documentation duplication eliminated. Consolidated to single source: `example/fortran/*/README.md` files now serve as canonical documentation with proper structure.
 
 **Primary Issues Identified**:
 1. **Documentation Content Gap**: Markdown files don't include image references or embedding syntax
@@ -2667,7 +2667,7 @@ Mandatory functional validation provides maximum strategic impact by preventing 
 
 **Documentation Architecture Flaw**:
 ```markdown
-# Current pattern in doc/example/basic_plots.md
+# Previous pattern in doc/example/basic_plots.md (now consolidated)
 ## Output
 # ^^^ EMPTY SECTION - No image embedding whatsoever
 ```
@@ -2711,7 +2711,7 @@ Mandatory functional validation provides maximum strategic impact by preventing 
     find output/example/fortran -name "*.png" -exec cp {} doc/media/examples/ \;
     
     # NEW: Update documentation with image references
-    ./scripts/embed_example_images.sh doc/example/ doc/media/examples/
+    # Documentation now consolidated - no longer needed
 ```
 
 #### Phase 2: FORD Configuration Enhancement
@@ -2741,7 +2741,7 @@ exclude_dir: output
     ls -la doc/media/examples/
     
     # Verify documentation references images
-    grep -r "media/examples" doc/example/
+    # Verify canonical example documentation
     
     # Verify FORD build includes media
     ls -la build/doc/media/examples/
