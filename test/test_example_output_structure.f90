@@ -29,15 +29,23 @@ contains
         ! Using system calls for cross-platform directory creation
         if (is_windows()) then
             call execute_command_line("if not exist output mkdir output", exitstat=ios)
-            call execute_command_line("if not exist output\example mkdir output\example", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran mkdir output\example\fortran", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\basic_plots mkdir output\example\fortran\basic_plots", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\legend_demo mkdir output\example\fortran\legend_demo", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\marker_demo mkdir output\example\fortran\marker_demo", exitstat=ios)
+            call execute_command_line("if not exist output\example mkdir output\example", &
+                                      exitstat=ios)
+            call execute_command_line("if not exist output\example\fortran " // &
+                                      "mkdir output\example\fortran", exitstat=ios)
+            call execute_command_line("if not exist output\example\fortran\basic_plots " // &
+                                      "mkdir output\example\fortran\basic_plots", exitstat=ios)
+            call execute_command_line("if not exist output\example\fortran\legend_demo " // &
+                                      "mkdir output\example\fortran\legend_demo", exitstat=ios)
+            call execute_command_line("if not exist output\example\fortran\marker_demo " // &
+                                      "mkdir output\example\fortran\marker_demo", exitstat=ios)
         else
-            call execute_command_line("mkdir -p output/example/fortran/basic_plots 2>/dev/null", exitstat=ios)
-            call execute_command_line("mkdir -p output/example/fortran/legend_demo 2>/dev/null", exitstat=ios)
-            call execute_command_line("mkdir -p output/example/fortran/marker_demo 2>/dev/null", exitstat=ios)
+            call execute_command_line("mkdir -p output/example/fortran/basic_plots " // &
+                                      "2>/dev/null", exitstat=ios)
+            call execute_command_line("mkdir -p output/example/fortran/legend_demo " // &
+                                      "2>/dev/null", exitstat=ios)
+            call execute_command_line("mkdir -p output/example/fortran/marker_demo " // &
+                                      "2>/dev/null", exitstat=ios)
         end if
     end subroutine setup_test_directories
     
