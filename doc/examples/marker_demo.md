@@ -42,14 +42,14 @@ make example ARGS="marker_demo"
 
 ### Scatter Plot
 
-![scatter_plot.png](../../media/examples/scatter_plot.png)
+![scatter_plot.png](../../media/examples/marker_demo/scatter_plot.png)
 
 ### All Marker Types
 
-![all_marker_types.png](../../media/examples/all_marker_types.png)
+![all_marker_types.png](../../media/examples/marker_demo/all_marker_types.png)
 
 ### Marker Colors
 
-![marker_colors.png](../../media/examples/marker_colors.png)
+![marker_colors.png](../../media/examples/marker_demo/marker_colors.png)
 
 [Download PDFs](../../media/examples/)

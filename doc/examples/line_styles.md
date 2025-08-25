@@ -34,7 +34,7 @@ make example ARGS="line_styles"
 
 ### Line Styles
 
-![line_styles.png](../../media/examples/line_styles.png)
+![line_styles.png](../../media/examples/line_styles/line_styles.png)
 
 ASCII output:
 ```
@@ -74,4 +74,4 @@ ASCII output:
 +--------------------------------------------------------------------------------+
 ```
 
-[Download PDF](../../media/examples/line_styles.pdf)
+[Download PDF](../../media/examples/line_styles/line_styles.pdf)
