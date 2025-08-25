@@ -946,6 +946,7 @@ contains
                                           title, xlabel, ylabel, &
                                           z_min, z_max, has_3d_plots)
         !! Draw axes and labels for raster backends
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -955,6 +956,10 @@ contains
         logical, intent(in) :: has_3d_plots
         
         real(wp) :: label_x, label_y
+        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
+        integer :: num_x_ticks, num_y_ticks, i
+        character(len=50) :: tick_label
+        real(wp) :: tick_length, tick_x, tick_y
         
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -962,6 +967,31 @@ contains
         ! Draw axes
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
+        
+        ! Generate and draw tick marks and labels
+        tick_length = 0.02_wp * (y_max - y_min)  ! 2% of plot height
+        
+        ! X-axis ticks
+        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
+        do i = 1, num_x_ticks
+            tick_x = x_tick_positions(i)
+            ! Draw tick mark
+            call this%line(tick_x, y_min, tick_x, y_min - tick_length)
+            ! Draw tick label below tick mark
+            tick_label = format_tick_label(tick_x, xscale)
+            call this%text(tick_x, y_min - 2.0_wp * tick_length, trim(tick_label))
+        end do
+        
+        ! Y-axis ticks
+        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+        do i = 1, num_y_ticks
+            tick_y = y_tick_positions(i)
+            ! Draw tick mark
+            call this%line(x_min, tick_y, x_min - tick_length, tick_y)
+            ! Draw tick label to the left of tick mark
+            tick_label = format_tick_label(tick_y, yscale)
+            call this%text(x_min - 2.0_wp * tick_length, tick_y, trim(tick_label))
+        end do
         
         ! Draw title at top if present
         if (present(title)) then

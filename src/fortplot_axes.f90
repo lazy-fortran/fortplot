@@ -11,7 +11,7 @@ module fortplot_axes
     implicit none
     
     private
-    public :: compute_scale_ticks, format_tick_label
+    public :: compute_scale_ticks, format_tick_label, MAX_TICKS
     
     integer, parameter :: MAX_TICKS = 20
     
