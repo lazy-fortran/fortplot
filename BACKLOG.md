@@ -3,7 +3,6 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**  
-- [ ] #278: Line styles dont work - all styling broken since 690b9834
 - [ ] #280: regression: contours dont work  
 - [ ] #292: regression: legend placement does not work
 
@@ -16,7 +15,7 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #276: Markers dont work - PNG examples completely broken
+- [ ] #278: Line styles dont work - all styling broken since 690b9834
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -43,7 +42,8 @@
 - Performance impact validation
 
 ## DONE (Completed)
-- [x] #296: regression: PDF plot strangely stretched - FIXED: PDF coordinate transformation preserves aspect ratios (PR #298 merged)
+- [x] #276: Markers dont work - PNG examples completely broken - FIXED: marker rendering restored in PNG backend (PR #302 merged)
+- [x] #296: regression: PDF plot strangely stretched - FIXED: PDF coordinate transformation preserves aspect ratios (PR #298 pending merge)
 - [x] #291: regression: y text not rotated in PNGs - FIXED: raster_render_ylabel implementation with bitmap rotation (PR #301 merged)
 - [x] #270: Broken example output documentation - fix PDF binary content display (PR #290 merged)
 - [x] #277: PDF page size still completely broken - FIXED: proper A4 dimensions and coordinate system (PR #294 merged)
