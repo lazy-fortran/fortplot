@@ -7,8 +7,7 @@ project_github: https://github.com/krystophny/fortplotlib
 project_download: https://github.com/krystophny/fortplotlib/releases
 output_dir: ./build/doc
 media_dir: ./doc/media
-page_dir: ./doc
-          ./doc/examples
+page_dir: ./doc ./doc/examples
 src_dir: ./src
          ./example
 exclude_dir: ./thirdparty
