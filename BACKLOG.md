@@ -8,8 +8,7 @@
 - [x] #335: Fix - Axes wrong and no labels visible on scale_examples.html (COMPLETED)
 - [x] #334: Fix - No output visible on pcolormesh_demo.html (COMPLETED - PR #351)
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
-- [ ] #332: Fix - Dashed and dash-dotted look funny on line_styles.html
-- [ ] #331: Fix - No legend visible in format_string_demo.html
+- [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
 - [ ] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html
 - [ ] #329: Fix - No output visible on colored_contours.html
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
@@ -25,7 +24,7 @@
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## DOING (Current Work)
-- [ ] #332: Fix - Dashed and dash-dotted look funny on line_styles.html
+- [ ] #331: Fix - No legend visible in format_string_demo.html
 
 ## BLOCKED (Infrastructure Issues)
 
