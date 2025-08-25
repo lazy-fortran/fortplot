@@ -3,13 +3,25 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
+- [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (moved to DOING)
+- [ ] #337: Fix - Title too far right in PNGs - check matplotlib placement
+- [ ] #335: Fix - Axes wrong and no labels visible on scale_examples.html
+- [ ] #334: Fix - No output visible on pcolormesh_demo.html
+- [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html
+- [ ] #332: Fix - Dashed and dash-dotted look funny on line_styles.html
+- [ ] #331: Fix - No legend visible in format_string_demo.html
+- [ ] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html
+- [ ] #329: Fix - No output visible on colored_contours.html
+- [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
+- [ ] #327: Fix - MP4 link not showing on animation.html
+- [ ] #336: Fix - Streamplot and stateful streamplot example redundant
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #323: Test - add edge case tests for PDF heatmap color validation
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 
 ## DOING (Current Work)
-- [x] #321: Refactor - apply consistent validation pattern to other PDF write functions (branch: refactor-consistent-validation-321)
+- [ ] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -36,6 +48,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #321: Refactor - apply consistent validation pattern to other PDF write functions - FIXED: Extended robust validation pattern to pdf_write_move, pdf_write_line, and pdf_write_line_width with comprehensive test coverage and zero performance impact (PR #326 merged)
 - [x] #320: Feature - add debug logging for invalid color value corrections - FIXED: Implemented debug logging for RGB color corrections in PDF output with zero performance impact and comprehensive test coverage (PR #325 merged)
 - [x] #319: Refactor - investigate source of invalid RGB values in contour color mapping - FIXED: Replaced direct color writing with validated pdf_write_color method, added proper edge case handling for division by zero scenarios (PR #322 merged)
 - [x] #317: Fix GitHub Pages deployment failure - colored_contours PDF runtime crash in pdf_write_color - FIXED: Added robust RGB validation to prevent PDF color crashes, restored visual showcase (PR #318 merged)

@@ -33,6 +33,7 @@ module fortplot_pdf
         type(pdf_context_handle), private :: coord_ctx
         integer :: x_tick_count = 0
         integer :: y_tick_count = 0
+        logical, private :: axes_rendered = .false.
     contains
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
@@ -62,6 +63,7 @@ module fortplot_pdf
         procedure :: draw_axes_and_labels_backend => draw_axes_and_labels_backend_wrapper
         procedure :: save_coordinates => pdf_save_coordinates
         procedure :: set_coordinates => pdf_set_coordinates
+        procedure :: render_axes => render_pdf_axes_wrapper
         
         procedure, private :: update_coord_context
         procedure, private :: make_coord_context
@@ -132,6 +134,10 @@ contains
     subroutine write_pdf_file_facade(this, filename)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        
+        ! Automatically render axes if they haven't been rendered yet
+        ! This provides better UX for low-level PDF API users
+        call this%render_axes()
         
         this%core_ctx%stream_data = this%stream_writer%content_stream
         call write_pdf_file(this%core_ctx, filename)
@@ -413,6 +419,56 @@ contains
         this%x_max = x_max
         this%y_min = y_min
         this%y_max = y_max
+        
+        ! Reset axes flag when coordinates change
+        this%axes_rendered = .false.
     end subroutine pdf_set_coordinates
+    
+    subroutine render_pdf_axes_wrapper(this, title_text, xlabel_text, ylabel_text)
+        !! Explicitly render axes with optional labels
+        !! This allows low-level PDF users to add proper axes to their plots
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        
+        character(len=256) :: title_str, xlabel_str, ylabel_str
+        
+        ! Only render axes once unless coordinates change
+        if (this%axes_rendered) return
+        
+        ! Ensure coordinate system is set
+        if (this%x_min == this%x_max .or. this%y_min == this%y_max) then
+            ! No valid coordinate system - skip axes
+            return
+        end if
+        
+        ! Set default empty strings for labels
+        title_str = ""
+        xlabel_str = ""  
+        ylabel_str = ""
+        
+        ! Use provided labels if present
+        if (present(title_text)) title_str = title_text
+        if (present(xlabel_text)) xlabel_str = xlabel_text
+        if (present(ylabel_text)) ylabel_str = ylabel_text
+        
+        ! Clear any previous axes data in core context
+        this%core_ctx%stream_data = ""
+        
+        ! Draw axes and labels with current coordinate system
+        call draw_pdf_axes_and_labels(this%core_ctx, "linear", "linear", 1.0_wp, &
+                                     this%x_min, this%x_max, this%y_min, this%y_max, &
+                                     title_str, xlabel_str, ylabel_str, &
+                                     real(this%plot_area%left, wp), &
+                                     real(this%plot_area%bottom, wp), &
+                                     real(this%plot_area%width, wp), &
+                                     real(this%plot_area%height, wp), &
+                                     real(this%height, wp))
+        
+        ! Add axes content to the stream
+        call this%stream_writer%add_to_stream(this%core_ctx%stream_data)
+        
+        ! Mark axes as rendered
+        this%axes_rendered = .true.
+    end subroutine render_pdf_axes_wrapper
     
 end module fortplot_pdf

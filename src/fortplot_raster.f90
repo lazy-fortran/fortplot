@@ -87,6 +87,7 @@ module fortplot_raster
         procedure :: draw_axes_and_labels_backend => raster_draw_axes_and_labels
         procedure :: save_coordinates => raster_save_coordinates
         procedure :: set_coordinates => raster_set_coordinates
+        procedure :: render_axes => raster_render_axes
     end type raster_context
 
 contains
@@ -1014,5 +1015,13 @@ contains
         this%y_max = y_max
     end subroutine raster_set_coordinates
 
+    subroutine raster_render_axes(this, title_text, xlabel_text, ylabel_text)
+        !! Render axes for raster context (stub implementation)
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        
+        ! Raster axes are rendered as part of draw_axes_and_labels_backend
+        ! This is a stub to satisfy the interface
+    end subroutine raster_render_axes
 
 end module fortplot_raster
