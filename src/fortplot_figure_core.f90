@@ -150,8 +150,7 @@ contains
         end if
         self%rendered = .false.
         
-        ! Initialize legend following SOLID principles  
-        self%show_legend = .false.
+        ! Preserve existing legend settings during re-initialization
         
         ! Initialize backend if specified
         if (present(backend)) then
@@ -348,6 +347,7 @@ contains
         logical, intent(in), optional :: blocking
         character(len=20) :: backend_type
         logical :: do_block
+        
         
         ! Default to non-blocking
         do_block = .false.
@@ -1646,6 +1646,7 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in), optional :: location
         integer :: i
+        
         
         ! Initialize legend if not already done
         if (.not. allocated(self%legend_data%entries)) then
