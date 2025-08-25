@@ -11,7 +11,7 @@
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #297: Windows test failures on PR #290 - precision and directory issues
+- [ ] #299: Regression: https://lazy-fortran.github.io/fortplot/ examples broken
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -38,6 +38,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #297: Windows test failures on PR #290 - precision and directory issues - FIXED: Windows-safe tolerances applied to failing tests (PR #307 merged)
 - [x] #300: fix: comprehensive Windows CI environment compatibility - FIXED: Windows CI tests pass with environment compatibility fixes (PR #306 merged)
 - [x] #292: regression: legend placement does not work - FIXED: legend positioning uses data coordinates (PR #305 merged)
 - [x] #278: Line styles dont work - all styling broken since 690b9834 - FIXED: partial fix for line styles in PNG backend (PR #303 merged)
