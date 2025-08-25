@@ -10,6 +10,7 @@
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
 - [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
+- [ ] #355: Fix - First plot is empty (likely from figure CLEAR logic regression)
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 - [ ] #327: Fix - MP4 link not showing on animation.html
 - [ ] #336: Fix - Streamplot and stateful streamplot example redundant
@@ -25,7 +26,6 @@
 - [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 
 ## DOING (Current Work)
-- [ ] #329: Fix - No output visible on colored_contours.html
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -52,6 +52,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #329: Fix - No output visible on colored_contours.html - FIXED: Added comprehensive visual outputs and documentation for colored contours example on GitHub Pages showcase with 5 different colormap demonstrations (crest, plasma, jet, coolwarm, inferno) and complete ASCII output sections (PR #356 merged)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html - FIXED: Implemented unconditional plot_count reset during figure initialization to ensure proper plot isolation between figure() calls and prevent overlapping contours (PR #354 merged)
 - [x] #331: Fix - No legend visible in format_string_demo.html - FIXED: Restored legend visibility by removing automatic reset of show_legend during figure re-initialization, allowing user legend settings to persist across plot operations (PR #353 merged)
 - [x] #334: Fix - No output visible on pcolormesh_demo.html - FIXED: Added comprehensive documentation content with PNG images, ASCII outputs, and PDF download links to resolve GitHub Pages visibility issue (PR #351 merged)
