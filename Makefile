@@ -91,7 +91,7 @@ run-release:
 # Build documentation with FORD
 doc:
 	# Run FORD first to generate documentation structure
-	ford README.md
+	ford doc.md
 	# Copy example media files to doc build directory AFTER running FORD
 	mkdir -p build/doc/media/examples
 	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
