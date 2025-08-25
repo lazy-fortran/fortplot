@@ -3,10 +3,13 @@
 ## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
+- [ ] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content
+- [ ] #312: Legend Demo plots dont show up on github pages
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
+- [x] #272: fix: rescue BACKLOG.md commits from main branch protection (branch: fix-rescue-backlog-commits-272, PR: #314)
 
 ## BLOCKED (Infrastructure Issues)
 
