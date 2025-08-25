@@ -134,8 +134,7 @@ contains
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        call ensure_global_figure_initialized()
-        ! TODO: bar method not implemented in working figure core
+        error stop "bar plot functionality is not yet implemented"
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -146,8 +145,7 @@ contains
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        call ensure_global_figure_initialized()
-        ! TODO: barh method not implemented in working figure core
+        error stop "horizontal bar plot functionality is not yet implemented"
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -158,8 +156,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
         
-        call ensure_global_figure_initialized()
-        ! TODO: hist method not implemented in working figure core
+        error stop "histogram functionality is not yet implemented"
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -171,8 +168,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
         
-        call ensure_global_figure_initialized()
-        ! TODO: hist method not implemented in working figure core
+        error stop "histogram functionality is not yet implemented"
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
