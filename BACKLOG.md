@@ -6,7 +6,7 @@
 - [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (COMPLETED)
 - [x] #337: Fix - Title too far right in PNGs - check matplotlib placement (COMPLETED)
 - [x] #335: Fix - Axes wrong and no labels visible on scale_examples.html (COMPLETED)
-- [ ] #334: Fix - No output visible on pcolormesh_demo.html
+- [x] #334: Fix - No output visible on pcolormesh_demo.html (COMPLETED)
 - [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html
 - [ ] #332: Fix - Dashed and dash-dotted look funny on line_styles.html
 - [ ] #331: Fix - No legend visible in format_string_demo.html
@@ -24,7 +24,7 @@
 - [ ] #344: Refactor - add format threshold constants in axes module
 
 ## DOING (Current Work)
-- [ ] #334: Fix - No output visible on pcolormesh_demo.html
+- [ ] #333: Fix - Circles seem not centered with line plot in marker_demo.html
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -51,6 +51,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #334: Fix - No output visible on pcolormesh_demo.html - FIXED: Corrected pcolormesh ASCII rendering dimension mismatch by ensuring all backends consistently expect z_grid(ny, nx) format (PR #345 merged)
 - [x] #335: Fix - Axes wrong and no labels visible on scale_examples.html - FIXED: Resolved axis label rendering issues with proper tick marks, axis labels, and tick labels in ASCII and raster backends (PR #341 merged)
 - [x] #337: Fix - Title too far right in PNGs - check matplotlib placement - FIXED: Centered PNG titles over plot area instead of data coordinates through corrected matplotlib placement (PR #340 merged)
 - [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF - FIXED: Restored PDF axes visibility and prevented plot stretching/shifting through corrected coordinate transformation and scaling (PR #339 merged)
