@@ -257,26 +257,29 @@ contains
         real(wp) :: x_quad(4), y_quad(4)
         real(wp) :: value, norm_value
         real(wp), dimension(3) :: color
-        character(len=32) :: cmd
         
         call this%update_coord_context()
         
         do i = 1, size(z_grid, 1) - 1
             do j = 1, size(z_grid, 2) - 1
-                ! Get normalized value
+                ! Get cell value
                 value = z_grid(i, j)
-                if (z_max > z_min) then
+                
+                ! Handle edge case where z_max == z_min
+                if (abs(z_max - z_min) > 1e-10_wp) then
                     norm_value = (value - z_min) / (z_max - z_min)
                 else
                     norm_value = 0.5_wp
                 end if
                 
-                ! Simple grayscale color
+                ! Clamp to [0, 1] range for safety
+                norm_value = max(0.0_wp, min(1.0_wp, norm_value))
+                
+                ! Simple grayscale color (colormaps should be handled at higher level)
                 color = [norm_value, norm_value, norm_value]
                 
-                ! Set fill color
-                write(cmd, '(3(F0.3, 1X), "rg")') color
-                call this%stream_writer%add_to_stream(trim(cmd))
+                ! Set fill color using validated method
+                call this%stream_writer%write_color(color(1), color(2), color(3))
                 
                 ! Define quad corners
                 x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
