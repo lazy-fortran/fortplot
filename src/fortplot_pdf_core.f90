@@ -68,11 +68,28 @@ contains
     end subroutine initialize_pdf_stream
 
     subroutine set_pdf_color(this, r, g, b)
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
         character(len=64) :: color_cmd
+        real(wp) :: safe_r, safe_g, safe_b
         
-        write(color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " RG")') r, g, b
+        ! Validate and clamp RGB values to prevent PDF format errors
+        safe_r = r
+        safe_g = g  
+        safe_b = b
+        
+        ! Handle NaN and infinity
+        if (.not. ieee_is_finite(safe_r)) safe_r = 0.0_wp
+        if (.not. ieee_is_finite(safe_g)) safe_g = 0.0_wp
+        if (.not. ieee_is_finite(safe_b)) safe_b = 0.0_wp
+        
+        ! Clamp to [0,1] range
+        safe_r = max(0.0_wp, min(1.0_wp, safe_r))
+        safe_g = max(0.0_wp, min(1.0_wp, safe_g))
+        safe_b = max(0.0_wp, min(1.0_wp, safe_b))
+        
+        write(color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " RG")') safe_r, safe_g, safe_b
         this%stream_data = this%stream_data // trim(adjustl(color_cmd)) // new_line('a')
     end subroutine set_pdf_color
 
