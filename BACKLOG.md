@@ -5,13 +5,12 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 - [ ] #285: refactor: remove hist() and bar() stub implementations
 - [ ] #293: fix: rescue BACKLOG.md update commit from main branch protection
 - [ ] #272: fix: rescue BACKLOG.md commits from main branch protection
 
 ## DOING (Current Work)
-- [ ] #299: Regression: https://lazy-fortran.github.io/fortplot/ examples broken
+- [ ] #271: Consolidate duplicate documentation content - remove redundant sections
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -38,6 +37,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #299: Regression: https://lazy-fortran.github.io/fortplot/ examples broken - FIXED: replaced PDF content with ASCII visualizations (PR #308 merged)
 - [x] #297: Windows test failures on PR #290 - precision and directory issues - FIXED: Windows-safe tolerances applied to failing tests (PR #307 merged)
 - [x] #300: fix: comprehensive Windows CI environment compatibility - FIXED: Windows CI tests pass with environment compatibility fixes (PR #306 merged)
 - [x] #292: regression: legend placement does not work - FIXED: legend positioning uses data coordinates (PR #305 merged)
