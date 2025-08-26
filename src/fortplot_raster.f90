@@ -24,13 +24,14 @@ module fortplot_raster
                                        draw_circle_with_edge_face, draw_square_with_edge_face, &
                                        draw_diamond_with_edge_face, draw_x_marker, draw_filled_quad_raster
     use fortplot_raster_line_styles, only: draw_styled_line, set_raster_line_style, reset_pattern_distance
+    use fortplot_bitmap, only: initialize_white_background, composite_image, composite_bitmap_to_raster, &
+                              render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw
+    use fortplot_png_encoder, only: bitmap_to_png_buffer
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
     private
     public :: raster_image_t, create_raster_image, destroy_raster_image
-    public :: initialize_white_background, composite_image, composite_bitmap_to_raster
-    public :: render_text_to_bitmap, rotate_bitmap_90_cw, rotate_bitmap_90_ccw, bitmap_to_png_buffer
     public :: raster_context, create_raster_canvas, raster_draw_axes_and_labels, raster_render_ylabel
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
@@ -131,167 +132,6 @@ contains
         b = color_to_byte(this%current_b)
     end subroutine raster_get_color_bytes
 
-    subroutine initialize_white_background(image_data, w, h)
-        integer(1), intent(out) :: image_data(:)
-        integer, intent(in) :: w, h
-        integer :: expected_size
-
-        ! Validate inputs
-        if (w <= 0 .or. h <= 0) return
-        
-        expected_size = w * h * 3
-        
-        ! Validate array size matches expected size
-        if (size(image_data) < expected_size) then
-            return
-        end if
-        
-        ! Use intrinsic assignment to initialize entire array at once - safer
-        image_data = -1_1  ! White = 255 = -1 in signed byte
-        
-    end subroutine initialize_white_background
-
-
-
-    subroutine composite_image(main_image, main_width, main_height, &
-                              overlay_image, overlay_width, overlay_height, dest_x, dest_y)
-        integer(1), intent(inout) :: main_image(*)
-        integer, intent(in) :: main_width, main_height
-        integer(1), intent(in) :: overlay_image(*)
-        integer, intent(in) :: overlay_width, overlay_height, dest_x, dest_y
-        integer :: x, y, src_idx, dst_idx, img_x, img_y
-        
-        do y = 1, overlay_height
-            do x = 1, overlay_width
-                img_x = dest_x + x - 1
-                img_y = dest_y + y - 1
-                
-                if (img_x >= 1 .and. img_x <= main_width .and. &
-                    img_y >= 1 .and. img_y <= main_height) then
-                    
-                    src_idx = ((y - 1) * overlay_width + (x - 1)) * 3 + 1
-                    dst_idx = ((img_y - 1) * main_width + (img_x - 1)) * 3 + 1
-                    
-                    if (overlay_image(src_idx) /= -1_1 .or. &
-                        overlay_image(src_idx+1) /= -1_1 .or. &
-                        overlay_image(src_idx+2) /= -1_1) then
-                        main_image(dst_idx:dst_idx+2) = overlay_image(src_idx:src_idx+2)
-                    end if
-                end if
-            end do
-        end do
-    end subroutine composite_image
-
-    subroutine composite_bitmap_to_raster(raster_buffer, raster_width, raster_height, &
-                                         bitmap, bitmap_width, bitmap_height, dest_x, dest_y)
-        !! Composite 3D RGB bitmap directly onto raster image buffer
-        integer(1), intent(inout) :: raster_buffer(*)
-        integer, intent(in) :: raster_width, raster_height
-        integer(1), intent(in) :: bitmap(:,:,:)
-        integer, intent(in) :: bitmap_width, bitmap_height, dest_x, dest_y
-        integer :: x, y, raster_x, raster_y, raster_idx
-        
-        do y = 1, bitmap_height
-            do x = 1, bitmap_width
-                raster_x = dest_x + x - 1
-                raster_y = dest_y + y - 1
-                
-                ! Check bounds
-                if (raster_x >= 1 .and. raster_x <= raster_width .and. &
-                    raster_y >= 1 .and. raster_y <= raster_height) then
-                    
-                    ! Skip white pixels (don't composite background)
-                    if (bitmap(x, y, 1) /= -1_1 .or. &
-                        bitmap(x, y, 2) /= -1_1 .or. &
-                        bitmap(x, y, 3) /= -1_1) then
-                        
-                        raster_idx = ((raster_y - 1) * raster_width + (raster_x - 1)) * 3 + 1
-                        raster_buffer(raster_idx)     = bitmap(x, y, 1)  ! R
-                        raster_buffer(raster_idx + 1) = bitmap(x, y, 2)  ! G
-                        raster_buffer(raster_idx + 2) = bitmap(x, y, 3)  ! B
-                    end if
-                end if
-            end do
-        end do
-    end subroutine composite_bitmap_to_raster
-
-
-    subroutine render_text_to_bitmap(bitmap, width, height, x, y, text)
-        !! Render text to RGB bitmap by using existing PNG rendering then converting
-        use fortplot_text, only: render_text_to_image
-        integer(1), intent(inout) :: bitmap(:,:,:)
-        integer, intent(in) :: width, height, x, y
-        character(len=*), intent(in) :: text
-        
-        ! Create temporary PNG buffer for text rendering
-        integer(1), allocatable :: temp_buffer(:)
-        integer :: i, j, buf_idx
-        
-        allocate(temp_buffer(width * height * 3))
-        call initialize_white_background(temp_buffer, width, height)
-        call render_text_to_image(temp_buffer, width, height, x, y, text, 0_1, 0_1, 0_1)
-        
-        ! Convert PNG buffer to bitmap
-        do j = 1, height
-            do i = 1, width
-                buf_idx = ((j - 1) * width + (i - 1)) * 3 + 1
-                bitmap(i, j, 1) = temp_buffer(buf_idx)     ! R
-                bitmap(i, j, 2) = temp_buffer(buf_idx + 1) ! G  
-                bitmap(i, j, 3) = temp_buffer(buf_idx + 2) ! B
-            end do
-        end do
-        
-        deallocate(temp_buffer)
-    end subroutine render_text_to_bitmap
-
-    subroutine rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)
-        !! Rotate bitmap 90 degrees clockwise: (x,y) -> (y, src_width-x+1)
-        integer(1), intent(in) :: src_bitmap(:,:,:)
-        integer(1), intent(out) :: dst_bitmap(:,:,:)
-        integer, intent(in) :: src_width, src_height
-        integer :: i, j
-        
-        do j = 1, src_height
-            do i = 1, src_width
-                dst_bitmap(j, src_width - i + 1, :) = src_bitmap(i, j, :)
-            end do
-        end do
-    end subroutine rotate_bitmap_90_ccw
-
-    subroutine rotate_bitmap_90_cw(src_bitmap, dst_bitmap, src_width, src_height)
-        !! Rotate bitmap 90 degrees counter-clockwise: (x,y) -> (src_height-y+1, x)
-        integer(1), intent(in) :: src_bitmap(:,:,:)
-        integer(1), intent(out) :: dst_bitmap(:,:,:)
-        integer, intent(in) :: src_width, src_height
-        integer :: i, j
-        
-        do j = 1, src_height
-            do i = 1, src_width
-                dst_bitmap(src_height - j + 1, i, :) = src_bitmap(i, j, :)
-            end do
-        end do
-    end subroutine rotate_bitmap_90_cw
-
-    subroutine bitmap_to_png_buffer(bitmap, width, height, buffer)
-        !! Convert 3D RGB bitmap to PNG buffer format with filter bytes
-        integer(1), intent(in) :: bitmap(:,:,:)
-        integer, intent(in) :: width, height
-        integer(1), intent(out) :: buffer(:)
-        integer :: i, j, buf_idx, row_start
-        
-        ! PNG format: each row starts with filter byte (0 = no filter) followed by RGB data
-        do j = 1, height
-            row_start = (j - 1) * (1 + width * 3) + 1
-            buffer(row_start) = 0_1  ! PNG filter byte: 0 = no filter
-            
-            do i = 1, width
-                buf_idx = row_start + 1 + (i - 1) * 3
-                buffer(buf_idx)     = bitmap(i, j, 1) ! R
-                buffer(buf_idx + 1) = bitmap(i, j, 2) ! G
-                buffer(buf_idx + 2) = bitmap(i, j, 3) ! B
-            end do
-        end do
-    end subroutine bitmap_to_png_buffer
 
     function create_raster_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
