@@ -10,9 +10,7 @@
 - [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
 - [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
-- [ ] #336: Fix - Streamplot and stateful streamplot example redundant
-
-**Critical Infrastructure Issues (High Priority)** - ESCALATED TO DOING
+**Critical Infrastructure Issues (High Priority)**
 
 **User-Facing Issues (Medium Priority)**
 - [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
@@ -31,10 +29,6 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #361: Fix - Windows CI: test_legend_comprehensive and test_streamplot runtime failures
-
-## BLOCKED (By Windows CI)
-- [ ] #336: Fix - Streamplot and stateful streamplot example redundant (PR #362 ready but blocked by Windows CI)
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -61,6 +55,8 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #361: Fix - Windows CI: test_legend_comprehensive and test_streamplot runtime failures - FIXED: Added Windows-compatible file system delays and enhanced error handling for CI stability (PR #363 merged)
+- [x] #336: Fix - Streamplot and stateful streamplot example redundant - FIXED: Removed duplicate stateful_streamplot example, consolidated to single streamplot_demo implementation (PR #362 merged)
 - [x] #355: Fix - First plot is empty (likely from figure CLEAR logic regression) - FIXED: Implemented proper backend initialization to prevent first plot rendering empty, major refactoring split 1776-line file into 3 modules (PR #359 merged)
 - [x] #329: Fix - No output visible on colored_contours.html - FIXED: Added comprehensive visual outputs and documentation for colored contours example on GitHub Pages showcase with 5 different colormap demonstrations (crest, plasma, jet, coolwarm, inferno) and complete ASCII output sections (PR #356 merged)
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html - FIXED: Implemented unconditional plot_count reset during figure initialization to ensure proper plot isolation between figure() calls and prevent overlapping contours (PR #354 merged)
