@@ -238,7 +238,7 @@ contains
         integer, intent(inout) :: num_ticks
         
         real(wp) :: range, step, tick_value
-        integer :: max_linear_ticks, i
+        integer :: max_linear_ticks
         
         if (upper_bound <= lower_bound) return
         

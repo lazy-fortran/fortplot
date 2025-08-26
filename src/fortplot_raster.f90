@@ -824,17 +824,10 @@ contains
             end if
         end if
         
-        ! Draw ylabel
+        ! Draw ylabel (rotated)
         if (present(ylabel)) then
             if (allocated(ylabel)) then
-                call process_latex_in_text(ylabel, processed_text, processed_len)
-                call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
-                text_width = calculate_text_width(trim(escaped_text))
-                text_height = calculate_text_height(trim(escaped_text))
-                px = YLABEL_HORIZONTAL_OFFSET
-                py = this%plot_area%bottom + this%plot_area%height / 2 - text_height / 2
-                call render_text_to_image(this%raster%image_data, this%width, this%height, &
-                                        px, py, trim(escaped_text), text_r, text_g, text_b)
+                call this%render_ylabel(ylabel)
             end if
         end if
     end subroutine raster_draw_axis_labels

@@ -411,6 +411,9 @@ contains
         integer :: actual_dpi
         real(8) :: width_val, height_val
         
+        ! Ensure global figure is allocated before initialization
+        call ensure_global_figure_initialized()
+        
         ! Default DPI (matches matplotlib default)
         actual_dpi = 100
         if (present(dpi)) then
