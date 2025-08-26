@@ -3,6 +3,7 @@ module fortplot_colormap
     !! Provides color interpolation for different colormaps like matplotlib
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: EPSILON_COMPARE
     implicit none
     
     private
@@ -47,7 +48,7 @@ contains
         
         real(wp) :: normalized_value
         
-        if (abs(z_max - z_min) < 1e-10_wp) then
+        if (abs(z_max - z_min) < EPSILON_COMPARE) then
             normalized_value = 0.5_wp
         else
             normalized_value = (z_value - z_min) / (z_max - z_min)

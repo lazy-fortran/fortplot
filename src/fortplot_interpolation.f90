@@ -7,6 +7,7 @@ module fortplot_interpolation
     !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: EPSILON_COMPARE
     implicit none
     
     private
@@ -92,7 +93,7 @@ contains
             z_value = z11
         else if (i1 == i2) then
             ! Linear interpolation in Y direction only
-            if (abs(y2 - y1) > 1e-10_wp) then
+            if (abs(y2 - y1) > EPSILON_COMPARE) then
                 dy_norm = (world_y - y1) / (y2 - y1)
                 z_value = z11 + dy_norm * (z12 - z11)
             else
@@ -100,7 +101,7 @@ contains
             end if
         else if (j1 == j2) then
             ! Linear interpolation in X direction only
-            if (abs(x2 - x1) > 1e-10_wp) then
+            if (abs(x2 - x1) > EPSILON_COMPARE) then
                 dx_norm = (world_x - x1) / (x2 - x1)
                 z_value = z11 + dx_norm * (z21 - z11)
             else
@@ -108,7 +109,7 @@ contains
             end if
         else
             ! Full bilinear interpolation
-            if (abs(x2 - x1) > 1e-10_wp .and. abs(y2 - y1) > 1e-10_wp) then
+            if (abs(x2 - x1) > EPSILON_COMPARE .and. abs(y2 - y1) > EPSILON_COMPARE) then
                 dx_norm = (world_x - x1) / (x2 - x1)
                 dy_norm = (world_y - y1) / (y2 - y1)
                 

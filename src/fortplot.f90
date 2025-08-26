@@ -55,6 +55,7 @@ module fortplot
     
     ! Core types and constants
     use fortplot_figure_core, only: figure_t
+    use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY
     
     ! Animation functionality
     use fortplot_animation, only: animation_t, FuncAnimation
@@ -101,6 +102,9 @@ module fortplot
     
     ! Core types and constants
     public :: figure_t, wp
+    
+    ! Numerical constants
+    public :: EPSILON_COMPARE, EPSILON_GEOMETRY
     
     ! Coordinate system constants for annotations
     public :: COORD_DATA, COORD_FIGURE, COORD_AXIS

@@ -11,6 +11,7 @@ module fortplot_ascii
     use fortplot_logging, only: log_info, log_error
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
+    use fortplot_constants, only: EPSILON_COMPARE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -596,7 +597,7 @@ contains
                 if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
                     ! Normalize z value to character index
                     ! z_grid is (ny, nx) so access as z_grid(j, i)
-                    if (abs(z_max - z_min) > 1e-10_wp) then
+                    if (abs(z_max - z_min) > EPSILON_COMPARE) then
                         z_normalized = (z_grid(j, i) - z_min) / (z_max - z_min)
                     else
                         z_normalized = 0.5_wp
