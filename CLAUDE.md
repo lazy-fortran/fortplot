@@ -64,3 +64,26 @@ If GitHub Pages shows broken images:
 ## 🔒 DO NOT TOUCH UNLESS YOU UNDERSTAND THE FULL PIPELINE
 
 The user explicitly requested this visual showcase. Breaking it again will cause significant frustration.
+
+## FORD Configuration Notes
+
+### Main Page Configuration
+
+The FORD documentation configuration is split between two locations:
+
+1. **`fpm.toml`**: Contains the basic FORD settings under `[extra.ford]` section including project name
+2. **`doc.md`**: Contains additional FORD configuration and the main page content
+
+**IMPORTANT**: The `doc.md` file should NOT use Markdown headers for FORD configuration directives. FORD directives like `project:`, `summary:`, `author:` etc. should be plain text at the beginning of the file, NOT formatted as Markdown headers.
+
+❌ **Don't do this in doc.md**:
+```markdown
+# project: fortplotlib
+```
+
+✅ **Do this in doc.md**:
+```
+project: fortplotlib
+```
+
+The project name is already defined in `fpm.toml` as `project = "fortplot"`, so it doesn't need to be duplicated in `doc.md`. Having it in both places can cause redundant headers on the GitHub Pages site.
