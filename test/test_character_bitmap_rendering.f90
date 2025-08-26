@@ -3,7 +3,7 @@ program test_character_bitmap_rendering
     !! Tests that characters are rendered with expected pixel patterns
     !! Backend-agnostic test that uses high-level rendering API
     use fortplot_text, only: init_text_system, cleanup_text_system, calculate_text_width, calculate_text_height
-    use fortplot_raster, only: render_text_to_bitmap
+    use fortplot_bitmap, only: render_text_to_bitmap
     implicit none
     
     logical :: all_tests_passed
