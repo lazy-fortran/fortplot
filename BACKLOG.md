@@ -6,7 +6,6 @@
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system)
 - [ ] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
 
 **User-Facing Issues (Medium Priority)**
@@ -15,7 +14,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [x] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system)
+- [x] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -40,6 +39,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system) - FIXED: Implemented proper legend entry reset in legend() procedure to prevent accumulation on multiple calls, resolving excess legend entries issue (PR #394 merged)
 - [x] #374: Fix - no line styles visible in line_styles.html all solid (line styling) - FIXED: Restored line styles and markers visibility in rendering by implementing proper line style differentiation across ASCII, PNG, and PDF backends with consistent styling throughout the pipeline (PR #393 merged)
 - [x] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates) - FIXED: Corrected PDF Y-axis coordinate transformation inconsistency by applying proper canvas_height conversion to Y-axis tick marks and labels, ensuring consistency with X-axis coordinate handling and proper PDF coordinate system alignment (PR #391 merged)
 - [x] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning) - FIXED: Y-axis label positioning and rotation corrected for PNG output with proper bounds checking and streamplot compatibility, resolving visual placement issues in scale examples (PR #390 merged)
