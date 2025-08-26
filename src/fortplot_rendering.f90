@@ -57,6 +57,19 @@ contains
         ! Set color
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
         
+        ! Check if we should draw lines at all
+        if (allocated(plot_data%linestyle)) then
+            ! Skip line drawing if linestyle is 'None'
+            if (trim(plot_data%linestyle) == 'None' .or. &
+                trim(plot_data%linestyle) == 'none' .or. &
+                trim(plot_data%linestyle) == '') then
+                ! No lines to draw, only markers
+                deallocate(x_scaled, y_scaled)
+                return
+            end if
+            call backend%set_line_style(plot_data%linestyle)
+        end if
+        
         ! Draw the line segments
         do i = 1, n-1
             call backend%line(x_scaled(i), y_scaled(i), x_scaled(i+1), y_scaled(i+1))
@@ -78,6 +91,7 @@ contains
         
         if (.not. allocated(plot_data%marker)) return
         if (len_trim(plot_data%marker) == 0) return
+        if (trim(plot_data%marker) == 'None' .or. trim(plot_data%marker) == 'none') return
         
         ! Validate input data
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) return
