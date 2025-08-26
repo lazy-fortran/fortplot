@@ -2,6 +2,7 @@ program test_mpeg_consolidated
     !! Consolidated MPEG validation test - replaces 20+ redundant MPEG tests
     !! Covers all essential MPEG functionality with minimal frame counts for speed
     use fortplot
+    use fortplot_animation
     use fortplot_pipe, only: check_ffmpeg_available
     use fortplot_security, only: safe_remove_file
     use fortplot_system_runtime, only: is_windows
@@ -68,7 +69,7 @@ contains
         
         ! Create minimal animation (2 frames only for speed)
         anim = FuncAnimation(update_data, frames=2, interval=200, fig=fig)
-        call anim%save(test_file, fps=10)
+        call save_animation(anim, test_file, fps=10)
         
         ! Comprehensive validation
         inquire(file=test_file, exist=file_exists, size=file_size)
@@ -139,7 +140,7 @@ contains
         
         ! Test invalid format rejection
         anim = FuncAnimation(dummy_update, frames=1, interval=100, fig=fig)
-        call anim%save("test.invalid", status=status)
+        call save_animation(anim, "test.invalid", status=status)
         
         if (status == 0) then
             error stop "ERROR: Should reject invalid format"
