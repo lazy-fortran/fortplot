@@ -55,6 +55,9 @@ contains
         call legend()
         call savefig('test_legend_basic.png')
         
+        ! Windows-compatible: Allow time for file system operations
+        call windows_safe_delay(100)
+        
         val = validate_file_exists('test_legend_basic.png')
         if (val%passed) then
             print *, "  ✓ Basic legend PNG created"
@@ -97,6 +100,7 @@ contains
             call add_plot(x, y, label="sin(x)")
             call legend(position=trim(positions(i)))
             call savefig(trim(filenames(i)))
+            call windows_safe_delay(100)  ! Windows file system delay
             
             val = validate_file_exists(trim(filenames(i)))
             if (val%passed) then
@@ -133,6 +137,7 @@ contains
         call add_plot(x, y3, label="Logarithm", linestyle=":^")
         call legend()
         call savefig('test_legend_markers.png')
+        call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend_markers.png')
         if (val%passed) then
@@ -173,6 +178,7 @@ contains
         call add_plot(x, y2, label="0.5*sin(x)")
         call legend(position="upper right")
         call savefig('test_legend.pdf')
+        call windows_safe_delay(150)  ! Extra delay for PDF operations
         
         val = validate_file_exists('test_legend.pdf')
         if (val%passed) then
@@ -214,6 +220,7 @@ contains
         call add_plot(x, y2, label="Sqrt")
         call legend()
         call savefig('test_legend.txt')
+        call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend.txt')
         if (val%passed) then
@@ -244,5 +251,18 @@ contains
         end if
         
     end subroutine test_ascii_legend
+    
+    subroutine windows_safe_delay(milliseconds)
+        !! Platform-independent delay for Windows file system operations
+        integer, intent(in) :: milliseconds
+        real(wp) :: start_time, current_time, delay_seconds
+        
+        delay_seconds = real(milliseconds, wp) / 1000.0_wp
+        call cpu_time(start_time)
+        do
+            call cpu_time(current_time)
+            if (current_time - start_time >= delay_seconds) exit
+        end do
+    end subroutine windows_safe_delay
 
 end program test_legend_comprehensive
