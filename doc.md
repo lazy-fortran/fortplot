@@ -1,4 +1,3 @@
-project: fortplotlib
 summary: Modern Fortran plotting library with multiple backends
 author: Plasma Theory Group, TU Graz
 author_description: Computational plasma physics research group
