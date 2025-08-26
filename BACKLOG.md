@@ -20,7 +20,6 @@
 - [ ] #355: Fix - First plot is empty
 
 ## DOING (Current Work)
-- [ ] #357: Docs - standardize colormap documentation across examples
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -47,6 +46,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #357: Docs - standardize colormap documentation across examples - FIXED: Updated colored_contours documentation to correctly reflect 'crest' as default colorblind-safe colormap instead of misleading 'jet' reference, ensuring consistency between documentation and actual implementation (PR #381 merged)
 - [x] #350: Refactor - improve documentation comments in raster drawing module - FIXED: Comprehensive documentation improvements with detailed function descriptions, parameter explanations, and usage examples for all raster drawing utilities including antialiasing, geometric functions, and marker rendering (PR #376 merged)
 - [x] #344: Refactor - add format threshold constants in axes module - FIXED: Format threshold constants extracted to shared module with descriptive names (DECIMAL_THRESHOLD, EXPONENT_THRESHOLD, SMALL_VALUE_THRESHOLD) replacing magic numbers for improved maintainability and consistency (PR #371 merged)
 - [x] #343: Refactor - extract label positioning constants - FIXED: Label positioning constants extracted to shared module with descriptive names (XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, TICK_MARK_LENGTH) replacing magic numbers for improved maintainability and consistency (PR #370 merged)
