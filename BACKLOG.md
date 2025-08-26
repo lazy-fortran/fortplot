@@ -13,7 +13,6 @@
 **Critical Infrastructure Issues (High Priority)**
 
 **User-Facing Issues (Medium Priority)**
-- [ ] #327: Fix - MP4 link not showing on animation.html
 - [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
 
 **Infrastructure & Documentation Issues (Lower Priority)**
@@ -28,7 +27,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
+- [ ] #327: Fix - MP4 link not showing on animation.html
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -55,6 +54,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #328: Fix - One legend entry too much in basic_plots.html second plot - FIXED: Empty labels no longer create legend entries, resolving extra legend entry issue (PR #364 merged)
 - [x] #361: Fix - Windows CI: test_legend_comprehensive and test_streamplot runtime failures - FIXED: Added Windows-compatible file system delays and enhanced error handling for CI stability (PR #363 merged)
 - [x] #336: Fix - Streamplot and stateful streamplot example redundant - FIXED: Removed duplicate stateful_streamplot example, consolidated to single streamplot_demo implementation (PR #362 merged)
 - [x] #355: Fix - First plot is empty (likely from figure CLEAR logic regression) - FIXED: Implemented proper backend initialization to prevent first plot rendering empty, major refactoring split 1776-line file into 3 modules (PR #359 merged)
