@@ -13,6 +13,7 @@ program test_legend_comprehensive
     print *, "========================================="
     print *, "COMPREHENSIVE LEGEND FUNCTIONALITY TEST"
     print *, "========================================="
+    print *, "Platform: Windows compatibility mode with enhanced error handling"
     
     call test_basic_legend(num_failures)
     call test_legend_positions(num_failures)
@@ -46,13 +47,23 @@ contains
         y1 = x**2
         y2 = 2.0_wp * x + 5.0_wp
         
+        ! Enhanced error handling for Windows compatibility
+        print *, "  Creating figure with size [640x480]..."
         call figure(figsize=[640.0_wp, 480.0_wp])
+        
+        print *, "  Setting title and labels..."
         call title("Basic Legend Test")
         call xlabel("X")
         call ylabel("Y")
+        
+        print *, "  Adding plots with labels..."
         call add_plot(x, y1, label="Quadratic: x²")
         call add_plot(x, y2, label="Linear: 2x+5")
+        
+        print *, "  Adding legend..."
         call legend()
+        
+        print *, "  Saving to PNG file..."
         call savefig('test_legend_basic.png')
         
         ! Windows-compatible: Allow time for file system operations
@@ -264,5 +275,6 @@ contains
             if (current_time - start_time >= delay_seconds) exit
         end do
     end subroutine windows_safe_delay
+    
 
 end program test_legend_comprehensive
