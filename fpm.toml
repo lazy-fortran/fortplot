@@ -26,7 +26,8 @@ source-form = "free"
 
 [extra.ford]
 project = "fortplot"
-src_dir = "src"
+summary = "Modern Fortran plotting library with multiple backends"
+src_dir = ["src", "example"]
 output_dir = "build/doc"
 page_dir = "doc"
 exclude = "fortplot_pdf_text.f90"
