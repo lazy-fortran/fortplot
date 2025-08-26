@@ -34,6 +34,7 @@
 - [ ] #411: Axes and labels at wrong positions in scale examples
 - [ ] #412: Streamplot demo too colorful
 - [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
+- [ ] #438: defect: Documentation consolidation for Critical Foundation Recovery Sprint
 
 ### EPIC: Code Quality and Technical Debt
 - [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
