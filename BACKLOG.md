@@ -8,9 +8,11 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
 
 **User-Facing Issues (Medium Priority)**
+- [ ] #392: Fix - Strange truncations in example documentation output (documentation rendering)
 - [ ] #377: Enhancement - make finer grid on pcolormesh_demo.html (enhancement)
 
 **Infrastructure & Documentation Issues (Lower Priority)**
+- [ ] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure)
 
 ## DOING (Current Work)
 
