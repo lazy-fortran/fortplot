@@ -26,7 +26,6 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -53,6 +52,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/ - FIXED: Removed duplicate 'project: fortplotlib' line from doc.md that was creating redundant header on GitHub Pages, documented FORD configuration format to prevent recurrence (PR #366 merged)
 - [x] #327: Fix - MP4 link not showing on animation.html - FIXED: Corrected incorrect reference from animation.mp4 to animated_plot.mp4 in documentation examples (PR #365 merged)
 - [x] #328: Fix - One legend entry too much in basic_plots.html second plot - FIXED: Empty labels no longer create legend entries, resolving extra legend entry issue (PR #364 merged)
 - [x] #361: Fix - Windows CI: test_legend_comprehensive and test_streamplot runtime failures - FIXED: Added Windows-compatible file system delays and enhanced error handling for CI stability (PR #363 merged)
