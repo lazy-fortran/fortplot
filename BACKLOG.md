@@ -14,7 +14,6 @@
 - [ ] #403: Refactor - reduce contour function complexity - functions exceed 50-line target
 
 ## DOING (Current Work)
-- [ ] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure) (branch: fix-test-mpeg-consolidated-388)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -39,6 +38,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure) - FIXED: Resolved test_mpeg_consolidated failure by properly registering animation save implementation through facade module pattern - added missing fortplot_animation import and changed from type-bound method to procedure call to ensure proper registration, now generates valid 1619-byte MPEG files with correct MP4 structure validation (PR #404 merged)
 - [x] #377: Enhancement - make finer grid on pcolormesh_demo.html - FIXED: Successfully upgraded pcolormesh demo grids from coarse to 50x50 high-resolution with comprehensive test coverage and verified visual output across PNG, PDF, and ASCII backends, enhancing mathematical function fidelity and visual quality (PR #400 merged)
 - [x] #392: Fix - Strange truncations in example documentation output - FIXED: Replaced all "[truncated]" placeholders in documentation with complete ASCII art examples using direct embedding approach following KISS principle, fixing 7 documentation files with 14+ ASCII preview sections, now showing complete plot visualization with proper axes and labels (PR #398 merged)
 - [x] #396: Fix - incomplete parameter forwarding in matplotlib API wrapper functions - FIXED: Complete parameter forwarding implementation in matplotlib wrapper functions with comprehensive API coverage and test validation covering contour_filled, pcolormesh, streamplot, and all matplotlib API functions with proper precision conversion and single-call forwarding patterns (PR #397 merged)
