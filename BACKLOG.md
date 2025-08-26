@@ -2,11 +2,8 @@
 
 ## CURRENT SPRINT (Critical CI and Rendering Issues)
 
-**🚨 CRITICAL CI BLOCKING: PR merge infrastructure broken**
-- [ ] #386: Fix - PR #369 CI failures - test-coverage and windows-test failing (URGENT)
 
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**  
-- [ ] #382: Fix - tests fail on main CI (critical infrastructure)
 - [ ] #383: Fix - some examples in CI cannot write output (test infrastructure)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
@@ -24,9 +21,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-
-## BLOCKED (Infrastructure Issues)
-- [ ] #342: Refactor - complete symlog tick generation implementation (BLOCKED by PR #369 CI failures)
+- [x] #382: Fix - tests fail on main CI (critical infrastructure)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
