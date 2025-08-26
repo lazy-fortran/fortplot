@@ -66,7 +66,7 @@ jobs:
       shell: cmd
       run: |
         set FORTPLOT_ENABLE_FFMPEG=1
-        fpm build --flag "-fPIC"
+        fpm build --flag "-cpp -fmax-stack-var-size=65536"
 
     - name: Run Windows tests with built-in timeout protection
       shell: cmd
