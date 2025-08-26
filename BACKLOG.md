@@ -44,7 +44,6 @@
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
 
 ## DOING (Current Work)
-- [ ] #436: Critical: Single point plotting failure across all backends [EPIC: System Stability and Core Functionality]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
