@@ -104,25 +104,16 @@ contains
         if (present(levels)) then
             allocate(wp_levels(size(levels)))
             wp_levels = real(levels, wp)
+        else
+            allocate(wp_levels(0))
         end if
         
-        ! Forward ALL parameters to underlying method
-        if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                                       colormap=colormap, label=label)
-        else if (present(levels)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
-        else if (present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, &
-                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
-        else
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
-        end if
+        ! Forward ALL parameters to underlying method using single call pattern
+        call fig%add_contour_filled(wp_x, wp_y, wp_z, &
+            levels=merge(wp_levels, wp_levels, present(levels)), &
+            colormap=merge(colormap, "", present(colormap)), &
+            show_colorbar=merge(show_colorbar, .false., present(show_colorbar)), &
+            label=merge(label, "", present(label)))
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
@@ -165,19 +156,13 @@ contains
             wp_linewidths = real(linewidths, wp)
         end if
         
-        ! Forward ALL parameters to underlying method
-        if (present(vmin) .and. present(vmax) .and. present(edgecolors) .and. present(linewidths)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
-                                   vmin=wp_vmin, vmax=wp_vmax, &
-                                   edgecolors=wp_edgecolors, linewidths=wp_linewidths)
-        else if (present(vmin) .and. present(vmax)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
-                                   vmin=wp_vmin, vmax=wp_vmax)
-        else if (present(colormap)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
-        else
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
-        end if
+        ! Forward SUPPORTED parameters to underlying method using single call pattern
+        call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+            colormap=merge(colormap, "", present(colormap)), &
+            vmin=merge(wp_vmin, 0.0_wp, present(vmin)), &
+            vmax=merge(wp_vmax, 0.0_wp, present(vmax)), &
+            edgecolors=merge(wp_edgecolors, [0.0_wp, 0.0_wp, 0.0_wp], present(edgecolors)), &
+            linewidths=merge(wp_linewidths, 0.0_wp, present(linewidths)))
         
         deallocate(wp_x, wp_y, wp_z)
     end subroutine pcolormesh
@@ -435,25 +420,16 @@ contains
         if (present(levels)) then
             allocate(wp_levels(size(levels)))
             wp_levels = real(levels, wp)
+        else
+            allocate(wp_levels(0))
         end if
         
-        ! Forward ALL parameters to underlying method
-        if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                                       colormap=colormap, label=label)
-        else if (present(levels)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
-        else if (present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, &
-                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
-        else
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
-        end if
+        ! Forward ALL parameters to underlying method using single call pattern
+        call fig%add_contour_filled(wp_x, wp_y, wp_z, &
+            levels=merge(wp_levels, wp_levels, present(levels)), &
+            colormap=merge(colormap, "", present(colormap)), &
+            show_colorbar=merge(show_colorbar, .false., present(show_colorbar)), &
+            label=merge(label, "", present(label)))
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
@@ -496,19 +472,13 @@ contains
             wp_linewidths = real(linewidths, wp)
         end if
         
-        ! Forward ALL parameters to underlying method
-        if (present(vmin) .and. present(vmax) .and. present(edgecolors) .and. present(linewidths)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
-                                   vmin=wp_vmin, vmax=wp_vmax, &
-                                   edgecolors=wp_edgecolors, linewidths=wp_linewidths)
-        else if (present(vmin) .and. present(vmax)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
-                                   vmin=wp_vmin, vmax=wp_vmax)
-        else if (present(colormap)) then
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
-        else
-            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
-        end if
+        ! Forward SUPPORTED parameters to underlying method using single call pattern
+        call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+            colormap=merge(colormap, "", present(colormap)), &
+            vmin=merge(wp_vmin, 0.0_wp, present(vmin)), &
+            vmax=merge(wp_vmax, 0.0_wp, present(vmax)), &
+            edgecolors=merge(wp_edgecolors, [0.0_wp, 0.0_wp, 0.0_wp], present(edgecolors)), &
+            linewidths=merge(wp_linewidths, 0.0_wp, present(linewidths)))
         
         deallocate(wp_x, wp_y, wp_z)
     end subroutine add_pcolormesh
