@@ -1,5 +1,6 @@
 program test_unicode_detection
-    use fortplot_unicode
+    use fortplot_unicode, only: is_unicode_char, check_utf8_sequence, utf8_char_length, &
+                                utf8_to_codepoint, is_greek_letter_codepoint, contains_unicode
     implicit none
     
     call test_is_unicode_character()

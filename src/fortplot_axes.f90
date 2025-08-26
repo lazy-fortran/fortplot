@@ -126,8 +126,8 @@ contains
             call add_negative_symlog_ticks(data_min, -threshold, tick_positions, num_ticks)
         end if
         
-        ! Add linear region ticks
-        if (data_min <= threshold .and. data_max >= -threshold) then
+        ! Add linear region ticks (only for the region within threshold bounds)
+        if (max(data_min, -threshold) <= min(data_max, threshold)) then
             call add_linear_symlog_ticks(max(data_min, -threshold), min(data_max, threshold), &
                                        tick_positions, num_ticks)
         end if
@@ -200,39 +200,102 @@ contains
     end function calculate_nice_step
     
     subroutine add_negative_symlog_ticks(data_min, upper_bound, tick_positions, num_ticks)
+        !! Add ticks for negative logarithmic region of symlog scale
         real(wp), intent(in) :: data_min, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
         
-        ! Suppress unused parameter warnings for stub implementation
-        associate(unused_real => data_min + upper_bound, &
-                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        real(wp) :: log_min, log_max, current_power
+        integer :: start_power, end_power, power
         
-        ! Implementation for negative symlog region (placeholder)
+        if (data_min >= 0.0_wp .or. upper_bound >= 0.0_wp .or. upper_bound <= data_min) return
+        
+        ! Work with positive values for log calculations
+        ! For negative range [-500, -1], we want powers that give us ticks in that range
+        log_min = log10(-upper_bound)  ! log10(1) = 0 (closer to zero)
+        log_max = log10(-data_min)     ! log10(500) = ~2.7 (larger magnitude)
+        
+        start_power = floor(log_min)
+        end_power = ceiling(log_max)
+        
+        do power = start_power, end_power
+            if (num_ticks >= MAX_TICKS) exit
+            current_power = -(10.0_wp**power)
+            
+            ! Check if tick is within bounds, excluding threshold boundary
+            if (current_power >= data_min - 1.0e-10_wp .and. &
+                current_power < upper_bound - 1.0e-10_wp) then
+                num_ticks = num_ticks + 1
+                tick_positions(num_ticks) = current_power
+            end if
+        end do
     end subroutine add_negative_symlog_ticks
     
     subroutine add_linear_symlog_ticks(lower_bound, upper_bound, tick_positions, num_ticks)
+        !! Add ticks for linear region of symlog scale
         real(wp), intent(in) :: lower_bound, upper_bound
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
         
-        ! Suppress unused parameter warnings for stub implementation
-        associate(unused_real => lower_bound + upper_bound, &
-                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        real(wp) :: range, step, tick_value
+        integer :: max_linear_ticks, i
         
-        ! Implementation for linear symlog region (placeholder)
+        if (upper_bound <= lower_bound) return
+        
+        range = upper_bound - lower_bound
+        max_linear_ticks = 5  ! Reasonable number for linear region
+        
+        ! Always include zero if it's in the range
+        if (lower_bound <= 0.0_wp .and. upper_bound >= 0.0_wp .and. num_ticks < MAX_TICKS) then
+            num_ticks = num_ticks + 1
+            tick_positions(num_ticks) = 0.0_wp
+        end if
+        
+        ! Add additional linear ticks
+        step = range / real(max_linear_ticks + 1, wp)
+        step = calculate_nice_step(step)
+        
+        ! Find first tick >= lower_bound
+        tick_value = ceiling(lower_bound / step) * step
+        
+        do while (tick_value <= upper_bound .and. num_ticks < MAX_TICKS)
+            ! Skip zero if already added, avoid duplicates
+            if (abs(tick_value) > 1.0e-10_wp) then
+                num_ticks = num_ticks + 1
+                tick_positions(num_ticks) = tick_value
+            end if
+            tick_value = tick_value + step
+        end do
     end subroutine add_linear_symlog_ticks
     
     subroutine add_positive_symlog_ticks(lower_bound, data_max, tick_positions, num_ticks)
+        !! Add ticks for positive logarithmic region of symlog scale
         real(wp), intent(in) :: lower_bound, data_max
         real(wp), intent(inout) :: tick_positions(MAX_TICKS)
         integer, intent(inout) :: num_ticks
         
-        ! Suppress unused parameter warnings for stub implementation
-        associate(unused_real => lower_bound + data_max, &
-                  unused_arr => tick_positions, unused_int => num_ticks); end associate
+        real(wp) :: log_min, log_max, current_power
+        integer :: start_power, end_power, power
         
-        ! Implementation for positive symlog region (placeholder)
+        if (lower_bound <= 0.0_wp .or. data_max <= 0.0_wp) return
+        
+        log_min = log10(lower_bound)
+        log_max = log10(data_max)
+        
+        start_power = floor(log_min)
+        end_power = ceiling(log_max)
+        
+        do power = start_power, end_power
+            if (num_ticks >= MAX_TICKS) exit
+            current_power = 10.0_wp**power
+            
+            ! Check if tick is within bounds, excluding threshold boundary
+            if (current_power > lower_bound + 1.0e-10_wp .and. &
+                current_power <= data_max + 1.0e-10_wp) then
+                num_ticks = num_ticks + 1
+                tick_positions(num_ticks) = current_power
+            end if
+        end do
     end subroutine add_positive_symlog_ticks
     
     function is_power_of_ten(value) result(is_power)

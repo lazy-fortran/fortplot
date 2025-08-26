@@ -1,25 +1,32 @@
 # Development Backlog
 
-## CURRENT SPRINT (Critical PNG/PDF Rendering Issues)
+## CURRENT SPRINT (Critical CI and Rendering Issues)
 
-**🚨 CRITICAL: User-visible PNG/PDF rendering completely broken**
-- [x] #338: Fix - No axes visible and plots strangely stretched and shifted in PDF (COMPLETED)
-- [x] #337: Fix - Title too far right in PNGs - check matplotlib placement (COMPLETED)
-- [x] #335: Fix - Axes wrong and no labels visible on scale_examples.html (COMPLETED)
-- [x] #334: Fix - No output visible on pcolormesh_demo.html (COMPLETED - PR #351)
-- [x] #333: Fix - Circles seem not centered with line plot in marker_demo.html (COMPLETED)
-- [x] #332: Fix - Dashed and dash-dotted look funny on line_styles.html (COMPLETED)
-- [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
-**Critical Infrastructure Issues (High Priority)**
+**🚨 CRITICAL CI BLOCKING: PR merge infrastructure broken**
+- [ ] #386: Fix - PR #369 CI failures - test-coverage and windows-test failing (URGENT)
+
+**🚨 CRITICAL: CI test suite failures - user-visible rendering broken**  
+- [ ] #382: Fix - tests fail on main CI (critical infrastructure)
+- [ ] #383: Fix - some examples in CI cannot write output (test infrastructure)
+
+**🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
+- [ ] #380: Fix - ylabel not rotates 90 degrees (rendering regression)
+- [ ] #379: Fix - no output in streamplot_demo.html (rendering regression)
+- [ ] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning)
+- [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
+- [ ] #374: Fix - no line styles visible in line_styles.html all solid (line styling)
+- [ ] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system)
+- [ ] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
 
 **User-Facing Issues (Medium Priority)**
+- [ ] #377: Enhancement - make finer grid on pcolormesh_demo.html (enhancement)
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [ ] #355: Fix - First plot is empty
 
 ## BLOCKED (Infrastructure Issues)
+- [ ] #342: Refactor - complete symlog tick generation implementation (BLOCKED by PR #369 CI failures)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
