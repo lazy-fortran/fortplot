@@ -152,13 +152,27 @@ contains
             end if
         end if
         
-        ! Reset plot counter
+        ! Reset plot counter and state
         self%plot_count = 0
         self%rendered = .false.
+        self%show_legend = .false.
+        
+        ! Clear legend data to prevent state contamination between figure calls
+        call self%legend_data%clear()
+        
+        ! Reset axis limits and labels
+        self%xlim_set = .false.
+        self%ylim_set = .false.
+        if (allocated(self%title)) deallocate(self%title)
+        if (allocated(self%xlabel)) deallocate(self%xlabel)
+        if (allocated(self%ylabel)) deallocate(self%ylabel)
         
         ! Allocate plots array
         if (allocated(self%plots)) deallocate(self%plots)
         allocate(self%plots(self%max_plots))
+        
+        ! Clear streamlines data if allocated
+        if (allocated(self%streamlines)) deallocate(self%streamlines)
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
