@@ -156,13 +156,22 @@ contains
             wp_linewidths = real(linewidths, wp)
         end if
         
-        ! Forward SUPPORTED parameters to underlying method using single call pattern
-        call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
-            colormap=merge(colormap, "", present(colormap)), &
-            vmin=merge(wp_vmin, 0.0_wp, present(vmin)), &
-            vmax=merge(wp_vmax, 0.0_wp, present(vmax)), &
-            edgecolors=merge(wp_edgecolors, [0.0_wp, 0.0_wp, 0.0_wp], present(edgecolors)), &
-            linewidths=merge(wp_linewidths, 0.0_wp, present(linewidths)))
+        ! Forward SUPPORTED parameters to underlying method using conditional calls
+        if (present(colormap) .and. present(vmin) .and. present(vmax) .and. &
+            present(edgecolors) .and. present(linewidths)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+                colormap=colormap, vmin=wp_vmin, vmax=wp_vmax, &
+                edgecolors=wp_edgecolors, linewidths=wp_linewidths)
+        else if (present(colormap) .and. present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+                colormap=colormap, vmin=wp_vmin, vmax=wp_vmax)
+        else if (present(colormap)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
+        else if (present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, vmin=wp_vmin, vmax=wp_vmax)
+        else
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
+        end if
         
         deallocate(wp_x, wp_y, wp_z)
     end subroutine pcolormesh
@@ -472,13 +481,22 @@ contains
             wp_linewidths = real(linewidths, wp)
         end if
         
-        ! Forward SUPPORTED parameters to underlying method using single call pattern
-        call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
-            colormap=merge(colormap, "", present(colormap)), &
-            vmin=merge(wp_vmin, 0.0_wp, present(vmin)), &
-            vmax=merge(wp_vmax, 0.0_wp, present(vmax)), &
-            edgecolors=merge(wp_edgecolors, [0.0_wp, 0.0_wp, 0.0_wp], present(edgecolors)), &
-            linewidths=merge(wp_linewidths, 0.0_wp, present(linewidths)))
+        ! Forward SUPPORTED parameters to underlying method using conditional calls
+        if (present(colormap) .and. present(vmin) .and. present(vmax) .and. &
+            present(edgecolors) .and. present(linewidths)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+                colormap=colormap, vmin=wp_vmin, vmax=wp_vmax, &
+                edgecolors=wp_edgecolors, linewidths=wp_linewidths)
+        else if (present(colormap) .and. present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, &
+                colormap=colormap, vmin=wp_vmin, vmax=wp_vmax)
+        else if (present(colormap)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
+        else if (present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, vmin=wp_vmin, vmax=wp_vmax)
+        else
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
+        end if
         
         deallocate(wp_x, wp_y, wp_z)
     end subroutine add_pcolormesh
