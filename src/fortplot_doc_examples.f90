@@ -36,8 +36,7 @@ contains
         case(14); dir = "example/fortran/show_viewer_demo"
         case(15); dir = "example/fortran/smart_show_demo"
         case(16); dir = "example/fortran/animation"
-        case(17); dir = "example/fortran/stateful_streamplot"
-        case(18); dir = "example/fortran/annotation_demo"
+        case(17); dir = "example/fortran/annotation_demo"
         case default; dir = ""
         end select
     end subroutine get_example_dir
@@ -63,8 +62,7 @@ contains
         case(14); name = "show_viewer_demo"
         case(15); name = "smart_show_demo"
         case(16); name = "animation"
-        case(17); name = "stateful_streamplot"
-        case(18); name = "annotation_demo"
+        case(17); name = "annotation_demo"
         case default; name = ""
         end select
     end subroutine get_example_name

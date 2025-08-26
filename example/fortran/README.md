@@ -34,7 +34,6 @@ make example ARGS="example_name"
 - [colored_contours](./colored_contours/) - Filled contours with colormaps
 - [pcolormesh_demo](./pcolormesh_demo/) - Pseudocolor mesh plots
 - [streamplot_demo](./streamplot_demo/) - Vector field visualization
-- [stateful_streamplot](./stateful_streamplot/) - Time-evolving fields
 
 ### Scaling and Styling
 - [scale_examples](./scale_examples/) - Log and symlog scales
