@@ -23,13 +23,13 @@ make example ARGS="colored_contours"
 ## Features Demonstrated
 
 - **Filled contours**: Continuous color gradients
-- **Multiple colormaps**: viridis, jet, coolwarm, inferno, plasma
+- **Multiple colormaps**: crest, jet, coolwarm, inferno, plasma
 - **Custom levels**: Control contour density
 - **Various functions**: Gaussian, ripple, saddle point patterns
 
 ## Available Colormaps
 
-- `viridis` - Default, perceptually uniform
+- `crest` - Default, perceptually uniform colorblind-safe
 - `jet` - Classic rainbow colormap
 - `coolwarm` - Blue to red diverging
 - `inferno` - Black to yellow sequential
