@@ -26,6 +26,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
+- [ ] #323: Test - add edge case tests for PDF heatmap color validation
 
 ## BLOCKED (Infrastructure Issues)
 
