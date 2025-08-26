@@ -383,43 +383,19 @@ contains
         
     end subroutine grid
 
-    subroutine hist(self, data, bins, density, label)
-        !! Create a histogram plot
-        !! 
-        !! Arguments:
-        !!   data - real array: Input data values to create histogram from
-        !!   bins - integer, optional: Number of bins (default 10)
-        !!   density - logical, optional: Normalize to density (default false)  
-        !!   label - character, optional: Legend label
-        class(figure_t), intent(inout) :: self
+    subroutine calculate_histogram_bins(data, n_bins, normalize_density, &
+                                        bin_edges, bin_counts)
+        !! Calculate histogram bin edges and counts from data
         real(wp), intent(in) :: data(:)
-        integer, intent(in), optional :: bins
-        logical, intent(in), optional :: density
-        character(len=*), intent(in), optional :: label
+        integer, intent(in) :: n_bins
+        logical, intent(in) :: normalize_density
+        real(wp), allocatable, intent(out) :: bin_edges(:), bin_counts(:)
         
-        integer :: n_bins, i, bin_index, n_data
-        real(wp) :: data_min, data_max, bin_width, bin_center
-        real(wp), allocatable :: bin_edges(:), bin_counts(:), bin_centers(:)
-        real(wp), allocatable :: x_data(:), y_data(:)
-        logical :: normalize_density
+        integer :: i, bin_index, n_data
+        real(wp) :: data_min, data_max, bin_width
         real(wp) :: total_area
-        character(len=:), allocatable :: hist_label
         
-        ! Handle empty data
         n_data = size(data)
-        if (n_data == 0) then
-            return
-        end if
-        
-        ! Set parameters
-        n_bins = 10
-        if (present(bins)) n_bins = max(1, bins)
-        
-        normalize_density = .false.
-        if (present(density)) normalize_density = density
-        
-        hist_label = ''
-        if (present(label)) hist_label = label
         
         ! Find data range
         data_min = minval(data)
@@ -431,19 +407,14 @@ contains
             data_max = data_max + 0.5_wp
         end if
         
-        ! Create bin edges and centers
+        ! Create bin edges
         allocate(bin_edges(n_bins + 1))
         allocate(bin_counts(n_bins))
-        allocate(bin_centers(n_bins))
         
         bin_width = (data_max - data_min) / real(n_bins, wp)
         
         do i = 1, n_bins + 1
             bin_edges(i) = data_min + real(i - 1, wp) * bin_width
-        end do
-        
-        do i = 1, n_bins
-            bin_centers(i) = data_min + (real(i, wp) - 0.5_wp) * bin_width
         end do
         
         ! Count data points in each bin
@@ -459,8 +430,16 @@ contains
             bin_counts = bin_counts / total_area
         end if
         
-        ! Create histogram as a bar plot (using lines to form rectangles)
-        ! We'll create the histogram as connected line segments forming rectangles
+    end subroutine calculate_histogram_bins
+    
+    subroutine create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
+        !! Create line data for histogram visualization as connected rectangles
+        real(wp), intent(in) :: bin_edges(:), bin_counts(:)
+        real(wp), allocatable, intent(out) :: x_data(:), y_data(:)
+        
+        integer :: i, n_bins
+        
+        n_bins = size(bin_counts)
         allocate(x_data(4 * n_bins + 1), y_data(4 * n_bins + 1))
         
         ! Create line segments for each bar
@@ -485,6 +464,48 @@ contains
         ! Close the path back to origin
         x_data(4 * n_bins + 1) = bin_edges(1)
         y_data(4 * n_bins + 1) = 0.0_wp
+        
+    end subroutine create_histogram_line_data
+
+    subroutine hist(self, data, bins, density, label)
+        !! Create a histogram plot
+        !! 
+        !! Arguments:
+        !!   data - real array: Input data values to create histogram from
+        !!   bins - integer, optional: Number of bins (default 10)
+        !!   density - logical, optional: Normalize to density (default false)  
+        !!   label - character, optional: Legend label
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        
+        integer :: n_bins
+        real(wp), allocatable :: bin_edges(:), bin_counts(:)
+        real(wp), allocatable :: x_data(:), y_data(:)
+        logical :: normalize_density
+        character(len=:), allocatable :: hist_label
+        
+        ! Handle empty data
+        if (size(data) == 0) return
+        
+        ! Set parameters
+        n_bins = 10
+        if (present(bins)) n_bins = max(1, bins)
+        
+        normalize_density = .false.
+        if (present(density)) normalize_density = density
+        
+        hist_label = ''
+        if (present(label)) hist_label = label
+        
+        ! Calculate histogram bins and counts
+        call calculate_histogram_bins(data, n_bins, normalize_density, &
+                                     bin_edges, bin_counts)
+        
+        ! Create line data for visualization
+        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
         
         ! Add as line plot
         call self%add_plot(x_data, y_data, label=hist_label)
