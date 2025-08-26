@@ -106,8 +106,12 @@ contains
         state%ylim_set = .false.
         state%has_error = .false.
         
-        ! Simple legend initialization
+        ! Proper legend initialization - allocate entries array
         state%legend_data%num_entries = 0
+        if (allocated(state%legend_data%entries)) then
+            deallocate(state%legend_data%entries)
+        end if
+        allocate(state%legend_data%entries(0))
     end subroutine initialize_figure_state
     
     subroutine reset_figure_state(state)
@@ -123,6 +127,7 @@ contains
         if (allocated(state%legend_data%entries)) then
             deallocate(state%legend_data%entries)
         end if
+        allocate(state%legend_data%entries(0))
         
         ! Reset axis limits and labels
         state%xlim_set = .false.
