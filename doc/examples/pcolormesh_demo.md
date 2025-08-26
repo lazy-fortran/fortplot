@@ -37,45 +37,21 @@ make example ARGS="pcolormesh_demo"
 
 ![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                        Basic Pcolormesh - Linear Gradient
 +--------------------------------------------------------------------------------+
 |1.20                                                                            |
-| .                                                                              |
-|                                                                                |
-|                                                                                |
-|1.00                                                                            |
 |        +               *              #              %               @         |
-|                                                                                |
-| .                                                                              |
-|                                                                                |
-|.800                                                                            |
-|                                                                                |
-|                                                                                |
 | .      -               =              +              *               #         |
-|                                                                                |
-|.600                                                                            |
-|                                                                                |
-|                                                                                |
-|                                                                                |
 | .      .               :              -              =               +         |
-|.400                                                                            |
-|                                                                                |
-|                                                                                |
-|                                                                                |
-| .                                                                              |
-|.200                                                                            |
-|                                       .              :               -         |
-|                                                                                |
-|                                                                                |
-| .       .        .       .        .       .        .       .        .        . |
-|0                  .500                1.00                1.50            2.00 |
+| ... [truncated - see full output in pcolormesh_basic.txt] ...                 |
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
 ```
+
+> **Full ASCII Output**: [Download pcolormesh_basic.txt](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
 
@@ -83,45 +59,21 @@ Y coordinate
 
 ![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                         Pcolormesh - Sinusoidal Pattern
 +--------------------------------------------------------------------------------+
-|1.20                                                                            |
-| .                                                                              |
-|                                                                                |
 |    =       =       =      =       =       =       =      =                     |
-|1.00                                                                            |
 |        +               *              #              %               @         |
-|                                                                                |
 | .  #       :              +       %       =              :                     |
-|                                                                                |
-|.800                                                                            |
 |    *       -       .      +       #       =       .      -                     |
-|                                                                                |
-| .      -               =              +              *               #         |
-|    :       +       #      -       .       =       #      +                     |
-|.600                                                                            |
-|                                                                                |
-|                                                                                |
-|    .       *       %      -               =       %      *                     |
-| .      .               :              -              =               +         |
-|.400                                                                            |
-|    =       =       =      =       =       =       =      =                     |
-|                                                                                |
-|                                                                                |
-| .  #       :              +       @       =              :                     |
-|.200                                                                            |
-|                                       .              :               -         |
-|                                                                                |
-|    *       -       .      +       #       =       .      -                     |
-| .       .        .       .        .       .        .       .        .        . |
-|0                  .500                1.00                1.50            2.00 |
+| ... [truncated - see full output in pcolormesh_sinusoidal.txt] ...            |
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
 ```
+
+> **Full ASCII Output**: [Download pcolormesh_sinusoidal.txt](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
 
@@ -129,45 +81,21 @@ Y coordinate
 
 ![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                       Pcolormesh - Radial Pattern (Plasma)
 +--------------------------------------------------------------------------------+
-|1.20                                                                            |
-| .                                                                              |
-|                                                                                |
-|                                                                                |
 |    = -     =     + =      = #     =     # =       =+     =                     |
-|1.00                                                                            |
 | .      +               *              #              %               @         |
-|    #       :              +       %       =              :                     |
-|                                                                                |
-|                                                                                |
 |.800  -           *          @           %          +                           |
-|    *       -       .      +       #       =       .      -                     |
-|        -               =              +              *               #         |
-|                                                                                |
-|    :       +       #      -       .       =       #      +                     |
 |.600  :           =          +           +          =                           |
-|                                                                                |
-|    .       *       %      -               =       %      *                     |
-|                                                                                |
-|.400    .               :              -              =               +         |
-|    = .     =     : =      = :     =     : =       =:     =                     |
-|                                                                                |
-|                                                                                |
-|                                                                                |
-|.200#       :              +       @       =              :                     |
-|                                       .              :               -         |
-|                                                                                |
-|    *       -       .      +       #       =       .      -                     |
-| .       .        .       .        .       .        .       .        .        . |
-|0                  .500                1.00                1.50            2.00 |
+| ... [truncated - see full output in pcolormesh_plasma.txt] ...                |
 +--------------------------------------------------------------------------------+
                                   X coordinate
 Y coordinate
 ```
+
+> **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
 
