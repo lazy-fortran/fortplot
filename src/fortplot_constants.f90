@@ -43,4 +43,35 @@ module fortplot_constants
     !! Smaller value provides better precision for critical geometric operations.
     real(wp), parameter, public :: EPSILON_GEOMETRY = 1e-12_wp
 
+    ! ========================================================================
+    ! LABEL POSITIONING CONSTANTS
+    ! ========================================================================
+
+    !! X-axis label vertical offset below plot area (pixels)
+    !!
+    !! This constant defines the vertical distance between the bottom of the
+    !! plot area and the baseline of the x-axis label text.
+    !! 
+    !! Used by raster backend for xlabel positioning to ensure consistent
+    !! spacing below tick labels while avoiding overlap.
+    integer, parameter, public :: XLABEL_VERTICAL_OFFSET = 30
+
+    !! Y-axis label horizontal offset from left edge (pixels)
+    !!
+    !! This constant defines the horizontal distance from the left edge of
+    !! the figure to the left edge of the y-axis label text.
+    !!
+    !! Used by raster backend for ylabel positioning to ensure consistent
+    !! left margin spacing and readability.
+    integer, parameter, public :: YLABEL_HORIZONTAL_OFFSET = 10
+
+    !! Tick mark length extending from axis line (pixels)
+    !!
+    !! This constant defines the length of tick marks extending from the
+    !! axis lines into the plot area or margin.
+    !!
+    !! Used by raster backend for drawing consistent tick marks across
+    !! all axes while maintaining visual hierarchy.
+    integer, parameter, public :: TICK_MARK_LENGTH = 5
+
 end module fortplot_constants

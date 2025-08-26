@@ -1,7 +1,9 @@
 module fortplot_raster
     use iso_c_binding
     use fortplot_context, only: plot_context, setup_canvas
-    use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY
+    use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY, &
+                                  XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, &
+                                  TICK_MARK_LENGTH
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
@@ -983,7 +985,7 @@ contains
         call this%line(x_min, y_min, x_min, y_max)
         
         ! Generate and draw tick marks and labels
-        tick_length = 5  ! Tick length in pixels
+        tick_length = TICK_MARK_LENGTH  ! Tick length in pixels
         
         ! X-axis ticks
         call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
@@ -1055,7 +1057,7 @@ contains
                 text_width = calculate_text_width(trim(escaped_text))
                 ! Center horizontally in plot area, position below tick labels
                 px = this%plot_area%left + this%plot_area%width / 2 - text_width / 2
-                py = this%plot_area%bottom + this%plot_area%height + 30  ! 30 pixels below plot area
+                py = this%plot_area%bottom + this%plot_area%height + XLABEL_VERTICAL_OFFSET  ! Pixels below plot area
                 call render_text_to_image(this%raster%image_data, this%width, this%height, &
                                         px, py, trim(escaped_text), text_r, text_g, text_b)
             end if
@@ -1069,7 +1071,7 @@ contains
                 text_width = calculate_text_width(trim(escaped_text))
                 text_height = calculate_text_height(trim(escaped_text))
                 ! Position to the left of plot area, centered vertically
-                px = 10  ! 10 pixels from left edge
+                px = YLABEL_HORIZONTAL_OFFSET  ! Pixels from left edge
                 py = this%plot_area%bottom + this%plot_area%height / 2 - text_height / 2
                 call render_text_to_image(this%raster%image_data, this%width, this%height, &
                                         px, py, trim(escaped_text), text_r, text_g, text_b)
