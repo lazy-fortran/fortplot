@@ -4,6 +4,7 @@
 
 
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
+- [ ] #401: Fix - CI test-coverage failing with segfaults in colored_contours and ascii_heatmap_demo (blocks all PR merges)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
 
