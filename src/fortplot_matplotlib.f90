@@ -47,6 +47,9 @@ contains
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)
         !! Auto-initializes with default dimensions if not already initialized
+        if (.not. allocated(fig)) then
+            allocate(figure_t :: fig)
+        end if
         if (.not. allocated(fig%backend)) then
             call fig%initialize()
         end if
@@ -55,7 +58,8 @@ contains
     function get_global_figure() result(global_fig)
         !! Get reference to the global figure for testing access to arrow data
         !! This allows tests to access fig%arrow_data without making fig public
-        type(figure_t), pointer :: global_fig
+        class(figure_t), pointer :: global_fig
+        call ensure_global_figure_initialized()
         global_fig => fig
     end function get_global_figure
 
@@ -104,14 +108,87 @@ contains
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
         !! Add a streamline plot to the global figure (pyplot-style)
+        !! Direct implementation compatible with figure_core type
+        use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: u, v
         real(8), intent(in), optional :: density, linewidth_scale, arrow_scale
         character(len=*), intent(in), optional :: colormap, label
         
+        real(wp) :: wp_density
+        real(wp), allocatable :: wp_x(:), wp_y(:), wp_u(:,:), wp_v(:,:)
+        real, allocatable :: trajectories(:,:,:)
+        integer :: n_trajectories
+        integer, allocatable :: trajectory_lengths(:)
+        
         call ensure_global_figure_initialized()
-        call fig%streamplot(x, y, u, v)
+        
+        ! Validate input dimensions
+        if (size(u,1) /= size(x) .or. size(u,2) /= size(y) .or. &
+            size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
+            call log_error('streamplot: Input dimension mismatch')
+            return
+        end if
+        
+        ! Convert parameters to working precision
+        wp_density = 1.0_wp
+        if (present(density)) wp_density = real(density, wp)
+        
+        ! Convert input arrays to working precision
+        allocate(wp_x(size(x)), wp_y(size(y)))
+        allocate(wp_u(size(u,1), size(u,2)), wp_v(size(v,1), size(v,2)))
+        
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_u = real(u, wp)
+        wp_v = real(v, wp)
+        
+        ! Generate streamlines using matplotlib algorithm
+        call streamplot_matplotlib(wp_x, wp_y, wp_u, wp_v, wp_density, &
+                                  trajectories, n_trajectories, trajectory_lengths)
+        
+        ! Add trajectories as line plots to figure
+        call add_streamplot_trajectories_to_figure(trajectories, n_trajectories, &
+                                                  trajectory_lengths, wp_x, wp_y)
+        
+        deallocate(wp_x, wp_y, wp_u, wp_v)
     end subroutine streamplot
+    
+    subroutine add_streamplot_trajectories_to_figure(trajectories, n_trajectories, &
+                                                    trajectory_lengths, x_grid, y_grid)
+        !! Add streamline trajectories to global figure as line plots
+        use fortplot_plot_data, only: PLOT_TYPE_LINE
+        real, intent(in) :: trajectories(:,:,:)
+        integer, intent(in) :: n_trajectories, trajectory_lengths(:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        
+        integer :: i, j, n_points
+        real(wp), allocatable :: traj_x(:), traj_y(:)
+        real(wp) :: line_color(3)
+        
+        ! Set default streamline color (blue)
+        line_color = [0.0_wp, 0.447_wp, 0.698_wp]
+        
+        do i = 1, n_trajectories
+            n_points = trajectory_lengths(i)
+            if (n_points <= 1) cycle
+            
+            allocate(traj_x(n_points), traj_y(n_points))
+            
+            ! Convert from grid coordinates to data coordinates
+            do j = 1, n_points
+                traj_x(j) = real(trajectories(i, j, 1), wp) * (x_grid(size(x_grid)) - x_grid(1)) / &
+                           real(size(x_grid) - 1, wp) + x_grid(1)
+                traj_y(j) = real(trajectories(i, j, 2), wp) * (y_grid(size(y_grid)) - y_grid(1)) / &
+                           real(size(y_grid) - 1, wp) + y_grid(1)
+            end do
+            
+            ! Add trajectory as line plot to figure
+            call fig%add_plot(traj_x, traj_y, linestyle='-')
+            
+            deallocate(traj_x, traj_y)
+        end do
+    end subroutine add_streamplot_trajectories_to_figure
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
         !! Add error bars to the global figure (pyplot-style)
