@@ -108,12 +108,42 @@ contains
             allocate(wp_levels(0))
         end if
         
-        ! Forward ALL parameters to underlying method using single call pattern
-        call fig%add_contour_filled(wp_x, wp_y, wp_z, &
-            levels=merge(wp_levels, wp_levels, present(levels)), &
-            colormap=merge(colormap, "", present(colormap)), &
-            show_colorbar=merge(show_colorbar, .false., present(show_colorbar)), &
-            label=merge(label, "", present(label)))
+        ! Forward parameters to underlying method using conditional calls for memory safety
+        if (present(levels) .and. present(colormap) .and. present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, show_colorbar=show_colorbar)
+        else if (present(levels) .and. present(colormap) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, label=label)
+        else if (present(colormap) .and. present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, &
+                show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, colormap=colormap)
+        else if (present(levels) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, show_colorbar=show_colorbar)
+        else if (present(levels) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
+        else if (present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, show_colorbar=show_colorbar)
+        else if (present(colormap) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
+        else if (present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar, label=label)
+        else if (present(levels)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels)
+        else if (present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap)
+        else if (present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar)
+        else if (present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
+        else
+            call fig%add_contour_filled(wp_x, wp_y, wp_z)
+        end if
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
@@ -433,12 +463,42 @@ contains
             allocate(wp_levels(0))
         end if
         
-        ! Forward ALL parameters to underlying method using single call pattern
-        call fig%add_contour_filled(wp_x, wp_y, wp_z, &
-            levels=merge(wp_levels, wp_levels, present(levels)), &
-            colormap=merge(colormap, "", present(colormap)), &
-            show_colorbar=merge(show_colorbar, .false., present(show_colorbar)), &
-            label=merge(label, "", present(label)))
+        ! Forward parameters to underlying method using conditional calls for memory safety
+        if (present(levels) .and. present(colormap) .and. present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, show_colorbar=show_colorbar)
+        else if (present(levels) .and. present(colormap) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                colormap=colormap, label=label)
+        else if (present(colormap) .and. present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, &
+                show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, colormap=colormap)
+        else if (present(levels) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, show_colorbar=show_colorbar)
+        else if (present(levels) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
+        else if (present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, show_colorbar=show_colorbar)
+        else if (present(colormap) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
+        else if (present(show_colorbar) .and. present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar, label=label)
+        else if (present(levels)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels)
+        else if (present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap)
+        else if (present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar)
+        else if (present(label)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
+        else
+            call fig%add_contour_filled(wp_x, wp_y, wp_z)
+        end if
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
