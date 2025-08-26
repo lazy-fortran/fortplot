@@ -16,7 +16,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
+- [x] #374: Fix - no line styles visible in line_styles.html all solid (line styling)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -41,6 +41,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates) - FIXED: Corrected PDF Y-axis coordinate transformation inconsistency by applying proper canvas_height conversion to Y-axis tick marks and labels, ensuring consistency with X-axis coordinate handling and proper PDF coordinate system alignment (PR #391 merged)
 - [x] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning) - FIXED: Y-axis label positioning and rotation corrected for PNG output with proper bounds checking and streamplot compatibility, resolving visual placement issues in scale examples (PR #390 merged)
 - [x] #379: Fix - no output in streamplot_demo.html (rendering regression) - FIXED: Restored streamplot trajectory rendering by implementing missing trajectory plotting functionality - streamlines are now properly converted from grid coordinates to data coordinates and added as line plots with correct styling (PR #389 merged)
 - [x] #380: Fix - ylabel not rotates 90 degrees (rendering regression) - FIXED: Corrected ylabel rotation regression by swapping bitmap rotation function names - rotate_bitmap_90_ccw now performs clockwise rotation and rotate_bitmap_90_cw performs counter-clockwise rotation, restoring proper ylabel 90-degree rotation behavior (PR #387 merged)
