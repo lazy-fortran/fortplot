@@ -19,12 +19,9 @@ contains
         
         status = 0
         
-        ! Setup PNG backend to render frame
-        call setup_png_backend(fig)
-        call render_to_backend(fig)
-        
-        ! Extract RGB data from rendered frame using polymorphic method
-        call fig%backend%extract_rgb_data(fig%width, fig%height, rgb_data)
+        ! Setup PNG backend and extract data using new methods
+        call fig%setup_png_backend_for_animation()
+        call fig%extract_rgb_data_for_animation(rgb_data)
     end subroutine extract_frame_rgb_data
 
     subroutine render_frame_to_png(fig, png_data, status)
@@ -32,17 +29,16 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        call setup_png_backend(fig)
-        call render_to_backend(fig)
-        call extract_png_data(fig, png_data, status)
+        call fig%setup_png_backend_for_animation()
+        call fig%extract_png_data_for_animation(png_data, status)
     end subroutine render_frame_to_png
 
     subroutine setup_png_backend(fig)
         type(figure_t), intent(inout) :: fig
         
-        if (allocated(fig%backend)) deallocate(fig%backend)
-        call initialize_backend(fig%backend, 'png', fig%width, fig%height)
-        fig%rendered = .false.
+        ! Use the savefig method which handles backend switching automatically
+        call fig%savefig('temp.png')
+        call fig%set_rendered(.false.)
     end subroutine setup_png_backend
 
     subroutine render_to_backend(fig)
@@ -56,32 +52,34 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        ! Use polymorphic method to get PNG data - eliminates SELECT TYPE
-        call fig%backend%get_png_data_backend(fig%width, fig%height, png_data, status)
+        ! Use new method to get PNG data 
+        call fig%extract_png_data_for_animation(png_data, status)
     end subroutine extract_png_data
 
     subroutine render_figure_components(fig)
         type(figure_t), intent(inout) :: fig
         
-        if (.not. allocated(fig%backend)) return
+        if (.not. fig%backend_associated()) return
         
         call render_background(fig)
         call render_all_plots(fig)
-        call mark_as_rendered(fig)
+        call fig%set_rendered(.true.)
     end subroutine render_figure_components
 
     subroutine render_background(fig)
         type(figure_t), intent(inout) :: fig
         
-        call fig%backend%color(1.0_wp, 1.0_wp, 1.0_wp)
+        call fig%backend_color(1.0_wp, 1.0_wp, 1.0_wp)
     end subroutine render_background
 
     subroutine render_all_plots(fig)
         type(figure_t), intent(inout) :: fig
         integer :: i
+        type(plot_data_t), pointer :: plots(:)
         
-        do i = 1, fig%plot_count
-            call render_single_plot(fig, fig%plots(i))
+        plots => fig%get_plots()
+        do i = 1, fig%get_plot_count()
+            call render_single_plot(fig, plots(i))
         end do
     end subroutine render_all_plots
 
@@ -108,7 +106,7 @@ contains
     subroutine mark_as_rendered(fig)
         type(figure_t), intent(inout) :: fig
         
-        fig%rendered = .true.
+        call fig%set_rendered(.true.)
     end subroutine mark_as_rendered
 
     subroutine render_line_plot(fig, plot_data)
@@ -157,7 +155,7 @@ contains
         type(figure_t), intent(inout) :: fig
         type(plot_data_t), intent(in) :: plot_data
         
-        call fig%backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        call fig%backend_color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
     end subroutine set_plot_color
 
     subroutine draw_line_segments(fig, plot_data)
@@ -170,7 +168,7 @@ contains
         
         do i = 2, size(plot_data%x)
             call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(i), x_screen, y_screen)
-            call fig%backend%line(x_prev, y_prev, x_screen, y_screen)
+            call fig%backend_line(x_prev, y_prev, x_screen, y_screen)
             x_prev = x_screen
             y_prev = y_screen
         end do
@@ -228,8 +226,8 @@ contains
         ! Simple linear mapping from data to screen coordinates
         ! This is a simplified version - the actual implementation would handle
         ! logarithmic scales, margins, etc.
-        x_screen = real(fig%width, wp) * (x_data - fig%x_min) / (fig%x_max - fig%x_min)
-        y_screen = real(fig%height, wp) * (1.0_wp - (y_data - fig%y_min) / (fig%y_max - fig%y_min))
+        x_screen = real(fig%get_width(), wp) * (x_data - fig%get_x_min()) / (fig%get_x_max() - fig%get_x_min())
+        y_screen = real(fig%get_height(), wp) * (1.0_wp - (y_data - fig%get_y_min()) / (fig%get_y_max() - fig%get_y_min()))
     end subroutine data_to_screen_coords
 
     function is_valid_2d_data(plot_data) result(valid)
@@ -256,7 +254,7 @@ contains
             do i = 1, nx - 1
                 call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(j), x1, y1)
                 call data_to_screen_coords(fig, plot_data%x(i+1), plot_data%y(j), x2, y2)
-                call fig%backend%line(x1, y1, x2, y2)
+                call fig%backend_line(x1, y1, x2, y2)
             end do
         end do
         
@@ -265,7 +263,7 @@ contains
             do j = 1, ny - 1
                 call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(j), x1, y1)
                 call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(j+1), x2, y2)
-                call fig%backend%line(x1, y1, x2, y2)
+                call fig%backend_line(x1, y1, x2, y2)
             end do
         end do
     end subroutine draw_2d_wireframe
@@ -287,7 +285,7 @@ contains
         do i = 1, size(plot_data%x)
             call data_to_screen_coords(fig, plot_data%x(i), 0.0_wp, x_screen, y_base)
             call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(i), x_screen, y_top)
-            call fig%backend%line(x_screen, y_base, x_screen, y_top)
+            call fig%backend_line(x_screen, y_base, x_screen, y_top)
         end do
     end subroutine draw_vertical_bars
 
@@ -308,10 +306,10 @@ contains
             call data_to_screen_coords(fig, plot_data%x(i) + bar_width/2, plot_data%y(i), x2, y_top)
             
             ! Draw rectangle outline for histogram bar
-            call fig%backend%line(x1, y_base, x2, y_base)  ! bottom
-            call fig%backend%line(x2, y_base, x2, y_top)   ! right
-            call fig%backend%line(x2, y_top, x1, y_top)    ! top
-            call fig%backend%line(x1, y_top, x1, y_base)   ! left
+            call fig%backend_line(x1, y_base, x2, y_base)  ! bottom
+            call fig%backend_line(x2, y_base, x2, y_top)   ! right
+            call fig%backend_line(x2, y_top, x1, y_top)    ! top
+            call fig%backend_line(x1, y_top, x1, y_base)   ! left
         end do
     end subroutine draw_histogram_bars
 
