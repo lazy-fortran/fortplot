@@ -55,7 +55,7 @@ contains
         character(len=*), intent(out) :: media_files(:)
         integer, intent(out) :: n_media
         
-        call add_if_exists(dir, 'wave_animation.mp4', media_files, n_media)
+        call add_if_exists(dir, 'animation.mp4', media_files, n_media)
     end subroutine add_animation_files
     
     subroutine add_basic_plot_files(dir, media_files, n_media)
