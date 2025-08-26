@@ -1,41 +1,67 @@
 # Development Backlog
 
-## CURRENT SPRINT (Critical CI and Rendering Issues)
+## CURRENT SPRINT (Critical Foundation Recovery)
 
+## SPRINT_BACKLOG (Critical Foundation Recovery Sprint)
 
-**🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
+### EPIC: System Stability and Core Functionality
+- [ ] #437: CRITICAL: Systematic architecture failure - 18 disabled test files indicate broken functionality
+- [ ] #430: Critical Bug: Segmentation fault in pcolormesh plot with array dimension mismatch
+- [ ] #434: Critical: State contamination between figure calls - legend pollution
+- [ ] #436: Critical: Single point plotting failure across all backends
+- [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots
+- [ ] #433: Critical: Numeric limits cause corrupted/blank plot output
+- [ ] #435: Critical: Machine precision coordinate handling produces blank outputs
 
-**🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
+### EPIC: API Foundation Integrity
+- [ ] #417: defect: stub implementations returning error stop
+- [ ] #422: defect: empty/no-op subroutines in multiple modules
+- [ ] #421: defect: file I/O operations without proper validation
+- [ ] #420: defect: potential memory leak - deallocate without error checking
+- [ ] #431: Bug: Inconsistent error reporting - reports success after failure
 
-**User-Facing Issues (Medium Priority)**
-*All user-facing issues moved to DOING*
+### EPIC: Rendering Pipeline Recovery
+- [ ] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content
+- [ ] #312: Legend Demo plots dont show up on github pages
+- [ ] #414: PDF plots completely broken
+- [ ] #413: title in png plots too far right
+- [ ] #429: Bug: Animation save implementation not initialized
 
-**Infrastructure & Documentation Issues (Lower Priority)**
+### EPIC: Examples and Documentation Quality
+- [ ] #408: ASCII plots don't show full curves in basic plots
+- [ ] #409: Limited height of ASCII plots in contour demo
+- [ ] #410: Format string markers (dashed, circles, x) completely non-functional
+- [ ] #411: Axes and labels at wrong positions in scale examples
+- [ ] #412: Streamplot demo too colorful
+- [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
+
+### EPIC: Code Quality and Technical Debt
+- [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
+- [ ] #418: defect: TODO comments indicate incomplete implementations
+- [ ] #419: defect: magic numbers without named constants
+- [ ] #423: defect: 18 disabled test files indicate broken functionality
+- [ ] #424: defect: test file duplication and proliferation
+- [ ] #425: defect: unused module fortplot_forensic_comparison
+- [ ] #426: defect: unused test security module
+- [ ] #427: defect: performance issues - large allocations and inefficient patterns
+- [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
 
 ## DOING (Current Work)
 
-## FUTURE SPRINTS - Systematic Restoration
+## PRODUCT_BACKLOG (Long-term Features)
 
-**Sprint 2: PNG Rendering Quality Restoration**
-- PNG antialiasing system restoration
-- Line styles and markers pipeline fixes
-- Color accuracy improvements
-- [ ] #407: Refactor - forward_contour_filled_params exceeds 50-line target
+- [ ] PNG Rendering Quality Enhancement System
+- [ ] PDF Coordinate System Architecture Overhaul
+- [ ] Cross-Backend Integration Framework
+- [ ] Automated Visual Regression Testing
+- [ ] Performance Optimization Framework
+- [ ] Advanced Animation Pipeline
 
-**Sprint 3: PDF Coordinate System Overhaul**  
-- Coordinate transformation restoration
-- Scaling and positioning fixes
-- Page layout system improvements
-
-**Sprint 4: Cross-Backend Integration**
-- Legend system restoration
-- Consistent rendering across backends
-- Text and label positioning fixes
-
-**Sprint 5: Quality Assurance & Testing**
-- Visual regression testing framework
-- Automated quality metrics
-- Performance impact validation
+## DONE (Completed Product Features)
+- [x] Repository Management and Branch Protection Recovery
+- [x] PLAY Workflow Defect Discovery System
+- [x] Core Rendering Pipeline Foundation
+- [x] Basic Plotting Functionality Restoration
 
 ## DONE (Completed)
 - [x] #403: Refactor - reduce contour function complexity - functions exceed 50-line target - FIXED: Refactored contour_filled and add_contour_filled functions from 65 lines to 22 lines each (well under 50-line target) by extracting reusable helper subroutines for array conversion and parameter forwarding, maintaining full functionality with comprehensive regression testing (PR #406 merged)
