@@ -5,6 +5,7 @@ module fortplot_streamplot_core
     !! following SOLID principles and size constraints.
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_base, only: figure_t
     use fortplot_plot_data, only: arrow_data_t
     use fortplot_streamplot_matplotlib
@@ -183,7 +184,7 @@ contains
                                               u_field, v_field, arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag)
                 
                 ! Skip if velocity is too small
-                if (speed_mag < 1e-10_wp) cycle
+                if (speed_mag < EPSILON_COMPARE) cycle
                 
                 ! Store arrow data
                 call store_arrow_data(fig, arrow_count, arrow_x, arrow_y, arrow_dx, arrow_dy, &

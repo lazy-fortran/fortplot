@@ -1,6 +1,7 @@
 module fortplot_raster
     use iso_c_binding
     use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
@@ -646,7 +647,7 @@ contains
         ! Precompute denominator for barycentric coordinates
         denom = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3)
         
-        if (abs(denom) < 1e-10_wp) return  ! Degenerate triangle
+        if (abs(denom) < EPSILON_COMPARE) return  ! Degenerate triangle
         
         ! Check each pixel in bounding box
         do y = y_min, y_max
@@ -756,7 +757,7 @@ contains
         
         ! Validate input dimensions - z_grid should be (ny, nx)
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
-        if (abs(z_max - z_min) < 1e-10_wp) return
+        if (abs(z_max - z_min) < EPSILON_COMPARE) return
         
         ! Get data bounds
         x_min = minval(x_grid)
