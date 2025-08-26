@@ -4,7 +4,6 @@
 
 
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
-- [ ] #401: Fix - CI test-coverage failing with segfaults in colored_contours and ascii_heatmap_demo (blocks all PR merges)
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
 
@@ -15,7 +14,7 @@
 - [ ] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure)
 
 ## DOING (Current Work)
-*Empty - ready for next issue*
+- [x] #401: Fix - CI test-coverage failing with segfaults in colored_contours and ascii_heatmap_demo (branch: fix-ci-segfaults-401)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
