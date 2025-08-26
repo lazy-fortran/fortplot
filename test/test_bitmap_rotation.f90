@@ -1,6 +1,6 @@
 program test_bitmap_rotation
     use fortplot_text, only: init_text_system, cleanup_text_system, calculate_text_width, calculate_text_height
-    use fortplot_raster, only: render_text_to_bitmap, rotate_bitmap_90_cw
+    use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_cw
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
