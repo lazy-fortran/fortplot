@@ -375,9 +375,10 @@ contains
         
         ! Set label
         if (present(label)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
-        else
-            self%subplots(subplot_idx)%plots(plot_idx)%label = ''
+            if (len_trim(label) > 0) then
+                self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            end if
+            ! If label is empty or not provided, leave it unallocated
         end if
         
         ! Set linestyle 
