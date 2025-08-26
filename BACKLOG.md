@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Critical Foundation Recovery Sprint)
 
 ### EPIC: System Stability and Core Functionality
-- [ ] #434: Critical: State contamination between figure calls - legend pollution
 - [ ] #436: Critical: Single point plotting failure across all backends
 - [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots
 - [ ] #433: Critical: Numeric limits cause corrupted/blank plot output
@@ -46,7 +45,7 @@
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
 
 ## DOING (Current Work)
-- [ ] #430: Critical Bug: Segmentation fault in pcolormesh plot with array dimension mismatch [EPIC: System Stability and Core Functionality]
+- [ ] #434: Critical: State contamination between figure calls - legend pollution [EPIC: System Stability and Core Functionality]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
