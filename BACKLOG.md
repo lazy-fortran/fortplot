@@ -11,10 +11,10 @@
 *All user-facing issues moved to DOING*
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #399: Fix - Strange summary on github pages - unwanted FORD configuration appearing in documentation
 - [ ] #403: Refactor - reduce contour function complexity - functions exceed 50-line target
 
 ## DOING (Current Work)
+- [ ] #399: Fix - Strange summary on github pages - unwanted FORD configuration appearing in documentation
 
 ## FUTURE SPRINTS - Systematic Restoration
 
