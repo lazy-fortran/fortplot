@@ -1,7 +1,7 @@
 program test_ylabel_positioning
     !! Debug Y-axis label rendering step by step
     use fortplot_text, only: init_text_system, render_text_to_image, calculate_text_width, calculate_text_height
-    use fortplot_raster, only: initialize_white_background
+    use fortplot_bitmap, only: initialize_white_background
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
