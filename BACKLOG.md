@@ -22,7 +22,6 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #343: Refactor - extract label positioning constants
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -49,6 +48,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #343: Refactor - extract label positioning constants - FIXED: Label positioning constants extracted to shared module with descriptive names (XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, TICK_MARK_LENGTH) replacing magic numbers for improved maintainability and consistency (PR #370 merged)
 - [x] #342: Refactor - complete symlog tick generation implementation - FIXED: Implemented symlog tick generation with proper exponential positioning and overlap handling in dedicated subroutines (PR #369 merged)
 - [x] #324: Refactor - define epsilon constant for numerical comparisons - FIXED: Extracted epsilon constants to shared fortplot_constants module, eliminating code duplication across multiple modules and creating centralized location for mathematical constants (PR #368 merged)
 - [x] #323: Test - add edge case tests for PDF heatmap color validation - FIXED: Added comprehensive edge case tests validating constant fields, NaN/infinity values, extreme ranges, and epsilon precision in PDF heatmap rendering (PR #367 merged)
