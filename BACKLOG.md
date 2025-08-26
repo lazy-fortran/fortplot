@@ -8,13 +8,13 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
 
 **User-Facing Issues (Medium Priority)**
-- [ ] #377: Enhancement - make finer grid on pcolormesh_demo.html (enhancement)
+*All user-facing issues moved to DOING*
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure)
 
 ## DOING (Current Work)
-*No current work - ready for next task*
+- [x] #377: Enhancement - make finer grid on pcolormesh_demo.html (branch: enhance-finer-grid-377)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
