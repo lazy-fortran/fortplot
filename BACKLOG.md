@@ -21,6 +21,7 @@
 - PNG antialiasing system restoration
 - Line styles and markers pipeline fixes
 - Color accuracy improvements
+- [ ] #407: Refactor - forward_contour_filled_params exceeds 50-line target
 
 **Sprint 3: PDF Coordinate System Overhaul**  
 - Coordinate transformation restoration

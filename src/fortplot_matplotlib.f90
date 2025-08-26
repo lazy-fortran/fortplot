@@ -96,54 +96,11 @@ contains
         call ensure_global_figure_initialized()
         
         ! Convert input arrays to working precision
-        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
-        wp_x = real(x, wp)
-        wp_y = real(y, wp)
-        wp_z = real(z, wp)
+        call convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, wp_levels)
         
-        if (present(levels)) then
-            allocate(wp_levels(size(levels)))
-            wp_levels = real(levels, wp)
-        else
-            allocate(wp_levels(0))
-        end if
-        
-        ! Forward parameters to underlying method using conditional calls for memory safety
-        if (present(levels) .and. present(colormap) .and. present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, show_colorbar=show_colorbar)
-        else if (present(levels) .and. present(colormap) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, label=label)
-        else if (present(colormap) .and. present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, &
-                show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, colormap=colormap)
-        else if (present(levels) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, show_colorbar=show_colorbar)
-        else if (present(levels) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
-        else if (present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, show_colorbar=show_colorbar)
-        else if (present(colormap) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
-        else if (present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar, label=label)
-        else if (present(levels)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels)
-        else if (present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap)
-        else if (present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar)
-        else if (present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
-        else
-            call fig%add_contour_filled(wp_x, wp_y, wp_z)
-        end if
+        ! Forward parameters using helper subroutine
+        call forward_contour_filled_params(fig, wp_x, wp_y, wp_z, wp_levels, &
+                                          colormap, show_colorbar, label)
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
@@ -451,54 +408,11 @@ contains
         call ensure_global_figure_initialized()
         
         ! Convert input arrays to working precision
-        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
-        wp_x = real(x, wp)
-        wp_y = real(y, wp)
-        wp_z = real(z, wp)
+        call convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, wp_levels)
         
-        if (present(levels)) then
-            allocate(wp_levels(size(levels)))
-            wp_levels = real(levels, wp)
-        else
-            allocate(wp_levels(0))
-        end if
-        
-        ! Forward parameters to underlying method using conditional calls for memory safety
-        if (present(levels) .and. present(colormap) .and. present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, show_colorbar=show_colorbar)
-        else if (present(levels) .and. present(colormap) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
-                colormap=colormap, label=label)
-        else if (present(colormap) .and. present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, &
-                show_colorbar=show_colorbar, label=label)
-        else if (present(levels) .and. present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, colormap=colormap)
-        else if (present(levels) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, show_colorbar=show_colorbar)
-        else if (present(levels) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
-        else if (present(colormap) .and. present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, show_colorbar=show_colorbar)
-        else if (present(colormap) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
-        else if (present(show_colorbar) .and. present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar, label=label)
-        else if (present(levels)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels)
-        else if (present(colormap)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap)
-        else if (present(show_colorbar)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, show_colorbar=show_colorbar)
-        else if (present(label)) then
-            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
-        else
-            call fig%add_contour_filled(wp_x, wp_y, wp_z)
-        end if
+        ! Forward parameters using helper subroutine
+        call forward_contour_filled_params(fig, wp_x, wp_y, wp_z, wp_levels, &
+                                          colormap, show_colorbar, label)
         
         deallocate(wp_x, wp_y, wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
@@ -883,5 +797,103 @@ contains
             call log_info('Note: Temporary file will remain at: ' // trim(temp_filename))
         end if
     end subroutine show_viewer_implementation
+
+    ! Helper subroutines for contour parameter forwarding
+    
+    subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, wp_levels)
+        !! Convert contour input arrays to working precision
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(:,:), intent(in) :: z
+        real(8), dimension(:), intent(in), optional :: levels
+        real(wp), allocatable, intent(out) :: wp_x(:), wp_y(:), wp_z(:,:), wp_levels(:)
+        
+        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_z = real(z, wp)
+        
+        if (present(levels)) then
+            allocate(wp_levels(size(levels)))
+            wp_levels = real(levels, wp)
+        else
+            allocate(wp_levels(0))
+        end if
+    end subroutine convert_contour_arrays
+    
+    subroutine forward_contour_filled_params(figure_obj, x, y, z, levels, &
+                                            colormap, show_colorbar, label)
+        !! Forward optional parameters to add_contour_filled with correct combinations
+        type(figure_t), intent(inout) :: figure_obj
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), dimension(:,:), intent(in) :: z
+        real(wp), dimension(:), intent(in) :: levels
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        logical :: has_levels, has_colormap, has_colorbar, has_label
+        
+        ! Check which parameters are present and meaningful
+        has_levels = size(levels) > 0
+        has_colormap = present(colormap)
+        has_colorbar = present(show_colorbar)
+        has_label = present(label)
+        
+        ! Forward based on parameter combinations using nested if structure
+        if (has_levels) then
+            if (has_colormap) then
+                if (has_colorbar) then
+                    if (has_label) then
+                        call figure_obj%add_contour_filled(x, y, z, levels=levels, &
+                            colormap=colormap, show_colorbar=show_colorbar, label=label)
+                    else
+                        call figure_obj%add_contour_filled(x, y, z, levels=levels, &
+                            colormap=colormap, show_colorbar=show_colorbar)
+                    end if
+                else if (has_label) then
+                    call figure_obj%add_contour_filled(x, y, z, levels=levels, &
+                        colormap=colormap, label=label)
+                else
+                    call figure_obj%add_contour_filled(x, y, z, levels=levels, colormap=colormap)
+                end if
+            else if (has_colorbar) then
+                if (has_label) then
+                    call figure_obj%add_contour_filled(x, y, z, levels=levels, &
+                        show_colorbar=show_colorbar, label=label)
+                else
+                    call figure_obj%add_contour_filled(x, y, z, levels=levels, &
+                        show_colorbar=show_colorbar)
+                end if
+            else if (has_label) then
+                call figure_obj%add_contour_filled(x, y, z, levels=levels, label=label)
+            else
+                call figure_obj%add_contour_filled(x, y, z, levels=levels)
+            end if
+        else if (has_colormap) then
+            if (has_colorbar) then
+                if (has_label) then
+                    call figure_obj%add_contour_filled(x, y, z, colormap=colormap, &
+                        show_colorbar=show_colorbar, label=label)
+                else
+                    call figure_obj%add_contour_filled(x, y, z, colormap=colormap, &
+                        show_colorbar=show_colorbar)
+                end if
+            else if (has_label) then
+                call figure_obj%add_contour_filled(x, y, z, colormap=colormap, label=label)
+            else
+                call figure_obj%add_contour_filled(x, y, z, colormap=colormap)
+            end if
+        else if (has_colorbar) then
+            if (has_label) then
+                call figure_obj%add_contour_filled(x, y, z, show_colorbar=show_colorbar, &
+                    label=label)
+            else
+                call figure_obj%add_contour_filled(x, y, z, show_colorbar=show_colorbar)
+            end if
+        else if (has_label) then
+            call figure_obj%add_contour_filled(x, y, z, label=label)
+        else
+            call figure_obj%add_contour_filled(x, y, z)
+        end if
+    end subroutine forward_contour_filled_params
 
 end module fortplot_matplotlib
