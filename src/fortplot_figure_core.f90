@@ -21,6 +21,7 @@ module fortplot_figure_core
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_rendering
     use fortplot_contour_algorithms
+    use fortplot_logging, only: log_error
     implicit none
 
     private
@@ -212,7 +213,10 @@ contains
     end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
-        !! Create a streamline plot
+        !! Streamplot functionality not available on figure instances
+        !! Use the pyplot-style streamplot interface instead:
+        !!   use fortplot_matplotlib, only: streamplot
+        !!   call streamplot(x, y, u, v)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
@@ -220,24 +224,10 @@ contains
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
         
-        ! Validate input dimensions (Windows compatibility fix)
-        if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
-            self%has_error = .true.
-            return
-        end if
-        
-        if (size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
-            self%has_error = .true.
-            return
-        end if
-        
-        ! For now, streamplot is not fully implemented
-        ! This stub provides proper grid validation and creates a dummy plot for tests
-        ! The real implementation will be added later
-        self%has_error = .false.
-        
-        ! Increment plot count to satisfy test expectations
-        self%plot_count = self%plot_count + 1
+        ! Set error state and provide guidance
+        self%has_error = .true.
+        call log_error('streamplot not implemented for figure instances. ' // &
+                      'Use pyplot-style streamplot from fortplot_matplotlib module.')
     end subroutine streamplot
 
     subroutine savefig(self, filename, blocking)

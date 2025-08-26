@@ -15,6 +15,6 @@ module fortplot_global
     public :: global_figure
     
     ! Global figure instance used by pyplot-style API
-    type(figure_t), save, target :: global_figure
+    class(figure_t), allocatable, save, target :: global_figure
     
 end module fortplot_global
