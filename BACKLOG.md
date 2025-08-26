@@ -13,7 +13,6 @@
 **Critical Infrastructure Issues (High Priority)**
 
 **User-Facing Issues (Medium Priority)**
-- [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
 
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #323: Test - add edge case tests for PDF heatmap color validation
@@ -27,6 +26,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
+- [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
 
 ## BLOCKED (Infrastructure Issues)
 
