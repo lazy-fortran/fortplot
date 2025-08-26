@@ -287,8 +287,8 @@ contains
         ! Draw Y-axis ticks (left side of plot area)
         do i = 1, num_y
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                plot_left, y_positions(i), &
-                plot_left - tick_length, y_positions(i)
+                plot_left, canvas_height - y_positions(i), &
+                plot_left - tick_length, canvas_height - y_positions(i)
             ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
         end do
     end subroutine draw_pdf_tick_marks_with_area
@@ -320,7 +320,7 @@ contains
         
         ! Draw Y-axis labels with overlap detection
         call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
-                                                     plot_left - PDF_TICK_SIZE - y_offset)
+                                                     plot_left - PDF_TICK_SIZE - y_offset, canvas_height)
     end subroutine draw_pdf_tick_labels_with_area
 
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
@@ -366,13 +366,13 @@ contains
         end if
     end subroutine draw_pdf_title_and_labels
 
-    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left)
+    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left, canvas_height)
         !! Draw Y-axis labels with overlap detection to prevent clustering
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: y_positions(:)
         character(len=*), intent(in) :: y_labels(:)
         integer, intent(in) :: num_y
-        real(wp), intent(in) :: plot_left
+        real(wp), intent(in) :: plot_left, canvas_height
         
         real(wp) :: last_y_drawn
         real(wp) :: min_spacing
@@ -383,7 +383,7 @@ contains
         last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn
         
         do i = 1, num_y
-            label_y = y_positions(i) - 3.0_wp  ! Vertically center
+            label_y = canvas_height - y_positions(i) - 3.0_wp  ! Convert to PDF coordinates and vertically center
             
             ! Only draw if sufficient spacing from last label
             if (abs(label_y - last_y_drawn) >= min_spacing) then
