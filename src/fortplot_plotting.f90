@@ -555,7 +555,7 @@ contains
         self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y
         self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_surface_plot_data
@@ -588,7 +588,7 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%contour_levels = levels
         end if
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_contour_plot_data
@@ -630,7 +630,7 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%show_colorbar = show_colorbar
         end if
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_colored_contour_plot_data
@@ -712,7 +712,7 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%color = color
         end if
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_bar_plot_data
@@ -775,7 +775,7 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%color = color
         end if
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_histogram_plot_data
@@ -814,7 +814,7 @@ contains
             self%subplots(subplot_idx)%plots(plot_idx)%color = color
         end if
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_boxplot_data
@@ -889,7 +889,7 @@ contains
         
         ! Note: alpha not directly supported in plot_data_t structure
         
-        if (present(label)) then
+        if (present(label) .and. len_trim(label) > 0) then
             self%subplots(subplot_idx)%plots(plot_idx)%label = label
         end if
     end subroutine add_scatter_plot_data
