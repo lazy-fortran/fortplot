@@ -12,6 +12,7 @@ module fortplot_rendering
     use fortplot_contour_algorithms
     use fortplot_plot_data
     use fortplot_format_parser, only: parse_format_string
+    use fortplot_coordinate_validation, only: validate_coordinate_arrays
     implicit none
     
     private
@@ -25,6 +26,7 @@ module fortplot_rendering
     public :: transform_quad_to_screen
     public :: draw_filled_quad
     public :: draw_quad_edges
+    public :: draw_single_point_marker
     
 contains
     
@@ -70,10 +72,17 @@ contains
             call backend%set_line_style(plot_data%linestyle)
         end if
         
-        ! Draw the line segments
-        do i = 1, n-1
-            call backend%line(x_scaled(i), y_scaled(i), x_scaled(i+1), y_scaled(i+1))
-        end do
+        ! Draw the line segments or handle single point
+        if (n == 1) then
+            ! For single point, draw a small visible mark
+            ! This ensures single points are visible even without explicit markers
+            call draw_single_point_marker(backend, x_scaled(1), y_scaled(1))
+        else
+            ! Draw connected line segments for multiple points
+            do i = 1, n-1
+                call backend%line(x_scaled(i), y_scaled(i), x_scaled(i+1), y_scaled(i+1))
+            end do
+        end if
         
         deallocate(x_scaled, y_scaled)
     end subroutine render_line_plot
@@ -533,4 +542,37 @@ contains
         call backend%line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
     end subroutine draw_quad_edges
     
+    subroutine draw_single_point_marker(backend, x, y)
+        !! Draw a visible marker for a single point
+        !! This ensures single points are visible even without explicit markers
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: x, y
+        
+        real(wp) :: marker_size
+        real(wp) :: data_range_x, data_range_y
+        
+        ! Calculate marker size based on the current data range to ensure visibility
+        ! This makes the marker a reasonable fraction of the plot area
+        data_range_x = abs(backend%x_max - backend%x_min)
+        data_range_y = abs(backend%y_max - backend%y_min)
+        
+        ! Use 1% of the smaller data range as marker size
+        marker_size = 0.01_wp * min(data_range_x, data_range_y)
+        
+        ! Ensure minimum visibility (in case data range is very small)
+        if (marker_size < epsilon(1.0_wp) * 1000) then
+            marker_size = 0.1_wp * max(data_range_x, data_range_y)
+        end if
+        
+        ! Draw a small cross or plus sign centered at the point
+        ! This works across all backends (PNG, PDF, ASCII)
+        
+        ! Horizontal line of the cross
+        call backend%line(x - marker_size, y, x + marker_size, y)
+        
+        ! Vertical line of the cross
+        call backend%line(x, y - marker_size, x, y + marker_size)
+        
+    end subroutine draw_single_point_marker
+
 end module fortplot_rendering

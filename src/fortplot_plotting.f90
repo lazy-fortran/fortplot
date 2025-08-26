@@ -15,9 +15,10 @@ module fortplot_plotting
     use fortplot_colors, only: parse_color, color_t
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_streamplot_matplotlib
-    use fortplot_logging, only: log_warning
-    use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT, log_error
+    use fortplot_logging, only: log_warning, log_error, log_info
+    use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
     use fortplot_format_parser, only: parse_format_string
+    use fortplot_coordinate_validation, only: validate_coordinate_arrays, coordinate_validation_result_t
 
     implicit none
 
@@ -446,7 +447,7 @@ contains
     ! Private implementation subroutines
 
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker)
-        !! Add line plot data to internal storage
+        !! Add line plot data to internal storage with comprehensive validation
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker
@@ -455,6 +456,20 @@ contains
         integer :: plot_idx, color_idx, subplot_idx
         real(wp) :: rgb(3)
         logical :: success
+        type(coordinate_validation_result_t) :: validation
+        character(len=64) :: suggested_marker
+        
+        ! Validate coordinate arrays (Issue #436 fix)
+        validation = validate_coordinate_arrays(x, y, "add_line_plot_data")
+        if (.not. validation%is_valid) then
+            call log_error(trim(validation%message))
+            return  ! Skip adding invalid data
+        end if
+        
+        ! For single points, suggest using markers for better visibility
+        if (validation%is_single_point .and. .not. present(marker)) then
+            call log_warning("Single point detected - consider adding markers for better visibility")
+        end if
         
         ! Get current subplot
         subplot_idx = self%current_subplot
