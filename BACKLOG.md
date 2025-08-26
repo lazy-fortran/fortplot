@@ -15,7 +15,6 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #342: Refactor - complete symlog tick generation implementation
 - [ ] #343: Refactor - extract label positioning constants
 - [ ] #344: Refactor - add format threshold constants in axes module
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
@@ -24,7 +23,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #324: Refactor - define epsilon constant for numerical comparisons
+- [ ] #342: Refactor - complete symlog tick generation implementation
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -51,6 +50,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #324: Refactor - define epsilon constant for numerical comparisons - FIXED: Extracted epsilon constants to shared fortplot_constants module, eliminating code duplication across multiple modules and creating centralized location for mathematical constants (PR #368 merged)
 - [x] #323: Test - add edge case tests for PDF heatmap color validation - FIXED: Added comprehensive edge case tests validating constant fields, NaN/infinity values, extreme ranges, and epsilon precision in PDF heatmap rendering (PR #367 merged)
 - [x] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/ - FIXED: Removed duplicate 'project: fortplotlib' line from doc.md that was creating redundant header on GitHub Pages, documented FORD configuration format to prevent recurrence (PR #366 merged)
 - [x] #327: Fix - MP4 link not showing on animation.html - FIXED: Corrected incorrect reference from animation.mp4 to animated_plot.mp4 in documentation examples (PR #365 merged)
