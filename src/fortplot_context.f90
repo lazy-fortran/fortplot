@@ -26,6 +26,7 @@ module fortplot_context
         procedure(text_interface), deferred :: text
         procedure(save_interface), deferred :: save
         procedure(line_width_interface), deferred :: set_line_width
+        procedure(line_style_interface), deferred :: set_line_style
         procedure(marker_interface), deferred :: draw_marker
         procedure(marker_colors_interface), deferred :: set_marker_colors
         procedure(marker_colors_alpha_interface), deferred :: set_marker_colors_with_alpha
@@ -78,6 +79,12 @@ module fortplot_context
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: width
         end subroutine line_width_interface
+
+        subroutine line_style_interface(this, style)
+            import :: plot_context
+            class(plot_context), intent(inout) :: this
+            character(len=*), intent(in) :: style
+        end subroutine line_style_interface
 
         subroutine marker_interface(this, x, y, style)
             import :: plot_context, wp

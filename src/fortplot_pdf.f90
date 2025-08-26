@@ -41,6 +41,7 @@ module fortplot_pdf
         procedure :: text => draw_pdf_text_wrapper
         procedure :: save => write_pdf_file_facade
         procedure :: set_line_width => set_pdf_line_width
+        procedure :: set_line_style => set_pdf_line_style
         procedure :: save_graphics_state => save_graphics_state_wrapper
         procedure :: restore_graphics_state => restore_graphics_state_wrapper
         procedure :: draw_marker => draw_pdf_marker_wrapper
@@ -118,6 +119,28 @@ contains
         call this%stream_writer%set_vector_line_width(width)
         call this%core_ctx%set_line_width(width)
     end subroutine set_pdf_line_width
+    
+    subroutine set_pdf_line_style(this, style)
+        class(pdf_context), intent(inout) :: this
+        character(len=*), intent(in) :: style
+        character(len=64) :: dash_pattern
+        
+        ! Convert line style to PDF dash pattern
+        select case (trim(style))
+        case ('-', 'solid')
+            dash_pattern = '[] 0 d'  ! Solid line (empty dash array)
+        case ('--', 'dashed')
+            dash_pattern = '[15 5] 0 d'  ! 15 units on, 5 units off
+        case (':', 'dotted')
+            dash_pattern = '[2 5] 0 d'  ! 2 units on, 5 units off
+        case ('-.', 'dashdot')
+            dash_pattern = '[15 5 2 5] 0 d'  ! dash-dot pattern
+        case default
+            dash_pattern = '[] 0 d'  ! Default to solid
+        end select
+        
+        call this%stream_writer%add_to_stream(trim(dash_pattern))
+    end subroutine set_pdf_line_style
     
     subroutine draw_pdf_text_wrapper(this, x, y, text)
         class(pdf_context), intent(inout) :: this
