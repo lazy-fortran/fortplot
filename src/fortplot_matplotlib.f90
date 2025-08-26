@@ -91,19 +91,95 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
         
+        real(wp), allocatable :: wp_x(:), wp_y(:), wp_z(:,:), wp_levels(:)
+        
         call ensure_global_figure_initialized()
-        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
+        
+        ! Convert input arrays to working precision
+        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_z = real(z, wp)
+        
+        if (present(levels)) then
+            allocate(wp_levels(size(levels)))
+            wp_levels = real(levels, wp)
+        end if
+        
+        ! Forward ALL parameters to underlying method
+        if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                                       colormap=colormap, label=label)
+        else if (present(levels)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
+        else if (present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, &
+                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
+        else
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
+        end if
+        
+        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_levels)) deallocate(wp_levels)
     end subroutine contour_filled
 
-    subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
+    subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label, &
+                         vmin, vmax, edgecolors, linewidths)
         !! Add a pseudocolor mesh plot to the global figure (pyplot-style)
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         character(len=*), intent(in), optional :: shading, colormap, label
         logical, intent(in), optional :: show_colorbar
+        real(8), intent(in), optional :: vmin, vmax
+        real(8), dimension(3), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
+        
+        real(wp), allocatable :: wp_x(:), wp_y(:), wp_z(:,:)
+        real(wp) :: wp_vmin, wp_vmax, wp_linewidths
+        real(wp) :: wp_edgecolors(3)
         
         call ensure_global_figure_initialized()
-        call fig%add_pcolormesh(x, y, z)
+        
+        ! Convert input arrays to working precision
+        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_z = real(z, wp)
+        
+        ! Convert optional parameters to working precision
+        if (present(vmin)) then
+            wp_vmin = real(vmin, wp)
+        end if
+        if (present(vmax)) then
+            wp_vmax = real(vmax, wp)
+        end if
+        if (present(edgecolors)) then
+            wp_edgecolors = real(edgecolors, wp)
+        end if
+        if (present(linewidths)) then
+            wp_linewidths = real(linewidths, wp)
+        end if
+        
+        ! Forward ALL parameters to underlying method
+        if (present(vmin) .and. present(vmax) .and. present(edgecolors) .and. present(linewidths)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
+                                   vmin=wp_vmin, vmax=wp_vmax, &
+                                   edgecolors=wp_edgecolors, linewidths=wp_linewidths)
+        else if (present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
+                                   vmin=wp_vmin, vmax=wp_vmax)
+        else if (present(colormap)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
+        else
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
+        end if
+        
+        deallocate(wp_x, wp_y, wp_z)
     end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
@@ -346,19 +422,95 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
         
+        real(wp), allocatable :: wp_x(:), wp_y(:), wp_z(:,:), wp_levels(:)
+        
         call ensure_global_figure_initialized()
-        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
+        
+        ! Convert input arrays to working precision
+        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_z = real(z, wp)
+        
+        if (present(levels)) then
+            allocate(wp_levels(size(levels)))
+            wp_levels = real(levels, wp)
+        end if
+        
+        ! Forward ALL parameters to underlying method
+        if (present(levels) .and. present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(levels) .and. present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, &
+                                       colormap=colormap, label=label)
+        else if (present(levels)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, levels=wp_levels, label=label)
+        else if (present(colormap) .and. present(show_colorbar)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, &
+                                       colormap=colormap, show_colorbar=show_colorbar, label=label)
+        else if (present(colormap)) then
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, colormap=colormap, label=label)
+        else
+            call fig%add_contour_filled(wp_x, wp_y, wp_z, label=label)
+        end if
+        
+        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_levels)) deallocate(wp_levels)
     end subroutine add_contour_filled
 
-    subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
+    subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label, &
+                             vmin, vmax, edgecolors, linewidths)
         !! Add a pseudocolor mesh plot to the global figure
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         character(len=*), intent(in), optional :: shading, colormap, label
         logical, intent(in), optional :: show_colorbar
+        real(8), intent(in), optional :: vmin, vmax
+        real(8), dimension(3), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
+        
+        real(wp), allocatable :: wp_x(:), wp_y(:), wp_z(:,:)
+        real(wp) :: wp_vmin, wp_vmax, wp_linewidths
+        real(wp) :: wp_edgecolors(3)
         
         call ensure_global_figure_initialized()
-        call fig%add_pcolormesh(x, y, z)
+        
+        ! Convert input arrays to working precision
+        allocate(wp_x(size(x)), wp_y(size(y)), wp_z(size(z,1), size(z,2)))
+        wp_x = real(x, wp)
+        wp_y = real(y, wp)
+        wp_z = real(z, wp)
+        
+        ! Convert optional parameters to working precision
+        if (present(vmin)) then
+            wp_vmin = real(vmin, wp)
+        end if
+        if (present(vmax)) then
+            wp_vmax = real(vmax, wp)
+        end if
+        if (present(edgecolors)) then
+            wp_edgecolors = real(edgecolors, wp)
+        end if
+        if (present(linewidths)) then
+            wp_linewidths = real(linewidths, wp)
+        end if
+        
+        ! Forward ALL parameters to underlying method
+        if (present(vmin) .and. present(vmax) .and. present(edgecolors) .and. present(linewidths)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
+                                   vmin=wp_vmin, vmax=wp_vmax, &
+                                   edgecolors=wp_edgecolors, linewidths=wp_linewidths)
+        else if (present(vmin) .and. present(vmax)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap, &
+                                   vmin=wp_vmin, vmax=wp_vmax)
+        else if (present(colormap)) then
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z, colormap=colormap)
+        else
+            call fig%add_pcolormesh(wp_x, wp_y, wp_z)
+        end if
+        
+        deallocate(wp_x, wp_y, wp_z)
     end subroutine add_pcolormesh
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
