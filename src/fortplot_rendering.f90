@@ -40,6 +40,11 @@ contains
         real(wp), allocatable :: x_scaled(:), y_scaled(:)
         integer :: i, n
         
+        ! Validate input data
+        if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) return
+        if (size(plot_data%x) == 0 .or. size(plot_data%y) == 0) return
+        if (size(plot_data%x) /= size(plot_data%y)) return
+        
         n = size(plot_data%x)
         allocate(x_scaled(n), y_scaled(n))
         
@@ -73,6 +78,11 @@ contains
         
         if (.not. allocated(plot_data%marker)) return
         if (len_trim(plot_data%marker) == 0) return
+        
+        ! Validate input data
+        if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) return
+        if (size(plot_data%x) == 0 .or. size(plot_data%y) == 0) return
+        if (size(plot_data%x) /= size(plot_data%y)) return
         
         ! Draw markers
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
