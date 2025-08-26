@@ -33,6 +33,11 @@
 - [ ] #438: defect: Documentation consolidation for Critical Foundation Recovery Sprint
 
 ### EPIC: Code Quality and Technical Debt
+- [ ] #443: Critical: fortplot_figure_core.f90 exceeds 1000-line hard limit (1258 lines)
+- [ ] #444: defect: 8 stub implementations with error_stop in fortplot_matplotlib.f90
+- [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations
+- [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown
+- [ ] #447: defect: Memory safety issues identified in 7 test files
 - [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
 - [ ] #418: defect: TODO comments indicate incomplete implementations
 - [ ] #419: defect: magic numbers without named constants
