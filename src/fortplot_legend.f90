@@ -43,6 +43,7 @@ module fortplot_legend
         procedure :: add_entry => legend_add_entry
         procedure :: render => legend_render
         procedure :: set_position => legend_set_position
+        procedure :: clear => legend_clear
     end type legend_t
     
 contains
@@ -91,6 +92,17 @@ contains
         call move_alloc(temp_entries, this%entries)
         this%num_entries = new_size
     end subroutine legend_add_entry
+    
+    subroutine legend_clear(this)
+        !! Clear all legend entries
+        class(legend_t), intent(inout) :: this
+        
+        if (allocated(this%entries)) then
+            deallocate(this%entries)
+        end if
+        allocate(this%entries(0))
+        this%num_entries = 0
+    end subroutine legend_clear
     
     subroutine legend_set_position(this, location)
         !! Set legend position using string interface
