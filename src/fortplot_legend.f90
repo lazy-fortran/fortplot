@@ -283,8 +283,7 @@ contains
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
-        real(wp) :: total_height, legend_width, legend_height, margin_x, margin_y
-        real(wp) :: data_width, data_height, legend_width_data, margin_x_data, margin_y_data
+        real(wp) :: data_width, data_height
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
