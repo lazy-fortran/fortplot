@@ -8,7 +8,7 @@ module fortplot_figure_core
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales
-    use fortplot_utils, only: initialize_backend
+    use fortplot_utils, only: initialize_backend, get_backend_from_filename
     use fortplot_axes
     use fortplot_colormap
     use fortplot_pcolormesh
@@ -227,22 +227,51 @@ contains
 
     subroutine savefig(self, filename, blocking)
         !! Save figure to file
+        !! Automatically switches backend based on file extension (Issue #323 fix)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        character(len=:), allocatable :: ext
+        character(len=20) :: required_backend, current_backend
         logical :: block
+        logical :: need_backend_switch
         
         block = .true.
         if (present(blocking)) block = blocking
         
-        ! Render if not already rendered
+        ! Determine required backend from filename extension
+        required_backend = get_backend_from_filename(filename)
+        
+        ! Determine current backend type
+        select type (backend => self%backend)
+        type is (png_context)
+            current_backend = 'png'
+        type is (pdf_context)
+            current_backend = 'pdf'
+        type is (ascii_context)
+            current_backend = 'ascii'
+        class default
+            current_backend = 'unknown'
+        end select
+        
+        ! Check if we need to switch backends
+        need_backend_switch = (trim(required_backend) /= trim(current_backend))
+        
+        if (need_backend_switch) then
+            ! Deallocate current backend and initialize correct one
+            if (allocated(self%backend)) deallocate(self%backend)
+            call initialize_backend(self%backend, required_backend, self%width, self%height)
+            
+            ! Force re-rendering with new backend
+            self%rendered = .false.
+        end if
+        
+        ! Render if not already rendered (or if we switched backends)
         if (.not. self%rendered) then
             call self%render_figure()
         end if
         
-        ! Save the figure
+        ! Save the figure with correct backend
         call self%backend%save(filename)
     end subroutine savefig
 
