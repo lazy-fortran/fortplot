@@ -1,5 +1,5 @@
 program test_system_fpm_example
-    use fortplot_security, only: safe_check_program_available, safe_check_program_available
+    use fortplot_security, only: safe_check_program_available
     implicit none
     integer :: exit_code
     character(len=256) :: cwd
