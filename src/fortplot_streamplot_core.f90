@@ -14,7 +14,7 @@ module fortplot_streamplot_core
     implicit none
 
     private
-    public :: setup_streamplot_parameters, generate_streamlines
+    public :: setup_streamplot_parameters, generate_streamlines, add_streamline_to_figure
 
 contains
 
@@ -289,12 +289,41 @@ contains
                        real(size(y_grid) - 1, wp) + y_grid(1)
         end do
         
-        ! Add as regular plot
-        ! Note: This needs to be implemented properly by calling the plotting module
-        ! call add_plot(fig, traj_x, traj_y, color_rgb=line_color, linestyle='-')
+        ! Add trajectory as line plot to figure
+        call add_streamline_to_figure(fig, traj_x, traj_y, line_color)
         
         deallocate(traj_x, traj_y)
     end subroutine convert_and_add_trajectory
+
+    subroutine add_streamline_to_figure(fig, traj_x, traj_y, line_color)
+        !! Add streamline trajectory to figure as line plot
+        use fortplot_plot_data, only: PLOT_TYPE_LINE
+        
+        class(figure_t), intent(inout) :: fig
+        real(wp), intent(in) :: traj_x(:), traj_y(:)
+        real(wp), intent(in) :: line_color(3)
+        
+        integer :: plot_idx, subplot_idx, color_idx
+        
+        ! Get current subplot
+        subplot_idx = fig%current_subplot
+        plot_idx = fig%subplots(subplot_idx)%plot_count + 1
+        fig%subplots(subplot_idx)%plot_count = plot_idx
+        
+        ! Set plot type and data
+        fig%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        
+        ! Store trajectory data
+        allocate(fig%subplots(subplot_idx)%plots(plot_idx)%x(size(traj_x)))
+        allocate(fig%subplots(subplot_idx)%plots(plot_idx)%y(size(traj_y)))
+        fig%subplots(subplot_idx)%plots(plot_idx)%x = traj_x
+        fig%subplots(subplot_idx)%plots(plot_idx)%y = traj_y
+        
+        ! Set streamline properties
+        fig%subplots(subplot_idx)%plots(plot_idx)%linestyle = '-'
+        fig%subplots(subplot_idx)%plots(plot_idx)%marker = ''
+        fig%subplots(subplot_idx)%plots(plot_idx)%color = line_color
+    end subroutine add_streamline_to_figure
 
     subroutine interpolate_velocity_at_point(x_pos, y_pos, x_grid, y_grid, u_field, v_field, &
                                            u_interp, v_interp, speed_mag)

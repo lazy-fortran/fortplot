@@ -23,7 +23,7 @@ module fortplot_plotting
     private
     public :: add_plot, add_3d_plot, add_scatter_2d, add_scatter_3d, add_surface
     public :: add_contour, add_contour_filled, add_pcolormesh, bar, barh, hist, boxplot
-    public :: streamplot, errorbar, add_text_annotation, add_arrow_annotation
+    public :: streamplot, streamplot_impl, errorbar, add_text_annotation, add_arrow_annotation
 
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -276,6 +276,7 @@ contains
         call setup_streamplot_parameters(self, x, y, u, v, density, color, linewidth, &
                                         rtol, atol, max_time, arrowsize, arrowstyle)
     end subroutine streamplot_impl
+
 
     subroutine errorbar_impl(self, x, y, xerr, yerr, xerr_lower, xerr_upper, &
                             yerr_lower, yerr_upper, linestyle, marker, color, label)
@@ -912,14 +913,17 @@ contains
     subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, linewidth, &
                                           rtol, atol, max_time, arrowsize, arrowstyle)
         !! Delegate to streamplot core module
+        use fortplot_streamplot_core, only: streamplot_core_setup => setup_streamplot_parameters
+        
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth, rtol, atol, max_time, arrowsize
         real(wp), intent(in), optional :: color(3)
         character(len=*), intent(in), optional :: arrowstyle
         
-        ! Delegate to streamplot core
-        ! (This would be a proper delegation in the complete implementation)
+        ! Delegate to streamplot core implementation
+        call streamplot_core_setup(self, x, y, u, v, density, color, linewidth, &
+                                  rtol, atol, max_time, arrowsize, arrowstyle)
     end subroutine setup_streamplot_parameters
 
 end module fortplot_plotting
