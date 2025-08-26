@@ -83,6 +83,13 @@ module fortplot_figure_core
         ! Streamline data
         type(plot_data_t), allocatable :: streamlines(:)
         logical :: has_error = .false.
+        
+        ! Grid settings
+        logical :: grid_enabled = .false.
+        character(len=10) :: grid_which = 'both'     ! 'major', 'minor', 'both'
+        character(len=1) :: grid_axis = 'b'          ! 'x', 'y', 'b' (both)
+        real(wp) :: grid_alpha = 0.3_wp
+        character(len=10) :: grid_linestyle = '-'
 
     contains
         procedure :: initialize
@@ -104,6 +111,8 @@ module fortplot_figure_core
         procedure :: legend => figure_legend
         procedure :: show
         procedure :: clear_streamlines
+        procedure :: grid
+        procedure :: hist
         procedure, private :: add_line_plot_data
         procedure, private :: add_contour_plot_data
         procedure, private :: add_colored_contour_plot_data
@@ -116,6 +125,7 @@ module fortplot_figure_core
         procedure, private :: render_figure_background
         procedure, private :: render_figure_axes
         procedure, private :: render_all_plots
+        procedure, private :: render_grid_lines
         procedure, private :: generate_default_contour_levels
         final :: destroy
     end type figure_t
@@ -318,6 +328,168 @@ contains
         ! Display the figure
         call self%backend%save("terminal")
     end subroutine show
+
+    subroutine grid(self, enabled, which, axis, alpha, linestyle)
+        !! Enable/disable and configure grid lines
+        !! 
+        !! Arguments:
+        !!   enabled - logical, optional: Turn grid on/off
+        !!   which - character, optional: 'major', 'minor', 'both' 
+        !!   axis - character, optional: 'x', 'y', 'both'
+        !!   alpha - real, optional: Grid line transparency (0-1)
+        !!   linestyle - character, optional: Grid line style
+        class(figure_t), intent(inout) :: self
+        logical, intent(in), optional :: enabled
+        character(len=*), intent(in), optional :: which, axis, linestyle
+        real(wp), intent(in), optional :: alpha
+        
+        ! Handle boolean toggle syntax: fig%grid(.true.)
+        if (present(enabled)) then
+            self%grid_enabled = enabled
+        end if
+        
+        ! Handle string-based which parameter
+        if (present(which)) then
+            self%grid_which = which
+            self%grid_enabled = .true.  ! Implicitly enable grid
+        end if
+        
+        ! Handle axis parameter with flexible input
+        if (present(axis)) then
+            select case(trim(axis))
+            case('x')
+                self%grid_axis = 'x'
+            case('y') 
+                self%grid_axis = 'y'
+            case('both', 'b')
+                self%grid_axis = 'b'
+            case default
+                self%grid_axis = 'b'
+            end select
+            self%grid_enabled = .true.  ! Implicitly enable grid
+        end if
+        
+        ! Handle alpha parameter
+        if (present(alpha)) then
+            self%grid_alpha = max(0.0_wp, min(1.0_wp, alpha))
+            self%grid_enabled = .true.  ! Implicitly enable grid
+        end if
+        
+        ! Handle linestyle parameter
+        if (present(linestyle)) then
+            self%grid_linestyle = linestyle
+            self%grid_enabled = .true.  ! Implicitly enable grid
+        end if
+        
+    end subroutine grid
+
+    subroutine hist(self, data, bins, density, label)
+        !! Create a histogram plot
+        !! 
+        !! Arguments:
+        !!   data - real array: Input data values to create histogram from
+        !!   bins - integer, optional: Number of bins (default 10)
+        !!   density - logical, optional: Normalize to density (default false)  
+        !!   label - character, optional: Legend label
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        
+        integer :: n_bins, i, bin_index, n_data
+        real(wp) :: data_min, data_max, bin_width, bin_center
+        real(wp), allocatable :: bin_edges(:), bin_counts(:), bin_centers(:)
+        real(wp), allocatable :: x_data(:), y_data(:)
+        logical :: normalize_density
+        real(wp) :: total_area
+        character(len=:), allocatable :: hist_label
+        
+        ! Handle empty data
+        n_data = size(data)
+        if (n_data == 0) then
+            return
+        end if
+        
+        ! Set parameters
+        n_bins = 10
+        if (present(bins)) n_bins = max(1, bins)
+        
+        normalize_density = .false.
+        if (present(density)) normalize_density = density
+        
+        hist_label = ''
+        if (present(label)) hist_label = label
+        
+        ! Find data range
+        data_min = minval(data)
+        data_max = maxval(data)
+        
+        ! Handle case where all data points are the same
+        if (abs(data_max - data_min) < epsilon(1.0_wp)) then
+            data_min = data_min - 0.5_wp
+            data_max = data_max + 0.5_wp
+        end if
+        
+        ! Create bin edges and centers
+        allocate(bin_edges(n_bins + 1))
+        allocate(bin_counts(n_bins))
+        allocate(bin_centers(n_bins))
+        
+        bin_width = (data_max - data_min) / real(n_bins, wp)
+        
+        do i = 1, n_bins + 1
+            bin_edges(i) = data_min + real(i - 1, wp) * bin_width
+        end do
+        
+        do i = 1, n_bins
+            bin_centers(i) = data_min + (real(i, wp) - 0.5_wp) * bin_width
+        end do
+        
+        ! Count data points in each bin
+        bin_counts = 0.0_wp
+        do i = 1, n_data
+            bin_index = min(n_bins, max(1, int((data(i) - data_min) / bin_width) + 1))
+            bin_counts(bin_index) = bin_counts(bin_index) + 1.0_wp
+        end do
+        
+        ! Normalize for density if requested
+        if (normalize_density) then
+            total_area = real(n_data, wp) * bin_width
+            bin_counts = bin_counts / total_area
+        end if
+        
+        ! Create histogram as a bar plot (using lines to form rectangles)
+        ! We'll create the histogram as connected line segments forming rectangles
+        allocate(x_data(4 * n_bins + 1), y_data(4 * n_bins + 1))
+        
+        ! Create line segments for each bar
+        do i = 1, n_bins
+            ! Bottom left corner
+            x_data(4*(i-1) + 1) = bin_edges(i)
+            y_data(4*(i-1) + 1) = 0.0_wp
+            
+            ! Top left corner
+            x_data(4*(i-1) + 2) = bin_edges(i)
+            y_data(4*(i-1) + 2) = bin_counts(i)
+            
+            ! Top right corner
+            x_data(4*(i-1) + 3) = bin_edges(i + 1)
+            y_data(4*(i-1) + 3) = bin_counts(i)
+            
+            ! Bottom right corner
+            x_data(4*(i-1) + 4) = bin_edges(i + 1)
+            y_data(4*(i-1) + 4) = 0.0_wp
+        end do
+        
+        ! Close the path back to origin
+        x_data(4 * n_bins + 1) = bin_edges(1)
+        y_data(4 * n_bins + 1) = 0.0_wp
+        
+        ! Add as line plot
+        call self%add_plot(x_data, y_data, label=hist_label)
+        
+    end subroutine hist
 
     subroutine set_xlabel(self, label)
         !! Set x-axis label
@@ -860,6 +1032,11 @@ contains
         !! Render figure axes and labels
         class(figure_t), intent(inout) :: self
         
+        ! Draw grid lines before axes (so axes are on top)
+        if (self%grid_enabled) then
+            call self%render_grid_lines()
+        end if
+        
         ! Draw axes using backend's polymorphic method
         call self%backend%draw_axes_and_labels_backend(self%xscale, self%yscale, &
                                                       self%symlog_threshold, &
@@ -908,6 +1085,89 @@ contains
             end select
         end do
     end subroutine render_all_plots
+
+    subroutine render_grid_lines(self)
+        !! Render grid lines on the figure
+        class(figure_t), intent(inout) :: self
+        
+        real(wp) :: major_ticks(50)  ! Fixed size array like in axes module
+        real(wp) :: tick_val, x1, y1, x2, y2, alpha_val
+        integer :: i, plot_width, plot_height, num_ticks
+        integer :: plot_x, plot_y
+        real(wp) :: grid_color(3)
+        real(wp) :: dummy_minor_ticks(50)  ! Placeholder
+        
+        ! Calculate plot area in pixels
+        plot_x = nint(self%margin_left * self%width)
+        plot_y = nint(self%margin_bottom * self%height)
+        plot_width = nint((1.0_wp - self%margin_left - self%margin_right) * self%width)
+        plot_height = nint((1.0_wp - self%margin_bottom - self%margin_top) * self%height)
+        
+        ! Set grid color (gray) and alpha
+        grid_color = [0.7_wp, 0.7_wp, 0.7_wp]
+        alpha_val = self%grid_alpha
+        
+        ! Draw X-axis grid lines (vertical lines)
+        if (self%grid_axis == 'x' .or. self%grid_axis == 'b') then
+            ! Get major ticks for x-axis
+            call compute_scale_ticks(self%xscale, self%x_min, self%x_max, &
+                                   self%symlog_threshold, major_ticks, num_ticks)
+            
+            ! Draw major tick grid lines
+            if (self%grid_which == 'major' .or. self%grid_which == 'both') then
+                do i = 1, num_ticks
+                    tick_val = major_ticks(i)
+                    if (tick_val >= self%x_min .and. tick_val <= self%x_max) then
+                        ! Transform tick value to plot coordinates
+                        tick_val = apply_scale_transform(tick_val, self%xscale, self%symlog_threshold)
+                        
+                        ! Convert to pixel coordinates
+                        x1 = plot_x + (tick_val - self%x_min_transformed) / &
+                             (self%x_max_transformed - self%x_min_transformed) * plot_width
+                        y1 = real(plot_y, wp)
+                        x2 = x1
+                        y2 = real(plot_y + plot_height, wp)
+                        
+                        ! Draw grid line
+                        call self%backend%color(grid_color(1), grid_color(2), grid_color(3))
+                        call self%backend%line(x1, y1, x2, y2)
+                    end if
+                end do
+            end if
+        end if
+        
+        ! Draw Y-axis grid lines (horizontal lines)
+        if (self%grid_axis == 'y' .or. self%grid_axis == 'b') then
+            ! Get major ticks for y-axis
+            call compute_scale_ticks(self%yscale, self%y_min, self%y_max, &
+                                   self%symlog_threshold, major_ticks, num_ticks)
+            
+            ! Draw major tick grid lines
+            if (self%grid_which == 'major' .or. self%grid_which == 'both') then
+                do i = 1, num_ticks
+                    tick_val = major_ticks(i)
+                    if (tick_val >= self%y_min .and. tick_val <= self%y_max) then
+                        ! Transform tick value to plot coordinates
+                        tick_val = apply_scale_transform(tick_val, self%yscale, self%symlog_threshold)
+                        
+                        ! Convert to pixel coordinates
+                        x1 = real(plot_x, wp)
+                        y1 = plot_y + (tick_val - self%y_min_transformed) / &
+                             (self%y_max_transformed - self%y_min_transformed) * plot_height
+                        x2 = real(plot_x + plot_width, wp)
+                        y2 = y1
+                        
+                        ! Draw grid line
+                        call self%backend%color(grid_color(1), grid_color(2), grid_color(3))
+                        call self%backend%line(x1, y1, x2, y2)
+                    end if
+                end do
+            end if
+        end if
+        
+        ! No cleanup needed for fixed arrays
+        
+    end subroutine render_grid_lines
 
     function get_file_extension(filename) result(ext)
         !! Extract file extension from filename
