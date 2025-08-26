@@ -690,7 +690,6 @@ subroutine streamplot(self, x, y, u, v, density, color, linewidth, &
 - scatter_demo - 2D scatter plots
 - show_viewer_demo - Display plot in viewer
 - smart_show_demo - Smart show functionality
-- stateful_streamplot - Streamplot with stateful API
 - streamplot_demo - Vector field visualization
 - unicode_demo - Unicode text support
 

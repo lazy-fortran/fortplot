@@ -12,6 +12,13 @@
 - [x] #330: Fix - Old plot not cleared in second figure (figure() call) in contour_demo.html (COMPLETED)
 - [ ] #336: Fix - Streamplot and stateful streamplot example redundant
 
+**Critical Infrastructure Issues (High Priority)** - ESCALATED TO DOING
+
+**User-Facing Issues (Medium Priority)**
+- [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
+- [ ] #327: Fix - MP4 link not showing on animation.html
+- [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
+
 **Infrastructure & Documentation Issues (Lower Priority)**
 - [ ] #323: Test - add edge case tests for PDF heatmap color validation
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
@@ -24,7 +31,10 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #336: Fix - Streamplot and stateful streamplot example redundant
+- [ ] #361: Fix - Windows CI: test_legend_comprehensive and test_streamplot runtime failures
+
+## BLOCKED (By Windows CI)
+- [ ] #336: Fix - Streamplot and stateful streamplot example redundant (PR #362 ready but blocked by Windows CI)
 
 ## BLOCKED (Infrastructure Issues)
 

@@ -65,8 +65,6 @@ Intelligent display mode selection based on environment.
 ### [Save Animation Demo](./save_animation.html)
 Creating animated plots and saving to video files.
 
-### [Stateful Streamplot](./stateful_streamplot.html)
-Time-evolving vector field animations.
 
 ---
 
