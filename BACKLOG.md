@@ -3,11 +3,9 @@
 ## CURRENT SPRINT (Critical CI and Rendering Issues)
 
 
-**🚨 CRITICAL: CI test suite failures - user-visible rendering broken**  
-- [ ] #383: Fix - some examples in CI cannot write output (test infrastructure)
+**🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #380: Fix - ylabel not rotates 90 degrees (rendering regression)
 - [ ] #379: Fix - no output in streamplot_demo.html (rendering regression)
 - [ ] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning)
 - [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
@@ -21,7 +19,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [x] #382: Fix - tests fail on main CI (critical infrastructure)
+- [x] #380: Fix - ylabel not rotates 90 degrees (rendering regression)
 
 ## FUTURE SPRINTS - Systematic Restoration
 

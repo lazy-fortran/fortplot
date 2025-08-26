@@ -121,7 +121,8 @@ contains
     end subroutine render_text_to_bitmap
 
     subroutine rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)
-        !! Rotate bitmap 90 degrees clockwise: (x,y) -> (y, src_width-x+1)
+        !! Rotate bitmap 90 degrees counter-clockwise
+        !! For arrays: (i,j) maps to (height-j+1, i) with swapped dimensions
         integer(1), intent(in) :: src_bitmap(:,:,:)
         integer(1), intent(out) :: dst_bitmap(:,:,:)
         integer, intent(in) :: src_width, src_height
@@ -129,13 +130,15 @@ contains
         
         do j = 1, src_height
             do i = 1, src_width
+                ! CCW: each point (i,j) goes to position that produces CCW rotation
                 dst_bitmap(j, src_width - i + 1, :) = src_bitmap(i, j, :)
             end do
         end do
     end subroutine rotate_bitmap_90_ccw
 
     subroutine rotate_bitmap_90_cw(src_bitmap, dst_bitmap, src_width, src_height)
-        !! Rotate bitmap 90 degrees counter-clockwise: (x,y) -> (src_height-y+1, x)
+        !! Rotate bitmap 90 degrees clockwise  
+        !! For arrays: (i,j) maps to (j, width-i+1) with swapped dimensions
         integer(1), intent(in) :: src_bitmap(:,:,:)
         integer(1), intent(out) :: dst_bitmap(:,:,:)
         integer, intent(in) :: src_width, src_height
@@ -143,6 +146,7 @@ contains
         
         do j = 1, src_height
             do i = 1, src_width
+                ! CW: each point (i,j) goes to position that produces CW rotation
                 dst_bitmap(src_height - j + 1, i, :) = src_bitmap(i, j, :)
             end do
         end do
