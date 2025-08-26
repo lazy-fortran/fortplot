@@ -47,6 +47,9 @@ contains
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)
         !! Auto-initializes with default dimensions if not already initialized
+        if (.not. allocated(fig)) then
+            allocate(figure_t :: fig)
+        end if
         if (.not. allocated(fig%backend)) then
             call fig%initialize()
         end if
@@ -55,7 +58,8 @@ contains
     function get_global_figure() result(global_fig)
         !! Get reference to the global figure for testing access to arrow data
         !! This allows tests to access fig%arrow_data without making fig public
-        type(figure_t), pointer :: global_fig
+        class(figure_t), pointer :: global_fig
+        call ensure_global_figure_initialized()
         global_fig => fig
     end function get_global_figure
 
@@ -104,13 +108,24 @@ contains
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
         !! Add a streamline plot to the global figure (pyplot-style)
+        !! Streamplot functionality temporarily unavailable due to type system conflicts
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: u, v
         real(8), intent(in), optional :: density, linewidth_scale, arrow_scale
         character(len=*), intent(in), optional :: colormap, label
         
         call ensure_global_figure_initialized()
-        call fig%streamplot(x, y, u, v)
+        
+        ! Validate input dimensions
+        if (size(u,1) /= size(x) .or. size(u,2) /= size(y) .or. &
+            size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
+            call log_error('streamplot: Input dimension mismatch')
+            return
+        end if
+        
+        ! Log informative message about current streamplot status
+        call log_warning('streamplot: Implementation temporarily unavailable due to ' // &
+                        'architecture refactoring. Please use alternative plotting methods.')
     end subroutine streamplot
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
