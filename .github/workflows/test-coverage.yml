@@ -64,7 +64,7 @@ jobs:
 
     - name: Build with coverage flags
       run: |
-        make build ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'"
+        make build ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
 
     - name: Build required examples for tests
       run: |
@@ -73,26 +73,26 @@ jobs:
     - name: Run FPM tests with coverage
       run: |
         mkdir -p /tmp/test
-        timeout 15m make test-ci ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'" || echo "Some CI tests may have timed out"
+        timeout 15m make test-ci ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'" || echo "Some CI tests may have timed out"
     
     - name: Run antialiasing quality tests with ImageMagick
       run: |
         # Verify ImageMagick is available
         if magick -version > /dev/null 2>&1; then
           echo "ImageMagick found - running graphics quality tests"
-          fpm test test_antialiasing_restoration --flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'
-          fpm test test_antialiasing_comprehensive --flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'
+          fpm test test_antialiasing_restoration --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'
+          fpm test test_antialiasing_comprehensive --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'
         else
           echo "ImageMagick not found - skipping graphics quality tests"
         fi
 
     - name: Test FPM example build
       run: |
-        make test ARGS="--target test_system_fpm_example --flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'"
+        make test ARGS="--target test_system_fpm_example --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
 
     - name: Test CMake example build
       run: |
-        make test ARGS="--target test_system_cmake_example --flag '-fprofile-arcs -ftest-coverage -Wno-error=implicit-interface'"
+        make test ARGS="--target test_system_cmake_example --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
 
     - name: Validate PNG output with PIL
       continue-on-error: true
