@@ -15,12 +15,12 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #357: Docs - standardize colormap documentation across examples
 - [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 - [ ] #355: Fix - First plot is empty
 
 ## DOING (Current Work)
+- [ ] #357: Docs - standardize colormap documentation across examples
 
 ## BLOCKED (Infrastructure Issues)
 
