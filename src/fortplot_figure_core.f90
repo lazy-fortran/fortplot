@@ -425,6 +425,9 @@ contains
         
         self%show_legend = .true.
         
+        ! Clear existing legend entries to prevent duplication (fixes #373)
+        call self%legend_data%clear()
+        
         ! Set legend position based on location string
         call self%legend_data%set_position(loc)
         
