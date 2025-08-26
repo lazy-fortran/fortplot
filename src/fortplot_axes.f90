@@ -15,6 +15,13 @@ module fortplot_axes
     
     integer, parameter :: MAX_TICKS = 20
     
+    ! Format threshold constants for tick label formatting
+    real(wp), parameter :: SCIENTIFIC_THRESHOLD_HIGH = 1000.0_wp   ! Use scientific for abs(value) >= this
+    real(wp), parameter :: SCIENTIFIC_THRESHOLD_LOW = 0.01_wp      ! Use scientific for abs(value) < this
+    real(wp), parameter :: NO_DECIMAL_THRESHOLD = 100.0_wp         ! No decimal places for abs(value) >= this
+    real(wp), parameter :: ONE_DECIMAL_THRESHOLD = 10.0_wp         ! One decimal place for abs(value) >= this
+    real(wp), parameter :: TWO_DECIMAL_THRESHOLD = 1.0_wp          ! Two decimal places for abs(value) >= this
+    
 contains
 
     subroutine compute_scale_ticks(scale_type, data_min, data_max, threshold, tick_positions, num_ticks)
@@ -149,17 +156,17 @@ contains
             label = '0'
         else if (trim(scale_type) == 'log' .and. is_power_of_ten(value)) then
             label = format_power_of_ten(value)
-        else if (abs_value >= 1000.0_wp .or. abs_value < 0.01_wp) then
+        else if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < SCIENTIFIC_THRESHOLD_LOW) then
             ! Use scientific notation for very large or very small values
             write(label, '(ES10.2)') value
             label = adjustl(label)
-        else if (abs_value >= 100.0_wp) then
+        else if (abs_value >= NO_DECIMAL_THRESHOLD) then
             ! No decimal places for values >= 100
             write(label, '(F0.0)') value
-        else if (abs_value >= 10.0_wp) then
+        else if (abs_value >= ONE_DECIMAL_THRESHOLD) then
             ! One decimal place for values >= 10
             write(label, '(F0.1)') value
-        else if (abs_value >= 1.0_wp) then
+        else if (abs_value >= TWO_DECIMAL_THRESHOLD) then
             ! Two decimal places for values >= 1
             write(label, '(F0.2)') value
         else
