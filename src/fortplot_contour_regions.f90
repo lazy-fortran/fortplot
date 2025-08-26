@@ -16,6 +16,7 @@ module fortplot_contour_regions
     !! Author: fortplot contributors
     
     use iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: EPSILON_GEOMETRY
     implicit none
     
     private
@@ -264,7 +265,7 @@ contains
         case (1)  ! Bottom edge (corners 1-2)
             v1 = corner_values(1)
             v2 = corner_values(2)
-            if (abs(v2 - v1) > 1e-12_wp) then
+            if (abs(v2 - v1) > EPSILON_GEOMETRY) then
                 t = (level - v1) / (v2 - v1)
             else
                 t = 0.5_wp
@@ -275,7 +276,7 @@ contains
         case (2)  ! Right edge (corners 2-3)
             v1 = corner_values(2)
             v2 = corner_values(3)
-            if (abs(v2 - v1) > 1e-12_wp) then
+            if (abs(v2 - v1) > EPSILON_GEOMETRY) then
                 t = (level - v1) / (v2 - v1)
             else
                 t = 0.5_wp
@@ -286,7 +287,7 @@ contains
         case (3)  ! Top edge (corners 3-4)
             v1 = corner_values(3)
             v2 = corner_values(4)
-            if (abs(v2 - v1) > 1e-12_wp) then
+            if (abs(v2 - v1) > EPSILON_GEOMETRY) then
                 t = (level - v1) / (v2 - v1)
             else
                 t = 0.5_wp
@@ -297,7 +298,7 @@ contains
         case (4)  ! Left edge (corners 4-1)
             v1 = corner_values(4)
             v2 = corner_values(1)
-            if (abs(v2 - v1) > 1e-12_wp) then
+            if (abs(v2 - v1) > EPSILON_GEOMETRY) then
                 t = (level - v1) / (v2 - v1)
             else
                 t = 0.5_wp

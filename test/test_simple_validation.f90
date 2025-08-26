@@ -4,6 +4,7 @@ program test_simple_validation
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure
+    use fortplot_constants, only: EPSILON_COMPARE
     implicit none
     
     logical :: all_tests_passed = .true.
@@ -86,7 +87,7 @@ contains
             linear_result = apply_scale_transform(5.0_wp, 'linear', 1.0_wp)
             log_result = apply_scale_transform(10.0_wp, 'log', 1.0_wp)
             
-            if (abs(linear_result - 5.0_wp) < 1e-10_wp .and. abs(log_result - 1.0_wp) < 1e-10_wp) then
+            if (abs(linear_result - 5.0_wp) < EPSILON_COMPARE .and. abs(log_result - 1.0_wp) < EPSILON_COMPARE) then
                 write(*, '(A)') '  ✅ Scale transformations working'
             else
                 write(*, '(A)') '  ❌ Scale transformations failed'

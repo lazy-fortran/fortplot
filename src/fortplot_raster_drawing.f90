@@ -7,6 +7,7 @@ module fortplot_raster_drawing
     !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: EPSILON_GEOMETRY, EPSILON_COMPARE
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     implicit none
     
@@ -45,7 +46,7 @@ contains
         dy = y2 - y1
         length_sq = dx * dx + dy * dy
         
-        if (length_sq < 1e-12_wp) then
+        if (length_sq < EPSILON_GEOMETRY) then
             distance = sqrt((px - x1)**2 + (py - y1)**2)
             return
         end if
@@ -376,7 +377,7 @@ contains
                 if ((y_quad(i) <= y_real .and. y_real < y_quad(j)) .or. &
                     (y_quad(j) <= y_real .and. y_real < y_quad(i))) then
                     
-                    if (abs(y_quad(j) - y_quad(i)) > 1e-10_wp) then
+                    if (abs(y_quad(j) - y_quad(i)) > EPSILON_COMPARE) then
                         num_intersect = num_intersect + 1
                         x_intersect(num_intersect) = x_quad(i) + &
                             (y_real - y_quad(i)) * (x_quad(j) - x_quad(i)) / (y_quad(j) - y_quad(i))

@@ -16,6 +16,7 @@ module fortplot_pdf
     use fortplot_legend, only: legend_entry_t
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
+    use fortplot_constants, only: EPSILON_COMPARE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -272,7 +273,7 @@ contains
                 value = z_grid(i, j)
                 
                 ! Handle edge case where z_max == z_min
-                if (abs(z_max - z_min) > 1e-10_wp) then
+                if (abs(z_max - z_min) > EPSILON_COMPARE) then
                     norm_value = (value - z_min) / (z_max - z_min)
                 else
                     norm_value = 0.5_wp
