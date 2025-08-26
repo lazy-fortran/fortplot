@@ -6,7 +6,6 @@
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
 - [ ] #374: Fix - no line styles visible in line_styles.html all solid (line styling)
 - [ ] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system)
 - [ ] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
@@ -17,6 +16,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
+- [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
