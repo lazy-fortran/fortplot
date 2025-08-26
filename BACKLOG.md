@@ -15,10 +15,9 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #355: Fix - First plot is empty
 
 ## DOING (Current Work)
-- [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
+- [ ] #355: Fix - First plot is empty
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -45,6 +44,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #360: Refactor - split fortplot_raster.f90 to comply with file size limits - FIXED: Split oversized raster module (1137 lines) into three focused modules - fortplot_bitmap.f90 (150 lines), fortplot_png_encoder.f90 (30 lines), and reduced fortplot_raster.f90 (980 lines) - maintaining Single Responsibility Principle with zero behavioral changes and full QADS compliance (PR #385 merged)
 - [x] #358: Refactor - consolidate ASCII output formatting in example docs - FIXED: Created centralized ASCII Output Format Reference documentation and truncated long ASCII blocks (50+ lines each) to key representative sections with direct references to full .txt files for complete output viewing (PR #384 merged)
 - [x] #357: Docs - standardize colormap documentation across examples - FIXED: Updated colored_contours documentation to correctly reflect 'crest' as default colorblind-safe colormap instead of misleading 'jet' reference, ensuring consistency between documentation and actual implementation (PR #381 merged)
 - [x] #350: Refactor - improve documentation comments in raster drawing module - FIXED: Comprehensive documentation improvements with detailed function descriptions, parameter explanations, and usage examples for all raster drawing utilities including antialiasing, geometric functions, and marker rendering (PR #376 merged)
