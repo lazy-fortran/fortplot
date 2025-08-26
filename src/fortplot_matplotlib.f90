@@ -92,7 +92,8 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
+        call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
+                                   show_colorbar=show_colorbar, label=label)
     end subroutine contour_filled
 
     subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
@@ -103,7 +104,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call fig%add_pcolormesh(x, y, z)
+        call fig%add_pcolormesh(x, y, z, colormap=colormap)
     end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
@@ -347,7 +348,8 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call fig%add_contour_filled(x, y, z, levels=levels, label=label)
+        call fig%add_contour_filled(x, y, z, levels=levels, colormap=colormap, &
+                                   show_colorbar=show_colorbar, label=label)
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label)
@@ -358,7 +360,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_global_figure_initialized()
-        call fig%add_pcolormesh(x, y, z)
+        call fig%add_pcolormesh(x, y, z, colormap=colormap)
     end subroutine add_pcolormesh
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
