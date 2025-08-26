@@ -28,7 +28,10 @@ contains
         call fig%initialize(800, 600)
         call fig%streamplot(x, y, u, v)
         
-        if (fig%plot_count == 0) error stop "No plots generated from streamplot"
+        if (fig%plot_count == 0) then
+            print *, "ERROR: No plots generated from streamplot"
+            stop 1
+        end if
         ! For now, just check that streamlines were allocated
     end subroutine
     
@@ -73,7 +76,10 @@ contains
         error_caught = .false.
         call fig%streamplot(x, y, u, v)
         
-        if (.not. fig%has_error) error stop "Should detect grid size mismatch"
+        if (.not. fig%has_error) then
+            print *, "ERROR: Should detect grid size mismatch"
+            stop 1
+        end if
     end subroutine
     
 end program test_streamplot
