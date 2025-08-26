@@ -8,7 +8,6 @@
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
 
 **User-Facing Issues (Medium Priority)**
-- [ ] #392: Fix - Strange truncations in example documentation output (documentation rendering)
 - [ ] #377: Enhancement - make finer grid on pcolormesh_demo.html (enhancement)
 
 **Infrastructure & Documentation Issues (Lower Priority)**
