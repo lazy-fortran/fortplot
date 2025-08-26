@@ -6,7 +6,6 @@
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
 
 **User-Facing Issues (Medium Priority)**
 - [ ] #377: Enhancement - make finer grid on pcolormesh_demo.html (enhancement)
@@ -14,7 +13,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [x] #372: Fix - all colormaps look the same on colored_contours.html (colormap system)
+- [x] #396: Fix - incomplete parameter forwarding in matplotlib API wrapper functions (branch: fix-parameter-forwarding-396)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
