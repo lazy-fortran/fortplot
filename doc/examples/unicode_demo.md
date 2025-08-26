@@ -48,13 +48,20 @@ ASCII output preview:
 ```
              Wave Functions: ψ(ω t) = A e^{-λ t} sin(ω t + φ)
 +--------------------------------------------------------------------------------+
-| **                    -- α damped: si                                         |
-|   *                   -- β damped: cos                                        |
-|    *                  -- γ oscillatio                                         |
-| .  *   ****                                                                    |
-|    * **       *       ****         *    *** *                * *               |
-| ... [truncated - see full output in unicode_demo.txt] ...                     |
+|1.0                                                                             |
+|     *                     -- α damped: sin                                    |
+|   *   *                   -- β damped: cos                                    |
+|0.5 *     *                -- γ oscillation                                   |
+|   *       *   ****                                                            |
+|0.0*--------*-------****---*----*--***-*-------*-*------***---*----------     |
+|             * *     *  *      *      *     * *         *   * *               |
+|-0.5           *       *                * *               *                    |
+|                                                                               |
+|-1.0+--------+----------+----------+----------+----------+--------+           |
+     0        2          4          6          8         10                    |
 +--------------------------------------------------------------------------------+
+                                  ωt (radians)
+Amplitude
 ```
 
 > **Full ASCII Output**: [Download unicode_demo.txt](../../media/examples/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)

@@ -40,13 +40,19 @@ ASCII output preview:
 ```
                          Complete Line Style Reference
 +--------------------------------------------------------------------------------+
-| .      * * *  ** *                                -- Solid*(-)* * *            |
-| .   *#*           *#*                             -- Dashed (--)   * *         |
-| . #*                 #*                           -*#Dotted (:)       *#*      |
-| **                     *#                       *#*# Dash-dot (-.)       *     |
-| .  ##       *    oo#o oo oo oo o o  ##   #*#%#       *       #    #*#%#        |
-| ... [truncated - see full output in line_styles.txt] ...                      |
+|3.0  ________________                              -- Solid (-)                  |
+|                                                                                |
+|2.0  ---- ---- ---- ---- ----                     -- Dashed (--)               |
+|                                                                                |
+|1.0  .... .... .... .... ....                     -- Dotted (:)               |
+|                                                                                |
+|0.0  _._ _._ _._ _._ _._ _._                        -- Dash-dot (-.)             |
+|                                                                                |
+|-1.0+--------+----------+----------+----------+----------+--------+            |
+     0        2          4          6          8         10                     |
 +--------------------------------------------------------------------------------+
+                                       x
+Line Styles
 ```
 
 > **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)

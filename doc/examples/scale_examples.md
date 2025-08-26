@@ -34,9 +34,19 @@ ASCII output preview:
 ```
 Log Scale Example
 +--------------------------------------------------------------------------------+
-| ... [representative scale visualization] ...                                  |
-| ... [truncated - see full output in log_scale.txt] ...                          |
+|10000   *                                                                       |
+|                                                                               |
+|1000      *                                                                     |
+|                                                                               |
+|100         *                                                                   |
+|                                                                               |
+|10            *                                                                 |
+|                                                                               |
+|1+--------+----------+----------+----------+----------+--------+              |
+  0        2          4          6          8         10                       |
 +--------------------------------------------------------------------------------+
+                                       x
+log(y)
 ```
 
 > **Full ASCII Output**: [Download log_scale.txt](../../media/examples/scale_examples/log_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
@@ -51,9 +61,22 @@ ASCII output preview:
 ```
 Symlog Scale Example
 +--------------------------------------------------------------------------------+
-| ... [representative scale visualization] ...                                  |
-| ... [truncated - see full output in symlog_scale.txt] ...                          |
+|100                                                                   *         |
+|                                                                                |
+|10                                                             *                |
+|                                                                                |
+|1                                                      *                        |
+|0     *     *     *                            *                               |
+|-1                         *            *                                      |
+|                                                                               |
+|-10                   *                                                        |
+|                                                                               |
+|-100              *                                                            |
++--------+----------+----------+----------+----------+--------+                 |
+-10     -5         0          5          10        15                          |
 +--------------------------------------------------------------------------------+
+                                       x
+symlog(y)
 ```
 
 > **Full ASCII Output**: [Download symlog_scale.txt](../../media/examples/scale_examples/symlog_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
