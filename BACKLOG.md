@@ -15,14 +15,13 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #344: Refactor - add format threshold constants in axes module
 - [ ] #350: Refactor - improve documentation comments in raster drawing module
 - [ ] #357: Docs - standardize colormap documentation across examples
 - [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
-- [ ] #344: Refactor - add format threshold constants in axes module
+- [ ] #350: Refactor - improve documentation comments in raster drawing module
 
 ## BLOCKED (Infrastructure Issues)
 
@@ -49,6 +48,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #344: Refactor - add format threshold constants in axes module - FIXED: Format threshold constants extracted to shared module with descriptive names (DECIMAL_THRESHOLD, EXPONENT_THRESHOLD, SMALL_VALUE_THRESHOLD) replacing magic numbers for improved maintainability and consistency (PR #371 merged)
 - [x] #343: Refactor - extract label positioning constants - FIXED: Label positioning constants extracted to shared module with descriptive names (XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, TICK_MARK_LENGTH) replacing magic numbers for improved maintainability and consistency (PR #370 merged)
 - [x] #342: Refactor - complete symlog tick generation implementation - FIXED: Implemented symlog tick generation with proper exponential positioning and overlap handling in dedicated subroutines (PR #369 merged)
 - [x] #324: Refactor - define epsilon constant for numerical comparisons - FIXED: Extracted epsilon constants to shared fortplot_constants module, eliminating code duplication across multiple modules and creating centralized location for mathematical constants (PR #368 merged)
