@@ -13,6 +13,7 @@ program test_legend_comprehensive
     print *, "========================================="
     print *, "COMPREHENSIVE LEGEND FUNCTIONALITY TEST"
     print *, "========================================="
+    print *, "Platform: Windows compatibility mode with enhanced error handling"
     
     call test_basic_legend(num_failures)
     call test_legend_positions(num_failures)
@@ -46,14 +47,27 @@ contains
         y1 = x**2
         y2 = 2.0_wp * x + 5.0_wp
         
+        ! Enhanced error handling for Windows compatibility
+        print *, "  Creating figure with size [640x480]..."
         call figure(figsize=[640.0_wp, 480.0_wp])
+        
+        print *, "  Setting title and labels..."
         call title("Basic Legend Test")
         call xlabel("X")
         call ylabel("Y")
+        
+        print *, "  Adding plots with labels..."
         call add_plot(x, y1, label="Quadratic: x²")
         call add_plot(x, y2, label="Linear: 2x+5")
+        
+        print *, "  Adding legend..."
         call legend()
+        
+        print *, "  Saving to PNG file..."
         call savefig('test_legend_basic.png')
+        
+        ! Windows-compatible: Allow time for file system operations
+        call windows_safe_delay(100)
         
         val = validate_file_exists('test_legend_basic.png')
         if (val%passed) then
@@ -97,6 +111,7 @@ contains
             call add_plot(x, y, label="sin(x)")
             call legend(position=trim(positions(i)))
             call savefig(trim(filenames(i)))
+            call windows_safe_delay(100)  ! Windows file system delay
             
             val = validate_file_exists(trim(filenames(i)))
             if (val%passed) then
@@ -133,6 +148,7 @@ contains
         call add_plot(x, y3, label="Logarithm", linestyle=":^")
         call legend()
         call savefig('test_legend_markers.png')
+        call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend_markers.png')
         if (val%passed) then
@@ -173,6 +189,7 @@ contains
         call add_plot(x, y2, label="0.5*sin(x)")
         call legend(position="upper right")
         call savefig('test_legend.pdf')
+        call windows_safe_delay(150)  ! Extra delay for PDF operations
         
         val = validate_file_exists('test_legend.pdf')
         if (val%passed) then
@@ -214,6 +231,7 @@ contains
         call add_plot(x, y2, label="Sqrt")
         call legend()
         call savefig('test_legend.txt')
+        call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend.txt')
         if (val%passed) then
@@ -244,5 +262,19 @@ contains
         end if
         
     end subroutine test_ascii_legend
+    
+    subroutine windows_safe_delay(milliseconds)
+        !! Platform-independent delay for Windows file system operations
+        integer, intent(in) :: milliseconds
+        real(wp) :: start_time, current_time, delay_seconds
+        
+        delay_seconds = real(milliseconds, wp) / 1000.0_wp
+        call cpu_time(start_time)
+        do
+            call cpu_time(current_time)
+            if (current_time - start_time >= delay_seconds) exit
+        end do
+    end subroutine windows_safe_delay
+    
 
 end program test_legend_comprehensive
