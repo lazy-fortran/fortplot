@@ -3,6 +3,8 @@ program test_streamplot
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
     
+    print *, "Starting streamplot tests with Windows compatibility..."
+    
     call test_basic_streamplot()
     call test_streamplot_parameters()
     call test_streamplot_grid_validation()
@@ -18,6 +20,8 @@ contains
         real(real64), dimension(5,4) :: u, v
         integer :: i, j
         
+        print *, "Test 1: Basic streamplot initialization"
+        
         do j = 1, 4
             do i = 1, 5
                 u(i,j) = 1.0
@@ -25,10 +29,16 @@ contains
             end do
         end do
         
+        print *, "  Initializing figure [800x600]..."
         call fig%initialize(800, 600)
+        
+        print *, "  Creating streamplot..."
         call fig%streamplot(x, y, u, v)
         
-        if (fig%plot_count == 0) error stop "No plots generated from streamplot"
+        if (fig%plot_count == 0) then
+            print *, "ERROR: No plots generated from streamplot"
+            stop 1
+        end if
         ! For now, just check that streamlines were allocated
     end subroutine
     
@@ -73,7 +83,10 @@ contains
         error_caught = .false.
         call fig%streamplot(x, y, u, v)
         
-        if (.not. fig%has_error) error stop "Should detect grid size mismatch"
+        if (.not. fig%has_error) then
+            print *, "ERROR: Should detect grid size mismatch"
+            stop 1
+        end if
     end subroutine
     
 end program test_streamplot
