@@ -57,7 +57,7 @@ module fortplot
     use fortplot_figure_core, only: figure_t
     use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY, &
                                   XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, &
-                                  TICK_MARK_LENGTH
+                                  TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET
     
     ! Animation functionality
     use fortplot_animation, only: animation_t, FuncAnimation
@@ -107,7 +107,8 @@ module fortplot
     
     ! Numerical constants
     public :: EPSILON_COMPARE, EPSILON_GEOMETRY, &
-              XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, TICK_MARK_LENGTH
+              XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, TICK_MARK_LENGTH, &
+              TITLE_VERTICAL_OFFSET
     
     ! Coordinate system constants for annotations
     public :: COORD_DATA, COORD_FIGURE, COORD_AXIS

@@ -3,7 +3,7 @@ module fortplot_raster
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY, &
                                   XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, &
-                                  TICK_MARK_LENGTH
+                                  TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
     ! use fortplot_unicode, only: unicode_to_ascii
@@ -1130,7 +1130,7 @@ contains
         
         ! Y position: above plot area (like matplotlib)  
         ! Place title approximately 30 pixels above the plot area
-        title_py = real(this%plot_area%bottom - 30, wp)
+        title_py = real(this%plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
         
         ! Get current color and render title directly in pixel coordinates
         call this%raster%get_color_bytes(r, g, b)

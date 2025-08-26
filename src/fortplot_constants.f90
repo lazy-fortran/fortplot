@@ -74,4 +74,13 @@ module fortplot_constants
     !! all axes while maintaining visual hierarchy.
     integer, parameter, public :: TICK_MARK_LENGTH = 5
 
+    !! Title vertical offset above plot area (pixels)
+    !!
+    !! This constant defines the vertical distance between the bottom of the
+    !! plot area and the baseline of the title text.
+    !!
+    !! Used by raster backend for title positioning to ensure consistent
+    !! spacing above the plot area while maintaining readability.
+    integer, parameter, public :: TITLE_VERTICAL_OFFSET = 30
+
 end module fortplot_constants
