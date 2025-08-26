@@ -52,6 +52,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #323: Test - add edge case tests for PDF heatmap color validation - FIXED: Added comprehensive edge case tests validating constant fields, NaN/infinity values, extreme ranges, and epsilon precision in PDF heatmap rendering (PR #367 merged)
 - [x] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/ - FIXED: Removed duplicate 'project: fortplotlib' line from doc.md that was creating redundant header on GitHub Pages, documented FORD configuration format to prevent recurrence (PR #366 merged)
 - [x] #327: Fix - MP4 link not showing on animation.html - FIXED: Corrected incorrect reference from animation.mp4 to animated_plot.mp4 in documentation examples (PR #365 merged)
 - [x] #328: Fix - One legend entry too much in basic_plots.html second plot - FIXED: Empty labels no longer create legend entries, resolving extra legend entry issue (PR #364 merged)
