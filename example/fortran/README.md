@@ -59,6 +59,8 @@ Each example can generate output in multiple formats:
 - **PDF** - Vector graphics for publications
 - **TXT** - ASCII art for terminal display
 
+> **ASCII Format Guide**: See [ASCII Output Format Reference](../doc/ascii_output_format.md) for character mapping, structure details, and terminal compatibility information.
+
 ## Building Individual Examples
 
 Examples are automatically discovered by fpm. To build a specific example:

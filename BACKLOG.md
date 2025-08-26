@@ -15,11 +15,11 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 - [ ] #355: Fix - First plot is empty
 
 ## DOING (Current Work)
+- [ ] #358: Refactor - consolidate ASCII output formatting in example docs
 
 ## BLOCKED (Infrastructure Issues)
 
