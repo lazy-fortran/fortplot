@@ -376,21 +376,24 @@ contains
         
         ! Add legend entries from plots
         do i = 1, self%plot_count
+            ! Only add legend entry if label is allocated and not empty
             if (allocated(self%plots(i)%label)) then
-                if (allocated(self%plots(i)%linestyle)) then
-                    if (allocated(self%plots(i)%marker)) then
-                        call self%legend_data%add_entry(self%plots(i)%label, &
-                                                       self%plots(i)%color, &
-                                                       self%plots(i)%linestyle, &
-                                                       self%plots(i)%marker)
+                if (len_trim(self%plots(i)%label) > 0) then
+                    if (allocated(self%plots(i)%linestyle)) then
+                        if (allocated(self%plots(i)%marker)) then
+                            call self%legend_data%add_entry(self%plots(i)%label, &
+                                                           self%plots(i)%color, &
+                                                           self%plots(i)%linestyle, &
+                                                           self%plots(i)%marker)
+                        else
+                            call self%legend_data%add_entry(self%plots(i)%label, &
+                                                           self%plots(i)%color, &
+                                                           self%plots(i)%linestyle)
+                        end if
                     else
                         call self%legend_data%add_entry(self%plots(i)%label, &
-                                                       self%plots(i)%color, &
-                                                       self%plots(i)%linestyle)
+                                                       self%plots(i)%color)
                     end if
-                else
-                    call self%legend_data%add_entry(self%plots(i)%label, &
-                                                   self%plots(i)%color)
                 end if
             end if
         end do

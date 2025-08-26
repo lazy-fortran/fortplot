@@ -13,7 +13,6 @@
 **Critical Infrastructure Issues (High Priority)**
 
 **User-Facing Issues (Medium Priority)**
-- [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 - [ ] #327: Fix - MP4 link not showing on animation.html
 - [ ] #347: Fix - Remove funny header from https://lazy-fortran.github.io/fortplot/
 
@@ -29,6 +28,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
+- [ ] #328: Fix - One legend entry too much in basic_plots.html second plot
 
 ## BLOCKED (Infrastructure Issues)
 
