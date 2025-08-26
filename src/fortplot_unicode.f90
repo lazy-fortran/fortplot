@@ -194,7 +194,6 @@ contains
         character(len=*), intent(in) :: text
         integer, intent(in) :: start_pos
         integer :: char_len, byte_val, codepoint
-        integer :: i
         
         char_len = utf8_char_length(text(start_pos:start_pos))
         

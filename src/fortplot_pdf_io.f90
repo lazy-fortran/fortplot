@@ -47,7 +47,7 @@ contains
     subroutine create_pdf_document(unit, filename, ctx)
         !! Create complete PDF document structure
         integer, intent(in) :: unit
-        character(len=*), intent(in) :: filename
+        character(len=*), intent(in) :: filename  ! Unused - placeholder for future use
         type(pdf_context_core), intent(inout) :: ctx
         
         ! Write PDF header

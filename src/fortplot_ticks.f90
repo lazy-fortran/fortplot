@@ -265,8 +265,7 @@ contains
         integer, intent(in) :: num_ticks
         character(len=20), intent(out) :: labels(:)
         
-        integer :: i, min_power, max_power, actual_num_ticks, power
-        real(wp) :: tick_value, decade_range
+        real(wp) :: decade_range
         logical :: use_subticks
         
         if (num_ticks <= 0 .or. data_min <= 0.0_wp .or. data_max <= 0.0_wp) then
@@ -508,7 +507,7 @@ contains
         real(wp), intent(out) :: tick_locations(:)
         integer, intent(out) :: actual_num_ticks
         
-        integer :: i, j
+        integer :: i
         real(wp) :: temp_candidates(20)
         
         ! Copy and simple sort (bubble sort for small arrays)
@@ -580,9 +579,7 @@ contains
         real(wp), intent(in) :: value
         integer, intent(in) :: max_chars
         character(len=20) :: formatted
-        character(len=20) :: temp_format
         real(wp) :: abs_value
-        integer :: exponent
         
         abs_value = abs(value)
         

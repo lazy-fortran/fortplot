@@ -310,6 +310,9 @@ contains
         plot_idx = fig%subplots(subplot_idx)%plot_count + 1
         fig%subplots(subplot_idx)%plot_count = plot_idx
         
+        ! Also increment main figure plot count for backward compatibility
+        fig%plot_count = fig%plot_count + 1
+        
         ! Set plot type and data
         fig%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
         
