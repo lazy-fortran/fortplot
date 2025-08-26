@@ -6,7 +6,6 @@
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #379: Fix - no output in streamplot_demo.html (rendering regression)
 - [ ] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning)
 - [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
 - [ ] #374: Fix - no line styles visible in line_styles.html all solid (line styling)
@@ -19,7 +18,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [x] #380: Fix - ylabel not rotates 90 degrees (rendering regression)
+- [ ] #379: Fix - no output in streamplot_demo.html (rendering regression)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -44,6 +43,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #380: Fix - ylabel not rotates 90 degrees (rendering regression) - FIXED: Corrected ylabel rotation regression by swapping bitmap rotation function names - rotate_bitmap_90_ccw now performs clockwise rotation and rotate_bitmap_90_cw performs counter-clockwise rotation, restoring proper ylabel 90-degree rotation behavior (PR #387 merged)
 - [x] #360: Refactor - split fortplot_raster.f90 to comply with file size limits - FIXED: Split oversized raster module (1137 lines) into three focused modules - fortplot_bitmap.f90 (150 lines), fortplot_png_encoder.f90 (30 lines), and reduced fortplot_raster.f90 (980 lines) - maintaining Single Responsibility Principle with zero behavioral changes and full QADS compliance (PR #385 merged)
 - [x] #358: Refactor - consolidate ASCII output formatting in example docs - FIXED: Created centralized ASCII Output Format Reference documentation and truncated long ASCII blocks (50+ lines each) to key representative sections with direct references to full .txt files for complete output viewing (PR #384 merged)
 - [x] #357: Docs - standardize colormap documentation across examples - FIXED: Updated colored_contours documentation to correctly reflect 'crest' as default colorblind-safe colormap instead of misleading 'jet' reference, ensuring consistency between documentation and actual implementation (PR #381 merged)
