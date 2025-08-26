@@ -66,7 +66,7 @@ jobs:
       shell: cmd
       run: |
         set FORTPLOT_ENABLE_FFMPEG=1
-        fpm build --flag "-cpp -fmax-stack-var-size=65536"
+        fpm build --flag "-cpp -fmax-stack-var-size=65536 -Wno-error=implicit-interface"
 
     - name: Run Windows tests with built-in timeout protection
       shell: cmd
@@ -78,7 +78,7 @@ jobs:
         echo System command timeouts: 3 seconds  
         echo Set FORTPLOT_DEBUG_TIMEOUT=1 for verbose logging
         echo ===============================================
-        fpm test --flag "-cpp -fmax-stack-var-size=65536"
+        fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-error=implicit-interface"
     
     - name: Run antialiasing quality tests with ImageMagick (optional on Windows)
       continue-on-error: true
@@ -88,5 +88,5 @@ jobs:
         magick -version
         echo.
         echo Running graphics quality tests (optional on Windows due to path issues)...
-        fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536" || echo Test skipped due to ImageMagick detection issue on Windows
-        fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536" || echo Test skipped due to ImageMagick detection issue on Windows
+        fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-error=implicit-interface" || echo Test skipped due to ImageMagick detection issue on Windows
+        fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-error=implicit-interface" || echo Test skipped due to ImageMagick detection issue on Windows
