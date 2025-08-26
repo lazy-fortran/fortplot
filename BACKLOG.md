@@ -13,7 +13,6 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [x] #396: Fix - incomplete parameter forwarding in matplotlib API wrapper functions (branch: fix-parameter-forwarding-396)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -38,6 +37,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #396: Fix - incomplete parameter forwarding in matplotlib API wrapper functions - FIXED: Complete parameter forwarding implementation in matplotlib wrapper functions with comprehensive API coverage and test validation covering contour_filled, pcolormesh, streamplot, and all matplotlib API functions with proper precision conversion and single-call forwarding patterns (PR #397 merged)
 - [x] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system) - FIXED: Implemented proper legend entry reset in legend() procedure to prevent accumulation on multiple calls, resolving excess legend entries issue (PR #394 merged)
 - [x] #374: Fix - no line styles visible in line_styles.html all solid (line styling) - FIXED: Restored line styles and markers visibility in rendering by implementing proper line style differentiation across ASCII, PNG, and PDF backends with consistent styling throughout the pipeline (PR #393 merged)
 - [x] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates) - FIXED: Corrected PDF Y-axis coordinate transformation inconsistency by applying proper canvas_height conversion to Y-axis tick marks and labels, ensuring consistency with X-axis coordinate handling and proper PDF coordinate system alignment (PR #391 merged)
