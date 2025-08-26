@@ -68,7 +68,7 @@ contains
         test_file = "test_constant_field.pdf"
         
         ! Create figure and add pcolormesh
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='viridis')
         
         ! Save to PDF
@@ -109,7 +109,7 @@ contains
         test_file = "test_nan_values.pdf"
         
         ! Create figure and add pcolormesh
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='coolwarm')
         
         ! Save to PDF
@@ -149,7 +149,7 @@ contains
         test_file = "test_infinity_values.pdf"
         
         ! Create figure and add pcolormesh
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='plasma')
         
         ! Save to PDF
@@ -184,7 +184,7 @@ contains
         
         test_file = "test_extreme_range_large.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='inferno')
         call fig%savefig(test_file)
         
@@ -201,7 +201,7 @@ contains
         
         test_file = "test_extreme_range_small.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='magma')
         call fig%savefig(test_file)
         
@@ -233,7 +233,7 @@ contains
         
         test_file = "test_numerical_precision.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='cividis')
         call fig%savefig(test_file)
         
@@ -264,7 +264,7 @@ contains
         
         test_file = "test_minimal_dataset.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='twilight')
         call fig%savefig(test_file)
         
@@ -295,7 +295,7 @@ contains
         
         test_file = "test_single_cell.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='rainbow')
         call fig%savefig(test_file)
         
@@ -340,7 +340,7 @@ contains
         
         test_file = "test_sparse_data.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='turbo')
         call fig%savefig(test_file)
         
@@ -372,7 +372,7 @@ contains
         
         test_file = "test_rgb_clamping.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         ! Set explicit vmin/vmax to force clamping
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='gray', vmin=0.0_wp, vmax=10.0_wp)
         call fig%savefig(test_file)
@@ -411,7 +411,7 @@ contains
         
         test_file = "test_mixed_edge_cases.pdf"
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x_grid, y_grid, z_grid, colormap='jet')
         call fig%savefig(test_file)
         

@@ -5,6 +5,7 @@ program test_pdf_heatmap_edge_cases
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic
     use fortplot
+    use fortplot_validation, only: validate_pdf_format, validation_result_t
     implicit none
     
     logical :: all_passed = .true.
@@ -41,7 +42,7 @@ contains
         
         real(wp) :: x(3), y(3), z(2,2)
         type(figure_t) :: fig
-        logical :: success
+        type(validation_result_t) :: validation
         
         test_count = test_count + 1
         print *, "Test 1: Constant field (z_max == z_min)"
@@ -50,21 +51,20 @@ contains
         y = [0.0_wp, 1.0_wp, 2.0_wp]
         z = 5.0_wp  ! Constant value
         
-        ! Create figure with pcolormesh
-        call fig%initialize(80, 24)
+        ! Create figure with PDF backend for proper PDF generation
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
-        ! Try to save as PDF - should not crash
-        success = .true.
+        ! Save as PDF
         call fig%savefig('test_constant.pdf')
         
-        ! Check file was created
-        inquire(file='test_constant.pdf', exist=success)
+        ! Validate PDF format
+        validation = validate_pdf_format('test_constant.pdf')
         
-        if (success) then
-            print *, "  ✅ Passed: Constant field handled correctly"
+        if (validation%passed) then
+            print *, "  ✅ Passed: Constant field handled correctly, valid PDF generated"
         else
-            print *, "  ❌ Failed: Could not generate PDF"
+            print *, "  ❌ Failed: ", trim(validation%message)
             all_passed = .false.
         end if
     end subroutine test_constant_field
@@ -76,7 +76,7 @@ contains
         real(wp) :: x(4), y(4), z(3,3)
         real(wp) :: nan_val
         type(figure_t) :: fig
-        logical :: success
+        type(validation_result_t) :: validation
         
         test_count = test_count + 1
         print *, "Test 2: NaN value handling"
@@ -91,18 +91,18 @@ contains
         z(2,:) = [nan_val, 5.0_wp, nan_val]
         z(3,:) = [7.0_wp, 8.0_wp, nan_val]
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
-        success = .true.
         call fig%savefig('test_nan.pdf')
         
-        inquire(file='test_nan.pdf', exist=success)
+        ! Validate PDF format
+        validation = validate_pdf_format('test_nan.pdf')
         
-        if (success) then
-            print *, "  ✅ Passed: NaN values handled without crash"
+        if (validation%passed) then
+            print *, "  ✅ Passed: NaN values handled correctly, valid PDF generated"
         else
-            print *, "  ❌ Failed: Could not generate PDF with NaN"
+            print *, "  ❌ Failed: ", trim(validation%message)
             all_passed = .false.
         end if
     end subroutine test_nan_handling
@@ -114,7 +114,7 @@ contains
         real(wp) :: x(3), y(3), z(2,2)
         real(wp) :: pos_inf, neg_inf
         type(figure_t) :: fig
-        logical :: success
+        type(validation_result_t) :: validation
         
         test_count = test_count + 1
         print *, "Test 3: Infinity value handling"
@@ -128,18 +128,18 @@ contains
         z(1,:) = [pos_inf, 5.0_wp]
         z(2,:) = [neg_inf, 10.0_wp]
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
-        success = .true.
         call fig%savefig('test_inf.pdf')
         
-        inquire(file='test_inf.pdf', exist=success)
+        ! Validate PDF format
+        validation = validate_pdf_format('test_inf.pdf')
         
-        if (success) then
-            print *, "  ✅ Passed: Infinity values handled correctly"
+        if (validation%passed) then
+            print *, "  ✅ Passed: Infinity values handled correctly, valid PDF generated"
         else
-            print *, "  ❌ Failed: Could not generate PDF with infinity"
+            print *, "  ❌ Failed: ", trim(validation%message)
             all_passed = .false.
         end if
     end subroutine test_infinity_handling
@@ -150,7 +150,7 @@ contains
         
         real(wp) :: x(3), y(3), z(2,2)
         type(figure_t) :: fig
-        logical :: success
+        type(validation_result_t) :: validation
         
         test_count = test_count + 1
         print *, "Test 4: Extreme value ranges"
@@ -162,16 +162,16 @@ contains
         z(1,:) = [1.0e-20_wp, 1.0e20_wp]
         z(2,:) = [5.0e19_wp, 9.0e19_wp]
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
-        success = .true.
         call fig%savefig('test_large_range.pdf')
         
-        inquire(file='test_large_range.pdf', exist=success)
+        ! Validate PDF format for large range
+        validation = validate_pdf_format('test_large_range.pdf')
         
-        if (.not. success) then
-            print *, "  ❌ Failed: Large range handling"
+        if (.not. validation%passed) then
+            print *, "  ❌ Failed (large range): ", trim(validation%message)
             all_passed = .false.
         end if
         
@@ -180,17 +180,18 @@ contains
         z(1,1) = 1.0_wp + 1.0e-15_wp
         z(2,2) = 1.0_wp - 1.0e-15_wp
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
         call fig%savefig('test_small_range.pdf')
         
-        inquire(file='test_small_range.pdf', exist=success)
+        ! Validate PDF format for small range
+        validation = validate_pdf_format('test_small_range.pdf')
         
-        if (success) then
-            print *, "  ✅ Passed: Extreme ranges handled correctly"
+        if (validation%passed) then
+            print *, "  ✅ Passed: Extreme ranges handled correctly, valid PDFs generated"
         else
-            print *, "  ❌ Failed: Small range handling"
+            print *, "  ❌ Failed (small range): ", trim(validation%message)
             all_passed = .false.
         end if
     end subroutine test_extreme_ranges
@@ -201,7 +202,7 @@ contains
         
         real(wp) :: x(3), y(3), z(2,2)
         type(figure_t) :: fig
-        logical :: success
+        type(validation_result_t) :: validation
         
         test_count = test_count + 1
         print *, "Test 5: Numerical precision near epsilon"
@@ -213,18 +214,18 @@ contains
         z(1,:) = [1.0_wp, 1.0_wp + 5e-11_wp]
         z(2,:) = [1.0_wp - 5e-11_wp, 1.0_wp + 1e-10_wp]
         
-        call fig%initialize(80, 24)
+        call fig%initialize(80, 24, backend='pdf')
         call fig%add_pcolormesh(x, y, z)
         
-        success = .true.
         call fig%savefig('test_epsilon.pdf')
         
-        inquire(file='test_epsilon.pdf', exist=success)
+        ! Validate PDF format
+        validation = validate_pdf_format('test_epsilon.pdf')
         
-        if (success) then
-            print *, "  ✅ Passed: Epsilon precision handled correctly"
+        if (validation%passed) then
+            print *, "  ✅ Passed: Epsilon precision handled correctly, valid PDF generated"
         else
-            print *, "  ❌ Failed: Epsilon handling"
+            print *, "  ❌ Failed: ", trim(validation%message)
             all_passed = .false.
         end if
     end subroutine test_epsilon_precision
