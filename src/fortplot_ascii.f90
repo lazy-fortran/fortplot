@@ -39,6 +39,7 @@ module fortplot_ascii
         procedure :: color => ascii_set_color
         procedure :: text => ascii_draw_text
         procedure :: set_line_width => ascii_set_line_width
+        procedure :: set_line_style => ascii_set_line_style
         procedure :: save => ascii_finalize
         procedure :: set_title => ascii_set_title
         procedure :: draw_marker => ascii_draw_marker
@@ -195,6 +196,19 @@ contains
         ! ASCII context doesn't support variable line widths
         ! This is a no-op to satisfy the interface
     end subroutine ascii_set_line_width
+    
+    subroutine ascii_set_line_style(this, style)
+        !! Set line style for ASCII context (no-op as ASCII uses fixed characters)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: style
+        
+        ! Suppress unused parameter warnings
+        associate(unused_int => this%width, unused_style => style); end associate
+        
+        ! ASCII context doesn't support different line styles
+        ! All lines are rendered as continuous ASCII characters
+        ! This is a no-op to satisfy the interface
+    end subroutine ascii_set_line_style
     
     subroutine ascii_draw_text(this, x, y, text)
         class(ascii_context), intent(inout) :: this

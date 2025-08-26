@@ -17,6 +17,7 @@ module fortplot_plotting
     use fortplot_streamplot_matplotlib
     use fortplot_logging, only: log_warning
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT, log_error
+    use fortplot_format_parser, only: parse_format_string
 
     implicit none
 
@@ -476,17 +477,39 @@ contains
             ! If label is empty or not provided, leave it unallocated
         end if
         
-        if (present(linestyle)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = linestyle
-        else
-            self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'solid'
-        end if
-
-        if (present(marker)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
-        else
-            self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
-        end if
+        ! Parse linestyle to extract marker and line style components
+        block
+            character(len=20) :: parsed_marker, parsed_linestyle
+            
+            if (present(linestyle)) then
+                call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+                
+                if (len_trim(parsed_marker) > 0) then
+                    ! Format string contained a marker
+                    self%subplots(subplot_idx)%plots(plot_idx)%marker = trim(parsed_marker)
+                    if (len_trim(parsed_linestyle) > 0) then
+                        self%subplots(subplot_idx)%plots(plot_idx)%linestyle = trim(parsed_linestyle)
+                    else
+                        self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'None'  ! No line, marker only
+                    end if
+                else
+                    ! Pure linestyle, no marker
+                    self%subplots(subplot_idx)%plots(plot_idx)%linestyle = linestyle
+                    if (present(marker)) then
+                        self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+                    else
+                        self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
+                    end if
+                end if
+            else
+                self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'solid'
+                if (present(marker)) then
+                    self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+                else
+                    self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
+                end if
+            end if
+        end block
         
         ! Handle color specification
         if (present(color_str)) then
