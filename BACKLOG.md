@@ -14,6 +14,7 @@
 - [ ] #388: Fix - investigate test_mpeg_consolidated failure unrelated to ylabel rotation (test infrastructure)
 
 ## DOING (Current Work)
+- [x] #392: Fix - Strange truncations in example documentation output (branch: fix-documentation-truncations-392)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
