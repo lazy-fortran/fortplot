@@ -1,5 +1,44 @@
 # fortplot Library Design Architecture
 
+## Sprint Goal and Definition of Done
+
+### Current Sprint Goal: Critical Foundation Recovery
+**Objective**: Restore core plotting functionality across all backends and eliminate systematic architecture failures that prevent basic plotting operations.
+
+**Definition of Done**:
+1. All critical segmentation faults resolved (issues #430, #437)
+2. Basic plotting works across PNG, PDF, and ASCII backends for simple data
+3. State contamination between figure calls eliminated (#434)
+4. Single point and edge case plotting functional (#432, #433, #435, #436)
+5. Example plots display correctly without blank outputs (#311, #312, #408-#413)
+6. Foundation API no longer returns error_stop for basic operations (#417, #422)
+7. Error reporting provides accurate status instead of success-after-failure (#431)
+8. All stub implementations replaced with working code or properly documented as not-yet-implemented
+9. Memory leaks in core plotting path eliminated (#420)
+10. Test suite demonstrates restored functionality with passing integration tests
+
+**Sprint Success Metric**: User can successfully create and save basic line plots, scatter plots, and simple visualizations without crashes, blank outputs, or system instability.
+
+## Architectural Lessons Learned from Previous Sprint
+
+### Critical Architecture Issues Identified (from PLAY Workflow Audit)
+1. **Systematic Test Failure Pattern**: 18 disabled test files indicate fundamental API contract violations across the codebase
+2. **Backend Integration Fragility**: Inconsistent behavior between PNG, PDF, and ASCII backends suggests missing abstraction layer
+3. **State Management Breakdown**: Figure-to-figure state contamination indicates global state pollution without proper cleanup
+4. **Edge Case Handling Failures**: Single points, zero-size arrays, and numeric limits expose missing validation throughout the pipeline
+5. **Error Propagation Inconsistency**: Success reported after failures indicates broken error handling contracts
+6. **Stub Implementation Proliferation**: Multiple modules contain error_stop stubs instead of proper functionality
+7. **Memory Management Gaps**: Deallocate operations without proper error checking create potential memory leaks
+
+### Architecture Recovery Strategy
+1. **Foundation-First Approach**: Address core API stability before feature enhancement
+2. **Backend Abstraction**: Implement consistent rendering contracts across all output formats
+3. **Defensive Programming**: Add comprehensive input validation and error handling
+4. **State Isolation**: Implement proper cleanup and state management between plotting operations
+5. **Incremental Recovery**: Focus on basic plotting functionality before advanced features
+6. **Error Contract Enforcement**: Ensure consistent error reporting across all API boundaries
+7. **Test-Driven Restoration**: Re-enable disabled tests as functionality is restored
+
 ## Project Overview
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
