@@ -6,7 +6,6 @@
 **🚨 CRITICAL: CI test suite failures - user-visible rendering broken**
 
 **🚨 CRITICAL: User-visible PNG/PDF rendering regressions**
-- [ ] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning)
 - [ ] #375: Fix - PDF lines are outside box and axes box is upside down (PDF coordinates)
 - [ ] #374: Fix - no line styles visible in line_styles.html all solid (line styling)
 - [ ] #373: Fix - too many legend entries in second plot of legend_demo.html (legend system)
@@ -18,7 +17,7 @@
 **Infrastructure & Documentation Issues (Lower Priority)**
 
 ## DOING (Current Work)
-- [ ] #379: Fix - no output in streamplot_demo.html (rendering regression)
+- [ ] #378: Fix - axes and labels at wrong place on scale_examples.html (positioning)
 
 ## FUTURE SPRINTS - Systematic Restoration
 
@@ -43,6 +42,7 @@
 - Performance impact validation
 
 ## DONE (Completed)
+- [x] #379: Fix - no output in streamplot_demo.html (rendering regression) - FIXED: Restored streamplot trajectory rendering by implementing missing trajectory plotting functionality - streamlines are now properly converted from grid coordinates to data coordinates and added as line plots with correct styling (PR #389 merged)
 - [x] #380: Fix - ylabel not rotates 90 degrees (rendering regression) - FIXED: Corrected ylabel rotation regression by swapping bitmap rotation function names - rotate_bitmap_90_ccw now performs clockwise rotation and rotate_bitmap_90_cw performs counter-clockwise rotation, restoring proper ylabel 90-degree rotation behavior (PR #387 merged)
 - [x] #360: Refactor - split fortplot_raster.f90 to comply with file size limits - FIXED: Split oversized raster module (1137 lines) into three focused modules - fortplot_bitmap.f90 (150 lines), fortplot_png_encoder.f90 (30 lines), and reduced fortplot_raster.f90 (980 lines) - maintaining Single Responsibility Principle with zero behavioral changes and full QADS compliance (PR #385 merged)
 - [x] #358: Refactor - consolidate ASCII output formatting in example docs - FIXED: Created centralized ASCII Output Format Reference documentation and truncated long ASCII blocks (50+ lines each) to key representative sections with direct references to full .txt files for complete output viewing (PR #384 merged)
