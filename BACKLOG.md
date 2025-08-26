@@ -15,7 +15,6 @@
 **User-Facing Issues (Medium Priority)**
 
 **Infrastructure & Documentation Issues (Lower Priority)**
-- [ ] #323: Test - add edge case tests for PDF heatmap color validation
 - [ ] #324: Refactor - define epsilon constant for numerical comparisons
 - [ ] #342: Refactor - complete symlog tick generation implementation
 - [ ] #343: Refactor - extract label positioning constants
