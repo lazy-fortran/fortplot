@@ -22,6 +22,7 @@
 - [ ] #360: Refactor - split fortplot_raster.f90 to comply with file size limits
 
 ## DOING (Current Work)
+- [ ] #344: Refactor - add format threshold constants in axes module
 
 ## BLOCKED (Infrastructure Issues)
 
