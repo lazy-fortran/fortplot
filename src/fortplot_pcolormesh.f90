@@ -195,7 +195,23 @@ contains
     
     subroutine get_data_range(self)
         !! Compute data range for colormap normalization
+        !! Only computes range if c_values is properly allocated
         class(pcolormesh_t), intent(inout) :: self
+        
+        ! Safety check: ensure c_values is allocated before accessing
+        if (.not. allocated(self%c_values)) then
+            ! Set default range for uninitialized data
+            if (.not. self%vmin_set) self%vmin = 0.0_wp
+            if (.not. self%vmax_set) self%vmax = 1.0_wp
+            return
+        end if
+        
+        ! Additional safety: check array has valid size
+        if (size(self%c_values) == 0) then
+            if (.not. self%vmin_set) self%vmin = 0.0_wp  
+            if (.not. self%vmax_set) self%vmax = 1.0_wp
+            return
+        end if
         
         if (.not. self%vmin_set) then
             self%vmin = minval(self%c_values)
@@ -206,7 +222,7 @@ contains
     end subroutine get_data_range
     
     subroutine get_quad_vertices(self, i, j, x_quad, y_quad)
-        !! Get vertices of quadrilateral (i,j)
+        !! Get vertices of quadrilateral (i,j) with bounds checking
         !! 
         !! Arguments:
         !!   i, j: Quadrilateral indices (1-based)
@@ -214,6 +230,29 @@ contains
         class(pcolormesh_t), intent(in) :: self
         integer, intent(in) :: i, j
         real(wp), intent(out) :: x_quad(4), y_quad(4)
+        
+        ! Safety checks: ensure vertex arrays are allocated and indices valid
+        if (.not. allocated(self%x_vertices) .or. .not. allocated(self%y_vertices)) then
+            ! Return zero coordinates for uninitialized mesh
+            x_quad = 0.0_wp
+            y_quad = 0.0_wp
+            return
+        end if
+        
+        ! Check bounds to prevent array access violations
+        if (i < 1 .or. i > self%ny .or. j < 1 .or. j > self%nx) then
+            ! Invalid indices - return zero coordinates
+            x_quad = 0.0_wp  
+            y_quad = 0.0_wp
+            return
+        end if
+        
+        ! Check array dimensions to ensure safe access to (i+1, j+1)
+        if (i + 1 > size(self%x_vertices, 1) .or. j + 1 > size(self%x_vertices, 2)) then
+            x_quad = 0.0_wp
+            y_quad = 0.0_wp
+            return
+        end if
         
         ! Quadrilateral vertices in counter-clockwise order
         ! Bottom-left, bottom-right, top-right, top-left
