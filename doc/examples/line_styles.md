@@ -36,42 +36,19 @@ make example ARGS="line_styles"
 
 ![line_styles.png](../../media/examples/line_styles/line_styles.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                          Complete Line Style Reference
 +--------------------------------------------------------------------------------+
-|                                                                                |
-| .           *                                                                  |
 | .      * * *  ** *                                -- Solid*(-)* * *            |
 | .   *#*           *#*                             -- Dashed (--)   * *         |
 | . #*                 #*                           -*#Dotted (:)       *#*      |
 | **                     *#                       *#*# Dash-dot (-.)       *     |
-| . #**#                   **                 ** ** o*N*ne (invisible)      #*#  |
-| .     **#                  #*#          *#* #*#   o Markers only             * |
-| .        *#                  * *      #*  * *             **#                  |
-| .   *#*    **                *#* ** ** **             *#*    *                 |
-| . #*#  *#*   #*            #*#  #*%#*               #*# ##*   * #           #* |
-| . #      ##    *#*        *#     **                *#     #*    *#*        ##  |
-| #*        #*      *#     ##  * *   #*             *         ##    #* *    #*   |
-| *           *  * *  *#**#** *   #*  ##          *#*          *  ##*   * **#*#* |
-| .*#         ##*   #    *#     #*  *  *#        ** ##          *#* #*    ##     |
-| . #          #%#  *#  #      *#    #   *      #*   *#         *##   #  #*      |
-| .  *        ## *#  #%#*      #      *  #*#   *#     ##        # *#*  **        |
 | .  ##       *    oo#o oo oo oo o o  ##   #*#%#       *       #    #*#%#        |
-| .   *#     oo oo     #     #*     o oo o    #        ##     #*        *        |
-| .    #oo o#*         #*    #          # o o#o         *#   ##          #    #* |
-| .o oo *  *#           #*  *            *# *# o o       #* #*            *##*   |
-| oo oo oo#o              #*              *       o oo      *              *#    |
-| .          oo o                                      oo o                      |
-| .              o oo                                       oo o                 |
-| .                   o oo                                      o o oo o     o o |
-| .                        oo                                           o oo o o |
-| .                           oo o                                   o o         |
-| .                                oo oo                       oo o o            |
-| .. . . . . . . . . . . . .. . . . . . .oo o oo.oo oo oo.o.oo . . . . . . . ..  |
-|                                                                                |
+| ... [truncated - see full output in line_styles.txt] ...                      |
 +--------------------------------------------------------------------------------+
 ```
+
+> **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/line_styles/line_styles.pdf)

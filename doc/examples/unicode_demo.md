@@ -44,43 +44,20 @@ make example ARGS="unicode_demo"
 
 ![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
              Wave Functions: ψ(ω t) = A e^{-λ t} sin(ω t + φ)
 +--------------------------------------------------------------------------------+
-|                                                                                |
-| *                                                                              |
 | **                    -- α damped: si                                         |
 |   *                   -- β damped: cos                                        |
 |    *                  -- γ oscillatio                                         |
 | .  *   ****                                                                    |
-|       *   **                                                                   |
-|     **      *                                                                  |
-|     **       *                                                                 |
-| .  **         *         *           ****  **                  **               |
 |    * **       *       ****         *    *** *                * *               |
-|    *   *       *     *           **      **  *              *   *              |
-|   *             *         *     *          * *             *     *             |
-| .*     *             *     *   *        *  ********                      ***** |
-|                  *             *       *  *  **    **      *      *    ***     |
-| *       *        *  *       * *         **   * *     **               *        |
-|          *        *          *        **      **       ** *       * **         |
-| *        *         *        *         *         *       **         *        ** |
-|           *                          **          *       ***      **     ***   |
-|                   * *       **      *            *          *** **    ****  *  |
-|           *          *     *       * *            **    *      ********        |
-| .          *     *   *    *   *   **             *  *   *     **           *   |
-|            *     *    ** *     * *  *               ***    ***       *         |
-|             *           *      **  *              *    *****          *   *    |
-|              *  *       ***  ***   *               *  *               *  *     |
-| .             **       *   **   ***                 **                 ***     |
-|               *       *                                                        |
-|                *     *                                                         |
-| .. .. .. .. .. .******. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. .. . . |
-|                                                                                |
+| ... [truncated - see full output in unicode_demo.txt] ...                     |
 +--------------------------------------------------------------------------------+
 ```
+
+> **Full ASCII Output**: [Download unicode_demo.txt](../../media/examples/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/unicode_demo/unicode_demo.pdf)
 

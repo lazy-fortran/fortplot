@@ -41,45 +41,21 @@ make example ARGS="colored_contours"
 
 ![gaussian_default.png](../../media/examples/colored_contours/gaussian_default.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                  2D Gaussian - Default Colorblind-Safe Colormap
 +--------------------------------------------------------------------------------+
 |3.00                                                                            |
-| .                                                                              |
-|                                                                                |
-| .                                                                              |
 |2.00                                                                            |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
 |1.00                                                                            |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
 |0.                                                                              |
-|                                                                                |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-|-1.00                                                                           |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-|-2.00                                                                           |
-| .                                                                              |
-| .                                                                              |
-| .                                                                              |
-| .  .  .  .  .  .  .  .  .  .  .  .  .   .  .  .  .  .  .  .  .  .  .  .  .   . |
-|-3.00       -2.00         -1.00        0            1.00          2.00     3.00 |
+| ... [truncated - see full output in gaussian_default.txt] ...                 |
 +--------------------------------------------------------------------------------+
                                        x
 y
 ```
+
+> **Full ASCII Output**: [Download gaussian_default.txt](../../media/examples/colored_contours/gaussian_default.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/gaussian_default.pdf)
 
@@ -87,45 +63,16 @@ y
 
 ![saddle_plasma.png](../../media/examples/colored_contours/saddle_plasma.png)
 
-ASCII output:
+ASCII output preview:
+```
+Saddle Function - Plasma Colormap
++--------------------------------------------------------------------------------+
+| ... [representative sample showing colormap pattern] ...                      |
+| ... [truncated - see full output in saddle_plasma.txt] ...                          |
++--------------------------------------------------------------------------------+
 ```
 
-                       Saddle Function - Plasma Colormap
-+--------------------------------------------------------------------------------+
-|                                                                                |
-| =  +  +  *  #   #  #  %  %  %   %  %  @  %  %   %  %  %  #  #   *  *  +  +   = |
-|2.00                                                                            |
-| -  =  +  +  *   *  #  #  #  %   %  %  %  %  %   %  #  #  #  *   *  +  +  =   - |
-| -  -  =  +  +   *  *  *  #  #   #  #  #  #  #   #  #  *  *  *   +  +  =  -   - |
-| :  -  -  =  +   +  +  *  *  *   *  *  #  *  *   *  *  *  +  +   +  =  -  -   : |
-| :  :  -  -  =   =  +  +  *  *   *  *  *  *  *   *  *  +  +  =   =  -  -  :   : |
-| .  :  :  -  =   =  =  +  +  +   +  *  *  *  +   +  +  +  =  =   =  -  :  :   . |
-|1.00.  :  -  -   =  =  =  +  +   +  +  +  +  +   +  +  =  =  =   -  -  :  .   . |
-| .  .  :  :  -   -  =  =  =  +   +  +  +  +  +   +  =  =  =  -   -  :  :  .     |
-| .  .  .  :  -   -  -  =  =  =   =  =  +  =  =   =  =  =  -  -   :  :  .  .     |
-|                                                                                |
-| .  .  .  :  :   -  -  =  =  =   =  =  =  =  =   =  =  =  -  -   :  :  .        |
-| .     .  :  :   -  -  -  =  =   =  =  =  =  =   =  =  -  -  -   :  :  .        |
-|0.     .  :  :   -  -  -  =  =   =  =  =  =  =   =  =  -  -  :   :  :  .        |
-|       .  .  :   :  -  -  =  =   =  =  =  =  =   =  =  -  -  :   :  .  .        |
-| .     .  :  :   -  -  -  =  =   =  =  =  =  =   =  =  -  -  :   :  :  .        |
-| .     .  :  :   -  -  -  =  =   =  =  =  =  =   =  =  -  -  -   :  :  .        |
-| .  .  .  :  :   -  -  =  =  =   =  =  =  =  =   =  =  =  -  -   :  :  .        |
-| .  .  .  :  -   -  -  =  =  =   =  =  +  =  =   =  =  =  -  -   :  :  .  .     |
-|-1.00                                                                           |
-| .  .  :  :  -   -  =  =  =  +   +  +  +  +  +   +  =  =  =  -   -  :  :  .     |
-| .  .  :  -  -   =  =  =  +  +   +  +  +  +  +   +  +  =  =  =   -  -  :  .   . |
-| .  :  :  -  =   =  =  +  +  +   +  +  *  +  +   +  +  +  =  =   =  -  :  :   . |
-| .  :  -  -  =   =  +  +  +  *   *  *  *  *  *   *  +  +  +  =   =  -  -  :   . |
-| :  -  -  =  +   +  +  *  *  *   *  *  #  *  *   *  *  *  +  +   +  =  -  -   : |
-|-2.00  =  +  +   *  *  *  #  #   #  #  #  #  #   #  #  *  *  *   +  +  =  -   - |
-| -  =  +  +  *   *  #  #  #  %   %  %  %  %  %   %  #  #  #  *   *  +  +  =   - |
-| =  +  +. * .# . # .#  %  %  %.  %. %. @ .%  %  .%  %  %. #. # . * .* .+  +   = |
-|       -2.00           -1.00           0               1.00            2.00     |
-+--------------------------------------------------------------------------------+
-                                       x
-y
-```
+> **Full ASCII Output**: [Download saddle_plasma.txt](../../media/examples/colored_contours/saddle_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/saddle_plasma.pdf)
 
@@ -133,45 +80,16 @@ y
 
 ![ripple_jet.png](../../media/examples/colored_contours/ripple_jet.png)
 
-ASCII output:
+ASCII output preview:
+```
+Ripple Function - Jet Colormap
++--------------------------------------------------------------------------------+
+| ... [representative sample showing colormap pattern] ...                      |
+| ... [truncated - see full output in ripple_jet.txt] ...                          |
++--------------------------------------------------------------------------------+
 ```
 
-                         Ripple Function - Jet Colormap
-+--------------------------------------------------------------------------------+
-|2.00                                                                            |
-| +   *   *   *   +   =   =   -   -   :   :   -   -   =   =   +   *   *   *    + |
-|                                                                                |
-|1*50 *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| .                                                                              |
-| *   +   -   :   .                                           .   :   -   +    * |
-|1+00 =   :   .               .   .   :   :   .   .               .   :   =    + |
-| .                                                                              |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|.500 :               .   -   +   #   #   #   #   +   -   .               :    = |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-|                                                                                |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|0:   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-|                                                                                |
-| :   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|-.500                                                                           |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-| =   :               .   -   +   #   #   #   #   +   -   .               :    = |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|-1.00                                                                           |
-| +   =   :   .               .   .   :   :   .   .               .   :   =    + |
-| *   +   -   :   .                                           .   :   -   +    * |
-|-1.50                                                                           |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| *   *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| +   *   *.  *.  + . = . =  .-  .-   :   :   -.  -.  = . = . +  .*  .*   *    + |
-|-2.00    -1.50     -1.00     -.500     0         .500      1.00      1.50  2.00 |
-+--------------------------------------------------------------------------------+
-                                       x
-y
-```
+> **Full ASCII Output**: [Download ripple_jet.txt](../../media/examples/colored_contours/ripple_jet.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/ripple_jet.pdf)
 
@@ -179,45 +97,16 @@ y
 
 ![ripple_coolwarm.png](../../media/examples/colored_contours/ripple_coolwarm.png)
 
-ASCII output:
+ASCII output preview:
+```
+Ripple Function - Coolwarm Colormap
++--------------------------------------------------------------------------------+
+| ... [representative sample showing colormap pattern] ...                      |
+| ... [truncated - see full output in ripple_coolwarm.txt] ...                          |
++--------------------------------------------------------------------------------+
 ```
 
-                      Ripple Function - Coolwarm Colormap
-+--------------------------------------------------------------------------------+
-|2.00                                                                            |
-| +   *   *   *   +   =   =   -   -   :   :   -   -   =   =   +   *   *   *    + |
-|                                                                                |
-|1*50 *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| .                                                                              |
-| *   +   -   :   .                                           .   :   -   +    * |
-|1+00 =   :   .               .   .   :   :   .   .               .   :   =    + |
-| .                                                                              |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|.500 :               .   -   +   #   #   #   #   +   -   .               :    = |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-|                                                                                |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|0:   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-|                                                                                |
-| :   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|-.500                                                                           |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-| =   :               .   -   +   #   #   #   #   +   -   .               :    = |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|-1.00                                                                           |
-| +   =   :   .               .   .   :   :   .   .               .   :   =    + |
-| *   +   -   :   .                                           .   :   -   +    * |
-|-1.50                                                                           |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| *   *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| +   *   *.  *.  + . = . =  .-  .-   :   :   -.  -.  = . = . +  .*  .*   *    + |
-|-2.00    -1.50     -1.00     -.500     0         .500      1.00      1.50  2.00 |
-+--------------------------------------------------------------------------------+
-                                       x
-y
-```
+> **Full ASCII Output**: [Download ripple_coolwarm.txt](../../media/examples/colored_contours/ripple_coolwarm.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/ripple_coolwarm.pdf)
 
@@ -225,45 +114,16 @@ y
 
 ![ripple_inferno.png](../../media/examples/colored_contours/ripple_inferno.png)
 
-ASCII output:
+ASCII output preview:
+```
+Ripple Function - Inferno Colormap
++--------------------------------------------------------------------------------+
+| ... [representative sample showing colormap pattern] ...                      |
+| ... [truncated - see full output in ripple_inferno.txt] ...                          |
++--------------------------------------------------------------------------------+
 ```
 
-                       Ripple Function - Inferno Colormap
-+--------------------------------------------------------------------------------+
-|2.00                                                                            |
-| +   *   *   *   +   =   =   -   -   :   :   -   -   =   =   +   *   *   *    + |
-|                                                                                |
-|1*50 *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| .                                                                              |
-| *   +   -   :   .                                           .   :   -   +    * |
-|1+00 =   :   .               .   .   :   :   .   .               .   :   =    + |
-| .                                                                              |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|.500 :               .   -   +   #   #   #   #   +   -   .               :    = |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-|                                                                                |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|0:   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-|                                                                                |
-| :   .           :   +   #   %   %   *   *   %   %   #   +   :           .    : |
-| -   .           .   =   #   %   @   %   %   @   %   #   =   .           .    - |
-|-.500                                                                           |
-| -   .           .   -   +   #   %   %   %   %   #   +   -   .           .    - |
-| =   :               .   -   +   #   #   #   #   +   -   .               :    = |
-| =   -   .               .   -   =   +   +   =   -   .               .   -    = |
-|-1.00                                                                           |
-| +   =   :   .               .   .   :   :   .   .               .   :   =    + |
-| *   +   -   :   .                                           .   :   -   +    * |
-|-1.50                                                                           |
-| *   *   +   -   :   .                                   .   :   -   +   *    * |
-| *   *   *   +   =   -   :   .   .   .   .   .   .   :   -   =   +   *   *    * |
-| +   *   *.  *.  + . = . =  .-  .-   :   :   -.  -.  = . = . +  .*  .*   *    + |
-|-2.00    -1.50     -1.00     -.500     0         .500      1.00      1.50  2.00 |
-+--------------------------------------------------------------------------------+
-                                       x
-y
-```
+> **Full ASCII Output**: [Download ripple_inferno.txt](../../media/examples/colored_contours/ripple_inferno.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/ripple_inferno.pdf)
 

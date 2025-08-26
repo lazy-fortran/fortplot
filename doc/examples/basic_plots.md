@@ -31,43 +31,23 @@ make example ARGS="basic_plots"
 
 ![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                                 Simple Sine Wave
 +--------------------------------------------------------------------------------+
-|                                                                                |
 | .        *                                                                     |
 |        *# #*                                  #**#*                            |
 |       *#    *                                *     #                           |
 |              #                              *      *                           |
 | .    #        *                                     #                          |
 |     *         #                            #         *                         |
-|    #                                      *                                    |
-| .  *           *                         #            #                        |
-|                 #                                      *                       |
-|   #                                     *                                      |
-|                  *                                     #                       |
-| .*                #                     #               *                      |
-| #                                      *                                       |
-|                   *                                      #                     |
-| *                                     #                                      * |
-|                    #                                      *                    |
-|                                      *                                      #  |
-| .                   *               #                     #                *   |
-|                      #                                     *                   |
-|                                     *                                     #    |
-|                       *                                     #                  |
-| .                     #            #                         *           *     |
-|                                   *                                      #     |
-|                        *         #                            #         *      |
-| .                       #                                     *        #       |
-|                          *      #*                             #               |
-|                          #     *                                *    #*        |
-| .. .. .. .. .. .. .. .. ..*#**#. .. .. .. .. .. .. .. .. .. .. ..#**#*. .. ..  |
-|                                                                                |
+| ... [truncated - see full output in simple_plot.txt] ...                     |
 +--------------------------------------------------------------------------------+
+                                       x
+sin(x)
 ```
+
+> **Full ASCII Output**: [Download simple_plot.txt](../../media/examples/basic_plots/simple_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/basic_plots/simple_plot.pdf)
 
@@ -75,42 +55,22 @@ ASCII output:
 
 ![multi_line.png](../../media/examples/basic_plots/multi_line.png)
 
-ASCII output:
+ASCII output preview:
 ```
-
                            Sine and Cosine Functions
 +--------------------------------------------------------------------------------+
-|                                                                                |
 | *                                                                              |
 | *   ****               ***   ***               ***   ****- sin(x)       ***    |
 |  *     *              *   * *   *                 * *   *- cos(x)      *   *   |
 |   **    *                   *                 *    *     *            *      * |
 | .  *                 *     *     *           *      *                       *  |
 |   #*     *           *     *                 #      *     *           *     %  |
-|   *#     #                # *     *          *     *#     #          #     # * |
-| .  *      *         #     * #     #               # *      *         *     *   |
-|  #  #     #         *       *      *        #     *  #                     #   |
-|  *  *     *        #      #  #              *              #        #     *    |
-|  #   #             *     *         #       #      #  *     *        *          |
-| *          #       #     #   *     *       *     *    #     #       #     #    |
-|      *     *            *    #      #            #    *            *     *     |
-| #    #      #     *           *            #                *            #     |
-| *     *           #     #           *     *      *    #      #     #           |
-|             *           *     #     #     #     #      *     *    *      *     |
-|       #     #    *     #       *     *          *      #          #     #      |
-| .      *     *   #             #          *                  #          *      |
-|        #         *     *             #   #     #        *     *   *            |
-|              #  #     #        *      *  *     *        #     #  #     #       |
-|        *      *       *         #     # #      #        *     *# *     *       |
-| .       #     # *     #         *     *       *          #     ##      #       |
-|         *     *#                 #     #*     #          *      *     *        |
-|                *     *           *     *#    *                 *               |
-| .        *     *     *                 *                  *    *      *        |
-|               *                   *   * *    *                  *              |
-|           *   * *   *              *     *  *              *  *  *   *         |
-| ..........****...***...............****...**...............****...***........  |
-|                                                                                |
+| ... [truncated - see full output in multi_line.txt] ...                       |
 +--------------------------------------------------------------------------------+
+                                       x
+y
 ```
+
+> **Full ASCII Output**: [Download multi_line.txt](../../media/examples/basic_plots/multi_line.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/basic_plots/multi_line.pdf)
