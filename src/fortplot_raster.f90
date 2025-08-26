@@ -225,7 +225,18 @@ contains
         integer, intent(in) :: codepoint
         character(len=*), intent(out) :: ascii_equiv
         
-        ! Convert Greek letters to ASCII names
+        ! Try lowercase Greek first, then uppercase, then default
+        if (codepoint_to_lowercase_greek(codepoint, ascii_equiv)) return
+        if (codepoint_to_uppercase_greek(codepoint, ascii_equiv)) return
+        call codepoint_to_default_placeholder(codepoint, ascii_equiv)
+    end subroutine unicode_codepoint_to_ascii
+    
+    logical function codepoint_to_lowercase_greek(codepoint, ascii_equiv)
+        !! Convert lowercase Greek codepoint to ASCII name
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+        
+        codepoint_to_lowercase_greek = .true.
         select case (codepoint)
         case (945) ! α
             ascii_equiv = "alpha"
@@ -275,6 +286,18 @@ contains
             ascii_equiv = "psi"
         case (969) ! ω
             ascii_equiv = "omega"
+        case default
+            codepoint_to_lowercase_greek = .false.
+        end select
+    end function codepoint_to_lowercase_greek
+    
+    logical function codepoint_to_uppercase_greek(codepoint, ascii_equiv)
+        !! Convert uppercase Greek codepoint to ASCII name
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+        
+        codepoint_to_uppercase_greek = .true.
+        select case (codepoint)
         case (913) ! Α
             ascii_equiv = "Alpha"
         case (914) ! Β
@@ -324,10 +347,17 @@ contains
         case (937) ! Ω
             ascii_equiv = "Omega"
         case default
-            ! For other Unicode characters, use a placeholder
-            write(ascii_equiv, '("U+", Z4.4)') codepoint
+            codepoint_to_uppercase_greek = .false.
         end select
-    end subroutine unicode_codepoint_to_ascii
+    end function codepoint_to_uppercase_greek
+    
+    subroutine codepoint_to_default_placeholder(codepoint, ascii_equiv)
+        !! Convert unknown codepoint to default placeholder format
+        integer, intent(in) :: codepoint
+        character(len=*), intent(out) :: ascii_equiv
+        
+        write(ascii_equiv, '("U+", Z4.4)') codepoint
+    end subroutine codepoint_to_default_placeholder
 
     subroutine raster_draw_text(this, x, y, text)
         class(raster_context), intent(inout) :: this
@@ -586,18 +616,13 @@ contains
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        integer :: px, py, nx, ny
-        real(wp) :: world_x, world_y, z_value, normalized_z
-        real(wp) :: color_rgb(3)
-        integer(1) :: r_byte, g_byte, b_byte
-        integer :: offset
-        real(wp) :: dx, dy
+        integer :: nx, ny
         real(wp) :: x_min, x_max, y_min, y_max
         
         nx = size(x_grid)
         ny = size(y_grid)
         
-        ! Validate input dimensions - z_grid should be (ny, nx)
+        ! Validate input dimensions and data bounds
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
         if (abs(z_max - z_min) < EPSILON_COMPARE) return
         
@@ -607,18 +632,23 @@ contains
         y_min = minval(y_grid)
         y_max = maxval(y_grid)
         
-        ! Grid spacing for interpolation
-        if (nx > 1) then
-            dx = (x_max - x_min) / real(nx - 1, wp)
-        else
-            dx = 1.0_wp
-        end if
+        ! Render pixels using scanline method
+        call raster_render_heatmap_pixels(this, x_grid, y_grid, z_grid, &
+                                         x_min, x_max, y_min, y_max, z_min, z_max)
+    end subroutine raster_fill_heatmap
+    
+    subroutine raster_render_heatmap_pixels(this, x_grid, y_grid, z_grid, &
+                                           x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Render heatmap pixels using pixel-by-pixel scanline approach
+        class(raster_context), intent(inout) :: this
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        if (ny > 1) then
-            dy = (y_max - y_min) / real(ny - 1, wp) 
-        else
-            dy = 1.0_wp
-        end if
+        integer :: px, py
+        real(wp) :: world_x, world_y, z_value
+        real(wp) :: color_rgb(3)
+        integer(1) :: r_byte, g_byte, b_byte
+        integer :: offset
         
         ! Scanline rendering: iterate over all pixels in plot area
         do py = this%plot_area%bottom, this%plot_area%bottom + this%plot_area%height - 1
@@ -631,13 +661,11 @@ contains
                 world_y = this%y_max - (real(py - this%plot_area%bottom, wp) / &
                          real(this%plot_area%height - 1, wp)) * (this%y_max - this%y_min)
                 
-                ! Interpolate Z value at this pixel
+                ! Interpolate Z value and convert to color
                 call interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, world_y, z_value)
-                
-                ! Convert Z value to color using default colormap (viridis)
                 call colormap_value_to_color(z_value, z_min, z_max, 'viridis', color_rgb)
                 
-                ! Convert to bytes
+                ! Convert to bytes and set pixel
                 r_byte = color_to_byte(color_rgb(1))
                 g_byte = color_to_byte(color_rgb(2))
                 b_byte = color_to_byte(color_rgb(3))
@@ -653,7 +681,7 @@ contains
                 end if
             end do
         end do
-    end subroutine raster_fill_heatmap
+    end subroutine raster_render_heatmap_pixels
 
     subroutine raster_render_legend_specialized(this, legend, legend_x, legend_y)
         !! Render legend using standard algorithm for PNG
@@ -791,8 +819,6 @@ contains
                                           title, xlabel, ylabel, &
                                           z_min, z_max, has_3d_plots)
         !! Draw axes and labels for raster backends
-        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-        use fortplot_text, only: calculate_text_width, calculate_text_height
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -801,123 +827,165 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        real(wp) :: label_x, label_y
-        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
-        integer :: num_x_ticks, num_y_ticks, i
-        character(len=50) :: tick_label
-        real(wp) :: tick_x, tick_y
-        integer :: tick_length  ! Tick length in pixels
-        integer :: px, py, text_width, text_height
-        real(wp) :: line_r, line_g, line_b
-        integer(1) :: text_r, text_g, text_b
-        real(wp) :: dummy_pattern(1)  ! Dummy pattern for solid lines
-        real(wp) :: pattern_dist  ! Pattern distance (mutable)
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
-        
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
-        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color for lines
-        text_r = 0; text_g = 0; text_b = 0  ! Black color for text
         
-        ! Draw axes
+        ! Draw main axes lines
         call this%line(x_min, y_min, x_max, y_min)
         call this%line(x_min, y_min, x_min, y_max)
         
-        ! Generate and draw tick marks and labels
-        tick_length = TICK_MARK_LENGTH  ! Tick length in pixels
+        ! Draw tick marks and labels
+        call raster_draw_x_axis_ticks(this, xscale, symlog_threshold, x_min, x_max, y_min, y_max)
+        call raster_draw_y_axis_ticks(this, yscale, symlog_threshold, x_min, x_max, y_min, y_max)
         
-        ! X-axis ticks
+        ! Draw labels and title
+        call raster_draw_axis_labels(this, title, xlabel, ylabel)
+    end subroutine raster_draw_axes_and_labels
+    
+    subroutine raster_draw_x_axis_ticks(this, xscale, symlog_threshold, x_min, x_max, y_min, y_max)
+        !! Draw X-axis tick marks and labels
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        use fortplot_text, only: calculate_text_width
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        real(wp) :: x_tick_positions(MAX_TICKS)
+        integer :: num_x_ticks, i
+        character(len=50) :: tick_label
+        real(wp) :: tick_x
+        integer :: tick_length, px, py, text_width
+        real(wp) :: line_r, line_g, line_b
+        integer(1) :: text_r, text_g, text_b
+        real(wp) :: dummy_pattern(1), pattern_dist
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
+        text_r = 0; text_g = 0; text_b = 0
+        tick_length = TICK_MARK_LENGTH
+        
         call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
-            ! Transform tick position to pixel coordinates
             px = int((tick_x - x_min) / (x_max - x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp))
-            py = this%plot_area%bottom + this%plot_area%height  ! Bottom of plot area
+            py = this%plot_area%bottom + this%plot_area%height
             
-            ! Draw tick mark down from axis
+            ! Draw tick mark
             dummy_pattern = 0.0_wp
             pattern_dist = 0.0_wp
             call draw_styled_line(this%raster%image_data, this%width, this%height, &
                                  real(px, wp), real(py, wp), real(px, wp), real(py + tick_length, wp), &
                                  line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
             
-            ! Draw tick label below tick mark
+            ! Draw tick label
             tick_label = format_tick_label(tick_x, xscale)
             call process_latex_in_text(trim(tick_label), processed_text, processed_len)
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
-            ! Center the label horizontally under the tick
             call render_text_to_image(this%raster%image_data, this%width, this%height, &
                                     px - text_width/2, py + tick_length + 5, trim(escaped_text), text_r, text_g, text_b)
         end do
+    end subroutine raster_draw_x_axis_ticks
+    
+    subroutine raster_draw_y_axis_ticks(this, yscale, symlog_threshold, x_min, x_max, y_min, y_max)
+        !! Draw Y-axis tick marks and labels
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        use fortplot_text, only: calculate_text_width, calculate_text_height
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
-        ! Y-axis ticks
+        real(wp) :: y_tick_positions(MAX_TICKS)
+        integer :: num_y_ticks, i
+        character(len=50) :: tick_label
+        real(wp) :: tick_y
+        integer :: tick_length, px, py, text_width, text_height
+        real(wp) :: line_r, line_g, line_b
+        integer(1) :: text_r, text_g, text_b
+        real(wp) :: dummy_pattern(1), pattern_dist
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
+        text_r = 0; text_g = 0; text_b = 0
+        tick_length = TICK_MARK_LENGTH
+        
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
-            ! Transform tick position to pixel coordinates
-            px = this%plot_area%left  ! Left edge of plot area
+            px = this%plot_area%left
             py = int(real(this%plot_area%bottom + this%plot_area%height, wp) - &
                     (tick_y - y_min) / (y_max - y_min) * real(this%plot_area%height, wp))
             
-            ! Draw tick mark to the left from axis
+            ! Draw tick mark
             dummy_pattern = 0.0_wp
             pattern_dist = 0.0_wp
             call draw_styled_line(this%raster%image_data, this%width, this%height, &
                                  real(px - tick_length, wp), real(py, wp), real(px, wp), real(py, wp), &
                                  line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
             
-            ! Draw tick label to the left of tick mark
+            ! Draw tick label
             tick_label = format_tick_label(tick_y, yscale)
             call process_latex_in_text(trim(tick_label), processed_text, processed_len)
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
             text_height = calculate_text_height(trim(escaped_text))
-            ! Right-align the label to the left of the tick
             call render_text_to_image(this%raster%image_data, this%width, this%height, &
                 px - tick_length - text_width - 5, py - text_height/2, &
                 trim(escaped_text), text_r, text_g, text_b)
         end do
+    end subroutine raster_draw_y_axis_ticks
+    
+    subroutine raster_draw_axis_labels(this, title, xlabel, ylabel)
+        !! Draw title, xlabel, and ylabel
+        use fortplot_text, only: calculate_text_width, calculate_text_height
+        class(raster_context), intent(inout) :: this
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
         
-        ! Draw title at top if present
+        integer :: px, py, text_width, text_height
+        integer(1) :: text_r, text_g, text_b
+        character(len=500) :: processed_text, escaped_text
+        integer :: processed_len
+        
+        text_r = 0; text_g = 0; text_b = 0  ! Black text
+        
+        ! Draw title
         if (present(title)) then
             if (allocated(title)) then
-                ! Position title centered horizontally over plot area (like matplotlib)
-                ! Use plot area center instead of data coordinate center for proper positioning
                 call render_title_centered(this, title)
             end if
         end if
         
-        ! Draw xlabel centered below x-axis (below tick labels)
+        ! Draw xlabel
         if (present(xlabel)) then
             if (allocated(xlabel)) then
                 call process_latex_in_text(xlabel, processed_text, processed_len)
                 call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
                 text_width = calculate_text_width(trim(escaped_text))
-                ! Center horizontally in plot area, position below tick labels
                 px = this%plot_area%left + this%plot_area%width / 2 - text_width / 2
-                py = this%plot_area%bottom + this%plot_area%height + XLABEL_VERTICAL_OFFSET  ! Pixels below plot area
+                py = this%plot_area%bottom + this%plot_area%height + XLABEL_VERTICAL_OFFSET
                 call render_text_to_image(this%raster%image_data, this%width, this%height, &
                                         px, py, trim(escaped_text), text_r, text_g, text_b)
             end if
         end if
         
-        ! Draw ylabel to the left of y-axis (rotated would be better, but for now horizontal)
+        ! Draw ylabel
         if (present(ylabel)) then
             if (allocated(ylabel)) then
                 call process_latex_in_text(ylabel, processed_text, processed_len)
                 call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
                 text_width = calculate_text_width(trim(escaped_text))
                 text_height = calculate_text_height(trim(escaped_text))
-                ! Position to the left of plot area, centered vertically
-                px = YLABEL_HORIZONTAL_OFFSET  ! Pixels from left edge
+                px = YLABEL_HORIZONTAL_OFFSET
                 py = this%plot_area%bottom + this%plot_area%height / 2 - text_height / 2
                 call render_text_to_image(this%raster%image_data, this%width, this%height, &
                                         px, py, trim(escaped_text), text_r, text_g, text_b)
             end if
         end if
-    end subroutine raster_draw_axes_and_labels
+    end subroutine raster_draw_axis_labels
 
     subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)
         !! Save current coordinate system
