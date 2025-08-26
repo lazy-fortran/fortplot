@@ -88,11 +88,11 @@ jobs:
 
     - name: Test FPM example build
       run: |
-        make test ARGS="--target test_system_fpm_example"
+        make test ARGS="--target test_system_fpm_example --flag '-fprofile-arcs -ftest-coverage'"
 
     - name: Test CMake example build
       run: |
-        make test ARGS="--target test_system_cmake_example"
+        make test ARGS="--target test_system_cmake_example --flag '-fprofile-arcs -ftest-coverage'"
 
     - name: Validate PNG output with PIL
       continue-on-error: true
