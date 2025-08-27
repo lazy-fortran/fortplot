@@ -28,6 +28,8 @@ module fortplot_figure_core
     use fortplot_figure_grid
     use fortplot_figure_streamlines
     use fortplot_figure_rendering_pipeline
+    use fortplot_figure_io, only: save_backend_with_status
+    use fortplot_utils_sort, only: sort_array
     implicit none
 
     private
@@ -310,29 +312,6 @@ contains
         ! Save the figure with status checking
         call save_backend_with_status(self%state%backend, filename, status)
     end subroutine savefig_with_status
-    
-    !> Save backend with error status checking
-    subroutine save_backend_with_status(backend, filename, status)
-        class(plot_context), intent(inout) :: backend
-        character(len=*), intent(in) :: filename
-        integer, intent(out) :: status
-        
-        ! Default to success, backends will set error status if needed
-        status = SUCCESS
-        
-        select type (backend)
-        type is (png_context)
-            call save_png_with_status(backend, filename, status)
-        type is (pdf_context)
-            call save_pdf_with_status(backend, filename, status)
-        type is (ascii_context)
-            call save_ascii_with_status(backend, filename, status)
-        class default
-            ! Fallback to old save method for unknown backends
-            call backend%save(filename)
-            ! No way to check error status for unknown backends - assume success
-        end select
-    end subroutine save_backend_with_status
 
     subroutine show(self, blocking)
         !! Display the figure
@@ -890,113 +869,5 @@ contains
         real(wp) :: y_max
         y_max = self%state%y_max
     end function get_y_max
-
-    subroutine sort_array(arr)
-        !! Simple bubble sort for small arrays (sufficient for boxplot quartiles)
-        real(wp), intent(inout) :: arr(:)
-        integer :: i, j, n
-        real(wp) :: temp
-        
-        n = size(arr)
-        do i = 1, n-1
-            do j = 1, n-i
-                if (arr(j) > arr(j+1)) then
-                    temp = arr(j)
-                    arr(j) = arr(j+1)
-                    arr(j+1) = temp
-                end if
-            end do
-        end do
-    end subroutine sort_array
-
-    ! Backend-specific save routines with error status reporting
-    
-    subroutine save_png_with_status(backend, filename, status)
-        !! Save PNG backend with error status reporting
-        use fortplot_png, only: png_context
-        class(png_context), intent(inout) :: backend
-        character(len=*), intent(in) :: filename
-        integer, intent(out) :: status
-        
-        ! PNG backend delegates to write_png_file which has error handling
-        ! We'll capture any errors by checking if file was actually created
-        logical :: file_exists
-        integer :: initial_size, final_size
-        
-        status = SUCCESS
-        
-        ! Check if file exists before save (in case of overwrite)
-        inquire(file=filename, exist=file_exists, size=initial_size)
-        if (.not. file_exists) initial_size = 0
-        
-        ! Call the original save method
-        call backend%save(filename)
-        
-        ! Verify the file was created/updated
-        inquire(file=filename, exist=file_exists, size=final_size)
-        if (.not. file_exists .or. final_size <= 0) then
-            status = ERROR_FILE_IO
-        end if
-    end subroutine save_png_with_status
-    
-    subroutine save_pdf_with_status(backend, filename, status)
-        !! Save PDF backend with error status reporting  
-        use fortplot_pdf, only: pdf_context
-        class(pdf_context), intent(inout) :: backend
-        character(len=*), intent(in) :: filename
-        integer, intent(out) :: status
-        
-        logical :: file_exists
-        integer :: final_size, ios
-        character(len=512) :: error_msg
-        
-        status = SUCCESS
-        
-        ! Pre-check: Can we create the file? This avoids ERROR STOP
-        open(newunit=ios, file=filename, status='replace', iostat=status, iomsg=error_msg)
-        if (status /= 0) then
-            ! File creation failed - return error without calling backend%save
-            call log_error("Cannot create PDF file '" // trim(filename) // "': " // trim(error_msg))
-            status = ERROR_FILE_IO
-            return
-        end if
-        close(ios, status='delete')  ! Clean up test file
-        
-        ! Now call the actual save method (should succeed since pre-check passed)
-        call backend%save(filename)
-        
-        ! Verify the file was created with reasonable size
-        inquire(file=filename, exist=file_exists, size=final_size)
-        if (.not. file_exists .or. final_size <= 0) then
-            status = ERROR_FILE_IO
-        end if
-    end subroutine save_pdf_with_status
-    
-    subroutine save_ascii_with_status(backend, filename, status)
-        !! Save ASCII backend with error status reporting
-        use fortplot_ascii, only: ascii_context
-        class(ascii_context), intent(inout) :: backend
-        character(len=*), intent(in) :: filename
-        integer, intent(out) :: status
-        
-        logical :: file_exists
-        integer :: final_size
-        
-        status = SUCCESS
-        
-        ! ASCII backend has fallback behavior, check if file was created
-        call backend%save(filename)
-        
-        ! For terminal output (empty filename), consider it successful
-        if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
-            return
-        end if
-        
-        ! Verify the file was created
-        inquire(file=filename, exist=file_exists, size=final_size)
-        if (.not. file_exists .or. final_size <= 0) then
-            status = ERROR_FILE_IO
-        end if
-    end subroutine save_ascii_with_status
 
 end module fortplot_figure_core

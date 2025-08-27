@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
 ### EPIC: Module Architecture Refactoring (TOP PRIORITY)
-- [ ] #469: architecture: Module size violations - 4 files exceed 1000-line hard limit
 - [ ] #470: architecture: High complexity concentration - 3 modules with 99+ procedures each
 - [ ] #456: architecture: duplicate figure_t type definitions in codebase
 
@@ -30,6 +29,9 @@
 - [ ] #429: Bug: Animation save implementation not initialized
 - [ ] #427: defect: performance issues - large allocations and inefficient patterns
 - [ ] #457: enhancement: complete matplotlib stub implementations
+- [ ] #473: refactor: implement proper errorbar, bar, and scatter functionality
+- [ ] #474: docs: add warnings for unimplemented matplotlib features
+- [ ] #475: perf: optimize contour array conversion in matplotlib wrapper
 
 ### EPIC: Visual Output Quality Restoration
 - [ ] #408: ASCII plots don't show full curves in basic plots
@@ -51,7 +53,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-<!-- SPRINT COMPLETE -->
+- [ ] #469: architecture: Module size violations - 4 files exceed 1000-line hard limit [EPIC: Module Architecture Refactoring]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
