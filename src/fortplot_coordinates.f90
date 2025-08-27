@@ -6,6 +6,7 @@ module fortplot_coordinates
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
+    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
@@ -50,20 +51,20 @@ contains
         real(wp) :: norm_x, norm_y
         
         ! Calculate plot area dimensions
-        plot_width = real(self%width, wp) * (1.0_wp - self%margin_left - self%margin_right)
-        plot_height = real(self%height, wp) * (1.0_wp - self%margin_bottom - self%margin_top)
-        plot_left = real(self%width, wp) * self%margin_left
-        plot_bottom = real(self%height, wp) * self%margin_bottom
+        plot_width = real(self%state%width, wp) * (1.0_wp - self%state%margin_left - self%state%margin_right)
+        plot_height = real(self%state%height, wp) * (1.0_wp - self%state%margin_bottom - self%state%margin_top)
+        plot_left = real(self%state%width, wp) * self%state%margin_left
+        plot_bottom = real(self%state%height, wp) * self%state%margin_bottom
         
         ! Normalize data coordinates to [0,1] range
-        if (self%x_max_transformed > self%x_min_transformed) then
-            norm_x = (x - self%x_min_transformed) / (self%x_max_transformed - self%x_min_transformed)
+        if (self%state%x_max_transformed > self%state%x_min_transformed) then
+            norm_x = (x - self%state%x_min_transformed) / (self%state%x_max_transformed - self%state%x_min_transformed)
         else
             norm_x = 0.5_wp
         end if
         
-        if (self%y_max_transformed > self%y_min_transformed) then
-            norm_y = (y - self%y_min_transformed) / (self%y_max_transformed - self%y_min_transformed)
+        if (self%state%y_max_transformed > self%state%y_min_transformed) then
+            norm_y = (y - self%state%y_min_transformed) / (self%state%y_max_transformed - self%state%y_min_transformed)
         else
             norm_y = 0.5_wp
         end if
@@ -79,8 +80,8 @@ contains
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pixel_x, pixel_y
         
-        pixel_x = x * real(self%width, wp)
-        pixel_y = y * real(self%height, wp)
+        pixel_x = x * real(self%state%width, wp)
+        pixel_y = y * real(self%state%height, wp)
     end subroutine transform_figure_to_pixel
 
     subroutine transform_axis_to_pixel(self, x, y, pixel_x, pixel_y)
@@ -92,10 +93,10 @@ contains
         real(wp) :: plot_width, plot_height, plot_left, plot_bottom
         
         ! Calculate plot area dimensions
-        plot_width = real(self%width, wp) * (1.0_wp - self%margin_left - self%margin_right)
-        plot_height = real(self%height, wp) * (1.0_wp - self%margin_bottom - self%margin_top)
-        plot_left = real(self%width, wp) * self%margin_left
-        plot_bottom = real(self%height, wp) * self%margin_bottom
+        plot_width = real(self%state%width, wp) * (1.0_wp - self%state%margin_left - self%state%margin_right)
+        plot_height = real(self%state%height, wp) * (1.0_wp - self%state%margin_bottom - self%state%margin_top)
+        plot_left = real(self%state%width, wp) * self%state%margin_left
+        plot_bottom = real(self%state%height, wp) * self%state%margin_bottom
         
         ! Convert to pixel coordinates within plot area
         pixel_x = plot_left + x * plot_width
@@ -183,7 +184,7 @@ contains
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
         ! Set backend to use projection coordinate system
-        call self%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max)
+        call self%state%backend%set_coordinates(proj_x_min, proj_x_max, proj_y_min, proj_y_max)
     end subroutine save_and_set_backend_coordinates
 
     subroutine restore_original_coordinate_system(self, orig_x_min, orig_x_max, &
@@ -193,7 +194,7 @@ contains
         real(wp), intent(in) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
         ! Restore original coordinate system
-        call self%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
+        call self%state%backend%set_coordinates(orig_x_min, orig_x_max, orig_y_min, orig_y_max)
     end subroutine restore_original_coordinate_system
 
     subroutine save_original_coordinates(self, orig_x_min, orig_x_max, orig_y_min, orig_y_max)
@@ -201,10 +202,10 @@ contains
         class(figure_t), intent(in) :: self
         real(wp), intent(out) :: orig_x_min, orig_x_max, orig_y_min, orig_y_max
         
-        orig_x_min = self%x_min_transformed
-        orig_x_max = self%x_max_transformed
-        orig_y_min = self%y_min_transformed
-        orig_y_max = self%y_max_transformed
+        orig_x_min = self%state%x_min_transformed
+        orig_x_max = self%state%x_max_transformed
+        orig_y_min = self%state%y_min_transformed
+        orig_y_max = self%state%y_max_transformed
     end subroutine save_original_coordinates
 
     subroutine apply_scale_transformation(self, scale_type, values, transformed_values)
@@ -220,7 +221,7 @@ contains
         case ('log')
             call apply_log_scale(values, transformed_values)
         case ('symlog')
-            call apply_symlog_scale(values, self%symlog_threshold, transformed_values)
+            call apply_symlog_scale(values, self%state%symlog_threshold, transformed_values)
         case default
             transformed_values = values
         end select
@@ -267,14 +268,14 @@ contains
         class(figure_t), intent(inout) :: self
         
         ! Transform X axis
-        call transform_single_axis_range(self%x_min, self%x_max, self%xscale, &
-                                        self%symlog_threshold, &
-                                        self%x_min_transformed, self%x_max_transformed)
+        call transform_single_axis_range(self%state%x_min, self%state%x_max, self%state%xscale, &
+                                        self%state%symlog_threshold, &
+                                        self%state%x_min_transformed, self%state%x_max_transformed)
         
         ! Transform Y axis
-        call transform_single_axis_range(self%y_min, self%y_max, self%yscale, &
-                                        self%symlog_threshold, &
-                                        self%y_min_transformed, self%y_max_transformed)
+        call transform_single_axis_range(self%state%y_min, self%state%y_max, self%state%yscale, &
+                                        self%state%symlog_threshold, &
+                                        self%state%y_min_transformed, self%state%y_max_transformed)
     end subroutine transform_axis_ranges
 
     subroutine transform_single_axis_range(min_val, max_val, scale_type, threshold, &

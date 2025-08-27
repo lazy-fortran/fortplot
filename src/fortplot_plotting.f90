@@ -7,6 +7,7 @@ module fortplot_plotting
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
     use fortplot_figure_core, only: figure_t
+    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                     PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
@@ -296,7 +297,7 @@ contains
         
         ! Validate input arrays
         if (size(x) /= size(y)) then
-            self%has_error = .true.
+            self%state%has_error = .true.
             return
         end if
         
@@ -328,8 +329,8 @@ contains
         end if
         
         ! Set color
-        color_idx = mod(self%plot_count, size(self%colors, 2)) + 1
-        plot_data%color = self%colors(:, color_idx)
+        color_idx = mod(self%plot_count, size(self%state%colors, 2)) + 1
+        plot_data%color = self%state%colors(:, color_idx)
         if (present(color)) plot_data%color = color
         
         ! Add to figure
@@ -471,23 +472,29 @@ contains
             call log_warning("Single point detected - consider adding markers for better visibility")
         end if
         
-        ! Get current subplot
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        ! Get current plot index
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
+        
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
         
         ! Store data
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
-        self%subplots(subplot_idx)%plots(plot_idx)%x = x
-        self%subplots(subplot_idx)%plots(plot_idx)%y = y
+        allocate(self%plots(plot_idx)%x(size(x)))
+        allocate(self%plots(plot_idx)%y(size(y)))
+        self%plots(plot_idx)%x = x
+        self%plots(plot_idx)%y = y
         
         ! Set properties
         if (present(label)) then
             if (len_trim(label) > 0) then
-                self%subplots(subplot_idx)%plots(plot_idx)%label = label
+                self%plots(plot_idx)%label = label
             end if
             ! If label is empty or not provided, leave it unallocated
         end if
@@ -501,27 +508,27 @@ contains
                 
                 if (len_trim(parsed_marker) > 0) then
                     ! Format string contained a marker
-                    self%subplots(subplot_idx)%plots(plot_idx)%marker = trim(parsed_marker)
+                    self%plots(plot_idx)%marker = trim(parsed_marker)
                     if (len_trim(parsed_linestyle) > 0) then
-                        self%subplots(subplot_idx)%plots(plot_idx)%linestyle = trim(parsed_linestyle)
+                        self%plots(plot_idx)%linestyle = trim(parsed_linestyle)
                     else
-                        self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'None'  ! No line, marker only
+                        self%plots(plot_idx)%linestyle = 'None'  ! No line, marker only
                     end if
                 else
                     ! Pure linestyle, no marker
-                    self%subplots(subplot_idx)%plots(plot_idx)%linestyle = linestyle
+                    self%plots(plot_idx)%linestyle = linestyle
                     if (present(marker)) then
-                        self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+                        self%plots(plot_idx)%marker = marker
                     else
-                        self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
+                        self%plots(plot_idx)%marker = 'None'
                     end if
                 end if
             else
-                self%subplots(subplot_idx)%plots(plot_idx)%linestyle = 'solid'
+                self%plots(plot_idx)%linestyle = 'solid'
                 if (present(marker)) then
-                    self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+                    self%plots(plot_idx)%marker = marker
                 else
-                    self%subplots(subplot_idx)%plots(plot_idx)%marker = 'None'
+                    self%plots(plot_idx)%marker = 'None'
                 end if
             end if
         end block
@@ -530,30 +537,16 @@ contains
         if (present(color_str)) then
             call parse_color(color_str, rgb, success)
             if (success) then
-                self%subplots(subplot_idx)%plots(plot_idx)%color = rgb
+                self%plots(plot_idx)%color = rgb
             else
                 color_idx = mod(plot_idx - 1, 6) + 1
-                self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
+                self%plots(plot_idx)%color = self%state%colors(:, color_idx)
             end if
         else if (present(color_rgb)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%color = color_rgb
+            self%plots(plot_idx)%color = color_rgb
         else
             color_idx = mod(plot_idx - 1, 6) + 1
-            self%subplots(subplot_idx)%plots(plot_idx)%color = self%colors(:, color_idx)
-        end if
-        
-        ! Update main plot count with warning generation
-        self%plot_count = self%plot_count + 1
-        if (self%plot_count <= self%max_plots) then
-            self%plots(self%plot_count) = self%subplots(subplot_idx)%plots(plot_idx)
-        else
-            ! Generate warning when max plots exceeded
-            call log_warning('Maximum number of plots reached, additional plots may not be rendered properly')
-        end if
-        
-        ! Also check subplot-specific plot limits
-        if (self%subplots(subplot_idx)%plot_count > self%subplots(subplot_idx)%max_plots) then
-            call log_warning('Subplot plot limit exceeded, performance may be degraded')
+            self%plots(plot_idx)%color = self%state%colors(:, color_idx)
         end if
     end subroutine add_line_plot_data
 
@@ -578,24 +571,30 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        ! Get current subplot
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        ! Get current plot index
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
+        
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
         
         ! Store grid data
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z, 1), size(z, 2)))
+        allocate(self%plots(plot_idx)%x_grid(size(x)))
+        allocate(self%plots(plot_idx)%y_grid(size(y)))
+        allocate(self%plots(plot_idx)%z_grid(size(z, 1), size(z, 2)))
         
-        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x
-        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y
-        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z
+        self%plots(plot_idx)%x_grid = x
+        self%plots(plot_idx)%y_grid = y
+        self%plots(plot_idx)%z_grid = z
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_surface_plot_data
 
@@ -608,27 +607,33 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
         
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x_grid)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y_grid)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
         
-        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x_grid
-        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y_grid
-        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z_grid
+        allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
+        allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
+        allocate(self%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        
+        self%plots(plot_idx)%x_grid = x_grid
+        self%plots(plot_idx)%y_grid = y_grid
+        self%plots(plot_idx)%z_grid = z_grid
         
         if (present(levels)) then
-            allocate(self%subplots(subplot_idx)%plots(plot_idx)%contour_levels(size(levels)))
-            self%subplots(subplot_idx)%plots(plot_idx)%contour_levels = levels
+            allocate(self%plots(plot_idx)%contour_levels(size(levels)))
+            self%plots(plot_idx)%contour_levels = levels
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_contour_plot_data
 
@@ -642,35 +647,41 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
         
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x_grid(size(x_grid)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y_grid(size(y_grid)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
         
-        self%subplots(subplot_idx)%plots(plot_idx)%x_grid = x_grid
-        self%subplots(subplot_idx)%plots(plot_idx)%y_grid = y_grid
-        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = z_grid
+        allocate(self%plots(plot_idx)%x_grid(size(x_grid)))
+        allocate(self%plots(plot_idx)%y_grid(size(y_grid)))
+        allocate(self%plots(plot_idx)%z_grid(size(z_grid, 1), size(z_grid, 2)))
+        
+        self%plots(plot_idx)%x_grid = x_grid
+        self%plots(plot_idx)%y_grid = y_grid
+        self%plots(plot_idx)%z_grid = z_grid
         
         if (present(levels)) then
-            allocate(self%subplots(subplot_idx)%plots(plot_idx)%contour_levels(size(levels)))
-            self%subplots(subplot_idx)%plots(plot_idx)%contour_levels = levels
+            allocate(self%plots(plot_idx)%contour_levels(size(levels)))
+            self%plots(plot_idx)%contour_levels = levels
         end if
         
         if (present(colormap)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%colormap = colormap
+            self%plots(plot_idx)%colormap = colormap
         end if
         
         if (present(show_colorbar)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%show_colorbar = show_colorbar
+            self%plots(plot_idx)%show_colorbar = show_colorbar
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_colored_contour_plot_data
 
@@ -688,32 +699,38 @@ contains
             error%status = SUCCESS
         end if
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
         
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%z_grid(size(c, 1), size(c, 2)))
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
         
-        self%subplots(subplot_idx)%plots(plot_idx)%x = x
-        self%subplots(subplot_idx)%plots(plot_idx)%y = y
-        self%subplots(subplot_idx)%plots(plot_idx)%z_grid = c
+        allocate(self%plots(plot_idx)%x(size(x)))
+        allocate(self%plots(plot_idx)%y(size(y)))
+        allocate(self%plots(plot_idx)%z_grid(size(c, 1), size(c, 2)))
+        
+        self%plots(plot_idx)%x = x
+        self%plots(plot_idx)%y = y
+        self%plots(plot_idx)%z_grid = c
         
         if (present(colormap)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%colormap = colormap
+            self%plots(plot_idx)%colormap = colormap
         end if
         
         if (present(vmin)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmin = vmin
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+            self%plots(plot_idx)%scatter_vmin = vmin
+            self%plots(plot_idx)%scatter_vrange_set = .true.
         end if
         
         if (present(vmax)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmax = vmax
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+            self%plots(plot_idx)%scatter_vmax = vmax
+            self%plots(plot_idx)%scatter_vrange_set = .true.
         end if
     end subroutine add_pcolormesh_plot_data
 
@@ -727,32 +744,38 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
-        
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(positions)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(values)))
-        
-        if (horizontal) then
-            self%subplots(subplot_idx)%plots(plot_idx)%x = values
-            self%subplots(subplot_idx)%plots(plot_idx)%y = positions
-        else
-            self%subplots(subplot_idx)%plots(plot_idx)%x = positions
-            self%subplots(subplot_idx)%plots(plot_idx)%y = values
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
         end if
         
-        self%subplots(subplot_idx)%plots(plot_idx)%bar_width = bar_size
-        self%subplots(subplot_idx)%plots(plot_idx)%bar_horizontal = horizontal
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
+        
+        allocate(self%plots(plot_idx)%x(size(positions)))
+        allocate(self%plots(plot_idx)%y(size(values)))
+        
+        if (horizontal) then
+            self%plots(plot_idx)%x = values
+            self%plots(plot_idx)%y = positions
+        else
+            self%plots(plot_idx)%x = positions
+            self%plots(plot_idx)%y = values
+        end if
+        
+        self%plots(plot_idx)%bar_width = bar_size
+        self%plots(plot_idx)%bar_horizontal = horizontal
         
         if (present(color)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+            self%plots(plot_idx)%color = color
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_bar_plot_data
 
@@ -795,27 +818,33 @@ contains
         
         if (.not. validate_histogram_input(self, data, bins)) return
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
+        
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_HISTOGRAM
         
         ! Store raw data for histogram computation
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(data)))
-        self%subplots(subplot_idx)%plots(plot_idx)%x = data
+        allocate(self%plots(plot_idx)%x(size(data)))
+        self%plots(plot_idx)%x = data
         ! Store bins as metadata (would need custom field or use existing structure)
         
         if (present(density)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%hist_density = density
+            self%plots(plot_idx)%hist_density = density
         end if
         
         if (present(color)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+            self%plots(plot_idx)%color = color
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_histogram_plot_data
 
@@ -829,32 +858,38 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
+        
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
         
         ! Store raw data for boxplot computation
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(data)))
-        self%subplots(subplot_idx)%plots(plot_idx)%x = data
-        self%subplots(subplot_idx)%plots(plot_idx)%position = position
-        self%subplots(subplot_idx)%plots(plot_idx)%width = width
+        allocate(self%plots(plot_idx)%x(size(data)))
+        self%plots(plot_idx)%x = data
+        self%plots(plot_idx)%position = position
+        self%plots(plot_idx)%width = width
         
         if (present(show_outliers)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%show_outliers = show_outliers
+            self%plots(plot_idx)%show_outliers = show_outliers
         end if
         
         if (present(horizontal)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%horizontal = horizontal
+            self%plots(plot_idx)%horizontal = horizontal
         end if
         
         if (present(color)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+            self%plots(plot_idx)%color = color
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_boxplot_data
 
@@ -869,67 +904,73 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
         
-        self%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_SCATTER
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
         
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%x(size(x)))
-        allocate(self%subplots(subplot_idx)%plots(plot_idx)%y(size(y)))
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_SCATTER
         
-        self%subplots(subplot_idx)%plots(plot_idx)%x = x
-        self%subplots(subplot_idx)%plots(plot_idx)%y = y
+        allocate(self%plots(plot_idx)%x(size(x)))
+        allocate(self%plots(plot_idx)%y(size(y)))
+        
+        self%plots(plot_idx)%x = x
+        self%plots(plot_idx)%y = y
         
         if (present(z)) then
-            allocate(self%subplots(subplot_idx)%plots(plot_idx)%z(size(z)))
-            self%subplots(subplot_idx)%plots(plot_idx)%z = z
+            allocate(self%plots(plot_idx)%z(size(z)))
+            self%plots(plot_idx)%z = z
         end if
         
         if (present(s)) then
-            allocate(self%subplots(subplot_idx)%plots(plot_idx)%scatter_sizes(size(s)))
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_sizes = s
+            allocate(self%plots(plot_idx)%scatter_sizes(size(s)))
+            self%plots(plot_idx)%scatter_sizes = s
         end if
         
         if (present(c)) then
-            allocate(self%subplots(subplot_idx)%plots(plot_idx)%scatter_colors(size(c)))
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colors = c
+            allocate(self%plots(plot_idx)%scatter_colors(size(c)))
+            self%plots(plot_idx)%scatter_colors = c
         end if
         
         if (present(color)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%color = color
+            self%plots(plot_idx)%color = color
         end if
         
         if (present(marker)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%marker = marker
+            self%plots(plot_idx)%marker = marker
         end if
         
         if (present(markersize)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_size_default = markersize
+            self%plots(plot_idx)%scatter_size_default = markersize
         end if
         
         if (present(colormap)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colormap = colormap
+            self%plots(plot_idx)%scatter_colormap = colormap
         end if
         
         if (present(vmin)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmin = vmin
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+            self%plots(plot_idx)%scatter_vmin = vmin
+            self%plots(plot_idx)%scatter_vrange_set = .true.
         end if
         
         if (present(vmax)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vmax = vmax
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_vrange_set = .true.
+            self%plots(plot_idx)%scatter_vmax = vmax
+            self%plots(plot_idx)%scatter_vrange_set = .true.
         end if
         
         if (present(show_colorbar)) then
-            self%subplots(subplot_idx)%plots(plot_idx)%scatter_colorbar = show_colorbar
+            self%plots(plot_idx)%scatter_colorbar = show_colorbar
         end if
         
         ! Note: alpha not directly supported in plot_data_t structure
         
         if (present(label) .and. len_trim(label) > 0) then
-            self%subplots(subplot_idx)%plots(plot_idx)%label = label
+            self%plots(plot_idx)%label = label
         end if
     end subroutine add_scatter_plot_data
 
@@ -940,12 +981,18 @@ contains
         
         integer :: subplot_idx, plot_idx
         
-        subplot_idx = self%current_subplot
-        plot_idx = self%subplots(subplot_idx)%plot_count + 1
-        self%subplots(subplot_idx)%plot_count = plot_idx
+        self%plot_count = self%plot_count + 1
+        plot_idx = self%plot_count
+        
+        ! Ensure plots array is allocated
+        if (.not. allocated(self%plots)) then
+            allocate(self%plots(self%state%max_plots))
+        else if (plot_idx > size(self%plots)) then
+            return
+        end if
         
         ! Copy plot data to subplot
-        self%subplots(subplot_idx)%plots(plot_idx) = plot_data
+        self%plots(plot_idx) = plot_data
     end subroutine add_plot_to_figure
 
     subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, linewidth, &

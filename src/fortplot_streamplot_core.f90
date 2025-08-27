@@ -7,6 +7,7 @@ module fortplot_streamplot_core
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_core, only: figure_t
+    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: arrow_data_t
     use fortplot_streamplot_matplotlib
     use fortplot_logging, only: log_warning
@@ -35,12 +36,12 @@ contains
         
         ! Validate input dimensions
         if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then
-            self%has_error = .true.
+            self%state%has_error = .true.
             return
         end if
         
         if (size(v,1) /= size(x) .or. size(v,2) /= size(y)) then
-            self%has_error = .true.
+            self%state%has_error = .true.
             return
         end if
         
@@ -50,7 +51,7 @@ contains
         
         ! Validate and set arrow parameters
         call validate_arrow_parameters(self, arrowsize, arrowstyle, arrow_size_val, arrow_style_val)
-        if (self%has_error) return
+        if (self%state%has_error) return
         
         ! Update data ranges for streamplot
         call update_streamplot_ranges(self, x, y)
@@ -80,7 +81,7 @@ contains
         arrow_size_val = 1.0_wp  ! Default matplotlib-compatible arrow size
         if (present(arrowsize)) then
             if (arrowsize < 0.0_wp) then
-                self%has_error = .true.
+                self%state%has_error = .true.
                 return
             end if
             arrow_size_val = arrowsize
@@ -91,7 +92,7 @@ contains
         if (present(arrowstyle)) then
             if (trim(arrowstyle) /= '->' .and. trim(arrowstyle) /= '-' .and. &
                 trim(arrowstyle) /= '<-' .and. trim(arrowstyle) /= '<->') then
-                self%has_error = .true.
+                self%state%has_error = .true.
                 return
             end if
             arrow_style_val = trim(arrowstyle)
@@ -103,13 +104,13 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         
-        if (.not. self%xlim_set) then
-            self%x_min = minval(x)
-            self%x_max = maxval(x)
+        if (.not. self%state%xlim_set) then
+            self%state%x_min = minval(x)
+            self%state%x_max = maxval(x)
         end if
-        if (.not. self%ylim_set) then
-            self%y_min = minval(y)
-            self%y_max = maxval(y)
+        if (.not. self%state%ylim_set) then
+            self%state%y_min = minval(y)
+            self%state%y_max = maxval(y)
         end if
     end subroutine update_streamplot_ranges
 
@@ -304,29 +305,33 @@ contains
         real(wp), intent(in) :: traj_x(:), traj_y(:)
         real(wp), intent(in) :: line_color(3)
         
-        integer :: plot_idx, subplot_idx, color_idx
+        integer :: plot_idx
         
-        ! Get current subplot
-        subplot_idx = fig%current_subplot
-        plot_idx = fig%subplots(subplot_idx)%plot_count + 1
-        fig%subplots(subplot_idx)%plot_count = plot_idx
-        
-        ! Also increment main figure plot count for backward compatibility
+        ! Get next plot index
         fig%plot_count = fig%plot_count + 1
+        plot_idx = fig%plot_count
+        
+        ! Ensure plots array is allocated with enough space
+        if (.not. allocated(fig%plots)) then
+            allocate(fig%plots(fig%state%max_plots))
+        else if (plot_idx > size(fig%plots)) then
+            ! Reallocate if needed - this shouldn't happen with proper max_plots
+            return
+        end if
         
         ! Set plot type and data
-        fig%subplots(subplot_idx)%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
+        fig%plots(plot_idx)%plot_type = PLOT_TYPE_LINE
         
         ! Store trajectory data
-        allocate(fig%subplots(subplot_idx)%plots(plot_idx)%x(size(traj_x)))
-        allocate(fig%subplots(subplot_idx)%plots(plot_idx)%y(size(traj_y)))
-        fig%subplots(subplot_idx)%plots(plot_idx)%x = traj_x
-        fig%subplots(subplot_idx)%plots(plot_idx)%y = traj_y
+        allocate(fig%plots(plot_idx)%x(size(traj_x)))
+        allocate(fig%plots(plot_idx)%y(size(traj_y)))
+        fig%plots(plot_idx)%x = traj_x
+        fig%plots(plot_idx)%y = traj_y
         
         ! Set streamline properties
-        fig%subplots(subplot_idx)%plots(plot_idx)%linestyle = '-'
-        fig%subplots(subplot_idx)%plots(plot_idx)%marker = ''
-        fig%subplots(subplot_idx)%plots(plot_idx)%color = line_color
+        fig%plots(plot_idx)%linestyle = '-'
+        fig%plots(plot_idx)%marker = ''
+        fig%plots(plot_idx)%color = line_color
     end subroutine add_streamline_to_figure
 
     subroutine interpolate_velocity_at_point(x_pos, y_pos, x_grid, y_grid, u_field, v_field, &
