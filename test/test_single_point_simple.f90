@@ -3,6 +3,7 @@ program test_single_point_simple
     !! This test demonstrates the core issue without complex validation
     
     use fortplot
+    use fortplot_test_helpers, only: test_initialize_figure, test_savefig, test_get_temp_path, test_cleanup_all
     use iso_fortran_env, only: wp => real64
     implicit none
     
@@ -23,11 +24,11 @@ program test_single_point_simple
     
     ! Test 1: Single point PNG
     print *, "Test 1: Single point PNG..."
-    call fig%initialize(400, 300, 'png')
+    call test_initialize_figure(fig, 400, 300, 'png')
     call fig%add_plot(x_single, y_single, label="single point")
-    call fig%savefig('single_point_test.png')
+    call test_savefig(fig, 'single_point_test.png')
     
-    inquire(file='single_point_test.png', exist=file_exists)
+    inquire(file=test_get_temp_path('single_point_test.png'), exist=file_exists)
     if (file_exists) then
         print *, "  ✓ PNG file created (but may be empty due to bug)"
     else
@@ -36,11 +37,11 @@ program test_single_point_simple
     
     ! Test 2: Single point PDF
     print *, "Test 2: Single point PDF..."
-    call fig%initialize(400, 300, 'pdf')
+    call test_initialize_figure(fig, 400, 300, 'pdf')
     call fig%add_plot(x_single, y_single, label="single point")
-    call fig%savefig('single_point_test.pdf')
+    call test_savefig(fig, 'single_point_test.pdf')
     
-    inquire(file='single_point_test.pdf', exist=file_exists)
+    inquire(file=test_get_temp_path('single_point_test.pdf'), exist=file_exists)
     if (file_exists) then
         print *, "  ✓ PDF file created (but may be empty due to bug)"
     else
@@ -49,11 +50,11 @@ program test_single_point_simple
     
     ! Test 3: Single point ASCII
     print *, "Test 3: Single point ASCII..."
-    call fig%initialize(80, 24, 'ascii')
+    call test_initialize_figure(fig, 80, 24, 'ascii')
     call fig%add_plot(x_single, y_single, label="single point")
-    call fig%savefig('single_point_test.txt')
+    call test_savefig(fig, 'single_point_test.txt')
     
-    inquire(file='single_point_test.txt', exist=file_exists)
+    inquire(file=test_get_temp_path('single_point_test.txt'), exist=file_exists)
     if (file_exists) then
         print *, "  ✓ ASCII file created (but likely shows no point due to bug)"
     else
@@ -62,11 +63,11 @@ program test_single_point_simple
     
     ! Test 4: Comparison with multi-point (this should work)
     print *, "Test 4: Multi-point comparison..."
-    call fig%initialize(400, 300, 'png')
+    call test_initialize_figure(fig, 400, 300, 'png')
     call fig%add_plot(x_multi, y_multi, label="multi points")
-    call fig%savefig('multi_point_test.png')
+    call test_savefig(fig, 'multi_point_test.png')
     
-    inquire(file='multi_point_test.png', exist=file_exists)
+    inquire(file=test_get_temp_path('multi_point_test.png'), exist=file_exists)
     if (file_exists) then
         print *, "  ✓ Multi-point PNG created (this should work fine)"
     else
@@ -75,8 +76,11 @@ program test_single_point_simple
     
     print *, "============================================="
     print *, "Test completed. Issue #436 confirmed if single point plots are empty."
-    print *, "Check the generated files to see the difference:"
+    print *, "Generated test files in temporary directory:"
     print *, "- single_point_test.png/pdf/txt (should show one point but likely empty)"
     print *, "- multi_point_test.png (should show connected line, works fine)"
+    
+    ! Clean up test files
+    call test_cleanup_all()
 
 end program test_single_point_simple

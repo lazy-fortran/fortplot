@@ -1,6 +1,7 @@
 program test_png_title_positioning
     use fortplot
     use fortplot_png, only: png_context, create_png_canvas
+    use fortplot_test_helpers, only: test_get_temp_path, test_cleanup_all
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -31,7 +32,7 @@ program test_png_title_positioning
                                          title=sym_title, &
                                          xlabel=sym_xlabel, ylabel=sym_ylabel, &
                                          has_3d_plots=.false.)
-    call ctx%save('test_symmetric_title.png')
+    call ctx%save(test_get_temp_path('test_symmetric_title.png'))
     
     ! Test case 2: Asymmetric data range
     print *, "Testing title positioning with asymmetric data range..."
@@ -50,7 +51,7 @@ program test_png_title_positioning
                                          title=asym_title, &
                                          xlabel=asym_xlabel, ylabel=asym_ylabel, &
                                          has_3d_plots=.false.)
-    call ctx%save('test_asymmetric_title.png')
+    call ctx%save(test_get_temp_path('test_asymmetric_title.png'))
     
     ! Test case 3: Negative range
     print *, "Testing title positioning with negative data range..."
@@ -69,15 +70,18 @@ program test_png_title_positioning
                                          title=neg_title, &
                                          xlabel=neg_xlabel, ylabel=neg_ylabel, &
                                          has_3d_plots=.false.)
-    call ctx%save('test_negative_title.png')
+    call ctx%save(test_get_temp_path('test_negative_title.png'))
     
     print *, "Title positioning test complete!"
-    print *, "Check the generated PNG files:"
+    print *, "Generated test files in temporary directory"
     print *, "- test_symmetric_title.png (should be centered)"
     print *, "- test_asymmetric_title.png (may appear off-center)"
     print *, "- test_negative_title.png (may appear off-center)"
     print *, ""
     print *, "In all cases, the title should be visually centered over the plot area"
     print *, "regardless of the data coordinate range."
+    
+    ! Clean up test files
+    call test_cleanup_all()
 
 end program test_png_title_positioning

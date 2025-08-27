@@ -3,6 +3,7 @@ program test_single_point_debug
     
     use fortplot
     use fortplot_logging, only: set_log_level, LOG_LEVEL_DEBUG
+    use fortplot_test_helpers, only: test_initialize_figure, test_savefig, test_cleanup_all
     use iso_fortran_env, only: wp => real64
     implicit none
     
@@ -19,7 +20,7 @@ program test_single_point_debug
     y_data = [3.0_wp]
     
     print *, "DEBUG: Creating figure..."
-    call fig%initialize(200, 150, 'png')
+    call test_initialize_figure(fig, 200, 150, 'png')
     
     print *, "DEBUG: Adding single point plot..."
     print *, "DEBUG: x_data = ", x_data
@@ -28,8 +29,9 @@ program test_single_point_debug
     call fig%add_plot(x_data, y_data, label="debug single point")
     
     print *, "DEBUG: Saving figure..."
-    call fig%savefig('debug_single_point.png')
+    call test_savefig(fig, 'debug_single_point.png')
     
     print *, "DEBUG: Test completed!"
+    call test_cleanup_all()
     
 end program test_single_point_debug
