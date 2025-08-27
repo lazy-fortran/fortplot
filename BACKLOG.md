@@ -6,7 +6,6 @@
 
 
 ### EPIC: Technical Debt Resolution
-- [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
 - [ ] #419: defect: magic numbers without named constants
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
 - [ ] #479: refactor: optimize Greek letter mapping functions with lookup tables
@@ -43,7 +42,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #418: defect: TODO comments indicate incomplete implementations [EPIC: Technical Debt Resolution]
+- [ ] #416: defect: commented-out code in fortplot_matplotlib.f90 [EPIC: Technical Debt Resolution]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
