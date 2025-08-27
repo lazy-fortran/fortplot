@@ -43,6 +43,10 @@
 - [ ] #426: defect: unused test security module
 - [ ] #427: defect: performance issues - large allocations and inefficient patterns
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
+- [ ] #451: refactor: replace bubble sort with efficient sorting in boxplot
+- [ ] #452: feat: implement color parameter processing in boxplot method
+- [ ] #453: fix: improve quartile calculation accuracy in boxplot
+- [ ] #454: feat: implement remaining 11 disabled test functionalities
 
 ### EPIC: Documentation Quality Assurance
 - [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
