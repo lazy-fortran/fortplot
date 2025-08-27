@@ -38,7 +38,7 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(.true.)
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
         
         call end_test()
     end subroutine test_grid_basic
@@ -60,8 +60,8 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(which='major')
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
-        call assert_equal_string(fig%grid_which, 'major', "Grid which should be major")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
+        call assert_equal_string(fig%state%grid_which, 'major', "Grid which should be major")
         
         call end_test()
     end subroutine test_grid_major_only
@@ -83,8 +83,8 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(which='minor')
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
-        call assert_equal_string(fig%grid_which, 'minor', "Grid which should be minor")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
+        call assert_equal_string(fig%state%grid_which, 'minor', "Grid which should be minor")
         
         call end_test()
     end subroutine test_grid_minor_only
@@ -106,8 +106,8 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(axis='x')
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
-        call assert_equal_string(fig%grid_axis, 'x', "Grid axis should be x")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
+        call assert_equal_string(fig%state%grid_axis, 'x', "Grid axis should be x")
         
         call end_test()
     end subroutine test_grid_x_axis_only
@@ -129,8 +129,8 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(axis='y')
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
-        call assert_equal_string(fig%grid_axis, 'y', "Grid axis should be y")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
+        call assert_equal_string(fig%state%grid_axis, 'y', "Grid axis should be y")
         
         call end_test()
     end subroutine test_grid_y_axis_only
@@ -152,9 +152,9 @@ contains
         
         call fig%add_plot(x, y)
         call fig%grid(alpha=0.5_wp, linestyle='--')
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
-        call assert_equal(real(fig%grid_alpha, wp), 0.5_wp, "Grid alpha")
-        call assert_equal_string(fig%grid_linestyle, '--', "Grid linestyle")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
+        call assert_equal(real(fig%state%grid_alpha, wp), 0.5_wp, "Grid alpha")
+        call assert_equal_string(fig%state%grid_linestyle, '--', "Grid linestyle")
         
         call end_test()
     end subroutine test_grid_customization
@@ -178,11 +178,11 @@ contains
         
         ! Turn grid on
         call fig%grid(.true.)
-        call assert_true(fig%grid_enabled, "Grid should be enabled")
+        call assert_true(fig%state%grid_enabled, "Grid should be enabled")
         
         ! Turn grid off
         call fig%grid(.false.)
-        call assert_false(fig%grid_enabled, "Grid should be disabled")
+        call assert_false(fig%state%grid_enabled, "Grid should be disabled")
         
         call end_test()
     end subroutine test_grid_toggle

@@ -41,6 +41,14 @@ module fortplot_figure_core
         ! Streamline data
         type(plot_data_t), allocatable :: streamlines(:)
         
+        ! Backward compatibility: expose labels directly for test access
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        
+        ! Backward compatibility: expose commonly accessed state members
+        integer :: plot_count = 0
+        
     contains
         procedure :: initialize
         procedure :: add_plot
@@ -80,6 +88,7 @@ module fortplot_figure_core
         procedure :: get_x_max
         procedure :: get_y_min
         procedure :: get_y_max
+        ! Label getters removed - direct member access available
         procedure, private :: update_data_ranges
         procedure, private :: update_data_ranges_pcolormesh
         procedure, private :: render_figure
@@ -102,6 +111,12 @@ contains
         
         ! Clear streamlines data if allocated
         if (allocated(self%streamlines)) deallocate(self%streamlines)
+        
+        ! Clear backward compatibility members
+        if (allocated(self%title)) deallocate(self%title)
+        if (allocated(self%xlabel)) deallocate(self%xlabel)
+        if (allocated(self%ylabel)) deallocate(self%ylabel)
+        self%plot_count = 0
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -132,6 +147,9 @@ contains
         call add_line_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
                                self%state%colors, x, y, label, ls, plot_color, marker='')
         
+        ! Sync backward compatibility member
+        self%plot_count = self%state%plot_count
+        
         ! Update data ranges
         call self%update_data_ranges()
     end subroutine add_plot
@@ -145,6 +163,9 @@ contains
         
         call add_contour_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
                                   self%state%colors, x_grid, y_grid, z_grid, levels, label)
+        
+        ! Sync backward compatibility member
+        self%plot_count = self%state%plot_count
         
         call self%update_data_ranges()
     end subroutine add_contour
@@ -160,6 +181,9 @@ contains
         call add_colored_contour_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
                                           x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
         
+        ! Sync backward compatibility member
+        self%plot_count = self%state%plot_count
+        
         call self%update_data_ranges()
     end subroutine add_contour_filled
 
@@ -174,6 +198,9 @@ contains
         
         call add_pcolormesh_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
                                      x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+        
+        ! Sync backward compatibility member
+        self%plot_count = self%state%plot_count
         
         call self%update_data_ranges_pcolormesh()
     end subroutine add_pcolormesh
@@ -329,6 +356,8 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
         call set_figure_labels(self%state, xlabel=label)
+        ! Update backward compatibility member
+        self%xlabel = label
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
@@ -336,6 +365,8 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
         call set_figure_labels(self%state, ylabel=label)
+        ! Update backward compatibility member
+        self%ylabel = label
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
@@ -343,6 +374,8 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
         call set_figure_labels(self%state, title=title)
+        ! Update backward compatibility member
+        self%title = title
     end subroutine set_title
 
     subroutine set_xscale(self, scale, threshold)
@@ -423,6 +456,10 @@ contains
         if (allocated(self%state%title)) deallocate(self%state%title)
         if (allocated(self%state%xlabel)) deallocate(self%state%xlabel)
         if (allocated(self%state%ylabel)) deallocate(self%state%ylabel)
+        ! Clean up backward compatibility members
+        if (allocated(self%title)) deallocate(self%title)
+        if (allocated(self%xlabel)) deallocate(self%xlabel)
+        if (allocated(self%ylabel)) deallocate(self%ylabel)
     end subroutine destroy
 
     ! Private implementation procedures

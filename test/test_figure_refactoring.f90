@@ -3,7 +3,7 @@ program test_figure_refactoring
     !! Validates that all public interfaces are preserved
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_figure_core, only: figure_t
+    use fortplot_figure, only: figure_t
     implicit none
     
     type(figure_t) :: fig
