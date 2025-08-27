@@ -9,13 +9,6 @@ module fortplot_matplotlib
     use iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_global, only: fig => global_figure
-    use fortplot_plotting, only: add_text_annotation, add_arrow_annotation, add_scatter_2d, &
-                                figure_add_plot => add_plot, figure_add_contour => add_contour, &
-                                figure_add_contour_filled => add_contour_filled, &
-                                figure_add_pcolormesh => add_pcolormesh, &
-                                figure_streamplot => streamplot, figure_bar => bar, figure_barh => barh, &
-                                figure_hist => hist, figure_errorbar => errorbar, &
-                                figure_add_3d_plot => add_3d_plot, figure_add_surface => add_surface
     ! Type-bound procedures from figure_t are used directly through fig%method() calls
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_security, only: safe_launch_viewer, safe_remove_file
@@ -43,6 +36,13 @@ module fortplot_matplotlib
     end interface show
     
 contains
+
+    function real_to_string(val) result(str)
+        !! Convert real value to string for logging
+        real(8), intent(in) :: val
+        character(len=32) :: str
+        write(str, '(F12.4)') val
+    end function real_to_string
 
     subroutine ensure_global_figure_initialized()
         !! Ensure global figure is initialized before use (matplotlib compatibility)
@@ -255,9 +255,15 @@ contains
         real(8), intent(in), optional :: capsize
         real(8), dimension(3), intent(in), optional :: color
         
+        ! Log warning for partial implementation
+        if (present(xerr) .or. present(yerr)) then
+            call log_warning("errorbar functionality is not fully implemented - showing base plot only")
+        end if
+        
         call ensure_global_figure_initialized()
-        ! TODO: errorbar method not yet implemented in working figure core
-        ! call fig%errorbar(x, y, xerr, yerr, label=label)
+        
+        ! For now, just plot the line without error bars
+        call plot(x, y, label=label, linestyle=linestyle)
     end subroutine errorbar
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
@@ -268,7 +274,13 @@ contains
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        error stop "bar plot functionality is not yet implemented"
+        ! Log warning instead of crashing
+        call log_warning("bar plot functionality is not fully implemented - using line plot approximation")
+        
+        call ensure_global_figure_initialized()
+        
+        ! Approximate bar plot using line plot for now
+        call plot(x, height, label=label, linestyle='-')
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -279,7 +291,13 @@ contains
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        error stop "horizontal bar plot functionality is not yet implemented"
+        ! Log warning instead of crashing
+        call log_warning("horizontal bar plot functionality is not fully implemented - using line plot approximation")
+        
+        call ensure_global_figure_initialized()
+        
+        ! Approximate horizontal bar plot using line plot for now
+        call plot(width, y, label=label, linestyle='-')
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -290,7 +308,18 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
         
-        error stop "histogram functionality is not yet implemented"
+        real(wp), allocatable :: wp_data(:)
+        
+        call ensure_global_figure_initialized()
+        
+        ! Convert to working precision
+        allocate(wp_data(size(data)))
+        wp_data = real(data, wp)
+        
+        ! Use the hist method from figure_core
+        call fig%hist(wp_data, bins=bins, density=density, label=label)
+        
+        deallocate(wp_data)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -302,7 +331,8 @@ contains
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
         
-        error stop "histogram functionality is not yet implemented"
+        ! Simply delegate to hist
+        call hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
@@ -315,8 +345,21 @@ contains
         logical, intent(in), optional :: horizontal
         real(wp), intent(in), optional :: color(3)
         
-        ! TODO: Implement boxplot method in figure_core
-        call log_error("boxplot() not yet implemented - please use main branch for boxplot support")
+        character(len=20) :: color_str
+        
+        call ensure_global_figure_initialized()
+        
+        ! Convert color array to string if provided (figure_core expects string)
+        if (present(color)) then
+            ! Simple conversion to hex-like format
+            write(color_str, '(A,3(I0,A))') 'rgb(', &
+                int(color(1)*255), ',', int(color(2)*255), ',', int(color(3)*255), ')'
+            call fig%boxplot(data, position=position, width=width, label=label, &
+                            show_outliers=show_outliers, horizontal=horizontal, color=color_str)
+        else
+            call fig%boxplot(data, position=position, width=width, label=label, &
+                            show_outliers=show_outliers, horizontal=horizontal)
+        end if
     end subroutine boxplot
 
     subroutine scatter(x, y, s, c, label, marker, markersize, color, &
@@ -329,8 +372,26 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         logical, intent(in), optional :: show_colorbar
         
+        character(len=10) :: plot_marker
+        
+        ! Log warning for partial implementation
+        call log_warning("scatter plot functionality is partially implemented - using plot with markers")
+        
         call ensure_global_figure_initialized()
-        ! TODO: scatter method not implemented in working figure core
+        
+        ! Set marker style
+        plot_marker = 'o'
+        if (present(marker)) then
+            select case(marker)
+            case('o', '.', 'x', '+', '*', 's', 'd', '^', 'v', '<', '>')
+                plot_marker = marker
+            case default
+                plot_marker = 'o'
+            end select
+        end if
+        
+        ! Use plot with markers as approximation
+        call plot(x, y, label=label, linestyle=plot_marker)
     end subroutine scatter
 
     subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
@@ -343,8 +404,10 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         logical, intent(in), optional :: show_colorbar
         
-        call ensure_global_figure_initialized()
-        ! TODO: scatter method not implemented in working figure core
+        ! Simply delegate to scatter
+        call scatter(x, y, s=s, c=c, label=label, marker=marker, markersize=markersize, &
+                    color=color, colormap=colormap, vmin=vmin, vmax=vmax, &
+                    show_colorbar=show_colorbar)
     end subroutine add_scatter
 
     subroutine text(x, y, text_content, coord_type, font_size, rotation, alignment, has_bbox)
@@ -356,8 +419,14 @@ contains
         character(len=*), intent(in), optional :: alignment
         logical, intent(in), optional :: has_bbox
         
+        ! Log warning for unimplemented functionality
+        call log_warning("text annotation functionality is not implemented in figure_core")
+        call log_info("Text would be placed at (" // &
+                     trim(adjustl(real_to_string(x))) // ", " // &
+                     trim(adjustl(real_to_string(y))) // "): '" // &
+                     trim(text_content) // "'")
+        
         call ensure_global_figure_initialized()
-        ! TODO: text annotation method not implemented in working figure core
     end subroutine text
 
     subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
@@ -370,8 +439,16 @@ contains
         character(len=*), intent(in), optional :: alignment
         logical, intent(in), optional :: has_bbox
         
+        ! Log warning for unimplemented functionality
+        call log_warning("arrow annotation functionality is not implemented in figure_core")
+        call log_info("Annotation would connect (" // &
+                     trim(adjustl(real_to_string(xytext(1)))) // ", " // &
+                     trim(adjustl(real_to_string(xytext(2)))) // ") to (" // &
+                     trim(adjustl(real_to_string(xy(1)))) // ", " // &
+                     trim(adjustl(real_to_string(xy(2)))) // "): '" // &
+                     trim(text_content) // "'")
+        
         call ensure_global_figure_initialized()
-        ! TODO: arrow annotation method not implemented in working figure core
     end subroutine annotate
 
     ! Additional wrappers for add_* functions
