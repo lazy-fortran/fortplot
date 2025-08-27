@@ -254,15 +254,34 @@ contains
             do
                 call cpu_time(current_time)
                 if (current_time - start_time > 30.0) exit  ! 30 second timeout
-                call execute_command_line("sleep 0.1", wait=.true.)
+                call sleep_fortran(100)  ! Sleep 100ms
             end do
         else
             ! Give viewer time to load file before deletion
-            call execute_command_line("sleep 1", wait=.true.)
+            call sleep_fortran(1000)  ! Sleep 1000ms (1 second)
         end if
         
         ! Clean up temporary file
         call safe_remove_file(trim(temp_file), success)
     end subroutine show_viewer_implementation
+
+    subroutine sleep_fortran(milliseconds)
+        !! Simple sleep implementation using Fortran intrinsic
+        integer, intent(in) :: milliseconds
+        real :: seconds
+        integer :: start_count, end_count, count_rate, target_count
+        
+        ! Convert milliseconds to seconds for system_clock
+        seconds = real(milliseconds) / 1000.0
+        
+        ! Use system_clock for precise timing
+        call system_clock(start_count, count_rate)
+        target_count = int(seconds * real(count_rate))
+        
+        do
+            call system_clock(end_count)
+            if (end_count - start_count >= target_count) exit
+        end do
+    end subroutine sleep_fortran
 
 end module fortplot_matplotlib_io

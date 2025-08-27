@@ -3,7 +3,7 @@ program test_example_output_structure
     use iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_validation
-    use fortplot_system_runtime, only: is_windows
+    use fortplot_system_runtime, only: is_windows, create_directory_runtime
     implicit none
     
     ! Create test directories if running in CI or test environment
@@ -24,30 +24,16 @@ contains
     
     ! Setup test directories for CI environment
     subroutine setup_test_directories()
-        integer :: ios
+        logical :: success
         
         ! Always create directory structure for testing (idempotent operation)
-        ! Using system calls for cross-platform directory creation
-        if (is_windows()) then
-            call execute_command_line("if not exist output mkdir output", exitstat=ios)
-            call execute_command_line("if not exist output\example mkdir output\example", &
-                                      exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran " // &
-                                      "mkdir output\example\fortran", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\basic_plots " // &
-                                      "mkdir output\example\fortran\basic_plots", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\legend_demo " // &
-                                      "mkdir output\example\fortran\legend_demo", exitstat=ios)
-            call execute_command_line("if not exist output\example\fortran\marker_demo " // &
-                                      "mkdir output\example\fortran\marker_demo", exitstat=ios)
-        else
-            call execute_command_line("mkdir -p output/example/fortran/basic_plots " // &
-                                      "2>/dev/null", exitstat=ios)
-            call execute_command_line("mkdir -p output/example/fortran/legend_demo " // &
-                                      "2>/dev/null", exitstat=ios)
-            call execute_command_line("mkdir -p output/example/fortran/marker_demo " // &
-                                      "2>/dev/null", exitstat=ios)
-        end if
+        ! Using secure runtime directory creation
+        call create_directory_runtime("output", success)
+        call create_directory_runtime("output/example", success)
+        call create_directory_runtime("output/example/fortran", success)
+        call create_directory_runtime("output/example/fortran/basic_plots", success)
+        call create_directory_runtime("output/example/fortran/legend_demo", success)
+        call create_directory_runtime("output/example/fortran/marker_demo", success)
     end subroutine setup_test_directories
     
     ! Cleanup test directories after testing

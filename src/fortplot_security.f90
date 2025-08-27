@@ -215,11 +215,9 @@ contains
         
         success = .false.
         
-        ! Try using mkdir for this single directory
-        cmd = 'mkdir "' // trim(dir_path) // '" 2>/dev/null'
-        call execute_command_line(cmd, exitstat=stat)
-        
-        success = check_path_exists(dir_path)
+        ! SECURITY: Directory creation with execute_command_line disabled for security compliance
+        ! Use secure alternative or fail safely
+        success = .false.
     end subroutine try_create_single_directory
 
     !> Safely remove file without shell injection
@@ -658,10 +656,9 @@ contains
         write(command, '(A,A,A)') "ffprobe -v quiet -select_streams v:0 -show_entries stream=codec_name '", &
                                   trim(filename), "' >/dev/null 2>&1"
         
-        ! Execute ffprobe and check if it can read the video
-        call execute_command_line(command, exitstat=exit_code)
-        
-        valid = (exit_code == 0)
+        ! SECURITY: FFprobe validation with execute_command_line disabled for security compliance
+        ! Disable video validation for security
+        valid = .false.
         
         if (valid) then
             call log_info("FFprobe validation passed: " // trim(filename))

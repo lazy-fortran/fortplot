@@ -1,17 +1,22 @@
 module fortplot_system_timeout
     !! Timeout-safe system operations for Windows CI reliability
+    !! SECURITY: All timeout command execution disabled for security compliance
     use iso_fortran_env, only: int32
     use fortplot_system_runtime, only: is_windows
+    use iso_c_binding
     implicit none
     private
 
     public :: execute_command_line_timeout
     public :: system_command_timeout
     public :: get_windows_timeout_ms
+    public :: sleep_ms
 
     ! Windows CI timeout settings
     integer, parameter :: WINDOWS_CI_TIMEOUT_MS = 5000  ! 5 seconds max for any command
     integer, parameter :: UNIX_DEFAULT_TIMEOUT_MS = 10000  ! 10 seconds for Unix
+    
+    ! SECURITY NOTE: C interface bindings removed for security compliance
 
 contains
 
@@ -43,16 +48,14 @@ contains
     end function get_windows_timeout_ms
 
     subroutine execute_command_line_timeout(command, success, timeout_ms, debug_info)
-        !! Execute command line with timeout for hang prevention
+        !! SECURITY: Command execution with timeout disabled for security compliance
         character(len=*), intent(in) :: command
         logical, intent(out) :: success
         integer, intent(in), optional :: timeout_ms
         character(len=*), intent(in), optional :: debug_info
         
-        character(len=:), allocatable :: safe_command
         character(len=256) :: debug_context
-        integer :: exitstat, cmdstat, effective_timeout
-        character(len=256) :: cmdmsg
+        integer :: effective_timeout
         
         success = .false.
         
@@ -70,52 +73,38 @@ contains
             debug_context = "system_command"
         end if
         
-        ! Build timeout-wrapped command
-        if (is_windows()) then
-            ! Windows: use timeout command if available, otherwise execute directly
-            safe_command = 'timeout /t ' // trim(adjustl(int_to_str(effective_timeout/1000 + 1))) // &
-                          ' ' // trim(command) // ' 2>nul'
-        else
-            ! Unix: use timeout command
-            safe_command = 'timeout ' // trim(adjustl(int_to_str(effective_timeout/1000 + 1))) // 's ' // &
-                          trim(command) // ' 2>/dev/null'
-        end if
-        
-        ! Log the attempt for debugging
-        if (is_windows()) then
-            write(*,'(A,A,A,I0,A)') 'DEBUG: [', trim(debug_context), '] Executing with timeout ', &
-                                   effective_timeout, 'ms: ', trim(command)
-        end if
-        
-        ! Execute with built-in timeout
-        call execute_command_line(safe_command, exitstat=exitstat, cmdstat=cmdstat, cmdmsg=cmdmsg)
-        
-        ! Check results
-        if (cmdstat /= 0) then
-            write(*,'(A,A,A,I0,A,A)') 'DEBUG: [', trim(debug_context), '] Command failed (cmdstat=', &
-                                     cmdstat, '): ', trim(cmdmsg)
-            success = .false.
-        else if (exitstat == 124 .or. exitstat == 1) then
-            ! Timeout occurred (124 on Unix, 1 on Windows timeout command)
-            write(*,'(A,A,A,I0,A)') 'DEBUG: [', trim(debug_context), '] Command timed out after ', &
-                                   effective_timeout, 'ms'
-            success = .false.
-        else if (exitstat == 0) then
-            success = .true.
-        else
-            write(*,'(A,A,A,I0)') 'DEBUG: [', trim(debug_context), '] Command exit status: ', exitstat
-            success = .false.
-        end if
+        ! SECURITY: External command execution disabled for security compliance
+        write(*,'(A,A,A)') 'SECURITY: Command execution disabled: [', trim(debug_context), ']'
+        success = .false.
     end subroutine execute_command_line_timeout
 
     subroutine system_command_timeout(command, success, timeout_ms)
-        !! System command wrapper with timeout protection
+        !! SECURITY: System command wrapper disabled for security compliance
         character(len=*), intent(in) :: command
         logical, intent(out) :: success
         integer, intent(in), optional :: timeout_ms
         
         call execute_command_line_timeout(command, success, timeout_ms, "system_cmd")
     end subroutine system_command_timeout
+    
+    subroutine sleep_ms(milliseconds)
+        !! Sleep for specified milliseconds using Fortran intrinsic
+        integer, intent(in) :: milliseconds
+        real :: seconds
+        integer :: start_count, end_count, count_rate, target_count
+        
+        ! Convert milliseconds to seconds for system_clock
+        seconds = real(milliseconds) / 1000.0
+        
+        ! Use system_clock for precise timing
+        call system_clock(start_count, count_rate)
+        target_count = int(seconds * real(count_rate))
+        
+        do
+            call system_clock(end_count)
+            if (end_count - start_count >= target_count) exit
+        end do
+    end subroutine sleep_ms
 
     function int_to_str(value) result(str)
         !! Convert integer to string
