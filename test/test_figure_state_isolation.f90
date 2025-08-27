@@ -22,8 +22,8 @@ program test_figure_state_isolation
     
     ! Get reference to global figure and check legend entries
     fig_ptr => get_global_figure()
-    if (fig_ptr%legend_data%num_entries /= 1) then
-        write(*,*) 'FAIL: First figure should have 1 legend entry, got:', fig_ptr%legend_data%num_entries
+    if (fig_ptr%state%legend_data%num_entries /= 1) then
+        write(*,*) 'FAIL: First figure should have 1 legend entry, got:', fig_ptr%state%legend_data%num_entries
         stop 1
     end if
     write(*,*) 'PASS: First figure has correct legend entries (1)'
@@ -34,8 +34,8 @@ program test_figure_state_isolation
     
     ! Check that legend state is clean (no entries from previous figure)
     fig_ptr => get_global_figure()
-    if (fig_ptr%legend_data%num_entries /= 0) then
-        write(*,*) 'FAIL: Second figure should have 0 legend entries before legend(), got:', fig_ptr%legend_data%num_entries
+    if (fig_ptr%state%legend_data%num_entries /= 0) then
+        write(*,*) 'FAIL: Second figure should have 0 legend entries before legend(), got:', fig_ptr%state%legend_data%num_entries
         write(*,*) 'This indicates state contamination from first figure'
         stop 1
     end if
@@ -45,8 +45,8 @@ program test_figure_state_isolation
     call legend()
     
     ! Check that second figure now has only its own legend
-    if (fig_ptr%legend_data%num_entries /= 1) then
-        write(*,*) 'FAIL: Second figure should have 1 legend entry after legend(), got:', fig_ptr%legend_data%num_entries
+    if (fig_ptr%state%legend_data%num_entries /= 1) then
+        write(*,*) 'FAIL: Second figure should have 1 legend entry after legend(), got:', fig_ptr%state%legend_data%num_entries
         stop 1
     end if
     write(*,*) 'PASS: Second figure has correct legend entries after legend() (1)'
@@ -56,8 +56,8 @@ program test_figure_state_isolation
     
     ! Should have no legend entries and no plots
     fig_ptr => get_global_figure()
-    if (fig_ptr%legend_data%num_entries /= 0) then
-        write(*,*) 'FAIL: Third figure should have 0 legend entries, got:', fig_ptr%legend_data%num_entries
+    if (fig_ptr%state%legend_data%num_entries /= 0) then
+        write(*,*) 'FAIL: Third figure should have 0 legend entries, got:', fig_ptr%state%legend_data%num_entries
         stop 1
     end if
     

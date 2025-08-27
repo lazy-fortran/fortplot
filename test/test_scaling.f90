@@ -143,8 +143,8 @@ contains
         
         do i = 1, size(x_data)
             ! Apply scale transformations (linear/log/symlog)
-            x_transformed = apply_scale_transform(x_data(i), fig%xscale, fig%symlog_threshold)
-            y_transformed = apply_scale_transform(y_data(i), fig%yscale, fig%symlog_threshold)
+            x_transformed = apply_scale_transform(x_data(i), fig%state%xscale, fig%state%symlog_threshold)
+            y_transformed = apply_scale_transform(y_data(i), fig%state%yscale, fig%state%symlog_threshold)
             
             ! Map to plot area coordinates (this should be the extracted scaling logic)
             x_scaled(i) = map_data_to_canvas_x(x_transformed, fig)
@@ -160,11 +160,11 @@ contains
         real(wp) :: x_min_transformed, x_max_transformed
         
         ! Apply same transformation to axis limits
-        x_min_transformed = apply_scale_transform(fig%x_min, fig%xscale, fig%symlog_threshold)
-        x_max_transformed = apply_scale_transform(fig%x_max, fig%xscale, fig%symlog_threshold)
+        x_min_transformed = apply_scale_transform(fig%state%x_min, fig%state%xscale, fig%state%symlog_threshold)
+        x_max_transformed = apply_scale_transform(fig%state%x_max, fig%state%xscale, fig%state%symlog_threshold)
         
         ! Use extracted coordinate transformation function
-        x_canvas = transform_x_coordinate(x_transformed, x_min_transformed, x_max_transformed, fig%width)
+        x_canvas = transform_x_coordinate(x_transformed, x_min_transformed, x_max_transformed, fig%state%width)
     end function
 
     function map_data_to_canvas_y(y_transformed, fig) result(y_canvas)
@@ -175,11 +175,11 @@ contains
         real(wp) :: y_min_transformed, y_max_transformed
         
         ! Apply same transformation to axis limits
-        y_min_transformed = apply_scale_transform(fig%y_min, fig%yscale, fig%symlog_threshold)
-        y_max_transformed = apply_scale_transform(fig%y_max, fig%yscale, fig%symlog_threshold)
+        y_min_transformed = apply_scale_transform(fig%state%y_min, fig%state%yscale, fig%state%symlog_threshold)
+        y_max_transformed = apply_scale_transform(fig%state%y_max, fig%state%yscale, fig%state%symlog_threshold)
         
         ! Use extracted coordinate transformation function (with Y-axis inversion for screen coords)
-        y_canvas = transform_y_coordinate(y_transformed, y_min_transformed, y_max_transformed, fig%height, invert=.true.)
+        y_canvas = transform_y_coordinate(y_transformed, y_min_transformed, y_max_transformed, fig%state%height, invert=.true.)
     end function
 
     function check_points_within_canvas(x_scaled, y_scaled, canvas_width, canvas_height) result(all_within)

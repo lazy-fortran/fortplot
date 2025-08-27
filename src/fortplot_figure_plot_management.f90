@@ -1,0 +1,298 @@
+module fortplot_figure_plot_management
+    !! Figure plot data management module
+    !! 
+    !! Single Responsibility: Manage plot data storage and operations
+    !! Extracted from fortplot_figure_core to improve modularity
+    
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_legend, only: legend_t
+    implicit none
+    
+    private
+    public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
+    public :: add_pcolormesh_plot_data, generate_default_contour_levels
+    public :: setup_figure_legend, update_plot_ydata
+    
+contains
+    
+    subroutine add_line_plot_data(plots, plot_count, max_plots, colors, &
+                                 x, y, label, linestyle, color, marker)
+        !! Add line plot data to internal storage
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: colors(:,:)
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(wp), intent(in) :: color(3)
+        
+        if (plot_count >= max_plots) then
+            print *, "Warning: Maximum number of plots reached"
+            return
+        end if
+        
+        plot_count = plot_count + 1
+        
+        ! Store plot data
+        plots(plot_count)%plot_type = PLOT_TYPE_LINE
+        allocate(plots(plot_count)%x(size(x)))
+        allocate(plots(plot_count)%y(size(y)))
+        plots(plot_count)%x = x
+        plots(plot_count)%y = y
+        plots(plot_count)%color = color
+        
+        ! Process optional arguments
+        if (present(label)) then
+            plots(plot_count)%label = label
+        end if
+        
+        if (present(linestyle)) then
+            plots(plot_count)%linestyle = linestyle
+        else
+            plots(plot_count)%linestyle = '-'
+        end if
+        
+        if (present(marker)) then
+            if (len_trim(marker) > 0) then
+                plots(plot_count)%marker = marker
+            end if
+        end if
+    end subroutine add_line_plot_data
+    
+    subroutine add_contour_plot_data(plots, plot_count, max_plots, colors, &
+                                    x_grid, y_grid, z_grid, levels, label)
+        !! Add contour plot data to internal storage
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: colors(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in), optional :: levels(:)
+        character(len=*), intent(in), optional :: label
+        
+        if (plot_count >= max_plots) then
+            print *, "Warning: Maximum number of plots reached"
+            return
+        end if
+        
+        plot_count = plot_count + 1
+        
+        ! Store plot data
+        plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
+        allocate(plots(plot_count)%x_grid(size(x_grid)))
+        allocate(plots(plot_count)%y_grid(size(y_grid)))
+        allocate(plots(plot_count)%z_grid(size(z_grid,1), size(z_grid,2)))
+        plots(plot_count)%x_grid = x_grid
+        plots(plot_count)%y_grid = y_grid
+        plots(plot_count)%z_grid = z_grid
+        
+        if (present(levels)) then
+            allocate(plots(plot_count)%contour_levels(size(levels)))
+            plots(plot_count)%contour_levels = levels
+        else
+            call generate_default_contour_levels(plots(plot_count))
+        end if
+        
+        if (present(label)) then
+            plots(plot_count)%label = label
+        end if
+        
+        ! Set default color
+        plots(plot_count)%color = colors(:, mod(plot_count-1, 6) + 1)
+        plots(plot_count)%use_color_levels = .false.
+    end subroutine add_contour_plot_data
+    
+    subroutine add_colored_contour_plot_data(plots, plot_count, max_plots, &
+                                            x_grid, y_grid, z_grid, levels, &
+                                            colormap, show_colorbar, label)
+        !! Add colored contour plot data
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in), optional :: levels(:)
+        character(len=*), intent(in), optional :: colormap, label
+        logical, intent(in), optional :: show_colorbar
+        
+        if (plot_count >= max_plots) then
+            print *, "Warning: Maximum number of plots reached"
+            return
+        end if
+        
+        plot_count = plot_count + 1
+        
+        ! Store plot data
+        plots(plot_count)%plot_type = PLOT_TYPE_CONTOUR
+        allocate(plots(plot_count)%x_grid(size(x_grid)))
+        allocate(plots(plot_count)%y_grid(size(y_grid)))
+        allocate(plots(plot_count)%z_grid(size(z_grid,1), size(z_grid,2)))
+        plots(plot_count)%x_grid = x_grid
+        plots(plot_count)%y_grid = y_grid
+        plots(plot_count)%z_grid = z_grid
+        
+        if (present(levels)) then
+            allocate(plots(plot_count)%contour_levels(size(levels)))
+            plots(plot_count)%contour_levels = levels
+        else
+            call generate_default_contour_levels(plots(plot_count))
+        end if
+        
+        if (present(colormap)) then
+            plots(plot_count)%colormap = colormap
+        else
+            plots(plot_count)%colormap = 'crest'
+        end if
+        
+        if (present(show_colorbar)) then
+            plots(plot_count)%show_colorbar = show_colorbar
+        else
+            plots(plot_count)%show_colorbar = .true.
+        end if
+        
+        if (present(label)) then
+            plots(plot_count)%label = label
+        end if
+        
+        plots(plot_count)%use_color_levels = .true.
+    end subroutine add_colored_contour_plot_data
+    
+    subroutine add_pcolormesh_plot_data(plots, plot_count, max_plots, &
+                                       x, y, c, colormap, vmin, vmax, &
+                                       edgecolors, linewidths)
+        !! Add pcolormesh plot data
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: vmin, vmax
+        real(wp), intent(in), optional :: edgecolors(3)
+        real(wp), intent(in), optional :: linewidths
+        
+        if (plot_count >= max_plots) then
+            print *, "Warning: Maximum number of plots reached"
+            return
+        end if
+        
+        plot_count = plot_count + 1
+        
+        ! Store plot data
+        plots(plot_count)%plot_type = PLOT_TYPE_PCOLORMESH
+        
+        ! Initialize pcolormesh data using proper method
+        call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap)
+        
+        if (present(vmin)) then
+            plots(plot_count)%pcolormesh_data%vmin = vmin
+            plots(plot_count)%pcolormesh_data%vmin_set = .true.
+        end if
+        
+        if (present(vmax)) then
+            plots(plot_count)%pcolormesh_data%vmax = vmax
+            plots(plot_count)%pcolormesh_data%vmax_set = .true.
+        end if
+        
+        if (present(edgecolors)) then
+            plots(plot_count)%pcolormesh_data%show_edges = .true.
+            plots(plot_count)%pcolormesh_data%edge_color = edgecolors
+        end if
+        
+        if (present(linewidths)) then
+            plots(plot_count)%pcolormesh_data%edge_width = linewidths
+        end if
+    end subroutine add_pcolormesh_plot_data
+    
+    subroutine generate_default_contour_levels(plot_data)
+        !! Generate default contour levels
+        type(plot_data_t), intent(inout) :: plot_data
+        
+        real(wp) :: z_min, z_max
+        integer :: num_levels
+        integer :: i
+        
+        z_min = minval(plot_data%z_grid)
+        z_max = maxval(plot_data%z_grid)
+        
+        num_levels = 7
+        allocate(plot_data%contour_levels(num_levels))
+        
+        do i = 1, num_levels
+            plot_data%contour_levels(i) = z_min + (i-1) * (z_max - z_min) / (num_levels - 1)
+        end do
+    end subroutine generate_default_contour_levels
+    
+    subroutine setup_figure_legend(legend_data, show_legend, plots, plot_count, location)
+        !! Setup figure legend
+        type(legend_t), intent(inout) :: legend_data
+        logical, intent(inout) :: show_legend
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        character(len=*), intent(in), optional :: location
+        
+        character(len=:), allocatable :: loc
+        integer :: i
+        
+        loc = 'upper right'
+        if (present(location)) loc = location
+        
+        show_legend = .true.
+        
+        ! Clear existing legend entries to prevent duplication
+        call legend_data%clear()
+        
+        ! Set legend position based on location string
+        call legend_data%set_position(loc)
+        
+        ! Add legend entries from plots
+        do i = 1, plot_count
+            ! Only add legend entry if label is allocated and not empty
+            if (allocated(plots(i)%label)) then
+                if (len_trim(plots(i)%label) > 0) then
+                    if (allocated(plots(i)%linestyle)) then
+                        if (allocated(plots(i)%marker)) then
+                            call legend_data%add_entry(plots(i)%label, &
+                                                      plots(i)%color, &
+                                                      plots(i)%linestyle, &
+                                                      plots(i)%marker)
+                        else
+                            call legend_data%add_entry(plots(i)%label, &
+                                                      plots(i)%color, &
+                                                      plots(i)%linestyle)
+                        end if
+                    else
+                        call legend_data%add_entry(plots(i)%label, &
+                                                  plots(i)%color)
+                    end if
+                end if
+            end if
+        end do
+    end subroutine setup_figure_legend
+    
+    subroutine update_plot_ydata(plots, plot_count, plot_index, y_new)
+        !! Update y data for an existing plot
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer, intent(in) :: plot_index
+        real(wp), intent(in) :: y_new(:)
+        
+        if (plot_index < 1 .or. plot_index > plot_count) then
+            print *, "Warning: Invalid plot index", plot_index
+            return
+        end if
+        
+        if (.not. allocated(plots(plot_index)%y)) then
+            print *, "Warning: Plot", plot_index, "has no y data to update"
+            return
+        end if
+        
+        if (size(y_new) /= size(plots(plot_index)%y)) then
+            print *, "Warning: New y data size", size(y_new), &
+                     "does not match existing size", size(plots(plot_index)%y)
+            return
+        end if
+        
+        plots(plot_index)%y = y_new
+    end subroutine update_plot_ydata
+
+end module fortplot_figure_plot_management

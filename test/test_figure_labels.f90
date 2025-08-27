@@ -1,5 +1,5 @@
 program test_figure_labels
-    use fortplot_figure_core, only: figure_t
+    use fortplot_figure, only: figure_t
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     

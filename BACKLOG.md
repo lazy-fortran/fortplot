@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Foundation Quality Enforcement Sprint)
 
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
-- [ ] #443: Critical: fortplot_figure_core.f90 exceeds 1000-line hard limit (1258 lines)
 - [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown
 - [ ] #444: defect: 8 stub implementations with error_stop in fortplot_matplotlib.f90
 - [ ] #447: defect: Memory safety issues identified in 7 test files
@@ -51,6 +50,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
+- [x] #443: Critical: fortplot_figure_core.f90 exceeds 1000-line hard limit (1258 lines) [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 

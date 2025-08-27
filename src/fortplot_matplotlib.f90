@@ -50,7 +50,7 @@ contains
         if (.not. allocated(fig)) then
             allocate(figure_t :: fig)
         end if
-        if (.not. allocated(fig%backend)) then
+        if (.not. fig%backend_associated()) then
             call fig%initialize()
         end if
     end subroutine ensure_global_figure_initialized
