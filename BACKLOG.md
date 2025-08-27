@@ -6,7 +6,6 @@
 
 
 ### EPIC: Technical Debt Resolution
-- [ ] #486: defect: fortplot_ascii.f90 exceeds 1000 line limit (1038 lines)
 - [ ] #467: defect: 36 files contain TODO/FIXME/stub markers indicating incomplete implementations
 - [ ] #418: defect: TODO comments indicate incomplete implementations
 - [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
@@ -46,7 +45,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #426: defect: unused test security module [EPIC: Test Infrastructure Cleanup and Automation]
+- [ ] #486: defect: fortplot_ascii.f90 exceeds 1000 line limit (1038 lines) [EPIC: Technical Debt Resolution]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
