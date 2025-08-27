@@ -9,7 +9,6 @@
 ### EPIC: Edge Case and Stability Foundation
 
 ### EPIC: Core API Implementation Completion
-- [ ] #417: defect: stub implementations returning error stop
 - [ ] #422: defect: empty/no-op subroutines in multiple modules
 - [ ] #421: defect: file I/O operations without proper validation
 - [ ] #420: defect: potential memory leak - deallocate without error checking
@@ -48,7 +47,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #431: Bug: Inconsistent error reporting - reports success after failure [EPIC: Edge Case and Stability Foundation]
+- [ ] #417: defect: stub implementations returning error stop [EPIC: Core API Implementation Completion]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
