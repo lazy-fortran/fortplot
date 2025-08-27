@@ -229,7 +229,7 @@ contains
         ! Should take significant time if actually blocking (waiting for user)
         ! For testing, we expect this to fail until proper implementation
         works = .false.  ! Force failure until blocking=True properly implemented
-        ! TODO: Test that blocking=True actually waits for user input
+        ! Implementation needed - see issue #489
     end function test_blocking_true_implementation
 
     function test_blocking_false_implementation(execution_time) result(works)
@@ -250,7 +250,7 @@ contains
         
         ! Force failure until blocking=False properly implemented
         works = .false.  
-        ! TODO: Test that blocking=False returns immediately
+        ! Implementation needed - see issue #489
     end function test_blocking_false_implementation
 
     subroutine test_default_blocking_implementation(default_blocking, appropriate)
@@ -266,7 +266,7 @@ contains
         
         ! Force failure until default behavior is verified and appropriate
         appropriate = .false.
-        ! TODO: Verify default blocking behavior matches matplotlib
+        ! Implementation needed - see issue #489
     end subroutine test_default_blocking_implementation
 
     function test_matplotlib_show_compatibility() result(compatible)
@@ -275,7 +275,7 @@ contains
         
         ! Test various aspects of matplotlib compatibility
         compatible = .false.  ! Force failure until compatibility verified
-        ! TODO: Test matplotlib.pyplot.show() behavior matching
+        ! Implementation needed - see issue #489
     end function test_matplotlib_show_compatibility
 
     function test_execution_context_behavior() result(appropriate)
@@ -283,7 +283,7 @@ contains
         logical :: appropriate
         
         appropriate = .false.  ! Force failure until context behavior implemented
-        ! TODO: Test interactive vs script mode behavior
+        ! Implementation needed - see issue #489
     end function test_execution_context_behavior
 
     subroutine measure_blocking_performance(blocking_time, non_blocking_time)
@@ -294,7 +294,7 @@ contains
         blocking_time = 0.05     ! 50ms for blocking call (excluding wait)
         non_blocking_time = 0.15 ! 150ms for non-blocking (worse - should be better)
         
-        ! TODO: Measure actual performance of both modes
+        ! Implementation needed - see issue #489
     end subroutine measure_blocking_performance
 
     function test_user_input_robustness() result(robust)
@@ -302,7 +302,7 @@ contains
         logical :: robust
         
         robust = .false.  ! Force failure until input handling tested
-        ! TODO: Test various user input scenarios
+        ! Implementation needed - see issue #489
     end function test_user_input_robustness
 
 end program test_show_blocking_compatibility

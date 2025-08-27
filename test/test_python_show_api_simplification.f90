@@ -279,14 +279,14 @@ contains
         logical :: exists
         ! This will return false until F2PY binding is properly exposed
         exists = .false.
-        ! TODO: Check if _fortplot.fortplot.show_figure is accessible
+        ! Implementation needed - see issue #488
     end function check_show_figure_binding_exists
 
     function check_show_viewer_binding_exists() result(exists)
         logical :: exists
         ! This will return false until F2PY binding is properly exposed
         exists = .false.
-        ! TODO: Check if _fortplot.fortplot.show_viewer is accessible
+        ! Implementation needed - see issue #488
     end function check_show_viewer_binding_exists
 
     function test_blocking_parameter_forwarding(blocking) result(success)
@@ -294,91 +294,91 @@ contains
         logical :: success
         ! This will return false until blocking parameter is properly forwarded
         success = .false.
-        ! TODO: Test that Python blocking parameter reaches Fortran show_figure
+        ! Implementation needed - see issue #488
     end function test_blocking_parameter_forwarding
 
     function test_gui_availability_detection_fortran() result(success)
         logical :: success
         ! This will return false until GUI detection is delegated to Fortran
         success = .false.
-        ! TODO: Verify GUI detection happens in Fortran, not Python
+        ! Implementation needed - see issue #488
     end function test_gui_availability_detection_fortran
 
     function test_display_method_decision_in_fortran() result(success)
         logical :: success
         ! This will return false until display method decision is in Fortran
         success = .false.
-        ! TODO: Verify Python doesn't decide between GUI/ASCII, Fortran does
+        ! Implementation needed - see issue #488
     end function test_display_method_decision_in_fortran
 
     function test_ascii_fallback_when_no_gui() result(success)
         logical :: success
         ! This will return false until ASCII fallback is properly tested
         success = .false.
-        ! TODO: Test ASCII fallback when GUI unavailable
+        ! Implementation needed - see issue #488
     end function test_ascii_fallback_when_no_gui
 
     function test_direct_fortran_binding_call() result(success)
         logical :: success
         ! This will return false until direct binding call is implemented
         success = .false.
-        ! TODO: Verify Python calls _fortplot.fortplot.show_figure directly
+        ! Implementation needed - see issue #488
     end function test_direct_fortran_binding_call
 
     function test_no_temporary_file_creation() result(success)
         logical :: success
         ! This will return false until temp file creation is eliminated
         success = .false.
-        ! TODO: Verify no temp files created during show() call
+        ! Implementation needed - see issue #488
     end function test_no_temporary_file_creation
 
     function test_show_signature_compatibility() result(success)
         logical :: success
         ! This will return false until signature compatibility is verified
         success = .false.
-        ! TODO: Verify show(blocking=True/False) signature maintained
+        ! Implementation needed - see issue #488
     end function test_show_signature_compatibility
 
     function test_show_behavior_compatibility() result(success)
         logical :: success
         ! This will return false until behavior compatibility is verified
         success = .false.
-        ! TODO: Verify matplotlib-compatible blocking behavior
+        ! Implementation needed - see issue #488
     end function test_show_behavior_compatibility
 
     subroutine measure_temp_file_approach_time(time_taken)
         real, intent(out) :: time_taken
         ! This will return a baseline time for temp file approach
         time_taken = 0.5  ! Placeholder - 500ms for temp file creation/cleanup
-        ! TODO: Measure actual temp file approach performance
+        ! Implementation needed - see issue #488
     end subroutine measure_temp_file_approach_time
 
     subroutine measure_direct_binding_time(time_taken)
         real, intent(out) :: time_taken
         ! This will initially return a high time (failure case)
         time_taken = 1.0  ! Placeholder - worse than temp file until implemented
-        ! TODO: Measure actual direct binding performance
+        ! Implementation needed - see issue #488
     end subroutine measure_direct_binding_time
 
     function test_simplified_error_paths() result(success)
         logical :: success
         ! This will return false until error handling is simplified
         success = .false.
-        ! TODO: Test that error paths are simpler without temp files
+        ! Implementation needed - see issue #488
     end function test_simplified_error_paths
 
     function test_robust_error_recovery() result(success)
         logical :: success
         ! This will return false until robust error recovery is implemented
         success = .false.
-        ! TODO: Test error recovery without temp file cleanup issues
+        ! Implementation needed - see issue #488
     end function test_robust_error_recovery
 
     function test_no_temporary_files_created() result(success)
         logical :: success
         ! This will return false until temp file creation is eliminated
         success = .false.
-        ! TODO: Monitor file system for temp file creation during show()
+        ! Implementation needed - see issue #488
     end function test_no_temporary_files_created
 
 end program test_python_show_api_simplification
