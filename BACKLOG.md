@@ -32,11 +32,9 @@
 - [ ] #457: enhancement: complete matplotlib stub implementations
 
 ### EPIC: Visual Output Quality Restoration
-- [ ] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content
-- [ ] #312: Legend Demo plots dont show up on github pages
-- [ ] #413: title in png plots too far right
 - [ ] #408: ASCII plots don't show full curves in basic plots
 - [ ] #409: Limited height of ASCII plots in contour demo
+- [ ] #413: title in png plots too far right
 - [ ] #410: Format string markers (dashed, circles, x) completely non-functional
 - [ ] #411: Axes and labels at wrong positions in scale examples
 - [ ] #412: Streamplot demo too colorful
@@ -48,6 +46,7 @@
 
 ### EPIC: Documentation Quality Assurance
 - [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
+- [ ] #438: defect: Documentation consolidation for Critical Foundation Recovery Sprint
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
