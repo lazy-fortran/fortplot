@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
 ### EPIC: Module Architecture Refactoring (TOP PRIORITY)
-- [ ] #470: architecture: High complexity concentration - 3 modules with 99+ procedures each
 - [ ] #456: architecture: duplicate figure_t type definitions in codebase
 
 ### EPIC: Test Infrastructure Cleanup and Automation
@@ -53,7 +52,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #469: architecture: Module size violations - 4 files exceed 1000-line hard limit [EPIC: Module Architecture Refactoring]
+- [ ] #470: architecture: High complexity concentration - 3 modules with 99+ procedures each [EPIC: Module Architecture Refactoring]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
