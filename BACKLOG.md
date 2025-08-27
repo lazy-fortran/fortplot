@@ -50,7 +50,6 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [x] #443: Critical: fortplot_figure_core.f90 exceeds 1000-line hard limit (1258 lines) [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
