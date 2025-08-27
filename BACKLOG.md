@@ -5,9 +5,6 @@
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
 
-### EPIC: Test Infrastructure Cleanup and Automation
-- [ ] #426: defect: unused test security module
-
 ### EPIC: Technical Debt Resolution
 - [ ] #467: defect: 36 files contain TODO/FIXME/stub markers indicating incomplete implementations
 - [ ] #418: defect: TODO comments indicate incomplete implementations
@@ -48,7 +45,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #425: defect: unused module fortplot_forensic_comparison [EPIC: Test Infrastructure Cleanup and Automation]
+- [ ] #426: defect: unused test security module [EPIC: Test Infrastructure Cleanup and Automation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
