@@ -145,9 +145,9 @@ contains
         type(figure_t) :: fig
         real(wp) :: x(10), y(10)
         character(len=1), parameter :: markers(10) = ['o', 's', '^', 'v', 'd', 'D', '*', '+', 'x', 'h']
-        character(len=10), parameter :: labels(10) = ['Circle   ', 'Square   ', 'Triangle▲', 'Triangle▼', &
-                                                     'Diamond  ', 'BigDiamond', 'Star     ', 'Plus     ', &
-                                                     'Cross    ', 'Hexagon  ']
+        character(len=10), parameter :: labels(10) = ['Circle    ', 'Square    ', 'Triangle_U', 'Triangle_D', &
+                                                      'Diamond   ', 'BigDiamond', 'Star      ', 'Plus      ', &
+                                                      'Cross     ', 'Hexagon   ']
         integer :: i
         
         ! Generate test positions for marker display
@@ -338,9 +338,15 @@ contains
         !! Then: Colorbar should be generated with proper layout integration
         
         type(figure_t) :: fig
-        real(wp) :: x(10) = [(real(i, wp), i=1, 10)]
-        real(wp) :: y(10) = [(sin(real(i, wp)), i=1, 10)]
-        real(wp) :: colors(10) = [(real(i-1, wp)/9.0_wp, i=1, 10)]
+        real(wp) :: x(10), y(10), colors(10)
+        integer :: i
+        
+        ! Initialize arrays
+        do i = 1, 10
+            x(i) = real(i, wp)
+            y(i) = sin(real(i, wp))
+            colors(i) = real(i-1, wp)/9.0_wp
+        end do
         
         write(error_unit, '(A)') 'Testing automatic colorbar generation...'
         call fig%initialize(700, 500)  ! Wider to accommodate colorbar

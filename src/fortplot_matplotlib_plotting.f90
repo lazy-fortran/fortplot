@@ -226,21 +226,10 @@ contains
         
         call ensure_fig_init()
         
-        ! Validate input arrays
-        if (size(x) /= size(y)) then
-            call log_error("scatter: x and y arrays must have same size")
-            return
-        end if
-        
-        if (present(s)) then
-            if (size(s) /= size(x) .and. size(s) /= 1) then
-                call log_error("scatter: size array must match data or be scalar")
-                return
-            end if
-        end if
-        
-        ! Scatter plot not yet implemented in figure_core - use line plot as placeholder
-        call fig%add_plot(x, y, label=label, linestyle='none')
+        ! Forward to figure's scatter method
+        call fig%scatter(x, y, s=s, c=c, marker=marker, markersize=markersize, &
+                        color=color, colormap=colormap, vmin=vmin, vmax=vmax, &
+                        label=label, show_colorbar=show_colorbar)
     end subroutine scatter
 
     subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
