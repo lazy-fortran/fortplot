@@ -285,7 +285,7 @@ contains
             call backend%text(text_x, text_y, legend%entries(i)%label)
         end do
         
-        deallocate(labels)
+        if (allocated(labels)) deallocate(labels)
     end subroutine render_standard_legend
     
     subroutine calculate_legend_position(legend, backend, x, y)
@@ -327,7 +327,7 @@ contains
             x = backend%x_min + box%x
             y = backend%y_min + box%y
             
-            deallocate(labels)
+            if (allocated(labels)) deallocate(labels)
         end if
     end subroutine calculate_legend_position
 

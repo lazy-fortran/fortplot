@@ -80,8 +80,8 @@ contains
 
         call build_png_buffer(width, height, compressed_data, compressed_size, png_buffer)
         
-        deallocate(compressed_data)
-        deallocate(png_row_data)
+        if (allocated(compressed_data)) deallocate(compressed_data)
+        if (allocated(png_row_data)) deallocate(png_row_data)
     end subroutine generate_png_data
 
     ! Build complete PNG buffer from compressed data  
@@ -257,7 +257,7 @@ contains
         end if
         
         crc = int(crc32_calculate(combined, size(combined)))
-        deallocate(combined)
+        if (allocated(combined)) deallocate(combined)
     end function calculate_chunk_crc
 
     ! PNG chunk writing functions (simplified versions)
@@ -327,7 +327,7 @@ contains
         end if
         write(unit) crc_be
 
-        deallocate(full_data)
+        if (allocated(full_data)) deallocate(full_data)
     end subroutine write_chunk
 
     function to_big_endian(value) result(be_value)
