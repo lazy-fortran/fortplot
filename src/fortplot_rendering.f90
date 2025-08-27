@@ -67,7 +67,7 @@ contains
                 trim(plot_data%linestyle) == '') then
                 ! No lines to draw, only markers
                 if (allocated(x_scaled)) deallocate(x_scaled)
-        if (allocated(y_scaled)) deallocate(y_scaled)
+                if (allocated(y_scaled)) deallocate(y_scaled)
                 return
             end if
             call backend%set_line_style(plot_data%linestyle)
