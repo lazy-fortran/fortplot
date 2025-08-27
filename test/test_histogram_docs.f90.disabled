@@ -17,13 +17,13 @@ program test_histogram_docs
     end do
     
     ! Test the exact example from the hist() documentation (needs figure initialization)
-    call figure(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call hist(data_values, bins=20, label='Distribution')
     call savefig('build/doc_example_hist.png')
     write(*,*) '  ✓ hist() documented example works (with figure init)'
     
     ! Test the exact example from the histogram() documentation (needs figure initialization)
-    call figure(800, 600)
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call histogram(data_values, bins=20, label='Distribution')
     call savefig('build/doc_example_histogram.png')
     write(*,*) '  ✓ histogram() documented example works (with figure init)'

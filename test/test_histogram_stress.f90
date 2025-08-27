@@ -143,8 +143,8 @@ contains
         data = real([(i, i=1,5000)], wp) * 0.01_wp
         
         call fig%initialize(800, 600)
-        call fig%hist(data(1:2000), bins=30, label='First Half', color=[1.0_wp, 0.0_wp, 0.0_wp])
-        call fig%hist(data(2500:4500), bins=30, label='Second Half', color=[0.0_wp, 0.0_wp, 1.0_wp])
+        call fig%hist(data(1:2000), bins=30, label='First Half')
+        call fig%hist(data(2500:4500), bins=30, label='Second Half')
         call fig%legend()
         call fig%set_title('Overlapping Histograms')
         call fig%savefig('build/stress_overlapping.png')

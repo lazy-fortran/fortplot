@@ -17,7 +17,8 @@ module fortplot_figure_core
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
     ! Import refactored modules
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+                                    PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
     use fortplot_figure_initialization
     use fortplot_figure_plot_management
     use fortplot_figure_histogram
@@ -28,7 +29,7 @@ module fortplot_figure_core
 
     private
     public :: figure_t, plot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -71,6 +72,7 @@ module fortplot_figure_core
         procedure :: clear_streamlines
         procedure :: grid
         procedure :: hist
+        procedure :: boxplot
         ! Getter methods for backward compatibility
         procedure :: get_width
         procedure :: get_height
@@ -351,6 +353,83 @@ contains
         call self%add_plot(x_data, y_data, label=hist_label)
     end subroutine hist
 
+    subroutine boxplot(self, data, position, width, label, show_outliers, &
+                       horizontal, color)
+        !! Create a box plot
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        character(len=*), intent(in), optional :: color
+        
+        integer :: plot_idx
+        
+        ! Handle empty data
+        if (size(data) == 0) return
+        
+        ! Check plot count
+        self%plot_count = self%plot_count + 1
+        if (self%plot_count > self%state%max_plots) then
+            print *, "WARNING: Maximum number of plots exceeded"
+            self%plot_count = self%state%max_plots
+            return
+        end if
+        
+        plot_idx = self%plot_count
+        
+        ! Store box plot data
+        if (allocated(self%plots(plot_idx)%box_data)) then
+            deallocate(self%plots(plot_idx)%box_data)
+        end if
+        allocate(self%plots(plot_idx)%box_data(size(data)))
+        self%plots(plot_idx)%box_data = data
+        
+        ! Set plot type
+        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
+        
+        ! Store label if provided
+        if (present(label)) then
+            self%plots(plot_idx)%label = label
+        end if
+        
+        ! Store position if provided
+        if (present(position)) then
+            self%plots(plot_idx)%position = position
+        else
+            self%plots(plot_idx)%position = 1.0_wp
+        end if
+        
+        ! Store width if provided
+        if (present(width)) then
+            self%plots(plot_idx)%width = width
+        else
+            self%plots(plot_idx)%width = 0.5_wp
+        end if
+        
+        ! Store other parameters
+        self%plots(plot_idx)%show_outliers = .true.
+        if (present(show_outliers)) then
+            self%plots(plot_idx)%show_outliers = show_outliers
+        end if
+        
+        self%plots(plot_idx)%horizontal = .false.
+        if (present(horizontal)) then
+            self%plots(plot_idx)%horizontal = horizontal
+        end if
+        
+        ! Store color if provided (would need conversion from string to RGB)
+        ! For now, use default color from plot_data_t initialization
+        
+        ! Update data ranges based on boxplot statistics
+        call update_data_ranges_boxplot(self, data, position)
+        
+        ! Mark as not rendered
+        self%state%rendered = .false.
+    end subroutine boxplot
+
     subroutine set_xlabel(self, label)
         !! Set x-axis label
         class(figure_t), intent(inout) :: self
@@ -494,6 +573,61 @@ contains
             end if
         end if
     end subroutine update_data_ranges_pcolormesh
+
+    subroutine update_data_ranges_boxplot(self, data, position)
+        !! Update data ranges after adding boxplot
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        
+        real(wp) :: x_pos, y_min_new, y_max_new
+        real(wp) :: q1, q3, iqr
+        integer :: n
+        real(wp), allocatable :: sorted_data(:)
+        
+        ! Set x position
+        x_pos = 1.0_wp
+        if (present(position)) x_pos = position
+        
+        ! Sort data for quartile calculations
+        n = size(data)
+        allocate(sorted_data(n))
+        sorted_data = data
+        call sort_array(sorted_data)
+        
+        ! Calculate quartiles and IQR for outlier detection
+        q1 = sorted_data(max(1, n/4))
+        q3 = sorted_data(min(n, 3*n/4))
+        iqr = q3 - q1
+        
+        ! Data range includes whisker extent (1.5 * IQR)
+        y_min_new = q1 - 1.5_wp * iqr
+        y_max_new = q3 + 1.5_wp * iqr
+        
+        ! Update x range to include box position
+        if (.not. self%state%xlim_set) then
+            if (self%state%plot_count == 1) then
+                self%state%x_min = x_pos - 0.5_wp
+                self%state%x_max = x_pos + 0.5_wp
+            else
+                self%state%x_min = min(self%state%x_min, x_pos - 0.5_wp)
+                self%state%x_max = max(self%state%x_max, x_pos + 0.5_wp)
+            end if
+        end if
+        
+        ! Update y range
+        if (.not. self%state%ylim_set) then
+            if (self%state%plot_count == 1) then
+                self%state%y_min = y_min_new
+                self%state%y_max = y_max_new
+            else
+                self%state%y_min = min(self%state%y_min, y_min_new)
+                self%state%y_max = max(self%state%y_max, y_max_new)
+            end if
+        end if
+        
+        deallocate(sorted_data)
+    end subroutine update_data_ranges_boxplot
 
     subroutine update_data_ranges(self)
         !! Update data ranges based on current plot
@@ -706,5 +840,23 @@ contains
         real(wp) :: y_max
         y_max = self%state%y_max
     end function get_y_max
+
+    subroutine sort_array(arr)
+        !! Simple bubble sort for small arrays (sufficient for boxplot quartiles)
+        real(wp), intent(inout) :: arr(:)
+        integer :: i, j, n
+        real(wp) :: temp
+        
+        n = size(arr)
+        do i = 1, n-1
+            do j = 1, n-i
+                if (arr(j) > arr(j+1)) then
+                    temp = arr(j)
+                    arr(j) = arr(j+1)
+                    arr(j+1) = temp
+                end if
+            end do
+        end do
+    end subroutine sort_array
 
 end module fortplot_figure_core
