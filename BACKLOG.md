@@ -50,7 +50,6 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #424: defect: test file duplication and proliferation [EPIC: Test Infrastructure Cleanup and Automation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
