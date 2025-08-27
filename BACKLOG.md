@@ -4,7 +4,6 @@
 
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
-### EPIC: Module Architecture Refactoring (TOP PRIORITY)
 
 ### EPIC: Test Infrastructure Cleanup and Automation
 - [ ] #423: defect: 18 disabled test files indicate broken functionality
