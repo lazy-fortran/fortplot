@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Foundation Quality Enforcement Sprint)
 
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
-- [ ] #447: defect: Memory safety issues identified in 7 test files
 - [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations
 
 ### EPIC: Edge Case and Stability Foundation
@@ -54,7 +53,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #444: defect: 8 stub implementations with error_stop in fortplot_matplotlib.f90 [EPIC: CRITICAL Quality Gate Enforcement]
+- [ ] #447: defect: Memory safety issues identified in 7 test files [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
