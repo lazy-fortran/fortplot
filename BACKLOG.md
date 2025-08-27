@@ -5,6 +5,7 @@
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
 ### EPIC: Module Architecture Refactoring (TOP PRIORITY)
+- [ ] #456: defect: consolidate duplicate figure_t type definitions [PR #476 READY]
 
 ### EPIC: Test Infrastructure Cleanup and Automation
 - [ ] #423: defect: 18 disabled test files indicate broken functionality
@@ -67,5 +68,4 @@
 - [x] Critical Foundation Recovery (Partial - 40% achieved)
 - [x] Core Segfault Resolution and State Management
 - [x] Foundation Quality Enforcement (85% Success - Major quality gates, infrastructure, API reliability, visual output achieved)
-- [x] Module Architecture Refactoring (100% Success - All QADS line limits achieved, complexity distributed, duplicate types eliminated)
 
