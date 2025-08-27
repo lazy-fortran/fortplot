@@ -24,7 +24,7 @@ program test_pdf_aspect_fix_validation
     y_min = 0.0_wp; y_max = 10.0_wp
     plot_left = real(ctx_square%plot_area%left, wp)
     plot_width = real(ctx_square%plot_area%width, wp)
-    plot_bottom = real(ctx_square%height - ctx_square%plot_area%bottom - ctx_square%plot_area%height, wp)
+    plot_bottom = real(ctx_square%plot_area%bottom, wp)
     plot_height = real(ctx_square%plot_area%height, wp)
     
     write(*, '(A, F8.1, A, F8.1, A, F8.1, A, F8.1)') &
@@ -58,7 +58,7 @@ program test_pdf_aspect_fix_validation
     
     plot_left = real(ctx_wide%plot_area%left, wp)
     plot_width = real(ctx_wide%plot_area%width, wp)
-    plot_bottom = real(ctx_wide%height - ctx_wide%plot_area%bottom - ctx_wide%plot_area%height, wp)
+    plot_bottom = real(ctx_wide%plot_area%bottom, wp)
     plot_height = real(ctx_wide%plot_area%height, wp)
     
     write(*, '(A, F8.1, A, F8.1, A, F8.1, A, F8.1)') &

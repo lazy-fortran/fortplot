@@ -54,7 +54,7 @@ contains
         end if
         
         if (abs(y_range) < EPSILON) then
-            pdf_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + &
+            pdf_y = real(ctx%plot_area%bottom, wp) + &
                     real(ctx%plot_area%height, wp) * 0.5_wp
         end if
         
@@ -79,8 +79,9 @@ contains
         pdf_x = (x - ctx%x_min) * common_scale + &
                 real(ctx%plot_area%left, wp) + x_offset
         
+        ! PDF coordinates: Y=0 at bottom, so transform data coordinates directly
         pdf_y = (y - ctx%y_min) * common_scale + &
-                real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + y_offset
+                real(ctx%plot_area%bottom, wp) + y_offset
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)

@@ -254,9 +254,9 @@ contains
         character(len=256) :: frame_cmd
         real(wp) :: x1, y1
         
-        ! Convert to PDF coordinates (Y=0 at bottom)
+        ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
         x1 = plot_left
-        y1 = canvas_height - plot_bottom - plot_height  ! PDF Y coordinate conversion
+        y1 = plot_bottom  ! No conversion needed - PDF Y=0 is at bottom
         
         ! Draw rectangle frame
         write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') &
@@ -278,7 +278,7 @@ contains
         real(wp) :: tick_length, bottom_y
         
         tick_length = PDF_TICK_SIZE
-        bottom_y = canvas_height - plot_bottom  ! Convert to PDF coordinates
+        bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
         
         ! Draw X-axis ticks (bottom of plot area)
         do i = 1, num_x
@@ -291,8 +291,8 @@ contains
         ! Draw Y-axis ticks (left side of plot area)
         do i = 1, num_y
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
-                plot_left, canvas_height - y_positions(i), &
-                plot_left - tick_length, canvas_height - y_positions(i)
+                plot_left, y_positions(i), &
+                plot_left - tick_length, y_positions(i)
             ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
         end do
     end subroutine draw_pdf_tick_marks_with_area
@@ -313,7 +313,7 @@ contains
         
         x_offset = 5.0_wp   ! Offset for X labels below ticks
         y_offset = 10.0_wp  ! Offset for Y labels left of ticks
-        bottom_y = canvas_height - plot_bottom  ! Convert to PDF coordinates
+        bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
         
         ! Draw X-axis labels
         do i = 1, num_x
@@ -324,7 +324,7 @@ contains
         
         ! Draw Y-axis labels with overlap detection
         call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
-                                                     plot_left - PDF_TICK_SIZE - y_offset, canvas_height)
+                                                     plot_left - PDF_TICK_SIZE - y_offset, 0.0_wp)
     end subroutine draw_pdf_tick_labels_with_area
 
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
@@ -387,7 +387,7 @@ contains
         last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn
         
         do i = 1, num_y
-            label_y = canvas_height - y_positions(i) - 3.0_wp  ! Convert to PDF coordinates and vertically center
+            label_y = y_positions(i) - 3.0_wp  ! PDF Y=0 is at bottom, no conversion needed
             
             ! Only draw if sufficient spacing from last label
             if (abs(label_y - last_y_drawn) >= min_spacing) then

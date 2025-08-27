@@ -96,11 +96,11 @@ contains
         ! Use actual coordinate transformation function
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
         
-        ! Test that coordinates are within expected bounds
+        ! Test that coordinates are within expected bounds (PDF Y=0 at bottom)
         if (pdf_x < real(ctx%plot_area%left, wp) - 1.0_wp .or. &
             pdf_x > real(ctx%plot_area%left + ctx%plot_area%width, wp) + 1.0_wp .or. &
-            pdf_y < real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) - 1.0_wp .or. &
-            pdf_y > real(ctx%height - ctx%plot_area%bottom, wp) + 1.0_wp) then
+            pdf_y < real(ctx%plot_area%bottom, wp) - 1.0_wp .or. &
+            pdf_y > real(ctx%plot_area%bottom + ctx%plot_area%height, wp) + 1.0_wp) then
             write(*, '(A, A, A)') "  ERROR: ", label, " coordinates out of bounds"
             passed = .false.
         else
