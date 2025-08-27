@@ -3,7 +3,7 @@ module fortplot_raster
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY, &
                                   XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, &
-                                  TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET
+                                  TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET, SOLID_LINE_PATTERN_LENGTH
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
@@ -45,7 +45,7 @@ module fortplot_raster
         character(len=10) :: line_style = '-'
         real(wp) :: line_pattern(20)
         integer :: pattern_size = 1
-        real(wp) :: pattern_length = 1000.0_wp
+        real(wp) :: pattern_length = SOLID_LINE_PATTERN_LENGTH
         real(wp) :: pattern_distance = 0.0_wp
         ! Marker colors - separate edge and face colors with alpha
         real(wp) :: marker_edge_r = 0.0_wp, marker_edge_g = 0.0_wp, marker_edge_b = 0.0_wp, marker_edge_alpha = 1.0_wp

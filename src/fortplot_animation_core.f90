@@ -2,6 +2,7 @@ module fortplot_animation_core
     use iso_fortran_env, only: real64, wp => real64
     use iso_c_binding, only: c_char, c_int, c_null_char
     use fortplot_animation_constants
+    use fortplot_constants, only: MILLISECONDS_PER_SECOND
     use fortplot_figure_core, only: figure_t, plot_data_t
     ! savefig is part of figure_t, not rendering module
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
@@ -150,7 +151,7 @@ contains
         
         ! Platform independent timing delay using Fortran intrinsic
         ! This provides a busy wait that works across platforms
-        call cpu_time_delay(real(milliseconds) / 1000.0_wp)
+        call cpu_time_delay(real(milliseconds) / MILLISECONDS_PER_SECOND)
     end subroutine sleep_ms
 
     subroutine cpu_time_delay(seconds)
