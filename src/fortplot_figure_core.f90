@@ -19,8 +19,9 @@ module fortplot_figure_core
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
+    use fortplot_annotations, only: text_annotation_t
     ! Import refactored modules
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
     use fortplot_figure_initialization
     use fortplot_figure_plot_management
@@ -46,6 +47,14 @@ module fortplot_figure_core
         
         ! Streamline data
         type(plot_data_t), allocatable :: streamlines(:)
+        
+        ! Arrow data for streamplot
+        type(arrow_data_t), allocatable :: arrow_data(:)
+        
+        ! Text annotations support (Issue #184)
+        type(text_annotation_t), allocatable :: annotations(:)
+        integer :: annotation_count = 0
+        integer :: max_annotations = 1000
         
         ! Backward compatibility: expose labels directly for test access
         character(len=:), allocatable :: title
