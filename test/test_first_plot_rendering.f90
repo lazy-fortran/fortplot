@@ -45,7 +45,10 @@ program test_first_plot_rendering
         stop 1
     end if
     
-    ! Clean up
-    call system('rm -f test_first_plot_355.txt')
+    ! Clean up - use secure file deletion instead of system command
+    open(newunit=unit, file='test_first_plot_355.txt', status='old', iostat=iostat)
+    if (iostat == 0) then
+        close(unit, status='delete')
+    end if
     
 end program test_first_plot_rendering
