@@ -7,7 +7,6 @@
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
 
 ### EPIC: Edge Case and Stability Foundation
-- [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots
 - [ ] #433: Critical: Numeric limits cause corrupted/blank plot output
 - [ ] #435: Critical: Machine precision coordinate handling produces blank outputs
 - [ ] #431: Bug: Inconsistent error reporting - reports success after failure
@@ -52,7 +51,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations [EPIC: CRITICAL Quality Gate Enforcement]
+- [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots [EPIC: Edge Case and Stability Foundation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
