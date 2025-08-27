@@ -215,7 +215,7 @@ contains
         
         ! This should test various scenarios for GUI detection
         accurate = .false.  ! Force failure until proper detection implemented
-        ! TODO: Test GUI detection in various environments
+        ! Implementation needed - see issue #490
     end function test_gui_detection_accuracy
 
     function test_ascii_fallback_functionality() result(works)
@@ -224,7 +224,7 @@ contains
         
         ! Simulate no-GUI environment
         works = .false.  ! Force failure until ASCII fallback implemented
-        ! TODO: Test ASCII display works correctly
+        ! Implementation needed - see issue #490
     end function test_ascii_fallback_functionality
 
     function test_display_error_handling() result(graceful)
@@ -233,7 +233,7 @@ contains
         
         ! Simulate various display errors
         graceful = .false.  ! Force failure until error handling improved
-        ! TODO: Test various display error scenarios
+        ! Implementation needed - see issue #490
     end function test_display_error_handling
 
     function test_platform_compatibility() result(compatible)
@@ -242,7 +242,7 @@ contains
         
         ! Test platform-specific behavior
         compatible = .false.  ! Force failure until cross-platform testing complete
-        ! TODO: Test Linux, macOS, Windows compatibility
+        ! Implementation needed - see issue #490
     end function test_platform_compatibility
 
     subroutine measure_primary_display_time(time_taken)
@@ -250,7 +250,7 @@ contains
         real, intent(out) :: time_taken
         
         time_taken = 0.1  ! Placeholder - 100ms for primary display
-        ! TODO: Measure actual primary display performance
+        ! Implementation needed - see issue #490
     end subroutine measure_primary_display_time
 
     subroutine measure_fallback_display_time(time_taken)
@@ -258,7 +258,7 @@ contains
         real, intent(out) :: time_taken
         
         time_taken = 0.5  ! Placeholder - 500ms for fallback (too slow)
-        ! TODO: Measure actual fallback display performance
+        ! Implementation needed - see issue #490
     end subroutine measure_fallback_display_time
 
     function test_error_recovery_behavior() result(recovers)
@@ -266,7 +266,7 @@ contains
         logical :: recovers
         
         recovers = .false.  ! Force failure until error recovery implemented
-        ! TODO: Test error recovery in various failure scenarios
+        ! Implementation needed - see issue #490
     end function test_error_recovery_behavior
 
     function test_ascii_output_quality() result(quality_ok)
@@ -274,7 +274,7 @@ contains
         logical :: quality_ok
         
         quality_ok = .false.  ! Force failure until ASCII output quality verified
-        ! TODO: Test ASCII output is readable and informative
+        ! Implementation needed - see issue #490
     end function test_ascii_output_quality
 
 end program test_show_fallback_mechanisms

@@ -108,10 +108,11 @@ contains
     end function to_lowercase
 
     subroutine ensure_directory_exists(filepath)
-        !! Stub: Ensure directory exists for given filepath
+        !! Stub: Ensure directory exists for given filepath (see issue #492)
         character(len=*), intent(in) :: filepath
         ! Stub implementation - directory creation would be OS-specific
         ! In full implementation, extract directory path and create if needed
+        ! See issue #492 for implementation roadmap
     end subroutine ensure_directory_exists
 
 end module fortplot_utils
