@@ -51,7 +51,6 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #423: defect: 18 disabled test files indicate broken functionality [EPIC: Test Infrastructure Cleanup and Automation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
