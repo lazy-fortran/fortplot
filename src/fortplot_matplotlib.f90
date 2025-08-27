@@ -276,13 +276,25 @@ contains
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
         !! Add vertical bar plot to the global figure (pyplot-style)
+        !! Currently approximates using line plots until full implementation
         real(8), dimension(:), intent(in) :: x, height
         real(8), intent(in), optional :: width
         real(8), dimension(:), intent(in), optional :: bottom
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        ! Log warning instead of crashing
+        ! Validate input dimensions
+        if (size(x) /= size(height)) then
+            call log_error("bar: x and height arrays must have the same size")
+            return
+        end if
+        
+        if (size(x) == 0) then
+            call log_warning("bar: empty arrays provided - no plot generated")
+            return
+        end if
+        
+        ! Inform user about current implementation status
         call log_warning("bar plot functionality is not fully implemented - using line plot approximation")
         
         call ensure_global_figure_initialized()
@@ -293,13 +305,25 @@ contains
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
         !! Add horizontal bar plot to the global figure (pyplot-style)
+        !! Currently approximates using line plots until full implementation
         real(8), dimension(:), intent(in) :: y, width
         real(8), intent(in), optional :: height
         real(8), dimension(:), intent(in), optional :: left
         character(len=*), intent(in), optional :: label, align
         real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        ! Log warning instead of crashing
+        ! Validate input dimensions
+        if (size(y) /= size(width)) then
+            call log_error("barh: y and width arrays must have the same size")
+            return
+        end if
+        
+        if (size(y) == 0) then
+            call log_warning("barh: empty arrays provided - no plot generated")
+            return
+        end if
+        
+        ! Inform user about current implementation status
         call log_warning("horizontal bar plot functionality is not fully implemented - using line plot approximation")
         
         call ensure_global_figure_initialized()
@@ -317,6 +341,23 @@ contains
         real(8), intent(in), optional :: color(3)
         
         real(wp), allocatable :: wp_data(:)
+        integer :: n_bins
+        
+        ! Validate input data
+        if (size(data) == 0) then
+            call log_warning("hist: empty data array provided - no histogram generated")
+            return
+        end if
+        
+        ! Validate bins parameter
+        n_bins = 10  ! default
+        if (present(bins)) then
+            if (bins <= 0) then
+                call log_warning("hist: bins must be positive, using default (10)")
+            else
+                n_bins = bins
+            end if
+        end if
         
         call ensure_global_figure_initialized()
         
@@ -325,21 +366,21 @@ contains
         wp_data = real(data, wp)
         
         ! Use the hist method from figure_core
-        call fig%hist(wp_data, bins=bins, density=density, label=label)
+        call fig%hist(wp_data, bins=n_bins, density=density, label=label)
         
         if (allocated(wp_data)) deallocate(wp_data)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
         !! Add histogram plot to the global figure (pyplot-style)
-        !! Alias for hist() subroutine
+        !! Alias for hist() subroutine with identical functionality
         real(8), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(8), intent(in), optional :: color(3)
         
-        ! Simply delegate to hist
+        ! Simply delegate to hist (validation happens there)
         call hist(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
 
