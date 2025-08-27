@@ -47,7 +47,6 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #417: defect: stub implementations returning error stop [EPIC: Core API Implementation Completion]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
