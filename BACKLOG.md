@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Architectural Debt Resolution Sprint)
 
 ### EPIC: Module Architecture Refactoring (TOP PRIORITY)
-- [ ] #456: architecture: duplicate figure_t type definitions in codebase
 
 ### EPIC: Test Infrastructure Cleanup and Automation
 - [ ] #468: defect: Test output file pollution - 214+ temporary files created during test runs
@@ -52,7 +51,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #470: architecture: High complexity concentration - 3 modules with 99+ procedures each [EPIC: Module Architecture Refactoring]
+- [ ] #456: architecture: duplicate figure_t type definitions in codebase [EPIC: Module Architecture Refactoring]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
