@@ -29,6 +29,9 @@
 - [ ] #429: Bug: Animation save implementation not initialized
 - [ ] #427: defect: performance issues - large allocations and inefficient patterns
 - [ ] #457: enhancement: complete matplotlib stub implementations
+- [ ] #473: refactor: implement proper errorbar, bar, and scatter functionality
+- [ ] #474: docs: add warnings for unimplemented matplotlib features
+- [ ] #475: perf: optimize contour array conversion in matplotlib wrapper
 
 ### EPIC: Visual Output Quality Restoration
 - [ ] #408: ASCII plots don't show full curves in basic plots
