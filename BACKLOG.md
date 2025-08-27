@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Foundation Quality Enforcement Sprint)
 
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
-- [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations
 
 ### EPIC: Edge Case and Stability Foundation
 - [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots
@@ -53,7 +52,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #447: defect: Memory safety issues identified in 7 test files [EPIC: CRITICAL Quality Gate Enforcement]
+- [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
