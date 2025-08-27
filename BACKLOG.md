@@ -7,10 +7,7 @@
 **BRUTAL REALITY**: Previous sprint had 40+ issues. Team can't handle complexity. Reducing to 3 SIMPLE issues even sergei can't break.
 
 ### ISSUE 1: SECURITY CRITICAL (Do this first, don't screw it up)
-- [ ] #506: defect: multiple execute_command_line calls pose security risks
-  **IMPLEMENTATION GUIDANCE**: Remove execute_command_line calls, replace with safe alternatives
-  **SUCCESS CRITERIA**: Zero execute_command_line calls in codebase
-  **SERGEI**: This is basic security - don't add new vulnerabilities
+- [x] #506: defect: multiple execute_command_line calls pose security risks → MOVED TO DOING
 
 ### ISSUE 2: QADS COMPLIANCE (Fix the line limit violation immediately) 
 - [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines)
@@ -24,9 +21,13 @@
   **SUCCESS CRITERIA**: Clean repository with proper ignore patterns
   **SERGEI**: Basic git hygiene - remove trash, don't delete source code
 
-## DOING (Current Work - NOTHING until SPRINT_BACKLOG complete)
+## DOING (Current Work)
 
-**RULE**: Complete ALL 3 sprint issues before touching anything else.
+### ACTIVE
+- [ ] #506: defect: multiple execute_command_line calls pose security risks
+  **STATUS**: In progress - security-506 branch
+  **OWNER**: sergei (implementation)
+  **PRIORITY**: SECURITY CRITICAL
 
 ## PRODUCT_BACKLOG (Moved from Previous Sprint - Team Couldn't Handle)
 
