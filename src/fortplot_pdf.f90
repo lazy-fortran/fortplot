@@ -86,7 +86,7 @@ contains
         call ctx%stream_writer%add_to_stream("1 w")
         call ctx%stream_writer%add_to_stream("1 J")
         call ctx%stream_writer%add_to_stream("1 j")
-        call ctx%stream_writer%add_to_stream("0 0 1 RG")
+        call ctx%stream_writer%add_to_stream("0 0 0 RG")
         
         ctx%margins = plot_margins_t()
         call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
