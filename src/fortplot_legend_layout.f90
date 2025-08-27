@@ -8,6 +8,7 @@ module fortplot_legend_layout
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
+    use fortplot_constants, only: STANDARD_WIDTH_PIXELS, STANDARD_HEIGHT_PIXELS, TEXT_WIDTH_RATIO
     implicit none
     
     private
@@ -76,8 +77,8 @@ contains
         ! Matplotlib sizes legend in pixels, then converts to data coordinates
         ! For a 640x480 figure, plot area is typically ~496x369 pixels
         ! We need to convert pixel measurements to data coordinates
-        data_to_pixel_ratio_x = 496.0_wp / data_width  ! pixels per data unit
-        data_to_pixel_ratio_y = 369.6_wp / data_height  ! pixels per data unit
+        data_to_pixel_ratio_x = STANDARD_WIDTH_PIXELS / data_width  ! pixels per data unit
+        data_to_pixel_ratio_y = STANDARD_HEIGHT_PIXELS / data_height  ! pixels per data unit
 
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
@@ -93,7 +94,7 @@ contains
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
                 ! Fallback estimation if text system not available
-                entry_text_width = real(len_trim(trimmed_label), wp) * data_width * 0.012_wp
+                entry_text_width = real(len_trim(trimmed_label), wp) * data_width * TEXT_WIDTH_RATIO
             end if
             total_text_width = total_text_width + entry_text_width
             max_text_width = max(max_text_width, entry_text_width)

@@ -83,4 +83,77 @@ module fortplot_constants
     !! spacing above the plot area while maintaining readability.
     integer, parameter, public :: TITLE_VERTICAL_OFFSET = 30
 
+    ! ========================================================================
+    ! DISPLAY AND RASTER CONSTANTS
+    ! ========================================================================
+
+    !! Standard figure width in pixels for matplotlib-compatible plots
+    !!
+    !! This constant represents the default plot area width in pixels for
+    !! a typical 640x480 figure, used for data-to-pixel conversions.
+    !! 
+    !! Used by legend layout calculations to convert between data coordinates
+    !! and pixel measurements for consistent text sizing.
+    real(wp), parameter, public :: STANDARD_WIDTH_PIXELS = 496.0_wp
+
+    !! Standard figure height in pixels for matplotlib-compatible plots
+    !!
+    !! This constant represents the default plot area height in pixels for
+    !! a typical 640x480 figure, used for data-to-pixel conversions.
+    !! 
+    !! Used by legend layout calculations to convert between data coordinates
+    !! and pixel measurements for consistent text sizing.
+    real(wp), parameter, public :: STANDARD_HEIGHT_PIXELS = 369.6_wp
+
+    !! Text width ratio for fallback text sizing calculations
+    !!
+    !! This constant provides a fallback ratio for estimating text width
+    !! when the text measurement system is unavailable. Represents approximate
+    !! character width as a fraction of data width.
+    !! 
+    !! Used by legend layout when text system measurements are not available.
+    real(wp), parameter, public :: TEXT_WIDTH_RATIO = 0.012_wp
+
+    !! Maximum safe pixel dimension for raster backends
+    !!
+    !! This constant defines the upper limit for width and height dimensions
+    !! in raster-based backends to prevent memory issues and crashes.
+    !! Matches typical matplotlib figure size limits.
+    !! 
+    !! Used by backend validation to ensure reasonable memory usage.
+    integer, parameter, public :: MAX_SAFE_PIXELS = 10000
+
+    ! ========================================================================
+    ! TIME CONVERSION CONSTANTS
+    ! ========================================================================
+
+    !! Milliseconds per second conversion factor
+    !!
+    !! This constant provides the conversion factor from milliseconds to seconds
+    !! for animation timing and delay calculations.
+    !! 
+    !! Used by animation pipeline for converting delay values between units.
+    real(wp), parameter, public :: MILLISECONDS_PER_SECOND = 1000.0_wp
+
+    ! ========================================================================
+    ! SCIENTIFIC NOTATION AND FORMATTING CONSTANTS
+    ! ========================================================================
+
+    !! Threshold for switching to scientific notation in axis labels
+    !!
+    !! This constant defines the absolute value threshold above which
+    !! numeric values are displayed in scientific notation for better readability.
+    !! 
+    !! Used by tick formatting and axis label generation.
+    real(wp), parameter, public :: SCIENTIFIC_THRESHOLD_HIGH = 1000.0_wp
+
+    !! Very long line pattern length for solid lines
+    !!
+    !! This constant defines a very long pattern length used to represent
+    !! solid lines in line style calculations. Large value ensures the
+    !! pattern doesn't repeat within typical plot ranges.
+    !! 
+    !! Used by line style pattern generation for solid line rendering.
+    real(wp), parameter, public :: SOLID_LINE_PATTERN_LENGTH = 1000.0_wp
+
 end module fortplot_constants

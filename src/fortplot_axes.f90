@@ -8,6 +8,7 @@ module fortplot_axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales
+    use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
     implicit none
     
     private
@@ -16,7 +17,7 @@ module fortplot_axes
     integer, parameter :: MAX_TICKS = 20
     
     ! Format threshold constants for tick label formatting
-    real(wp), parameter :: SCIENTIFIC_THRESHOLD_HIGH = 1000.0_wp   ! Use scientific for abs(value) >= this
+    ! SCIENTIFIC_THRESHOLD_HIGH is imported from fortplot_constants
     real(wp), parameter :: SCIENTIFIC_THRESHOLD_LOW = 0.01_wp      ! Use scientific for abs(value) < this
     real(wp), parameter :: NO_DECIMAL_THRESHOLD = 100.0_wp         ! No decimal places for abs(value) >= this
     real(wp), parameter :: ONE_DECIMAL_THRESHOLD = 10.0_wp         ! One decimal place for abs(value) >= this

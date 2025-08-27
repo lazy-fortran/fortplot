@@ -7,6 +7,7 @@ module fortplot_line_styles
     !! SOLID: Single responsibility for line style implementation
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: SOLID_LINE_PATTERN_LENGTH
     implicit none
 
     private
@@ -32,7 +33,7 @@ contains
         
         select case (trim(linestyle))
         case ('-', 'solid')
-            pattern(1) = 1000.0_wp  ! Very long solid segment
+            pattern(1) = SOLID_LINE_PATTERN_LENGTH  ! Very long solid segment
             pattern_size = 1
             
         case ('--', 'dashed')
@@ -53,7 +54,7 @@ contains
             pattern_size = 4
             
         case default
-            pattern(1) = 1000.0_wp  ! Default to solid
+            pattern(1) = SOLID_LINE_PATTERN_LENGTH  ! Default to solid
             pattern_size = 1
         end select
         
@@ -122,7 +123,7 @@ contains
         new_distance = current_distance + segment_length
         
         ! Keep distance within reasonable bounds to avoid overflow
-        if (pattern_length > 0.0_wp .and. new_distance > 1000.0_wp * pattern_length) then
+        if (pattern_length > 0.0_wp .and. new_distance > SOLID_LINE_PATTERN_LENGTH * pattern_length) then
             new_distance = mod(new_distance, pattern_length)
         end if
         
