@@ -13,20 +13,21 @@
 - [x] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines) → MOVED TO DOING
 
 ### ISSUE 3: REPOSITORY CLEANUP (Basic hygiene the team ignored)
-- [ ] #499: defect: binary executables and unreferenced files polluting repository
-  **IMPLEMENTATION GUIDANCE**: Delete binaries and build artifacts, update .gitignore
-  **SUCCESS CRITERIA**: Clean repository with proper ignore patterns
-  **SERGEI**: Basic git hygiene - remove trash, don't delete source code
+- [x] #499: defect: binary executables and unreferenced files polluting repository → MOVED TO DOING
 
 ## DOING (Current Work)
 
 ### ACTIVE
-- [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines)
-  **STATUS**: In progress - qads-511 branch
+- [ ] #499: defect: binary executables and unreferenced files polluting repository
+  **STATUS**: In progress - cleanup-499 branch
   **OWNER**: sergei (implementation)
-  **PRIORITY**: QADS COMPLIANCE
+  **PRIORITY**: REPOSITORY HYGIENE
 
 ### IN REVIEW
+- [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines)
+  **STATUS**: PR #518 created, awaiting patrick review
+  **OWNER**: patrick (review)
+  
 - [ ] #506: defect: multiple execute_command_line calls pose security risks
   **STATUS**: PR #517 created, awaiting patrick review
   **OWNER**: patrick (review)
