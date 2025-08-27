@@ -41,7 +41,6 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #419: defect: magic numbers without named constants [EPIC: Technical Debt Resolution]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
