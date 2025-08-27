@@ -45,7 +45,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #414: PDF plots completely broken [EPIC: Visual Output Quality Restoration]
+<!-- SPRINT COMPLETE -->
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
