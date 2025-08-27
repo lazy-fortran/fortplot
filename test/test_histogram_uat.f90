@@ -45,7 +45,7 @@ contains
         write(*,*) '  ✓ hist() function works'
         
         ! Test histogram() function (module-level function)
-        call figure(600, 400)
+        call figure(figsize=[600.0_wp, 400.0_wp])
         call histogram(data)
         call title('Basic histogram() API Test') 
         call savefig('build/uat_histogram_basic.png')

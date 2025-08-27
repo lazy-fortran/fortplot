@@ -17,6 +17,9 @@
 - [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
 - [ ] #419: defect: magic numbers without named constants
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
+- [ ] #479: refactor: optimize Greek letter mapping functions with lookup tables
+- [ ] #480: enhance: add extended Greek Unicode ranges for complete scientific notation
+- [ ] #481: refactor: extract common TDD test utilities to reduce duplication
 
 ### EPIC: Core API Stability Enhancement
 - [ ] #421: defect: file I/O operations without proper validation
