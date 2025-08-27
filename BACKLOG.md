@@ -44,7 +44,6 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #467: defect: 36 files contain TODO/FIXME/stub markers indicating incomplete implementations [EPIC: Technical Debt Resolution]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
