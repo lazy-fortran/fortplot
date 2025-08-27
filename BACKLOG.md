@@ -6,7 +6,6 @@
 
 
 ### EPIC: Test Infrastructure Cleanup and Automation
-- [ ] #454: feat: implement remaining 11 disabled test functionalities
 - [ ] #425: defect: unused module fortplot_forensic_comparison
 - [ ] #426: defect: unused test security module
 
@@ -50,6 +49,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
+- [ ] #454: feat: implement remaining 11 disabled test functionalities [EPIC: Test Infrastructure Cleanup and Automation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 

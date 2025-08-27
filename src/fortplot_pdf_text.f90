@@ -176,13 +176,8 @@ contains
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
         logical :: in_symbol_font
-        character(len=1024) :: text_cmd
-        integer :: i, text_pos
-        character(len=256) :: current_segment
         
         in_symbol_font = .false.
-        text_pos = 1
-        current_segment = ""
         
         ! Process the text similarly to non-rotated version
         call process_text_segments(this, text, in_symbol_font)

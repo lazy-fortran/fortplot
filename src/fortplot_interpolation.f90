@@ -17,14 +17,7 @@ contains
 
     subroutine interpolate_z_bilinear(x_grid, y_grid, z_grid, world_x, world_y, z_value)
         !! Bilinear interpolation of Z value at world coordinates
-        !!
-        !! Given: Grid coordinates and query point
-        !! When: Point falls within or outside grid bounds
-        !! Then: Returns interpolated Z value using bilinear interpolation
-        !!
-        !! Handles edge cases with linear interpolation when point coincides
-        !! with grid boundaries or falls outside grid domain.
-        
+        !! Refactored to be under 100 lines (QADS compliance)
         real(wp), intent(in) :: x_grid(:)     ! X coordinates of grid points
         real(wp), intent(in) :: y_grid(:)     ! Y coordinates of grid points
         real(wp), intent(in) :: z_grid(:,:)   ! Z values at grid points
@@ -32,18 +25,58 @@ contains
         real(wp), intent(in) :: world_y       ! Y coordinate to interpolate
         real(wp), intent(out) :: z_value      ! Interpolated Z value
         
-        integer :: nx, ny, i, j, i1, i2, j1, j2
-        real(wp) :: x1, x2, y1, y2, dx_norm, dy_norm
-        real(wp) :: z11, z12, z21, z22
+        integer :: i1, i2, j1, j2
+        real(wp) :: x1, x2, y1, y2, z11, z12, z21, z22
+        
+        ! Find grid indices for interpolation
+        call find_interpolation_indices(x_grid, y_grid, world_x, world_y, i1, i2, j1, j2)
+        
+        ! Get coordinates and values at corners
+        call get_corner_values(x_grid, y_grid, z_grid, i1, i2, j1, j2, &
+                              x1, x2, y1, y2, z11, z12, z21, z22)
+        
+        ! Perform interpolation
+        call perform_bilinear_interpolation(world_x, world_y, x1, x2, y1, y2, &
+                                           z11, z12, z21, z22, i1, i2, j1, j2, z_value)
+        
+    end subroutine interpolate_z_bilinear
+    
+    subroutine find_interpolation_indices(x_grid, y_grid, world_x, world_y, i1, i2, j1, j2)
+        !! Find grid indices for interpolation
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(in) :: world_x, world_y
+        integer, intent(out) :: i1, i2, j1, j2
+        
+        integer :: i, j, nx, ny
         
         nx = size(x_grid)
         ny = size(y_grid)
         
-        ! Initialize indices to avoid compiler warnings
-        i1 = 0; i2 = 0
-        j1 = 0; j2 = 0
+        ! Find X direction indices
+        call find_x_indices(x_grid, world_x, nx, i1, i2)
         
-        ! Find grid indices for interpolation - X direction
+        ! Find Y direction indices
+        call find_y_indices(y_grid, world_y, ny, j1, j2)
+        
+        ! Handle edge cases where indices weren't found
+        if (i1 == 0) then
+            i1 = 1; i2 = min(2, nx)
+        end if
+        if (j1 == 0) then
+            j1 = 1; j2 = min(2, ny)
+        end if
+    end subroutine find_interpolation_indices
+    
+    subroutine find_x_indices(x_grid, world_x, nx, i1, i2)
+        !! Find X direction grid indices
+        real(wp), intent(in) :: x_grid(:), world_x
+        integer, intent(in) :: nx
+        integer, intent(out) :: i1, i2
+        
+        integer :: i
+        
+        i1 = 0; i2 = 0
+        
         if (world_x <= x_grid(1)) then
             i1 = 1; i2 = 1
         else if (world_x >= x_grid(nx)) then
@@ -56,8 +89,18 @@ contains
                 end if
             end do
         end if
+    end subroutine find_x_indices
+    
+    subroutine find_y_indices(y_grid, world_y, ny, j1, j2)
+        !! Find Y direction grid indices
+        real(wp), intent(in) :: y_grid(:), world_y
+        integer, intent(in) :: ny
+        integer, intent(out) :: j1, j2
         
-        ! Find grid indices for interpolation - Y direction
+        integer :: j
+        
+        j1 = 0; j2 = 0
+        
         if (world_y <= y_grid(1)) then
             j1 = 1; j2 = 1
         else if (world_y >= y_grid(ny)) then
@@ -70,27 +113,35 @@ contains
                 end if
             end do
         end if
+    end subroutine find_y_indices
+    
+    subroutine get_corner_values(x_grid, y_grid, z_grid, i1, i2, j1, j2, &
+                                 x1, x2, y1, y2, z11, z12, z21, z22)
+        !! Get coordinates and values at interpolation corners
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        integer, intent(in) :: i1, i2, j1, j2
+        real(wp), intent(out) :: x1, x2, y1, y2, z11, z12, z21, z22
         
-        ! Handle edge cases where indices weren't found
-        if (i1 == 0) then
-            i1 = 1; i2 = min(2, nx)
-        end if
-        if (j1 == 0) then
-            j1 = 1; j2 = min(2, ny)
-        end if
-        
-        ! Get coordinates and values at corners
         x1 = x_grid(i1); x2 = x_grid(i2)
         y1 = y_grid(j1); y2 = y_grid(j2)
         z11 = z_grid(j1, i1)
         z12 = z_grid(j2, i1)
         z21 = z_grid(j1, i2)
         z22 = z_grid(j2, i2)
+    end subroutine get_corner_values
+    
+    subroutine perform_bilinear_interpolation(world_x, world_y, x1, x2, y1, y2, &
+                                             z11, z12, z21, z22, i1, i2, j1, j2, z_value)
+        !! Perform the actual bilinear interpolation
+        real(wp), intent(in) :: world_x, world_y, x1, x2, y1, y2
+        real(wp), intent(in) :: z11, z12, z21, z22
+        integer, intent(in) :: i1, i2, j1, j2
+        real(wp), intent(out) :: z_value
         
-        ! Bilinear interpolation with special cases
+        real(wp) :: dx_norm, dy_norm
+        
         if (i1 == i2 .and. j1 == j2) then
-            ! Point coincides with grid point
-            z_value = z11
+            z_value = z11  ! Point coincides with grid point
         else if (i1 == i2) then
             ! Linear interpolation in Y direction only
             if (abs(y2 - y1) > EPSILON_COMPARE) then
@@ -109,19 +160,31 @@ contains
             end if
         else
             ! Full bilinear interpolation
-            if (abs(x2 - x1) > EPSILON_COMPARE .and. abs(y2 - y1) > EPSILON_COMPARE) then
-                dx_norm = (world_x - x1) / (x2 - x1)
-                dy_norm = (world_y - y1) / (y2 - y1)
-                
-                z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
-                         z21 * dx_norm * (1.0_wp - dy_norm) + &
-                         z12 * (1.0_wp - dx_norm) * dy_norm + &
-                         z22 * dx_norm * dy_norm
-            else
-                z_value = z11
-            end if
+            call compute_full_bilinear(world_x, world_y, x1, x2, y1, y2, &
+                                      z11, z12, z21, z22, z_value)
         end if
+    end subroutine perform_bilinear_interpolation
+    
+    subroutine compute_full_bilinear(world_x, world_y, x1, x2, y1, y2, &
+                                     z11, z12, z21, z22, z_value)
+        !! Compute full bilinear interpolation
+        real(wp), intent(in) :: world_x, world_y, x1, x2, y1, y2
+        real(wp), intent(in) :: z11, z12, z21, z22
+        real(wp), intent(out) :: z_value
         
-    end subroutine interpolate_z_bilinear
+        real(wp) :: dx_norm, dy_norm
+        
+        if (abs(x2 - x1) > EPSILON_COMPARE .and. abs(y2 - y1) > EPSILON_COMPARE) then
+            dx_norm = (world_x - x1) / (x2 - x1)
+            dy_norm = (world_y - y1) / (y2 - y1)
+            
+            z_value = z11 * (1.0_wp - dx_norm) * (1.0_wp - dy_norm) + &
+                     z21 * dx_norm * (1.0_wp - dy_norm) + &
+                     z12 * (1.0_wp - dx_norm) * dy_norm + &
+                     z22 * dx_norm * dy_norm
+        else
+            z_value = z11
+        end if
+    end subroutine compute_full_bilinear
 
 end module fortplot_interpolation
