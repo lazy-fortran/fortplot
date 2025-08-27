@@ -186,19 +186,38 @@ contains
     
     subroutine render_standard_legend(legend, backend, legend_x, legend_y)
         !! Render standard legend for PNG/PDF backends with improved sizing
-        !! Uses shared legend_layout module for DRY compliance
+        !! Refactored to be under 100 lines (QADS compliance)
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
         use fortplot_text, only: calculate_text_height, get_font_ascent_ratio
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: legend_x, legend_y
-        real(wp) :: line_x1, line_x2, line_y, text_x, text_y, text_offset
-        real(wp) :: data_width, data_height
-        real(wp) :: box_x1, box_y1, box_x2, box_y2
-        real(wp) :: ascent_ratio, line_center_y
-        real(wp) :: actual_text_height, data_to_pixel_y
+        
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
+        real(wp) :: data_width, data_height
+        
+        ! Initialize legend rendering
+        call initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
+        
+        ! Draw legend box and border
+        call draw_legend_frame(backend, legend_x, legend_y, box)
+        
+        ! Render all legend entries
+        call render_legend_entries(legend, backend, legend_x, legend_y, box)
+        
+        if (allocated(labels)) deallocate(labels)
+    end subroutine render_standard_legend
+    
+    subroutine initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
+        !! Initialize legend rendering components
+        use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
+        type(legend_t), intent(in) :: legend
+        class(plot_context), intent(in) :: backend
+        type(legend_box_t), intent(out) :: box
+        character(len=:), allocatable, intent(out) :: labels(:)
+        real(wp), intent(out) :: data_width, data_height
+        
         integer :: i
         
         ! Extract labels for box calculation
@@ -214,8 +233,17 @@ contains
         ! Use shared layout calculation for improved sizing
         box = calculate_legend_box(labels, data_width, data_height, &
                                   legend%num_entries, legend%position)
+    end subroutine initialize_legend_rendering
+    
+    subroutine draw_legend_frame(backend, legend_x, legend_y, box)
+        !! Draw legend background box and border
+        use fortplot_legend_layout, only: legend_box_t
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: legend_x, legend_y
+        type(legend_box_t), intent(in) :: box
         
-        ! legend_x, legend_y is the top-left corner of the legend box
+        real(wp) :: box_x1, box_y1, box_x2, box_y2
+        
         ! Calculate box boundaries
         box_x1 = legend_x
         box_y1 = legend_y
@@ -229,64 +257,101 @@ contains
         ! Draw black border
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black border
         call draw_legend_border(backend, box_x1, box_y1, box_x2, box_y2)
+    end subroutine draw_legend_frame
+    
+    subroutine render_legend_entries(legend, backend, legend_x, legend_y, box)
+        !! Render all legend entries (lines, markers, text)
+        use fortplot_legend_layout, only: legend_box_t
+        use fortplot_text, only: get_font_ascent_ratio
+        type(legend_t), intent(in) :: legend
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: legend_x, legend_y
+        type(legend_box_t), intent(in) :: box
+        
+        real(wp) :: ascent_ratio, line_x1, line_x2, line_y, text_x, text_y, line_center_y
+        integer :: i
         
         ! Get font ascent ratio for proper text centering
         ascent_ratio = get_font_ascent_ratio()
         
-        ! Calculate data to pixel ratio for accurate text positioning
-        data_to_pixel_y = 369.6_wp / data_height
-        ! Get actual text height in pixels (typically ~14-16 pixels)
-        actual_text_height = real(calculate_text_height("Ay"), wp) / data_to_pixel_y
-        
         do i = 1, legend%num_entries
-            ! Calculate line position using entry height + spacing
-            ! Content starts at padding distance from box edges
-            line_x1 = legend_x + box%padding
-            line_x2 = line_x1 + box%line_length
-            ! First entry starts at top - padding - enough space for text ascent
-            ! Account for text extending upward from baseline by ascent_ratio * entry_height
-            line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
-                     real(i-1, wp) * (box%entry_height + box%entry_spacing)
-            
-            ! Text positioning with proper vertical alignment
-            text_x = line_x2 + box%text_spacing
-            ! Text should be vertically centered on the line
-            ! In PNG backend, text_y is the BASELINE of the text
-            ! Text extends mostly upward from baseline (ascent ~70% of height)
-            ! To visually center: baseline should be at line_y + descent_portion
-            text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
+            ! Calculate positions for this entry
+            call calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, i, &
+                                         line_x1, line_x2, line_y, text_x, text_y)
             
             line_center_y = line_y
             
-            ! Set color and draw legend line (only if linestyle is not None)
-            call backend%color(legend%entries(i)%color(1), &
-                              legend%entries(i)%color(2), &
-                              legend%entries(i)%color(3))
-            if (allocated(legend%entries(i)%linestyle)) then
-                if (legend%entries(i)%linestyle /= 'None') then
-                    call backend%line(line_x1, line_center_y, line_x2, line_center_y)
-                end if
-            else
-                ! Default to drawing line if linestyle not specified
+            ! Render entry components
+            call render_legend_line(legend%entries(i), backend, line_x1, line_x2, line_center_y)
+            call render_legend_marker(legend%entries(i), backend, line_x1, line_x2, line_center_y)
+            call render_legend_text(legend%entries(i), backend, text_x, text_y)
+        end do
+    end subroutine render_legend_entries
+    
+    subroutine calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, entry_idx, &
+                                        line_x1, line_x2, line_y, text_x, text_y)
+        !! Calculate positions for legend entry components
+        use fortplot_legend_layout, only: legend_box_t
+        real(wp), intent(in) :: legend_x, legend_y, ascent_ratio
+        type(legend_box_t), intent(in) :: box
+        integer, intent(in) :: entry_idx
+        real(wp), intent(out) :: line_x1, line_x2, line_y, text_x, text_y
+        
+        ! Calculate line position
+        line_x1 = legend_x + box%padding
+        line_x2 = line_x1 + box%line_length
+        line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
+                 real(entry_idx-1, wp) * (box%entry_height + box%entry_spacing)
+        
+        ! Text positioning
+        text_x = line_x2 + box%text_spacing
+        text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
+    end subroutine calculate_entry_positions
+    
+    subroutine render_legend_line(entry, backend, line_x1, line_x2, line_center_y)
+        !! Render legend line for entry
+        type(legend_entry_t), intent(in) :: entry
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: line_x1, line_x2, line_center_y
+        
+        ! Set color
+        call backend%color(entry%color(1), entry%color(2), entry%color(3))
+        
+        ! Draw line if style permits
+        if (allocated(entry%linestyle)) then
+            if (entry%linestyle /= 'None') then
                 call backend%line(line_x1, line_center_y, line_x2, line_center_y)
             end if
-
-            ! Draw marker in the middle of the line (on the line)
-            if (allocated(legend%entries(i)%marker)) then
-                if (legend%entries(i)%marker /= 'None') then
-                    call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
-                                            line_center_y, &
-                                            legend%entries(i)%marker)
-                end if
-            end if
-            
-            ! Draw legend text in black
-            call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text
-            call backend%text(text_x, text_y, legend%entries(i)%label)
-        end do
+        else
+            call backend%line(line_x1, line_center_y, line_x2, line_center_y)
+        end if
+    end subroutine render_legend_line
+    
+    subroutine render_legend_marker(entry, backend, line_x1, line_x2, line_center_y)
+        !! Render legend marker for entry
+        type(legend_entry_t), intent(in) :: entry
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: line_x1, line_x2, line_center_y
         
-        if (allocated(labels)) deallocate(labels)
-    end subroutine render_standard_legend
+        ! Draw marker in the middle of the line
+        if (allocated(entry%marker)) then
+            if (entry%marker /= 'None') then
+                call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
+                                        line_center_y, entry%marker)
+            end if
+        end if
+    end subroutine render_legend_marker
+    
+    subroutine render_legend_text(entry, backend, text_x, text_y)
+        !! Render legend text for entry
+        type(legend_entry_t), intent(in) :: entry
+        class(plot_context), intent(inout) :: backend
+        real(wp), intent(in) :: text_x, text_y
+        
+        ! Draw legend text in black
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)  ! Black text
+        call backend%text(text_x, text_y, entry%label)
+    end subroutine render_legend_text
     
     subroutine calculate_legend_position(legend, backend, x, y)
         !! Calculate legend position based on backend and position setting

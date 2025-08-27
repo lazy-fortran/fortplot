@@ -107,14 +107,9 @@ contains
         real(wp), intent(in) :: level_max
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
         
-        integer :: nx, ny, i, j
-        integer :: grid_case
-        logical :: corner_mask(4)
-        real(wp) :: corner_values(4)
         real(wp), allocatable :: contour_x(:), contour_y(:)
         integer :: contour_count
-        real(wp) :: interp_x1, interp_y1, interp_x2, interp_y2
-        real(wp) :: dx, dy
+        integer :: nx, ny
         
         nx = size(x_grid)
         ny = size(y_grid)
@@ -124,11 +119,31 @@ contains
         allocate(contour_y(2 * (nx + ny)))
         contour_count = 0
         
-        ! Grid spacing
-        dx = x_grid(2) - x_grid(1)
-        dy = y_grid(2) - y_grid(1)
+        ! Process grid using marching squares algorithm
+        call process_marching_squares(x_grid, y_grid, z_grid, level_min, level_max, &
+                                     contour_x, contour_y, contour_count)
         
-        ! Process each grid cell using marching squares
+        ! Create boundary polygon from collected contour points
+        call finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
+        
+    end subroutine extract_region_boundaries
+    
+    subroutine process_marching_squares(x_grid, y_grid, z_grid, level_min, level_max, &
+                                       contour_x, contour_y, contour_count)
+        !! Process grid cells using marching squares algorithm
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
+        real(wp), intent(in) :: level_min, level_max
+        real(wp), intent(inout) :: contour_x(:), contour_y(:)
+        integer, intent(inout) :: contour_count
+        
+        integer :: nx, ny, i, j
+        integer :: grid_case
+        real(wp) :: corner_values(4)
+        
+        nx = size(x_grid)
+        ny = size(y_grid)
+        
+        ! Process each grid cell
         do j = 1, ny - 1
             do i = 1, nx - 1
                 ! Get corner values for current cell
@@ -137,66 +152,86 @@ contains
                 corner_values(3) = z_grid(i+1, j+1)   ! Top-right
                 corner_values(4) = z_grid(i, j+1)     ! Top-left
                 
-                ! Create mask for corners inside the region
-                corner_mask(1) = (corner_values(1) >= level_min .and. corner_values(1) < level_max)
-                corner_mask(2) = (corner_values(2) >= level_min .and. corner_values(2) < level_max)
-                corner_mask(3) = (corner_values(3) >= level_min .and. corner_values(3) < level_max)
-                corner_mask(4) = (corner_values(4) >= level_min .and. corner_values(4) < level_max)
+                ! Calculate marching squares case
+                grid_case = calculate_marching_squares_case(corner_values, level_min, level_max)
                 
-                ! Convert mask to marching squares case (0-15)
-                grid_case = 0
-                if (corner_mask(1)) grid_case = grid_case + 1
-                if (corner_mask(2)) grid_case = grid_case + 2
-                if (corner_mask(3)) grid_case = grid_case + 4
-                if (corner_mask(4)) grid_case = grid_case + 8
-                
-                ! Generate contour line segments based on case
-                select case (grid_case)
-                case (0, 15)
-                    ! No contour or fully inside - no line segments
-                    continue
-                    
-                case (1, 14)
-                    ! Single corner case - one line segment
-                    call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (2, 13)
-                    ! Single corner case - one line segment
-                    call add_contour_segment(i, j, 1, 2, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (3, 12)
-                    ! Adjacent corners - one line segment
-                    call add_contour_segment(i, j, 2, 4, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (4, 11)
-                    ! Single corner case - one line segment
-                    call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (5, 10)
-                    ! Saddle case - two line segments (ambiguous)
-                    call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (6, 9)
-                    ! Adjacent corners - one line segment
-                    call add_contour_segment(i, j, 1, 3, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                    
-                case (7, 8)
-                    ! Single corner case - one line segment
-                    call add_contour_segment(i, j, 3, 4, corner_values, level_min, level_max, &
-                                           x_grid, y_grid, contour_x, contour_y, contour_count)
-                end select
+                ! Handle the marching squares case
+                call handle_marching_squares_case(grid_case, i, j, corner_values, &
+                                                 level_min, level_max, x_grid, y_grid, &
+                                                 contour_x, contour_y, contour_count)
             end do
         end do
+    end subroutine process_marching_squares
+    
+    function calculate_marching_squares_case(corner_values, level_min, level_max) result(grid_case)
+        !! Calculate marching squares case from corner values
+        real(wp), intent(in) :: corner_values(4)
+        real(wp), intent(in) :: level_min, level_max
+        integer :: grid_case
         
-        ! Create boundary polygon from collected contour points
+        logical :: corner_mask(4)
+        integer :: k
+        
+        ! Create mask for corners inside the region
+        do k = 1, 4
+            corner_mask(k) = (corner_values(k) >= level_min .and. corner_values(k) < level_max)
+        end do
+        
+        ! Convert mask to marching squares case (0-15)
+        grid_case = 0
+        if (corner_mask(1)) grid_case = grid_case + 1
+        if (corner_mask(2)) grid_case = grid_case + 2
+        if (corner_mask(3)) grid_case = grid_case + 4
+        if (corner_mask(4)) grid_case = grid_case + 8
+    end function calculate_marching_squares_case
+    
+    subroutine handle_marching_squares_case(grid_case, i, j, corner_values, level_min, level_max, &
+                                           x_grid, y_grid, contour_x, contour_y, contour_count)
+        !! Handle marching squares case and add appropriate contour segments
+        integer, intent(in) :: grid_case, i, j
+        real(wp), intent(in) :: corner_values(4), level_min, level_max
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), intent(inout) :: contour_x(:), contour_y(:)
+        integer, intent(inout) :: contour_count
+        
+        ! Generate contour line segments based on case
+        select case (grid_case)
+        case (0, 15)
+            ! No contour or fully inside - no line segments
+            continue
+        case (1, 14)
+            call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (2, 13)
+            call add_contour_segment(i, j, 1, 2, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (3, 12)
+            call add_contour_segment(i, j, 2, 4, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (4, 11)
+            call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (5, 10)
+            ! Saddle case - two line segments
+            call add_contour_segment(i, j, 1, 4, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+            call add_contour_segment(i, j, 2, 3, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (6, 9)
+            call add_contour_segment(i, j, 1, 3, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        case (7, 8)
+            call add_contour_segment(i, j, 3, 4, corner_values, level_min, level_max, &
+                                   x_grid, y_grid, contour_x, contour_y, contour_count)
+        end select
+    end subroutine handle_marching_squares_case
+    
+    subroutine finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
+        !! Create boundary polygon from collected contour points
+        real(wp), intent(in) :: contour_x(:), contour_y(:)
+        integer, intent(in) :: contour_count
+        type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
+        
         if (contour_count > 0) then
             allocate(boundaries(1))
             allocate(boundaries(1)%x(contour_count + 1))
@@ -213,8 +248,7 @@ contains
             ! No contour found - create empty boundary
             allocate(boundaries(0))
         end if
-        
-    end subroutine extract_region_boundaries
+    end subroutine finalize_boundaries
     
     subroutine add_contour_segment(i, j, edge1, edge2, corner_values, level_min, level_max, &
                                   x_grid, y_grid, contour_x, contour_y, contour_count)
