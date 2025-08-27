@@ -83,7 +83,7 @@ contains
         error_caught = .false.
         call fig%streamplot(x, y, u, v)
         
-        if (.not. fig%has_error) then
+        if (.not. fig%state%has_error) then
             print *, "ERROR: Should detect grid size mismatch"
             stop 1
         end if
