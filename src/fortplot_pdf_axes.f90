@@ -269,7 +269,7 @@ contains
     end subroutine draw_pdf_axes_and_labels
 
     subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame (placeholder for future implementation)
+        !! Draw 3D axes frame - see issue #494 for implementation roadmap
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
@@ -279,6 +279,7 @@ contains
         ! PDF plotting libraries that focus on vector graphics in 2D space.
         ! 3D visualization is better suited to raster backends (PNG) that can
         ! render projected 3D axes with proper visual depth cues.
+        ! Implementation needed - see issue #494
     end subroutine draw_pdf_3d_axes_frame
 
     subroutine draw_pdf_frame_with_area(ctx, plot_left, plot_bottom, plot_width, plot_height, canvas_height)

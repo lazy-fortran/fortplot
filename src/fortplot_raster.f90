@@ -238,11 +238,12 @@ contains
     end subroutine raster_draw_text
 
     subroutine raster_save_dummy(this, filename)
-        !! Dummy save method - raster context doesn't save files directly
+        !! Dummy save method - see issue #496 for implementation improvement roadmap
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
         ! This is a dummy implementation - concrete backends like PNG will override this
+        ! Implementation improvement needed - see issue #496
         call log_error("raster_context cannot save files directly. Use a concrete backend like PNG.")
         ! Return instead of stopping - this allows graceful error handling
         return
@@ -892,12 +893,12 @@ contains
     end subroutine raster_set_coordinates
 
     subroutine raster_render_axes(this, title_text, xlabel_text, ylabel_text)
-        !! Render axes for raster context (stub implementation)
+        !! Render axes for raster context - see issue #495 for implementation roadmap
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
         
         ! Raster axes are rendered as part of draw_axes_and_labels_backend
-        ! This is a stub to satisfy the interface
+        ! Implementation needed - see issue #495
     end subroutine raster_render_axes
 
     subroutine render_title_centered(this, title_text)
