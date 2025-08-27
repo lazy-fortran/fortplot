@@ -5981,7 +5981,7 @@ This warning noise obscures critical test failures and degrades CI readability. 
 ### Current Architecture Analysis
 
 **Plot Limit Infrastructure**:
-- Figure type has `max_plots = 50` limit (fortplot_figure_base.f90:90)
+- Figure type has `max_plots = 50` limit (fortplot_figure_core.f90:state%max_plots)
 - Subplot type has `max_plots = 10` limit (fortplot_plot_data.f90:108)  
 - Rendering checks `total_idx <= self%max_plots` (fortplot_rendering.f90:141)
 - Plotting checks `self%plot_count <= self%max_plots` (fortplot_plotting.f90:512)
@@ -6808,7 +6808,7 @@ module fortplot_api_3d
     ! 3D transformations
 end module
 
-! fortplot_figure_base.f90 (474 lines) - Figure management
+! fortplot_figure_core.f90 - Figure management (consolidated)
 module fortplot_figure_management
     ! Figure creation and lifecycle
     ! Subplot management
