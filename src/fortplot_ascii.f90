@@ -10,18 +10,19 @@ module fortplot_ascii
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_logging, only: log_info, log_error
     use fortplot_latex_parser, only: process_latex_in_text
-    ! use fortplot_unicode, only: unicode_to_ascii
     use fortplot_constants, only: EPSILON_COMPARE
+    use fortplot_ascii_utils, only: text_element_t, get_char_density, get_blend_char
+    use fortplot_ascii_utils, only: render_text_elements_to_canvas, print_centered_title, write_centered_title
+    use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
+    use fortplot_ascii_elements, only: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
+    use fortplot_ascii_elements, only: set_ascii_legend_border_width, calculate_ascii_legend_position
+    use fortplot_ascii_elements, only: extract_ascii_rgb_data, get_ascii_png_data, prepare_ascii_3d_data
+    use fortplot_ascii_elements, only: render_ascii_ylabel, draw_ascii_axes_and_labels, render_ascii_axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: ascii_context, create_ascii_canvas
-    type :: text_element_t
-        character(len=:), allocatable :: text
-        integer :: x, y
-        real(wp) :: color_r, color_g, color_b
-    end type text_element_t
 
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
@@ -302,7 +303,7 @@ contains
         integer :: i, j
         
         ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this)
+        call render_text_elements_to_canvas(this%canvas, this%text_elements, this%num_text_elements, this%plot_width, this%plot_height)
         
         if (allocated(this%title_text)) then
             print '(A)', ''  ! Empty line before title
@@ -337,7 +338,7 @@ contains
         integer :: i, j
         
         ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this)
+        call render_text_elements_to_canvas(this%canvas, this%text_elements, this%num_text_elements, this%plot_width, this%plot_height)
         
         if (allocated(this%title_text)) then
             write(unit, '(A)') ''  ! Empty line before title
@@ -366,186 +367,15 @@ contains
         end if
     end subroutine output_to_file
 
-    integer function get_char_density(char)
-        character(len=1), intent(in) :: char
-        
-        select case (char)
-        case (' ')
-            get_char_density = 0
-        case ('.')
-            get_char_density = 1
-        case (':')
-            get_char_density = 2
-        case ('-')
-            get_char_density = 2
-        case ('=')
-            get_char_density = 3
-        case ('+')
-            get_char_density = 3
-        case ('o')
-            get_char_density = 4
-        case ('*')
-            get_char_density = 5
-        case ('#')
-            get_char_density = 6
-        case ('%')
-            get_char_density = 7
-        case ('@')
-            get_char_density = 8
-        case default
-            get_char_density = 9
-        end select
-    end function get_char_density
-
-    character(len=1) function get_blend_char(char1, char2)
-        character(len=1), intent(in) :: char1, char2
-        
-        select case (char1)
-        case ('*')
-            if (char2 == '#' .or. char2 == '@') then
-                get_blend_char = '%'
-            else
-                get_blend_char = char1
-            end if
-        case ('#')
-            if (char2 == '*' .or. char2 == 'o') then
-                get_blend_char = '%'
-            else
-                get_blend_char = char1
-            end if
-        case ('@')
-            if (char2 == '*' .or. char2 == 'o') then
-                get_blend_char = '%'
-            else
-                get_blend_char = char1
-            end if
-        case default
-            if (get_char_density(char2) > get_char_density(char1)) then
-                get_blend_char = char2
-            else
-                get_blend_char = char1
-            end if
-        end select
-    end function get_blend_char
-
-    subroutine render_text_elements_to_canvas(this)
-        !! Render stored text elements onto the ASCII canvas
-        class(ascii_context), intent(inout) :: this
-        integer :: i, j, text_len, char_idx
-        character(len=1) :: text_char
-        
-        ! Render each stored text element
-        do i = 1, this%num_text_elements
-            text_len = len_trim(this%text_elements(i)%text)
-            
-            ! Draw each character of the text
-            do char_idx = 1, text_len
-                j = this%text_elements(i)%x + char_idx - 1
-                
-                ! Check bounds
-                if (j >= 1 .and. j <= this%plot_width .and. &
-                    this%text_elements(i)%y >= 1 .and. this%text_elements(i)%y <= this%plot_height) then
-                    
-                    text_char = this%text_elements(i)%text(char_idx:char_idx)
-                    
-                    ! Choose character based on text color (simple color mapping)
-                    if (this%text_elements(i)%color_r > 0.7_wp) then
-                        text_char = text_char  ! Keep original for red text
-                    else if (this%text_elements(i)%color_g > 0.7_wp) then
-                        text_char = text_char  ! Keep original for green text
-                    else if (this%text_elements(i)%color_b > 0.7_wp) then
-                        text_char = text_char  ! Keep original for blue text
-                    end if
-                    
-                    ! Only overwrite space or lower density characters
-                    if (this%canvas(this%text_elements(i)%y, j) == ' ' .or. &
-                        get_char_density(text_char) > get_char_density(this%canvas(this%text_elements(i)%y, j))) then
-                        this%canvas(this%text_elements(i)%y, j) = text_char
-                    end if
-                end if
-            end do
-        end do
-    end subroutine render_text_elements_to_canvas
-
-    subroutine print_centered_title(title, width)
-        !! Print centered title to terminal
-        character(len=*), intent(in) :: title
-        integer, intent(in) :: width
-        integer :: padding, title_len
-        character(len=:), allocatable :: centered_title
-        
-        title_len = len_trim(title)
-        if (title_len >= width) then
-            print '(A)', trim(title)
-        else
-            padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(title)
-            print '(A)', centered_title
-        end if
-    end subroutine print_centered_title
-
-    subroutine write_centered_title(unit, title, width)
-        !! Write centered title to file
-        integer, intent(in) :: unit
-        character(len=*), intent(in) :: title
-        integer, intent(in) :: width
-        integer :: padding, title_len
-        character(len=:), allocatable :: centered_title
-        
-        title_len = len_trim(title)
-        if (title_len >= width) then
-            write(unit, '(A)') trim(title)
-        else
-            padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(title)
-            write(unit, '(A)') centered_title
-        end if
-    end subroutine write_centered_title
 
     subroutine ascii_draw_marker(this, x, y, style)
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: style
-        integer :: px, py
-        character(len=1) :: marker_char
-
-        ! Map to usable plot area (excluding 1-char border on each side)
-        px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
-        py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
-
-        ! Map marker styles to distinct ASCII characters for visual differentiation
-        select case (trim(style))
-        case ('o')
-            marker_char = 'o'  ! Circle
-        case ('s')
-            marker_char = '#'  ! Square
-        case ('D', 'd')
-            marker_char = '%'  ! Diamond (ASCII representation)
-        case ('x')
-            marker_char = 'x'  ! Cross
-        case ('+')
-            marker_char = '+'  ! Plus
-        case ('*')
-            marker_char = '*'  ! Star
-        case ('^')
-            marker_char = '^'  ! Triangle up
-        case ('v')
-            marker_char = 'v'  ! Triangle down
-        case ('<')
-            marker_char = '<'  ! Triangle left
-        case ('>')
-            marker_char = '>'  ! Triangle right
-        case ('p')
-            marker_char = 'P'  ! Pentagon
-        case ('h', 'H')
-            marker_char = 'H'  ! Hexagon
-        case default
-            marker_char = '*'  ! Default fallback
-        end select
-
-        if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
-            this%canvas(py, px) = marker_char
-        end if
+        
+        call draw_ascii_marker(this%canvas, x, y, style, &
+                              this%x_min, this%x_max, this%y_min, this%y_max, &
+                              this%plot_width, this%plot_height)
     end subroutine ascii_draw_marker
 
     subroutine ascii_set_marker_colors(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
@@ -577,109 +407,24 @@ contains
     end subroutine ascii_set_marker_colors_with_alpha
     
     subroutine ascii_fill_heatmap(this, x_grid, y_grid, z_grid, z_min, z_max)
-        !! Fill ASCII canvas with heatmap representation of 2D data
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
         
-        integer :: nx, ny, i, j, px, py
-        real(wp) :: x_min, x_max, y_min, y_max
-        real(wp) :: z_normalized
-        integer :: char_idx
-        
-        nx = size(x_grid)
-        ny = size(y_grid)
-        
-        ! z_grid should have dimensions (ny, nx) - rows by columns
-        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
-        
-        x_min = minval(x_grid)
-        x_max = maxval(x_grid)
-        y_min = minval(y_grid)
-        y_max = maxval(y_grid)
-        
-        ! Fill the canvas with density characters based on z values
-        do i = 1, nx
-            do j = 1, ny
-                ! Map grid coordinates to canvas coordinates
-                px = int((x_grid(i) - this%x_min) / (this%x_max - this%x_min) * &
-                        real(this%plot_width - 3, wp)) + 2
-                py = (this%plot_height - 1) - int((y_grid(j) - this%y_min) / &
-                        (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
-                
-                ! Check bounds
-                if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
-                    ! Normalize z value to character index
-                    ! z_grid is (ny, nx) so access as z_grid(j, i)
-                    if (abs(z_max - z_min) > EPSILON_COMPARE) then
-                        z_normalized = (z_grid(j, i) - z_min) / (z_max - z_min)
-                    else
-                        z_normalized = 0.5_wp
-                    end if
-                    
-                    ! Map to character index (1 to len(ASCII_CHARS))
-                    char_idx = min(len(ASCII_CHARS), max(1, int(z_normalized * real(len(ASCII_CHARS) - 1, wp)) + 1))
-                    
-                    ! Only overwrite if current position is empty or has lower density
-                    if (this%canvas(py, px) == ' ' .or. char_idx > index(ASCII_CHARS, this%canvas(py, px))) then
-                        this%canvas(py, px) = ASCII_CHARS(char_idx:char_idx)
-                    end if
-                end if
-            end do
-        end do
+        call fill_ascii_heatmap(this%canvas, x_grid, y_grid, z_grid, z_min, z_max, &
+                               this%x_min, this%x_max, this%y_min, this%y_max, &
+                               this%plot_width, this%plot_height)
     end subroutine ascii_fill_heatmap
 
     subroutine ascii_draw_arrow(this, x, y, dx, dy, size, style)
-        !! Draw arrow using Unicode directional characters for ASCII backend
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
         
-        integer :: px, py
-        character(len=1) :: arrow_char
-        real(wp) :: angle
-        
-        ! Suppress unused parameter warnings
-        if (size < 0.0_wp .or. len_trim(style) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
-        
-        ! Convert world coordinates to pixel coordinates
-        px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp))
-        py = int((y - this%y_min) / (this%y_max - this%y_min) * real(this%height, wp))
-        
-        ! Ensure coordinates are within bounds
-        if (px < 1 .or. px > this%width .or. py < 1 .or. py > this%height) return
-        
-        ! Calculate angle for direction
-        angle = atan2(dy, dx)
-        
-        ! Choose ASCII-compatible arrow character based on direction
-        if (abs(angle) < 0.393_wp) then          ! 0 ± 22.5 degrees (right)
-            arrow_char = '>'
-        else if (angle >= 0.393_wp .and. angle < 1.178_wp) then  ! 22.5-67.5 degrees (up-right)
-            arrow_char = '/'
-        else if (angle >= 1.178_wp .and. angle < 1.963_wp) then  ! 67.5-112.5 degrees (up)
-            arrow_char = '^'
-        else if (angle >= 1.963_wp .and. angle < 2.749_wp) then  ! 112.5-157.5 degrees (up-left)
-            arrow_char = '\'
-        else if (abs(angle) >= 2.749_wp) then    ! 157.5-180 degrees (left)
-            arrow_char = '<'
-        else if (angle <= -0.393_wp .and. angle > -1.178_wp) then  ! -22.5 to -67.5 degrees (down-right)
-            arrow_char = '\'
-        else if (angle <= -1.178_wp .and. angle > -1.963_wp) then  ! -67.5 to -112.5 degrees (down)
-            arrow_char = 'v'
-        else  ! -112.5 to -157.5 degrees (down-left)
-            arrow_char = '/'
-        end if
-        
-        ! Place arrow character on canvas
-        this%canvas(py, px) = arrow_char
-        
-        ! Mark that arrows have been rendered
-        this%has_rendered_arrows = .true.
-        this%uses_vector_arrows = .false.
-        this%has_triangular_arrows = .false.
+        call draw_ascii_arrow(this%canvas, x, y, dx, dy, size, style, &
+                             this%x_min, this%x_max, this%y_min, this%y_max, &
+                             this%width, this%height, &
+                             this%has_rendered_arrows, this%uses_vector_arrows, this%has_triangular_arrows)
     end subroutine ascii_draw_arrow
 
     function ascii_get_output(this) result(output)
@@ -782,48 +527,31 @@ contains
     end subroutine ascii_fill_quad
 
     subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
-        !! Render legend using ASCII-specific compact layout
-        use fortplot_legend, only: legend_t, render_ascii_legend
+        use fortplot_legend, only: legend_t
         class(ascii_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
         
-        ! Use ASCII-specific legend rendering
-        call render_ascii_legend(legend, this, legend_x, legend_y)
+        call render_ascii_legend_specialized(legend, this, legend_x, legend_y)
     end subroutine ascii_render_legend_specialized
 
     subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, legend_height)
-        !! Calculate ASCII-specific legend dimensions
         use fortplot_legend, only: legend_t
         class(ascii_context), intent(in) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: legend_width, legend_height
-        integer :: i
         
-        ! Calculate actual legend width based on longest entry
-        legend_width = 15.0_wp  ! Default minimum width
-        do i = 1, legend%num_entries
-            legend_width = max(legend_width, real(len_trim(legend%entries(i)%label) + 5, wp))  ! +5 for "-- " prefix and margin
-        end do
-        
-        ! For ASCII backend, limit legend width to prevent overflow  
-        if (legend_width > real(this%width, wp) * 0.3) then
-            legend_width = real(this%width, wp) * 0.3
-        end if
-        
-        legend_height = real(legend%num_entries + 2, wp)  ! Each entry + border
+        call calculate_ascii_legend_dimensions(legend, this%width, legend_width, legend_height)
     end subroutine ascii_calculate_legend_dimensions
 
     subroutine ascii_set_legend_border_width(this)
-        !! ASCII doesn't use line widths - no-op
         class(ascii_context), intent(inout) :: this
         
         ! Suppress unused parameter warning
         if (this%width < 0) then
-            ! This condition is never true, but suppresses unused parameter warning
         end if
         
-        ! ASCII backend doesn't have line widths - no operation needed
+        call set_ascii_legend_border_width()
     end subroutine ascii_set_legend_border_width
 
     subroutine ascii_calculate_legend_position(this, legend, x, y)
