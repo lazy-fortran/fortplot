@@ -172,7 +172,9 @@ contains
         path_x = real(path_x_wp)
         path_y = real(path_y_wp)
         
-        deallocate(path_x_wp, path_y_wp, times)
+        if (allocated(path_x_wp)) deallocate(path_x_wp)
+        if (allocated(path_y_wp)) deallocate(path_y_wp)
+        if (allocated(times)) deallocate(times)
     end subroutine integrate_streamline_dopri5
 
     subroutine calculate_seed_points_matplotlib(x, y, density, seed_x, seed_y, n_seeds, mask)
@@ -238,7 +240,7 @@ contains
             seed_y = seed_y(1:n_seeds)
         end if
         
-        deallocate(spiral_seeds)
+        if (allocated(spiral_seeds)) deallocate(spiral_seeds)
     end subroutine calculate_seed_points_matplotlib
 
     subroutine integrate_streamline_bidirectional(x0, y0, u_func, v_func, params, max_time, &
@@ -302,7 +304,10 @@ contains
             path_y(n_backward - 1 + i) = forward_y(i)
         end do
         
-        deallocate(forward_x, forward_y, backward_x, backward_y)
+        if (allocated(forward_x)) deallocate(forward_x)
+        if (allocated(forward_y)) deallocate(forward_y)
+        if (allocated(backward_x)) deallocate(backward_x)
+        if (allocated(backward_y)) deallocate(backward_y)
     end subroutine integrate_streamline_bidirectional
     
     subroutine rk4_step(x, y, u_func, v_func, dt, x_new, y_new)

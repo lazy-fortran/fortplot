@@ -274,7 +274,9 @@ contains
         temp_t(1:old_size) = times(1:old_size)
         
         ! Reallocate original arrays
-        deallocate(path_x, path_y, times)
+        if (allocated(path_x)) deallocate(path_x)
+        if (allocated(path_y)) deallocate(path_y)
+        if (allocated(times)) deallocate(times)
         allocate(path_x(new_size), path_y(new_size), times(new_size))
         
         ! Copy back
@@ -283,7 +285,9 @@ contains
         times = temp_t
         
         array_size = new_size
-        deallocate(temp_x, temp_y, temp_t)
+        if (allocated(temp_x)) deallocate(temp_x)
+        if (allocated(temp_y)) deallocate(temp_y)
+        if (allocated(temp_t)) deallocate(temp_t)
         
     end subroutine resize_arrays
 
@@ -303,7 +307,9 @@ contains
         temp_t = times(1:n_points)
         
         ! Reallocate with correct size
-        deallocate(path_x, path_y, times)
+        if (allocated(path_x)) deallocate(path_x)
+        if (allocated(path_y)) deallocate(path_y)
+        if (allocated(times)) deallocate(times)
         allocate(path_x(n_points), path_y(n_points), times(n_points))
         
         ! Copy back
@@ -311,7 +317,9 @@ contains
         path_y = temp_y
         times = temp_t
         
-        deallocate(temp_x, temp_y, temp_t)
+        if (allocated(temp_x)) deallocate(temp_x)
+        if (allocated(temp_y)) deallocate(temp_y)
+        if (allocated(temp_t)) deallocate(temp_t)
         
     end subroutine trim_arrays
 

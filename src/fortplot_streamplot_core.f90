@@ -242,7 +242,7 @@ contains
         if (arrow_count > 0) then
             fig%arrow_data = fig%arrow_data(1:arrow_count)
         else
-            deallocate(fig%arrow_data)
+            if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
         end if
     end subroutine finalize_arrow_array
 
@@ -292,7 +292,8 @@ contains
         ! Add trajectory as line plot to figure
         call add_streamline_to_figure(fig, traj_x, traj_y, line_color)
         
-        deallocate(traj_x, traj_y)
+        if (allocated(traj_x)) deallocate(traj_x)
+        if (allocated(traj_y)) deallocate(traj_y)
     end subroutine convert_and_add_trajectory
 
     subroutine add_streamline_to_figure(fig, traj_x, traj_y, line_color)

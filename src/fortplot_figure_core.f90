@@ -626,7 +626,7 @@ contains
             end if
         end if
         
-        deallocate(sorted_data)
+        if (allocated(sorted_data)) deallocate(sorted_data)
     end subroutine update_data_ranges_boxplot
 
     subroutine update_data_ranges(self)

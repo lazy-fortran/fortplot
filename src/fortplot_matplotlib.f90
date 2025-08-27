@@ -102,7 +102,9 @@ contains
         call forward_contour_filled_params(fig, wp_x, wp_y, wp_z, wp_levels, &
                                           colormap, show_colorbar, label)
         
-        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_x)) deallocate(wp_x)
+        if (allocated(wp_y)) deallocate(wp_y)
+        if (allocated(wp_z)) deallocate(wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
     end subroutine contour_filled
 
@@ -160,7 +162,9 @@ contains
             call fig%add_pcolormesh(wp_x, wp_y, wp_z)
         end if
         
-        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_x)) deallocate(wp_x)
+        if (allocated(wp_y)) deallocate(wp_y)
+        if (allocated(wp_z)) deallocate(wp_z)
     end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
@@ -208,7 +212,10 @@ contains
         call add_streamplot_trajectories_to_figure(trajectories, n_trajectories, &
                                                   trajectory_lengths, wp_x, wp_y)
         
-        deallocate(wp_x, wp_y, wp_u, wp_v)
+        if (allocated(wp_x)) deallocate(wp_x)
+        if (allocated(wp_y)) deallocate(wp_y)
+        if (allocated(wp_u)) deallocate(wp_u)
+        if (allocated(wp_v)) deallocate(wp_v)
     end subroutine streamplot
     
     subroutine add_streamplot_trajectories_to_figure(trajectories, n_trajectories, &
@@ -243,7 +250,8 @@ contains
             ! Add trajectory as line plot to figure
             call fig%add_plot(traj_x, traj_y, linestyle='-')
             
-            deallocate(traj_x, traj_y)
+            if (allocated(traj_x)) deallocate(traj_x)
+            if (allocated(traj_y)) deallocate(traj_y)
         end do
     end subroutine add_streamplot_trajectories_to_figure
 
@@ -319,7 +327,7 @@ contains
         ! Use the hist method from figure_core
         call fig%hist(wp_data, bins=bins, density=density, label=label)
         
-        deallocate(wp_data)
+        if (allocated(wp_data)) deallocate(wp_data)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)
@@ -491,7 +499,9 @@ contains
         call forward_contour_filled_params(fig, wp_x, wp_y, wp_z, wp_levels, &
                                           colormap, show_colorbar, label)
         
-        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_x)) deallocate(wp_x)
+        if (allocated(wp_y)) deallocate(wp_y)
+        if (allocated(wp_z)) deallocate(wp_z)
         if (allocated(wp_levels)) deallocate(wp_levels)
     end subroutine add_contour_filled
 
@@ -549,7 +559,9 @@ contains
             call fig%add_pcolormesh(wp_x, wp_y, wp_z)
         end if
         
-        deallocate(wp_x, wp_y, wp_z)
+        if (allocated(wp_x)) deallocate(wp_x)
+        if (allocated(wp_y)) deallocate(wp_y)
+        if (allocated(wp_z)) deallocate(wp_z)
     end subroutine add_pcolormesh
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)

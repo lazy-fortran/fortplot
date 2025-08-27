@@ -117,7 +117,7 @@ contains
             end do
         end do
         
-        deallocate(temp_buffer)
+        if (allocated(temp_buffer)) deallocate(temp_buffer)
     end subroutine render_text_to_bitmap
 
     subroutine rotate_bitmap_90_ccw(src_bitmap, dst_bitmap, src_width, src_height)

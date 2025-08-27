@@ -662,8 +662,8 @@ contains
                                        rotated_width, rotated_height, x_pos, y_pos)
         
         ! Clean up
-        deallocate(text_bitmap)
-        deallocate(rotated_bitmap)
+        if (allocated(text_bitmap)) deallocate(text_bitmap)
+        if (allocated(rotated_bitmap)) deallocate(rotated_bitmap)
     end subroutine raster_render_ylabel
 
     subroutine raster_draw_axes_and_labels(this, xscale, yscale, symlog_threshold, &
