@@ -7,7 +7,6 @@
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
 
 ### EPIC: Edge Case and Stability Foundation
-- [ ] #433: Critical: Numeric limits cause corrupted/blank plot output
 - [ ] #435: Critical: Machine precision coordinate handling produces blank outputs
 - [ ] #431: Bug: Inconsistent error reporting - reports success after failure
 
@@ -51,6 +50,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
+- [ ] #433: Critical: Numeric limits cause corrupted/blank plot output [EPIC: Edge Case and Stability Foundation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
