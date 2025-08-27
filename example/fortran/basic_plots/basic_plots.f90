@@ -1,6 +1,7 @@
 program basic_plots
     !! Basic plotting examples using both simple and OO APIs
     use fortplot
+    use fortplot_errors, only: SUCCESS
     implicit none
 
     call simple_plots()
@@ -10,7 +11,8 @@ contains
 
     subroutine simple_plots()
         real(wp), dimension(50) :: x, y
-        integer :: i
+        integer :: i, save_status
+        logical :: all_success
         
         print *, "=== Basic Plots ==="
         
@@ -24,18 +26,30 @@ contains
         call title('Simple Sine Wave')
         call xlabel('x')
         call ylabel('sin(x)')
-        call savefig('output/example/fortran/basic_plots/simple_plot.png')
-        call savefig('output/example/fortran/basic_plots/simple_plot.pdf')
-        call savefig('output/example/fortran/basic_plots/simple_plot.txt')
+        all_success = .true.
         
-        print *, "Created: simple_plot.png/pdf/txt"
+        call savefig_with_status('output/example/fortran/basic_plots/simple_plot.png', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        call savefig_with_status('output/example/fortran/basic_plots/simple_plot.pdf', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        call savefig_with_status('output/example/fortran/basic_plots/simple_plot.txt', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        if (all_success) then
+            print *, "Created: simple_plot.png/pdf/txt"
+        else
+            print *, "ERROR: Failed to create some simple_plot files"
+        end if
         
     end subroutine simple_plots
 
     subroutine multi_line_plot()
         real(wp), dimension(100) :: x, sx, cx
         type(figure_t) :: fig
-        integer :: i
+        integer :: i, save_status
+        logical :: all_success
 
         x = [(real(i, wp), i=0, size(x) - 1)]/5.0_wp
         sx = sin(x)
@@ -49,11 +63,22 @@ contains
         call add_plot(x, sx, label="sin(x)")
         call add_plot(x, cx, label="cos(x)")
         call legend()  ! Add legend for labeled plots
-        call savefig('output/example/fortran/basic_plots/multi_line.png')
-        call savefig('output/example/fortran/basic_plots/multi_line.pdf')
-        call savefig('output/example/fortran/basic_plots/multi_line.txt')
+        all_success = .true.
         
-        print *, "Created: multi_line.png/pdf/txt"
+        call savefig_with_status('output/example/fortran/basic_plots/multi_line.png', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        call savefig_with_status('output/example/fortran/basic_plots/multi_line.pdf', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        call savefig_with_status('output/example/fortran/basic_plots/multi_line.txt', save_status)
+        if (save_status /= SUCCESS) all_success = .false.
+        
+        if (all_success) then
+            print *, "Created: multi_line.png/pdf/txt"
+        else
+            print *, "ERROR: Failed to create some multi_line files"
+        end if
         
     end subroutine multi_line_plot
 

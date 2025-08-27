@@ -87,7 +87,7 @@ module fortplot
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
                                    xlabel, ylabel, title, legend, &
-                                   savefig, figure, subplot, &
+                                   savefig, savefig_with_status, figure, subplot, &
                                    add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar, &
                                    add_3d_plot, add_surface, add_scatter, &
                                    set_xscale, set_yscale, xlim, ylim, &
@@ -124,7 +124,7 @@ module fortplot
     public :: xlabel, ylabel, title, legend
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
-    public :: savefig
+    public :: savefig, savefig_with_status
     
     ! Extended plotting functions
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh

@@ -22,7 +22,7 @@ module fortplot_matplotlib
     public :: bar, barh
     public :: text, annotate
     public :: xlabel, ylabel, title, legend
-    public :: savefig, figure, subplot
+    public :: savefig, savefig_with_status, figure, subplot
     public :: add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar
     public :: add_3d_plot, add_surface, add_scatter
     public :: set_xscale, set_yscale, xlim, ylim
@@ -784,6 +784,19 @@ contains
         call ensure_global_figure_initialized()
         call fig%savefig(filename)
     end subroutine savefig
+    
+    subroutine savefig_with_status(filename, status, dpi, transparent, bbox_inches)
+        !! Save the global figure to file with error status reporting
+        use fortplot_errors, only: SUCCESS
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
+        integer, intent(in), optional :: dpi
+        logical, intent(in), optional :: transparent
+        character(len=*), intent(in), optional :: bbox_inches
+        
+        call ensure_global_figure_initialized()
+        call fig%savefig_with_status(filename, status)
+    end subroutine savefig_with_status
 
     ! Display functions
     subroutine show_data(x, y, label, title_text, xlabel_text, ylabel_text, blocking)
