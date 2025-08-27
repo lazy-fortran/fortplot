@@ -45,7 +45,6 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #486: defect: fortplot_ascii.f90 exceeds 1000 line limit (1038 lines) [EPIC: Technical Debt Resolution]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
