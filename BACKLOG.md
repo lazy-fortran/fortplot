@@ -6,7 +6,6 @@
 
 
 ### EPIC: Test Infrastructure Cleanup and Automation
-- [ ] #423: defect: 18 disabled test files indicate broken functionality
 - [ ] #424: defect: test file duplication and proliferation
 - [ ] #454: feat: implement remaining 11 disabled test functionalities
 - [ ] #425: defect: unused module fortplot_forensic_comparison
@@ -49,7 +48,7 @@
 - [ ] #471: defect: Documentation consolidation for Architectural Debt Resolution Sprint
 
 ## DOING (Current Work)
-- [ ] #468: defect: Test output file pollution - 214+ temporary files created during test runs [EPIC: Test Infrastructure Cleanup and Automation]
+- [ ] #423: defect: 18 disabled test files indicate broken functionality [EPIC: Test Infrastructure Cleanup and Automation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
