@@ -7,7 +7,6 @@
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
 
 ### EPIC: Edge Case and Stability Foundation
-- [ ] #431: Bug: Inconsistent error reporting - reports success after failure
 
 ### EPIC: Core API Implementation Completion
 - [ ] #417: defect: stub implementations returning error stop
@@ -49,7 +48,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #435: Critical: Machine precision coordinate handling produces blank outputs [EPIC: Edge Case and Stability Foundation]
+- [ ] #431: Bug: Inconsistent error reporting - reports success after failure [EPIC: Edge Case and Stability Foundation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
