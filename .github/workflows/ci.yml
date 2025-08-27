@@ -42,6 +42,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
 
+    - name: Create test directories
+      run: |
+        echo "Creating test output directories..."
+        mkdir -p build/test
+        mkdir -p output/example/fortran
+        echo "Test directories created."
+
     - name: Build project
       run: |
         make build

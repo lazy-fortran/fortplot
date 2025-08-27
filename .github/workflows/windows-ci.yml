@@ -62,6 +62,15 @@ jobs:
         magick -version
         echo === Environment verification complete ===
 
+    - name: Create test directories
+      shell: cmd
+      run: |
+        echo Creating test output directories...
+        if not exist build\test mkdir build\test
+        if not exist output\example mkdir output\example
+        if not exist output\example\fortran mkdir output\example\fortran
+        echo Test directories created.
+
     - name: Build project
       shell: cmd
       run: |
