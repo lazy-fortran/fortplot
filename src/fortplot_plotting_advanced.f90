@@ -13,16 +13,17 @@ module fortplot_plotting_advanced
                                     HALF_WIDTH, IQR_WHISKER_MULTIPLIER
     use fortplot_colors, only: parse_color, color_t
     use fortplot_streamplot_matplotlib
+    use fortplot_streamplot_core, only: setup_streamplot_parameters
     use fortplot_logging, only: log_warning, log_error, log_info
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
-    use fortplot_utils_sort, only: quicksort_dp
+    use fortplot_utils_sort, only: sort_array
     
     implicit none
     
     private
     public :: add_contour_impl, add_contour_filled_impl, add_pcolormesh_impl
     public :: bar_impl, barh_impl, hist_impl, boxplot_impl
-    public :: streamplot_impl, setup_streamplot_parameters
+    public :: streamplot_impl
     
     ! Histogram constants
     integer, parameter :: DEFAULT_HISTOGRAM_BINS = 10
@@ -237,7 +238,7 @@ contains
         
         integer :: subplot_idx, plot_idx, i, j
         
-        error%code = SUCCESS
+        error%status = SUCCESS
         
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
@@ -246,7 +247,7 @@ contains
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
         else if (plot_idx > size(self%plots)) then
-            error%code = ERROR_RESOURCE_LIMIT
+            error%status = ERROR_RESOURCE_LIMIT
             error%message = "Maximum plot count exceeded"
             return
         end if
@@ -254,42 +255,60 @@ contains
         self%plots(plot_idx)%plot_type = PLOT_TYPE_PCOLORMESH
         
         ! Store pcolormesh data
-        allocate(self%plots(plot_idx)%pcolormesh_data%x(size(x)))
-        allocate(self%plots(plot_idx)%pcolormesh_data%y(size(y)))
-        allocate(self%plots(plot_idx)%pcolormesh_data%c(size(c, 1), size(c, 2)))
+        ! Note: x and y are edge coordinates, so dimensions are (ny+1, nx+1)
+        allocate(self%plots(plot_idx)%pcolormesh_data%x_vertices(size(y), size(x)))
+        allocate(self%plots(plot_idx)%pcolormesh_data%y_vertices(size(y), size(x)))
+        allocate(self%plots(plot_idx)%pcolormesh_data%c_values(size(c, 1), size(c, 2)))
         
-        self%plots(plot_idx)%pcolormesh_data%x = x
-        self%plots(plot_idx)%pcolormesh_data%y = y
-        self%plots(plot_idx)%pcolormesh_data%c = c
+        ! Create mesh grid from 1D arrays
+        do i = 1, size(y)
+            self%plots(plot_idx)%pcolormesh_data%x_vertices(i, :) = x
+        end do
+        do j = 1, size(x)
+            self%plots(plot_idx)%pcolormesh_data%y_vertices(:, j) = y
+        end do
+        self%plots(plot_idx)%pcolormesh_data%c_values = c
+        self%plots(plot_idx)%pcolormesh_data%nx = size(c, 2)
+        self%plots(plot_idx)%pcolormesh_data%ny = size(c, 1)
         
         if (present(colormap)) then
-            self%plots(plot_idx)%pcolormesh_data%colormap = colormap
+            self%plots(plot_idx)%pcolormesh_data%colormap_name = colormap
         else
-            self%plots(plot_idx)%pcolormesh_data%colormap = 'viridis'
+            self%plots(plot_idx)%pcolormesh_data%colormap_name = 'viridis'
         end if
         
         if (present(vmin)) then
             self%plots(plot_idx)%pcolormesh_data%vmin = vmin
+            self%plots(plot_idx)%pcolormesh_data%vmin_set = .true.
         else
             self%plots(plot_idx)%pcolormesh_data%vmin = minval(c)
+            self%plots(plot_idx)%pcolormesh_data%vmin_set = .true.
         end if
         
         if (present(vmax)) then
             self%plots(plot_idx)%pcolormesh_data%vmax = vmax
+            self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         else
             self%plots(plot_idx)%pcolormesh_data%vmax = maxval(c)
+            self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         end if
         
         if (present(edgecolors)) then
-            self%plots(plot_idx)%pcolormesh_data%edgecolors = edgecolors
+            ! Handle edge colors - if 'none', disable edges
+            if (edgecolors == 'none') then
+                self%plots(plot_idx)%pcolormesh_data%show_edges = .false.
+            else
+                self%plots(plot_idx)%pcolormesh_data%show_edges = .true.
+                ! Could parse color string here if needed
+            end if
         else
-            self%plots(plot_idx)%pcolormesh_data%edgecolors = 'none'
+            self%plots(plot_idx)%pcolormesh_data%show_edges = .false.
         end if
         
         if (present(linewidths)) then
-            self%plots(plot_idx)%pcolormesh_data%linewidths = linewidths
+            self%plots(plot_idx)%pcolormesh_data%edge_width = linewidths
         else
-            self%plots(plot_idx)%pcolormesh_data%linewidths = 0.0_wp
+            self%plots(plot_idx)%pcolormesh_data%edge_width = 0.5_wp
         end if
         
     end subroutine add_pcolormesh_plot_data
@@ -519,7 +538,7 @@ contains
         sorted_data = data
         
         ! Sort data
-        call quicksort_dp(sorted_data)
+        call sort_array(sorted_data)
         
         ! Calculate quartile indices
         q1_idx = max(1, nint(0.25_wp * n))
@@ -597,17 +616,7 @@ contains
         end if
     end subroutine compute_boxplot_statistics
     
-    subroutine setup_streamplot_parameters(self, x, y, u, v, density, color, linewidth, &
-                                          rtol, atol, max_time, arrowsize, arrowstyle)
-        !! Setup streamplot parameters
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
-        real(wp), intent(in), optional :: density, color(3), linewidth
-        real(wp), intent(in), optional :: rtol, atol, max_time, arrowsize
-        character(len=*), intent(in), optional :: arrowstyle
-        
-        call streamplot_core_setup(self, x, y, u, v, density, color, linewidth, &
-                                  rtol, atol, max_time, arrowsize, arrowstyle)
-    end subroutine setup_streamplot_parameters
+    ! Note: setup_streamplot_parameters is provided by fortplot_streamplot_core module
+    ! No need to duplicate it here
     
 end module fortplot_plotting_advanced

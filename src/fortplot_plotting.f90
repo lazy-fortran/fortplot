@@ -260,7 +260,10 @@ contains
         if (present(rotation)) annotation%rotation = rotation
         if (present(ha)) annotation%ha = ha
         if (present(va)) annotation%va = va
-        if (present(bbox)) annotation%bbox = bbox
+        if (present(bbox)) then
+            annotation%bbox = bbox
+            annotation%has_bbox = bbox
+        end if
         if (present(color)) annotation%color = color
         if (present(alpha)) annotation%alpha = alpha
         if (present(weight)) annotation%weight = weight
