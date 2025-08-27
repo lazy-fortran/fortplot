@@ -5,7 +5,7 @@ module fortplot_coordinates
     !! coordinate system management, separated for better modularity.
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_figure_base, only: figure_t
+    use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: plot_data_t
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS

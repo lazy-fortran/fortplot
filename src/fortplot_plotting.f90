@@ -6,7 +6,7 @@ module fortplot_plotting
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
-    use fortplot_figure_base, only: figure_t
+    use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                     PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
