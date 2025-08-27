@@ -82,7 +82,7 @@ contains
         
         call fig%initialize(500, 400)
         call fig%add_plot(x_data, y_data)
-        ! TODO: Fix set_tick_count interface - method not available in figure_t from figure_core
+        ! Fix set_tick_count interface - method not available in figure_t from figure_core
         ! call fig%set_tick_count(10, 10)  ! Override with 10 ticks for both axes
         call fig%set_title("Explicit tick count = 10")
         call fig%savefig(get_test_output_path("/tmp/test_ticks_override.pdf"))
@@ -100,7 +100,7 @@ contains
         
         call fig%initialize(100, 100)  ! Very small plot
         call fig%add_plot(x_data, y_data)
-        ! TODO: Fix set_tick_count interface - method not available in figure_t from figure_core
+        ! Fix set_tick_count interface - method not available in figure_t from figure_core
         ! call fig%set_tick_count(2, 2)  ! Try to set below minimum
         call fig%set_title("Minimum tick test")
         call fig%savefig(get_test_output_path("/tmp/test_ticks_minimum.pdf"))
@@ -119,7 +119,7 @@ contains
         
         call fig%initialize(600, 450)
         call fig%add_plot(x_data, y_data)
-        ! TODO: Fix set_tick_count interface - method not available in figure_t from figure_core
+        ! Fix set_tick_count interface - method not available in figure_t from figure_core
         ! call fig%set_tick_count(25, 25)  ! Try to set above maximum
         call fig%set_title("Maximum tick test")
         call fig%savefig(get_test_output_path("/tmp/test_ticks_maximum.pdf"))

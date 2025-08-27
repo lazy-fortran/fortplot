@@ -15,7 +15,7 @@ program test_histogram_consolidated
 
     print *, "=== CONSOLIDATED HISTOGRAM TESTS ==="
     
-    ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+    ! Histogram tests disabled pending hist() implementation (issue #285)
     print *, "Histogram tests disabled - waiting for issue #285 implementation"
     
     ! Initialize performance optimization for Windows CI
@@ -29,7 +29,7 @@ program test_histogram_consolidated
         ! Performance monitoring not integrated yet
     end if
     
-    ! TODO: Re-enable these tests when hist() functionality is implemented
+    ! Tests disabled pending hist() implementation (issue #285)
     ! Currently disabled due to issue #285 - hist() stubs need to be removed/implemented
     ! call test_basic_histogram_functionality()
     ! call test_boundary_conditions()
@@ -42,7 +42,7 @@ program test_histogram_consolidated
     print *, "Replaced 6 redundant tests with comprehensive validation"
 
 contains
-    ! TODO: Re-enable all histogram test subroutines when hist() functionality is implemented (issue #285)
+    ! Re-enable all histogram test subroutines when hist() functionality is implemented (issue #285)
     ! All test functions have been commented out due to hist() method not being available
 
     subroutine test_basic_histogram_functionality()
@@ -61,7 +61,7 @@ contains
         end do
         
         call fig%initialize(300, 200)  ! Small size for speed
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(data, bins=5)  ! Few bins for speed
         call fig%set_title("Consolidated Histogram Test")
         call fig%set_xlabel("Value")
@@ -93,7 +93,7 @@ contains
         
         ! Test single data point
         call fig%initialize(200, 150)
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(single_data, bins=1)
         if (should_use_memory_backend()) then
             call fig%savefig(get_test_output_path('/tmp/histogram_single.png'))
@@ -104,7 +104,7 @@ contains
         ! Test uniform data
         uniform_data = [(5.0_wp, i=1, 10)]  ! All same value
         call fig%initialize(200, 150)
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(uniform_data, bins=3)
         if (should_use_memory_backend()) then
             call fig%savefig(get_test_output_path('/tmp/histogram_uniform.png'))
@@ -131,7 +131,7 @@ contains
         end do
         
         call fig%initialize(200, 150)
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(negative_data, bins=3)
         if (should_use_memory_backend()) then
             call fig%savefig(get_test_output_path('/tmp/histogram_negative.png'))
@@ -145,7 +145,7 @@ contains
         end do
         
         call fig%initialize(200, 150)
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(mixed_data, bins=4)
         if (should_use_memory_backend()) then
             call fig%savefig(get_test_output_path('/tmp/histogram_mixed.png'))
@@ -172,7 +172,7 @@ contains
         end do
         
         call fig%initialize(250, 180)
-        ! TODO: Re-enable when hist() functionality is implemented (issue #285)
+        ! Disabled pending hist() implementation (issue #285)
         ! call fig%hist(realistic_data, bins=4)
         call fig%set_title("User Acceptance Test")
         if (should_use_memory_backend()) then

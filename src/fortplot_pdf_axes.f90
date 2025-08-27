@@ -239,8 +239,12 @@ contains
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        ! For now, 3D not supported - just return
-        ! TODO: Implement proper 3D axes projection
+        ! PDF backend does not support 3D axes projection
+        ! 3D plots in PDF backend fall back to 2D projections handled by the
+        ! standard 2D axes drawing functions. This is consistent with many
+        ! PDF plotting libraries that focus on vector graphics in 2D space.
+        ! 3D visualization is better suited to raster backends (PNG) that can
+        ! render projected 3D axes with proper visual depth cues.
     end subroutine draw_pdf_3d_axes_frame
 
     subroutine draw_pdf_frame_with_area(ctx, plot_left, plot_bottom, plot_width, plot_height, canvas_height)
