@@ -194,48 +194,78 @@ contains
     
     subroutine apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
                                          y_min_data, y_max_data)
-        !! Apply margins for single point case (zero range)
+        !! Apply margins for single point case and machine precision ranges (Issue #435)
+        !! 
+        !! Enhanced to handle machine precision coordinate boundaries where ranges
+        !! are extremely small but not exactly zero, preventing coordinate
+        !! transformation failures during normalization.
         logical, intent(in) :: has_valid_data
         real(wp), intent(inout) :: x_min_data, x_max_data, y_min_data, y_max_data
         
         real(wp) :: range_x, range_y, margin_factor
+        real(wp) :: machine_precision_threshold
         
         ! Default margin for single points and empty data (10% of unit range)
         margin_factor = 0.1_wp
         
-        ! CRITICAL FIX: Handle single point case (zero range)
+        ! Machine precision threshold: 100x epsilon for robust detection
+        ! This catches ranges that are effectively at machine precision limits
+        machine_precision_threshold = 100.0_wp * epsilon(1.0_wp)
+        
+        ! CRITICAL FIX: Handle both zero range and machine precision range cases
         if (has_valid_data) then
             range_x = x_max_data - x_min_data
             range_y = y_max_data - y_min_data
             
-            ! If range is zero or very small (single point case), add margins
-            if (abs(range_x) < 1.0e-10_wp) then
-                if (abs(x_min_data) < 1.0e-10_wp) then
-                    ! Point at origin, use symmetric range
-                    x_min_data = -margin_factor
-                    x_max_data = margin_factor
-                else
-                    ! Point not at origin, use percentage-based margin
-                    range_x = abs(x_min_data) * margin_factor
-                    x_min_data = x_min_data - range_x
-                    x_max_data = x_max_data + range_x
-                end if
+            ! Enhanced range detection: catch both zero and machine precision ranges
+            if (abs(range_x) < 1.0e-10_wp .or. &
+                abs(range_x) < machine_precision_threshold) then
+                
+                call expand_precision_range(x_min_data, x_max_data, range_x, &
+                                          margin_factor, machine_precision_threshold)
             end if
             
-            if (abs(range_y) < 1.0e-10_wp) then
-                if (abs(y_min_data) < 1.0e-10_wp) then
-                    ! Point at origin, use symmetric range
-                    y_min_data = -margin_factor
-                    y_max_data = margin_factor
-                else
-                    ! Point not at origin, use percentage-based margin
-                    range_y = abs(y_min_data) * margin_factor
-                    y_min_data = y_min_data - range_y
-                    y_max_data = y_max_data + range_y
-                end if
+            if (abs(range_y) < 1.0e-10_wp .or. &
+                abs(range_y) < machine_precision_threshold) then
+                
+                call expand_precision_range(y_min_data, y_max_data, range_y, &
+                                          margin_factor, machine_precision_threshold)
             end if
         end if
     end subroutine apply_single_point_margins
+    
+    subroutine expand_precision_range(coord_min, coord_max, current_range, &
+                                    margin_factor, precision_threshold)
+        !! Expand coordinate range for machine precision boundaries (Issue #435)
+        !! 
+        !! Intelligently expands coordinate ranges that are at machine precision
+        !! scale to ensure proper coordinate transformation and visualization
+        real(wp), intent(inout) :: coord_min, coord_max
+        real(wp), intent(in) :: current_range, margin_factor, precision_threshold
+        
+        real(wp) :: range_center, expanded_range, absolute_scale
+        real(wp) :: minimum_visible_range
+        
+        ! Calculate range properties
+        range_center = (coord_min + coord_max) * 0.5_wp
+        absolute_scale = max(abs(coord_min), abs(coord_max))
+        
+        ! Determine minimum visible range based on coordinate scale
+        if (absolute_scale < precision_threshold) then
+            ! Near-zero coordinates: use absolute minimum range
+            minimum_visible_range = margin_factor
+        else
+            ! Non-zero coordinates: use relative minimum range
+            minimum_visible_range = absolute_scale * margin_factor
+        end if
+        
+        ! Ensure the range is at least the minimum visible range
+        if (abs(current_range) < minimum_visible_range) then
+            expanded_range = minimum_visible_range
+            coord_min = range_center - expanded_range * 0.5_wp
+            coord_max = range_center + expanded_range * 0.5_wp
+        end if
+    end subroutine expand_precision_range
     
     subroutine finalize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
                                    x_min_data, x_max_data, y_min_data, y_max_data, &
