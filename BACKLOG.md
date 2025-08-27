@@ -7,15 +7,15 @@
 **HISTORIC COMPETENCY FAILURE**: Team achieved 0/3 deliverables with systematic false reporting. Reducing to SINGLE ISSUE maximum until basic competency demonstrated.
 
 ### SINGLE CRITICAL DEFECT REPAIR (Maximum Team Capacity)
-- [ ] #519: CRITICAL: BACKLOG.md contains LIES about PR implementation status
-  **BRUTAL REQUIREMENT**: Fix the systematic false reporting that undermines all planning
-  **SUCCESS CRITERIA**: BACKLOG.md accurately reflects actual work status without lies
-  **IMPLEMENTATION GUIDANCE**: Remove false completion claims, restore accurate status
-  **COMPETENCY TEST**: Can team handle basic documentation accuracy?
+- [x] #519: CRITICAL: BACKLOG.md contains LIES about PR implementation status → MOVED TO DOING
 
 ## DOING (Current Work)
 
-**EMPTY - NO ACTIVE WORK UNTIL SPRINT ISSUE SELECTED**
+### ACTIVE - CRISIS RECOVERY COMPETENCY TEST
+- [ ] #519: CRITICAL: BACKLOG.md contains LIES about PR implementation status
+  **STATUS**: In progress - documentation-519 branch
+  **OWNER**: winny (documentation accuracy fix)
+  **PRIORITY**: COMPETENCY TEST
 
 ## PRODUCT_BACKLOG (CATASTROPHIC DEFECT CONSOLIDATION)
 
