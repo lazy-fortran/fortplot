@@ -301,7 +301,9 @@ contains
         integer :: i, j
         
         ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this%canvas, this%text_elements, this%num_text_elements, this%plot_width, this%plot_height)
+        call render_text_elements_to_canvas(this%canvas, this%text_elements, &
+                                            this%num_text_elements, &
+                                            this%plot_width, this%plot_height)
         
         if (allocated(this%title_text)) then
             print '(A)', ''  ! Empty line before title
@@ -336,7 +338,9 @@ contains
         integer :: i, j
         
         ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this%canvas, this%text_elements, this%num_text_elements, this%plot_width, this%plot_height)
+        call render_text_elements_to_canvas(this%canvas, this%text_elements, &
+                                            this%num_text_elements, &
+                                            this%plot_width, this%plot_height)
         
         if (allocated(this%title_text)) then
             write(unit, '(A)') ''  ! Empty line before title
