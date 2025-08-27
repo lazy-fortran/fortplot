@@ -1,6 +1,7 @@
 module fortplot_text_stub
     !! Stub implementation for text and annotation functions
     !! These are placeholders for compatibility until full implementation
+    !! See issue #491 for implementation roadmap
     
     use iso_fortran_env, only: wp => real64
     use fortplot_logging, only: log_warning
@@ -21,7 +22,7 @@ contains
         real(wp), intent(in), optional :: font_size, rotation
         logical, intent(in), optional :: has_bbox
         
-        call log_warning("text: Text annotations not yet implemented")
+        call log_warning("text: Text annotations not yet implemented (see issue #491)")
     end subroutine text
 
     subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
@@ -35,7 +36,7 @@ contains
         real(wp), intent(in), optional :: font_size
         logical, intent(in), optional :: has_bbox
         
-        call log_warning("annotate: Annotations not yet implemented")
+        call log_warning("annotate: Annotations not yet implemented (see issue #491)")
     end subroutine annotate
 
 end module fortplot_text_stub
