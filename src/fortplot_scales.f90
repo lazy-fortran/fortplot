@@ -11,6 +11,13 @@ module fortplot_scales
     private
     public :: apply_scale_transform, apply_inverse_scale_transform
     public :: transform_x_coordinate, transform_y_coordinate
+    public :: clamp_extreme_log_range
+    
+    ! Safe log range limits to prevent precision loss and overflow
+    ! Based on practical plotting limits and numerical stability
+    real(wp), parameter :: MAX_LOG_RANGE = 50.0_wp      ! 50 orders of magnitude max
+    real(wp), parameter :: MIN_LOG_VALUE = -25.0_wp     ! 10^-25 minimum
+    real(wp), parameter :: MAX_LOG_VALUE = 25.0_wp      ! 10^25 maximum
     
 contains
 
@@ -115,15 +122,21 @@ contains
     end function transform_y_coordinate
 
     function apply_log_transform(value) result(transformed)
-        !! Apply logarithmic transformation
+        !! Apply logarithmic transformation with extreme value protection
+        !! 
+        !! Clamps extreme values to prevent precision loss and overflow.
+        !! This ensures scientifically meaningful plots while handling edge cases.
         real(wp), intent(in) :: value
         real(wp) :: transformed
+        real(wp) :: safe_value, log_val
         
         if (value > 0.0_wp) then
-            transformed = log10(value)
+            log_val = log10(value)
+            ! Clamp to safe logarithmic range
+            transformed = max(MIN_LOG_VALUE, min(MAX_LOG_VALUE, log_val))
         else
             ! Handle non-positive values gracefully
-            transformed = log10(tiny(1.0_wp))
+            transformed = MIN_LOG_VALUE
         end if
     end function apply_log_transform
 
@@ -169,5 +182,53 @@ contains
             original = -threshold * (10.0_wp**(-value - threshold))
         end if
     end function apply_inverse_symlog_transform
+
+    subroutine clamp_extreme_log_range(data_min, data_max, clamped_min, clamped_max)
+        !! Clamp extreme logarithmic ranges to ensure usable plots
+        !! 
+        !! This function prevents precision loss and overflow when dealing with 
+        !! extreme ranges like huge() to tiny() values. It preserves scientific
+        !! correctness while ensuring practical visualization.
+        !! 
+        !! @param data_min: Original minimum data value 
+        !! @param data_max: Original maximum data value
+        !! @param clamped_min: Output clamped minimum value
+        !! @param clamped_max: Output clamped maximum value
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(out) :: clamped_min, clamped_max
+        
+        real(wp) :: log_min, log_max, log_range, log_center
+        
+        ! Handle non-positive values
+        if (data_min <= 0.0_wp .and. data_max <= 0.0_wp) then
+            clamped_min = 10.0_wp**MIN_LOG_VALUE
+            clamped_max = 10.0_wp**(MIN_LOG_VALUE + 1.0_wp)
+            return
+        end if
+        
+        ! Ensure positive values for log transformation
+        clamped_min = max(data_min, 10.0_wp**MIN_LOG_VALUE)
+        clamped_max = max(data_max, clamped_min * 2.0_wp)
+        
+        ! Calculate log range
+        log_min = log10(clamped_min)
+        log_max = log10(clamped_max)
+        log_range = log_max - log_min
+        
+        ! If range exceeds maximum, clamp symmetrically around geometric mean
+        if (log_range > MAX_LOG_RANGE) then
+            log_center = (log_min + log_max) * 0.5_wp
+            log_min = log_center - MAX_LOG_RANGE * 0.5_wp
+            log_max = log_center + MAX_LOG_RANGE * 0.5_wp
+            
+            ! Clamp to absolute bounds
+            log_min = max(MIN_LOG_VALUE, log_min)
+            log_max = min(MAX_LOG_VALUE, log_max)
+            
+            ! Convert back to linear space
+            clamped_min = 10.0_wp**log_min
+            clamped_max = 10.0_wp**log_max
+        end if
+    end subroutine clamp_extreme_log_range
 
 end module fortplot_scales

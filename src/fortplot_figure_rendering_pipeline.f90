@@ -6,7 +6,7 @@ module fortplot_figure_rendering_pipeline
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_scales, only: apply_scale_transform
+    use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_markers
@@ -242,7 +242,8 @@ contains
                                    x_min_transformed, x_max_transformed, &
                                    y_min_transformed, y_max_transformed, &
                                    xscale, yscale, symlog_threshold)
-        !! Apply user limits and scale transformations
+        !! Apply user limits and scale transformations with extreme value protection
+        !! Fixed Issue #433: Added range clamping for extreme numeric values
         logical, intent(in) :: xlim_set, ylim_set
         real(wp), intent(inout) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_min_data, x_max_data, y_min_data, y_max_data
@@ -250,6 +251,8 @@ contains
         real(wp), intent(out) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
+        
+        real(wp) :: x_clamped_min, x_clamped_max, y_clamped_min, y_clamped_max
         
         ! Apply user-specified limits or use calculated data ranges
         if (.not. xlim_set) then
@@ -260,6 +263,31 @@ contains
         if (.not. ylim_set) then
             y_min = y_min_data
             y_max = y_max_data
+        end if
+        
+        ! Apply extreme value clamping for log scales to prevent precision loss
+        if (trim(xscale) == 'log') then
+            call clamp_extreme_log_range(x_min, x_max, x_clamped_min, x_clamped_max)
+            if (abs(x_clamped_min - x_min) > 1.0e-10_wp .or. &
+                abs(x_clamped_max - x_max) > 1.0e-10_wp) then
+                print *, "Info: X-axis range clamped for log scale visualization"
+                print *, "      Original:", x_min, "to", x_max
+                print *, "      Clamped: ", x_clamped_min, "to", x_clamped_max
+            end if
+            x_min = x_clamped_min
+            x_max = x_clamped_max
+        end if
+        
+        if (trim(yscale) == 'log') then
+            call clamp_extreme_log_range(y_min, y_max, y_clamped_min, y_clamped_max)
+            if (abs(y_clamped_min - y_min) > 1.0e-10_wp .or. &
+                abs(y_clamped_max - y_max) > 1.0e-10_wp) then
+                print *, "Info: Y-axis range clamped for log scale visualization"
+                print *, "      Original:", y_min, "to", y_max
+                print *, "      Clamped: ", y_clamped_min, "to", y_clamped_max
+            end if
+            y_min = y_clamped_min
+            y_max = y_clamped_max
         end if
         
         ! Apply scale transformations
