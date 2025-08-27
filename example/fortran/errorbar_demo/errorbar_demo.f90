@@ -4,12 +4,13 @@ program errorbar_demo
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_errors, only: SUCCESS
     implicit none
     
     type(figure_t) :: fig
     real(wp) :: x(10), y(10), yerr(10), xerr(10)
     real(wp) :: yerr_lower(5), yerr_upper(5)
-    integer :: i
+    integer :: i, save_status
     
     ! Create test data with calculated errors
     do i = 1, 10
@@ -32,8 +33,12 @@ program errorbar_demo
     call title('Basic Symmetric Y Error Bars')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_basic_y.png')
-    write(*,*) 'Created errorbar_basic_y.png'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_y.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_basic_y.png'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_basic_y.png'
+    end if
     
     ! Symmetric X error bars
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -42,8 +47,12 @@ program errorbar_demo
     call title('Symmetric X Error Bars')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_basic_x.png')
-    write(*,*) 'Created errorbar_basic_x.png'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_basic_x.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_basic_x.png'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_basic_x.png'
+    end if
     
     ! Both X and Y error bars
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -52,8 +61,12 @@ program errorbar_demo
     call title('Combined X and Y Error Bars')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_combined.png')
-    write(*,*) 'Created errorbar_combined.png'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_combined.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_combined.png'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_combined.png'
+    end if
     
     ! Symmetric Y error bars (average of asymmetric errors)
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -63,8 +76,12 @@ program errorbar_demo
     call title('Symmetric Y Error Bars (from asymmetric)')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_asymmetric.png')
-    write(*,*) 'Created errorbar_asymmetric.png'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_asymmetric.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_asymmetric.png'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_asymmetric.png'
+    end if
     
     ! Error bars with markers and customization
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -75,8 +92,12 @@ program errorbar_demo
     call title('Customized Error Bars with Markers')
     call xlabel('X values')
     call ylabel('Y values')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_custom.png')
-    write(*,*) 'Created errorbar_custom.png'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_custom.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_custom.png'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_custom.png'
+    end if
     
     ! Scientific data example
     call figure(figsize=[8.0_wp, 6.0_wp])
@@ -93,9 +114,13 @@ program errorbar_demo
     call title('Scientific Data with Error Bars')
     call xlabel('Time (s)')
     call ylabel('Signal amplitude')
-    call savefig('output/example/fortran/errorbar_demo/errorbar_scientific.png')
-    write(*,*) 'Created errorbar_scientific.png'
-    
-    write(*,*) 'Error bar demonstration completed!'
+    call savefig_with_status('output/example/fortran/errorbar_demo/errorbar_scientific.png', save_status)
+    if (save_status == SUCCESS) then
+        write(*,*) 'Created errorbar_scientific.png'
+        write(*,*) 'Error bar demonstration completed!'
+    else
+        write(*,*) 'ERROR: Failed to create errorbar_scientific.png'
+        write(*,*) 'Error bar demonstration completed with errors!'
+    end if
     
 end program errorbar_demo
