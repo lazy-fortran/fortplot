@@ -46,6 +46,8 @@
 - [ ] #452: feat: implement color parameter processing in boxplot method
 - [ ] #453: fix: improve quartile calculation accuracy in boxplot
 - [ ] #454: feat: implement remaining 11 disabled test functionalities
+- [ ] #456: architecture: duplicate figure_t type definitions in codebase
+- [ ] #457: enhancement: complete matplotlib stub implementations
 
 ### EPIC: Documentation Quality Assurance
 - [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
