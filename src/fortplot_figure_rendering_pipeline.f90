@@ -24,7 +24,8 @@ contains
                                           x_min_transformed, x_max_transformed, &
                                           y_min_transformed, y_max_transformed, &
                                           xscale, yscale, symlog_threshold)
-        !! Calculate overall data ranges for the figure
+        !! Calculate overall data ranges for the figure with robust edge case handling
+        !! Fixed Issue #432: Handles zero-size arrays and single points properly
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         logical, intent(in) :: xlim_set, ylim_set
@@ -35,8 +36,12 @@ contains
         real(wp), intent(in) :: symlog_threshold
         
         real(wp) :: x_min_data, x_max_data, y_min_data, y_max_data
+        real(wp) :: range_x, range_y, margin_factor
         integer :: i
-        logical :: first_plot
+        logical :: first_plot, has_valid_data
+        
+        ! Default margin for single points and empty data (10% of unit range)
+        margin_factor = 0.1_wp
         
         if (xlim_set .and. ylim_set) then
             x_min_transformed = apply_scale_transform(x_min, xscale, symlog_threshold)
@@ -47,61 +52,112 @@ contains
         end if
         
         first_plot = .true.
+        has_valid_data = .false.
+        
+        ! Initialize with safe default ranges for empty data case
+        x_min_data = 0.0_wp
+        x_max_data = 1.0_wp
+        y_min_data = 0.0_wp
+        y_max_data = 1.0_wp
         
         do i = 1, plot_count
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
                 if (allocated(plots(i)%x) .and. allocated(plots(i)%y)) then
-                    if (first_plot) then
-                        x_min_data = minval(plots(i)%x)
-                        x_max_data = maxval(plots(i)%x)
-                        y_min_data = minval(plots(i)%y)
-                        y_max_data = maxval(plots(i)%y)
-                        first_plot = .false.
-                    else
-                        x_min_data = min(x_min_data, minval(plots(i)%x))
-                        x_max_data = max(x_max_data, maxval(plots(i)%x))
-                        y_min_data = min(y_min_data, minval(plots(i)%y))
-                        y_max_data = max(y_max_data, maxval(plots(i)%y))
+                    ! CRITICAL FIX: Check for non-empty arrays before minval/maxval
+                    if (size(plots(i)%x) > 0 .and. size(plots(i)%y) > 0) then
+                        if (first_plot) then
+                            x_min_data = minval(plots(i)%x)
+                            x_max_data = maxval(plots(i)%x)
+                            y_min_data = minval(plots(i)%y)
+                            y_max_data = maxval(plots(i)%y)
+                            first_plot = .false.
+                        else
+                            x_min_data = min(x_min_data, minval(plots(i)%x))
+                            x_max_data = max(x_max_data, maxval(plots(i)%x))
+                            y_min_data = min(y_min_data, minval(plots(i)%y))
+                            y_max_data = max(y_max_data, maxval(plots(i)%y))
+                        end if
+                        has_valid_data = .true.
                     end if
                 end if
                 
             case (PLOT_TYPE_CONTOUR)
                 if (allocated(plots(i)%x_grid) .and. allocated(plots(i)%y_grid)) then
-                    if (first_plot) then
-                        x_min_data = minval(plots(i)%x_grid)
-                        x_max_data = maxval(plots(i)%x_grid)
-                        y_min_data = minval(plots(i)%y_grid)
-                        y_max_data = maxval(plots(i)%y_grid)
-                        first_plot = .false.
-                    else
-                        x_min_data = min(x_min_data, minval(plots(i)%x_grid))
-                        x_max_data = max(x_max_data, maxval(plots(i)%x_grid))
-                        y_min_data = min(y_min_data, minval(plots(i)%y_grid))
-                        y_max_data = max(y_max_data, maxval(plots(i)%y_grid))
+                    if (size(plots(i)%x_grid) > 0 .and. size(plots(i)%y_grid) > 0) then
+                        if (first_plot) then
+                            x_min_data = minval(plots(i)%x_grid)
+                            x_max_data = maxval(plots(i)%x_grid)
+                            y_min_data = minval(plots(i)%y_grid)
+                            y_max_data = maxval(plots(i)%y_grid)
+                            first_plot = .false.
+                        else
+                            x_min_data = min(x_min_data, minval(plots(i)%x_grid))
+                            x_max_data = max(x_max_data, maxval(plots(i)%x_grid))
+                            y_min_data = min(y_min_data, minval(plots(i)%y_grid))
+                            y_max_data = max(y_max_data, maxval(plots(i)%y_grid))
+                        end if
+                        has_valid_data = .true.
                     end if
                 end if
                 
             case (PLOT_TYPE_PCOLORMESH)
                 if (allocated(plots(i)%pcolormesh_data%x_vertices) .and. &
                     allocated(plots(i)%pcolormesh_data%y_vertices)) then
-                    if (first_plot) then
-                        x_min_data = minval(plots(i)%pcolormesh_data%x_vertices)
-                        x_max_data = maxval(plots(i)%pcolormesh_data%x_vertices)
-                        y_min_data = minval(plots(i)%pcolormesh_data%y_vertices)
-                        y_max_data = maxval(plots(i)%pcolormesh_data%y_vertices)
-                        first_plot = .false.
-                    else
-                        x_min_data = min(x_min_data, minval(plots(i)%pcolormesh_data%x_vertices))
-                        x_max_data = max(x_max_data, maxval(plots(i)%pcolormesh_data%x_vertices))
-                        y_min_data = min(y_min_data, minval(plots(i)%pcolormesh_data%y_vertices))
-                        y_max_data = max(y_max_data, maxval(plots(i)%pcolormesh_data%y_vertices))
+                    if (size(plots(i)%pcolormesh_data%x_vertices) > 0 .and. &
+                        size(plots(i)%pcolormesh_data%y_vertices) > 0) then
+                        if (first_plot) then
+                            x_min_data = minval(plots(i)%pcolormesh_data%x_vertices)
+                            x_max_data = maxval(plots(i)%pcolormesh_data%x_vertices)
+                            y_min_data = minval(plots(i)%pcolormesh_data%y_vertices)
+                            y_max_data = maxval(plots(i)%pcolormesh_data%y_vertices)
+                            first_plot = .false.
+                        else
+                            x_min_data = min(x_min_data, minval(plots(i)%pcolormesh_data%x_vertices))
+                            x_max_data = max(x_max_data, maxval(plots(i)%pcolormesh_data%x_vertices))
+                            y_min_data = min(y_min_data, minval(plots(i)%pcolormesh_data%y_vertices))
+                            y_max_data = max(y_max_data, maxval(plots(i)%pcolormesh_data%y_vertices))
+                        end if
+                        has_valid_data = .true.
                     end if
                 end if
             end select
         end do
         
-        ! Apply user-specified limits or use data ranges
+        ! CRITICAL FIX: Handle single point case (zero range)
+        if (has_valid_data) then
+            range_x = x_max_data - x_min_data
+            range_y = y_max_data - y_min_data
+            
+            ! If range is zero or very small (single point case), add margins
+            if (abs(range_x) < 1.0e-10_wp) then
+                if (abs(x_min_data) < 1.0e-10_wp) then
+                    ! Point at origin, use symmetric range
+                    x_min_data = -margin_factor
+                    x_max_data = margin_factor
+                else
+                    ! Point not at origin, use percentage-based margin
+                    range_x = abs(x_min_data) * margin_factor
+                    x_min_data = x_min_data - range_x
+                    x_max_data = x_max_data + range_x
+                end if
+            end if
+            
+            if (abs(range_y) < 1.0e-10_wp) then
+                if (abs(y_min_data) < 1.0e-10_wp) then
+                    ! Point at origin, use symmetric range
+                    y_min_data = -margin_factor
+                    y_max_data = margin_factor
+                else
+                    ! Point not at origin, use percentage-based margin
+                    range_y = abs(y_min_data) * margin_factor
+                    y_min_data = y_min_data - range_y
+                    y_max_data = y_max_data + range_y
+                end if
+            end if
+        end if
+        
+        ! Apply user-specified limits or use calculated data ranges
         if (.not. xlim_set) then
             x_min = x_min_data
             x_max = x_max_data
