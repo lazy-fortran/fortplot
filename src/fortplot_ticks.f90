@@ -9,6 +9,7 @@ module fortplot_ticks
     !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
     implicit none
     
     intrinsic :: floor, log10
@@ -63,7 +64,7 @@ contains
         
         if (abs_value < 1.0e-10_wp) then
             formatted = '0'
-        else if (range >= 100.0_wp .or. abs_value >= 1000.0_wp) then
+        else if (range >= 100.0_wp .or. abs_value >= SCIENTIFIC_THRESHOLD_HIGH) then
             ! Use integer format for large ranges
             write(formatted, '(I0)') nint(value)
         else if (range >= 10.0_wp .or. abs_value >= 10.0_wp) then
@@ -590,7 +591,7 @@ contains
         end if
         
         ! Try normal formatting first
-        if (abs_value >= 1000.0_wp .or. abs_value < 0.001_wp) then
+        if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < 0.001_wp) then
             ! Large or very small numbers - use exponential notation
             write(formatted, '(ES8.1)') value
         else if (abs_value >= 100.0_wp) then
@@ -668,7 +669,7 @@ contains
             end if
         else
             ! For non-powers of 10, use regular formatting
-            if (abs(value) >= 1000.0_wp .or. abs(value) < 0.01_wp) then
+            if (abs(value) >= SCIENTIFIC_THRESHOLD_HIGH .or. abs(value) < 0.01_wp) then
                 write(formatted, '(ES8.1)') value
             else
                 formatted = format_tick_value(value, abs(value))

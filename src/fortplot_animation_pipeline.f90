@@ -1,6 +1,7 @@
 module fortplot_animation_pipeline
     use iso_fortran_env, only: real64, wp => real64
     use fortplot_animation_constants
+    use fortplot_constants, only: MILLISECONDS_PER_SECOND
     use fortplot_animation_core, only: animation_t
     use fortplot_animation_rendering, only: render_frame_to_png
     use fortplot_animation_validation, only: validate_generated_video_enhanced
@@ -208,7 +209,7 @@ contains
         integer, intent(in) :: delay_ms
         real(wp) :: delay_seconds
         
-        delay_seconds = real(delay_ms, wp) / 1000.0_wp
+        delay_seconds = real(delay_ms, wp) / MILLISECONDS_PER_SECOND
         call cpu_time_delay(delay_seconds)
     end subroutine exponential_backoff_delay
 
