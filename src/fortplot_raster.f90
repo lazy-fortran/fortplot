@@ -419,8 +419,45 @@ contains
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
         
-        ! Simple stub implementation to avoid compiler crash
-        ! TODO: Implement proper arrow rendering
+        real(wp) :: arrow_length, arrow_width, norm_dx, norm_dy
+        real(wp) :: perp_x, perp_y  ! Perpendicular vector for arrow width
+        real(wp) :: x1, y1, x2, y2, x3, y3  ! Triangle vertices
+        real(wp) :: magnitude
+        integer(1) :: r, g, b
+        
+        ! Normalize direction vector
+        magnitude = sqrt(dx*dx + dy*dy)
+        if (magnitude < 1e-10_wp) return  ! Avoid division by zero
+        
+        norm_dx = dx / magnitude
+        norm_dy = dy / magnitude
+        
+        ! Calculate arrow dimensions based on size
+        arrow_length = size * 8.0_wp  ! Scale factor for reasonable arrow size
+        arrow_width = arrow_length * 0.5_wp
+        
+        ! Calculate perpendicular vector for arrow width
+        perp_x = -norm_dy
+        perp_y = norm_dx
+        
+        ! Calculate triangle vertices for arrow head
+        ! Tip of arrow at (x, y)
+        x1 = x
+        y1 = y
+        
+        ! Base vertices of arrow head
+        x2 = x - arrow_length * norm_dx + arrow_width * perp_x
+        y2 = y - arrow_length * norm_dy + arrow_width * perp_y
+        
+        x3 = x - arrow_length * norm_dx - arrow_width * perp_x
+        y3 = y - arrow_length * norm_dy - arrow_width * perp_y
+        
+        ! Get current color for filling
+        call this%raster%get_color_bytes(r, g, b)
+        
+        ! Draw filled triangle arrow head
+        call fill_triangle(this%raster%image_data, this%width, this%height, &
+                          x1, y1, x2, y2, x3, y3, r, g, b)
         
         ! Mark that arrows have been rendered
         this%has_rendered_arrows = .true.

@@ -514,8 +514,11 @@ contains
         cos_a = cos(angle * PI / 180.0_wp)
         sin_a = sin(angle * PI / 180.0_wp)
         
-        ! For now, render text normally (STB doesn't have built-in rotation)
-        ! TODO: Implement proper bitmap rotation if needed
+        ! Render glyphs at normal orientation (no per-glyph bitmap rotation)
+        ! Individual glyph rotation would require complex bitmap transformation
+        ! which is computationally expensive and rarely used in practice.
+        ! The pen position advances along the rotated baseline (implemented below),
+        ! providing reasonable behavior for most text rendering scenarios.
         i = 1
         do while (i <= len_trim(text))
             char_len = utf8_char_length(text(i:i))

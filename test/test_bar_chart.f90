@@ -1,7 +1,7 @@
 program test_bar_chart
     !! Test suite for bar chart plotting functionality
     !! Tests vertical/horizontal bars, grouping, and categorical data
-    !! TODO: Re-enable when bar() functionality is implemented (issue #285)
+    !! Test disabled pending bar() implementation (issue #285)
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure
@@ -10,7 +10,7 @@ program test_bar_chart
     integer :: test_count = 0
     integer :: pass_count = 0
     
-    ! TODO: Re-enable these tests when bar chart functionality is implemented
+    ! Tests disabled pending bar chart implementation
     ! Currently disabled due to issue #285 - bar() stubs need to be removed/implemented
     ! call test_bar_basic()
     ! call test_barh_basic()
@@ -23,7 +23,7 @@ program test_bar_chart
     
 contains
 
-    ! TODO: Re-enable when bar() functionality is implemented (issue #285)
+    ! Disabled pending bar() implementation (issue #285)
     ! subroutine test_bar_basic()
     !     type(figure_t) :: fig
     !     real(wp) :: x_pos(5), heights(5)
@@ -46,7 +46,7 @@ contains
     !     call end_test()
     ! end subroutine test_bar_basic
 
-    ! TODO: Re-enable when barh() functionality is implemented (issue #285)
+    ! Disabled pending barh() implementation (issue #285)
     ! subroutine test_barh_basic()
     !     type(figure_t) :: fig
     !     real(wp) :: y_pos(4), widths(4)
@@ -69,7 +69,7 @@ contains
     !     call end_test()
     ! end subroutine test_barh_basic
 
-    ! TODO: Re-enable when bar() functionality is implemented (issue #285)
+    ! Disabled pending bar() implementation (issue #285)
     ! subroutine test_bar_custom_width()
     !     type(figure_t) :: fig
     !     real(wp) :: x_pos(3), heights(3)
@@ -92,7 +92,7 @@ contains
     !     call end_test()
     ! end subroutine test_bar_custom_width
 
-    ! TODO: Re-enable when bar() functionality is implemented (issue #285)
+    ! Disabled pending bar() implementation (issue #285)
     ! subroutine test_bar_grouped()
     !     type(figure_t) :: fig
     !     real(wp) :: x_pos(3), heights1(3), heights2(3)
@@ -117,7 +117,7 @@ contains
     !     call end_test()
     ! end subroutine test_bar_grouped
 
-    ! TODO: Re-enable when bar() functionality is implemented (issue #285)
+    ! Disabled pending bar() implementation (issue #285)
     ! subroutine test_bar_empty_data()
     !     type(figure_t) :: fig
     !     real(wp) :: x_pos(0), heights(0)

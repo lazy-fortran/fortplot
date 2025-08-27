@@ -181,7 +181,7 @@ contains
         call ctx%line(x1, y1, x2, y2)
         
         ! Draw ticks and labels on the three axes
-        ! TODO: Implement proper tick drawing
+        call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_to_raster
 
     subroutine transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, z_min, z_max)
