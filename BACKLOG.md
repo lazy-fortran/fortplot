@@ -51,7 +51,6 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #432: Critical: Zero-size arrays and single points produce blank/invisible plots [EPIC: Edge Case and Stability Foundation]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
