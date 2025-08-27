@@ -11,6 +11,7 @@ module fortplot_figure_plots
     use fortplot_context
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_plot_management
+    use fortplot_figure_initialization, only: figure_state_t
     implicit none
 
     private

@@ -18,7 +18,7 @@ module fortplot_figure_compatibility
     private
     public :: get_figure_width_compat, get_figure_height_compat
     public :: get_figure_rendered_compat, set_figure_rendered_compat
-    public :: get_figure_plot_count_compat, get_figure_plots_compat
+    public :: get_figure_plot_count_compat
     public :: setup_png_backend_for_animation_compat
     public :: extract_rgb_data_for_animation_compat
     public :: extract_png_data_for_animation_compat

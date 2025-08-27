@@ -41,7 +41,6 @@ module fortplot_figure_core
     use fortplot_figure_accessors
     use fortplot_figure_compatibility
     use fortplot_figure_plots
-    use fortplot_figure_io_operations
     use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
     implicit none
 
@@ -264,7 +263,15 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        call figure_savefig(self%state, filename, blocking, self%render_figure)
+        integer :: status
+        
+        ! Delegate to version with status reporting
+        call self%savefig_with_status(filename, status, blocking)
+        
+        ! Log error if save failed (maintains existing behavior)
+        if (status /= SUCCESS) then
+            call log_error("Failed to save figure to '" // trim(filename) // "'")
+        end if
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -274,8 +281,44 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
-        call figure_savefig_with_status(self%state, filename, status, blocking, &
-                                       self%render_figure)
+        character(len=20) :: required_backend, current_backend
+        logical :: block, need_backend_switch
+        
+        ! Initialize success status
+        status = SUCCESS
+        
+        block = .true.
+        if (present(blocking)) block = blocking
+        
+        ! Determine required backend from filename extension
+        required_backend = get_backend_from_filename(filename)
+        
+        ! Determine current backend type
+        select type (backend => self%state%backend)
+        type is (png_context)
+            current_backend = 'png'
+        type is (pdf_context)
+            current_backend = 'pdf'
+        type is (ascii_context)
+            current_backend = 'ascii'
+        class default
+            current_backend = 'unknown'
+        end select
+        
+        ! Check if we need to switch backends
+        need_backend_switch = (trim(required_backend) /= trim(current_backend))
+        
+        if (need_backend_switch) then
+            call setup_figure_backend(self%state, required_backend)
+        end if
+        
+        ! Render if not already rendered
+        if (.not. self%state%rendered) then
+            call self%render_figure()
+        end if
+        
+        ! Save the figure with status checking
+        call save_backend_with_status(self%state%backend, filename, status)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -283,7 +326,18 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        call figure_show(self%state, blocking, self%render_figure)
+        logical :: block
+        
+        block = .true.
+        if (present(blocking)) block = blocking
+        
+        ! Render if not already rendered
+        if (.not. self%state%rendered) then
+            call self%render_figure()
+        end if
+        
+        ! Display the figure
+        call self%state%backend%save("terminal")
     end subroutine show
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
