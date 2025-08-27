@@ -11,7 +11,7 @@ module fortplot_ascii_elements
     use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_ascii_utils, only: get_char_density
+    use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use, intrinsic :: iso_fortran_env, only: wp => real64, real64
     implicit none
     
@@ -22,8 +22,6 @@ module fortplot_ascii_elements
     public :: extract_ascii_rgb_data, get_ascii_png_data, prepare_ascii_3d_data
     public :: render_ascii_ylabel, draw_ascii_axes_and_labels, render_ascii_axes
     
-    ! ASCII plotting constants
-    character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
     
 contains
 

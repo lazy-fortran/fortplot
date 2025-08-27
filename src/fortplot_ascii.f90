@@ -11,7 +11,7 @@ module fortplot_ascii
     use fortplot_logging, only: log_info, log_error
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_constants, only: EPSILON_COMPARE
-    use fortplot_ascii_utils, only: text_element_t, get_char_density, get_blend_char
+    use fortplot_ascii_utils, only: text_element_t, get_char_density, get_blend_char, ASCII_CHARS
     use fortplot_ascii_utils, only: render_text_elements_to_canvas, print_centered_title, write_centered_title
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
     use fortplot_ascii_elements, only: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
@@ -68,8 +68,6 @@ module fortplot_ascii
         procedure :: render_axes => ascii_render_axes
     end type ascii_context
     
-    ! ASCII plotting constants
-    character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
     character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
     character(len=*), parameter :: BOX_CHARS = '-|+++++++'
     

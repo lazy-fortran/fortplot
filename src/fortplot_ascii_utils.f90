@@ -13,7 +13,10 @@ module fortplot_ascii_utils
     public :: get_char_density, get_blend_char
     public :: render_text_elements_to_canvas
     public :: print_centered_title, write_centered_title
-    public :: text_element_t
+    public :: text_element_t, ASCII_CHARS
+    
+    ! ASCII plotting constants
+    character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
     
     type :: text_element_t
         character(len=:), allocatable :: text
