@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Foundation Quality Enforcement Sprint)
 
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
-- [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown
 - [ ] #444: defect: 8 stub implementations with error_stop in fortplot_matplotlib.f90
 - [ ] #447: defect: Memory safety issues identified in 7 test files
 - [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations
@@ -50,6 +49,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
+- [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
