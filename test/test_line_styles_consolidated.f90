@@ -95,10 +95,10 @@ contains
         end do
         
         call figure(figsize=[600.0_wp, 400.0_wp])
-        call plot(x, y1, 'b-', label='solid', ! linewidth=2.0_wp)
-        call plot(x, y2, 'r--', label='dashed', ! linewidth=2.0_wp)
-        call plot(x, y3, 'g:', label='dotted', ! linewidth=2.0_wp)
-        call plot(x, y4, 'm-.', label='dashdot', ! linewidth=2.0_wp)
+        call plot(x, y1, 'b-', label='solid')
+        call plot(x, y2, 'r--', label='dashed')
+        call plot(x, y3, 'g:', label='dotted')
+        call plot(x, y4, 'm-.', label='dashdot')
         
         call title('Plot Function Line Styles')
         call xlabel('X values')
@@ -170,10 +170,10 @@ contains
         
         call figure(figsize=[600.0_wp, 400.0_wp])
         
-        call plot(x_vals, y_vals(1, :), 'k-', ! linewidth=2.0_wp, label='Solid (-)')
-        call plot(x_vals, y_vals(2, :), 'r--', ! linewidth=2.0_wp, label='Dashed (--)')
-        call plot(x_vals, y_vals(3, :), 'g:', ! linewidth=2.0_wp, label='Dotted (:)')
-        call plot(x_vals, y_vals(4, :), 'b-.', ! linewidth=2.0_wp, label='Dash-dot (-.)') 
+        call plot(x_vals, y_vals(1, :), 'k-', label='Solid (-)')
+        call plot(x_vals, y_vals(2, :), 'r--', label='Dashed (--)')
+        call plot(x_vals, y_vals(3, :), 'g:', label='Dotted (:)')
+        call plot(x_vals, y_vals(4, :), 'b-.', label='Dash-dot (-.)')  
         
         call title('Line Pattern Comparison')
         call xlim([0.0_wp, 10.0_wp])
@@ -215,10 +215,10 @@ contains
         end do
         
         call figure(figsize=[500.0_wp, 350.0_wp])
-        call plot(x, y, 'b-', ! linewidth=2.0_wp, label='solid')
-        call plot(x, y * 0.7_wp, 'r--', ! linewidth=2.0_wp, label='dashed')
-        call plot(x, y * 0.4_wp, 'g:', ! linewidth=2.0_wp, label='dotted')
-        call plot(x, y * 0.1_wp, 'm-.', ! linewidth=2.0_wp, label='dashdot')
+        call plot(x, y, 'b-', label='solid')
+        call plot(x, y * 0.7_wp, 'r--', label='dashed')
+        call plot(x, y * 0.4_wp, 'g:', label='dotted')
+        call plot(x, y * 0.1_wp, 'm-.', label='dashdot')
         
         call title('PNG Backend Line Styles')
         call xlabel('X')
@@ -245,10 +245,10 @@ contains
         end do
         
         call figure(figsize=[500.0_wp, 350.0_wp])
-        call plot(x, y, 'k-', ! linewidth=1.5_wp, label='solid')
-        call plot(x, y * 0.8_wp, 'r--', ! linewidth=1.5_wp, label='dashed')
-        call plot(x, y * 0.6_wp, 'g:', ! linewidth=1.5_wp, label='dotted')  
-        call plot(x, y * 0.4_wp, 'b-.', ! linewidth=1.5_wp, label='dashdot')
+        call plot(x, y, 'k-', label='solid')
+        call plot(x, y * 0.8_wp, 'r--', label='dashed')
+        call plot(x, y * 0.6_wp, 'g:', label='dotted')  
+        call plot(x, y * 0.4_wp, 'b-.', label='dashdot')
         
         call title('PDF Backend Line Styles')
         call xlabel('Position')
@@ -319,9 +319,9 @@ contains
         call figure(figsize=[600.0_wp, 400.0_wp])
         
         ! Test different widths with same style
-        call plot(x, y, 'b--', ! linewidth=1.0_wp, label='thin dashed')
-        call plot(x, y + 0.5_wp, 'r--', ! linewidth=3.0_wp, label='thick dashed')
-        call plot(x, y + 1.0_wp, 'g--', ! linewidth=5.0_wp, label='very thick dashed')
+        call plot(x, y, 'b--', label='thin dashed')
+        call plot(x, y + 0.5_wp, 'r--', label='thick dashed')
+        call plot(x, y + 1.0_wp, 'g--', label='very thick dashed')
         
         call title('Line Width and Style Combinations')
         call xlabel('X')  
@@ -349,11 +349,11 @@ contains
         
         call figure(figsize=[500.0_wp, 400.0_wp])
         
-        call plot(x, y, 'r-', ! linewidth=2.0_wp, label='red solid')
-        call plot(x, y * 0.9_wp, 'g--', ! linewidth=2.0_wp, label='green dashed')
-        call plot(x, y * 0.8_wp, 'b:', ! linewidth=2.0_wp, label='blue dotted')
-        call plot(x, y * 0.7_wp, 'k-.', ! linewidth=2.0_wp, label='black dashdot')
-        call plot(x, y * 0.6_wp, 'm-', ! linewidth=2.0_wp, label='magenta solid')
+        call plot(x, y, 'r-', label='red solid')
+        call plot(x, y * 0.9_wp, 'g--', label='green dashed')
+        call plot(x, y * 0.8_wp, 'b:', label='blue dotted')
+        call plot(x, y * 0.7_wp, 'k-.', label='black dashdot')
+        call plot(x, y * 0.6_wp, 'm-', label='magenta solid')
         
         call title('Color and Style Combinations')
         call xlabel('X')
@@ -381,10 +381,10 @@ contains
         
         call figure(figsize=[500.0_wp, 350.0_wp])
         
-        call plot(x, y, 'bo-', ! linewidth=2.0_wp, markersize=6.0_wp, label='solid with circles')
-        call plot(x, y * 0.8_wp, 'rs--', ! linewidth=2.0_wp, markersize=6.0_wp, label='dashed with squares')
-        call plot(x, y * 0.6_wp, 'g^:', ! linewidth=2.0_wp, markersize=6.0_wp, label='dotted with triangles')
-        call plot(x, y * 0.4_wp, 'md-.', ! linewidth=2.0_wp, markersize=6.0_wp, label='dashdot with diamonds')
+        call plot(x, y, 'bo-', label='solid with circles')
+        call plot(x, y * 0.8_wp, 'rs--', label='dashed with squares')
+        call plot(x, y * 0.6_wp, 'g^:', label='dotted with triangles')
+        call plot(x, y * 0.4_wp, 'md-.', label='dashdot with diamonds')
         
         call title('Marker and Line Style Combinations')
         call xlabel('X')
