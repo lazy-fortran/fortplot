@@ -5,7 +5,6 @@
 ## SPRINT_BACKLOG (Foundation Quality Enforcement Sprint)
 
 ### EPIC: CRITICAL Quality Gate Enforcement (TOP PRIORITY)
-- [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown
 - [ ] #444: defect: 8 stub implementations with error_stop in fortplot_matplotlib.f90
 - [ ] #447: defect: Memory safety issues identified in 7 test files
 - [ ] #445: defect: 12 TODO comments indicate incomplete critical implementations
@@ -44,12 +43,17 @@
 - [ ] #426: defect: unused test security module
 - [ ] #427: defect: performance issues - large allocations and inefficient patterns
 - [ ] #428: defect: PLAY workflow audit summary - 13 defect categories found
+- [ ] #451: refactor: replace bubble sort with efficient sorting in boxplot
+- [ ] #452: feat: implement color parameter processing in boxplot method
+- [ ] #453: fix: improve quartile calculation accuracy in boxplot
+- [ ] #454: feat: implement remaining 11 disabled test functionalities
 
 ### EPIC: Documentation Quality Assurance
 - [ ] #415: Documentation Defects: Broken references, duplicated content, empty READMEs
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
+- [ ] #446: Critical: 16 disabled test files indicate systematic functionality breakdown [EPIC: CRITICAL Quality Gate Enforcement]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
