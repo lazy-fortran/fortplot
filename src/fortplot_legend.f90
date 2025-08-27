@@ -128,9 +128,7 @@ contains
         !! Works with any backend that implements plot_context interface
         class(legend_t), intent(in) :: this
         class(plot_context), intent(inout) :: backend
-        real(wp) :: legend_x, legend_y, line_x1, line_x2, line_y
-        real(wp) :: text_x, text_y
-        integer :: i
+        real(wp) :: legend_x, legend_y
         
         if (this%num_entries == 0) return
         
@@ -376,6 +374,7 @@ contains
             ! Use proportional positioning in data space
             x = backend%x_min + 0.8_wp * data_width
             y = backend%y_min + 0.95_wp * data_height
+            ! Note: labels not used in ASCII path, but must be declared due to Fortran scoping
         else
             ! Standard backends with margin support
             allocate(character(len=20) :: labels(legend%num_entries))

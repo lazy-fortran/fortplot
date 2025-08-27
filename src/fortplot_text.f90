@@ -451,42 +451,6 @@ contains
         end do
     end subroutine render_simple_placeholder
 
-    
-    
-    function get_character_pixel(char_code, x, y) result(pixel_set)
-        integer, intent(in) :: char_code, x, y
-        logical :: pixel_set
-        
-        pixel_set = .false.
-        
-        select case (char_code)
-        case (48) ! '0'
-            pixel_set = (x == 0 .or. x == 3) .and. (y >= 1 .and. y <= 6) .or. &
-                       (y == 0 .or. y == 7) .and. (x >= 1 .and. x <= 2)
-        case (49) ! '1'
-            pixel_set = x == 2 .and. (y >= 0 .and. y <= 7)
-        case (50) ! '2'
-            pixel_set = (y == 0 .or. y == 3 .or. y == 7) .and. (x >= 0 .and. x <= 3) .or. &
-                       x == 3 .and. (y >= 1 .and. y <= 2) .or. &
-                       x == 0 .and. (y >= 4 .and. y <= 6)
-        case (51) ! '3'
-            pixel_set = (y == 0 .or. y == 3 .or. y == 7) .and. (x >= 0 .and. x <= 3) .or. &
-                       x == 3 .and. ((y >= 1 .and. y <= 2) .or. (y >= 4 .and. y <= 6))
-        case (53) ! '5'
-            pixel_set = (y == 0 .or. y == 3 .or. y == 7) .and. (x >= 0 .and. x <= 3) .or. &
-                       x == 0 .and. (y >= 1 .and. y <= 2) .or. &
-                       x == 3 .and. (y >= 4 .and. y <= 6)
-        case (55) ! '7'
-            pixel_set = y == 0 .and. (x >= 0 .and. x <= 3) .or. &
-                       x == 3 .and. (y >= 1 .and. y <= 7)
-        case (45) ! '-'
-            pixel_set = y == 3 .and. (x >= 0 .and. x <= 3)
-        case (46) ! '.'
-            pixel_set = y == 7 .and. x == 1
-        case default
-            pixel_set = (x >= 1 .and. x <= 2) .and. (y >= 2 .and. y <= 5)
-        end select
-    end function get_character_pixel
 
     subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
         !! Render rotated text to PNG image using STB TrueType with UTF-8 support

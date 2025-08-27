@@ -234,6 +234,12 @@ contains
         real(wp), intent(in) :: text_width, text_height
         real(wp), intent(out) :: adjusted_x, adjusted_y
         
+        ! Note: text_height is reserved for future vertical alignment implementation
+        ! Suppress unused variable warning by referencing it
+        if (text_height < 0.0_wp) then
+            ! This condition is never true, but suppresses unused parameter warning
+        end if
+        
         adjusted_x = annotation%x
         adjusted_y = annotation%y
         
@@ -249,6 +255,7 @@ contains
         
         ! Vertical alignment (simple baseline positioning for now)
         ! Future enhancement: support 'top', 'center', 'bottom', 'baseline'
+        ! When implemented, text_height will be used here
     end subroutine calculate_aligned_position
 
     subroutine calculate_rotated_bounds(annotation, bounds)

@@ -128,7 +128,7 @@ contains
         !! This ensures scientifically meaningful plots while handling edge cases.
         real(wp), intent(in) :: value
         real(wp) :: transformed
-        real(wp) :: safe_value, log_val
+        real(wp) :: log_val
         
         if (value > 0.0_wp) then
             log_val = log10(value)
