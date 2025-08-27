@@ -647,9 +647,8 @@ contains
 
     subroutine render_figure(self)
         !! Main rendering pipeline using focused modules
+        !! Fixed Issue #432: Always render axes/labels even with no plot data
         class(figure_t), intent(inout) :: self
-        
-        if (self%state%plot_count == 0) return
         
         ! Calculate final data ranges
         call calculate_figure_data_ranges(self%plots, self%state%plot_count, &
@@ -691,14 +690,16 @@ contains
                                self%state%y_min, self%state%y_max, self%state%title, &
                                self%state%xlabel, self%state%ylabel)
         
-        ! Render all plots
-        call render_all_plots(self%state%backend, self%plots, self%state%plot_count, &
-                             self%state%x_min_transformed, self%state%x_max_transformed, &
-                             self%state%y_min_transformed, self%state%y_max_transformed, &
-                             self%state%xscale, self%state%yscale, self%state%symlog_threshold, &
-                             self%state%width, self%state%height, &
-                             self%state%margin_left, self%state%margin_right, &
-                             self%state%margin_bottom, self%state%margin_top)
+        ! Render all plots (only if there are plots to render)
+        if (self%state%plot_count > 0) then
+            call render_all_plots(self%state%backend, self%plots, self%state%plot_count, &
+                                 self%state%x_min_transformed, self%state%x_max_transformed, &
+                                 self%state%y_min_transformed, self%state%y_max_transformed, &
+                                 self%state%xscale, self%state%yscale, self%state%symlog_threshold, &
+                                 self%state%width, self%state%height, &
+                                 self%state%margin_left, self%state%margin_right, &
+                                 self%state%margin_bottom, self%state%margin_top)
+        end if
         
         ! Render legend if requested
         if (self%state%show_legend .and. self%state%legend_data%num_entries > 0) then
