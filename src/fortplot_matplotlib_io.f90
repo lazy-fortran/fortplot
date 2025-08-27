@@ -76,7 +76,7 @@ contains
         end if
         
         ! Log figure creation
-        write(msg, '(A,I0,A,F6.2,A,F6.2,A,I0)') &
+        write(msg, '(A,I0,A,F6.2,A,F6.2,A,I0,A)') &
             "Creating figure ", fig_num, " with size ", size(1), "x", size(2), &
             " inches at ", fig_dpi, " DPI"
         call log_info(trim(msg))
@@ -112,7 +112,7 @@ contains
         end if
         
         ! Log subplot creation
-        write(msg, '(A,I0,A,I0,A,I0)') &
+        write(msg, '(A,I0,A,I0,A,I0,A)') &
             "Creating subplot ", index, " in ", nrows, "x", ncols, " grid"
         call log_info(trim(msg))
         
