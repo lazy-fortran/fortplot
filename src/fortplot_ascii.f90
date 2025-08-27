@@ -639,6 +639,11 @@ contains
         character(len=1) :: arrow_char
         real(wp) :: angle
         
+        ! Suppress unused parameter warnings
+        if (size < 0.0_wp .or. len_trim(style) < 0) then
+            ! This condition is never true, but suppresses unused parameter warnings
+        end if
+        
         ! Convert world coordinates to pixel coordinates
         px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%width, wp))
         py = int((y - this%y_min) / (this%y_max - this%y_min) * real(this%height, wp))
@@ -649,23 +654,23 @@ contains
         ! Calculate angle for direction
         angle = atan2(dy, dx)
         
-        ! Choose arrow character based on direction
+        ! Choose ASCII-compatible arrow character based on direction
         if (abs(angle) < 0.393_wp) then          ! 0 ± 22.5 degrees (right)
-            arrow_char = '→'
+            arrow_char = '>'
         else if (angle >= 0.393_wp .and. angle < 1.178_wp) then  ! 22.5-67.5 degrees (up-right)
-            arrow_char = '↗'
+            arrow_char = '/'
         else if (angle >= 1.178_wp .and. angle < 1.963_wp) then  ! 67.5-112.5 degrees (up)
-            arrow_char = '↑'
+            arrow_char = '^'
         else if (angle >= 1.963_wp .and. angle < 2.749_wp) then  ! 112.5-157.5 degrees (up-left)
-            arrow_char = '↖'
+            arrow_char = '\'
         else if (abs(angle) >= 2.749_wp) then    ! 157.5-180 degrees (left)
-            arrow_char = '←'
+            arrow_char = '<'
         else if (angle <= -0.393_wp .and. angle > -1.178_wp) then  ! -22.5 to -67.5 degrees (down-right)
-            arrow_char = '↘'
+            arrow_char = '\'
         else if (angle <= -1.178_wp .and. angle > -1.963_wp) then  ! -67.5 to -112.5 degrees (down)
-            arrow_char = '↓'
+            arrow_char = 'v'
         else  ! -112.5 to -157.5 degrees (down-left)
-            arrow_char = '↙'
+            arrow_char = '/'
         end if
         
         ! Place arrow character on canvas
@@ -813,6 +818,11 @@ contains
         !! ASCII doesn't use line widths - no-op
         class(ascii_context), intent(inout) :: this
         
+        ! Suppress unused parameter warning
+        if (this%width < 0) then
+            ! This condition is never true, but suppresses unused parameter warning
+        end if
+        
         ! ASCII backend doesn't have line widths - no operation needed
     end subroutine ascii_set_legend_border_width
 
@@ -860,6 +870,11 @@ contains
         integer, intent(in) :: width, height
         real(real64), intent(out) :: rgb_data(width, height, 3)
         
+        ! Suppress unused parameter warning
+        if (this%width < 0) then
+            ! This condition is never true, but suppresses unused parameter warning
+        end if
+        
         ! ASCII backend doesn't have RGB data for animation - fill with dummy data
         rgb_data = 0.0_real64  ! Black background
     end subroutine ascii_extract_rgb_data
@@ -870,6 +885,11 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
+        
+        ! Suppress unused parameter warnings
+        if (this%width < 0 .or. width < 0 .or. height < 0) then
+            ! This condition is never true, but suppresses unused parameter warnings
+        end if
         
         ! ASCII backend doesn't provide PNG data
         allocate(png_data(0))
@@ -882,6 +902,11 @@ contains
         class(ascii_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
+        ! Suppress unused parameter warnings
+        if (this%width < 0 .or. size(plots) < 0) then
+            ! This condition is never true, but suppresses unused parameter warnings
+        end if
+        
         ! ASCII backend doesn't need 3D data preparation - no-op
     end subroutine ascii_prepare_3d_data
 
@@ -889,6 +914,11 @@ contains
         !! Render Y-axis label for ASCII backend (no-op - handled elsewhere)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
+        
+        ! Suppress unused parameter warnings
+        if (this%width < 0 .or. len_trim(ylabel) < 0) then
+            ! This condition is never true, but suppresses unused parameter warnings
+        end if
         
         ! ASCII backend handles Y-axis labels differently - no-op
     end subroutine ascii_render_ylabel
@@ -907,11 +937,20 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        real(wp) :: label_x, label_y
         real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
         integer :: num_x_ticks, num_y_ticks, i
         character(len=50) :: tick_label
         real(wp) :: tick_x, tick_y
+        
+        ! Suppress unused parameter warnings
+        if (present(z_min) .and. present(z_max)) then
+            if (z_min < -huge(z_min) .or. z_max > huge(z_max)) then
+                ! This condition is never true, but suppresses unused parameter warnings
+            end if
+        end if
+        if (.not. has_3d_plots) then
+            ! Reference has_3d_plots to suppress warning
+        end if
         
         ! ASCII backend: explicitly set title and draw simple axes
         if (present(title)) then
@@ -982,6 +1021,16 @@ contains
         !! Render axes for ASCII context (stub implementation)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        
+        ! Suppress unused parameter warnings
+        if (this%width < 0) then
+            ! This condition is never true, but suppresses unused parameter warning
+        end if
+        if (present(title_text) .and. present(xlabel_text) .and. present(ylabel_text)) then
+            if (len_trim(title_text) < 0 .or. len_trim(xlabel_text) < 0 .or. len_trim(ylabel_text) < 0) then
+                ! This condition is never true, but suppresses unused parameter warnings
+            end if
+        end if
         
         ! ASCII axes are rendered as part of draw_axes_and_labels_backend
         ! This is a stub to satisfy the interface

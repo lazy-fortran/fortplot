@@ -43,17 +43,30 @@ module fortplot_annotations
         real(wp) :: font_size = 12.0_wp
         real(wp) :: rotation = 0.0_wp
         character(len=16) :: alignment = 'left'
+        character(len=16) :: ha = 'left'     ! Horizontal alignment
+        character(len=16) :: va = 'bottom'   ! Vertical alignment
         character(len=64) :: font_family = 'DejaVu Sans'
+        character(len=16) :: weight = 'normal'  ! Font weight
+        character(len=16) :: style = 'normal'   ! Font style
+        
+        ! Color properties
+        real(wp) :: color(3) = [0.0_wp, 0.0_wp, 0.0_wp]  ! RGB text color (black)
+        real(wp) :: alpha = 1.0_wp  ! Text transparency
         
         ! Background box properties
         logical :: has_bbox = .false.
+        logical :: bbox = .false.  ! Alias for has_bbox
         type(annotation_color_t) :: bbox_color = annotation_color_t(1.0_wp, 1.0_wp, 1.0_wp, 1.0_wp) ! White
         
         ! Arrow annotation properties  
         logical :: has_arrow = .false.
+        real(wp) :: arrow_x = 0.0_wp  ! Arrow target x
+        real(wp) :: arrow_y = 0.0_wp  ! Arrow target y
+        integer :: arrow_coord_type = COORD_DATA  ! Arrow target coordinate type
         real(wp) :: xytext_x = 0.0_wp
         real(wp) :: xytext_y = 0.0_wp
         integer :: xytext_coord_type = COORD_DATA
+        character(len=64) :: arrowstyle = ''  ! Arrow properties string
     end type text_annotation_t
     
     ! Public interface
@@ -94,8 +107,23 @@ contains
         annotation%font_size = 12.0_wp
         annotation%rotation = 0.0_wp
         annotation%alignment = 'left'
+        annotation%ha = 'left'
+        annotation%va = 'bottom'
+        annotation%weight = 'normal'
+        annotation%style = 'normal'
+        
+        ! Set default color properties
+        annotation%color = [0.0_wp, 0.0_wp, 0.0_wp]  ! Black
+        annotation%alpha = 1.0_wp
+        
+        ! Set default box and arrow properties
         annotation%has_bbox = .false.
+        annotation%bbox = .false.
         annotation%has_arrow = .false.
+        annotation%arrow_x = 0.0_wp
+        annotation%arrow_y = 0.0_wp
+        annotation%arrow_coord_type = COORD_DATA
+        annotation%arrowstyle = ''
     end function create_text_annotation
 
     subroutine destroy_text_annotation(annotation)
@@ -234,6 +262,12 @@ contains
         real(wp), intent(in) :: text_width, text_height
         real(wp), intent(out) :: adjusted_x, adjusted_y
         
+        ! Note: text_height is reserved for future vertical alignment implementation
+        ! Suppress unused variable warning by referencing it
+        if (text_height < 0.0_wp) then
+            ! This condition is never true, but suppresses unused parameter warning
+        end if
+        
         adjusted_x = annotation%x
         adjusted_y = annotation%y
         
@@ -249,6 +283,7 @@ contains
         
         ! Vertical alignment (simple baseline positioning for now)
         ! Future enhancement: support 'top', 'center', 'bottom', 'baseline'
+        ! When implemented, text_height will be used here
     end subroutine calculate_aligned_position
 
     subroutine calculate_rotated_bounds(annotation, bounds)
