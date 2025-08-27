@@ -1,15 +1,13 @@
-program test_line_styles_comprehensive
-    !! Comprehensive line styles test consolidating all line style functionality  
-    !! Replaces: test_line_styles_278.f90, test_line_styles_comprehensive.f90,
-    !!           test_line_patterns_visual_332.f90 (3 files total)
+program test_line_styles_advanced
+    !! Advanced line styles test covering comprehensive line style functionality
+    !! Split from test_line_styles_consolidated.f90 for QADS compliance
     !!
     !! This test covers:
-    !! - All line styles (solid, dashed, dotted, dash-dot)
-    !! - Line style rendering in PNG backend (issue #278)
-    !! - Line pattern visual appearance (issue #332)
-    !! - Pattern clarity and visibility
-    !! - Cross-backend compatibility
+    !! - Line pattern visual appearance and clarity (issue #332)
+    !! - Cross-backend compatibility (PNG, PDF, ASCII)
     !! - Line width and color interactions with styles
+    !! - Style combinations with markers
+    !! - Regression scenarios for known issues
     
     use fortplot
     use fortplot_png
@@ -20,10 +18,9 @@ program test_line_styles_comprehensive
     integer :: test_count = 0
     integer :: pass_count = 0
 
-    print *, "=== COMPREHENSIVE LINE STYLES TESTS ==="
+    print *, "=== ADVANCED LINE STYLES TESTS ==="
     
-    ! Run all test categories
-    call test_basic_line_styles()
+    ! Run all advanced test categories
     call test_pattern_visibility()
     call test_backend_compatibility()
     call test_style_combinations()
@@ -32,86 +29,6 @@ program test_line_styles_comprehensive
     call print_test_summary()
 
 contains
-
-    !===========================================================================
-    ! Basic Line Styles Tests (from test_line_styles_278.f90)
-    !===========================================================================
-    
-    subroutine test_basic_line_styles()
-        print *, "--- Basic Line Styles Tests ---"
-        
-        call test_figure_api_line_styles()
-        call test_plot_function_line_styles()
-    end subroutine test_basic_line_styles
-
-    subroutine test_figure_api_line_styles()
-        type(figure_t) :: fig
-        real(wp) :: x(100), y(100)
-        integer :: i
-        character(len=512) :: filename
-        
-        call start_test("Figure API line styles (issue #278)")
-        
-        ! Generate test data
-        do i = 1, 100
-            x(i) = real(i-1, wp) / 99.0_wp * 10.0_wp
-            y(i) = sin(x(i))
-        end do
-        
-        ! Create figure and test different line styles
-        call fig%initialize(640, 480)
-        
-        call fig%add_plot(x, y, linestyle='-', label='solid')
-        call fig%add_plot(x, y + 1.0_wp, linestyle='--', label='dashed')
-        call fig%add_plot(x, y + 2.0_wp, linestyle=':', label='dotted')
-        call fig%add_plot(x, y + 3.0_wp, linestyle='-.', label='dashdot')
-        
-        call fig%set_xlabel('X')
-        call fig%set_ylabel('Y')
-        call fig%set_title('Line Styles Test - Issue #278')
-        call fig%legend()
-        
-        filename = get_test_output_path('/tmp/line_styles_figure_api.png')
-        call fig%savefig(filename)
-        
-        print *, '  Figure API line styles test saved'
-        call end_test()
-    end subroutine test_figure_api_line_styles
-
-    subroutine test_plot_function_line_styles()
-        real(wp) :: x(50), y1(50), y2(50), y3(50), y4(50)
-        integer :: i
-        character(len=512) :: filename
-        
-        call start_test("Plot function line styles")
-        
-        ! Generate test data
-        do i = 1, 50
-            x(i) = real(i-1, wp) * 0.2_wp
-            y1(i) = cos(x(i))
-            y2(i) = cos(x(i)) + 1.2_wp
-            y3(i) = cos(x(i)) + 2.4_wp  
-            y4(i) = cos(x(i)) + 3.6_wp
-        end do
-        
-        call figure(figsize=[600.0_wp, 400.0_wp])
-        call plot(x, y1, 'b-', label='solid')
-        call plot(x, y2, 'r--', label='dashed')
-        call plot(x, y3, 'g:', label='dotted')
-        call plot(x, y4, 'm-.', label='dashdot')
-        
-        call title('Plot Function Line Styles')
-        call xlabel('X values')
-        call ylabel('Y values')
-        call legend()
-        call grid(.true.)
-        
-        filename = get_test_output_path('/tmp/line_styles_plot_function.png')
-        call savefig(filename)
-        
-        print *, '  Plot function line styles test saved'
-        call end_test()
-    end subroutine test_plot_function_line_styles
 
     !===========================================================================
     ! Pattern Visibility Tests (from test_line_patterns_visual_332.f90)
@@ -187,8 +104,6 @@ contains
         print *, '  Pattern comparison test saved'
         call end_test()
     end subroutine test_pattern_comparison_high_level
-
-
 
     !===========================================================================
     ! Backend Compatibility Tests
@@ -494,17 +409,17 @@ contains
 
     subroutine print_test_summary()
         write(*, '(A)') '============================================'
-        write(*, '(A)') 'Line Styles Comprehensive Test Summary'
-        write(*, '(A)') 'Consolidated 3 line style test files into single comprehensive test'
+        write(*, '(A)') 'Advanced Line Styles Test Summary'
+        write(*, '(A)') 'Comprehensive line style pattern and compatibility testing'
         write(*, '(A)') ''
         write(*, '(A)') 'MANUAL VERIFICATION REQUIRED:'
         write(*, '(A)') '  1. Check all PNG outputs for clear line pattern visibility'
         write(*, '(A)') '  2. Verify dashed lines show dashes, not sparse dots (issue #332)'
-        write(*, '(A)') '  3. Confirm all line styles work in PNG backend (issue #278)'
-        write(*, '(A)') '  4. Compare PDF output for pattern consistency'
-        write(*, '(A)') '  5. Verify ASCII backend renders styles appropriately'
+        write(*, '(A)') '  3. Compare PDF output for pattern consistency across backends'
+        write(*, '(A)') '  4. Verify ASCII backend renders styles appropriately'
+        write(*, '(A)') '  5. Confirm regression scenarios pass visual verification'
         write(*, '(A)') ''
-        write(*, '(A)') 'All comprehensive line styles tests COMPLETED!'
+        write(*, '(A)') 'Advanced line styles tests COMPLETED!'
     end subroutine print_test_summary
 
-end program test_line_styles_comprehensive
+end program test_line_styles_advanced
