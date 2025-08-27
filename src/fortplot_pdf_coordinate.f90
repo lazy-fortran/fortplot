@@ -54,7 +54,7 @@ contains
         end if
         
         if (abs(y_range) < EPSILON) then
-            pdf_y = real(ctx%height - ctx%plot_area%bottom - ctx%plot_area%height, wp) + &
+            pdf_y = real(ctx%plot_area%bottom, wp) + &
                     real(ctx%plot_area%height, wp) * 0.5_wp
         end if
         
