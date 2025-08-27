@@ -33,3 +33,8 @@ page_dir = "doc"
 exclude = "fortplot_pdf_text.f90"
 
 # Tests are auto-discovered from test/ directory
+
+[[test]]
+name = "edge_cases_432"
+source-dir = "."
+main = "test_simple_edge_cases.f90"

@@ -12,13 +12,60 @@ module fortplot_figure_plot_management
     private
     public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
     public :: add_pcolormesh_plot_data, generate_default_contour_levels
-    public :: setup_figure_legend, update_plot_ydata
+    public :: setup_figure_legend, update_plot_ydata, validate_plot_data
     
 contains
+
+    subroutine validate_plot_data(x, y, label)
+        !! Validate plot data and provide informative warnings for edge cases
+        !! Added for Issue #432: Better user feedback for problematic data
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label
+        character(len=100) :: label_str
+        
+        ! Prepare label for messages
+        if (present(label)) then
+            label_str = "'" // trim(label) // "'"
+        else
+            label_str = "(unlabeled plot)"
+        end if
+        
+        ! Check for zero-size arrays
+        if (size(x) == 0 .or. size(y) == 0) then
+            print *, "Warning: Plot data ", trim(label_str), " contains zero-size arrays."
+            print *, "         The plot will show axes and labels but no data points."
+            return
+        end if
+        
+        ! Check for mismatched array sizes
+        if (size(x) /= size(y)) then
+            print *, "Warning: Plot data ", trim(label_str), " has mismatched array sizes:"
+            print *, "         x has ", size(x), " elements, y has ", size(y), " elements."
+            print *, "         Only the common size will be plotted."
+        end if
+        
+        ! Check for single point case
+        if (size(x) == 1 .and. size(y) == 1) then
+            print *, "Info: Plot data ", trim(label_str), " contains a single point."
+            print *, "      Automatic scaling will add margins for visibility."
+        end if
+        
+        ! Check for constant values (might be hard to see)
+        if (size(x) > 1 .and. abs(maxval(x) - minval(x)) < 1.0e-10_wp) then
+            print *, "Warning: All x values in plot ", trim(label_str), " are identical."
+            print *, "         This may result in a vertical line or poor visualization."
+        end if
+        
+        if (size(y) > 1 .and. abs(maxval(y) - minval(y)) < 1.0e-10_wp) then
+            print *, "Warning: All y values in plot ", trim(label_str), " are identical."
+            print *, "         This may result in a horizontal line or poor visualization."
+        end if
+    end subroutine validate_plot_data
     
     subroutine add_line_plot_data(plots, plot_count, max_plots, colors, &
                                  x, y, label, linestyle, color, marker)
-        !! Add line plot data to internal storage
+        !! Add line plot data to internal storage with edge case validation
+        !! Fixed Issue #432: Added data validation for better user feedback
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
@@ -31,6 +78,9 @@ contains
             print *, "Warning: Maximum number of plots reached"
             return
         end if
+        
+        ! Validate input data and provide warnings
+        call validate_plot_data(x, y, label)
         
         plot_count = plot_count + 1
         
