@@ -42,8 +42,9 @@ contains
         !! Add an errorbar plot to the global figure (pyplot-style)
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:), intent(in), optional :: xerr, yerr
-        character(len=*), intent(in), optional :: fmt, label, linestyle, marker, color
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(8), intent(in), optional :: capsize
+        real(8), dimension(3), intent(in), optional :: color
         
         call ensure_fig_init()
         ! Errorbar not fully implemented yet - use regular plot
@@ -53,19 +54,33 @@ contains
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
         !! Add a bar plot to the global figure (pyplot-style)
         real(8), dimension(:), intent(in) :: x, height
-        real(8), intent(in), optional :: width, bottom
-        character(len=*), intent(in), optional :: label, color, edgecolor, align
+        real(8), intent(in), optional :: width
+        real(8), dimension(:), intent(in), optional :: bottom
+        character(len=*), intent(in), optional :: label, align
+        real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        real(8) :: bar_width, bar_bottom
+        real(8) :: bar_width
+        real(8), allocatable :: bar_bottom(:)
         character(len=32) :: bar_align
+        integer :: i
         
         call ensure_fig_init()
         
         bar_width = 0.8d0
         if (present(width)) bar_width = width
         
+        allocate(bar_bottom(size(x)))
         bar_bottom = 0.0d0
-        if (present(bottom)) bar_bottom = bottom
+        if (present(bottom)) then
+            if (size(bottom) == size(x)) then
+                bar_bottom = bottom
+            else if (size(bottom) == 1) then
+                bar_bottom = bottom(1)
+            else
+                call log_error("bar: bottom array size must match x array or be scalar")
+                return
+            end if
+        end if
         
         bar_align = 'center'
         if (present(align)) bar_align = align
@@ -77,19 +92,33 @@ contains
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
         !! Add a horizontal bar plot to the global figure (pyplot-style)
         real(8), dimension(:), intent(in) :: y, width
-        real(8), intent(in), optional :: height, left
-        character(len=*), intent(in), optional :: label, color, edgecolor, align
+        real(8), intent(in), optional :: height
+        real(8), dimension(:), intent(in), optional :: left
+        character(len=*), intent(in), optional :: label, align
+        real(8), dimension(3), intent(in), optional :: color, edgecolor
         
-        real(8) :: bar_height, bar_left
+        real(8) :: bar_height
+        real(8), allocatable :: bar_left(:)
         character(len=32) :: bar_align
+        integer :: i
         
         call ensure_fig_init()
         
         bar_height = 0.8d0
         if (present(height)) bar_height = height
         
+        allocate(bar_left(size(y)))
         bar_left = 0.0d0
-        if (present(left)) bar_left = left
+        if (present(left)) then
+            if (size(left) == size(y)) then
+                bar_left = left
+            else if (size(left) == 1) then
+                bar_left = left(1)
+            else
+                call log_error("barh: left array size must match y array or be scalar")
+                return
+            end if
+        end if
         
         bar_align = 'center'
         if (present(align)) bar_align = align
@@ -103,7 +132,8 @@ contains
         real(8), dimension(:), intent(in) :: data
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
-        character(len=*), intent(in), optional :: label, color
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
         
         integer :: num_bins
         logical :: use_density
@@ -137,20 +167,23 @@ contains
         real(8), dimension(:), intent(in) :: data
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
-        character(len=*), intent(in), optional :: label, color
+        character(len=*), intent(in), optional :: label
+        real(8), dimension(3), intent(in), optional :: color
         
         call hist(data, bins, density, label, color)
     end subroutine histogram
 
     subroutine boxplot(data, position, width, label, show_outliers, horizontal, color)
         !! Add a box-and-whisker plot to the global figure (pyplot-style)
-        real(8), dimension(:), intent(in) :: data
-        real(8), intent(in), optional :: position, width
-        character(len=*), intent(in), optional :: label, color
+        real(wp), dimension(:), intent(in) :: data
+        real(wp), intent(in), optional :: position, width
+        character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers, horizontal
+        real(wp), dimension(3), intent(in), optional :: color
         
         real(8) :: box_position, box_width
         logical :: outliers, horiz
+        character(len=20) :: color_str
         
         call ensure_fig_init()
         
@@ -167,18 +200,29 @@ contains
         if (present(horizontal)) horiz = horizontal
         
         ! Forward to figure method
-        call fig%boxplot(data, position=box_position, width=box_width, &
-                        label=label, show_outliers=outliers, &
-                        horizontal=horiz, color=color)
+        if (present(color)) then
+            ! Convert color array to string (figure_core expects string)
+            write(color_str, '(A,3(I0,A))') 'rgb(', &
+                int(color(1)*255), ',', int(color(2)*255), ',', int(color(3)*255), ')'
+            call fig%boxplot(data, position=box_position, width=box_width, &
+                            label=label, show_outliers=outliers, &
+                            horizontal=horiz, color=color_str)
+        else
+            call fig%boxplot(data, position=box_position, width=box_width, &
+                            label=label, show_outliers=outliers, &
+                            horizontal=horiz)
+        end if
     end subroutine boxplot
 
     subroutine scatter(x, y, s, c, label, marker, markersize, color, &
-                      alpha, edgecolors, linewidth)
+                      colormap, vmin, vmax, show_colorbar)
         !! Add a scatter plot to the global figure (pyplot-style)
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:), intent(in), optional :: s, c
-        character(len=*), intent(in), optional :: label, marker, color, edgecolors
-        real(8), intent(in), optional :: markersize, alpha, linewidth
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
         
         call ensure_fig_init()
         
@@ -200,12 +244,14 @@ contains
     end subroutine scatter
 
     subroutine add_scatter(x, y, s, c, label, marker, markersize, color, &
-                          alpha, edgecolors, linewidth)
+                          colormap, vmin, vmax, show_colorbar)
         !! Direct interface to figure's add_scatter method for testing
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:), intent(in), optional :: s, c
-        character(len=*), intent(in), optional :: label, marker, color, edgecolors
-        real(8), intent(in), optional :: markersize, alpha, linewidth
+        character(len=*), intent(in), optional :: label, marker, colormap
+        real(8), intent(in), optional :: markersize, vmin, vmax
+        real(8), dimension(3), intent(in), optional :: color
+        logical, intent(in), optional :: show_colorbar
         
         call ensure_fig_init()
         ! Scatter plot not yet implemented in figure_core - use line plot as placeholder
@@ -226,12 +272,13 @@ contains
         !! Provides direct access to figure's add_errorbar method
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:), intent(in), optional :: xerr, yerr
-        character(len=*), intent(in), optional :: fmt, label, linestyle, marker, color
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(8), intent(in), optional :: capsize
+        real(8), dimension(3), intent(in), optional :: color
         
         real(8), allocatable :: xerr_local(:), yerr_local(:)
         character(len=64) :: fmt_local, label_local, linestyle_local
-        character(len=64) :: marker_local, color_local
+        character(len=64) :: marker_local
         real(8) :: capsize_local
         integer :: i, n
         
@@ -285,8 +332,7 @@ contains
         marker_local = 'o'
         if (present(marker)) marker_local = marker
         
-        color_local = 'auto'
-        if (present(color)) color_local = color
+        ! Color parameter is not used in placeholder implementation
         
         capsize_local = 3.0d0
         if (present(capsize)) capsize_local = capsize
@@ -299,10 +345,11 @@ contains
         !! Add a 3D line plot with optional markers
         !! Provides direct access to figure's 3D plotting capabilities
         real(8), dimension(:), intent(in) :: x, y, z
-        character(len=*), intent(in), optional :: label, linestyle, color, marker
+        character(len=*), intent(in), optional :: label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
         real(8), intent(in), optional :: linewidth, markersize
         
-        character(len=64) :: label_local, linestyle_local, color_local, marker_local
+        character(len=64) :: label_local, linestyle_local, marker_local
         real(8) :: linewidth_local, markersize_local
         integer :: n
         
@@ -327,8 +374,7 @@ contains
         linestyle_local = '-'
         if (present(linestyle)) linestyle_local = linestyle
         
-        color_local = 'auto'
-        if (present(color)) color_local = color
+        ! Color parameter is not used in placeholder implementation
         
         marker_local = 'none'
         if (present(marker)) marker_local = marker

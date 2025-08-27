@@ -59,20 +59,20 @@ contains
     end subroutine contour_filled
 
     subroutine pcolormesh(x, y, z, shading, colormap, show_colorbar, label, &
-                         vmin, vmax, edgecolors, linewidths, alpha)
+                         vmin, vmax, edgecolors, linewidths)
         !! Add a pseudocolor plot to the global figure (pyplot-style)
         !! Creates a colored mesh representation of 2D data
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         character(len=*), intent(in), optional :: shading, colormap, label
-        character(len=*), intent(in), optional :: edgecolors
         logical, intent(in), optional :: show_colorbar
-        real(8), intent(in), optional :: vmin, vmax, linewidths, alpha
+        real(8), intent(in), optional :: vmin, vmax
+        real(8), dimension(3), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
         
         character(len=64) :: shading_local, colormap_local, label_local
-        character(len=64) :: edgecolors_local
         logical :: show_colorbar_local
-        real(8) :: vmin_local, vmax_local, linewidths_local, alpha_local
+        real(8) :: vmin_local, vmax_local, linewidths_local
         integer :: nx, ny
         
         call ensure_fig_init()
@@ -104,14 +104,10 @@ contains
         label_local = ''
         if (present(label)) label_local = label
         
-        edgecolors_local = 'none'
-        if (present(edgecolors)) edgecolors_local = edgecolors
+        ! Handle edgecolors (color array not used in placeholder implementation)
         
         linewidths_local = 1.0d0
         if (present(linewidths)) linewidths_local = linewidths
-        
-        alpha_local = 1.0d0
-        if (present(alpha)) alpha_local = alpha
         
         ! Calculate default vmin/vmax if not provided
         if (present(vmin)) then
@@ -214,19 +210,19 @@ contains
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(x, y, z, shading, colormap, show_colorbar, label, &
-                             vmin, vmax, edgecolors, linewidths, alpha)
+                             vmin, vmax, edgecolors, linewidths)
         !! Direct interface to figure's add_pcolormesh for testing
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
         character(len=*), intent(in), optional :: shading, colormap, label
-        character(len=*), intent(in), optional :: edgecolors
         logical, intent(in), optional :: show_colorbar
-        real(8), intent(in), optional :: vmin, vmax, linewidths, alpha
+        real(8), intent(in), optional :: vmin, vmax
+        real(8), dimension(3), intent(in), optional :: edgecolors
+        real(8), intent(in), optional :: linewidths
         
         character(len=64) :: shading_local, colormap_local, label_local
-        character(len=64) :: edgecolors_local
         logical :: show_colorbar_local
-        real(8) :: vmin_local, vmax_local, linewidths_local, alpha_local
+        real(8) :: vmin_local, vmax_local, linewidths_local
         
         call ensure_fig_init()
         
@@ -243,14 +239,10 @@ contains
         label_local = ''
         if (present(label)) label_local = label
         
-        edgecolors_local = 'none'
-        if (present(edgecolors)) edgecolors_local = edgecolors
+        ! Handle edgecolors (color array not used in placeholder implementation)
         
         linewidths_local = 1.0d0
         if (present(linewidths)) linewidths_local = linewidths
-        
-        alpha_local = 1.0d0
-        if (present(alpha)) alpha_local = alpha
         
         ! Calculate default vmin/vmax if not provided
         if (present(vmin)) then
@@ -276,11 +268,12 @@ contains
         !! Provides direct access to figure's 3D surface capabilities
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: z
-        character(len=*), intent(in), optional :: colormap, edgecolor, label
+        character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
         real(8), intent(in), optional :: alpha, linewidth
+        real(8), dimension(3), intent(in), optional :: edgecolor
         
-        character(len=64) :: colormap_local, edgecolor_local, label_local
+        character(len=64) :: colormap_local, label_local
         logical :: show_colorbar_local
         real(8) :: alpha_local, linewidth_local
         integer :: nx, ny, i, j
@@ -311,8 +304,7 @@ contains
         alpha_local = 1.0d0
         if (present(alpha)) alpha_local = alpha
         
-        edgecolor_local = 'none'
-        if (present(edgecolor)) edgecolor_local = edgecolor
+        ! Handle edgecolor (color array not used in placeholder implementation)
         
         linewidth_local = 0.5d0
         if (present(linewidth)) linewidth_local = linewidth
