@@ -3,7 +3,8 @@ program test_pdf_coordinate_debug
     !! Uses low-level PDF API to test coordinate transformations
     
     use fortplot_pdf
-    use fortplot_png  
+    use fortplot_png
+    use fortplot_test_helpers, only: test_get_temp_path, test_cleanup_all
     use iso_fortran_env, only: wp => real64
     implicit none
     
@@ -49,15 +50,18 @@ program test_pdf_coordinate_debug
         call png_ctx%line(x_data(i), y_data(i), x_data(i+1), y_data(i+1))
     end do
     
-    ! Save both files
-    call pdf_ctx%save('debug_coordinates_pdf.pdf')
-    call png_ctx%save('debug_coordinates_png.png')
+    ! Save both files to temp directory
+    call pdf_ctx%save(test_get_temp_path('debug_coordinates_pdf.pdf'))
+    call png_ctx%save(test_get_temp_path('debug_coordinates_png.png'))
     
-    print *, 'Generated debug_coordinates_png.png and debug_coordinates_pdf.pdf'
+    print *, 'Generated test files in temporary directory'
     print *, 'Compare both files to identify coordinate system issues:'
     print *, '1. Check if X axis appears at bottom (correct) or top (incorrect)'
     print *, '2. Check if axes are blue (incorrect) or black (correct)'
     print *, '3. Check if plot appears within frame boundaries'
     print *, '4. Verify data line positions match between formats'
+    
+    ! Clean up test files
+    call test_cleanup_all()
     
 end program test_pdf_coordinate_debug
