@@ -67,8 +67,9 @@ jobs:
       run: |
         echo Creating test output directories...
         if not exist build\test mkdir build\test
-        if not exist output\example mkdir output\example
-        if not exist output\example\fortran mkdir output\example\fortran
+        if not exist output\example\fortran\basic_plots mkdir output\example\fortran\basic_plots
+        if not exist output\example\fortran\legend_demo mkdir output\example\fortran\legend_demo
+        if not exist output\example\fortran\marker_demo mkdir output\example\fortran\marker_demo
         echo Test directories created.
 
     - name: Build project

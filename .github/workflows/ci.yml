@@ -46,7 +46,9 @@ jobs:
       run: |
         echo "Creating test output directories..."
         mkdir -p build/test
-        mkdir -p output/example/fortran
+        mkdir -p output/example/fortran/basic_plots
+        mkdir -p output/example/fortran/legend_demo
+        mkdir -p output/example/fortran/marker_demo
         echo "Test directories created."
 
     - name: Build project
