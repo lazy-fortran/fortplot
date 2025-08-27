@@ -12,7 +12,7 @@ module fortplot_plot_data
     implicit none
 
     private
-    public :: plot_data_t, arrow_data_t, subplot_t
+    public :: plot_data_t, arrow_data_t, subplot_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
               PLOT_TYPE_SCATTER
@@ -113,6 +113,19 @@ module fortplot_plot_data
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
     end type subplot_t
+    
+    ! Subplot data storage to avoid recursive type
+    type :: subplot_data_t
+        !! Subplot data container (extracted from fortplot_figure_core)
+        type(plot_data_t), allocatable :: plots(:)
+        integer :: plot_count = 0
+        character(len=:), allocatable :: title
+        character(len=:), allocatable :: xlabel
+        character(len=:), allocatable :: ylabel
+        real(wp) :: x_min, x_max, y_min, y_max
+        logical :: xlim_set = .false., ylim_set = .false.
+        integer :: max_plots = 100
+    end type subplot_data_t
 
 contains
 

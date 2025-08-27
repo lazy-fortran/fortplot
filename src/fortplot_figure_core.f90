@@ -21,8 +21,10 @@ module fortplot_figure_core
     use fortplot_ascii, only: ascii_context
     use fortplot_annotations, only: text_annotation_t
     ! Import refactored modules
-    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                    PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
+                                    PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+                                    PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
+                                    PLOT_TYPE_SCATTER
     use fortplot_figure_initialization
     use fortplot_figure_plot_management
     use fortplot_figure_histogram
@@ -31,23 +33,19 @@ module fortplot_figure_core
     use fortplot_figure_rendering_pipeline
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_utils_sort, only: sort_array
+    use fortplot_figure_scatter, only: add_scatter_plot
+    use fortplot_figure_subplots, only: create_subplots, add_subplot_plot, &
+                                        get_subplot_plot_count, set_subplot_title, &
+                                        set_subplot_xlabel, set_subplot_ylabel, &
+                                        get_subplot_title
+    use fortplot_figure_accessors
+    use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
     implicit none
 
     private
     public :: figure_t, plot_data_t, subplot_data_t
-    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT
-
-    ! Subplot data storage to avoid recursive type
-    type :: subplot_data_t
-        type(plot_data_t), allocatable :: plots(:)
-        integer :: plot_count = 0
-        character(len=:), allocatable :: title
-        character(len=:), allocatable :: xlabel
-        character(len=:), allocatable :: ylabel
-        real(wp) :: x_min, x_max, y_min, y_max
-        logical :: xlim_set = .false., ylim_set = .false.
-        integer :: max_plots = 100
-    end type subplot_data_t
+    public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
     type :: figure_t
         !! Main figure class - coordinates plotting operations
@@ -655,53 +653,11 @@ contains
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         
-        real(wp) :: x_pos, y_min_new, y_max_new
-        real(wp) :: q1, q3, iqr
-        integer :: n
-        real(wp), allocatable :: sorted_data(:)
-        
-        ! Set x position
-        x_pos = 1.0_wp
-        if (present(position)) x_pos = position
-        
-        ! Sort data for quartile calculations
-        n = size(data)
-        allocate(sorted_data(n))
-        sorted_data = data
-        call sort_array(sorted_data)
-        
-        ! Calculate quartiles and IQR for outlier detection
-        q1 = sorted_data(max(1, n/4))
-        q3 = sorted_data(min(n, 3*n/4))
-        iqr = q3 - q1
-        
-        ! Data range includes whisker extent (1.5 * IQR)
-        y_min_new = q1 - 1.5_wp * iqr
-        y_max_new = q3 + 1.5_wp * iqr
-        
-        ! Update x range to include box position
-        if (.not. self%state%xlim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%x_min = x_pos - 0.5_wp
-                self%state%x_max = x_pos + 0.5_wp
-            else
-                self%state%x_min = min(self%state%x_min, x_pos - 0.5_wp)
-                self%state%x_max = max(self%state%x_max, x_pos + 0.5_wp)
-            end if
-        end if
-        
-        ! Update y range
-        if (.not. self%state%ylim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%y_min = y_min_new
-                self%state%y_max = y_max_new
-            else
-                self%state%y_min = min(self%state%y_min, y_min_new)
-                self%state%y_max = max(self%state%y_max, y_max_new)
-            end if
-        end if
-        
-        if (allocated(sorted_data)) deallocate(sorted_data)
+        ! Delegate to module implementation
+        call update_boxplot_ranges(data, position, &
+                                   self%state%x_min, self%state%x_max, &
+                                   self%state%y_min, self%state%y_max, &
+                                   self%state%xlim_set, self%state%ylim_set)
     end subroutine update_data_ranges_boxplot
 
     subroutine update_data_ranges(self)
@@ -790,50 +746,48 @@ contains
         !! Get figure width
         class(figure_t), intent(in) :: self
         integer :: width
-        width = self%state%width
+        width = get_figure_width(self%state)
     end function get_width
     
     function get_height(self) result(height)
         !! Get figure height
         class(figure_t), intent(in) :: self
         integer :: height
-        height = self%state%height
+        height = get_figure_height(self%state)
     end function get_height
     
     function get_rendered(self) result(rendered)
         !! Get rendered state
         class(figure_t), intent(in) :: self
         logical :: rendered
-        rendered = self%state%rendered
+        rendered = get_figure_rendered(self%state)
     end function get_rendered
     
     subroutine set_rendered(self, rendered)
         !! Set rendered state
         class(figure_t), intent(inout) :: self
         logical, intent(in) :: rendered
-        self%state%rendered = rendered
+        call set_figure_rendered(self%state, rendered)
     end subroutine set_rendered
     
     function get_plot_count(self) result(plot_count)
         !! Get number of plots
         class(figure_t), intent(in) :: self
         integer :: plot_count
-        plot_count = self%state%plot_count
+        plot_count = get_figure_plot_count(self%state)
     end function get_plot_count
     
     function get_plots(self) result(plots_ptr)
         !! Get pointer to plots array  
         class(figure_t), intent(in), target :: self
         type(plot_data_t), pointer :: plots_ptr(:)
-        plots_ptr => self%plots
+        plots_ptr => self%plots  ! Keep direct access for efficiency
     end function get_plots
     
     subroutine setup_png_backend_for_animation(self)
         !! Setup PNG backend for animation (temporary method)
         class(figure_t), intent(inout) :: self
-        
-        call setup_figure_backend(self%state, 'png')
-        self%state%rendered = .false.
+        call setup_png_for_animation(self%state)
     end subroutine setup_png_backend_for_animation
     
     subroutine extract_rgb_data_for_animation(self, rgb_data)
@@ -845,7 +799,7 @@ contains
             call self%render_figure()
         end if
         
-        call self%state%backend%extract_rgb_data(self%state%width, self%state%height, rgb_data)
+        call extract_rgb_for_animation(self%state, rgb_data)
     end subroutine extract_rgb_data_for_animation
     
     subroutine extract_png_data_for_animation(self, png_data, status)
@@ -858,69 +812,63 @@ contains
             call self%render_figure()
         end if
         
-        call self%state%backend%get_png_data_backend(self%state%width, self%state%height, png_data, status)
+        call extract_png_for_animation(self%state, png_data, status)
     end subroutine extract_png_data_for_animation
     
     subroutine backend_color(self, r, g, b)
         !! Set backend color
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: r, g, b
-        
-        if (allocated(self%state%backend)) then
-            call self%state%backend%color(r, g, b)
-        end if
+        call set_backend_color(self%state, r, g, b)
     end subroutine backend_color
     
     function backend_associated(self) result(is_associated)
         !! Check if backend is allocated
         class(figure_t), intent(in) :: self
         logical :: is_associated
-        
-        is_associated = allocated(self%state%backend)
+        is_associated = is_backend_associated(self%state)
     end function backend_associated
     
     subroutine backend_line(self, x1, y1, x2, y2)
         !! Draw line using backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x1, y1, x2, y2
-        
-        if (allocated(self%state%backend)) then
-            call self%state%backend%line(x1, y1, x2, y2)
-        end if
+        call draw_backend_line(self%state, x1, y1, x2, y2)
     end subroutine backend_line
     
     function get_x_min(self) result(x_min)
         !! Get x minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_min
-        x_min = self%state%x_min
+        x_min = get_figure_x_min(self%state)
     end function get_x_min
     
     function get_x_max(self) result(x_max)
         !! Get x maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_max
-        x_max = self%state%x_max
+        x_max = get_figure_x_max(self%state)
     end function get_x_max
     
     function get_y_min(self) result(y_min)
         !! Get y minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_min
-        y_min = self%state%y_min
+        y_min = get_figure_y_min(self%state)
     end function get_y_min
     
     function get_y_max(self) result(y_max)
         !! Get y maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_max
-        y_max = self%state%y_max
+        y_max = get_figure_y_max(self%state)
     end function get_y_max
 
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
                       colormap, alpha, edgecolor, facecolor, linewidth, &
                       vmin, vmax, label, show_colorbar)
-        !! Add a scatter plot with comprehensive marker customization
+        !! Add an efficient scatter plot using a single plot object
+        !! Properly handles thousands of points without O(n) overhead
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
@@ -929,102 +877,20 @@ contains
         real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
         logical, intent(in), optional :: show_colorbar
         
-        real(wp) :: plot_color(3)
-        real(wp), allocatable :: sizes(:), colors(:)
-        character(len=:), allocatable :: mk
-        integer :: i, n
+        real(wp) :: default_color(3)
         
-        n = size(x)
+        ! Get default color from state
+        default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
         
-        ! Handle empty arrays
-        if (n == 0) then
-            call log_warning("scatter: Empty arrays provided")
-            return
-        end if
+        ! Delegate to efficient scatter implementation
+        call add_scatter_plot(self%plots, self%state%plot_count, &
+                             x, y, s, c, marker, markersize, color, &
+                             colormap, alpha, edgecolor, facecolor, &
+                             linewidth, vmin, vmax, label, show_colorbar, &
+                             default_color)
         
-        ! Validate input sizes
-        if (size(y) /= n) then
-            call log_error("scatter: x and y arrays must have same size")
-            return
-        end if
-        
-        ! Handle size array
-        if (present(s)) then
-            if (size(s) == n) then
-                allocate(sizes(n))
-                sizes = s
-            else if (size(s) == 1) then
-                allocate(sizes(n))
-                sizes = s(1)
-            else
-                call log_error("scatter: size array must match data or be scalar")
-                return
-            end if
-        else if (present(markersize)) then
-            allocate(sizes(n))
-            sizes = markersize
-        else
-            allocate(sizes(n))
-            sizes = 10.0_wp  ! Default size
-        end if
-        
-        ! Handle color array
-        if (present(c)) then
-            if (size(c) == n) then
-                allocate(colors(n))
-                colors = c
-            else if (size(c) == 1) then
-                allocate(colors(n))
-                colors = c(1)
-            else
-                call log_error("scatter: color array must match data or be scalar")
-                return
-            end if
-        end if
-        
-        ! Determine marker type
-        if (present(marker)) then
-            mk = marker
-        else
-            mk = 'o'  ! Default to circle
-        end if
-        
-        ! Determine color (if not using colormap)
-        if (.not. allocated(colors)) then
-            if (present(color)) then
-                plot_color = color
-            else if (present(facecolor)) then
-                plot_color = facecolor
-            else
-                plot_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
-            end if
-        end if
-        
-        ! For now, implement scatter as individual points with markers
-        ! This is a simplified implementation that works with existing infrastructure
-        do i = 1, n
-            if (allocated(colors)) then
-                ! Map color value to actual RGB using colormap (simplified)
-                if (present(colormap)) then
-                    ! Simple linear mapping for now
-                    plot_color = [colors(i), 0.5_wp, 1.0_wp - colors(i)]
-                else
-                    plot_color = [colors(i), colors(i), colors(i)]
-                end if
-            end if
-            
-            ! Add single point plot with marker
-            call self%add_plot([x(i)], [y(i)], label=' ', linestyle='none')
-            
-            ! Note: Full marker rendering with sizes needs backend support
-            ! This is a basic implementation that gets the functionality working
-        end do
-        
-        ! Add label to legend for the collection
-        if (present(label) .and. len_trim(label) > 0 .and. n > 0) then
-            ! Add a dummy plot for the legend entry
-            call self%add_plot([x(1)], [y(1)], label=label, linestyle='none')
-        end if
+        ! Update figure state
+        self%plot_count = self%state%plot_count
         
         ! Update data ranges
         call self%update_data_ranges()
@@ -1034,34 +900,12 @@ contains
         !! Create a grid of subplots
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: nrows, ncols
-        integer :: i, j
+        logical :: subplot_active
         
-        ! Validate input
-        if (nrows <= 0 .or. ncols <= 0) then
-            call log_error("subplots: Invalid grid dimensions")
-            return
-        end if
-        
-        ! Set subplot configuration
-        self%subplot_rows = nrows
-        self%subplot_cols = ncols
+        ! Delegate to module implementation
+        call create_subplots(self%subplots_array, self%subplot_rows, &
+                            self%subplot_cols, nrows, ncols, subplot_active)
         self%current_subplot = 1
-        
-        ! Allocate subplot array
-        if (allocated(self%subplots_array)) deallocate(self%subplots_array)
-        allocate(self%subplots_array(nrows, ncols))
-        
-        ! Initialize each subplot
-        do i = 1, nrows
-            do j = 1, ncols
-                ! Initialize subplot data
-                self%subplots_array(i, j)%plot_count = 0
-                self%subplots_array(i, j)%xlim_set = .false.
-                self%subplots_array(i, j)%ylim_set = .false.
-                if (allocated(self%subplots_array(i, j)%plots)) deallocate(self%subplots_array(i, j)%plots)
-                allocate(self%subplots_array(i, j)%plots(self%subplots_array(i, j)%max_plots))
-            end do
-        end do
     end subroutine subplots
     
     subroutine subplot_plot(self, row, col, x, y, label, linestyle, color)
@@ -1071,62 +915,11 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
-        real(wp) :: plot_color(3)
-        character(len=:), allocatable :: ls
-        integer :: idx
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            call log_error("subplot_plot: Invalid subplot indices")
-            return
-        end if
-        
-        ! Check capacity
-        if (self%subplots_array(row, col)%plot_count >= self%subplots_array(row, col)%max_plots) then
-            call log_error("subplot_plot: Maximum number of plots reached")
-            return
-        end if
-        
-        ! Determine color
-        if (present(color)) then
-            plot_color = color
-        else
-            plot_color = self%state%colors(:, mod(self%subplots_array(row, col)%plot_count, 6) + 1)
-        end if
-        
-        ! Determine linestyle  
-        if (present(linestyle)) then
-            ls = linestyle
-        else
-            ls = '-'
-        end if
-        
-        ! Add plot data
-        idx = self%subplots_array(row, col)%plot_count + 1
-        self%subplots_array(row, col)%plots(idx)%plot_type = PLOT_TYPE_LINE
-        allocate(self%subplots_array(row, col)%plots(idx)%x(size(x)))
-        allocate(self%subplots_array(row, col)%plots(idx)%y(size(y)))
-        self%subplots_array(row, col)%plots(idx)%x = x
-        self%subplots_array(row, col)%plots(idx)%y = y
-        self%subplots_array(row, col)%plots(idx)%color = plot_color
-        self%subplots_array(row, col)%plots(idx)%linestyle = ls
-        if (present(label)) self%subplots_array(row, col)%plots(idx)%label = label
-        
-        self%subplots_array(row, col)%plot_count = self%subplots_array(row, col)%plot_count + 1
-        
-        ! Update data ranges
-        if (self%subplots_array(row, col)%plot_count == 1) then
-            self%subplots_array(row, col)%x_min = minval(x)
-            self%subplots_array(row, col)%x_max = maxval(x)
-            self%subplots_array(row, col)%y_min = minval(y)
-            self%subplots_array(row, col)%y_max = maxval(y)
-        else
-            self%subplots_array(row, col)%x_min = min(self%subplots_array(row, col)%x_min, minval(x))
-            self%subplots_array(row, col)%x_max = max(self%subplots_array(row, col)%x_max, maxval(x))
-            self%subplots_array(row, col)%y_min = min(self%subplots_array(row, col)%y_min, minval(y))
-            self%subplots_array(row, col)%y_max = max(self%subplots_array(row, col)%y_max, maxval(y))
-        end if
+        ! Delegate to module implementation
+        call add_subplot_plot(self%subplots_array, self%subplot_rows, &
+                             self%subplot_cols, row, col, x, y, label, &
+                             linestyle, color, self%state%colors, 6)
     end subroutine subplot_plot
     
     function subplot_plot_count(self, row, col) result(count)
@@ -1135,14 +928,9 @@ contains
         integer, intent(in) :: row, col
         integer :: count
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            count = 0
-            return
-        end if
-        
-        count = self%subplots_array(row, col)%plot_count
+        ! Delegate to module implementation
+        count = get_subplot_plot_count(self%subplots_array, self%subplot_rows, &
+                                       self%subplot_cols, row, col)
     end function subplot_plot_count
     
     subroutine subplot_set_title(self, row, col, title)
@@ -1151,14 +939,9 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: title
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            call log_error("subplot_set_title: Invalid subplot indices")
-            return
-        end if
-        
-        self%subplots_array(row, col)%title = title
+        ! Delegate to module implementation
+        call set_subplot_title(self%subplots_array, self%subplot_rows, &
+                              self%subplot_cols, row, col, title)
     end subroutine subplot_set_title
     
     subroutine subplot_set_xlabel(self, row, col, xlabel)
@@ -1167,14 +950,9 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: xlabel
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            call log_error("subplot_set_xlabel: Invalid subplot indices")
-            return
-        end if
-        
-        self%subplots_array(row, col)%xlabel = xlabel
+        ! Delegate to module implementation
+        call set_subplot_xlabel(self%subplots_array, self%subplot_rows, &
+                               self%subplot_cols, row, col, xlabel)
     end subroutine subplot_set_xlabel
     
     subroutine subplot_set_ylabel(self, row, col, ylabel)
@@ -1183,14 +961,9 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: ylabel
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            call log_error("subplot_set_ylabel: Invalid subplot indices")
-            return
-        end if
-        
-        self%subplots_array(row, col)%ylabel = ylabel
+        ! Delegate to module implementation
+        call set_subplot_ylabel(self%subplots_array, self%subplot_rows, &
+                               self%subplot_cols, row, col, ylabel)
     end subroutine subplot_set_ylabel
     
     function subplot_title(self, row, col) result(title)
@@ -1199,18 +972,9 @@ contains
         integer, intent(in) :: row, col
         character(len=:), allocatable :: title
         
-        ! Validate indices
-        if (row <= 0 .or. row > self%subplot_rows .or. &
-            col <= 0 .or. col > self%subplot_cols) then
-            title = ""
-            return
-        end if
-        
-        if (allocated(self%subplots_array(row, col)%title)) then
-            title = self%subplots_array(row, col)%title
-        else
-            title = ""
-        end if
+        ! Delegate to module implementation
+        title = get_subplot_title(self%subplots_array, self%subplot_rows, &
+                                  self%subplot_cols, row, col)
     end function subplot_title
 
 end module fortplot_figure_core
