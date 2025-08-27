@@ -353,13 +353,14 @@ contains
                            self%state%grid_linestyle, enabled, which, axis, alpha, linestyle)
     end subroutine grid
 
-    subroutine hist(self, data, bins, density, label)
+    subroutine hist(self, data, bins, density, label, color)
         !! Create a histogram plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
         
         integer :: n_bins
         real(wp), allocatable :: bin_edges(:), bin_counts(:)
@@ -387,7 +388,11 @@ contains
         call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
         
         ! Add as line plot
-        call self%add_plot(x_data, y_data, label=hist_label)
+        if (present(color)) then
+            call self%add_plot(x_data, y_data, label=hist_label, color=color)
+        else
+            call self%add_plot(x_data, y_data, label=hist_label)
+        end if
     end subroutine hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, &

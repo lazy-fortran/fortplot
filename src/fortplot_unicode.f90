@@ -13,6 +13,7 @@ module fortplot_unicode
     public :: codepoint_to_default_placeholder
     public :: utf8_to_codepoint
     public :: utf8_char_length
+    public :: contains_unicode, is_unicode_char, check_utf8_sequence, is_greek_letter_codepoint
 
 contains
 
@@ -237,5 +238,75 @@ contains
             utf8_to_codepoint = 0
         end if
     end function utf8_to_codepoint
+
+    logical function contains_unicode(text)
+        !! Check if text contains Unicode characters
+        character(len=*), intent(in) :: text
+        integer :: i, char_len
+        logical :: is_valid
+        
+        contains_unicode = .false.
+        i = 1
+        
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len > 1) then
+                ! Check if it's a valid UTF-8 sequence
+                call check_utf8_sequence(text, i, is_valid, char_len)
+                if (is_valid) then
+                    contains_unicode = .true.
+                    return
+                end if
+            end if
+            i = i + char_len
+        end do
+    end function contains_unicode
+
+    logical function is_unicode_char(char)
+        !! Check if a character is Unicode (multi-byte)
+        character(len=*), intent(in) :: char
+        
+        is_unicode_char = utf8_char_length(char(1:1)) > 1
+    end function is_unicode_char
+
+    subroutine check_utf8_sequence(text, start_pos, is_valid, seq_len)
+        !! Check if UTF-8 sequence is valid and return its length
+        character(len=*), intent(in) :: text
+        integer, intent(in) :: start_pos
+        logical, intent(out) :: is_valid
+        integer, intent(out) :: seq_len
+        integer :: i, byte_val
+        
+        is_valid = .false.
+        seq_len = utf8_char_length(text(start_pos:start_pos))
+        
+        if (seq_len == 1) then
+            is_valid = .true.
+            return
+        end if
+        
+        if (start_pos + seq_len - 1 > len(text)) then
+            return  ! Not enough bytes
+        end if
+        
+        ! Check continuation bytes
+        do i = 1, seq_len - 1
+            byte_val = ichar(text(start_pos + i:start_pos + i))
+            if (iand(byte_val, int(z'C0')) /= int(z'80')) then
+                return  ! Invalid continuation byte
+            end if
+        end do
+        
+        is_valid = .true.
+    end subroutine check_utf8_sequence
+
+    logical function is_greek_letter_codepoint(codepoint)
+        !! Check if codepoint is a Greek letter
+        integer, intent(in) :: codepoint
+        
+        ! Greek letters are in ranges U+0391-U+03A9 (uppercase) and U+03B1-U+03C9 (lowercase)
+        is_greek_letter_codepoint = (codepoint >= 913 .and. codepoint <= 937) .or. &
+                                   (codepoint >= 945 .and. codepoint <= 969)
+    end function is_greek_letter_codepoint
 
 end module fortplot_unicode
