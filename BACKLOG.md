@@ -10,10 +10,7 @@
 - [x] #506: defect: multiple execute_command_line calls pose security risks → MOVED TO DOING
 
 ### ISSUE 2: QADS COMPLIANCE (Fix the line limit violation immediately) 
-- [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines)
-  **IMPLEMENTATION GUIDANCE**: Split oversized file, maintain clean interfaces
-  **SUCCESS CRITERIA**: All files under 1000 lines, no functionality broken
-  **SERGEI**: You've done file splitting before - don't break the API this time
+- [x] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines) → MOVED TO DOING
 
 ### ISSUE 3: REPOSITORY CLEANUP (Basic hygiene the team ignored)
 - [ ] #499: defect: binary executables and unreferenced files polluting repository
@@ -24,10 +21,15 @@
 ## DOING (Current Work)
 
 ### ACTIVE
-- [ ] #506: defect: multiple execute_command_line calls pose security risks
-  **STATUS**: In progress - security-506 branch
+- [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines)
+  **STATUS**: In progress - qads-511 branch
   **OWNER**: sergei (implementation)
-  **PRIORITY**: SECURITY CRITICAL
+  **PRIORITY**: QADS COMPLIANCE
+
+### IN REVIEW
+- [ ] #506: defect: multiple execute_command_line calls pose security risks
+  **STATUS**: PR #517 created, awaiting patrick review
+  **OWNER**: patrick (review)
 
 ## PRODUCT_BACKLOG (Moved from Previous Sprint - Team Couldn't Handle)
 
