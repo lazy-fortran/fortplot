@@ -6,6 +6,7 @@
 
 
 ### EPIC: Technical Debt Resolution
+- [ ] #486: defect: fortplot_ascii.f90 exceeds 1000 line limit (1038 lines)
 - [ ] #467: defect: 36 files contain TODO/FIXME/stub markers indicating incomplete implementations
 - [ ] #418: defect: TODO comments indicate incomplete implementations
 - [ ] #416: defect: commented-out code in fortplot_matplotlib.f90
