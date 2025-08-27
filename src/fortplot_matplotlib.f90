@@ -573,8 +573,9 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         
         call ensure_global_figure_initialized()
-        ! TODO: errorbar method not yet implemented in working figure core
-        ! call fig%errorbar(x, y, xerr, yerr, label=label)
+        call log_warning("errorbar functionality is not yet implemented in working figure core")
+        ! Errorbar plots require specialized error bar rendering which is not
+        ! implemented in the current figure core. Use basic line plots instead.
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, markersize)
@@ -585,8 +586,9 @@ contains
         real(8), intent(in), optional :: linewidth, markersize
         
         call ensure_global_figure_initialized()
-        ! TODO: add_3d_plot method not yet implemented in working figure core  
-        ! call fig%add_3d_plot(x, y, z, label=label)
+        call log_warning("3D plot functionality is not yet implemented in working figure core")
+        ! 3D line plots require 3D coordinate projection and specialized rendering
+        ! which is not implemented in the current figure core.
     end subroutine add_3d_plot
 
     subroutine add_surface(x, y, z, colormap, show_colorbar, alpha, edgecolor, linewidth, label)
@@ -599,8 +601,9 @@ contains
         real(8), dimension(3), intent(in), optional :: edgecolor
         
         call ensure_global_figure_initialized()
-        ! TODO: add_surface method not yet implemented in working figure core
-        ! call fig%add_surface(x, y, z, label=label)
+        call log_warning("surface plot functionality is not yet implemented in working figure core")
+        ! Surface plots require complex 3D mesh rendering and shading algorithms
+        ! which are not implemented in the current figure core. Use contour plots instead.
     end subroutine add_surface
 
     ! Figure management functions
