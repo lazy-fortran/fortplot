@@ -148,7 +148,7 @@ contains
         pos = pos + 1
         output_data(pos) = int(iand(adler32_checksum, 255), int8)
         
-        deallocate(compressed_block)
+        if (allocated(compressed_block)) deallocate(compressed_block)
     end function zlib_compress
        
     function calculate_adler32(data, data_len) result(adler32)
@@ -251,7 +251,7 @@ contains
         allocate(output_data(output_len))
         output_data(1:output_len) = temp_buffer(1:output_len)
         
-        deallocate(temp_buffer)
+        if (allocated(temp_buffer)) deallocate(temp_buffer)
     end subroutine deflate_compress
     
     subroutine init_fixed_huffman_tables(literal_codes, literal_lengths, distance_codes, distance_lengths)

@@ -88,7 +88,7 @@ contains
             end if
         end do
         
-        deallocate(spiral_seeds)
+        if (allocated(spiral_seeds)) deallocate(spiral_seeds)
     end subroutine streamplot_matplotlib
 
     subroutine integrate_matplotlib_style(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &

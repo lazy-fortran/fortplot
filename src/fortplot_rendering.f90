@@ -66,7 +66,8 @@ contains
                 trim(plot_data%linestyle) == 'none' .or. &
                 trim(plot_data%linestyle) == '') then
                 ! No lines to draw, only markers
-                deallocate(x_scaled, y_scaled)
+                if (allocated(x_scaled)) deallocate(x_scaled)
+        if (allocated(y_scaled)) deallocate(y_scaled)
                 return
             end if
             call backend%set_line_style(plot_data%linestyle)
@@ -84,7 +85,8 @@ contains
             end do
         end if
         
-        deallocate(x_scaled, y_scaled)
+        if (allocated(x_scaled)) deallocate(x_scaled)
+        if (allocated(y_scaled)) deallocate(y_scaled)
     end subroutine render_line_plot
     
     subroutine render_markers(backend, plot_data, x_min_t, x_max_t, y_min_t, y_max_t, xscale, yscale, symlog_threshold)
