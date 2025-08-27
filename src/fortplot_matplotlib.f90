@@ -613,10 +613,49 @@ contains
         real(8), intent(in), optional :: capsize
         real(8), dimension(3), intent(in), optional :: color
         
+        ! Validate input arrays
+        if (size(x) /= size(y)) then
+            call log_error("add_errorbar: x and y arrays must have the same size")
+            return
+        end if
+        
+        if (size(x) == 0) then
+            call log_warning("add_errorbar: empty arrays provided - no plot generated")
+            return
+        end if
+        
+        ! Validate error arrays if provided
+        if (present(xerr)) then
+            if (size(xerr) /= size(x)) then
+                call log_error("add_errorbar: xerr array must have same size as x and y")
+                return
+            end if
+        end if
+        
+        if (present(yerr)) then
+            if (size(yerr) /= size(y)) then
+                call log_error("add_errorbar: yerr array must have same size as x and y")
+                return
+            end if
+        end if
+        
+        ! Validate capsize parameter
+        if (present(capsize)) then
+            if (capsize < 0.0_wp) then
+                call log_warning("add_errorbar: capsize must be non-negative, ignoring")
+            end if
+        end if
+        
         call ensure_global_figure_initialized()
-        call log_warning("errorbar functionality is not yet implemented in working figure core")
-        ! Errorbar plots require specialized error bar rendering which is not
-        ! implemented in the current figure core. Use basic line plots instead.
+        
+        ! Log informative message about current implementation status
+        if (present(xerr) .or. present(yerr)) then
+            call log_warning("add_errorbar: errorbar functionality not implemented - showing base plot only")
+        end if
+        
+        ! Fall back to basic line plot (delegate to errorbar() for consistency)
+        call errorbar(x, y, xerr=xerr, yerr=yerr, fmt=fmt, label=label, &
+                     capsize=capsize, linestyle=linestyle, marker=marker, color=color)
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, markersize)
@@ -626,10 +665,38 @@ contains
         real(8), dimension(3), intent(in), optional :: color
         real(8), intent(in), optional :: linewidth, markersize
         
+        ! Validate input arrays
+        if (size(x) /= size(y) .or. size(x) /= size(z)) then
+            call log_error("add_3d_plot: x, y, and z arrays must have the same size")
+            return
+        end if
+        
+        if (size(x) == 0) then
+            call log_warning("add_3d_plot: empty arrays provided - no plot generated")
+            return
+        end if
+        
+        ! Validate optional parameters
+        if (present(linewidth)) then
+            if (linewidth <= 0.0_wp) then
+                call log_warning("add_3d_plot: linewidth must be positive, using default")
+            end if
+        end if
+        
+        if (present(markersize)) then
+            if (markersize <= 0.0_wp) then
+                call log_warning("add_3d_plot: markersize must be positive, using default")
+            end if
+        end if
+        
         call ensure_global_figure_initialized()
-        call log_warning("3D plot functionality is not yet implemented in working figure core")
-        ! 3D line plots require 3D coordinate projection and specialized rendering
-        ! which is not implemented in the current figure core.
+        
+        call log_warning("add_3d_plot: 3D plot functionality not implemented - using 2D projection")
+        call log_info("add_3d_plot: projecting 3D data (" // &
+                     trim(adjustl(real_to_string(real(size(x), 8)))) // " points) to 2D plot")
+        
+        ! Fall back to 2D plot using x and y coordinates
+        call plot(x, y, label=label, linestyle=linestyle)
     end subroutine add_3d_plot
 
     subroutine add_surface(x, y, z, colormap, show_colorbar, alpha, edgecolor, linewidth, label)
@@ -641,10 +708,49 @@ contains
         real(8), intent(in), optional :: alpha, linewidth
         real(8), dimension(3), intent(in), optional :: edgecolor
         
+        ! Validate input arrays
+        if (size(x) == 0 .or. size(y) == 0) then
+            call log_warning("add_surface: empty coordinate arrays provided - no plot generated")
+            return
+        end if
+        
+        if (size(z,1) == 0 .or. size(z,2) == 0) then
+            call log_warning("add_surface: empty z data array provided - no plot generated")
+            return
+        end if
+        
+        ! Validate dimension compatibility
+        if (size(z,1) /= size(x) .or. size(z,2) /= size(y)) then
+            call log_error("add_surface: z array dimensions must match x and y array sizes")
+            call log_info("Expected z(" // trim(adjustl(real_to_string(real(size(x), 8)))) // "," // &
+                         trim(adjustl(real_to_string(real(size(y), 8)))) // "), got z(" // &
+                         trim(adjustl(real_to_string(real(size(z,1), 8)))) // "," // &
+                         trim(adjustl(real_to_string(real(size(z,2), 8)))) // ")")
+            return
+        end if
+        
+        ! Validate optional parameters
+        if (present(alpha)) then
+            if (alpha < 0.0_wp .or. alpha > 1.0_wp) then
+                call log_warning("add_surface: alpha must be between 0 and 1, using default")
+            end if
+        end if
+        
+        if (present(linewidth)) then
+            if (linewidth <= 0.0_wp) then
+                call log_warning("add_surface: linewidth must be positive, using default")
+            end if
+        end if
+        
         call ensure_global_figure_initialized()
-        call log_warning("surface plot functionality is not yet implemented in working figure core")
-        ! Surface plots require complex 3D mesh rendering and shading algorithms
-        ! which are not implemented in the current figure core. Use contour plots instead.
+        
+        call log_warning("add_surface: surface plot functionality not implemented - using contour plot")
+        call log_info("add_surface: rendering surface as contour plot (" // &
+                     trim(adjustl(real_to_string(real(size(x), 8)))) // "x" // &
+                     trim(adjustl(real_to_string(real(size(y), 8)))) // " grid)")
+        
+        ! Fall back to contour plot as suggested in the original comment
+        call contour(x, y, z, label=label)
     end subroutine add_surface
 
     ! Figure management functions
@@ -699,8 +805,31 @@ contains
         !! Create subplot (placeholder for future implementation)
         integer, intent(in) :: nrows, ncols, index
         
-        call log_warning("subplot() is not yet fully implemented")
+        ! Validate input parameters
+        if (nrows <= 0) then
+            call log_error("subplot: nrows must be positive")
+            return
+        end if
+        
+        if (ncols <= 0) then
+            call log_error("subplot: ncols must be positive")
+            return
+        end if
+        
+        if (index <= 0 .or. index > nrows * ncols) then
+            call log_error("subplot: index must be between 1 and " // &
+                          trim(adjustl(real_to_string(real(nrows * ncols, 8)))))
+            return
+        end if
+        
         call ensure_global_figure_initialized()
+        
+        call log_warning("subplot: subplot functionality not implemented")
+        call log_info("subplot: would create subplot " // &
+                     trim(adjustl(real_to_string(real(index, 8)))) // " of " // &
+                     trim(adjustl(real_to_string(real(nrows, 8)))) // "x" // &
+                     trim(adjustl(real_to_string(real(ncols, 8)))) // " grid")
+        call log_info("All plots will be rendered in single figure instead")
     end subroutine subplot
 
     ! Axis configuration functions
@@ -804,14 +933,40 @@ contains
         !! Set line width for subsequent plots (placeholder)
         real(8), intent(in) :: width
         
-        call log_warning("set_line_width() is not yet fully implemented")
+        ! Validate input parameter
+        if (width <= 0.0_wp) then
+            call log_error("set_line_width: width must be positive")
+            return
+        end if
+        
+        ! Check for reasonable range
+        if (width > 100.0_wp) then
+            call log_warning("set_line_width: unusually large width (" // &
+                           trim(adjustl(real_to_string(width))) // "), this may affect performance")
+        end if
+        
+        call log_warning("set_line_width: global line width setting not implemented")
+        call log_info("set_line_width: would set line width to " // &
+                     trim(adjustl(real_to_string(width))) // " for subsequent plots")
+        call log_info("Use linestyle parameter in individual plot calls instead")
     end subroutine set_line_width
 
     subroutine set_ydata(ydata)
         !! Update y data for existing plot (placeholder)
         real(8), dimension(:), intent(in) :: ydata
         
-        call log_warning("set_ydata() is not yet fully implemented")
+        ! Validate input data
+        if (size(ydata) == 0) then
+            call log_warning("set_ydata: empty data array provided")
+            return
+        end if
+        
+        call ensure_global_figure_initialized()
+        
+        call log_warning("set_ydata: dynamic plot data update not implemented")
+        call log_info("set_ydata: would update plot data with " // &
+                     trim(adjustl(real_to_string(real(size(ydata), 8)))) // " points")
+        call log_info("Create new plot with updated data instead")
     end subroutine set_ydata
 
     ! Output functions

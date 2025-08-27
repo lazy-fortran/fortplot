@@ -9,7 +9,6 @@
 ### EPIC: Edge Case and Stability Foundation
 
 ### EPIC: Core API Implementation Completion
-- [ ] #422: defect: empty/no-op subroutines in multiple modules
 - [ ] #421: defect: file I/O operations without proper validation
 - [ ] #420: defect: potential memory leak - deallocate without error checking
 - [ ] #429: Bug: Animation save implementation not initialized
@@ -47,6 +46,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
+- [ ] #422: defect: empty/no-op subroutines in multiple modules [EPIC: Core API Implementation Completion]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
