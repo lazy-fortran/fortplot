@@ -16,7 +16,6 @@
 ### EPIC: Visual Output Quality Restoration
 - [ ] #311: Simple Sine Wave and Gaussian Default plots shows just axes in examples but no content
 - [ ] #312: Legend Demo plots dont show up on github pages
-- [ ] #414: PDF plots completely broken
 - [ ] #413: title in png plots too far right
 - [ ] #408: ASCII plots don't show full curves in basic plots
 - [ ] #409: Limited height of ASCII plots in contour demo
@@ -46,7 +45,7 @@
 - [ ] #448: defect: Documentation consolidation for Foundation Quality Enforcement Sprint
 
 ## DOING (Current Work)
-- [ ] #422: defect: empty/no-op subroutines in multiple modules [EPIC: Core API Implementation Completion]
+- [ ] #414: PDF plots completely broken [EPIC: Visual Output Quality Restoration]
 
 ## PRODUCT_BACKLOG (Long-term Features)
 
