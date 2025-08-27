@@ -39,6 +39,9 @@ module fortplot_figure_core
                                         set_subplot_xlabel, set_subplot_ylabel, &
                                         get_subplot_title
     use fortplot_figure_accessors
+    use fortplot_figure_compatibility
+    use fortplot_figure_plots
+    use fortplot_figure_io_operations
     use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
     implicit none
 
@@ -174,31 +177,8 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         
-        real(wp) :: plot_color(3)
-        character(len=:), allocatable :: ls
-        
-        ! Determine color
-        if (present(color)) then
-            plot_color = color
-        else
-            plot_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
-        end if
-        
-        ! Determine linestyle
-        if (present(linestyle)) then
-            ls = linestyle
-        else
-            ls = '-'
-        end if
-        
-        ! Add the plot data using focused module
-        call add_line_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
-                               self%state%colors, x, y, label, ls, plot_color, marker='')
-        
-        ! Sync backward compatibility member
+        call figure_add_plot(self%plots, self%state, x, y, label, linestyle, color)
         self%plot_count = self%state%plot_count
-        
-        ! Update data ranges
         call self%update_data_ranges()
     end subroutine add_plot
 
@@ -209,12 +189,8 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         
-        call add_contour_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
-                                  self%state%colors, x_grid, y_grid, z_grid, levels, label)
-        
-        ! Sync backward compatibility member
+        call figure_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, levels, label)
         self%plot_count = self%state%plot_count
-        
         call self%update_data_ranges()
     end subroutine add_contour
 
@@ -226,12 +202,9 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
         
-        call add_colored_contour_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
-                                          x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
-        
-        ! Sync backward compatibility member
+        call figure_add_contour_filled(self%plots, self%state, x_grid, y_grid, z_grid, &
+                                      levels, colormap, show_colorbar, label)
         self%plot_count = self%state%plot_count
-        
         call self%update_data_ranges()
     end subroutine add_contour_filled
 
@@ -244,12 +217,9 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
         
-        call add_pcolormesh_plot_data(self%plots, self%state%plot_count, self%state%max_plots, &
-                                     x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
-        
-        ! Sync backward compatibility member
+        call figure_add_pcolormesh(self%plots, self%state, x, y, c, colormap, &
+                                  vmin, vmax, edgecolors, linewidths)
         self%plot_count = self%state%plot_count
-        
         call self%update_data_ranges_pcolormesh()
     end subroutine add_pcolormesh
 
@@ -290,20 +260,11 @@ contains
 
     subroutine savefig(self, filename, blocking)
         !! Save figure to file (backward compatibility version)
-        !! This version logs errors but doesn't return status
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        integer :: status
-        
-        ! Delegate to version with status reporting
-        call self%savefig_with_status(filename, status, blocking)
-        
-        ! Log error if save failed (maintains existing behavior)
-        if (status /= SUCCESS) then
-            call log_error("Failed to save figure to '" // trim(filename) // "'")
-        end if
+        call figure_savefig(self%state, filename, blocking, self%render_figure)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -313,44 +274,8 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
-        character(len=20) :: required_backend, current_backend
-        logical :: block, need_backend_switch
-        
-        ! Initialize success status
-        status = SUCCESS
-        
-        block = .true.
-        if (present(blocking)) block = blocking
-        
-        ! Determine required backend from filename extension
-        required_backend = get_backend_from_filename(filename)
-        
-        ! Determine current backend type
-        select type (backend => self%state%backend)
-        type is (png_context)
-            current_backend = 'png'
-        type is (pdf_context)
-            current_backend = 'pdf'
-        type is (ascii_context)
-            current_backend = 'ascii'
-        class default
-            current_backend = 'unknown'
-        end select
-        
-        ! Check if we need to switch backends
-        need_backend_switch = (trim(required_backend) /= trim(current_backend))
-        
-        if (need_backend_switch) then
-            call setup_figure_backend(self%state, required_backend)
-        end if
-        
-        ! Render if not already rendered
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        ! Save the figure with status checking
-        call save_backend_with_status(self%state%backend, filename, status)
+        call figure_savefig_with_status(self%state, filename, status, blocking, &
+                                       self%render_figure)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -358,18 +283,7 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        logical :: block
-        
-        block = .true.
-        if (present(blocking)) block = blocking
-        
-        ! Render if not already rendered
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        ! Display the figure
-        call self%state%backend%save("terminal")
+        call figure_show(self%state, blocking, self%render_figure)
     end subroutine show
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
@@ -438,65 +352,15 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         
-        integer :: plot_idx
+        ! Delegate to focused boxplot module
+        call add_boxplot(self%plots, self%state%plot_count, data, position, &
+                        width, label, show_outliers, horizontal, color, &
+                        self%state%max_plots)
         
-        ! Handle empty data
-        if (size(data) == 0) return
+        ! Sync backward compatibility member
+        self%plot_count = self%state%plot_count
         
-        ! Check plot count
-        self%plot_count = self%plot_count + 1
-        if (self%plot_count > self%state%max_plots) then
-            print *, "WARNING: Maximum number of plots exceeded"
-            self%plot_count = self%state%max_plots
-            return
-        end if
-        
-        plot_idx = self%plot_count
-        
-        ! Store box plot data
-        if (allocated(self%plots(plot_idx)%box_data)) then
-            deallocate(self%plots(plot_idx)%box_data)
-        end if
-        allocate(self%plots(plot_idx)%box_data(size(data)))
-        self%plots(plot_idx)%box_data = data
-        
-        ! Set plot type
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_BOXPLOT
-        
-        ! Store label if provided
-        if (present(label)) then
-            self%plots(plot_idx)%label = label
-        end if
-        
-        ! Store position if provided
-        if (present(position)) then
-            self%plots(plot_idx)%position = position
-        else
-            self%plots(plot_idx)%position = 1.0_wp
-        end if
-        
-        ! Store width if provided
-        if (present(width)) then
-            self%plots(plot_idx)%width = width
-        else
-            self%plots(plot_idx)%width = 0.5_wp
-        end if
-        
-        ! Store other parameters
-        self%plots(plot_idx)%show_outliers = .true.
-        if (present(show_outliers)) then
-            self%plots(plot_idx)%show_outliers = show_outliers
-        end if
-        
-        self%plots(plot_idx)%horizontal = .false.
-        if (present(horizontal)) then
-            self%plots(plot_idx)%horizontal = horizontal
-        end if
-        
-        ! Store color if provided (would need conversion from string to RGB)
-        ! For now, use default color from plot_data_t initialization
-        
-        ! Update data ranges based on boxplot statistics
+        ! Update data ranges
         call update_data_ranges_boxplot(self, data, position)
         
         ! Mark as not rendered
@@ -746,35 +610,35 @@ contains
         !! Get figure width
         class(figure_t), intent(in) :: self
         integer :: width
-        width = get_figure_width(self%state)
+        width = get_figure_width_compat(self%state)
     end function get_width
     
     function get_height(self) result(height)
         !! Get figure height
         class(figure_t), intent(in) :: self
         integer :: height
-        height = get_figure_height(self%state)
+        height = get_figure_height_compat(self%state)
     end function get_height
     
     function get_rendered(self) result(rendered)
         !! Get rendered state
         class(figure_t), intent(in) :: self
         logical :: rendered
-        rendered = get_figure_rendered(self%state)
+        rendered = get_figure_rendered_compat(self%state)
     end function get_rendered
     
     subroutine set_rendered(self, rendered)
         !! Set rendered state
         class(figure_t), intent(inout) :: self
         logical, intent(in) :: rendered
-        call set_figure_rendered(self%state, rendered)
+        call set_figure_rendered_compat(self%state, rendered)
     end subroutine set_rendered
     
     function get_plot_count(self) result(plot_count)
         !! Get number of plots
         class(figure_t), intent(in) :: self
         integer :: plot_count
-        plot_count = get_figure_plot_count(self%state)
+        plot_count = get_figure_plot_count_compat(self%state)
     end function get_plot_count
     
     function get_plots(self) result(plots_ptr)
@@ -787,7 +651,7 @@ contains
     subroutine setup_png_backend_for_animation(self)
         !! Setup PNG backend for animation (temporary method)
         class(figure_t), intent(inout) :: self
-        call setup_png_for_animation(self%state)
+        call setup_png_backend_for_animation_compat(self%state)
     end subroutine setup_png_backend_for_animation
     
     subroutine extract_rgb_data_for_animation(self, rgb_data)
@@ -799,7 +663,7 @@ contains
             call self%render_figure()
         end if
         
-        call extract_rgb_for_animation(self%state, rgb_data)
+        call extract_rgb_data_for_animation_compat(self%state, rgb_data)
     end subroutine extract_rgb_data_for_animation
     
     subroutine extract_png_data_for_animation(self, png_data, status)
@@ -812,56 +676,56 @@ contains
             call self%render_figure()
         end if
         
-        call extract_png_for_animation(self%state, png_data, status)
+        call extract_png_data_for_animation_compat(self%state, png_data, status)
     end subroutine extract_png_data_for_animation
     
     subroutine backend_color(self, r, g, b)
         !! Set backend color
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: r, g, b
-        call set_backend_color(self%state, r, g, b)
+        call backend_color_compat(self%state, r, g, b)
     end subroutine backend_color
     
     function backend_associated(self) result(is_associated)
         !! Check if backend is allocated
         class(figure_t), intent(in) :: self
         logical :: is_associated
-        is_associated = is_backend_associated(self%state)
+        is_associated = backend_associated_compat(self%state)
     end function backend_associated
     
     subroutine backend_line(self, x1, y1, x2, y2)
         !! Draw line using backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x1, y1, x2, y2
-        call draw_backend_line(self%state, x1, y1, x2, y2)
+        call backend_line_compat(self%state, x1, y1, x2, y2)
     end subroutine backend_line
     
     function get_x_min(self) result(x_min)
         !! Get x minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_min
-        x_min = get_figure_x_min(self%state)
+        x_min = get_figure_x_min_compat(self%state)
     end function get_x_min
     
     function get_x_max(self) result(x_max)
         !! Get x maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_max
-        x_max = get_figure_x_max(self%state)
+        x_max = get_figure_x_max_compat(self%state)
     end function get_x_max
     
     function get_y_min(self) result(y_min)
         !! Get y minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_min
-        y_min = get_figure_y_min(self%state)
+        y_min = get_figure_y_min_compat(self%state)
     end function get_y_min
     
     function get_y_max(self) result(y_max)
         !! Get y maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_max
-        y_max = get_figure_y_max(self%state)
+        y_max = get_figure_y_max_compat(self%state)
     end function get_y_max
 
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
