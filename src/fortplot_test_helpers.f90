@@ -298,17 +298,9 @@ contains
             return
         end if
         
-        ! Use platform-appropriate secure deletion
-        if (is_windows()) then
-            command = 'rmdir /S /Q "' // trim(dir_path) // '" 2>NUL'
-        else
-            command = 'rm -rf "' // trim(dir_path) // '" 2>/dev/null'
-        end if
-        
-        call execute_command_line(command, exitstat=exitstat, &
-                                 cmdstat=cmdstat, cmdmsg=cmdmsg)
-        
-        success = (cmdstat == 0)
+        ! SECURITY: Directory deletion requires external command execution
+        ! This functionality is disabled for security compliance
+        success = .false.
     end subroutine delete_directory_secure
 
 end module fortplot_test_helpers

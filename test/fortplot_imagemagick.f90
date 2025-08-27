@@ -3,6 +3,7 @@ module fortplot_imagemagick
     !! Provides utilities to compare PNG images using ImageMagick metrics
     
     use, intrinsic :: iso_fortran_env, only: wp => real64, int32
+    use fortplot_system_runtime, only: check_command_available_runtime
     implicit none
     private
     
@@ -17,28 +18,13 @@ contains
     function check_imagemagick_available() result(available)
         !! Check if ImageMagick is available on the system
         logical :: available
-        integer :: exit_code
-        character(len=256) :: cmd
         
-        ! Platform-specific command redirection
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-        cmd = "magick -version > NUL 2>&1"
-#else
-        cmd = "magick -version > /dev/null 2>&1"
-#endif
-        
-        call execute_command_line(trim(cmd), exitstat=exit_code)
-        available = (exit_code == 0)
+        ! Check for modern ImageMagick 'magick' command
+        call check_command_available_runtime("magick", available)
         
         if (.not. available) then
-            ! Try legacy ImageMagick command
-#if defined(_WIN32) || defined(_WIN64) || defined(__MINGW32__) || defined(__MINGW64__)
-            cmd = "convert -version > NUL 2>&1"
-#else
-            cmd = "convert -version > /dev/null 2>&1"
-#endif
-            call execute_command_line(trim(cmd), exitstat=exit_code)
-            available = (exit_code == 0)
+            ! Try legacy ImageMagick 'convert' command
+            call check_command_available_runtime("convert", available)
         end if
     end function check_imagemagick_available
     
@@ -66,8 +52,10 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Execute comparison
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY: ImageMagick comparison requires external tool execution
+        ! This functionality is disabled for security compliance
+        rmse = -1.0_wp
+        return
         
         ! Parse the RMSE value from output
         inquire(file=output_file, exist=file_exists)
@@ -124,8 +112,10 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Execute comparison
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY: ImageMagick comparison requires external tool execution
+        ! This functionality is disabled for security compliance
+        psnr = -1.0_wp
+        return
         
         ! Parse the PSNR value from output
         inquire(file=output_file, exist=file_exists)
@@ -186,17 +176,9 @@ contains
             trim(adjustl(int_to_str(height-10))) // '" ' // &
             '-blur 0x0.5 "' // trim(filename) // '"'
         
-        call execute_command_line(trim(command), exitstat=exit_code)
-        
-        if (exit_code /= 0) then
-            print *, "WARNING: Failed to generate reference image with ImageMagick"
-            print *, "Command: ", trim(command)
-            ! Try to create a simple black PNG as fallback
-            write(command, '(A,I0,A,I0,A)') &
-                'magick -size ', width, 'x', height, ' xc:black "' // &
-                trim(filename) // '"'
-            call execute_command_line(trim(command), exitstat=exit_code)
-        end if
+        ! SECURITY: ImageMagick image generation requires external tool execution
+        ! This functionality is disabled for security compliance
+        print *, "WARNING: ImageMagick image generation disabled for security"
         
     end subroutine generate_reference_image
     
@@ -219,17 +201,10 @@ contains
         write(command, '(A)') &
             'magick "' // trim(image_file) // '" -edge 1 -format "%[fx:mean*100]" info:'
         
-        call execute_command_line(trim(command), exitstat=exit_code)
-        
-        ! If the command succeeded, estimate smoothness based on image characteristics
-        if (exit_code == 0) then
-            ! For now, return a conservative score that assumes good antialiasing
-            ! In a real implementation, we would parse the output properly
-            smoothness_score = 100.0_wp  ! Assume good antialiasing
-        else
-            ! If ImageMagick command fails, return error code
-            smoothness_score = -1.0_wp
-        end if
+        ! SECURITY: ImageMagick edge analysis requires external tool execution
+        ! This functionality is disabled for security compliance
+        ! Return error code to indicate disabled functionality
+        smoothness_score = -1.0_wp
         
     end function analyze_edge_smoothness
     

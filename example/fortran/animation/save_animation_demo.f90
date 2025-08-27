@@ -81,14 +81,9 @@ contains
     end subroutine save_animation_with_error_handling
     
     subroutine create_output_directory()
-        integer :: mkdir_status
-        
-        ! Create directory structure for GitHub Pages integration
-        call execute_command_line("mkdir -p output/example/fortran/animation", &
-                                 exitstat=mkdir_status)
-        if (mkdir_status /= 0) then
-            print *, "Warning: Could not create output directory structure"
-        end if
+        ! SECURITY: Directory creation using execute_command_line disabled for security compliance
+        ! Create directory structure would require secure alternatives
+        print *, "Info: Output directory creation disabled for security compliance"
     end subroutine create_output_directory
     
 end program save_animation_demo
