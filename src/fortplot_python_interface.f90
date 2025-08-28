@@ -1,15 +1,14 @@
 module fortplot_python_interface
-    !! Python interface module for F2PY binding generation
+    !! Unified Python interface module supporting both F2PY and bridge modes
     !!
-    !! This module provides a clean interface for Python bindings using F2PY.
-    !! It exposes the essential functions needed for simplified Python show() API.
+    !! This module provides a complete interface for Python bindings that works with:
+    !! 1. Direct F2PY compilation for high-performance native binding
+    !! 2. Subprocess bridge mode for flexibility and ease of distribution
     !!
-    !! Key functions:
-    !! - show_figure(blocking): Direct call to Fortran show with blocking parameter
-    !! - show_viewer(blocking): Direct call to Fortran show_viewer with blocking parameter
-    !! - All other plotting functions for complete API coverage
+    !! All plotting functionality is exposed through a consistent API that works
+    !! identically regardless of the binding method used.
 
-    use iso_fortran_env, only: wp => real64
+    use iso_fortran_env, only: wp => real64, input_unit, output_unit, error_unit
     use fortplot_matplotlib, only: mpl_show => show, mpl_show_viewer => show_viewer, &
                                   mpl_figure => figure, mpl_plot => plot, &
                                   mpl_savefig => savefig, mpl_title => title, &
@@ -18,7 +17,8 @@ module fortplot_python_interface
                                   mpl_pcolormesh => pcolormesh, mpl_streamplot => streamplot, &
                                   mpl_legend => legend, mpl_set_xscale => set_xscale, &
                                   mpl_set_yscale => set_yscale, mpl_xlim => xlim, mpl_ylim => ylim, &
-                                  mpl_scatter => scatter, mpl_histogram => histogram
+                                  mpl_scatter => scatter, mpl_histogram => histogram, &
+                                  mpl_hist => hist
     implicit none
 
     private
@@ -28,6 +28,9 @@ module fortplot_python_interface
     public :: title, xlabel, ylabel, contour, contour_filled
     public :: pcolormesh, streamplot, legend, scatter, histogram
     public :: set_xscale, set_yscale, xlim, ylim
+    
+    ! Bridge mode support - process commands from stdin
+    public :: run_bridge_mode
 
 contains
 
@@ -259,5 +262,261 @@ contains
         
         call mpl_histogram(data, bins=bins, density=density, label=label, color=color)
     end subroutine histogram
+
+    subroutine run_bridge_mode()
+        !! Run in bridge mode processing commands from stdin
+        !! This provides an alternative to F2PY for Python integration
+        !! Commands are read from stdin and executed in a loop
+        
+        character(len=256) :: command
+        real(wp), allocatable :: x_data(:), y_data(:), data_array(:)
+        integer :: ios
+        
+        ! Main command processing loop
+        do
+            read(input_unit, '(A)', iostat=ios) command
+            if (ios /= 0) exit
+            
+            command = adjustl(trim(command))
+            if (len_trim(command) == 0) cycle
+            
+            select case (trim(command))
+            case ('FIGURE')
+                call process_figure_cmd()
+            case ('PLOT')
+                call process_plot_cmd(x_data, y_data)
+            case ('SCATTER')
+                call process_scatter_cmd(x_data, y_data)
+            case ('HISTOGRAM')
+                call process_histogram_cmd(data_array)
+            case ('TITLE')
+                call process_title_cmd()
+            case ('XLABEL')
+                call process_xlabel_cmd()
+            case ('YLABEL')
+                call process_ylabel_cmd()
+            case ('LEGEND')
+                call mpl_legend()
+            case ('SAVEFIG')
+                call process_savefig_cmd()
+            case ('SHOW')
+                call process_show_cmd()
+            case ('XLIM')
+                call process_xlim_cmd()
+            case ('YLIM')
+                call process_ylim_cmd()
+            case ('XSCALE')
+                call process_xscale_cmd()
+            case ('YSCALE')
+                call process_yscale_cmd()
+            case ('QUIT', 'EXIT')
+                exit
+            case default
+                ! Unknown command, skip silently
+                cycle
+            end select
+        end do
+        
+        ! Cleanup
+        if (allocated(x_data)) deallocate(x_data)
+        if (allocated(y_data)) deallocate(y_data)
+        if (allocated(data_array)) deallocate(data_array)
+        
+    contains
+        
+        subroutine process_figure_cmd()
+            integer :: width, height, ios
+            read(input_unit, *, iostat=ios) width, height
+            if (ios == 0) then
+                call figure(width, height)
+            else
+                call mpl_figure()
+            end if
+        end subroutine
+        
+        subroutine process_plot_cmd(x_arr, y_arr)
+            real(wp), allocatable, intent(inout) :: x_arr(:), y_arr(:)
+            character(len=256) :: label_str, style_str
+            integer :: n, i, ios
+            
+            read(input_unit, *, iostat=ios) n
+            if (ios /= 0) return
+            
+            if (allocated(x_arr)) deallocate(x_arr)
+            if (allocated(y_arr)) deallocate(y_arr)
+            allocate(x_arr(n), y_arr(n))
+            
+            ! Read x values
+            do i = 1, n
+                read(input_unit, *, iostat=ios) x_arr(i)
+                if (ios /= 0) return
+            end do
+            
+            ! Read y values
+            do i = 1, n
+                read(input_unit, *, iostat=ios) y_arr(i)
+                if (ios /= 0) return
+            end do
+            
+            ! Read optional label
+            read(input_unit, '(A)', iostat=ios) label_str
+            if (ios /= 0) label_str = ''
+            
+            ! Read optional linestyle
+            read(input_unit, '(A)', iostat=ios) style_str
+            if (ios /= 0) style_str = '-'
+            
+            if (len_trim(label_str) > 0 .and. len_trim(style_str) > 0) then
+                call plot(x_arr, y_arr, n, trim(label_str), trim(style_str))
+            else if (len_trim(label_str) > 0) then
+                call plot(x_arr, y_arr, n, label=trim(label_str))
+            else
+                call plot(x_arr, y_arr, n)
+            end if
+        end subroutine
+        
+        subroutine process_scatter_cmd(x_arr, y_arr)
+            real(wp), allocatable, intent(inout) :: x_arr(:), y_arr(:)
+            character(len=256) :: label_str
+            integer :: n, i, ios
+            
+            read(input_unit, *, iostat=ios) n
+            if (ios /= 0) return
+            
+            if (allocated(x_arr)) deallocate(x_arr)
+            if (allocated(y_arr)) deallocate(y_arr)
+            allocate(x_arr(n), y_arr(n))
+            
+            ! Read x values
+            do i = 1, n
+                read(input_unit, *, iostat=ios) x_arr(i)
+                if (ios /= 0) return
+            end do
+            
+            ! Read y values  
+            do i = 1, n
+                read(input_unit, *, iostat=ios) y_arr(i)
+                if (ios /= 0) return
+            end do
+            
+            ! Read optional label
+            read(input_unit, '(A)', iostat=ios) label_str
+            
+            if (ios == 0 .and. len_trim(label_str) > 0) then
+                call scatter(x_arr, y_arr, n, label=trim(label_str))
+            else
+                call scatter(x_arr, y_arr, n)
+            end if
+        end subroutine
+        
+        subroutine process_histogram_cmd(data_arr)
+            real(wp), allocatable, intent(inout) :: data_arr(:)
+            character(len=256) :: label_str
+            integer :: n, i, bins_val, ios
+            logical :: density_flag
+            
+            read(input_unit, *, iostat=ios) n
+            if (ios /= 0) return
+            
+            if (allocated(data_arr)) deallocate(data_arr)
+            allocate(data_arr(n))
+            
+            ! Read data values
+            do i = 1, n
+                read(input_unit, *, iostat=ios) data_arr(i)
+                if (ios /= 0) return
+            end do
+            
+            ! Read optional bins
+            read(input_unit, *, iostat=ios) bins_val
+            if (ios /= 0) bins_val = 0
+            
+            ! Read optional density flag
+            read(input_unit, *, iostat=ios) density_flag
+            if (ios /= 0) density_flag = .false.
+            
+            ! Read optional label
+            read(input_unit, '(A)', iostat=ios) label_str
+            
+            if (bins_val > 0 .and. ios == 0 .and. len_trim(label_str) > 0) then
+                call histogram(data_arr, n, bins_val, density_flag, trim(label_str))
+            else if (ios == 0 .and. len_trim(label_str) > 0) then
+                call histogram(data_arr, n, label=trim(label_str))
+            else
+                ! Use mpl_hist for basic histogram
+                call mpl_hist(data_arr)
+            end if
+        end subroutine
+        
+        subroutine process_title_cmd()
+            character(len=256) :: title_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) title_str
+            if (ios == 0) call mpl_title(trim(title_str))
+        end subroutine
+        
+        subroutine process_xlabel_cmd()
+            character(len=256) :: xlabel_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) xlabel_str
+            if (ios == 0) call mpl_xlabel(trim(xlabel_str))
+        end subroutine
+        
+        subroutine process_ylabel_cmd()
+            character(len=256) :: ylabel_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) ylabel_str
+            if (ios == 0) call mpl_ylabel(trim(ylabel_str))
+        end subroutine
+        
+        subroutine process_savefig_cmd()
+            character(len=256) :: filename_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) filename_str
+            if (ios == 0) call mpl_savefig(trim(filename_str))
+        end subroutine
+        
+        subroutine process_show_cmd()
+            logical :: blocking_flag
+            integer :: ios
+            character :: blocking_char
+            read(input_unit, '(A1)', iostat=ios) blocking_char
+            if (ios == 0) then
+                blocking_flag = (blocking_char == 'T' .or. blocking_char == 't')
+                call mpl_show(blocking=blocking_flag)
+            else
+                call mpl_show()
+            end if
+        end subroutine
+        
+        subroutine process_xlim_cmd()
+            real(wp) :: xmin_val, xmax_val
+            integer :: ios
+            read(input_unit, *, iostat=ios) xmin_val, xmax_val
+            if (ios == 0) call mpl_xlim(xmin_val, xmax_val)
+        end subroutine
+        
+        subroutine process_ylim_cmd()
+            real(wp) :: ymin_val, ymax_val
+            integer :: ios
+            read(input_unit, *, iostat=ios) ymin_val, ymax_val
+            if (ios == 0) call mpl_ylim(ymin_val, ymax_val)
+        end subroutine
+        
+        subroutine process_xscale_cmd()
+            character(len=256) :: scale_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) scale_str
+            if (ios == 0) call mpl_set_xscale(trim(scale_str))
+        end subroutine
+        
+        subroutine process_yscale_cmd()
+            character(len=256) :: scale_str
+            integer :: ios
+            read(input_unit, '(A)', iostat=ios) scale_str
+            if (ios == 0) call mpl_set_yscale(trim(scale_str))
+        end subroutine
+        
+    end subroutine run_bridge_mode
 
 end module fortplot_python_interface
