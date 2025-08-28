@@ -213,15 +213,16 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        character(len=SMALL_COMMAND_LENGTH) :: cmd
-        integer :: stat
         logical :: exists
         
-        success = .false.
+        ! Use the secure runtime system for directory creation
+        call create_directory_runtime(dir_path, success)
         
-        ! SECURITY: Directory creation with execute_command_line disabled for security compliance
-        ! Use secure alternative or fail safely
-        success = .false.
+        ! Verify the directory was created
+        if (success) then
+            exists = check_path_exists(dir_path)
+            success = exists
+        end if
     end subroutine try_create_single_directory
 
     !> Safely remove file without shell injection
@@ -726,23 +727,16 @@ contains
     function validate_with_actual_ffprobe(filename) result(valid)
         character(len=*), intent(in) :: filename
         logical :: valid
-        integer :: exit_code
-        character(len=200) :: command
         
-        valid = .false.
-        
-        ! Build safe ffprobe command for validation
-        write(command, '(A,A,A)') "ffprobe -v quiet -select_streams v:0 -show_entries stream=codec_name '", &
-                                  trim(filename), "' >/dev/null 2>&1"
-        
-        ! SECURITY: FFprobe validation with execute_command_line disabled for security compliance
-        ! Disable video validation for security
-        valid = .false.
+        ! SECURITY: Direct ffprobe execution disabled for security compliance
+        ! Fall back to magic byte validation which is already implemented
+        valid = validate_mpeg_magic_bytes(filename)
         
         if (valid) then
-            call log_info("FFprobe validation passed: " // trim(filename))
+            call log_info("Video file validation passed (magic bytes): " // trim(filename))
         else
-            call log_warning("FFprobe validation failed: " // trim(filename))
+            call log_warning("Video file validation failed: " // trim(filename))
+            call log_info("For thorough validation, use external ffprobe manually")
         end if
     end function validate_with_actual_ffprobe
 
