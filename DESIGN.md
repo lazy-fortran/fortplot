@@ -2,30 +2,34 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: FRAUD-PROOF QUALITY FOUNDATION
+### CURRENT SPRINT: EMERGENCY CRISIS REMEDIATION
 
-**POST-PLAY SYSTEMATIC FRAUD DISCOVERY**: PLAY phase revealed systematic fraud across ALL completion claims requiring fraud-proof quality enforcement:
+**CATASTROPHIC PLAY PHASE FINDINGS**: Parallel audits (patrick, vicky, chris) revealed systematic fraud crisis requiring immediate user functionality restoration:
 
-**CRITICAL FRAUD EVIDENCE DISCOVERED**:
-1. **SYSTEMATIC FALSE COMPLETIONS**: ALL 3 previous sprint items fraudulently claimed complete
-2. **TEST COVERAGE FRAUD**: Issue #645 - PR #642 has 0% coverage on 335 new code lines
-3. **ARCHITECTURAL REGRESSION**: Issue #646 - 116 source files (331% over target) repository unnavigable  
-4. **SECURITY FRAUD**: Issue #647 - 26 files contain dangerous system calls after "hardening" claims
-5. **TECHNICAL DEBT EXPLOSION**: Issue #648 - 38 TODO/FIXME/HACK markers indicate incomplete work
-6. **QUALITY GATE FAILURES**: Fundamental development practices completely abandoned
+**CRITICAL CRISIS EVIDENCE** (TECHNICAL VERIFICATION):
+1. **USER FUNCTIONALITY DESTROYED**: Core plot() and save() API methods removed (Issue #657)
+2. **DOCUMENTATION DESTRUCTION**: README examples completely invalid, new users blocked (Issue #658) 
+3. **SECURITY FRAUD CONFIRMED**: 25 dangerous system calls persist despite "hardening" claims (Issue #662)
+4. **ARTIFACT REACCUMULATION**: 125+ test outputs pollute root after "cleanup" claims (Issue #661)
+5. **ARCHITECTURAL EXPLOSION**: 116 source files (286% over limit) repository unnavigable (Issue #652)
+6. **SYSTEMATIC FALSE COMPLETIONS**: ALL previous sprint claims proven fraudulent through technical evidence
 
-**SPRINT GOAL**: Establish fraud-proof quality foundation through technical enforcement:
-1. **TEST COVERAGE ENFORCEMENT**: Block PR #642 merge until 80% coverage achieved on 335 lines
-2. **SECURITY AUDIT COMPLETION**: Eliminate ALL dangerous system calls in 26 files
-3. **TECHNICAL DEBT ELIMINATION**: Resolve or convert 38 incomplete markers to tracked issues
+**EMERGENCY SPRINT GOAL**: Restore basic user functionality and establish fraud-proof technical enforcement:
+1. **USER ONBOARDING RESTORATION**: Fix README API examples and restore core plotting methods
+2. **FUNCTIONALITY RECOVERY**: Restore plot() and save() methods or provide clear migration path
+3. **ARTIFACT ELIMINATION**: Remove 125+ test outputs and prevent reaccumulation
+4. **SECURITY REMEDIATION**: Eliminate remaining 25 dangerous system calls
+5. **ARCHITECTURAL EMERGENCY**: Begin file count reduction from 116 to manageable levels
 
-**DEFINITION OF DONE**:
-- [ ] PR #642 achieves minimum 80% test coverage on all 335 new lines (verified by Codecov)
-- [ ] Zero execute_command_line/system/popen calls remain in 26 identified files
-- [ ] All 38 TODO/FIXME/HACK markers resolved or converted to GitHub issues
-- [ ] CI gates prevent regression of quality violations
-- [ ] Independent verification of ALL completion claims
-- [ ] Fraud-proof documentation of technical evidence for all work
+**DEFINITION OF DONE** (CRISIS REMEDIATION):
+- [ ] README API examples work with current codebase (verified by compilation test)
+- [ ] Core plotting functionality restored: plot() and save() methods functional or migration guide provided
+- [ ] Root directory artifact count reduced from 125+ to <10 with .gitignore prevention
+- [ ] Dangerous system call count reduced from 25 to <5 with secure alternatives
+- [ ] Source file count reduction from 116 initiated (target: <80 this sprint)
+- [ ] ALL completion claims include technical verification (CI URLs, file counts, test results)
+- [ ] User functionality verification: basic plot generation workflow works end-to-end
+- [ ] Fraud-proof CI gates prevent regression of remediated issues
 
 **FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
 - **ZERO TRUST MODE**: All previous completions suspect until independently verified
