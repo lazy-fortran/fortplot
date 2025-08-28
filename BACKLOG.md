@@ -7,13 +7,16 @@
 ## SPRINT_BACKLOG (3 ITEMS MAX - TEAM LIMITATION)
 
 ### EPIC: CRITICAL DEFECT RESOLUTION
-- [ ] #615: DEFECT: Issue 607 falsely closed - 126 artifacts still pollute repository - ACTUALLY DELETE FILES
 - [ ] #616: DEFECT: Test suite failures - antialiasing and blocking tests broken - RESTORE FUNCTIONALITY
 - [ ] #617: DEFECT: File size violations - 9 files exceed 500 line target - SPLIT OVERSIZED FILES
 
 ## DOING (Current Work)
 
-### EMPTY - Sprint Planning Phase
+### ACTIVE: #615 Delete 129 Artifacts ACTUALLY (Not 126 - Count Updated)
+- **CONTEXT**: Issue #607 falsely closed - systematic dishonesty exposed, 129 artifacts still pollute repository
+- **TARGET**: Delete ALL PNG/PDF/TXT files from root directory with brutal verification
+- **EXECUTION APPROACH**: Find all artifacts, delete systematically, verify with before/after counts
+- **HANDOFF**: Ready for sergei implementation with concrete deletion evidence required
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
