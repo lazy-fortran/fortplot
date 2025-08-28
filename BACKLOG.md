@@ -8,7 +8,7 @@
 
 ### EPIC: FRAUD-PROOF QUALITY ENFORCEMENT
 
-- [ ] #645: CRITICAL - Zero test coverage on 335 new code lines in PR #642 (BLOCKS MERGE)
+- [DOING] #645: CRITICAL - Zero test coverage on 335 new code lines in PR #642 (BLOCKS MERGE)
 - [ ] #647: SECURITY AUDIT - 26 files contain dangerous system execution calls despite hardening claims  
 - [ ] #648: TECHNICAL DEBT - 38 TODO/FIXME/HACK markers indicate systematic incomplete work
 
@@ -22,6 +22,12 @@
 - [ ] PR #642: HANDBACK - 335 lines uncovered + size violations, coverage crisis
 
 **READY FOR SPRINT_BACKLOG WORK**: All blocking PRs resolved, development workflow unblocked
+
+### DOING: Issue #645 - CRITICAL Test Coverage Crisis (PR #642)
+
+**MOVED FROM SPRINT_BACKLOG**: Issue #645 now in implementation phase
+**CONTEXT**: PR #642 has 335 lines of uncovered code requiring comprehensive testing
+**EPIC**: FRAUD-PROOF QUALITY ENFORCEMENT (1 of 3 items)
 
 ### Sprint Notes (FRAUD-PROOF QUALITY FOUNDATION)
 - **PLAY AUDIT DISCOVERY**: SYSTEMATIC FRAUD CONFIRMED - false completion claims across ALL 3 previous sprint items
