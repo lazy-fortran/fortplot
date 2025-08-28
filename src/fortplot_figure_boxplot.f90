@@ -6,7 +6,7 @@ module fortplot_figure_boxplot
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BOXPLOT
-    use fortplot_utils_sort, only: sort_array
+    use fortplot_utilities, only: sort_array
     implicit none
     
     private

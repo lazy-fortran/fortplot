@@ -1,8 +1,7 @@
 program generate_example_docs
     !! Generate FORD documentation pages for fortplot examples
-    use fortplot_doc_constants, only: PATH_MAX_LEN
-    use fortplot_doc_examples, only: get_example_count, get_example_dir, get_example_name
-    use fortplot_doc_processor, only: process_example
+    use fortplot_documentation, only: PATH_MAX_LEN, get_example_count, &
+                                    get_example_dir, get_example_name, process_example
     implicit none
     
     character(len=PATH_MAX_LEN) :: example_dir, example_name

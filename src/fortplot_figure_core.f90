@@ -15,7 +15,7 @@ module fortplot_figure_core
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_utils, only: get_backend_from_filename
+    use fortplot_utilities, only: get_backend_from_filename
     use fortplot_figure_initialization, only: setup_figure_backend
     use fortplot_errors, only: SUCCESS, ERROR_FILE_IO, is_error
     use fortplot_logging, only: log_error, log_warning
@@ -36,7 +36,7 @@ module fortplot_figure_core
     use fortplot_figure_streamlines
     use fortplot_figure_rendering_pipeline
     use fortplot_figure_io, only: save_backend_with_status
-    use fortplot_utils_sort, only: sort_array
+    use fortplot_utilities, only: sort_array
     use fortplot_figure_scatter, only: add_scatter_plot
     use fortplot_figure_subplots, only: create_subplots, add_subplot_plot, &
                                         get_subplot_plot_count, set_subplot_title, &

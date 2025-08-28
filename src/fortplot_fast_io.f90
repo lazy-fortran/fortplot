@@ -34,7 +34,7 @@ contains
         !! Fast savefig that can use memory backend when appropriate
         use fortplot_figure_core, only: figure_t
         ! render_figure is a type-bound procedure, not needed in import
-        use fortplot_utils, only: get_backend_from_filename
+        use fortplot_utilities, only: get_backend_from_filename
         
         class(figure_t), intent(inout) :: fig
         character(len=*), intent(in) :: filename

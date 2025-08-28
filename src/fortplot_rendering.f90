@@ -7,7 +7,7 @@ module fortplot_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales, only: apply_scale_transform
-    use fortplot_utils
+    use fortplot_utilities
     use fortplot_colormap
     use fortplot_contour_algorithms
     use fortplot_plot_data

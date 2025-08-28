@@ -8,7 +8,7 @@ module fortplot_pdf_drawing
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
-    use fortplot_vector, only: vector_stream_writer, vector_graphics_state
+    use fortplot_utilities, only: vector_stream_writer, vector_graphics_state
     use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use fortplot_logging, only: log_debug
     implicit none

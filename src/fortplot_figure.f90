@@ -12,7 +12,7 @@ module fortplot_figure
                                    PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_scales, only: apply_scale_transform, apply_inverse_scale_transform, &
                               transform_x_coordinate, transform_y_coordinate
-    use fortplot_utils, only: get_backend_from_filename, initialize_backend
+    use fortplot_utilities, only: get_backend_from_filename, initialize_backend
     use fortplot_axes, only: compute_scale_ticks, format_tick_label
     
     implicit none

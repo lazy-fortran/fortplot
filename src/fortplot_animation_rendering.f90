@@ -1,7 +1,7 @@
 module fortplot_animation_rendering
     use iso_fortran_env, only: real64, wp => real64
     use fortplot_figure_core, only: figure_t, plot_data_t
-    use fortplot_utils, only: initialize_backend
+    use fortplot_utilities, only: initialize_backend
     implicit none
     private
 

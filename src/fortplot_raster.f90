@@ -10,14 +10,14 @@ module fortplot_raster
     use fortplot_logging, only: log_error
     use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area, get_axis_tick_positions
+    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use fortplot_ticks, only: generate_scale_aware_tick_labels, format_tick_value_smart, find_nice_tick_locations
     use fortplot_scales, only: apply_scale_transform
     use fortplot_label_positioning, only: calculate_x_label_position, calculate_y_label_position, &
                                          calculate_x_tick_label_position, calculate_y_tick_label_position, &
                                          calculate_x_axis_label_position, calculate_y_axis_label_position
-    use fortplot_markers, only: get_marker_size, MARKER_CIRCLE, MARKER_SQUARE, MARKER_DIAMOND, MARKER_CROSS
     use fortplot_colormap, only: colormap_value_to_color
-    use fortplot_interpolation, only: interpolate_z_bilinear
+    use fortplot_utilities, only: interpolate_z_bilinear
     use fortplot_raster_drawing, only: draw_line_distance_aa, blend_pixel, distance_point_to_line_segment, &
                                        ipart, fpart, rfpart, color_to_byte, &
                                        draw_circle_antialiased, draw_circle_outline_antialiased, &

@@ -6,7 +6,7 @@ module fortplot_figure_initialization
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_utils, only: initialize_backend
+    use fortplot_utilities, only: initialize_backend
     use fortplot_legend, only: legend_t
     use fortplot_plot_data, only: plot_data_t
     implicit none

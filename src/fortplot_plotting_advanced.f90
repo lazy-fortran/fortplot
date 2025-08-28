@@ -16,7 +16,7 @@ module fortplot_plotting_advanced
     use fortplot_streamplot_core, only: setup_streamplot_parameters
     use fortplot_logging, only: log_warning, log_error, log_info
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
-    use fortplot_utils_sort, only: sort_array
+    use fortplot_utilities, only: sort_array
     
     implicit none
     
