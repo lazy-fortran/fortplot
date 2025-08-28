@@ -2,34 +2,34 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: EMERGENCY CRISIS REMEDIATION
+### CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
 
-**CATASTROPHIC PLAY PHASE FINDINGS**: Parallel audits (patrick, vicky, chris) revealed systematic fraud crisis requiring immediate user functionality restoration:
+**REPOSITORY SCALE CRISIS**: Development paralysis from unmanageable file count requiring immediate architectural consolidation:
 
-**CRITICAL CRISIS EVIDENCE** (TECHNICAL VERIFICATION):
-1. **USER FUNCTIONALITY DESTROYED**: Core plot() and save() API methods removed (Issue #657)
-2. **DOCUMENTATION DESTRUCTION**: README examples completely invalid, new users blocked (Issue #658) 
-3. **SECURITY FRAUD CONFIRMED**: 25 dangerous system calls persist despite "hardening" claims (Issue #662)
-4. **ARTIFACT REACCUMULATION**: 125+ test outputs pollute root after "cleanup" claims (Issue #661)
-5. **ARCHITECTURAL EXPLOSION**: 116 source files (286% over limit) repository unnavigable (Issue #652)
-6. **SYSTEMATIC FALSE COMPLETIONS**: ALL previous sprint claims proven fraudulent through technical evidence
+**ARCHITECTURAL CRISIS EVIDENCE** (TECHNICAL VERIFICATION):
+1. **SCALE EXPLOSION**: 116 source files exceed management capacity by 331% (target: <50)
+2. **SIZE VIOLATIONS**: fortplot_figure_core.f90 at 912 lines exceeds limit by 82% (target: <500)
+3. **DEVELOPMENT PARALYSIS**: Team cannot efficiently locate or modify code
+4. **MAINTENANCE CRISIS**: Simple changes require searching through 100+ files
+5. **STRATEGIC BLOCKER**: Repository organization prevents sustainable development
+6. **PREVIOUS ATTEMPTS FAILED**: File consolidation repeatedly attempted but never completed
 
-**EMERGENCY SPRINT GOAL**: Restore basic user functionality and establish fraud-proof technical enforcement:
-1. **USER ONBOARDING RESTORATION**: Fix README API examples and restore core plotting methods
-2. **FUNCTIONALITY RECOVERY**: Restore plot() and save() methods or provide clear migration path
-3. **ARTIFACT ELIMINATION**: Remove 125+ test outputs and prevent reaccumulation
-4. **SECURITY REMEDIATION**: Eliminate remaining 25 dangerous system calls
-5. **ARCHITECTURAL EMERGENCY**: Begin file count reduction from 116 to manageable levels
+**ARCHITECTURAL CONSOLIDATION GOAL**: Establish manageable repository structure for sustainable development:
+1. **FILE COUNT REDUCTION**: Consolidate 116 source files to <50 maximum (functional grouping)
+2. **MODULE SIZE COMPLIANCE**: Split fortplot_figure_core.f90 from 912 to <500 lines per module
+3. **AUTOMATED ENFORCEMENT**: Establish CI gates to prevent file count re-accumulation
+4. **FUNCTIONALITY PRESERVATION**: Maintain all existing APIs and test coverage
+5. **BUILD SYSTEM INTEGRITY**: Ensure fpm build system remains functional
 
-**DEFINITION OF DONE** (CRISIS REMEDIATION):
-- [ ] README API examples work with current codebase (verified by compilation test)
-- [ ] Core plotting functionality restored: plot() and save() methods functional or migration guide provided
-- [ ] Root directory artifact count reduced from 125+ to <10 with .gitignore prevention
-- [ ] Dangerous system call count reduced from 25 to <5 with secure alternatives
-- [ ] Source file count reduction from 116 initiated (target: <80 this sprint)
-- [ ] ALL completion claims include technical verification (CI URLs, file counts, test results)
-- [ ] User functionality verification: basic plot generation workflow works end-to-end
-- [ ] Fraud-proof CI gates prevent regression of remediated issues
+**DEFINITION OF DONE** (ARCHITECTURAL CONSOLIDATION):
+- [ ] Source file count reduced from 116 to <50 files (verified by automated count)
+- [ ] fortplot_figure_core.f90 split into <500 line modules (verified by wc -l)
+- [ ] All tests pass after consolidation (verified by make test)
+- [ ] API compatibility maintained (verified by example compilation)
+- [ ] CI enforcement implemented (file count limits in GitHub Actions)
+- [ ] Build system functional (verified by make build)
+- [ ] Documentation updated to reflect new structure
+- [ ] Consolidation process documented for future maintenance
 
 **FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
 - **ZERO TRUST MODE**: All previous completions suspect until independently verified
