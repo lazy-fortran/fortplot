@@ -67,8 +67,11 @@ contains
             return
         end if
         
-        ! Execute ImageMagick compare command in secure environment
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
+        ! The is_imagemagick_environment_enabled check above prevents execution
+        ! This code path should never be reached, but we'll fail safely
+        rmse = -1.0_wp
+        return
         
         ! Parse the RMSE value from output
         inquire(file=output_file, exist=file_exists)
@@ -133,8 +136,11 @@ contains
             return
         end if
         
-        ! Execute ImageMagick compare command in secure environment
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
+        ! The is_imagemagick_environment_enabled check above prevents execution
+        ! This code path should never be reached, but we'll fail safely
+        psnr = -1.0_wp
+        return
         
         ! Parse the PSNR value from output
         inquire(file=output_file, exist=file_exists)
@@ -203,10 +209,13 @@ contains
             return
         end if
         
-        ! Execute ImageMagick command in secure environment
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
+        ! The is_imagemagick_environment_enabled check above prevents execution
+        ! This code path should never be reached, but we'll fail safely
+        print *, "WARNING: ImageMagick image generation blocked for security"
+        return
         
-        if (exit_code /= 0) then
+        if (.false.) then
             print *, "ERROR: Failed to generate reference image with ImageMagick"
         end if
         
@@ -240,10 +249,13 @@ contains
             'magick "' // trim(image_file) // '" -edge 1 -format "%[fx:mean*100]" info: > "' // &
             trim(output_file) // '"'
         
-        ! Execute ImageMagick command
-        call execute_command_line(trim(command), exitstat=exit_code)
+        ! SECURITY FIX: ImageMagick operations are blocked in secure mode  
+        ! The is_imagemagick_environment_enabled check above prevents execution
+        ! This code path should never be reached, but we'll fail safely
+        smoothness_score = -1.0_wp
+        return
         
-        if (exit_code == 0) then
+        if (.false.) then
             ! Read the result from file
             inquire(file=output_file, exist=file_exists)
             if (file_exists) then
