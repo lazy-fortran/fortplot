@@ -6,13 +6,14 @@
 
 ## SPRINT_BACKLOG (3 ITEMS MAX - PROVEN TEAM LIMITATION)
 
-### EPIC: ARCHITECTURAL SIZE COMPLIANCE
+### EPIC: CRITICAL BUILD SYSTEM RECOVERY
 
-- [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files
+- [ ] #637: CRITICAL - Build system creates modules and libraries in different directories - project unbuildable for users  
+- [ ] #633: EMERGENCY - Repository completely unbuildable - immediate recovery required
 
 ## DOING (Current Work)
 
-**NO ACTIVE WORK** - PR #628 created for #625, awaiting review
+**SPRINT_BACKLOG PRIORITY**: Next item ready for implementation after Issue #630 completion
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
@@ -26,6 +27,7 @@
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
 **STRATEGIC ARCHITECTURAL DEFECTS** (Next Sprint After Foundation Recovery):
+- [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files (moved from SPRINT_BACKLOG due to build crisis priority)
 - [ ] #623: PROCESS - False completion claims and systemic violation pattern (strategic coaching required)
 - [ ] #609: CI ENFORCEMENT - File count limits and automated prevention
 - [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #626)
@@ -96,6 +98,8 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
+- [x] #630: CRITICAL - Build system recovery complete (PR #638 - CI VERIFIED: test/test-coverage/windows-test PASSED, build system functional, emergency recovery SUCCESS)
+- [x] #625: CLEANUP - Complete artifact removal (PR #628 merged successfully)
 - [x] #624: ARCHITECTURAL - Split fortplot_figure_core.f90 into logical modules (PR #627 merged, foundation work completed)
 - [x] #607: Repository Artifact Cleanup (SUCCESS - PR #611 merged, removed root CMakeLists.txt and enhanced .gitignore)
 - [x] Emergency Defect Elimination Sprint (MIXED SUCCESS - Tactical progress, strategic failures persist)
