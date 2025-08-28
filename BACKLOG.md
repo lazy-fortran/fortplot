@@ -1,33 +1,33 @@
 # Development Backlog
 
-## CURRENT SPRINT (FUNCTIONALITY RECOVERY - 5 Issues)
+## CURRENT SPRINT (SECURITY & CORE FUNCTIONALITY - 5 Issues)
 
-## SPRINT_BACKLOG (USER VALUE RECOVERY - Restore Core Functionality)
+## SPRINT_BACKLOG (SECURITY FIRST - Eliminate Vulnerabilities & Restore Core)
 
-**FOCUS**: Restore basic user functionality by fixing the highest-impact blockers that prevent ALL users from getting value.
+**FOCUS**: Security vulnerabilities discovered DURING security fix. This incompetence ends NOW. Fix security FIRST, then core functionality.
 
-### EPIC: PYTHON INTEGRATION RECOVERY
-- [ ] #584: CRITICAL: Python API completely broken - dependency hallucination
-- [ ] #575: CRITICAL: Python bridge executable not in PATH - Python integration broken
+### EPIC: SECURITY ELIMINATION
+- [ ] #581: CRITICAL: C code still contains system() and popen() command injection vectors
+- [ ] #541: CRITICAL: Security module USES execute_command_line instead of eliminating it
 
-### EPIC: VISUAL OUTPUT RECOVERY  
-- [ ] #577: CRITICAL: PNG backend has 100x dimension calculation error
-- [ ] #569: FUNCTIONALITY DESTROYED: ImageMagick disabled breaking visual processing capabilities
-
-### EPIC: QUALITY FOUNDATION
+### EPIC: TEST INTEGRITY
 - [ ] #585: CRITICAL: Test fabrication - 7 fake EXPECTED FAILURE tests
+
+### EPIC: CORE FUNCTIONALITY RESTORATION
+- [ ] #577: CRITICAL: PNG backend has 100x dimension calculation error
+- [ ] #575: CRITICAL: Python bridge executable not in PATH - Python integration broken
 
 ## DOING (Current Work)
 
-*Sprint ready to begin - focus on maximum user value delivery*
+*Security vulnerabilities take absolute priority - no functionality work until security fixed*
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
 **CRITICAL DEFECTS** (Next Sprint Priority):
-- [ ] #577: CRITICAL: PNG backend has 100x dimension calculation error
-- [ ] #575: CRITICAL: Python bridge executable not in PATH - Python integration broken
+- [ ] #531: DEFECT: Security changes broke 8+ example directories - GitHub Pages visual showcase damaged
 - [ ] #569: FUNCTIONALITY DESTROYED: ImageMagick disabled breaking visual processing capabilities
-- [ ] #578: ARCHITECTURAL DISASTER: 119 files in src/ directory violates limits
+- [ ] #530: DEFECT: Catastrophic performance regression - 800+ identical warnings spam console
+- [ ] #524: DEFECT: Issue #511 QADS file splitting violation remains completely unfixed
 
 **PROCESS DEFECTS**:
 - [ ] #562: PROCESS VIOLATION: PR #560 BACKLOG.md status inconsistent with completion claims
@@ -61,6 +61,7 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
+- [x] Functionality Recovery Sprint (DEFERRED - Security vulnerabilities discovered requiring immediate priority)
 - [x] Critical Defect Resolution Sprint (3/3 COMPLETE SUCCESS - Issues #573, #574, #576 all resolved, development infrastructure restored)
 - [x] Infrastructure Restoration Sprint (2/3 SUCCESS - #568 FPM operations and #570 temp directory creation fixed, #569 ImageMagick remains broken)
 - [x] Trust Restoration Sprint (2/2 COMPLETE SUCCESS - Issues #506 and #511 both resolved with security implementation and module splitting)
