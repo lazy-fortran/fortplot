@@ -288,6 +288,90 @@
 4. **Test Infrastructure Recovery**: Systematically re-enable disabled tests with proper validation
 5. **Documentation Quality Assurance**: Consolidate and fix all documentation defects
 
+## Security Architecture Requirements
+
+### ZERO TOLERANCE: Command Injection Elimination
+
+**CURRENT VIOLATIONS** (Must be eliminated):
+1. **C Code**: system() and popen() calls (#581)
+2. **Security Module**: execute_command_line usage (#541)
+3. **Any Shell Execution**: Direct or indirect command execution
+
+### Secure Implementation Patterns
+
+#### FORBIDDEN Patterns
+```c
+// NEVER DO THIS
+system(command);           // Command injection vector
+popen(command, "r");       // Command injection vector
+execl("/bin/sh", ..);      // Shell injection vector
+```
+
+```fortran
+! NEVER DO THIS
+call execute_command_line(cmd)  ! Command injection vector
+```
+
+#### REQUIRED Patterns
+
+**For FFmpeg Integration**:
+```c
+// CORRECT: Direct process execution without shell
+execlp("ffmpeg", "ffmpeg", "-i", input_file, "-o", output_file, NULL);
+
+// CORRECT: Pipe communication without shell
+int pipefd[2];
+pipe(pipefd);
+if (fork() == 0) {
+    dup2(pipefd[0], STDIN_FILENO);
+    execlp("ffmpeg", "ffmpeg", "-i", "pipe:0", "-o", output, NULL);
+}
+```
+
+**For ImageMagick Integration**:
+```c
+// CORRECT: Use ImageMagick C API directly
+#include <MagickWand/MagickWand.h>
+MagickWand *wand = NewMagickWand();
+MagickReadImage(wand, filename);
+// Process image...
+```
+
+### Security Audit Checklist
+
+**MANDATORY for Every Code Change**:
+1. **Zero Shell Execution**: No system(), popen(), execute_command_line
+2. **Input Validation**: All user inputs sanitized
+3. **Path Traversal Prevention**: No "../" in file paths
+4. **Resource Limits**: Memory and file size limits enforced
+5. **Error Information**: No sensitive paths in error messages
+
+### Implementation Priority
+
+1. **IMMEDIATE**: Remove ALL command injection vectors
+   - Audit ALL C files for system()/popen()
+   - Audit ALL Fortran files for execute_command_line
+   - Replace with secure alternatives
+
+2. **HIGH**: Secure FFmpeg integration
+   - Direct process execution
+   - Pipe communication without shell
+   - Input validation on all parameters
+
+3. **MEDIUM**: ImageMagick security
+   - Use C API or secure alternatives
+   - Never pass user input to commands
+   - Implement resource limits
+
+### Verification Requirements
+
+**Every Security Fix MUST**:
+1. Pass security audit with ZERO findings
+2. Work on Linux, macOS, and Windows
+3. Maintain full functionality
+4. Include security-focused tests
+5. Document secure usage patterns
+
 ## Project Overview
 
 **fortplot** is a modern Fortran plotting library providing scientific visualization with PNG, PDF, ASCII, and animation backends. The library follows scientific computing best practices with a clean API inspired by matplotlib.
