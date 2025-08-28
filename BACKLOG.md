@@ -28,8 +28,11 @@
 
 **DEFERRED DEFECTS FROM PLAY** (Next Sprint After Emergency Fixes):
 - [ ] #618: DEFECT: Security vulnerabilities persist - system/popen calls in 8 files
-- [ ] #619: DEFECT: Issues 605 and 608 ignored - test/module consolidation never started
+- [ ] #608: DEFECT: Python interface consolidation needs proper branch management (PR #614 closed for branch errors)
 - [ ] #613: DEFECT: CMAKE CI test obsolete after artifact cleanup blocks all PRs
+
+**PROGRESS NOTES**:
+- [ ] #605: Test consolidation - PR #612 APPROVED and ready to merge (9→2 files, real consolidation achieved)
 
 **USER FUNCTIONALITY DISASTERS** (Next Sprint After Repository Reduction):
 - [ ] #598: CRITICAL: PNG backend 100x dimension overflow regression - 80% of users blocked
