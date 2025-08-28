@@ -1,35 +1,37 @@
 # Development Backlog
 
-## CURRENT SPRINT: ARCHITECTURAL FOUNDATION RECOVERY
+## CURRENT SPRINT: EMERGENCY REPOSITORY RECOVERY
 
-**SPRINT GOAL**: Address root architectural failures through systematic reduction and consolidation. Focus on size compliance and directory organization to restore team navigation capability.
+**SPRINT GOAL**: CRISIS RECOVERY - Restore basic repository functionality after catastrophic consolidation failure. Repository is 100% unbuildable blocking all development.
 
-## SPRINT_BACKLOG (3 ITEMS MAX - PROVEN TEAM LIMITATION)
+## SPRINT_BACKLOG (2 ITEMS MAX - EMERGENCY PROTOCOLS)
 
-### EPIC: ARCHITECTURAL SIZE COMPLIANCE
+### EPIC: EMERGENCY BUILD SYSTEM RECOVERY
 
 ## DOING (Current Work)
 
-### #626: ARCHITECTURAL - Consolidate src/ directory from 116 files to <50 files
-**EPIC**: ARCHITECTURAL SIZE COMPLIANCE  
-**STATUS**: IN PROGRESS - Consolidating 116 source files into focused modules <50 total
-**PR**: #628 pending review for #625 (artifact cleanup completed)
+### #633: EMERGENCY - Repository completely unbuildable - immediate recovery required
+**EPIC**: EMERGENCY BUILD SYSTEM RECOVERY  
+**STATUS**: IN PROGRESS - Fix broken module references from failed PR #629 consolidation
+**CRITICAL**: make test fails immediately - 100% development blockage
 
-### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
-- **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
-- **BRUTAL VERIFICATION**: Every claim must be independently verified with concrete evidence
-- **TRUST DESTROYED**: Issue #607 closed with false claims - 126 artifacts still exist
-- **BROKEN TESTS**: Test suite failures in antialiasing and blocking tests must be fixed
-- **SIZE VIOLATIONS**: 9 files exceed 500 lines causing comprehension failures
-- **MAXIMUM 3 ITEMS**: Team proven incapable of handling more than 3 simple tasks
-- **DEFINITION OF DONE**: Concrete evidence required - file counts, passing tests, size compliance
+### Sprint Notes (EMERGENCY COMPETENCE CRISIS PROTOCOLS)
+- **REPOSITORY DISASTER**: PR #629 claimed consolidation success while breaking build system 100%
+- **SYSTEMATIC LYING**: Team pattern of false completion claims while leaving broken repositories
+- **TRUST OBLITERATED**: Cannot trust any completion claims without independent verification
+- **BUILD SYSTEM DESTROYED**: make test fails immediately - cannot run any tests or validation
+- **COMPETENCE EMERGENCY**: Team demonstrates dangerous incompetence requiring external oversight
+- **MAXIMUM 2 ITEMS**: Further reduction after catastrophic consolidation failure
+- **MANDATORY VERIFICATION**: make test must pass before claiming ANY progress
+- **BRUTAL REALITY**: Repository state is worse than before "architectural improvements"
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
-**STRATEGIC ARCHITECTURAL DEFECTS** (Next Sprint After Foundation Recovery):
-- [ ] #623: PROCESS - False completion claims and systemic violation pattern (strategic coaching required)
-- [ ] #609: CI ENFORCEMENT - File count limits and automated prevention
-- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #626)
+**EMERGENCY RECOVERY BACKLOG** (After Build System Restored):
+- [ ] #634: EMERGENCY PROTOCOLS - Team competence crisis requires immediate intervention
+- [ ] #630: CRITICAL - Fix incomplete consolidation module migration (fortplot_utils missing)
+- [ ] #631: DEFECT - 9 files still exceed 500-line limits after "consolidation"
+- [ ] #632: SECURITY - 245+ system/exec calls persist despite security sprint claims
 
 **DEFERRED TECHNICAL DEFECTS** (After Repository Reduction):
 - [ ] #618: SECURITY - system/popen calls in 8 files require secure replacement
@@ -97,8 +99,11 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
-- [x] #624: ARCHITECTURAL - Split fortplot_figure_core.f90 into logical modules (PR #627 merged, foundation work completed)
-- [x] #607: Repository Artifact Cleanup (SUCCESS - PR #611 merged, removed root CMakeLists.txt and enhanced .gitignore)
+- [x] ARCHITECTURAL FOUNDATION RECOVERY SPRINT (CATASTROPHIC FAILURE - Repository destroyed by "improvements")
+  - **CLAIMED SUCCESS**: #626 consolidation work claimed architectural progress
+  - **ACTUAL OUTCOME**: Repository 100% unbuildable, development completely blocked
+  - **PATTERN CONFIRMED**: Team systematically lies about completion while breaking functionality
+  - **COMPETENCE ASSESSMENT**: Team dangerous to repository - requires emergency supervision
 - [x] Emergency Defect Elimination Sprint (MIXED SUCCESS - Tactical progress, strategic failures persist)
   - **TACTICAL WINS**: Test infrastructure restored, some test consolidation achieved
   - **STRATEGIC FAILURES**: File size violations unaddressed, artifact cleanup incomplete, directory crisis ignored

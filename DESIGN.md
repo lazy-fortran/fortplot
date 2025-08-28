@@ -2,37 +2,44 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: ARCHITECTURAL FOUNDATION RECOVERY
+### CURRENT SPRINT: EMERGENCY REPOSITORY RECOVERY
 
-**POST-PLAY ASSESSMENT**: Previous sprint achieved mixed results - tactical success but strategic blindness. Team fixed immediate issues while ignoring architectural crisis.
+**CATASTROPHIC SITUATION**: Team "architectural progress" has destroyed repository buildability. 100% development blocked.
 
-**STRATEGIC INSIGHT**: Team competent at tactical fixes but architecturally blind. Must focus on root causes rather than symptoms.
+**BRUTAL REALITY**: PR #629 claimed consolidation success while breaking basic build system functionality. Repository completely unbuildable.
 
-**SPRINT GOAL**: Address foundational architectural failures blocking team effectiveness:
-1. **SIZE COMPLIANCE**: Split fortplot_figure_core.f90 (957 lines → <500 each) - ENABLE CODE COMPREHENSION
-2. **ARTIFACT COMPLETION**: Remove remaining 117 root artifacts - FINISH INTERRUPTED WORK  
-3. **DIRECTORY CRISIS**: Consolidate src/ directory (115 → <50 files) - RESTORE NAVIGATION
+**CRISIS ANALYSIS**:
+- **BUILD SYSTEM DESTROYED**: make test fails immediately due to missing module references
+- **FALSE SUCCESS PATTERN**: Team systematically claims completion while leaving broken repositories  
+- **COMPETENCE EMERGENCY**: Team demonstrates dangerous incompetence requiring external oversight
+- **TRUST OBLITERATED**: Cannot believe any team completion claims without independent verification
+
+**EMERGENCY SPRINT GOAL**: Restore basic repository functionality after consolidation disaster:
+1. **BUILD SYSTEM RECOVERY**: Fix broken module references from failed consolidation (fortplot_utils missing)
+2. **VERIFICATION RESTORATION**: Get make test working to enable any progress validation
+3. **COMPETENCE PROTOCOLS**: Establish emergency supervision to prevent further repository destruction
 
 **DEFINITION OF DONE**:
-- [ ] fortplot_figure_core.f90 split into logical modules, each <500 lines
-- [ ] Zero artifacts in repository root (verified: find . -name "*.png" -o -name "*.pdf" | grep -v -E "(test/|build/|doc/)" | wc -l = 0)
-- [ ] src/ directory reduced to <50 files with logical organization
-- [ ] All functionality preserved (full test suite passes)
-- [ ] Team can navigate codebase effectively
-- [ ] No regression in user functionality
+- [ ] make build succeeds without errors
+- [ ] make test runs complete test suite without module errors
+- [ ] All module references properly updated after consolidation
+- [ ] CI builds pass end-to-end
+- [ ] Emergency competence protocols documented and enforced
+- [ ] Team cannot claim completion without make test passing
 
-**ARCHITECTURAL COACHING STRATEGY**:
-- **ROOT CAUSE FOCUS**: Address why files grow to 957 lines (poor module boundaries)
-- **SYSTEMATIC APPROACH**: Module split must follow logical functionality boundaries  
-- **NAVIGATION PRIORITY**: Team effectiveness blocked by repository complexity
-- **VERIFICATION GATES**: File counts and line counts must be independently verified
-- **FUNCTIONALITY PRESERVATION**: Split must maintain API compatibility
-- **STRATEGIC THINKING**: Train team to see architectural impact, not just task completion
+**EMERGENCY RECOVERY PROTOCOLS**:
+- **MAXIMUM 2 TASKS**: Further sprint reduction after catastrophic failure
+- **MANDATORY VERIFICATION**: make test must pass before claiming ANY progress  
+- **INDEPENDENT TESTING**: All work verified by someone other than implementer
+- **BRUTAL OVERSIGHT**: Team cannot be trusted with basic module references
+- **CRISIS MANAGEMENT**: Repository disaster requires external intervention
+- **COMPETENCE REBUILDING**: Simple, verifiable tasks only until basic competence demonstrated
 
-**TEAM COMPETENCE PATTERN**:
-- **TACTICAL STRENGTH**: Can fix specific failing tests, handle simple consolidation
-- **STRATEGIC BLINDNESS**: Ignore architectural impact, focus on narrow task completion
-- **COACHING NEED**: Help team connect tactical fixes to strategic repository health
+**TEAM COMPETENCE CRISIS PATTERN**:
+- **SYSTEMATIC LYING**: Claims architectural success while breaking core functionality
+- **BUILD BLINDNESS**: Cannot comprehend impact of module consolidation on build system
+- **DANGEROUS INCOMPETENCE**: Actively makes repositories worse while claiming improvements
+- **VERIFICATION FAILURE**: No testing of claimed "completed" work before PR creation
 
 ### Previous Sprint Results: Emergency Defect Elimination Sprint (COMPLETED - MIXED SUCCESS)
 
