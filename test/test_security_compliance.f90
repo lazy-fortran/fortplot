@@ -4,7 +4,7 @@ program test_security_compliance
                                 safe_validate_mpeg_with_ffprobe
     use fortplot_system_runtime, only: delete_file_runtime, open_with_default_app_runtime, &
                                        check_command_available_runtime
-    use fortplot_system_timeout, only: execute_command_line_timeout
+    use fortplot_system_timeout, only: system_command_timeout
     implicit none
     
     logical :: success, available
@@ -47,7 +47,7 @@ program test_security_compliance
     end if
     
     ! Test 4: Verify command execution with timeout is disabled
-    call execute_command_line_timeout("echo test", success)
+    call system_command_timeout("echo test", success)
     if (success) then
         print *, "FAIL: Command execution should be disabled for security"
         stop 1

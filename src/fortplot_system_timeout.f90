@@ -7,7 +7,7 @@ module fortplot_system_timeout
     implicit none
     private
 
-    public :: execute_command_line_timeout
+    ! SECURITY REMOVED: execute_command_line_timeout removed from public interface
     public :: system_command_timeout
     public :: get_windows_timeout_ms
     public :: sleep_ms
@@ -47,36 +47,7 @@ contains
         end if
     end function get_windows_timeout_ms
 
-    subroutine execute_command_line_timeout(command, success, timeout_ms, debug_info)
-        !! SECURITY: Command execution with timeout disabled for security compliance
-        character(len=*), intent(in) :: command
-        logical, intent(out) :: success
-        integer, intent(in), optional :: timeout_ms
-        character(len=*), intent(in), optional :: debug_info
-        
-        character(len=256) :: debug_context
-        integer :: effective_timeout
-        
-        success = .false.
-        
-        ! Determine timeout
-        if (present(timeout_ms)) then
-            effective_timeout = timeout_ms
-        else
-            effective_timeout = get_windows_timeout_ms()
-        end if
-        
-        ! Debug context
-        if (present(debug_info)) then
-            debug_context = debug_info
-        else
-            debug_context = "system_command"
-        end if
-        
-        ! SECURITY: External command execution disabled for security compliance
-        write(*,'(A,A,A)') 'SECURITY: Command execution disabled: [', trim(debug_context), ']'
-        success = .false.
-    end subroutine execute_command_line_timeout
+    ! SECURITY: execute_command_line_timeout completely removed for security compliance
 
     subroutine system_command_timeout(command, success, timeout_ms)
         !! SECURITY: System command wrapper disabled for security compliance
@@ -84,7 +55,9 @@ contains
         logical, intent(out) :: success
         integer, intent(in), optional :: timeout_ms
         
-        call execute_command_line_timeout(command, success, timeout_ms, "system_cmd")
+        ! SECURITY: All command execution disabled for security compliance
+        write(*,'(A)') 'SECURITY: System command execution disabled'
+        success = .false.
     end subroutine system_command_timeout
     
     subroutine sleep_ms(milliseconds)
