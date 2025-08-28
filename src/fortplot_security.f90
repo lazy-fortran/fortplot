@@ -15,6 +15,7 @@ module fortplot_security
     public :: sanitize_filename
     public :: is_safe_path
     public :: get_test_output_path
+    public :: is_imagemagick_environment_enabled
 
     ! Security-related constants
     integer, parameter :: MAX_PATH_LENGTH = 4096
@@ -606,6 +607,24 @@ contains
         end if
     end function is_ffmpeg_environment_enabled
     
+    !> Check if ImageMagick environment is enabled
+    function is_imagemagick_environment_enabled() result(enabled)
+        logical :: enabled
+        
+        enabled = .false.
+        
+        ! Check various environment variables
+        if (check_ci_environment()) then
+            enabled = .true.
+        else if (check_github_actions_environment()) then
+            enabled = .true.
+        else if (check_imagemagick_explicit_flag()) then
+            enabled = .true.
+        else if (check_runner_os_environment()) then
+            enabled = .true.
+        end if
+    end function is_imagemagick_environment_enabled
+    
     !> Check CI environment variable
     function check_ci_environment() result(is_ci)
         logical :: is_ci
@@ -635,6 +654,16 @@ contains
         call get_environment_variable("FORTPLOT_ENABLE_FFMPEG", env_value, status)
         is_enabled = (status == 0 .and. trim(env_value) == "1")
     end function check_ffmpeg_explicit_flag
+    
+    !> Check explicit ImageMagick enable flag
+    function check_imagemagick_explicit_flag() result(is_enabled)
+        logical :: is_enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("FORTPLOT_ENABLE_IMAGEMAGICK", env_value, status)
+        is_enabled = (status == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true"))
+    end function check_imagemagick_explicit_flag
     
     !> Check RUNNER_OS environment
     function check_runner_os_environment() result(has_runner)

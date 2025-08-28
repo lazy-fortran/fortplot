@@ -305,6 +305,23 @@ contains
             if (status == 0 .and. trim(env_value) == "true") then
                 is_allowed_command = .true.
             end if
+        else if (trim(command_name) == 'magick' .or. trim(command_name) == 'convert' .or. &
+                 trim(command_name) == 'compare' .or. trim(command_name) == 'identify') then
+            ! Check for ImageMagick tool environment
+            call get_environment_variable("FORTPLOT_ENABLE_IMAGEMAGICK", env_value, status)
+            if (status == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true")) then
+                is_allowed_command = .true.
+            end if
+            
+            call get_environment_variable("CI", env_value, status)
+            if (status == 0 .and. trim(env_value) == "true") then
+                is_allowed_command = .true.
+            end if
+            
+            call get_environment_variable("GITHUB_ACTIONS", env_value, status)
+            if (status == 0 .and. trim(env_value) == "true") then
+                is_allowed_command = .true.
+            end if
         end if
         
         if (is_allowed_command) then
