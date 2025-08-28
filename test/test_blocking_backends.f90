@@ -2,9 +2,17 @@ program test_blocking_backends
     !! Test blocking parameter works with all backends
     
     use fortplot
-    use fortplot_security, only: get_test_output_path
+    use fortplot_security, only: get_test_output_path, safe_create_directory
     use iso_fortran_env, only: wp => real64
     implicit none
+    
+    logical :: dir_success
+    
+    ! Create test output directory first
+    call safe_create_directory('build/test', dir_success)
+    if (.not. dir_success) then
+        print *, "WARNING: Could not create build/test directory"
+    end if
     
     call test_blocking_with_png()
     call test_blocking_with_pdf()
