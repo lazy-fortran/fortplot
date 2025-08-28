@@ -8,12 +8,13 @@
 
 ### EPIC: ARCHITECTURAL SIZE COMPLIANCE
 
-- [ ] #625: CLEANUP - Complete artifact removal (117 files remain in repository root)  
 - [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files
 
 ## DOING (Current Work)
 
-**NO ACTIVE WORK** - PR #627 merged for issue #624
+### #625: CLEANUP - Complete artifact removal (117 files remain in repository root)
+**EPIC**: ARCHITECTURAL SIZE COMPLIANCE
+**STATUS**: IN PROGRESS - Removing remaining artifacts scattered in repository root
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
