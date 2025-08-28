@@ -1,38 +1,49 @@
 # Development Backlog
 
-## CURRENT SPRINT: EMERGENCY USER FUNCTIONALITY RECOVERY
+## CURRENT SPRINT: REPOSITORY REDUCTION FOR TEAM COMPETENCE RECOVERY
 
-**SPRINT GOAL**: Restore basic user functionality destroyed by team's incompetent "security improvements". Focus ONLY on user value - no more architectural experiments.
+**SPRINT GOAL**: Reduce repository complexity overwhelming the incompetent team. Remove 200+ files to enable basic functionality fixes in next sprint.
 
-## SPRINT_BACKLOG (USER FUNCTIONALITY EMERGENCY)
+## SPRINT_BACKLOG (REPOSITORY REDUCTION EMERGENCY)
 
-**TEAM FAILURE CONTEXT**: Previous sprint created 9 new critical issues while claiming security improvements. Net negative progress demonstrates dangerous incompetence.
+**OVERWHELM ANALYSIS CONTEXT**: 400+ files and 114 files in src/ directory exceed team mental capacity. Previous sprint failures caused by structural overwhelm, not just incompetence.
 
-### EPIC: CRITICAL USER FUNCTIONALITY RESTORATION (3 Items Maximum)
+### EPIC: REPOSITORY COMPLEXITY REDUCTION (3 Items Only - Team Cannot Handle More)
+- [ ] #607: CRITICAL: Remove 182 scattered test output artifacts from repository - immediate 45% file reduction
+- [ ] #605: CRITICAL: Eliminate 9 redundant pcolormesh test files overwhelming test suite - consolidate to 3 maximum
+- [ ] #608: CRITICAL: Remove duplicate bridge files and consolidate Python interface - eliminate interface confusion
+
+## DOING (Current Work)
+
+**NO ACTIVE WORK** - Repository reduction sprint planning in progress.
+
+### Sprint Notes (REPOSITORY REDUCTION EMERGENCY)
+- **OVERWHELM CRISIS**: 400+ files and 114 files in src/ exceed team mental capacity causing systematic failures
+- **STRUCTURAL ROOT CAUSE**: Repository complexity is primary cause of team incompetence - not individual capability
+- **CLEANUP FIRST**: Reduce file count by 200+ before attempting complex functionality fixes
+- **SIMPLE DELETION TASKS**: Team more likely to succeed at file removal than complex code fixes
+- **FOUNDATION FOR SUCCESS**: Reduced complexity enables team success on user functionality in next sprint
+- **MAXIMUM 3 ITEMS**: Team still incapable of handling more than 3 tasks
+- **MANDATORY FILE COUNT MONITORING**: Track file reduction progress continuously
+
+## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
+
+**USER FUNCTIONALITY DISASTERS** (Next Sprint After Repository Reduction):
 - [ ] #598: CRITICAL: PNG backend 100x dimension overflow regression - 80% of users blocked
 - [ ] #599: CRITICAL: Python bridge executable hangs indefinitely - Python integration destroyed  
 - [ ] #600: CRITICAL: pcolormesh functionality completely broken - scientific visualization destroyed
 
-## DOING (Current Work)
-
-**NO ACTIVE WORK** - Emergency sprint planning in progress.
-
-### Sprint Notes (USER FUNCTIONALITY EMERGENCY)
-- **COMPETENCE CRISIS**: Team created 9 new critical issues while claiming "fixes" 
-- **TRUST DESTROYED**: All prior completion claims proved false - independent verification mandatory
-- **USER FIRST**: No architectural work until user functionality restored  
-- **MAXIMUM 3 ITEMS**: Team incapable of handling more than 3 simple tasks
-- **DIRECT OVERSIGHT**: chris reviews ALL work before any PR creation
-
-## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
-
-**TEAM-CREATED SECURITY DISASTERS** (Fix After User Functionality Restored):
+**TEAM-CREATED SECURITY DISASTERS** (Fix After Repository Reduction):
 - [ ] #592: CRITICAL: Memory leak in secure_exec strdup calls allows DoS attacks (team created)
 - [ ] #593: CRITICAL: Windows command injection vulnerability in secure_exec quote handling (team created)  
 - [ ] #597: CRITICAL: Potential deadlock in Windows secure_close_pipe with INFINITE timeout (team created)
 - [ ] #595: CRITICAL: Massive directory size violation - src/ has 114 files (team created)
 - [ ] #596: CRITICAL: Massive code duplication across 9 files for command checking (team created)
 - [ ] #594: MAJOR: fortplot_secure_exec.c exceeds 500-line size target (team created)
+
+**REMAINING REPOSITORY REDUCTION TASKS** (Phase 2):
+- [ ] #606: CRITICAL: Consolidate 9 fortplot_doc modules into 3 files maximum - eliminate module sprawl
+- [ ] #609: CRITICAL: Establish file count limits and CI enforcement to prevent re-accumulation
 
 **CRITICAL DEFECTS** (Next Sprint Priority):
 - [ ] #531: DEFECT: Security changes broke 8+ example directories - GitHub Pages visual showcase damaged
