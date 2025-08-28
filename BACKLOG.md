@@ -11,11 +11,11 @@
 
 ## DOING (Current Work)
 
-### ACTIVE: #616 Fix Failing Tests (antialiasing and blocking tests)
-- **CONTEXT**: Test suite has systematic failures in antialiasing and blocking functionality
-- **TARGET**: Restore broken test functionality and ensure all tests pass
-- **EXECUTION APPROACH**: Identify failing tests, fix root causes, verify with test suite execution
-- **HANDOFF**: Ready for sergei implementation with test restoration requirements
+### ACTIVE: #617 Split Files Exceeding 500 Lines (9 files identified)
+- **CONTEXT**: Multiple files violate QADS 500-line size target causing comprehension issues
+- **TARGET**: Split all oversized files into focused, maintainable modules under 500 lines
+- **EXECUTION APPROACH**: Identify violations, analyze dependencies, split into logical modules
+- **HANDOFF**: Ready for sergei implementation with file splitting requirements
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
@@ -34,7 +34,8 @@
 - [ ] #613: DEFECT: CMAKE CI test obsolete after artifact cleanup blocks all PRs
 
 **COMPLETED EMERGENCY FIXES**:
-- [x] #615: Artifact cleanup - COMPLETED (129 root artifacts deleted, repository cleaned, no lying)
+- [x] #616: Test failures - COMPLETED (antialiasing SKIP when ImageMagick disabled, blocking tests create missing dirs)
+- [x] #615: Artifact cleanup - COMPLETED (129 root artifacts deleted, repository cleaned, no lying)  
 - [x] #605: Test consolidation - PR #612 MERGED (9→2 files, 1,214→948 lines, 22% reduction, all tests passing)
 
 **USER FUNCTIONALITY DISASTERS** (Next Sprint After Repository Reduction):
