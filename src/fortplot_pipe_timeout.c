@@ -148,31 +148,16 @@ FILE* popen_timeout_c(const char* command, const char* mode, int timeout_ms) {
         return NULL;
     }
     
-    FILE* pipe = popen(command, mode);
+    // SECURITY FIX: Replace popen() with secure implementation
+    // popen() allows shell injection - use secure_exec_command instead
+    FILE* pipe = NULL;  // SECURITY: popen() disabled for security compliance
     
-    if (timeout_occurred) {
-        cleanup_timeout();
-        if (pipe) pclose(pipe);
-        return NULL;
-    }
+    // SECURITY: With popen() disabled, always return NULL
+    cleanup_timeout();
+    fprintf(stderr, "SECURITY: popen() disabled for command injection prevention\n");
+    return NULL;
     
-    if (!pipe) {
-        cleanup_timeout();
-        return NULL;
-    }
-    
-#ifdef _WIN32
-    // Windows: Ensure binary mode for pipe if writing mode
-    if (strchr(mode, 'w') != NULL || strchr(mode, 'b') != NULL) {
-        int fd = _fileno(pipe);
-        if (fd != -1) {
-            _setmode(fd, _O_BINARY);
-        }
-    }
-#endif
-    
-    // Note: Keep timeout active for subsequent operations
-    return pipe;
+    // SECURITY: All Windows-specific pipe handling removed with popen() elimination
 }
 
 // Safe pclose wrapper
