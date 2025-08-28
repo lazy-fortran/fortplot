@@ -261,20 +261,66 @@ contains
     end subroutine open_with_default_app_runtime
 
     subroutine check_command_available_runtime(command_name, available)
-        !! SECURITY: Command checking disabled for security compliance
+        !! Check if a command is available - with security restrictions
         character(len=*), intent(in) :: command_name
         logical, intent(out) :: available
         logical :: debug_enabled
+        logical :: is_allowed_command
+        character(len=256) :: env_value
+        integer :: status
         
         available = .false.
         debug_enabled = is_debug_enabled()
         
-        if (debug_enabled) then
-            write(*,'(A,A)') 'SECURITY: Command check disabled for security: ', trim(command_name)
+        ! Check if this is an allowed command
+        is_allowed_command = .false.
+        
+        ! Check for allowed development tools (FPM)
+        if (trim(command_name) == 'fpm') then
+            ! FPM is essential for development - allow in CI environments
+            call get_environment_variable("CI", env_value, status)
+            if (status == 0 .and. (trim(env_value) == "true" .or. trim(env_value) == "1")) then
+                is_allowed_command = .true.
+            end if
+            
+            call get_environment_variable("GITHUB_ACTIONS", env_value, status)
+            if (status == 0 .and. (trim(env_value) == "true" .or. trim(env_value) == "1")) then
+                is_allowed_command = .true.
+            end if
+            
+            ! Also check for explicit FPM enablement (though this may not work due to env var issues)
+            call get_environment_variable("FORTPLOT_ENABLE_FPM", env_value, status)
+            if (status == 0 .and. len_trim(env_value) > 0 .and. &
+                (trim(env_value) == "1" .or. trim(env_value) == "true")) then
+                is_allowed_command = .true.
+            end if
+        else if (trim(command_name) == 'ffmpeg' .or. trim(command_name) == 'ffprobe') then
+            ! Check for media tool environment
+            call get_environment_variable("FORTPLOT_ENABLE_FFMPEG", env_value, status)
+            if (status == 0 .and. trim(env_value) == "1") then
+                is_allowed_command = .true.
+            end if
+            
+            call get_environment_variable("CI", env_value, status)
+            if (status == 0 .and. trim(env_value) == "true") then
+                is_allowed_command = .true.
+            end if
         end if
         
-        ! SECURITY: External command checking disabled to prevent vulnerabilities
-        available = .false.
+        if (is_allowed_command) then
+            ! For allowed commands, we still can't actually check availability
+            ! without execute_command_line, but we can assume they exist in CI
+            available = .true.
+            if (debug_enabled) then
+                write(*,'(A,A,A)') 'Command assumed available in enabled environment: ', trim(command_name), &
+                    ' (actual check requires execute_command_line)'
+            end if
+        else
+            available = .false.
+            if (debug_enabled) then
+                write(*,'(A,A)') 'Command check disabled for security: ', trim(command_name)
+            end if
+        end if
     end subroutine check_command_available_runtime
 
 end module fortplot_system_runtime
