@@ -15,6 +15,7 @@ module fortplot_security
     public :: sanitize_filename
     public :: is_safe_path
     public :: get_test_output_path
+    public :: is_imagemagick_environment_enabled
 
     ! Security-related constants
     integer, parameter :: MAX_PATH_LENGTH = 4096
@@ -192,13 +193,16 @@ contains
         character(len=*), intent(inout) :: current_path
         character(len=*), intent(in) :: next_part
         integer, intent(in) :: level
+        integer :: path_len
         
         if (level == 1 .and. next_part == "") then
             current_path = "/"
         else
-            if (len_trim(current_path) > 0 .and. &
-                current_path(len_trim(current_path):len_trim(current_path)) /= "/") then
-                current_path = trim(current_path) // "/"
+            path_len = len_trim(current_path)
+            if (path_len > 0) then
+                if (current_path(path_len:path_len) /= "/") then
+                    current_path = trim(current_path) // "/"
+                end if
             end if
             current_path = trim(current_path) // trim(next_part)
         end if
@@ -285,9 +289,18 @@ contains
             else
                 call log_info("External program " // trim(program_name) // " not found")
             end if
+        else if (trim(program_name) == 'fpm') then
+            ! FPM is a build tool - consider it available in CI/test environments
+            ! Actual availability will be determined by test_program_availability
+            available = test_program_availability(program_name)
+            if (available) then
+                call log_info("Build tool FPM is available")
+            else
+                call log_info("Build tool FPM not found or disabled")
+            end if
         else
             available = .false.
-            call log_info("Only ffmpeg/ffprobe checking enabled - " // trim(program_name) // " assumed unavailable")
+            call log_info("Only ffmpeg/ffprobe/fpm checking enabled - " // trim(program_name) // " assumed unavailable")
         end if
     end function check_program_in_enabled_env
     
@@ -594,6 +607,24 @@ contains
         end if
     end function is_ffmpeg_environment_enabled
     
+    !> Check if ImageMagick environment is enabled
+    function is_imagemagick_environment_enabled() result(enabled)
+        logical :: enabled
+        
+        enabled = .false.
+        
+        ! Check various environment variables
+        if (check_ci_environment()) then
+            enabled = .true.
+        else if (check_github_actions_environment()) then
+            enabled = .true.
+        else if (check_imagemagick_explicit_flag()) then
+            enabled = .true.
+        else if (check_runner_os_environment()) then
+            enabled = .true.
+        end if
+    end function is_imagemagick_environment_enabled
+    
     !> Check CI environment variable
     function check_ci_environment() result(is_ci)
         logical :: is_ci
@@ -624,6 +655,16 @@ contains
         is_enabled = (status == 0 .and. trim(env_value) == "1")
     end function check_ffmpeg_explicit_flag
     
+    !> Check explicit ImageMagick enable flag
+    function check_imagemagick_explicit_flag() result(is_enabled)
+        logical :: is_enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("FORTPLOT_ENABLE_IMAGEMAGICK", env_value, status)
+        is_enabled = (status == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true"))
+    end function check_imagemagick_explicit_flag
+    
     !> Check RUNNER_OS environment
     function check_runner_os_environment() result(has_runner)
         logical :: has_runner
@@ -633,6 +674,44 @@ contains
         call get_environment_variable("RUNNER_OS", env_value, status)
         has_runner = (status == 0)
     end function check_runner_os_environment
+    
+    !> Check if development environment is enabled (for FPM operations)
+    function is_development_environment_enabled() result(enabled)
+        logical :: enabled
+        
+        enabled = .false.
+        
+        ! Check various conditions that enable development tools
+        if (check_ci_environment()) then
+            enabled = .true.
+        else if (check_github_actions_environment()) then
+            enabled = .true.
+        else if (check_fpm_explicit_flag()) then
+            enabled = .true.
+        else if (check_development_explicit_flag()) then
+            enabled = .true.
+        end if
+    end function is_development_environment_enabled
+    
+    !> Check explicit FPM enable flag
+    function check_fpm_explicit_flag() result(is_enabled)
+        logical :: is_enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("FORTPLOT_ENABLE_FPM", env_value, status)
+        is_enabled = (status == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true"))
+    end function check_fpm_explicit_flag
+    
+    !> Check explicit development environment flag
+    function check_development_explicit_flag() result(is_enabled)
+        logical :: is_enabled
+        character(len=50) :: env_value
+        integer :: status
+        
+        call get_environment_variable("FORTPLOT_DEVELOPMENT", env_value, status)
+        is_enabled = (status == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true"))
+    end function check_development_explicit_flag
     
     !> Test if a program is actually available
     function test_program_availability(program_name) result(available)
