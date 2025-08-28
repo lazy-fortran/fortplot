@@ -60,44 +60,57 @@
 
 **Success Metrics Achieved**: Test suite runs to completion, CI pipeline functional, zero security vulnerabilities.
 
-### CURRENT SPRINT: FUNCTIONALITY RECOVERY - 5 Issues (ACTIVE)
-**USER VALUE MODE**: Infrastructure fixed. Now restore core functionality that directly delivers user value.
+### PREVIOUS SPRINT: FUNCTIONALITY RECOVERY - 5 Issues (PLANNING COMPLETE)
+**USER VALUE MODE**: Infrastructure fixed. Focus shifted to security and core functionality.
 
-**Objective**: Fix highest-impact blockers preventing users from getting value from fortplot - Python API and PNG backend are CRITICAL.
+**Objective**: Fix highest-impact blockers preventing users from getting value from fortplot.
 
-**STRATEGIC PRIORITY**: Python and PNG unlock 80% of user functionality. Fix these FIRST.
+**Sprint Status**: Planning complete, execution deferred to prioritize security vulnerabilities.
+
+### CURRENT SPRINT: SECURITY & CORE FUNCTIONALITY - 5 Issues (ACTIVE)
+**SECURITY FIRST**: Critical command injection vulnerabilities discovered. Security fixes MUST precede functionality.
+
+**Objective**: Eliminate ALL security vulnerabilities while restoring critical user functionality.
+
+**BRUTAL REALITY**: The team created security vulnerabilities WHILE fixing security vulnerabilities. This incompetence ends NOW.
 
 **Definition of Done** (5/5 Required):
-1. **PYTHON API FIX**: Fix dependency hallucination (#584)
-   - Python wrapper must find correct executable name
-   - ALL Python functionality must work after fix
-   - Python examples must run successfully
+1. **SECURITY FIX**: Eliminate ALL command injection vectors (#581)
+   - Remove system() and popen() from ALL C code
+   - No execute_command_line in security module (#541)
+   - Zero command injection vectors remaining
+   - Security audit passes with NO findings
 
-2. **PNG BACKEND FIX**: Fix 100x dimension error (#577)
-   - PNG backend must generate correct dimensions (640x480, not 64000x48000)
-   - PNG output must work without overflow errors
-   - No silent fallbacks to PDF when PNG requested
-
-3. **PYTHON PATH FIX**: Install bridge executable to PATH (#575)
-   - fortplot_python_bridge accessible via PATH after pip install
-   - Python package installation must be complete and functional
-   - No manual PATH configuration required by users
-
-4. **TEST QUALITY FIX**: Eliminate fake test fabrication (#585)
-   - Delete all EXPECTED FAILURE tests that provide no value
+2. **TEST INTEGRITY**: Eliminate fake test fabrication (#585)
+   - Delete all 7 EXPECTED FAILURE fake tests
    - Replace with real validation tests
-   - No tests designed to always fail
+   - Test suite must validate actual functionality
+   - No tests that always fail by design
 
-5. **IMAGEMAGICK RESTORATION**: Re-enable secure visual processing (#569)
-   - Restore antialiasing and visual enhancement capabilities
-   - Implement secure ImageMagick usage or native alternatives
-   - Document secure usage patterns for users
+3. **PNG BACKEND FIX**: Fix 100x dimension calculation error (#577)
+   - PNG backend generates 640x480, NOT 64000x48000
+   - No overflow errors in dimension calculations
+   - PNG output works correctly for all plot types
+   - No silent fallbacks when PNG requested
 
-**Success Metrics**: 
-- Python integration fully functional end-to-end
-- PNG backend generates correct output without errors
-- Test suite contains only real validation tests
-- Visual processing capabilities restored
+4. **PYTHON INTEGRATION**: Fix Python bridge PATH issue (#575)
+   - fortplot_python_bridge executable in PATH after pip install
+   - Python API finds correct executable name
+   - Complete end-to-end Python functionality
+   - Zero manual configuration required
+
+5. **VISUAL SHOWCASE**: Restore example directories (#531)
+   - Fix 8+ broken example directories
+   - GitHub Pages visual showcase fully functional
+   - All example PNGs generated correctly
+   - Documentation examples match actual output
+
+**Success Metrics**:
+- ZERO security vulnerabilities in entire codebase
+- Test suite contains ONLY real tests
+- PNG backend works correctly for ALL plots
+- Python integration fully functional
+- GitHub Pages shows ALL examples correctly
 - Maximum user functionality delivered
 
 **USER VALUE FOCUS**: These 5 issues unlock the most critical user functionality. Fix them and users can actually USE fortplot.
