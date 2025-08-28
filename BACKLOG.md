@@ -6,9 +6,11 @@
 
 ## SPRINT_BACKLOG (3 ITEMS MAX - PROVEN TEAM LIMITATION)
 
-### EPIC: ARCHITECTURAL SIZE COMPLIANCE
+### EPIC: CRITICAL BUILD SYSTEM RECOVERY
 
-- [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files
+- [ ] #637: CRITICAL - Build system creates modules and libraries in different directories - project unbuildable for users
+- [ ] #630: CRITICAL - Consolidation PR breaks test suite - incomplete module migration  
+- [ ] #633: EMERGENCY - Repository completely unbuildable - immediate recovery required
 
 ## DOING (Current Work)
 
@@ -29,6 +31,7 @@
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
 **STRATEGIC ARCHITECTURAL DEFECTS** (Next Sprint After Foundation Recovery):
+- [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files (moved from SPRINT_BACKLOG due to build crisis priority)
 - [ ] #623: PROCESS - False completion claims and systemic violation pattern (strategic coaching required)
 - [ ] #609: CI ENFORCEMENT - File count limits and automated prevention
 - [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #626)
