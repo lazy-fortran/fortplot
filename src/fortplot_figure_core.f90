@@ -90,11 +90,13 @@ module fortplot_figure_core
     contains
         procedure :: initialize
         procedure :: add_plot
+        procedure :: plot => add_plot        ! Convenience alias for user expectation
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
         procedure :: streamplot
         procedure :: savefig
+        procedure :: save => savefig         ! Convenience alias for user expectation
         procedure :: savefig_with_status
         procedure :: set_xlabel
         procedure :: set_ylabel
