@@ -8,9 +8,9 @@
 
 ### EPIC: USER FUNCTIONALITY CRISIS REMEDIATION
 
-- [DOING] #658: CRITICAL - README documentation destruction blocks all new user onboarding
-- [SPRINT_BACKLOG] #657: CRITICAL - figure_t API breaking changes removed core plot() and save() methods
-- [SPRINT_BACKLOG] #661: MAJOR - 125+ test artifacts reaccumulated in root directory after cleanup claims
+- [COMPLETED] #658: CRITICAL - README documentation destruction blocks all new user onboarding ✅
+- [COMPLETED] #657: CRITICAL - figure_t API breaking changes removed core plot() and save() methods ✅
+- [DOING] #661: MAJOR - 125+ test artifacts reaccumulated in root directory after cleanup claims
 
 ### EPIC: SYSTEMATIC FRAUD TECHNICAL ENFORCEMENT  
 
@@ -19,9 +19,12 @@
 
 ## DOING (Current Work)
 
-### CRISIS REMEDIATION STATUS: ISSUE #658 README DOCUMENTATION CRISIS
+### CRISIS REMEDIATION STATUS: ISSUE #661 ARTIFACT REACCUMULATION
 
-**CURRENT TASK**: Fix README documentation blocking all new users (Issue #658)
+**CURRENT TASK**: Clean up 125+ test artifacts in root directory (Issue #661)  
+**COMPLETED**: 
+- ✅ Issue #658 - README documentation fixed, all examples now compile correctly
+- ✅ Issue #657 - Added plot() and save() convenience aliases for figure_t API
 
 **FRAUD-PROOF AUDIT FINDINGS** (TECHNICAL EVIDENCE):
 - **SECURITY FRAUD CONFIRMED**: 25 dangerous calls persist despite "elimination" claims
