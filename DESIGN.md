@@ -2,30 +2,56 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: REPOSITORY REDUCTION FOR TEAM COMPETENCE RECOVERY (In Progress)
+### CURRENT SPRINT: ARCHITECTURAL FOUNDATION RECOVERY
 
-**STRATEGIC SHIFT**: Analysis revealed 400+ files and 114 files in src/ directory overwhelm team mental capacity causing systematic failures. Repository reduction is prerequisite to functionality fixes.
+**POST-PLAY ASSESSMENT**: Previous sprint achieved mixed results - tactical success but strategic blindness. Team fixed immediate issues while ignoring architectural crisis.
 
-**SPRINT GOAL**: Reduce repository file count by 200+ files to enable team success:
-1. **Test Artifact Cleanup**: Remove 182 scattered test output files (#607) - immediate 45% reduction
-2. **Test Suite Consolidation**: Eliminate 9 redundant pcolormesh test files (#605) - reduce test complexity
-3. **Interface Deduplication**: Remove duplicate Python bridge files (#608) - eliminate confusion
+**STRATEGIC INSIGHT**: Team competent at tactical fixes but architecturally blind. Must focus on root causes rather than symptoms.
+
+**SPRINT GOAL**: Address foundational architectural failures blocking team effectiveness:
+1. **SIZE COMPLIANCE**: Split fortplot_figure_core.f90 (957 lines → <500 each) - ENABLE CODE COMPREHENSION
+2. **ARTIFACT COMPLETION**: Remove remaining 117 root artifacts - FINISH INTERRUPTED WORK  
+3. **DIRECTORY CRISIS**: Consolidate src/ directory (115 → <50 files) - RESTORE NAVIGATION
 
 **DEFINITION OF DONE**:
-- [ ] Repository file count reduced by minimum 200 files
-- [ ] Test output artifacts completely eliminated from src/ tree
-- [ ] pcolormesh test files consolidated to maximum 3 files
-- [ ] Python interface has single bridge file only
-- [ ] File count monitoring CI check established
-- [ ] No functionality broken during cleanup
+- [ ] fortplot_figure_core.f90 split into logical modules, each <500 lines
+- [ ] Zero artifacts in repository root (verified: find . -name "*.png" -o -name "*.pdf" | grep -v -E "(test/|build/|doc/)" | wc -l = 0)
+- [ ] src/ directory reduced to <50 files with logical organization
+- [ ] All functionality preserved (full test suite passes)
+- [ ] Team can navigate codebase effectively
+- [ ] No regression in user functionality
 
-**REPOSITORY REDUCTION PROTOCOLS ESTABLISHED**:
-- **OVERWHELM DIAGNOSIS**: 400+ files exceed team mental capacity - structural problem, not just incompetence
-- **CLEANUP FIRST STRATEGY**: Repository reduction prerequisite to functionality fixes
-- **SIMPLE DELETION TASKS**: Team more likely to succeed at file removal than complex code fixes
-- **FOUNDATION FOR SUCCESS**: Reduced complexity enables future user functionality success
-- **MAXIMUM CAPACITY**: Team still limited to 3 simple tasks - cannot handle complexity
-- **MANDATORY FILE COUNT TRACKING**: Monitor file reduction progress continuously
+**ARCHITECTURAL COACHING STRATEGY**:
+- **ROOT CAUSE FOCUS**: Address why files grow to 957 lines (poor module boundaries)
+- **SYSTEMATIC APPROACH**: Module split must follow logical functionality boundaries  
+- **NAVIGATION PRIORITY**: Team effectiveness blocked by repository complexity
+- **VERIFICATION GATES**: File counts and line counts must be independently verified
+- **FUNCTIONALITY PRESERVATION**: Split must maintain API compatibility
+- **STRATEGIC THINKING**: Train team to see architectural impact, not just task completion
+
+**TEAM COMPETENCE PATTERN**:
+- **TACTICAL STRENGTH**: Can fix specific failing tests, handle simple consolidation
+- **STRATEGIC BLINDNESS**: Ignore architectural impact, focus on narrow task completion
+- **COACHING NEED**: Help team connect tactical fixes to strategic repository health
+
+### Previous Sprint Results: Emergency Defect Elimination Sprint (COMPLETED - MIXED SUCCESS)
+
+**OBJECTIVE**: Fix critical defects from competence crisis with brutal verification.
+
+**MIXED RESULTS** (Tactical Success, Strategic Failure):
+1. ✅ **TEST INFRASTRUCTURE**: Successfully resolved antialiasing and blocking test failures (#616)
+2. ✅ **TEST CONSOLIDATION**: Achieved 22% reduction in pcolormesh tests (PR #612: 9→2 files)
+3. ✅ **ANALYSIS COMPLETION**: Comprehensive file size analysis completed (#617)
+4. ⚠️ **INCOMPLETE CLEANUP**: Artifact cleanup partial (129 deleted, 117 remain) (#615)
+5. ❌ **SIZE VIOLATIONS IGNORED**: 957-line file unaddressed despite analysis completion
+6. ❌ **DIRECTORY CRISIS IGNORED**: 115 files in src/ still 283% over limit
+
+**TEAM COMPETENCE PATTERN IDENTIFIED**:
+- **TACTICAL COMPETENCE**: Can fix specific technical issues when clearly defined
+- **STRATEGIC BLINDNESS**: Complete inability to see broader architectural impact
+- **TASK TUNNEL VISION**: Focus on narrow completion rather than systemic improvement
+
+**KEY INSIGHT**: Team needs architectural coaching, not competence replacement
 
 ### Previous Sprint Results: Security & Core Functionality Sprint (COMPLETED - CATASTROPHIC FAILURE)
 
