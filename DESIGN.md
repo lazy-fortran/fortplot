@@ -2,24 +2,30 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: ARCHITECTURAL FOUNDATION RECOVERY
+### CURRENT SPRINT: SYSTEMATIC CRISIS REMEDIATION
 
-**POST-PLAY ASSESSMENT**: Previous sprint achieved mixed results - tactical success but strategic blindness. Team fixed immediate issues while ignoring architectural crisis.
+**POST-PLAY COMPREHENSIVE AUDIT**: PLAY phase discovered systematic repository crisis requiring focused remediation:
 
-**STRATEGIC INSIGHT**: Team competent at tactical fixes but architecturally blind. Must focus on root causes rather than symptoms.
+**CRITICAL FINDINGS FROM PLAY PHASE**:
+1. **ARCHITECTURAL COLLAPSE**: 118 files in src/ (236% over 50-file limit) - repository unnavigable
+2. **MASSIVE FILE SIZE VIOLATIONS**: 10+ files over 500 lines (fortplot_raster.f90: 931 lines, fortplot_figure_core.f90: 910 lines) 
+3. **FALSE COMPLETION EPIDEMIC**: Issue #491 marked closed but text annotations still warn "not implemented"
+4. **ARTIFACT POLLUTION WORSENED**: 147 root artifacts (26% increase) - cleanup regressed
+5. **SECURITY VULNERABILITIES PERSIST**: popen() calls still present after security sprints
+6. **TEST INFRASTRUCTURE DECAY**: Outdated configurations, disabled functionality tests
 
-**SPRINT GOAL**: Address foundational architectural failures blocking team effectiveness:
-1. **SIZE COMPLIANCE**: Split fortplot_figure_core.f90 (957 lines → <500 each) - ENABLE CODE COMPREHENSION
-2. **ARTIFACT COMPLETION**: Remove remaining 117 root artifacts - FINISH INTERRUPTED WORK  
-3. **DIRECTORY CRISIS**: Consolidate src/ directory (115 → <50 files) - RESTORE NAVIGATION
+**SPRINT GOAL**: Focused remediation of the three most critical blockers to team effectiveness:
+1. **SYSTEMATIC FILE SIZE REDUCTION**: Address 10+ files over 500 lines through module splitting
+2. **FALSE COMPLETION FRAUD FIX**: Reopen #491, implement text annotations OR remove API entirely
+3. **ARTIFACT POLLUTION ELIMINATION**: Achieve zero root artifacts with CI enforcement
 
 **DEFINITION OF DONE**:
-- [ ] fortplot_figure_core.f90 split into logical modules, each <500 lines
-- [ ] Zero artifacts in repository root (verified: find . -name "*.png" -o -name "*.pdf" | grep -v -E "(test/|build/|doc/)" | wc -l = 0)
-- [ ] src/ directory reduced to <50 files with logical organization
-- [ ] All functionality preserved (full test suite passes)
-- [ ] Team can navigate codebase effectively
-- [ ] No regression in user functionality
+- [ ] ALL files under 500 lines (fortplot_raster.f90, fortplot_figure_core.f90, etc. split)
+- [ ] Issue #491 reopened and either functional text annotations OR API removed
+- [ ] Zero artifacts in repository root with CI preventing regression
+- [ ] Full test suite passes without "not implemented" warnings
+- [ ] Repository navigable by development team
+- [ ] No false completion claims in sprint reporting
 
 **ARCHITECTURAL COACHING STRATEGY**:
 - **ROOT CAUSE FOCUS**: Address why files grow to 957 lines (poor module boundaries)
