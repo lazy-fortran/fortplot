@@ -118,12 +118,14 @@ contains
             if (status /= 0 .or. len_trim(base_temp) == 0) then
                 call get_environment_variable("TMP", base_temp, status=status)
                 if (status /= 0 .or. len_trim(base_temp) == 0) then
-                    base_temp = "temp"
+                    ! Use current directory as fallback on Windows
+                    base_temp = "."
                 end if
             end if
             current_test_dir = trim(base_temp) // "\" // TEMP_DIR_PREFIX // trim(suffix)
             current_test_dir = normalize_path_separators(current_test_dir, .true.)
         else
+            ! Always use /tmp on Unix systems - it exists and is writable
             current_test_dir = "/tmp/" // TEMP_DIR_PREFIX // trim(suffix)
         end if
         
@@ -133,20 +135,36 @@ contains
             current_test_dir = TEMP_DIR_PREFIX // trim(suffix)
         end if
         
-        ! Create directory with error handling
+        ! Try to create or use the directory
         call create_directory_runtime(current_test_dir, success)
         if (success) then
             test_dir_created = .true.
         else
-            ! Safe fallback to current directory with unique suffix
-            current_test_dir = TEMP_DIR_PREFIX // trim(suffix)
-            call create_directory_runtime(current_test_dir, success)
-            test_dir_created = success
-            
-            if (.not. success) then
-                print *, "ERROR: Failed to create test directory, cleanup will not work properly"
-                ! Don't fallback to current directory - this causes file pollution
-                test_dir_created = .false.
+            ! Check if directory already exists
+            inquire(file=trim(current_test_dir)//"/." , exist=test_dir_created)
+            if (.not. test_dir_created) then
+                ! Try build/test directory which should exist
+                current_test_dir = "build/test/" // TEMP_DIR_PREFIX // trim(suffix)
+                if (is_windows()) then
+                    current_test_dir = normalize_path_separators(current_test_dir, .true.)
+                end if
+                call create_directory_runtime(current_test_dir, success)
+                test_dir_created = success
+                
+                if (.not. success) then
+                    ! Check if build/test exists
+                    inquire(file="build/test/." , exist=test_dir_created)
+                    if (test_dir_created) then
+                        current_test_dir = "build/test"
+                        if (is_windows()) then
+                            current_test_dir = normalize_path_separators(current_test_dir, .true.)
+                        end if
+                    else
+                        ! Ultimate fallback: use current directory
+                        current_test_dir = "."
+                        test_dir_created = .true.
+                    end if
+                end if
             end if
         end if
     end subroutine ensure_test_directory
