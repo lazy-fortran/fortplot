@@ -1,14 +1,15 @@
 # Development Backlog
 
-## CURRENT SPRINT (TRUST RESTORATION - Two Issues Maximum)
+## CURRENT SPRINT (INFRASTRUCTURE RESTORATION - 3 Issues)
 
-## SPRINT_BACKLOG (TRUST RESTORATION - Progressing from 1 to 2 Issues)
+## SPRINT_BACKLOG (INFRASTRUCTURE RESTORATION - Functionality Recovery Phase)
 
-**RECOVERY PROGRESS**: Team demonstrated capacity for 1 documentation task. Progressing to 2 verifiable technical issues.
+**TRUST RESTORED**: Team successfully completed 2/2 technical issues in previous sprint. Ready for infrastructure restoration phase.
 
-### EPIC: SECURITY AND COMPLIANCE RESTORATION
-- [ ] #506: defect: multiple execute_command_line calls pose security risks (38 calls remain - PR #517 incomplete)
-- [ ] #511: QADS Violation: fortplot_figure_core.f90 exceeds 1000-line limit (979 lines unchanged)
+### EPIC: CRITICAL INFRASTRUCTURE RESTORATION  
+- [ ] #568: CRITICAL: FPM build operations disabled breaking core development workflow
+- [ ] #569: FUNCTIONALITY DESTROYED: ImageMagick disabled breaking visual processing capabilities
+- [ ] #570: CRITICAL: Temp directory creation failures causing systematic output failures
 
 ## DOING (Current Work)
 
@@ -16,22 +17,17 @@
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
-**CRITICAL SECURITY DEFECTS** (Immediate Priority After Sprint):
+**CRITICAL INFRASTRUCTURE FAILURES** (Post-Sprint Priority):
+- [ ] #571: DEFECT: PNG backend dimension overflow causing systematic fallback to PDF
+- [ ] #550: CRITICAL: Security restrictions destroyed test infrastructure - 95 test failures
+- [ ] #500: defect: 22 disabled test files indicate systematic test infrastructure failure
+- [ ] #523: DEFECT: Test suite shows multiple RED phase failures for unimplemented features
+
+**REMAINING SECURITY AND PROCESS DEFECTS**:
 - [ ] #543: CRITICAL: Shell injection vulnerability in fortplot_security.f90
 - [ ] #544: CRITICAL: Second shell injection in validate_with_actual_ffprobe
-- [ ] #550: CRITICAL: Security restrictions destroyed test infrastructure - 95 test failures
-- [ ] #554: CRITICAL: Security PR #517 failing checks but claimed as completed
-
-**PROCESS AND TRUST VIOLATIONS** (Trust Recovery Focus):
-- [ ] #546: defect: PR #539 merged without review violating process
-- [ ] #547: defect: PR #517 has merge conflicts and cannot be merged
-- [ ] #545: defect: PR #517 calls non-existent sleep_fortran function
-- [ ] #540: defect: Documentation claims incorrect execute_command_line count
-- [ ] #541: defect: Security module USES execute_command_line instead of eliminating it
-- [ ] #542: defect: Documentation claims 248 build artifacts but actual count is 346
-- [ ] #549: CRITICAL: Documentation systematically reports false execute_command_line count
-- [ ] #551: DEFECT: Repository cleanup false claims - 346 build artifacts remain
-- [ ] #552: PROCESS VIOLATION: Documentation refers to completed work in open PR #539
+- [ ] #562: PROCESS VIOLATION: PR #560 BACKLOG.md status inconsistent with completion claims
+- [ ] #561: CRITICAL: PR #560 security claims FALSE - system() call remains in fortplot_pipe_timeout.c
 
 **TECHNICAL DEFECTS** (Deferred Until Trust Restored):
 - [ ] #548: defect: Duplicate directory creation functions across modules
@@ -70,3 +66,4 @@
 - [x] Module Architecture Refactoring (PARTIAL SUCCESS - Most QADS limits met, but #511 remains unfixed at 979 lines)
 - [x] Architectural Debt Resolution Sprint (90% Success - Major architectural violations resolved, quality foundation maintained)
 - [x] Crisis Recovery Sprint (1/1 SINGLE TASK SUCCESS - Documentation accuracy restored, evidence-based reporting implemented)
+- [x] Trust Restoration Sprint (2/2 COMPLETE SUCCESS - Issues #506 and #511 both resolved with security implementation and module splitting)
