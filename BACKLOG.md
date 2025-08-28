@@ -10,21 +10,22 @@
 
 - [COMPLETED] #658: CRITICAL - README documentation destruction blocks all new user onboarding ✅
 - [COMPLETED] #657: CRITICAL - figure_t API breaking changes removed core plot() and save() methods ✅
-- [DOING] #661: MAJOR - 125+ test artifacts reaccumulated in root directory after cleanup claims
+- [COMPLETED] #661: MAJOR - 125+ test artifacts reaccumulated in root directory after cleanup claims ✅
 
 ### EPIC: SYSTEMATIC FRAUD TECHNICAL ENFORCEMENT  
 
-- [SPRINT_BACKLOG] #662: CRITICAL - Security implementation failure - 25 dangerous system calls persist after hardening claims
+- [DOING] #662: CRITICAL - Security implementation failure - 25 dangerous system calls persist after hardening claims
 - [SPRINT_BACKLOG] #652: ARCHITECTURAL - File count explosion to 116 source + 103 test files violates all limits
 
 ## DOING (Current Work)
 
-### CRISIS REMEDIATION STATUS: ISSUE #661 ARTIFACT REACCUMULATION
+### CRISIS REMEDIATION STATUS: ISSUE #662 SECURITY IMPLEMENTATION FAILURE
 
-**CURRENT TASK**: Clean up 125+ test artifacts in root directory (Issue #661)  
+**CURRENT TASK**: Eliminate 25 dangerous system calls persisting after security hardening (Issue #662)  
 **COMPLETED**: 
 - ✅ Issue #658 - README documentation fixed, all examples now compile correctly
 - ✅ Issue #657 - Added plot() and save() convenience aliases for figure_t API
+- ✅ Issue #661 - Eliminated 125+ artifact pollution, moved to proper test directories
 
 **FRAUD-PROOF AUDIT FINDINGS** (TECHNICAL EVIDENCE):
 - **SECURITY FRAUD CONFIRMED**: 25 dangerous calls persist despite "elimination" claims
