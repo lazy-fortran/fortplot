@@ -13,13 +13,20 @@ use fortplot
 
 ### Stateful API
 ```fortran
+use fortplot  ! Provides wp => real64 for precision
+real(wp), dimension(50) :: x, y
+
+! Generate sample data
+x = [(real(i-1, wp) * 0.2_wp, i=1, 50)]
+y = sin(x)
+
 call figure()
 call plot(x, y)
 call title("Function Plot")
 call xlabel("x")
 call ylabel("y")
-call xlim(0.0d0, 10.0d0)  ! Set x-axis limits
-call ylim(-1.0d0, 1.0d0)   ! Set y-axis limits
+call xlim(0.0_wp, 10.0_wp)  ! Set x-axis limits
+call ylim(-1.0_wp, 1.0_wp)   ! Set y-axis limits
 call savefig("plot.png")
 ```
 
@@ -38,14 +45,20 @@ call savefig("subplots.png")
 
 ### Object-Oriented API
 ```fortran
+use fortplot  ! Imports wp => real64 for precision
 type(figure_t) :: fig
+real(wp), dimension(50) :: x, yf
+integer :: i
+
+! Generate test data
+x = [(real(i-1, wp) * 0.1_wp, i=1, 50)]
+yf = sin(x)
 
 call fig%initialize()
 call fig%set_title("Function Plot")
 call fig%set_xlabel("x")
 call fig%set_ylabel("y")
 call fig%add_plot(x, yf)
-call fig%add_3d_plot(x, y, z, label="3D data")  ! 3D plotting
 call fig%savefig("plot_oo.png")
 ```
 
@@ -90,14 +103,11 @@ call savefig("basic_scatter.png")
 
 ! Bubble chart with variable marker sizes  
 type(figure_t) :: fig
+real(wp), dimension(20) :: x, y, sizes
 call fig%initialize(600, 400)
-call fig%add_scatter_2d(x, y, s=sizes, label='Bubble Chart')
+! Note: scatter method available, add_scatter_2d for specialized features
+call fig%scatter(x, y, label='Bubble Chart')
 call fig%savefig("bubble_chart.pdf")
-
-! Color-mapped scatter with automatic colorbar
-call fig%add_scatter_2d(x, y, c=values, colormap='viridis', &
-                       show_colorbar=.true., label='Scientific Data')
-call fig%savefig("scientific_scatter.png")
 ```
 
 #### Surface plot with dimension validation
@@ -125,7 +135,8 @@ do i = 1, 21
 end do
 
 call fig%initialize(800, 600)
-call fig%add_surface(x, y, z, label="Paraboloid")
+! Note: Surface plots are available through pcolormesh for 2D data visualization
+call fig%add_pcolormesh(x, y, z, colormap="viridis", label="Paraboloid") 
 call fig%savefig("surface.png")
 ```
 
@@ -155,18 +166,16 @@ call streamplot(x_grid, y_grid, u_field, v_field, arrowsize=0.0_real64)
 
 #### Error bars for scientific data
 ```fortran
-use iso_fortran_env, only: wp => real64
-use fortplot
+use fortplot  ! Imports wp => real64 automatically
 implicit none
 
-type(figure_t) :: fig
-call fig%initialize(800, 600)
-call fig%errorbar(x, y, yerr=measurement_errors, &
-                  marker='o', capsize=5.0_wp, &
-                  label='Experimental data')
-call fig%errorbar(x, y_theory, label='Theory', linestyle='-')
-call fig%legend()
-call fig%savefig("scientific_plot.png")
+! Use functional API for errorbar plots (currently supported)
+real(wp), dimension(20) :: x, y, yerr, y_theory
+call figure(800, 600)
+call errorbar(x, y, yerr=yerr, marker='o', label='Experimental data')
+call plot(x, y_theory, label='Theory', linestyle='-')
+call legend()
+call savefig("scientific_plot.png")
 ```
 
 #### Log scale plot
@@ -174,36 +183,23 @@ call fig%savefig("scientific_plot.png")
 call figure()
 call plot(x, y)
 call set_xscale("log")
-call set_yscale("symlog", threshold=0.01d0)
-call xlim(1.0d-3, 1.0d3)
-call ylim(-100.0d0, 100.0d0)
+call set_yscale("symlog", threshold=0.01_wp)
+call xlim(1.0e-3_wp, 1.0e3_wp)
+call ylim(-100.0_wp, 100.0_wp)
 call savefig("log_plot.pdf")
 ```
 
 #### Text annotations with coordinate systems
 ```fortran
+! Note: Text annotation system is under development (Issue #491)
+! Current functionality supports basic plot elements
 type(figure_t) :: fig
+real(wp), dimension(50) :: x, y
 call fig%initialize(800, 600)
 call fig%add_plot(x, y, label="Scientific Data")
-
-! Basic text at data coordinates
-call fig%text(2.5_wp, 1.0_wp, "Peak Region", coord_type=COORD_DATA)
-
-! Arrow annotation pointing to data point
-call fig%annotate("Maximum", xy=[x_max, y_max], &
-                  xytext=[x_max+1.0_wp, y_max+0.3_wp], &
-                  xy_coord_type=COORD_DATA, font_size=12.0_wp)
-
-! Typography and positioning
-call fig%text(0.5_wp, 0.95_wp, "TITLE", coord_type=COORD_FIGURE, &
-              font_size=16.0_wp, alignment="center")
-call fig%text(4.0_wp, 0.0_wp, "Vertical Label", rotation=90.0_wp, &
-              coord_type=COORD_DATA, alignment="center")
-
-! Mathematical expressions with Unicode
-call fig%text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4}", &
-              coord_type=COORD_DATA, font_size=10.0_wp)
-
+call fig%set_title("Annotated Scientific Plot")
+call fig%set_xlabel("X Variable")  
+call fig%set_ylabel("Y Variable")
 call fig%savefig("annotated_plot.png")
 ```
 
