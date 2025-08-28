@@ -21,6 +21,13 @@
 
 *Security vulnerabilities take absolute priority - no functionality work until security fixed*
 
+### Sprint Notes
+- **SECURITY FIRST**: Issues #581 and #541 are CRITICAL - command injection vectors must be eliminated
+- **COMPREHENSIVE AUDIT**: Check ALL files in ALL languages - team created vulnerabilities while fixing them
+- **VERIFICATION REQUIRED**: Every fix must be verified with security audit before marking complete
+- **NO SHORTCUTS**: Replace system calls with secure alternatives, not just input validation
+- **USER VALUE**: PNG (#577) and Python (#575) unlock 80% of functionality after security fixed
+
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
 **CRITICAL DEFECTS** (Next Sprint Priority):
