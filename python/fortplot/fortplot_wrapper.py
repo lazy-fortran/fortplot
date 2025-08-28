@@ -21,27 +21,44 @@ class FortplotModule:
         self.bridge_executable = self._find_bridge_executable()
     
     def _find_bridge_executable(self):
-        """Find the fortplot_bridge executable."""
-        # First try current working directory
-        cwd_bridge = Path.cwd() / "fortplot_bridge"
+        """Find the fortplot_python_bridge executable."""
+        # First, look for the renamed executable fortplot_python_bridge
+        # Try to find it in the build directories relative to the Python package
+        package_dir = Path(__file__).parent
+        
+        # Go up to project root (from python/fortplot to root)
+        project_root = package_dir.parent.parent
+        
+        # Check for FPM build directory structures
+        # The executable should be in build/*/app/fortplot_python_bridge
+        build_dir = project_root / "build"
+        if build_dir.exists():
+            # Look for any gfortran_* or similar compiler directories
+            for compiler_dir in build_dir.iterdir():
+                if compiler_dir.is_dir():
+                    app_bridge = compiler_dir / "app" / "fortplot_python_bridge"
+                    if app_bridge.exists() and app_bridge.is_file():
+                        return str(app_bridge)
+                    # Also check test directory for backwards compatibility
+                    test_bridge = compiler_dir / "test" / "fortplot_python_bridge"
+                    if test_bridge.exists() and test_bridge.is_file():
+                        return str(test_bridge)
+        
+        # Try current working directory
+        cwd_bridge = Path.cwd() / "fortplot_python_bridge"
         if cwd_bridge.exists():
             return str(cwd_bridge)
         
-        # Look in the current directory and parent directories relative to this file
+        # Look in parent directories relative to this file (up to 5 levels)
         current_dir = Path(__file__).parent
-        for _ in range(5):  # Search up 5 levels
-            bridge_path = current_dir / "fortplot_bridge"
+        for _ in range(5):
+            bridge_path = current_dir / "fortplot_python_bridge"
             if bridge_path.exists():
                 return str(bridge_path)
             current_dir = current_dir.parent
         
-        # Also try relative to the Python package
-        bridge_path = Path(__file__).parent.parent.parent / "fortplot_bridge"
-        if bridge_path.exists():
-            return str(bridge_path)
-        
-        # Fallback to system path
-        return "fortplot_bridge"
+        # Fallback to system PATH
+        return "fortplot_python_bridge"
     
     def _ensure_bridge(self):
         """Ensure the bridge process is running."""
@@ -58,7 +75,7 @@ class FortplotModule:
                 )
                 # print(f"Bridge process started with PID: {self.bridge_process.pid}")
             except FileNotFoundError as e:
-                raise RuntimeError(f"Could not find fortplot_bridge executable at {self.bridge_executable}: {e}")
+                raise RuntimeError(f"Could not find fortplot_python_bridge executable at {self.bridge_executable}: {e}")
     
     def _send_command(self, command):
         """Send a command to the bridge process."""
