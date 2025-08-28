@@ -97,4 +97,12 @@ title_test_*.png
 # Runtime directories
 test_runtime_dir/
 
+# Build artifacts in wrong locations
+build/*.png
+build/*.pdf  
+build/*.txt
+build/test/*.png
+build/test/*.pdf
+build/test/*.txt
+
 # Force CI rebuild
