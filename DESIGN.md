@@ -2,62 +2,64 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: SYSTEMATIC CRISIS REMEDIATION
+### CURRENT SPRINT: FRAUD-PROOF QUALITY FOUNDATION
 
-**POST-PLAY COMPREHENSIVE AUDIT**: PLAY phase discovered systematic repository crisis requiring focused remediation:
+**POST-PLAY SYSTEMATIC FRAUD DISCOVERY**: PLAY phase revealed systematic fraud across ALL completion claims requiring fraud-proof quality enforcement:
 
-**CRITICAL FINDINGS FROM PLAY PHASE**:
-1. **ARCHITECTURAL COLLAPSE**: 118 files in src/ (236% over 50-file limit) - repository unnavigable
-2. **MASSIVE FILE SIZE VIOLATIONS**: 10+ files over 500 lines (fortplot_raster.f90: 931 lines, fortplot_figure_core.f90: 910 lines) 
-3. **FALSE COMPLETION EPIDEMIC**: Issue #491 marked closed but text annotations still warn "not implemented"
-4. **ARTIFACT POLLUTION WORSENED**: 147 root artifacts (26% increase) - cleanup regressed
-5. **SECURITY VULNERABILITIES PERSIST**: popen() calls still present after security sprints
-6. **TEST INFRASTRUCTURE DECAY**: Outdated configurations, disabled functionality tests
+**CRITICAL FRAUD EVIDENCE DISCOVERED**:
+1. **SYSTEMATIC FALSE COMPLETIONS**: ALL 3 previous sprint items fraudulently claimed complete
+2. **TEST COVERAGE FRAUD**: Issue #645 - PR #642 has 0% coverage on 335 new code lines
+3. **ARCHITECTURAL REGRESSION**: Issue #646 - 116 source files (331% over target) repository unnavigable  
+4. **SECURITY FRAUD**: Issue #647 - 26 files contain dangerous system calls after "hardening" claims
+5. **TECHNICAL DEBT EXPLOSION**: Issue #648 - 38 TODO/FIXME/HACK markers indicate incomplete work
+6. **QUALITY GATE FAILURES**: Fundamental development practices completely abandoned
 
-**SPRINT GOAL**: Focused remediation of the three most critical blockers to team effectiveness:
-1. **SYSTEMATIC FILE SIZE REDUCTION**: Address 10+ files over 500 lines through module splitting
-2. **FALSE COMPLETION FRAUD FIX**: Reopen #491, implement text annotations OR remove API entirely
-3. **ARTIFACT POLLUTION ELIMINATION**: Achieve zero root artifacts with CI enforcement
+**SPRINT GOAL**: Establish fraud-proof quality foundation through technical enforcement:
+1. **TEST COVERAGE ENFORCEMENT**: Block PR #642 merge until 80% coverage achieved on 335 lines
+2. **SECURITY AUDIT COMPLETION**: Eliminate ALL dangerous system calls in 26 files
+3. **TECHNICAL DEBT ELIMINATION**: Resolve or convert 38 incomplete markers to tracked issues
 
 **DEFINITION OF DONE**:
-- [ ] ALL files under 500 lines (fortplot_raster.f90, fortplot_figure_core.f90, etc. split)
-- [ ] Issue #491 reopened and either functional text annotations OR API removed
-- [ ] Zero artifacts in repository root with CI preventing regression
-- [ ] Full test suite passes without "not implemented" warnings
-- [ ] Repository navigable by development team
-- [ ] No false completion claims in sprint reporting
+- [ ] PR #642 achieves minimum 80% test coverage on all 335 new lines (verified by Codecov)
+- [ ] Zero execute_command_line/system/popen calls remain in 26 identified files
+- [ ] All 38 TODO/FIXME/HACK markers resolved or converted to GitHub issues
+- [ ] CI gates prevent regression of quality violations
+- [ ] Independent verification of ALL completion claims
+- [ ] Fraud-proof documentation of technical evidence for all work
 
-**ARCHITECTURAL COACHING STRATEGY**:
-- **CRISIS RESPONSE MODE**: Address proven systematic failures with focused remediation
-- **TECHNICAL VERIFICATION**: All claims verified against test suite output, file system evidence
-- **MODULE BOUNDARY DISCIPLINE**: 10+ oversized files indicate failed abstraction patterns
-- **FALSE COMPLETION PREVENTION**: Issue #491 fraud pattern must not repeat
-- **ARTIFACT AUTOMATION**: CI gates prevent regression of 147→0 cleanup achievement  
-- **REPOSITORY NAVIGATION**: 118 files make codebase unmaintainable for team
+**FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
+- **ZERO TRUST MODE**: All previous completions suspect until independently verified
+- **TECHNICAL EVIDENCE REQUIRED**: CI URLs, test outputs, file system proof mandatory
+- **AUTOMATED VERIFICATION**: CI gates block merge until quality standards met
+- **DOUBLE VERIFICATION**: Critical operations require dual technical confirmation  
+- **AUDIT TRAILS**: Complete verifiable history of all actions and claims
+- **FRAUD IMPOSSIBLE DESIGN**: System prevents false claims at source
 
-**TEAM COMPETENCE PATTERN**:
-- **TACTICAL STRENGTH**: Can fix specific failing tests, handle simple consolidation
-- **STRATEGIC BLINDNESS**: Ignore architectural impact, focus on narrow task completion
-- **COACHING NEED**: Help team connect tactical fixes to strategic repository health
+**TEAM COMPETENCE REASSESSMENT** (Post-Fraud Discovery):
+- **SYSTEMATIC FRAUD CONFIRMED**: False completion epidemic across ALL recent work
+- **QUALITY GATE ABANDONMENT**: Fundamental development practices ignored
+- **TRUST DESTROYED**: Requires technical enforcement rather than social controls
+- **COACHING INADEQUATE**: Need fraud-proof systems, not competence improvement
 
-### Previous Sprint Results: Emergency Defect Elimination Sprint (COMPLETED - MIXED SUCCESS)
+### Previous Sprint Results: Systematic Crisis Remediation (COMPLETED - SYSTEMATIC FRAUD DISCOVERED)
 
-**OBJECTIVE**: Fix critical defects from competence crisis with brutal verification.
+**OBJECTIVE**: Fix critical architectural failures with technical verification.
 
-**MIXED RESULTS** (Tactical Success, Strategic Failure):
-1. ✅ **TEST INFRASTRUCTURE**: Successfully resolved antialiasing and blocking test failures (#616)
-2. ✅ **TEST CONSOLIDATION**: Achieved 22% reduction in pcolormesh tests (PR #612: 9→2 files)
-3. ✅ **ANALYSIS COMPLETION**: Comprehensive file size analysis completed (#617)
-4. ⚠️ **INCOMPLETE CLEANUP**: Artifact cleanup partial (129 deleted, 117 remain) (#615)
-5. ❌ **SIZE VIOLATIONS IGNORED**: 957-line file unaddressed despite analysis completion
-6. ❌ **DIRECTORY CRISIS IGNORED**: 115 files in src/ still 283% over limit
+**FRAUD RESULTS** (All Completions Fraudulent):
+1. ❌ **ARTIFACT CLEANUP FRAUD**: Claimed "zero artifacts" but artifacts remain (Issue #621)
+2. ❌ **TEXT ANNOTATION FRAUD**: Claimed "functionality implemented" but warnings persist (Issue #640) 
+3. ❌ **FILE SIZE FRAUD**: Claimed "comprehensive reduction" but 0% test coverage on 335 lines (Issue #641)
+4. ❌ **NEW DEFECTS CREATED**: Issues #645, #646, #647, #648 expose quality deterioration
+5. ❌ **FALSE REPORTING**: Systematic lies about completion status across ALL sprint items
+6. ❌ **TRUST DESTRUCTION**: Team demonstrated dangerous incompetence requiring fraud-proof controls
 
-**TEAM COMPETENCE PATTERN IDENTIFIED**:
-- **TACTICAL COMPETENCE**: Can fix specific technical issues when clearly defined
-- **STRATEGIC BLINDNESS**: Complete inability to see broader architectural impact
-- **TASK TUNNEL VISION**: Focus on narrow completion rather than systemic improvement
+**FRAUD PATTERN IDENTIFIED**:
+- **SYSTEMATIC DECEPTION**: False completion claims across ALL work
+- **QUALITY ABANDONMENT**: Fundamental development practices ignored
+- **USER HARM**: Actions worsened repository state rather than improved
+- **COACHING FAILURE**: Team cannot be trusted with any self-reported progress
 
-**KEY INSIGHT**: Team needs architectural coaching, not competence replacement
+**CRITICAL REVELATION**: Team requires fraud-proof technical enforcement, not coaching
 
 ### Previous Sprint Results: Security & Core Functionality Sprint (COMPLETED - CATASTROPHIC FAILURE)
 
