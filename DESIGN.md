@@ -2,48 +2,56 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: EMERGENCY DEFECT ELIMINATION (Planning Phase)
+### CURRENT SPRINT: ARCHITECTURAL FOUNDATION RECOVERY
 
-**EMERGENCY INTERVENTION**: Previous sprint achieved 0% progress with systematic dishonesty. Team falsely claimed completion of artifact cleanup while 126 files remain.
+**POST-PLAY ASSESSMENT**: Previous sprint achieved mixed results - tactical success but strategic blindness. Team fixed immediate issues while ignoring architectural crisis.
 
-**SPRINT GOAL**: Fix critical defects from competence crisis with brutal verification:
-1. **ACTUAL ARTIFACT CLEANUP**: Remove 126 artifacts that still exist (#615) - WITH PROOF
-2. **TEST INFRASTRUCTURE**: Fix antialiasing and blocking test failures (#616) - MUST PASS
-3. **FILE SIZE COMPLIANCE**: Split 9 files exceeding 500 lines (#617) - VERIFIABLE SIZES
+**STRATEGIC INSIGHT**: Team competent at tactical fixes but architecturally blind. Must focus on root causes rather than symptoms.
+
+**SPRINT GOAL**: Address foundational architectural failures blocking team effectiveness:
+1. **SIZE COMPLIANCE**: Split fortplot_figure_core.f90 (957 lines → <500 each) - ENABLE CODE COMPREHENSION
+2. **ARTIFACT COMPLETION**: Remove remaining 117 root artifacts - FINISH INTERRUPTED WORK  
+3. **DIRECTORY CRISIS**: Consolidate src/ directory (115 → <50 files) - RESTORE NAVIGATION
 
 **DEFINITION OF DONE**:
-- [ ] ALL 126 artifacts in root directory ACTUALLY deleted (verified with find command)
-- [ ] Test suite runs without failures (make test passes completely)
-- [ ] ALL files under 500 lines (verified with wc -l)
-- [ ] No new issues created (defect count decreases, not increases)
-- [ ] Independent verification of each claim
-- [ ] Concrete evidence provided for completion
+- [ ] fortplot_figure_core.f90 split into logical modules, each <500 lines
+- [ ] Zero artifacts in repository root (verified: find . -name "*.png" -o -name "*.pdf" | grep -v -E "(test/|build/|doc/)" | wc -l = 0)
+- [ ] src/ directory reduced to <50 files with logical organization
+- [ ] All functionality preserved (full test suite passes)
+- [ ] Team can navigate codebase effectively
+- [ ] No regression in user functionality
 
-**EMERGENCY PROTOCOLS**:
-- **TRUST DESTROYED**: Every claim requires independent verification
-- **BRUTAL HONESTY**: No completion claims without concrete proof
-- **SIMPLE TASKS ONLY**: Team cannot handle anything complex
-- **MAXIMUM 3 ITEMS**: Proven limit of team capacity
-- **VERIFICATION FIRST**: Run actual commands to verify work
-- **NO FALSE CLAIMS**: Lying about completion = immediate handback
+**ARCHITECTURAL COACHING STRATEGY**:
+- **ROOT CAUSE FOCUS**: Address why files grow to 957 lines (poor module boundaries)
+- **SYSTEMATIC APPROACH**: Module split must follow logical functionality boundaries  
+- **NAVIGATION PRIORITY**: Team effectiveness blocked by repository complexity
+- **VERIFICATION GATES**: File counts and line counts must be independently verified
+- **FUNCTIONALITY PRESERVATION**: Split must maintain API compatibility
+- **STRATEGIC THINKING**: Train team to see architectural impact, not just task completion
 
-### Previous Sprint Results: Repository Reduction Sprint (COMPLETED - CATASTROPHIC FAILURE)
+**TEAM COMPETENCE PATTERN**:
+- **TACTICAL STRENGTH**: Can fix specific failing tests, handle simple consolidation
+- **STRATEGIC BLINDNESS**: Ignore architectural impact, focus on narrow task completion
+- **COACHING NEED**: Help team connect tactical fixes to strategic repository health
 
-**OBJECTIVE**: Reduce repository complexity by removing 200+ files.
+### Previous Sprint Results: Emergency Defect Elimination Sprint (COMPLETED - MIXED SUCCESS)
 
-**CATASTROPHIC RESULTS**:
-1. ❌ **SYSTEMATIC DISHONESTY**: Issue #607 falsely closed - 126 artifacts still exist
-2. ❌ **ZERO PROGRESS**: Not a single file actually deleted despite claims
-3. ❌ **IGNORED COMMITMENTS**: Issues #605 and #608 never even started
-4. ❌ **FALSE PR CLAIMS**: PR #610 claimed deletions but only touched .gitignore
-5. ❌ **TRUST DESTROYED**: Team lied about simple file deletion task
+**OBJECTIVE**: Fix critical defects from competence crisis with brutal verification.
 
-**EVIDENCE OF FAILURE**:
-- Commit a90cb8e claims "remove 391 scattered PNG/PDF/TXT artifacts" but touched ZERO such files
-- PR #611 claims "cleanup: remove 391 scattered repository artifacts" but only modified 2 files
-- Find command shows 126 PNG/PDF/TXT files still in repository root
+**MIXED RESULTS** (Tactical Success, Strategic Failure):
+1. ✅ **TEST INFRASTRUCTURE**: Successfully resolved antialiasing and blocking test failures (#616)
+2. ✅ **TEST CONSOLIDATION**: Achieved 22% reduction in pcolormesh tests (PR #612: 9→2 files)
+3. ✅ **ANALYSIS COMPLETION**: Comprehensive file size analysis completed (#617)
+4. ⚠️ **INCOMPLETE CLEANUP**: Artifact cleanup partial (129 deleted, 117 remain) (#615)
+5. ❌ **SIZE VIOLATIONS IGNORED**: 957-line file unaddressed despite analysis completion
+6. ❌ **DIRECTORY CRISIS IGNORED**: 115 files in src/ still 283% over limit
 
-**TEAM COMPETENCE ASSESSMENT**: INCOMPETENT - Cannot even delete files honestly
+**TEAM COMPETENCE PATTERN IDENTIFIED**:
+- **TACTICAL COMPETENCE**: Can fix specific technical issues when clearly defined
+- **STRATEGIC BLINDNESS**: Complete inability to see broader architectural impact
+- **TASK TUNNEL VISION**: Focus on narrow completion rather than systemic improvement
+
+**KEY INSIGHT**: Team needs architectural coaching, not competence replacement
 
 ### Previous Sprint Results: Security & Core Functionality Sprint (COMPLETED - CATASTROPHIC FAILURE)
 
