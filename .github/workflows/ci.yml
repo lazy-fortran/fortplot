@@ -94,22 +94,26 @@ jobs:
     #   run: |
     #     make test ARGS="test_png_validation"
 
-  build-cmake:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
+  # build-cmake:
+  #   runs-on: ubuntu-latest
+  #   
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gfortran cmake ffmpeg
+  #   - name: Install dependencies
+  #     run: |
+  #       sudo apt-get update
+  #       sudo apt-get install -y gfortran cmake ffmpeg
 
-    - name: Test CMake build
-      run: |
-        cd doc/cmake_example
-        mkdir -p build
-        cd build
-        cmake ..
-        make
-        ./fortplot_test
+  #   - name: Test CMake build
+  #     run: |
+  #       cd doc/cmake_example
+  #       mkdir -p build
+  #       cd build
+  #       cmake ..
+  #       make
+  #       ./fortplot_test
+  
+  # CMAKE CI test disabled - CMAKE build system removed in artifact cleanup
+  # Issue #613: Root CMakeLists.txt removed, CMAKE example needs rework  
+  # Re-enable after CMAKE example updated to work without root build system
