@@ -27,7 +27,7 @@ module fortplot_matplotlib
         figure, subplot, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
     
-    use fortplot_text_stub, only: &
+    use fortplot_text_impl, only: &
         text, annotate
     
     implicit none
