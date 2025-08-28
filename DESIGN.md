@@ -28,12 +28,12 @@
 - [ ] No false completion claims in sprint reporting
 
 **ARCHITECTURAL COACHING STRATEGY**:
-- **ROOT CAUSE FOCUS**: Address why files grow to 957 lines (poor module boundaries)
-- **SYSTEMATIC APPROACH**: Module split must follow logical functionality boundaries  
-- **NAVIGATION PRIORITY**: Team effectiveness blocked by repository complexity
-- **VERIFICATION GATES**: File counts and line counts must be independently verified
-- **FUNCTIONALITY PRESERVATION**: Split must maintain API compatibility
-- **STRATEGIC THINKING**: Train team to see architectural impact, not just task completion
+- **CRISIS RESPONSE MODE**: Address proven systematic failures with focused remediation
+- **TECHNICAL VERIFICATION**: All claims verified against test suite output, file system evidence
+- **MODULE BOUNDARY DISCIPLINE**: 10+ oversized files indicate failed abstraction patterns
+- **FALSE COMPLETION PREVENTION**: Issue #491 fraud pattern must not repeat
+- **ARTIFACT AUTOMATION**: CI gates prevent regression of 147→0 cleanup achievement  
+- **REPOSITORY NAVIGATION**: 118 files make codebase unmaintainable for team
 
 **TEAM COMPETENCE PATTERN**:
 - **TACTICAL STRENGTH**: Can fix specific failing tests, handle simple consolidation
