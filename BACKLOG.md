@@ -13,11 +13,12 @@
 
 ## DOING (Current Work)
 
-### ACTIVE: #605 Eliminate Redundant Pcolormesh Test Files 
-- **CONTEXT**: Test suite overwhelmed by 9 redundant pcolormesh test variations  
-- **TARGET**: Consolidate to 3 maximum comprehensive test files
-- **EXECUTION APPROACH**: Systematic analysis and elimination of duplicate test coverage
-- **HANDOFF**: Ready for sergei implementation with consolidation requirements
+### BLOCKED: PR #614 Mixed Scope - Requires Split
+- **STATUS**: PR #614 mixing TWO issues (#605 pcolormesh AND #608 Python bridge)
+- **REVIEW VERDICT**: REQUEST CHANGES - must split into separate PRs
+- **CRITICAL ISSUE**: Violates single-issue PR principle, making review complex
+- **ACTION REQUIRED**: Split pcolormesh changes from Python bridge changes
+- **TECHNICAL MERIT**: Both consolidations work but must be separated
 
 ### Sprint Notes (REPOSITORY REDUCTION EMERGENCY)
 - **OVERWHELM CRISIS**: 400+ files and 114 files in src/ exceed team mental capacity causing systematic failures
