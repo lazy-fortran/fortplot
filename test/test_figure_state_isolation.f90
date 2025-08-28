@@ -16,7 +16,7 @@ program test_figure_state_isolation
     write(*,*) 'Testing figure state isolation...'
     
     ! Test 1: Create first figure with legend
-    call figure(figsize=[800.0d0, 600.0d0])
+    call figure(figsize=[8.0d0, 6.0d0])
     call plot(x1, y1, label='First Plot')
     call legend()
     
@@ -29,7 +29,7 @@ program test_figure_state_isolation
     write(*,*) 'PASS: First figure has correct legend entries (1)'
     
     ! Test 2: Create second figure - should have clean state
-    call figure(figsize=[800.0d0, 600.0d0])
+    call figure(figsize=[8.0d0, 6.0d0])
     call plot(x2, y2, label='Second Plot')
     
     ! Check that legend state is clean (no entries from previous figure)
@@ -52,7 +52,7 @@ program test_figure_state_isolation
     write(*,*) 'PASS: Second figure has correct legend entries after legend() (1)'
     
     ! Test 3: Create third figure and verify complete isolation
-    call figure(figsize=[800.0d0, 600.0d0])
+    call figure(figsize=[8.0d0, 6.0d0])
     
     ! Should have no legend entries and no plots
     fig_ptr => get_global_figure()

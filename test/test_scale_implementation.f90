@@ -31,7 +31,7 @@ contains
         y = sin(x * 0.1_wp) * 100.0_wp
         
         ! Create plot with linear scale
-        call figure(figsize=[800.0d0, 600.0d0])
+        call figure(figsize=[8.0d0, 6.0d0])
         call set_xscale('linear')
         call set_yscale('linear')
         call plot(x, y, label='sin(x)')
@@ -59,7 +59,7 @@ contains
         y = x**2  ! Quadratic growth
         
         ! Create plot with log scales
-        call figure(figsize=[800.0d0, 600.0d0])
+        call figure(figsize=[8.0d0, 6.0d0])
         call set_xscale('log')
         call set_yscale('log')
         call plot(x, y, label='x^2')
@@ -88,7 +88,7 @@ contains
         y = x**3  ! Cubic function: negative to positive
         
         ! Create plot with symlog scales
-        call figure(figsize=[800.0d0, 600.0d0])
+        call figure(figsize=[8.0d0, 6.0d0])
         call set_xscale('symlog', threshold)
         call set_yscale('symlog', threshold)
         call plot(x, y, label='x^3')
@@ -119,7 +119,7 @@ contains
         where (x <= 0.0_wp) x = 0.001_wp
         
         ! Create plot with log scale on y-axis only
-        call figure(figsize=[800.0d0, 600.0d0])
+        call figure(figsize=[8.0d0, 6.0d0])
         call set_xscale('linear')
         call set_yscale('log')
         call plot(x, y, label='|sin(x)| + 0.1')
@@ -149,21 +149,21 @@ contains
         test_passed = .true.
         
         ! Test 1: Invalid scale type (should default to linear with warning)
-        call figure(figsize=[400.0d0, 300.0d0])
+        call figure(figsize=[4.0d0, 3.0d0])
         call set_xscale('invalid_scale')
         call set_yscale('invalid_scale')
         call plot(x, y)
         call savefig('test_invalid_scale.png')
         
         ! Test 2: Very small symlog threshold
-        call figure(figsize=[400.0d0, 300.0d0])
+        call figure(figsize=[4.0d0, 3.0d0])
         call set_xscale('symlog', 0.001_wp)
         call set_yscale('symlog', 0.001_wp)
         call plot(x, y)
         call savefig('test_small_threshold.png')
         
         ! Test 3: Switching scales after plotting
-        call figure(figsize=[400.0d0, 300.0d0])
+        call figure(figsize=[4.0d0, 3.0d0])
         call plot(x, y)
         call set_xscale('log')
         call set_yscale('log')

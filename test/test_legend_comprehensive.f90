@@ -49,7 +49,7 @@ contains
         
         ! Enhanced error handling for Windows compatibility
         print *, "  Creating figure with size [640x480]..."
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         
         print *, "  Setting title and labels..."
         call title("Basic Legend Test")
@@ -106,7 +106,7 @@ contains
         y = sin(x)
         
         do i = 1, 4
-            call figure(figsize=[640.0_wp, 480.0_wp])
+            call figure(figsize=[6.4_wp, 4.8_wp])
             call title("Legend: " // trim(positions(i)))
             call add_plot(x, y, label="sin(x)")
             call legend(position=trim(positions(i)))
@@ -139,7 +139,7 @@ contains
         y2 = sqrt(x)
         y3 = log(x+1)
         
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("Legend with Markers")
         call xlabel("X")
         call ylabel("Y")
@@ -181,7 +181,7 @@ contains
         y1 = cos(x)
         y2 = sin(x) * 0.5_wp
         
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("PDF Legend Test")
         call xlabel("X")
         call ylabel("Y")

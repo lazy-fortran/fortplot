@@ -57,13 +57,16 @@ contains
         !! Python-accessible figure initialization
         !! 
         !! Arguments:
-        !!   width, height: Optional figure dimensions (default: 640x480)
+        !!   width, height: Optional figure dimensions in pixels (default: 640x480)
         integer, intent(in), optional :: width, height
         
         real(8), dimension(2) :: figsize
+        real(8), parameter :: DPI = 100.0d0
         
         if (present(width) .and. present(height)) then
-            figsize = [real(width, 8), real(height, 8)]
+            ! Convert pixel dimensions to inches for matplotlib compatibility
+            ! Python passes pixels, but mpl_figure expects inches
+            figsize = [real(width, 8) / DPI, real(height, 8) / DPI]
             call mpl_figure(figsize=figsize)
         else
             call mpl_figure()
