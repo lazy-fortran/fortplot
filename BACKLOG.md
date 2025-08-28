@@ -12,9 +12,7 @@
 
 ## DOING (Current Work)
 
-### #625: CLEANUP - Complete artifact removal (117 files remain in repository root)
-**EPIC**: ARCHITECTURAL SIZE COMPLIANCE
-**STATUS**: IN PROGRESS - Removing remaining artifacts scattered in repository root
+**NO ACTIVE WORK** - PR #628 created for #625, awaiting review
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
