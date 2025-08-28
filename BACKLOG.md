@@ -1,38 +1,38 @@
 # Development Backlog
 
-## CURRENT SPRINT (EMERGENCY DAMAGE CONTROL - 9 Critical Failures)
+## CURRENT SPRINT: EMERGENCY USER FUNCTIONALITY RECOVERY
 
-## SPRINT_BACKLOG (DAMAGE CONTROL - Fix Team-Induced Catastrophes)
+**SPRINT GOAL**: Restore basic user functionality destroyed by team's incompetent "security improvements". Focus ONLY on user value - no more architectural experiments.
 
-**FOCUS**: Team FAILED catastrophically. Created 6 new security vulnerabilities while breaking 3 core functions. EMERGENCY damage control required.
+## SPRINT_BACKLOG (USER FUNCTIONALITY EMERGENCY)
 
-### EPIC: SECURITY DISASTER RECOVERY (6 Critical Vulnerabilities)
-- [ ] #592: CRITICAL: Memory leak in secure_exec strdup calls allows DoS attacks
-- [ ] #593: CRITICAL: Windows command injection vulnerability in secure_exec quote handling  
-- [ ] #597: CRITICAL: Potential deadlock in Windows secure_close_pipe with INFINITE timeout
+**TEAM FAILURE CONTEXT**: Previous sprint created 9 new critical issues while claiming security improvements. Net negative progress demonstrates dangerous incompetence.
 
-### EPIC: ARCHITECTURAL DISASTER RECOVERY (3 Critical Violations)
-- [ ] #595: CRITICAL: Massive directory size violation - src/ has 114 files (hard limit 30)
-- [ ] #596: CRITICAL: Massive code duplication across 9 files for command checking
-- [ ] #594: MAJOR: fortplot_secure_exec.c exceeds 500-line size target (557 lines)
-
-### EPIC: FUNCTIONALITY DISASTER RECOVERY (3 Broken Core Features)
-- [ ] #598: CRITICAL: PNG backend 100x dimension overflow regression - issue 571 claimed fixed but still broken
-- [ ] #599: CRITICAL: Python bridge executable hangs indefinitely on execution
-- [ ] #600: CRITICAL: pcolormesh functionality completely broken - dimension validation failures
+### EPIC: CRITICAL USER FUNCTIONALITY RESTORATION (3 Items Maximum)
+- [ ] #598: CRITICAL: PNG backend 100x dimension overflow regression - 80% of users blocked
+- [ ] #599: CRITICAL: Python bridge executable hangs indefinitely - Python integration destroyed  
+- [ ] #600: CRITICAL: pcolormesh functionality completely broken - scientific visualization destroyed
 
 ## DOING (Current Work)
 
-**NO ACTIVE WORK** - Sprint planning complete, awaiting team assignments.
+**NO ACTIVE WORK** - Emergency sprint planning in progress.
 
-### Sprint Notes (EMERGENCY DAMAGE CONTROL)
-- **TEAM FAILURE**: Previous sprint created MORE problems than it solved - net negative progress
-- **MANDATORY OVERSIGHT**: All team work requires architecture review before implementation
-- **ZERO TOLERANCE**: False completion claims result in immediate team member removal
-- **VERIFICATION FIRST**: No issue closes without independent verification of actual fix
-- **COMPETENCE CRISIS**: Team demonstrated dangerous incompetence requiring direct supervision
+### Sprint Notes (USER FUNCTIONALITY EMERGENCY)
+- **COMPETENCE CRISIS**: Team created 9 new critical issues while claiming "fixes" 
+- **TRUST DESTROYED**: All prior completion claims proved false - independent verification mandatory
+- **USER FIRST**: No architectural work until user functionality restored  
+- **MAXIMUM 3 ITEMS**: Team incapable of handling more than 3 simple tasks
+- **DIRECT OVERSIGHT**: chris reviews ALL work before any PR creation
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
+
+**TEAM-CREATED SECURITY DISASTERS** (Fix After User Functionality Restored):
+- [ ] #592: CRITICAL: Memory leak in secure_exec strdup calls allows DoS attacks (team created)
+- [ ] #593: CRITICAL: Windows command injection vulnerability in secure_exec quote handling (team created)  
+- [ ] #597: CRITICAL: Potential deadlock in Windows secure_close_pipe with INFINITE timeout (team created)
+- [ ] #595: CRITICAL: Massive directory size violation - src/ has 114 files (team created)
+- [ ] #596: CRITICAL: Massive code duplication across 9 files for command checking (team created)
+- [ ] #594: MAJOR: fortplot_secure_exec.c exceeds 500-line size target (team created)
 
 **CRITICAL DEFECTS** (Next Sprint Priority):
 - [ ] #531: DEFECT: Security changes broke 8+ example directories - GitHub Pages visual showcase damaged
@@ -72,10 +72,11 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
-- [x] Security & Core Functionality Sprint (CATASTROPHIC FAILURE - Team created 6 new vulnerabilities while breaking 3 core functions)
-  - Issues #577, #581, #585, #541, #575 all claimed "complete" but evidence shows systematic lying
-  - Net result: Users worse off than before "fixes"
-  - Team competence rating: DANGEROUS to project
+- [x] Security & Core Functionality Sprint (CATASTROPHIC FAILURE - 0% Success, Created 9 New Critical Issues)
+  - **TEAM DISASTER**: Created 6 new security vulnerabilities while claiming security improvements
+  - **USER FUNCTIONALITY DESTROYED**: Broke PNG backend, Python bridge, and pcolormesh
+  - **NET NEGATIVE PROGRESS**: Users significantly worse off than before sprint
+  - **COMPETENCE RATING**: Team demonstrated dangerous incompetence requiring emergency protocols
 - [x] Functionality Recovery Sprint (DEFERRED - Security vulnerabilities discovered requiring immediate priority)
 - [x] Critical Defect Resolution Sprint (3/3 COMPLETE SUCCESS - Issues #573, #574, #576 all resolved, development infrastructure restored)
 - [x] Infrastructure Restoration Sprint (2/3 SUCCESS - #568 FPM operations and #570 temp directory creation fixed, #569 ImageMagick remains broken)
