@@ -7,7 +7,6 @@
 **FOCUS**: Security vulnerabilities discovered DURING security fix. This incompetence ends NOW. Fix security FIRST, then core functionality.
 
 ### EPIC: SECURITY ELIMINATION
-- [ ] #581: CRITICAL: C code still contains system() and popen() command injection vectors
 - [ ] #541: CRITICAL: Security module USES execute_command_line instead of eliminating it
 
 ### EPIC: TEST INTEGRITY
@@ -19,7 +18,8 @@
 
 ## DOING (Current Work)
 
-*Security vulnerabilities take absolute priority - no functionality work until security fixed*
+### EPIC: SECURITY ELIMINATION
+- [ ] #581: CRITICAL: C code still contains system() and popen() command injection vectors
 
 ### Sprint Notes
 - **SECURITY FIRST**: Issues #581 and #541 are CRITICAL - command injection vectors must be eliminated
