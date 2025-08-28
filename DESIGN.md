@@ -903,7 +903,7 @@ Instead of just drawing contour lines, collect boundary segments to form closed 
 **New Module**: `fortplot_contour_fill.f90`
 ```fortran
 module fortplot_contour_fill
-    use fortplot_utils, only: wp
+    use fortplot_utilities, only: wp
     use fortplot_colormap, only: colormap_value_to_color
     
     type :: contour_region_t
