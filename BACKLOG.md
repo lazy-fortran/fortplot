@@ -8,9 +8,9 @@
 
 ### EPIC: ARCHITECTURAL SIZE COMPLIANCE
 
-- [ ] #620: CRITICAL - Split fortplot_figure_core.f90 (957 lines → <500 lines each module)
-- [ ] #621: DEFECT - Complete artifact cleanup (117 remaining root artifacts)
-- [ ] #622: DEFECT - Directory consolidation crisis (115 files → <50 files in src/)
+- [ ] #624: ARCHITECTURAL - Split fortplot_figure_core.f90 into logical modules <500 lines each
+- [ ] #625: CLEANUP - Complete artifact removal (117 files remain in repository root)  
+- [ ] #626: ARCHITECTURAL - Consolidate src/ directory from 115 files to <50 files
 
 ## DOING (Current Work)
 
@@ -29,8 +29,8 @@
 
 **STRATEGIC ARCHITECTURAL DEFECTS** (Next Sprint After Foundation Recovery):
 - [ ] #623: PROCESS - False completion claims and systemic violation pattern (strategic coaching required)
-- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum
 - [ ] #609: CI ENFORCEMENT - File count limits and automated prevention
+- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #626)
 
 **DEFERRED TECHNICAL DEFECTS** (After Repository Reduction):
 - [ ] #618: SECURITY - system/popen calls in 8 files require secure replacement
