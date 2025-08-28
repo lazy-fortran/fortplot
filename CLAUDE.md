@@ -1,8 +1,13 @@
-# 🚨 CATASTROPHIC TEAM FAILURE RECOVERY PROTOCOL
+# 🚨 REPOSITORY COMPLEXITY CRISIS PROTOCOLS
 
-**SPRINT JUST FAILED: 0% SUCCESS RATE, 9 NEW CRITICAL ISSUES CREATED**
+**REPOSITORY OVERWHELM ANALYSIS:**
+- 121 source files (target: 30-50)
+- 107 test files with massive redundancy
+- 182 scattered output artifacts
+- 100+ GitHub issues (many duplicates)
+- Team cannot navigate or maintain this complexity
 
-Team systematically failed basic tasks while claiming completion. IMMEDIATE COMPETENCE RESTRICTIONS REQUIRED.
+**MANDATORY CLEANUP PROTOCOLS BEFORE ANY NEW WORK**
 
 # 🚨 CRITICAL: GitHub Pages Documentation System
 
@@ -70,6 +75,85 @@ If GitHub Pages shows broken images:
 ## 🔒 DO NOT TOUCH UNLESS YOU UNDERSTAND THE FULL PIPELINE
 
 The user explicitly requested this visual showcase. Breaking it again will cause significant frustration.
+
+# 🚨 REPOSITORY CLEANUP PROTOCOLS
+
+## MANDATORY FILE REDUCTION TARGETS
+
+**SOURCE FILES** (Currently 121, Target: 30-50):
+- Consolidate fortplot_doc_* modules (9 files → 3 files)
+- Merge redundant functionality modules
+- Eliminate single-purpose modules with <50 lines
+- Combine related plotting modules
+
+**TEST FILES** (Currently 107, Target: 40-60):
+- **ELIMINATE REDUNDANT TESTS**: 9 pcolormesh variations → 2 comprehensive tests
+- **CONSOLIDATE REGRESSION TESTS**: Multiple single-point tests → 1 comprehensive test
+- **DELETE DEBUG-ONLY TESTS**: Tests that don't verify functionality
+- **MERGE SIMILAR FUNCTIONALITY**: histogram tests, legend tests, axis tests
+
+**OUTPUT ARTIFACTS** (Currently 182, Target: 0 in repository root):
+- Move ALL test outputs to test/output/ directory
+- Clean ALL PNG/PDF files from root directory
+- Establish .gitignore for build artifacts
+- Remove ALL debug output files
+
+## FILE DELETION CRITERIA
+
+**DELETE IMMEDIATELY:**
+- Files with backup extensions (.bak, .old, .backup, ~)
+- Debug output files in root directory (*.png, *.pdf, *.txt in root)
+- Duplicate functionality tests
+- Unused example files
+- Build artifacts in wrong locations
+
+**CONSOLIDATION CANDIDATES:**
+- fortplot_doc_* modules → fortplot_documentation.f90
+- Multiple pcolormesh tests → test_pcolormesh_comprehensive.f90
+- Single-purpose utility modules
+- Redundant matplotlib interface modules
+
+## CLEANUP RESPONSIBILITIES
+
+**CHRIS (ARCHITECT):**
+- File GitHub issues for specific file deletions
+- Update DESIGN.md with simplified architecture
+- Establish file count limits and enforcement
+- Define core vs peripheral module boundaries
+
+**SERGEI (IMPLEMENTATION):**
+- Execute module consolidation
+- Merge redundant test files
+- Move scattered artifacts to proper locations
+- Remove obsolete implementations
+
+**MAX (DEVOPS):**
+- Update .gitignore for proper artifact handling
+- Clean build directories
+- Establish build artifact isolation
+- Configure CI to prevent artifact accumulation
+
+## REPOSITORY SIZE LIMITS
+
+**HARD LIMITS** (Enforced by CI):
+- Source files: 50 maximum
+- Test files: 60 maximum
+- Root directory artifacts: 0 (except essential config files)
+- Documentation modules: 5 maximum
+
+**SOFT LIMITS** (Review triggers):
+- Any module >500 lines requires justification
+- Any directory >15 files requires reorganization
+- Test-to-source ratio >1.5:1 requires test consolidation
+
+## CLEANUP WORKFLOW
+
+1. **AUDIT PHASE**: Identify all redundant/obsolete files
+2. **CONSOLIDATION PHASE**: Merge related functionality
+3. **DELETION PHASE**: Remove confirmed obsolete files
+4. **REORGANIZATION PHASE**: Move remaining files to proper locations
+5. **VALIDATION PHASE**: Ensure all tests still pass
+6. **ENFORCEMENT PHASE**: Update CI to prevent re-accumulation
 
 ## FORD Configuration Notes
 
