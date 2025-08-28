@@ -11,12 +11,11 @@
 ### EPIC: TEST INTEGRITY
 
 ### EPIC: CORE FUNCTIONALITY RESTORATION
-- [ ] #575: CRITICAL: Python bridge executable not in PATH - Python integration broken
 
 ## DOING (Current Work)
 
 ### EPIC: CORE FUNCTIONALITY RESTORATION
-- [ ] #577: CRITICAL: PNG backend has 100x dimension calculation error
+- [ ] #575: CRITICAL: Python bridge executable not in PATH - Python integration broken
 
 ### Sprint Notes
 - **SECURITY FIRST**: Issues #581 and #541 are CRITICAL - command injection vectors must be eliminated
@@ -65,6 +64,7 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
+- [x] #577: CRITICAL: PNG backend has 100x dimension calculation error (FIXED via PR #590)
 - [x] #585: CRITICAL: Test fabrication - 7 fake EXPECTED FAILURE tests (FIXED via PR #589)
 - [x] #581: CRITICAL: C code still contains system() and popen() command injection vectors (FIXED via PR #587)
 - [x] #541: CRITICAL: Security module USES execute_command_line instead of eliminating it (FIXED via PR #588)
