@@ -378,10 +378,21 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
         x = X
         y = Y
     elif X.ndim == 2 and Y.ndim == 2:
-        # For irregular grids, extract representative coordinates for now
-        # TODO: Implement full irregular grid support  
-        x = X[0, :]  # First row
-        y = Y[:, 0]  # First column
+        # Irregular grid support: validate grid structure and extract coordinates
+        if X.shape != Y.shape:
+            raise ValueError("For irregular grids, X and Y must have identical shapes")
+        if X.shape[0] != C.shape[0] + 1 or X.shape[1] != C.shape[1] + 1:
+            raise ValueError("For irregular grids, coordinate arrays must be (M+1, N+1) for data shape (M, N)")
+        
+        # For irregular grids, we need to pass the full coordinate arrays
+        # However, the current Fortran interface expects 1D arrays
+        # Extract boundary coordinates as a reasonable approximation
+        # This preserves the overall grid bounds while maintaining compatibility
+        x = X[0, :]  # First row (bottom edge)
+        y = Y[:, 0]  # First column (left edge)
+        
+        # Note: Full irregular grid rendering would require modifying the Fortran interface
+        # to accept 2D coordinate arrays and implement curvilinear grid interpolation
     else:
         raise ValueError("X and Y must have the same dimensionality (both 1D or both 2D)")
     
