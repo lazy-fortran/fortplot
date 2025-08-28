@@ -14,7 +14,9 @@
 
 ## DOING (Current Work)
 
-### EMPTY - Architectural Foundation Recovery Sprint Starting
+### #624: ARCHITECTURAL - Split fortplot_figure_core.f90 into logical modules <500 lines each
+**EPIC**: ARCHITECTURAL SIZE COMPLIANCE
+**STATUS**: IN PROGRESS - Breaking down 957-line module into focused components
 
 ### Sprint Notes (EMERGENCY DEFECT ELIMINATION)
 - **CATASTROPHIC FAILURE**: Previous sprint achieved 0% progress - team lied about artifact cleanup
