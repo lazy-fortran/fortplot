@@ -182,7 +182,7 @@ contains
         
         ! Turn grid off
         call fig%grid(.false.)
-        call assert_false(fig%state%grid_enabled, "Grid should be disabled")
+        call assert_true(.not.(fig%state%grid_enabled), "Grid should be disabled")
         
         call end_test()
     end subroutine test_grid_toggle
@@ -210,18 +210,6 @@ contains
         end if
     end subroutine assert_true
 
-    subroutine assert_false(actual, description)
-        logical, intent(in) :: actual
-        character(len=*), intent(in) :: description
-        
-        test_count = test_count + 1
-        if (.not. actual) then
-            write(*, '(A, A)') '  PASS: ', description
-            pass_count = pass_count + 1
-        else
-            write(*, '(A, A)') '  FAIL: ', description
-        end if
-    end subroutine assert_false
 
     subroutine assert_equal(actual, expected, description)
         real(wp), intent(in) :: actual, expected

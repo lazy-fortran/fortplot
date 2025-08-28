@@ -6,8 +6,7 @@ program test_figure_animation_coverage
                                         extract_figure_rgb_data_for_animation, &
                                         extract_figure_png_data_for_animation
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
-    use fortplot_testing, only: assert_true
-    implicit none
+        use fortplot_testing, only: assert_true
 
     integer :: test_count = 0
     integer :: passed_count = 0
@@ -111,7 +110,7 @@ contains
         call extract_figure_png_data_for_animation(state, png_data, status, .true.)
         
         ! Verify function completed (compatibility layer handles actual extraction)
-        call assert_allocated(png_data, 'PNG data allocated after extraction')
+        call assert_true(allocated(png_data), 'PNG data allocated after extraction')
         
         if (allocated(png_data)) deallocate(png_data)
         call test_end()
@@ -132,9 +131,9 @@ contains
         call extract_figure_png_data_for_animation(state, png_data, status, .false.)
         
         ! When rendered=false, should allocate empty array and return status=-1
-        call assert_allocated(png_data, 'PNG data allocated even when rendered=false')
-        call assert_equal_int(size(png_data), 0, 'PNG data is empty array when rendered=false')
-        call assert_equal_int(status, -1, 'Status is -1 when rendered=false')
+        call assert_true(allocated(png_data), 'PNG data allocated even when rendered=false')
+        call assert_true(size(png_data) == 0, 'PNG data is empty array when rendered=false')
+        call assert_true(status == -1, 'Status is -1 when rendered=false')
         
         if (allocated(png_data)) deallocate(png_data)
         call test_end()

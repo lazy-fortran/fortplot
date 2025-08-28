@@ -10,9 +10,7 @@ program test_raster_rendering_coverage
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
     use fortplot_margins, only: plot_area_t
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_testing, only: assert_true, assert_false, assert_equal_int, &
-                               assert_equal_real, assert_allocated, assert_greater, &
-                               assert_less_equal, test_summary
+    use fortplot_testing, only: assert_true
     implicit none
 
     integer :: test_count = 0
@@ -31,7 +29,10 @@ program test_raster_rendering_coverage
     call test_png_data_extraction()
     call test_prepare_3d_data()
 
-    call test_summary(test_count, passed_count, all_tests_passed, 'fortplot_raster_rendering')
+    write(*, '(A,I0,A,I0,A)') "=== Summary: ", passed_count, "/", test_count, " tests passed ==="
+    if (passed_count == test_count) then
+        write(*, '(A)') "fortplot_raster_rendering: ALL TESTS PASSED"
+    end if
 
 contains
 
@@ -146,14 +147,14 @@ contains
         ! Fill triangle with red color
         call fill_triangle(image_data, img_w, img_h, &
                           20.0_wp, 10.0_wp, 50.0_wp, 10.0_wp, 35.0_wp, 40.0_wp, &
-                          int(255, 1), int(0, 1), int(0, 1))
+                          int(127, 1), int(0, 1), int(0, 1))
         
         call assert_true(.true., 'Triangle filling completes')
         
         ! Test degenerate triangle (should return early)
         call fill_triangle(image_data, img_w, img_h, &
                           10.0_wp, 10.0_wp, 10.0_wp, 10.0_wp, 10.0_wp, 10.0_wp, &
-                          int(0, 1), int(255, 1), int(0, 1))
+                          int(0, 1), int(127, 1), int(0, 1))
         
         call assert_true(.true., 'Degenerate triangle handled')
         
@@ -173,19 +174,19 @@ contains
         
         ! Fill horizontal line
         call fill_horizontal_line(image_data, img_w, img_h, 10, 50, 30, &
-                                 int(0, 1), int(0, 1), int(255, 1))
+                                 int(0, 1), int(0, 1), int(127, 1))
         
         call assert_true(.true., 'Horizontal line filling completes')
         
         ! Test line outside bounds (should be clipped)
         call fill_horizontal_line(image_data, img_w, img_h, -10, 200, 10, &
-                                 int(255, 1), int(255, 1), int(0, 1))
+                                 int(127, 1), int(127, 1), int(0, 1))
         
         call assert_true(.true., 'Out-of-bounds horizontal line handled')
         
         ! Test line outside vertical bounds (should be skipped)
         call fill_horizontal_line(image_data, img_w, img_h, 10, 50, -5, &
-                                 int(255, 1), int(0, 1), int(255, 1))
+                                 int(127, 1), int(0, 1), int(127, 1))
         
         call assert_true(.true., 'Vertical out-of-bounds line handled')
         
@@ -240,8 +241,8 @@ contains
         call assert_true(.true., 'RGB data extraction completes')
         
         ! Verify data range (should be normalized 0-1)
-        call assert_greater(maxval(rgb_data), -0.1_wp, 'RGB data in valid range (positive)')
-        call assert_less_equal(maxval(rgb_data), 1.1_wp, 'RGB data in valid range (≤1)')
+        call assert_true(maxval(rgb_data) > -0.1_wp, 'RGB data in valid range (positive)')
+        call assert_true(maxval(rgb_data) <= 1.1_wp, 'RGB data in valid range (≤1)')
         
         call destroy_raster_image(raster)
         call test_end()

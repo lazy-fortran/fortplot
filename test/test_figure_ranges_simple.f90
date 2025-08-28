@@ -3,7 +3,7 @@ program test_figure_ranges_simple
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_ranges, only: update_figure_data_ranges_pcolormesh, &
                                      update_figure_data_ranges_boxplot
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH, initialize_pcolormesh_data
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH
     use fortplot_testing, only: assert_true
     implicit none
 
@@ -30,12 +30,11 @@ contains
         
         ! Test pcolormesh ranges
         plots(1)%plot_type = PLOT_TYPE_PCOLORMESH
-        call initialize_pcolormesh_data(plots(1)%pcolormesh_data)
         
-        allocate(plots(1)%pcolormesh_data%x_vertices(4))
-        allocate(plots(1)%pcolormesh_data%y_vertices(4))
-        plots(1)%pcolormesh_data%x_vertices = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
-        plots(1)%pcolormesh_data%y_vertices = [10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp]
+        allocate(plots(1)%pcolormesh_data%x_vertices(2, 2))
+        allocate(plots(1)%pcolormesh_data%y_vertices(2, 2))
+        plots(1)%pcolormesh_data%x_vertices = reshape([0.0_wp, 10.0_wp, 1.0_wp, 11.0_wp], [2, 2])
+        plots(1)%pcolormesh_data%y_vertices = reshape([0.0_wp, 0.0_wp, 3.0_wp, 3.0_wp], [2, 2])
         
         x_min = 0.0_wp; x_max = 0.0_wp; y_min = 0.0_wp; y_max = 0.0_wp
         
@@ -43,9 +42,9 @@ contains
                                                  x_min, x_max, y_min, y_max)
         
         call assert_true(x_min == 0.0_wp, 'Pcolormesh X min correct')
-        call assert_true(x_max == 3.0_wp, 'Pcolormesh X max correct')
-        call assert_true(y_min == 10.0_wp, 'Pcolormesh Y min correct')
-        call assert_true(y_max == 40.0_wp, 'Pcolormesh Y max correct')
+        call assert_true(x_max == 11.0_wp, 'Pcolormesh X max correct')
+        call assert_true(y_min == 0.0_wp, 'Pcolormesh Y min correct')
+        call assert_true(y_max == 3.0_wp, 'Pcolormesh Y max correct')
         
         ! Test boxplot ranges
         x_min = 0.0_wp; x_max = 0.0_wp; y_min = 0.0_wp; y_max = 0.0_wp

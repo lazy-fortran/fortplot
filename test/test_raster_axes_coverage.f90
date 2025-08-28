@@ -5,8 +5,7 @@ program test_raster_axes_coverage
     use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
     use fortplot_margins, only: plot_area_t
-    use fortplot_testing, only: assert_true, assert_false, assert_equal_int, &
-                               assert_allocated, test_summary
+    use fortplot_testing, only: assert_true
     implicit none
 
     integer :: test_count = 0
@@ -24,7 +23,10 @@ program test_raster_axes_coverage
     call test_render_ylabel_simple()
     call test_render_ylabel_unicode()
 
-    call test_summary(test_count, passed_count, all_tests_passed, 'fortplot_raster_axes')
+    write(*, '(A,I0,A,I0,A)') "=== Summary: ", passed_count, "/", test_count, " tests passed ==="
+    if (passed_count == test_count) then
+        write(*, '(A)') "fortplot_raster_axes: ALL TESTS PASSED"
+    end if
 
 contains
 

@@ -4,9 +4,8 @@ program test_figure_ranges_coverage
     use, intrinsic :: iso_fortran_env, only: wp => real64, error_unit
     use fortplot_figure_ranges, only: update_figure_data_ranges_pcolormesh, &
                                      update_figure_data_ranges_boxplot
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH, initialize_pcolormesh_data
-    use fortplot_testing, only: assert_true, assert_false, assert_equal_real, &
-                               assert_greater, assert_less, test_summary
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PCOLORMESH
+    use fortplot_testing, only: assert_true
     implicit none
 
     integer :: test_count = 0
@@ -23,7 +22,10 @@ program test_figure_ranges_coverage
     call test_boxplot_ranges_with_position()
     call test_boxplot_ranges_limits_set()
 
-    call test_summary(test_count, passed_count, all_tests_passed, 'fortplot_figure_ranges')
+    write(*, '(A,I0,A,I0,A)') "=== Summary: ", passed_count, "/", test_count, " tests passed ==="
+    if (passed_count == test_count) then
+        write(*, '(A)') "fortplot_figure_ranges: ALL TESTS PASSED"
+    end if
 
 contains
 
@@ -36,13 +38,12 @@ contains
         
         ! Initialize plot with pcolormesh data
         plots(1)%plot_type = PLOT_TYPE_PCOLORMESH
-        call initialize_pcolormesh_data(plots(1)%pcolormesh_data)
         
         ! Set up test vertices
-        allocate(plots(1)%pcolormesh_data%x_vertices(4))
-        allocate(plots(1)%pcolormesh_data%y_vertices(4))
-        plots(1)%pcolormesh_data%x_vertices = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
-        plots(1)%pcolormesh_data%y_vertices = [10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp]
+        allocate(plots(1)%pcolormesh_data%x_vertices(2, 2))
+        allocate(plots(1)%pcolormesh_data%y_vertices(2, 2))
+        plots(1)%pcolormesh_data%x_vertices = reshape([0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp], [2, 2])
+        plots(1)%pcolormesh_data%y_vertices = reshape([10.0_wp, 20.0_wp, 30.0_wp, 40.0_wp], [2, 2])
         
         ! Initialize ranges to arbitrary values
         x_min = -999.0_wp; x_max = -999.0_wp
@@ -74,12 +75,11 @@ contains
         
         ! Initialize plot with pcolormesh data
         plots(1)%plot_type = PLOT_TYPE_PCOLORMESH
-        call initialize_pcolormesh_data(plots(1)%pcolormesh_data)
         
-        allocate(plots(1)%pcolormesh_data%x_vertices(2))
-        allocate(plots(1)%pcolormesh_data%y_vertices(2))
-        plots(1)%pcolormesh_data%x_vertices = [5.0_wp, 6.0_wp]
-        plots(1)%pcolormesh_data%y_vertices = [50.0_wp, 60.0_wp]
+        allocate(plots(1)%pcolormesh_data%x_vertices(2, 2))
+        allocate(plots(1)%pcolormesh_data%y_vertices(2, 2))
+        plots(1)%pcolormesh_data%x_vertices = reshape([5.0_wp, 5.5_wp, 6.0_wp, 6.5_wp], [2, 2])
+        plots(1)%pcolormesh_data%y_vertices = reshape([50.0_wp, 55.0_wp, 60.0_wp, 65.0_wp], [2, 2])
         
         ! Set initial ranges
         x_min = -10.0_wp; x_max = 10.0_wp  ! User-set x limits
@@ -95,7 +95,7 @@ contains
         
         ! Y ranges should be updated (ylim_set=false)
         call assert_true(y_min == 50.0_wp, 'Y min updated when ylim not set')
-        call assert_true(y_max == 60.0_wp, 'Y max updated when ylim not set')
+        call assert_true(y_max == 65.0_wp, 'Y max updated when ylim not set')
         
         if (allocated(plots(1)%pcolormesh_data%x_vertices)) &
             deallocate(plots(1)%pcolormesh_data%x_vertices)
@@ -113,12 +113,11 @@ contains
         
         ! Initialize plot with pcolormesh data
         plots(1)%plot_type = PLOT_TYPE_PCOLORMESH
-        call initialize_pcolormesh_data(plots(1)%pcolormesh_data)
         
-        allocate(plots(1)%pcolormesh_data%x_vertices(2))
-        allocate(plots(1)%pcolormesh_data%y_vertices(2))
-        plots(1)%pcolormesh_data%x_vertices = [7.0_wp, 8.0_wp]
-        plots(1)%pcolormesh_data%y_vertices = [70.0_wp, 80.0_wp]
+        allocate(plots(1)%pcolormesh_data%x_vertices(2, 2))
+        allocate(plots(1)%pcolormesh_data%y_vertices(2, 2))
+        plots(1)%pcolormesh_data%x_vertices = reshape([7.0_wp, 7.5_wp, 8.0_wp, 8.5_wp], [2, 2])
+        plots(1)%pcolormesh_data%y_vertices = reshape([70.0_wp, 75.0_wp, 80.0_wp, 85.0_wp], [2, 2])
         
         ! Set initial ranges
         x_min = -999.0_wp; x_max = -999.0_wp
@@ -130,7 +129,7 @@ contains
         
         ! X ranges should be updated (xlim_set=false)
         call assert_true(x_min == 7.0_wp, 'X min updated when xlim not set')
-        call assert_true(x_max == 8.0_wp, 'X max updated when xlim not set')
+        call assert_true(x_max == 8.5_wp, 'X max updated when xlim not set')
         
         ! Y ranges should not change (ylim_set=true)
         call assert_true(y_min == -20.0_wp, 'Y min unchanged when ylim_set')
@@ -154,14 +153,13 @@ contains
         ! Initialize all plots
         do i = 1, 3
             plots(i)%plot_type = PLOT_TYPE_PCOLORMESH
-            call initialize_pcolormesh_data(plots(i)%pcolormesh_data)
         end do
         
         ! Set up plot 3 (current plot) with vertices that should expand ranges
-        allocate(plots(3)%pcolormesh_data%x_vertices(2))
-        allocate(plots(3)%pcolormesh_data%y_vertices(2))
-        plots(3)%pcolormesh_data%x_vertices = [-5.0_wp, 15.0_wp]  ! Should expand existing range
-        plots(3)%pcolormesh_data%y_vertices = [-10.0_wp, 100.0_wp]
+        allocate(plots(3)%pcolormesh_data%x_vertices(2, 2))
+        allocate(plots(3)%pcolormesh_data%y_vertices(2, 2))
+        plots(3)%pcolormesh_data%x_vertices = reshape([-5.0_wp, 0.0_wp, 15.0_wp, 20.0_wp], [2, 2])  ! Should expand existing range
+        plots(3)%pcolormesh_data%y_vertices = reshape([-10.0_wp, 50.0_wp, 100.0_wp, 110.0_wp], [2, 2])
         
         ! Set existing ranges (from previous plots)
         x_min = 0.0_wp; x_max = 10.0_wp
@@ -173,9 +171,9 @@ contains
         
         ! Ranges should expand to accommodate new data
         call assert_true(x_min == -5.0_wp, 'X min expanded for new plot')
-        call assert_true(x_max == 15.0_wp, 'X max expanded for new plot')  
+        call assert_true(x_max == 20.0_wp, 'X max expanded for new plot')  
         call assert_true(y_min == -10.0_wp, 'Y min expanded for new plot')
-        call assert_true(y_max == 100.0_wp, 'Y max expanded for new plot')
+        call assert_true(y_max == 110.0_wp, 'Y max expanded for new plot')
         
         if (allocated(plots(3)%pcolormesh_data%x_vertices)) &
             deallocate(plots(3)%pcolormesh_data%x_vertices)

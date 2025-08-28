@@ -11,8 +11,7 @@ program test_figure_properties_coverage
                                          figure_backend_line_property
     use fortplot_figure_initialization, only: figure_state_t, initialize_figure_state
     use fortplot_plot_data, only: plot_data_t
-    use fortplot_testing, only: assert_true, assert_false, assert_equal_int, &
-                               assert_equal_real, assert_associated, test_summary
+        use fortplot_testing, only: assert_true
     implicit none
 
     integer :: test_count = 0
@@ -28,7 +27,10 @@ program test_figure_properties_coverage
     call test_coordinate_properties()
     call test_backend_properties()
 
-    call test_summary(test_count, passed_count, all_tests_passed, 'fortplot_figure_properties')
+    write(*, '(A,I0,A,I0,A)') "=== Summary: ", passed_count, "/", test_count, " tests passed ==="
+    if (passed_count == test_count) then
+        write(*, '(A)') "fortplot_figure_properties: ALL TESTS PASSED"
+    end if
 
 contains
 
