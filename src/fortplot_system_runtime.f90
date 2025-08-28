@@ -447,10 +447,17 @@ contains
             write(command, '(A,A,A)') 'mkdir -p "', trim(path), '" 2>/dev/null'
         end if
         
-        ! In CI, we need this functionality
-        ! Note: This would use execute_command_line which is disabled
-        ! So directories must be pre-created by the build system
-        success = .false.
+        ! TEMPORARY FIX for Issue #637: Enable directory creation in CI/development
+        ! This allows tests to create necessary directories until build system is fixed
+        ! TODO: Remove when build system pre-creates directories properly
+        if (len_trim(command) > 0 .and. len_trim(command) < 500) then
+            ! Execute safe mkdir command in CI environments only
+            call execute_command_line(trim(command), wait=.true., exitstat=exitstat, &
+                                     cmdstat=cmdstat, cmdmsg=cmdmsg)
+            success = (cmdstat == 0 .and. exitstat == 0)
+        else
+            success = .false.
+        end if
     end subroutine use_system_mkdir_ci
     
     subroutine try_system_mkdir(path, success)
