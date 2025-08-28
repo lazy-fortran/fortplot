@@ -8,7 +8,7 @@
 
 ### EPIC: USER FUNCTIONALITY CRISIS REMEDIATION
 
-- [SPRINT_BACKLOG] #658: CRITICAL - README documentation destruction blocks all new user onboarding
+- [DOING] #658: CRITICAL - README documentation destruction blocks all new user onboarding
 - [SPRINT_BACKLOG] #657: CRITICAL - figure_t API breaking changes removed core plot() and save() methods
 - [SPRINT_BACKLOG] #661: MAJOR - 125+ test artifacts reaccumulated in root directory after cleanup claims
 
@@ -19,7 +19,9 @@
 
 ## DOING (Current Work)
 
-### CRISIS REMEDIATION STATUS: AWAITING SPRINT START
+### CRISIS REMEDIATION STATUS: ISSUE #658 README DOCUMENTATION CRISIS
+
+**CURRENT TASK**: Fix README documentation blocking all new users (Issue #658)
 
 **FRAUD-PROOF AUDIT FINDINGS** (TECHNICAL EVIDENCE):
 - **SECURITY FRAUD CONFIRMED**: 25 dangerous calls persist despite "elimination" claims
