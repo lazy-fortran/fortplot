@@ -3,6 +3,14 @@
 #include <string.h>
 #include <ctype.h>
 
+// Forward declarations for secure pipe operations
+typedef struct secure_pipe_t secure_pipe_t;
+extern secure_pipe_t* secure_open_pipe(const char* program, const char* const argv[]);
+extern int secure_close_pipe(secure_pipe_t* pipe);
+extern int secure_check_command(const char* command);
+extern FILE* secure_pipe_get_write_handle(secure_pipe_t* pipe);
+extern FILE* secure_pipe_get_read_handle(secure_pipe_t* pipe);
+
 // Configuration constants
 #define MAX_FILENAME_LENGTH 512
 #define MAX_COMMAND_BUFFER_SIZE 1024
@@ -31,19 +39,15 @@
 #endif
 
 typedef struct {
-    FILE* pipe;
+    secure_pipe_t* secure_pipe;  // Use secure pipe implementation
+    FILE* pipe;  // Legacy compatibility
     int health_status;
     size_t bytes_written;
     int consecutive_failures;
-    #ifdef _WIN32
-        HANDLE process;
-    #else
-        pid_t pid;
-    #endif
 } ffmpeg_pipe_t;
 
-// Initialize with zero - works for both platforms (NULL == 0, and pid_t 0)
-static ffmpeg_pipe_t current_pipe = {NULL, 0, 0, 0, 0};
+// Initialize with zero
+static ffmpeg_pipe_t current_pipe = {NULL, NULL, 0, 0, 0};
 
 // Forward declarations
 int close_ffmpeg_pipe_c(void);
@@ -177,51 +181,47 @@ int open_ffmpeg_pipe_c(const char* filename, int fps) {
         return -1;
     }
     
-    // Build FFmpeg command with platform-specific controls
-    char command[MAX_COMMAND_BUFFER_SIZE];
-    char escaped_filename[ESCAPED_FILENAME_SIZE];
+    // SECURITY FIX: Use secure pipe creation without shell interpretation
     
-    #ifdef _WIN32
-        // Windows: Escape path and use NUL for stderr redirection
-        if (!escape_windows_path(filename, escaped_filename, sizeof(escaped_filename))) {
-            fprintf(stderr, "Error: Failed to escape Windows path\n");
-            return -1;
-        }
-        int ret = snprintf(command, sizeof(command), 
-            "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>NUL",
-            fps, escaped_filename);
-    #else
-        // Unix: Simple escaping and /dev/null for stderr
-        strncpy(escaped_filename, filename, sizeof(escaped_filename) - 1);
-        escaped_filename[sizeof(escaped_filename) - 1] = '\0';
-        int ret = snprintf(command, sizeof(command), 
-            "ffmpeg -y -f image2pipe -vcodec png -r %d -i - -vcodec libx264 -pix_fmt yuv420p \"%s\" 2>/dev/null",
-            fps, escaped_filename);
-    #endif
+    // Build argument array for FFmpeg (no shell metacharacters)
+    const char* argv[20];
+    int argc = 0;
+    char fps_str[32];
     
-    if (ret >= sizeof(command) || ret < 0) {
-        fprintf(stderr, "Error: FFmpeg command too long or formatting failed\n");
+    argv[argc++] = "-y";                    // Overwrite output
+    argv[argc++] = "-f";
+    argv[argc++] = "image2pipe";
+    argv[argc++] = "-vcodec";
+    argv[argc++] = "png";
+    argv[argc++] = "-r";
+    
+    snprintf(fps_str, sizeof(fps_str), "%d", fps);
+    argv[argc++] = fps_str;
+    
+    argv[argc++] = "-i";
+    argv[argc++] = "-";                     // Read from stdin
+    argv[argc++] = "-vcodec";
+    argv[argc++] = "libx264";
+    argv[argc++] = "-pix_fmt";
+    argv[argc++] = "yuv420p";
+    argv[argc++] = filename;                // Output file (already validated)
+    argv[argc] = NULL;
+    
+    // Create secure pipe to FFmpeg
+    current_pipe.secure_pipe = secure_open_pipe("ffmpeg", argv);
+    
+    if (current_pipe.secure_pipe == NULL) {
+        fprintf(stderr, "Error: Failed to start FFmpeg process securely\n");
         return -1;
     }
     
-    // Open pipe to FFmpeg with platform-specific mode
-    #ifdef _WIN32
-        // Windows requires binary mode to prevent corruption
-        current_pipe.pipe = _popen(command, "wb");
-        if (current_pipe.pipe != NULL) {
-            // Ensure binary mode is set on the pipe
-            if (ensure_binary_mode(current_pipe.pipe) != 0) {
-                fprintf(stderr, "Error: Failed to set binary mode on Windows pipe\n");
-                _pclose(current_pipe.pipe);
-                current_pipe.pipe = NULL;
-                return -1;
-            }
-        }
-    #else
-        current_pipe.pipe = popen(command, "w");
-    #endif
+    // Get write pipe handle for compatibility with existing write functions
+    current_pipe.pipe = secure_pipe_get_write_handle(current_pipe.secure_pipe);
+    
     if (current_pipe.pipe == NULL) {
-        fprintf(stderr, "Error: Failed to start FFmpeg process\n");
+        fprintf(stderr, "Error: Failed to get write handle from secure pipe\n");
+        secure_close_pipe(current_pipe.secure_pipe);
+        current_pipe.secure_pipe = NULL;
         return -1;
     }
     
@@ -242,7 +242,7 @@ int write_png_to_pipe_c(const unsigned char* png_data, size_t data_size) {
         return -1;
     }
     
-    if (current_pipe.pipe == NULL) {
+    if (current_pipe.secure_pipe == NULL && current_pipe.pipe == NULL) {
         fprintf(stderr, "Error: FFmpeg pipe not open\n");
         return -2;
     }
@@ -324,14 +324,10 @@ int write_png_to_pipe_c(const unsigned char* png_data, size_t data_size) {
 // Close ffmpeg pipe and wait for completion with enhanced error handling
 int close_ffmpeg_pipe_c(void) {
     if (!is_ffmpeg_enabled()) {
-        if (current_pipe.pipe != NULL) {
+        if (current_pipe.pipe != NULL || current_pipe.secure_pipe != NULL) {
             fprintf(stderr, "Warning: Cleaning up unexpected pipe in secure mode\n");
             current_pipe.pipe = NULL;
-            #ifdef _WIN32
-                current_pipe.process = NULL;
-            #else
-                current_pipe.pid = 0;
-            #endif
+            current_pipe.secure_pipe = NULL;
         }
         return 0;
     }
@@ -340,19 +336,27 @@ int close_ffmpeg_pipe_c(void) {
         return 0;  // No pipe to close - success
     }
     
-    // Flush any remaining data before closing
-    fflush(current_pipe.pipe);
+    // SECURITY FIX: Use secure pipe closure
+    int status = 0;
     
-    int status = pclose(current_pipe.pipe);
+    if (current_pipe.secure_pipe != NULL) {
+        // Flush before closing if we have a FILE* handle
+        if (current_pipe.pipe != NULL) {
+            fflush(current_pipe.pipe);
+        }
+        
+        status = secure_close_pipe(current_pipe.secure_pipe);
+        current_pipe.secure_pipe = NULL;
+    } else if (current_pipe.pipe != NULL) {
+        // Legacy fallback (should not happen with secure implementation)
+        fflush(current_pipe.pipe);
+        status = pclose(current_pipe.pipe);
+    }
+    
     current_pipe.pipe = NULL;
     current_pipe.health_status = 0;
     current_pipe.bytes_written = 0;
     current_pipe.consecutive_failures = 0;
-    #ifdef _WIN32
-        current_pipe.process = NULL;
-    #else
-        current_pipe.pid = 0;
-    #endif
     
     if (status == -1) {
         fprintf(stderr, "Error: Failed to close FFmpeg pipe (pclose returned -1)\n");
@@ -393,8 +397,8 @@ int check_ffmpeg_available_c(void) {
         return 0;
     }
     
-    // Secure FFmpeg availability detection without system() calls
-    if (is_ffmpeg_executable_available()) {
+    // SECURITY FIX: Use secure command checking
+    if (secure_check_command("ffmpeg")) {
         fprintf(stderr, "Info: FFmpeg is available and working\n");
         return 1;
     } else {
@@ -476,36 +480,10 @@ int escape_windows_path(const char* input, char* output, size_t output_size) {
 }
 #endif
 
-// Secure FFmpeg executable detection without system() calls
+// Secure FFmpeg executable detection (DEPRECATED - use secure_check_command)
 int is_ffmpeg_executable_available(void) {
-    #ifdef _WIN32
-        // Windows: Check common FFmpeg installation paths using access()
-        if (access("ffmpeg.exe", 0) == 0) {
-            return 1;  // Found in PATH
-        }
-        if (access("C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe", 0) == 0) {
-            return 1;  // Found in common installation path
-        }
-        if (access("C:\\ffmpeg\\bin\\ffmpeg.exe", 0) == 0) {
-            return 1;  // Found in alternate installation path
-        }
-        return 0;  // Not found
-    #else
-        // Unix: Check common installation paths using access()
-        if (access("ffmpeg", X_OK) == 0) {
-            return 1;  // Found in PATH
-        }
-        if (access("/usr/bin/ffmpeg", X_OK) == 0) {
-            return 1;  // Found in /usr/bin
-        }
-        if (access("/usr/local/bin/ffmpeg", X_OK) == 0) {
-            return 1;  // Found in /usr/local/bin
-        }
-        if (access("/opt/homebrew/bin/ffmpeg", X_OK) == 0) {
-            return 1;  // Found in Homebrew path (macOS)
-        }
-        return 0;  // Not found
-    #endif
+    // SECURITY FIX: Delegate to secure implementation
+    return secure_check_command("ffmpeg");
 }
 
 // Real-time pipe health monitoring functions
