@@ -32,7 +32,7 @@ call savefig("plot.png")
 
 ### Subplot Grids
 ```fortran
-call figure(800, 600)
+call figure(figsize=[8.0_wp, 6.0_wp])
 call subplot(2, 2, 1)  ! 2x2 grid, top-left
 call plot(x, sin(x))
 call title("Sine Wave")
@@ -66,7 +66,7 @@ call fig%savefig("plot_oo.png")
 
 #### 3D plotting
 ```fortran
-call figure(800, 600)
+call figure(figsize=[8.0_wp, 6.0_wp])
 call add_3d_plot(x, y, z, label="3D curve")
 call title("3D Line Plot")
 call savefig("3d_plot.png")
@@ -74,7 +74,7 @@ call savefig("3d_plot.png")
 
 #### Multiple plots with legend
 ```fortran
-call figure(800, 600)
+call figure(figsize=[8.0_wp, 6.0_wp])
 call plot(x, sin(x), label="sin(x)", linestyle="b-")
 call plot(x, cos(x), label="cos(x)", linestyle="r--")
 call plot(x, sin(2*x), label="sin(2x)", linestyle="g:")
@@ -84,7 +84,7 @@ call savefig("trig_functions.pdf")
 
 #### Unicode and Greek letters in scientific plots
 ```fortran
-call figure(800, 600)
+call figure(figsize=[8.0_wp, 6.0_wp])
 call title("Wave Functions: \psi(\omega t) = A e^{-\lambda t} sin(\omega t)")
 call xlabel("Time \tau (normalized)")
 call ylabel("Amplitude \Psi (V)")
@@ -101,43 +101,35 @@ call figure()
 call scatter(x, y, label="Data Points")
 call savefig("basic_scatter.png")
 
-! Bubble chart with variable marker sizes  
+! Object-oriented scatter plot
 type(figure_t) :: fig
 real(wp), dimension(20) :: x, y, sizes
-call fig%initialize(600, 400)
-! Note: scatter method available, add_scatter_2d for specialized features
+call fig%initialize()
 call fig%scatter(x, y, label='Bubble Chart')
 call fig%savefig("bubble_chart.pdf")
 ```
 
-#### Surface plot with dimension validation
+#### Surface plots (3D visualization)
 ```fortran
-use iso_fortran_env, only: wp => real64
 use fortplot
 implicit none
 
-type(figure_t) :: fig
-integer :: i, j
-real(wp), dimension(21) :: x, y
-real(wp), dimension(21,21) :: z  ! Must match: size(z,1)=size(x), size(z,2)=size(y)
+real(wp), dimension(50) :: x, y, z
+integer :: i
 
-! Create coordinate arrays
-do i = 1, 21
-    x(i) = (i-1) * 0.2_wp
-    y(i) = (i-1) * 0.2_wp
-end do
+! Generate 3D curve data
+x = [(real(i-1, wp) * 0.1_wp, i=1, 50)]
+y = sin(x)
+z = cos(x)
 
-! Calculate surface values
-do i = 1, 21
-    do j = 1, 21  
-        z(i,j) = x(i)**2 + y(j)**2  ! Paraboloid
-    end do
-end do
+! 3D surface visualization
+call figure(figsize=[8.0_wp, 6.0_wp])
+call add_3d_plot(x, y, z, label="3D Surface Curve")
+call title("3D Surface Plot")
+call savefig("surface_3d.png")
 
-call fig%initialize(800, 600)
-! Note: Surface plots are available through pcolormesh for 2D data visualization
-call fig%add_pcolormesh(x, y, z, colormap="viridis", label="Paraboloid") 
-call fig%savefig("surface.png")
+! Note: pcolormesh for 2D heatmaps is available but currently
+! has dimension validation issues (see Issue #701)
 ```
 
 #### Contour plot with colorbar
@@ -171,7 +163,7 @@ implicit none
 
 ! Use functional API for errorbar plots (currently supported)
 real(wp), dimension(20) :: x, y, yerr, y_theory
-call figure(800, 600)
+call figure(figsize=[8.0_wp, 6.0_wp])
 call errorbar(x, y, yerr=yerr, marker='o', label='Experimental data')
 call plot(x, y_theory, label='Theory', linestyle='-')
 call legend()
@@ -195,7 +187,7 @@ call savefig("log_plot.pdf")
 ! Current functionality supports basic plot elements
 type(figure_t) :: fig
 real(wp), dimension(50) :: x, y
-call fig%initialize(800, 600)
+call fig%initialize()
 call fig%add_plot(x, y, label="Scientific Data")
 call fig%set_title("Annotated Scientific Plot")
 call fig%set_xlabel("X Variable")  
@@ -205,15 +197,33 @@ call fig%savefig("annotated_plot.png")
 
 #### Animation example
 ```fortran
+use fortplot_animation
+type(figure_t) :: fig
 type(animation_t) :: anim
 integer :: status
-anim = FuncAnimation(update_func, frames=100, interval=50, fig=fig)
-call anim%save("animation.mp4", fps=24, status=status)
+real(wp), dimension(100) :: x_data, y_data
+
+! Setup figure and initial plot
+call figure(figsize=[8.0_wp, 6.0_wp])
+call add_plot(x_data, y_data, label='animated data')
+call title('Animation Demo')
+
+! Create animation with update function
+anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
+call save_animation(anim, "animation.mp4", 24, status)
+
 if (status /= 0) then
     print *, "ERROR: Animation save failed. Check ffmpeg installation."
     print *, "Windows: choco install ffmpeg"
     print *, "Linux: sudo apt install ffmpeg"
 end if
+
+contains
+    subroutine update_frame(frame)
+        integer, intent(in) :: frame
+        ! Update plot data based on frame number
+        call set_ydata(sin(x_data + real(frame, wp) * 0.1_wp))
+    end subroutine update_frame
 ```
 
 **Windows Support (Issue #189 Fixed)**: Binary pipe handling and path escaping now work correctly on Windows.
