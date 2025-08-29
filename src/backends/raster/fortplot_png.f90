@@ -4,6 +4,7 @@ module fortplot_png
     use fortplot_raster, only: raster_context, create_raster_canvas, raster_draw_axes_and_labels, raster_render_ylabel
     use fortplot_zlib, only: zlib_compress, crc32_calculate
     use fortplot_logging, only: log_error, log_info
+    use fortplot_security, only: safe_create_directory
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
 
@@ -133,14 +134,25 @@ contains
         integer(1), intent(in) :: image_data(:)
         
         integer(1), allocatable :: png_buffer(:)
-        integer :: png_unit, ios
-        character(len=512) :: error_msg
+        integer :: png_unit, ios, last_separator
+        character(len=512) :: error_msg, dir_path
+        logical :: dir_success
         
         call generate_png_data(width, height, image_data, png_buffer)
         
         if (.not. allocated(png_buffer)) then
             call log_error("Failed to generate PNG data for '" // trim(filename) // "'")
             return
+        end if
+        
+        ! Create directory if needed
+        last_separator = max(index(filename, '/', back=.true.), index(filename, '\', back=.true.))
+        if (last_separator > 0) then
+            dir_path = filename(1:last_separator-1)
+            call safe_create_directory(trim(dir_path), dir_success)
+            if (.not. dir_success) then
+                call log_error("Could not create directory for PNG file: " // trim(dir_path))
+            end if
         end if
         
         open(newunit=png_unit, file=filename, access='stream', form='unformatted', &

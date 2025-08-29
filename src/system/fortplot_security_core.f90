@@ -392,10 +392,15 @@ contains
         ! Sanitize the input path
         sanitized_path = sanitize_filename(relative_path)
         
-        ! Construct full path with test output directory
-        if (len_trim(sanitized_path) > 0) then
+        ! Check if path already starts with output/test to avoid duplication
+        if (index(trim(sanitized_path), OUTPUT_DIR) == 1) then
+            ! Path already has output/test/ prefix, use as-is
+            full_path = trim(sanitized_path)
+        else if (len_trim(sanitized_path) > 0) then
+            ! Path doesn't have prefix, add it
             full_path = OUTPUT_DIR // trim(sanitized_path)
         else
+            ! Empty path, use default
             full_path = OUTPUT_DIR // "default_output"
         end if
         
