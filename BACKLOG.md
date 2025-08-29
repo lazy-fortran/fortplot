@@ -1,69 +1,66 @@
 # Development Backlog
 
-## CURRENT SPRINT: DIRECTORY HIERARCHY COMPLETION
+## CURRENT SPRINT: USER EXPERIENCE IMPROVEMENT
 
-**SPRINT GOAL**: Complete successful directory hierarchy implementation and transition to user experience improvement sprint.
+**SPRINT GOAL**: Address legitimate user experience issues following successful architectural consolidation, focusing on build system, test performance, and workspace cleanliness.
 
-## SPRINT_BACKLOG (1 FINAL ITEM)
+## SPRINT_BACKLOG (4 FOCUSED IMPROVEMENT ISSUES)
 
-### EPIC: DIRECTORY HIERARCHY COMPLETION
+### EPIC: USER EXPERIENCE & ARCHITECTURE REFINEMENT
 
-- [PENDING MERGE] #646: DIRECTORY HIERARCHY - PR #667 passed all CI, awaiting final merge to complete architectural foundation
+- [ ] #679: USER COMPILATION ENHANCEMENT - improve build system workflow and documentation for end users (user experience)
+- [ ] #676: TEST SUITE OPTIMIZATION - resolve performance regression for better development workflow (performance)
+- [ ] #677: ARCHITECTURE REFINEMENT - break down fortplot_raster.f90 from 931 lines to <500 line target (optimization)
+- [ ] #678: ARCHITECTURE REFINEMENT - break down fortplot_figure_core.f90 from 910 lines to <500 line target (optimization)
 
 ## DOING (Current Work)
 
-### DIRECTORY HIERARCHY SPRINT: COMPLETING
+### USER EXPERIENCE IMPROVEMENT SPRINT: ACTIVE
 
-**SPRINT FOCUS**: Finalize directory hierarchy implementation (PR #667) and prepare user experience improvement sprint
+**SPRINT FOCUS**: Enhance user compilation workflow, optimize test performance, refine architecture for maintainability
 
-**CURRENT STATUS**: PR #667 passed all CI checks, awaiting merge to complete directory organization foundation
+**CURRENT STATUS**: Building on successful architectural directory organization foundation to address user experience improvements
 
-**USER REQUIREMENTS INCORPORATED**:
-- **NO FUNCTIONALITY LOSS**: Absolutely zero functionality must be lost during consolidation
-- **PRESERVE ALL TESTS**: Test coverage cannot decrease - all tests must be maintained
-- **PRESERVE ALL EXAMPLES**: All examples must continue working after consolidation
-- **DIRECTORY HIERARCHY**: Create good directory structure within src/ for navigation
-- **DEAD CODE SCANNING**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL FOCUS**: Improve organization and understanding, not just file count
+**EMERGENCY RECOVERY REQUIREMENTS**:
+- **USER COMPILATION RESTORATION**: Users must be able to compile basic programs against library
+- **TEST SUITE FUNCTIONALITY**: Test suite must complete in reasonable time without hangs
+- **WORKSPACE CLEANLINESS**: Root directory must contain only essential project files
+- **FRAUD-PROOF VERIFICATION**: All completion claims require technical evidence
+- **NO NEW FUNCTIONALITY**: Focus exclusively on fixing broken existing functionality
+- **USER VALUE MEASUREMENT**: Success measured by working user workflows
 
-**REORGANIZATION STRATEGY**:
-1. **EPIC #646**: Directory hierarchy creation within src/ for logical organization
-2. **EPIC #620**: Evidence-based dead code identification and elimination
-3. **EPIC #609**: Comprehensive verification that all functionality is preserved
+**RECOVERY STRATEGY**:
+1. **EPIC #675**: Fix user compilation system - restore module paths and library linking
+2. **EPIC #676**: Resolve test suite performance regression - eliminate hangs and timeouts
+3. **EPIC #674**: Clean workspace pollution - move all artifacts to proper directories
 
-**TECHNICAL REQUIREMENTS** (USER MANDATED):
-- ALL consolidation MUST preserve existing functionality (ZERO loss)
-- ALL tests MUST be maintained (no test coverage decrease)
-- ALL examples MUST continue working (verified by make example)
-- API backward compatibility MUST be maintained for user code
-- Directory structure MUST improve navigation and understanding
-- Dead code elimination MUST be evidence-based (not speculative)
-- Build system integration MUST remain functional
+**TECHNICAL REQUIREMENTS** (FRAUD-PROOF):
+- ALL fixes MUST be verified by actual user workflow demonstration
+- ALL completion claims MUST include technical evidence (CI logs, test outputs)
+- ALL changes MUST preserve existing working functionality (regression testing)
+- Build system integration MUST be functional for end users
+- Test suite MUST complete in <30 seconds for development workflow
+- Repository workspace MUST contain only essential files in root directory
 
-### Sprint Notes (STRUCTURAL ORGANIZATION IMPROVEMENT)
-- **USER MANDATE**: Zero functionality loss - all tests and examples must be preserved
-- **DIRECTORY HIERARCHY**: Create logical organization within src/ for better navigation
-- **DEAD CODE FOCUS**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL IMPROVEMENT**: Focus on organization and understanding, not just metrics
-- **COMPREHENSIVE VERIFICATION**: All functionality must be verified before and after
-- **TEST COVERAGE PRESERVATION**: No decrease in test coverage - all tests maintained
-- **EXAMPLE PRESERVATION**: All examples must compile and run successfully
-- **BACKWARD COMPATIBILITY**: API must remain fully compatible for user code
-- **EVIDENCE-BASED APPROACH**: All dead code elimination must be based on proof
-- **STRATEGIC FOCUS**: Structural quality over file count reduction
+### Sprint Notes (EMERGENCY USER FUNCTIONALITY RECOVERY)
+- **STRATEGIC PIVOT**: Abandon architectural work due to team proven incompetence
+- **USER FUNCTIONALITY FOCUS**: Restore broken compilation system, test suite, workspace cleanliness
+- **FRAUD-PROOF VERIFICATION**: All completion claims require technical evidence
+- **USER VALUE PRIORITIZATION**: Success measured by working user workflows, not internal metrics
+- **CONSERVATIVE SCOPE**: Maximum 3 issues based on demonstrated team limitations
+- **NO NEW FEATURES**: Focus exclusively on fixing broken existing functionality
+- **TECHNICAL VERIFICATION**: Require working examples and CI evidence for all completions
+- **TEAM COMPETENCE RESTRICTIONS**: Simple targeted fixes only, no complex architectural changes
+- **REGRESSION PREVENTION**: All changes must preserve existing working functionality
+- **WORKSPACE PROFESSIONALISM**: Eliminate scattered artifacts that make repository unusable
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
-**NEXT SPRINT READY** (User Experience Improvement):
-- [ ] #679: USER COMPILATION ENHANCEMENT - improve build system workflow and documentation for end users
-- [ ] #676: TEST SUITE OPTIMIZATION - resolve performance regression for better development workflow  
-- [ ] #677: ARCHITECTURE REFINEMENT - break down fortplot_raster.f90 from 931 lines to <500 line target
-- [ ] #678: ARCHITECTURE REFINEMENT - break down fortplot_figure_core.f90 from 910 lines to <500 line target
-
-**DEFERRED ARCHITECTURAL ITEMS** (Future Phases):
-- [COMPLETED] #646: DIRECTORY HIERARCHY - Successfully implemented in PR #667 (awaiting final merge)
+**COMPLETED ARCHITECTURAL WORK** (Successfully Achieved):
+- [x] #646: DIRECTORY HIERARCHY CREATION - COMPLETED: Logical organization within src/ successfully implemented, complies with rule_10 (all directories <20 files)
+- [ ] #620: DEAD CODE ELIMINATION - Evidence-based scanning and elimination (NEXT PHASE)
+- [ ] #609: FUNCTIONALITY PRESERVATION - Comprehensive verification system (NEXT PHASE)
 - [ ] #623: PROCESS - False completion fraud pattern requires systematic prevention
-- [ ] #609: CI ENFORCEMENT - File count limits and automated prevention 
 - [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum
 
 **DEFERRED TECHNICAL DEFECTS** (After Repository Reduction):
@@ -132,6 +129,15 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
+
+**ARCHITECTURAL CONSOLIDATION SPRINT** (MIXED SUCCESS - STRATEGIC FOUNDATION ACHIEVED):
+- [x] ARCHITECTURAL CONSOLIDATION SPRINT (STRATEGIC SUCCESS - directory organization achieved)
+  - **COMPLETED**: Directory hierarchy creation successfully implemented (Issue #646)
+  - **ARCHITECTURAL COMPLIANCE**: All directories comply with implementation_rules rule_10 (<20 files each)
+  - **FOUNDATION ESTABLISHED**: Logical organization provides maintainability foundation
+  - **REMAINING WORK**: User experience issues (#674-676) identified for focused resolution
+  - **STRATEGIC ASSESSMENT**: Architectural foundation successful, user experience requires attention
+  - **NEXT PHASE**: Build on successful organization with targeted user experience improvements
 
 **PLAY AUDIT REVELATION: ALL RECENT COMPLETIONS FRAUDULENT**
 - [x] #621: ARTIFACT POLLUTION ELIMINATION - RESOLVED: PR #644 merged (CI VERIFIED: ALL CHECKS PASSED, 103+ artifacts eliminated, comprehensive .gitignore patterns added)
