@@ -81,12 +81,19 @@ contains
         nx = size(x)
         ny = size(y)
         
-        if (size(z, 1) /= nx .or. size(z, 2) /= ny) then
+        ! For pcolormesh, z should have dimensions (nx-1, ny-1) for cell-centered data
+        ! or (nx, ny) for vertex-centered data
+        if (size(z, 1) /= nx-1 .or. size(z, 2) /= ny-1) then
+            ! Check for vertex-centered data
+            if (size(z, 1) == nx .and. size(z, 2) == ny) then
+                call log_info("pcolormesh: using vertex-centered data")
             ! Check if z is transposed
-            if (size(z, 1) == ny .and. size(z, 2) == nx) then
+            elseif (size(z, 1) == ny-1 .and. size(z, 2) == nx-1) then
                 call log_warning("pcolormesh: z dimensions appear transposed")
+            elseif (size(z, 1) == ny .and. size(z, 2) == nx) then
+                call log_warning("pcolormesh: vertex-centered z dimensions appear transposed")
             else
-                call log_error("pcolormesh: z dimensions must match x and y")
+                call log_error("pcolormesh: z must have dimensions (nx-1, ny-1) for cell-centered or (nx, ny) for vertex-centered data")
                 return
             end if
         end if
@@ -284,12 +291,19 @@ contains
         nx = size(x)
         ny = size(y)
         
-        if (size(z, 1) /= nx .or. size(z, 2) /= ny) then
+        ! For surface plots, z should have dimensions (nx-1, ny-1) for cell-centered data
+        ! or (nx, ny) for vertex-centered data
+        if (size(z, 1) /= nx-1 .or. size(z, 2) /= ny-1) then
+            ! Check for vertex-centered data
+            if (size(z, 1) == nx .and. size(z, 2) == ny) then
+                call log_info("add_surface: using vertex-centered data")
             ! Check if z is transposed
-            if (size(z, 1) == ny .and. size(z, 2) == nx) then
+            elseif (size(z, 1) == ny-1 .and. size(z, 2) == nx-1) then
                 call log_warning("add_surface: z dimensions appear transposed")
+            elseif (size(z, 1) == ny .and. size(z, 2) == nx) then
+                call log_warning("add_surface: vertex-centered z dimensions appear transposed")
             else
-                call log_error("add_surface: z dimensions must match x and y")
+                call log_error("add_surface: z must have dimensions (nx-1, ny-1) for cell-centered or (nx, ny) for vertex-centered data")
                 return
             end if
         end if
