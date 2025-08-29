@@ -281,13 +281,13 @@ contains
         
         allocate(traj_x(n_points), traj_y(n_points))
         
-        ! Convert from grid coordinates to data coordinates
+        ! Convert from grid indices to data coordinates
         do j = 1, n_points
-            ! Convert grid coords to data coords: grid2data transformation
-            traj_x(j) = real(trajectories(traj_idx, j, 1), wp) * (x_grid(size(x_grid)) - x_grid(1)) / &
-                       real(size(x_grid) - 1, wp) + x_grid(1)
-            traj_y(j) = real(trajectories(traj_idx, j, 2), wp) * (y_grid(size(y_grid)) - y_grid(1)) / &
-                       real(size(y_grid) - 1, wp) + y_grid(1)
+            ! trajectory coordinates are grid indices, convert to data coordinates
+            traj_x(j) = x_grid(1) + real(trajectories(traj_idx, j, 1), wp) * &
+                       (x_grid(size(x_grid)) - x_grid(1)) / real(size(x_grid) - 1, wp)
+            traj_y(j) = y_grid(1) + real(trajectories(traj_idx, j, 2), wp) * &
+                       (y_grid(size(y_grid)) - y_grid(1)) / real(size(y_grid) - 1, wp)
         end do
         
         ! Add trajectory as line plot to figure
