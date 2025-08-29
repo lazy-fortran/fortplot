@@ -5,11 +5,13 @@ build*
 .LSOverride
 *.DS_Store
 ._*
-*.pdf
-*.png
-*.jpg
-*.bmp
-*.txt
+# Image and document files in root directory - STRICT PREVENTION
+/*.pdf
+/*.png
+/*.jpg
+/*.bmp
+/*.txt
+/*.log
 !CMakeLists.txt
 *.mod
 
@@ -81,6 +83,7 @@ bar_chart_demo_temp
 test_*.png
 test_*.pdf
 test_*.txt
+test_*.log
 test_*.ppm
 vicky_*.png
 vicky_*.pdf
@@ -125,5 +128,13 @@ build/*.txt
 build/test/*.png
 build/test/*.pdf
 build/test/*.txt
+
+# Test output organization - keep test artifacts in test/output/
+test/output/**/*.png
+test/output/**/*.pdf
+test/output/**/*.txt
+test/output/**/*.ppm
+test/output/**/*.exe
+test/output/**/*.out
 
 # Force CI rebuild
