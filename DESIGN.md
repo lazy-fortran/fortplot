@@ -14,22 +14,24 @@
 5. **STRATEGIC BLOCKER**: Repository organization prevents sustainable development
 6. **PREVIOUS ATTEMPTS FAILED**: File consolidation repeatedly attempted but never completed
 
-**ARCHITECTURAL CONSOLIDATION GOAL**: Establish manageable repository structure for sustainable development:
-1. **FILE COUNT REDUCTION**: Consolidate 116 source files to <50 maximum (functional grouping)
-2. **MODULE SIZE COMPLIANCE**: Split fortplot_figure_core.f90 from 912 to <500 lines per module
-3. **AUTOMATED ENFORCEMENT**: Establish CI gates to prevent file count re-accumulation
-4. **FUNCTIONALITY PRESERVATION**: Maintain all existing APIs and test coverage
-5. **BUILD SYSTEM INTEGRITY**: Ensure fpm build system remains functional
+**ARCHITECTURAL CONSOLIDATION GOAL**: Establish manageable repository structure for sustainable development with ZERO functionality loss:
+1. **DIRECTORY HIERARCHY IMPROVEMENT**: Create logical directory structure within src/ for better navigation
+2. **DEAD CODE ELIMINATION**: Scan for and remove unused/dead code based on evidence (not speculation)
+3. **STRUCTURAL ORGANIZATION**: Improve code organization and maintainability (file count reduction secondary)
+4. **ABSOLUTE FUNCTIONALITY PRESERVATION**: Maintain ALL existing APIs, tests, and examples without loss
+5. **COMPREHENSIVE VERIFICATION**: All tests and examples must work before and after consolidation
+6. **BACKWARD COMPATIBILITY**: API must remain fully compatible for existing user code
 
 **DEFINITION OF DONE** (ARCHITECTURAL CONSOLIDATION):
-- [ ] Source file count reduced from 116 to <50 files (verified by automated count)
-- [ ] fortplot_figure_core.f90 split into <500 line modules (verified by wc -l)
-- [ ] All tests pass after consolidation (verified by make test)
-- [ ] API compatibility maintained (verified by example compilation)
-- [ ] CI enforcement implemented (file count limits in GitHub Actions)
+- [ ] Directory hierarchy created within src/ for logical organization (verified by tree structure)
+- [ ] Dead code identified and eliminated with evidence-based scanning (verified by usage analysis)
+- [ ] ALL tests pass after consolidation (verified by make test - NO test coverage decrease)
+- [ ] ALL examples compile and run successfully (verified by make example)
+- [ ] API backward compatibility maintained (verified by example compilation)
+- [ ] Test coverage preserved or improved (verified by coverage reports)
 - [ ] Build system functional (verified by make build)
 - [ ] Documentation updated to reflect new structure
-- [ ] Consolidation process documented for future maintenance
+- [ ] Structural improvements documented with before/after evidence
 
 **FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
 - **ZERO TRUST MODE**: All previous completions suspect until independently verified
