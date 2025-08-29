@@ -23,18 +23,25 @@ module fortplot_pdf_io
 
 contains
 
-    subroutine write_pdf_file(this, filename)
+    subroutine write_pdf_file(this, filename, success)
         !! Write PDF context to file
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        logical, intent(out), optional :: success
         integer :: unit, ios
+        
+        if (present(success)) success = .false.
         
         ! Open file for writing
         open(newunit=unit, file=filename, status='replace', &
              form='formatted', action='write', iostat=ios)
         
         if (ios /= 0) then
-            error stop "Failed to open PDF file for writing"
+            if (present(success)) then
+                return  ! Return with success = .false.
+            else
+                error stop "Failed to open PDF file for writing"
+            end if
         end if
         
         ! Write PDF document
@@ -42,6 +49,8 @@ contains
         
         ! Close file
         close(unit)
+        
+        if (present(success)) success = .true.
     end subroutine write_pdf_file
 
     subroutine create_pdf_document(unit, filename, ctx)

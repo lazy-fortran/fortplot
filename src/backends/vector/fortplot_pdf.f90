@@ -158,13 +158,21 @@ contains
     subroutine write_pdf_file_facade(this, filename)
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        logical :: file_success
         
         ! Automatically render axes if they haven't been rendered yet
         ! This provides better UX for low-level PDF API users
         call this%render_axes()
         
         this%core_ctx%stream_data = this%stream_writer%content_stream
-        call write_pdf_file(this%core_ctx, filename)
+        call write_pdf_file(this%core_ctx, filename, file_success)
+        
+        ! If file creation failed, continue without ERROR STOP
+        ! The wrapper functions will detect the missing file and handle appropriately
+        if (.not. file_success) then
+            ! Silent failure - let the wrapper detect and report the error
+            return
+        end if
     end subroutine write_pdf_file_facade
     
     subroutine update_coord_context(this)
