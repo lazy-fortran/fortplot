@@ -6,7 +6,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST = 
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs verify-functionality verify-setup
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance
 
 # Default target
 all: build
@@ -191,6 +191,11 @@ verify-with-evidence: verify-functionality
 	@echo "Evidence directory: test/output/verification/evidence/"
 	@ls -la test/output/verification/evidence/ || true
 
+# File size compliance verification - fraud prevention
+verify-size-compliance:
+	@echo "Running file size fraud prevention verification..."
+	./scripts/verify_file_sizes.sh
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -206,6 +211,7 @@ help:
 	@echo "  verify-functionality - Run comprehensive functionality preservation verification"
 	@echo "  verify-setup     - Setup functionality verification environment"
 	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
+	@echo "  verify-size-compliance - File size fraud prevention verification"
 	@echo "  coverage         - Generate coverage report"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
