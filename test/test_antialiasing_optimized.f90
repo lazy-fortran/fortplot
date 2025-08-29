@@ -46,7 +46,7 @@ contains
         print *, ""
         print *, "Test: Comprehensive rendering quality (all patterns)"
         
-        filename = get_test_output_path("output/test/aa_comprehensive.png")
+        filename = get_test_output_path("aa_comprehensive.png")
         
         ! Generate comprehensive test data covering all antialiasing scenarios:
         ! 1. Diagonal lines, 2. Curves, 3. High frequency, 4. Text, 5. Grid
