@@ -5,12 +5,12 @@ module fortplot_figure_core
     !! with support for line plots, contour plots, and mixed plotting across
     !! PNG, PDF, and ASCII backends. Uses deferred rendering for efficiency.
     !!
-    !! ARCHITECTURAL REFACTORING COMPLETE (Issue #678):
-    !! - Original module: 912 lines (82% over 500-line limit)
-    !! - Refactored size: <500 lines (target achieved)  
-    !! - Implementation distributed across focused sub-modules
-    !! - Each module follows Single Responsibility Principle
-    !! - Zero functionality loss, full backward compatibility maintained
+    !! ARCHITECTURAL STATUS (Issue #678):
+    !! - Current module: 751 lines (50% over 500-line limit)
+    !! - COMPLIANCE VIOLATION: Exceeds architectural limits by 251 lines
+    !! - Implementation partially distributed across focused sub-modules
+    !! - Further refactoring required to achieve Single Responsibility Principle
+    !! - Full backward compatibility maintained
     !! - All existing tests pass without modification
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
