@@ -47,6 +47,17 @@ module fortplot_figure_core
     use fortplot_figure_plots
     use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
+    use fortplot_figure_ranges, only: update_figure_data_ranges_pcolormesh, update_figure_data_ranges_boxplot
+    use fortplot_figure_properties, only: get_figure_width_property, get_figure_height_property, &
+                                         get_figure_rendered_property, set_figure_rendered_property, &
+                                         get_figure_plot_count_property, get_figure_plots_property, &
+                                         get_figure_x_min_property, get_figure_x_max_property, &
+                                         get_figure_y_min_property, get_figure_y_max_property, &
+                                         figure_backend_color_property, figure_backend_associated_property, &
+                                         figure_backend_line_property
+    use fortplot_figure_animation, only: setup_figure_png_backend_for_animation, &
+                                        extract_figure_rgb_data_for_animation, &
+                                        extract_figure_png_data_for_animation
     implicit none
 
     private
@@ -547,47 +558,25 @@ contains
     ! Private implementation procedures
 
     subroutine update_data_ranges_pcolormesh(self)
-        !! Update data ranges after adding pcolormesh plot
+        !! Update data ranges after adding pcolormesh plot - delegate to ranges module
         class(figure_t), intent(inout) :: self
-        real(wp) :: x_min_new, x_max_new, y_min_new, y_max_new
         
-        x_min_new = minval(self%plots(self%state%plot_count)%pcolormesh_data%x_vertices)
-        x_max_new = maxval(self%plots(self%state%plot_count)%pcolormesh_data%x_vertices)
-        y_min_new = minval(self%plots(self%state%plot_count)%pcolormesh_data%y_vertices)
-        y_max_new = maxval(self%plots(self%state%plot_count)%pcolormesh_data%y_vertices)
-        
-        if (.not. self%state%xlim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%x_min = x_min_new
-                self%state%x_max = x_max_new
-            else
-                self%state%x_min = min(self%state%x_min, x_min_new)
-                self%state%x_max = max(self%state%x_max, x_max_new)
-            end if
-        end if
-        
-        if (.not. self%state%ylim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%y_min = y_min_new
-                self%state%y_max = y_max_new
-            else
-                self%state%y_min = min(self%state%y_min, y_min_new)
-                self%state%y_max = max(self%state%y_max, y_max_new)
-            end if
-        end if
+        call update_figure_data_ranges_pcolormesh(self%plots, self%state%plot_count, &
+                                                 self%state%xlim_set, self%state%ylim_set, &
+                                                 self%state%x_min, self%state%x_max, &
+                                                 self%state%y_min, self%state%y_max)
     end subroutine update_data_ranges_pcolormesh
 
     subroutine update_data_ranges_boxplot(self, data, position)
-        !! Update data ranges after adding boxplot
+        !! Update data ranges after adding boxplot - delegate to ranges module
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         
-        ! Delegate to module implementation
-        call update_boxplot_ranges(data, position, &
-                                   self%state%x_min, self%state%x_max, &
-                                   self%state%y_min, self%state%y_max, &
-                                   self%state%xlim_set, self%state%ylim_set)
+        call update_figure_data_ranges_boxplot(data, position, &
+                                               self%state%x_min, self%state%x_max, &
+                                               self%state%y_min, self%state%y_max, &
+                                               self%state%xlim_set, self%state%ylim_set)
     end subroutine update_data_ranges_boxplot
 
     subroutine update_data_ranges(self)
@@ -672,56 +661,50 @@ contains
 
     ! Methods for backward compatibility with animation module
     
+    ! Property accessors - delegate to properties module
     function get_width(self) result(width)
-        !! Get figure width
         class(figure_t), intent(in) :: self
         integer :: width
-        width = get_figure_width_compat(self%state)
+        width = get_figure_width_property(self%state)
     end function get_width
     
     function get_height(self) result(height)
-        !! Get figure height
         class(figure_t), intent(in) :: self
         integer :: height
-        height = get_figure_height_compat(self%state)
+        height = get_figure_height_property(self%state)
     end function get_height
     
     function get_rendered(self) result(rendered)
-        !! Get rendered state
         class(figure_t), intent(in) :: self
         logical :: rendered
-        rendered = get_figure_rendered_compat(self%state)
+        rendered = get_figure_rendered_property(self%state)
     end function get_rendered
     
     subroutine set_rendered(self, rendered)
-        !! Set rendered state
         class(figure_t), intent(inout) :: self
         logical, intent(in) :: rendered
-        call set_figure_rendered_compat(self%state, rendered)
+        call set_figure_rendered_property(self%state, rendered)
     end subroutine set_rendered
     
     function get_plot_count(self) result(plot_count)
-        !! Get number of plots
         class(figure_t), intent(in) :: self
         integer :: plot_count
-        plot_count = get_figure_plot_count_compat(self%state)
+        plot_count = get_figure_plot_count_property(self%state)
     end function get_plot_count
     
     function get_plots(self) result(plots_ptr)
-        !! Get pointer to plots array  
         class(figure_t), intent(in), target :: self
         type(plot_data_t), pointer :: plots_ptr(:)
-        plots_ptr => self%plots  ! Keep direct access for efficiency
+        plots_ptr => get_figure_plots_property(self%plots)
     end function get_plots
     
+    ! Animation support - delegate to animation module
     subroutine setup_png_backend_for_animation(self)
-        !! Setup PNG backend for animation (temporary method)
         class(figure_t), intent(inout) :: self
-        call setup_png_backend_for_animation_compat(self%state)
+        call setup_figure_png_backend_for_animation(self%state)
     end subroutine setup_png_backend_for_animation
     
     subroutine extract_rgb_data_for_animation(self, rgb_data)
-        !! Extract RGB data for animation
         class(figure_t), intent(inout) :: self
         real(wp), intent(out) :: rgb_data(:,:,:)
         
@@ -729,11 +712,10 @@ contains
             call self%render_figure()
         end if
         
-        call extract_rgb_data_for_animation_compat(self%state, rgb_data)
+        call extract_figure_rgb_data_for_animation(self%state, rgb_data, self%state%rendered)
     end subroutine extract_rgb_data_for_animation
     
     subroutine extract_png_data_for_animation(self, png_data, status)
-        !! Extract PNG data for animation
         class(figure_t), intent(inout) :: self
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
@@ -742,56 +724,50 @@ contains
             call self%render_figure()
         end if
         
-        call extract_png_data_for_animation_compat(self%state, png_data, status)
+        call extract_figure_png_data_for_animation(self%state, png_data, status, self%state%rendered)
     end subroutine extract_png_data_for_animation
     
+    ! Backend interface and coordinate accessors - delegate to properties module
     subroutine backend_color(self, r, g, b)
-        !! Set backend color
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: r, g, b
-        call backend_color_compat(self%state, r, g, b)
+        call figure_backend_color_property(self%state, r, g, b)
     end subroutine backend_color
     
     function backend_associated(self) result(is_associated)
-        !! Check if backend is allocated
         class(figure_t), intent(in) :: self
         logical :: is_associated
-        is_associated = backend_associated_compat(self%state)
+        is_associated = figure_backend_associated_property(self%state)
     end function backend_associated
     
     subroutine backend_line(self, x1, y1, x2, y2)
-        !! Draw line using backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x1, y1, x2, y2
-        call backend_line_compat(self%state, x1, y1, x2, y2)
+        call figure_backend_line_property(self%state, x1, y1, x2, y2)
     end subroutine backend_line
     
     function get_x_min(self) result(x_min)
-        !! Get x minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_min
-        x_min = get_figure_x_min_compat(self%state)
+        x_min = get_figure_x_min_property(self%state)
     end function get_x_min
     
     function get_x_max(self) result(x_max)
-        !! Get x maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_max
-        x_max = get_figure_x_max_compat(self%state)
+        x_max = get_figure_x_max_property(self%state)
     end function get_x_max
     
     function get_y_min(self) result(y_min)
-        !! Get y minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_min
-        y_min = get_figure_y_min_compat(self%state)
+        y_min = get_figure_y_min_property(self%state)
     end function get_y_min
     
     function get_y_max(self) result(y_max)
-        !! Get y maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_max
-        y_max = get_figure_y_max_compat(self%state)
+        y_max = get_figure_y_max_property(self%state)
     end function get_y_max
 
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
