@@ -80,13 +80,13 @@ The user explicitly requested this visual showcase. Breaking it again will cause
 
 ## MANDATORY FILE REDUCTION TARGETS
 
-**SOURCE FILES** (Currently 121, Target: 30-50):
+**SOURCE FILES** (Currently 121 across all directories, NO TOTAL LIMIT - check per-directory limits):
 - Consolidate fortplot_doc_* modules (9 files → 3 files)
 - Merge redundant functionality modules
 - Eliminate single-purpose modules with <50 lines
 - Combine related plotting modules
 
-**TEST FILES** (Currently 107, Target: 40-60):
+**TEST FILES** (Currently 107 across all directories, NO TOTAL LIMIT - check per-directory limits):
 - **ELIMINATE REDUNDANT TESTS**: 9 pcolormesh variations → 2 comprehensive tests
 - **CONSOLIDATE REGRESSION TESTS**: Multiple single-point tests → 1 comprehensive test
 - **DELETE DEBUG-ONLY TESTS**: Tests that don't verify functionality
@@ -135,16 +135,26 @@ The user explicitly requested this visual showcase. Breaking it again will cause
 
 ## REPOSITORY SIZE LIMITS
 
-**HARD LIMITS** (Enforced by CI):
-- Source files: 50 maximum
-- Test files: 60 maximum
+**DIRECTORY ORGANIZATION LIMITS** (Per Directory):
+- Children per directory: soft limit 20, HARD LIMIT 50 files per directory
+- When any single directory exceeds 50 children, reorganization REQUIRED
+- NO TOTAL REPOSITORY FILE LIMITS - only per-directory limits
 - Root directory artifacts: 0 (except essential config files)
-- Documentation modules: 5 maximum
 
-**SOFT LIMITS** (Review triggers):
+**FILE SIZE LIMITS** (Per Individual File):
 - Any module >500 lines requires justification
-- Any directory >15 files requires reorganization
-- Test-to-source ratio >1.5:1 requires test consolidation
+- Any function >100 lines requires refactoring
+- Target: <50 lines per function, <500 lines per module
+
+**CLARIFICATION**: 
+- ✅ CORRECT: "src/ directory has 120 files - violates 50 per directory limit"
+- ❌ INCORRECT: "Repository has 120 files - violates 50 total file limit"
+- ✅ CORRECT: "test/ directory has 30 files - within 50 per directory limit"
+
+**REORGANIZATION TRIGGERS**:
+- Single directory >50 children → Split into subdirectories
+- Single file >500 lines → Split into focused modules
+- Test-to-source ratio >1.5:1 per directory → Test consolidation
 
 ## CLEANUP WORKFLOW
 
@@ -199,7 +209,7 @@ The project name is already defined in `fpm.toml` as `project = "fortplot"`, so 
 
 #### SIZE AND COMPLEXITY LIMITS (Team Cannot Handle Scale)
 - **EMERGENCY FILE SIZE LIMITS**: IMMEDIATE reduction required - NO files >500 lines (current: 957 lines)
-- **DIRECTORY ORGANIZATION CRISIS**: src/ has 114 files (4x over limit) - IMMEDIATE consolidation required
+- **DIRECTORY ORGANIZATION CRISIS**: src/ has 114 files (2.3x over 50 per-directory limit) - IMMEDIATE reorganization required
 - **FUNCTION SIZE VIOLATIONS**: All functions >50 lines must be broken down IMMEDIATELY
 - **SPRINT TASK LIMITS**: MAX 3 issues per sprint (team proved incompetent with 5)
 
