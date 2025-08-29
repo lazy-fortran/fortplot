@@ -1,66 +1,66 @@
 # Development Backlog
 
-## CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
+## CURRENT SPRINT: EMERGENCY BUILD SYSTEM RESTORATION
 
-**SPRINT GOAL**: Address repository organizational crisis through structural improvements and dead code elimination with ZERO functionality loss - focus on directory hierarchy and code quality over file count metrics.
+**SPRINT GOAL**: Emergency restoration of basic compilation functionality - users MUST be able to build and run fortplot programs. All architectural work deferred until build system functional.
 
-## SPRINT_BACKLOG (3 FOCUSED ITEMS - ARCHITECTURAL SCOPE)
+## SPRINT_BACKLOG (3 CRITICAL BUILD ITEMS - EMERGENCY SCOPE)
 
-### EPIC: STRUCTURAL ORGANIZATION IMPROVEMENT
+### EPIC: COMPILATION SYSTEM RESTORATION
 
-- [ ] #646: DIRECTORY HIERARCHY - Create logical directory structure within src/ for better navigation and understanding
-- [ ] #620: DEAD CODE ELIMINATION - Scan for and eliminate unused/dead code with evidence-based analysis
-- [ ] #609: FUNCTIONALITY PRESERVATION - Ensure all tests and examples work before and after reorganization
+- [ ] #680: CATASTROPHIC BUILD FAILURE - Restore basic compilation system functionality
+- [ ] #683: BUILD SYSTEM DESTRUCTION - Fix examples compilation with proper interfaces
+- [ ] #684: OBJECT-ORIENTED API COMPILATION - Restore README example compilation
 
 ## DOING (Current Work)
 
-### ARCHITECTURAL CONSOLIDATION CRISIS SPRINT: ACTIVE
+### EMERGENCY BUILD SYSTEM RESTORATION SPRINT: CRITICAL
 
-**SPRINT FOCUS**: Repository structural improvement with ZERO functionality loss - directory organization and dead code elimination
+**SPRINT FOCUS**: Emergency restoration of basic compilation functionality - users cannot build ANY programs
 
-**CURRENT STATUS**: Planning phase updated with user requirements, ready for implementation
+**CURRENT STATUS**: PLAY audit revealed catastrophic build failures, emergency sprint planning completed
 
-**USER REQUIREMENTS INCORPORATED**:
-- **NO FUNCTIONALITY LOSS**: Absolutely zero functionality must be lost during consolidation
-- **PRESERVE ALL TESTS**: Test coverage cannot decrease - all tests must be maintained
-- **PRESERVE ALL EXAMPLES**: All examples must continue working after consolidation
-- **DIRECTORY HIERARCHY**: Create good directory structure within src/ for navigation
-- **DEAD CODE SCANNING**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL FOCUS**: Improve organization and understanding, not just file count
+**EMERGENCY REQUIREMENTS IDENTIFIED**:
+- **COMPILATION MUST WORK**: Users cannot build ANY fortplot programs - critical business failure
+- **EXAMPLES MUST COMPILE**: README examples fail with interface errors - documentation fraud
+- **API FUNCTIONALITY REQUIRED**: Object-oriented API broken - core user interface destroyed
+- **DOCUMENTATION BUILD REQUIRED**: Build system completely non-functional
+- **USER HARM PREVENTION**: Focus exclusively on restoring working functionality
+- **DEVELOPMENT MORATORIUM**: No new features until basic functionality restored
 
-**REORGANIZATION STRATEGY**:
-1. **EPIC #646**: Directory hierarchy creation within src/ for logical organization
-2. **EPIC #620**: Evidence-based dead code identification and elimination
-3. **EPIC #609**: Comprehensive verification that all functionality is preserved
+**BUILD RESTORATION STRATEGY**:
+1. **EPIC #680**: Emergency compilation system diagnosis and restoration
+2. **EPIC #683**: Example compilation fixes with proper interface resolution
+3. **EPIC #684**: Object-oriented API restoration for user code compatibility
 
-**TECHNICAL REQUIREMENTS** (USER MANDATED):
-- ALL consolidation MUST preserve existing functionality (ZERO loss)
-- ALL tests MUST be maintained (no test coverage decrease)
-- ALL examples MUST continue working (verified by make example)
-- API backward compatibility MUST be maintained for user code
-- Directory structure MUST improve navigation and understanding
-- Dead code elimination MUST be evidence-based (not speculative)
-- Build system integration MUST remain functional
+**EMERGENCY TECHNICAL REQUIREMENTS**:
+- Build system MUST compile basic fortplot programs (verified by make build)
+- Examples MUST compile successfully (verified by make example)
+- Object-oriented API MUST work with user code (verified by README examples)
+- Documentation build MUST generate user-accessible docs (verified by make doc)
+- Interface resolution MUST be working correctly (verified by compilation tests)
+- NO NEW FEATURES until basic functionality restored
+- All completion claims MUST be verified with working compilation evidence
 
-### Sprint Notes (STRUCTURAL ORGANIZATION IMPROVEMENT)
-- **USER MANDATE**: Zero functionality loss - all tests and examples must be preserved
-- **DIRECTORY HIERARCHY**: Create logical organization within src/ for better navigation
-- **DEAD CODE FOCUS**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL IMPROVEMENT**: Focus on organization and understanding, not just metrics
-- **COMPREHENSIVE VERIFICATION**: All functionality must be verified before and after
-- **TEST COVERAGE PRESERVATION**: No decrease in test coverage - all tests maintained
-- **EXAMPLE PRESERVATION**: All examples must compile and run successfully
-- **BACKWARD COMPATIBILITY**: API must remain fully compatible for user code
-- **EVIDENCE-BASED APPROACH**: All dead code elimination must be based on proof
-- **STRATEGIC FOCUS**: Structural quality over file count reduction
+### Sprint Notes (EMERGENCY BUILD SYSTEM RESTORATION)
+- **CRITICAL BUSINESS FAILURE**: Users cannot compile ANY fortplot programs - emergency priority
+- **BUILD SYSTEM BROKEN**: Compilation failures block all user workflows
+- **INTERFACE ERRORS**: Examples fail with interface resolution problems
+- **API DESTRUCTION**: Object-oriented interface from README documentation non-functional
+- **DOCUMENTATION FAILURE**: Build system cannot generate user-accessible documentation
+- **DEVELOPMENT MORATORIUM**: No architectural work until compilation works
+- **FRAUD PREVENTION**: All completion claims require working compilation evidence
+- **USER-FIRST PRIORITY**: Restore user functionality before any internal improvements
+- **EMERGENCY PROTOCOL**: Maximum oversight and verification for all completion claims
+- **TECHNICAL ENFORCEMENT**: CI gates prevent merge until compilation verified
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
-**STRATEGIC ARCHITECTURAL DEFECTS** (After Quality Foundation):
-- [ ] #646: ARCHITECTURAL CRISIS - 116 source files exceed target by 331% (SUPERSEDES #626)
-- [ ] #623: PROCESS - False completion fraud pattern requires systematic prevention
-- [ ] #609: CI ENFORCEMENT - File count limits and automated prevention (CRITICAL after fraud detection)
-- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #646)
+**DEFERRED ARCHITECTURAL DEFECTS** (After Build System Restoration):
+- [ ] #646: ARCHITECTURAL CRISIS - 116 source files exceed target by 331% (DEFERRED - build system priority)
+- [ ] #623: PROCESS - False completion fraud pattern requires systematic prevention (ACTIVE - fraud prevention protocols implemented)
+- [ ] #609: CI ENFORCEMENT - File count limits and automated prevention (DEFERRED - build functionality first)
+- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (DEFERRED - compilation priority)
 
 **DEFERRED TECHNICAL DEFECTS** (After Repository Reduction):
 - [ ] #618: SECURITY - system/popen calls in 8 files require secure replacement

@@ -2,36 +2,36 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
+### CURRENT SPRINT: EMERGENCY BUILD SYSTEM RESTORATION
 
-**REPOSITORY SCALE CRISIS**: Development paralysis from unmanageable file count requiring immediate architectural consolidation:
+**BUILD SYSTEM CATASTROPHE**: PLAY audit revealed complete compilation failure preventing all user workflows:
 
-**ARCHITECTURAL CRISIS EVIDENCE** (TECHNICAL VERIFICATION):
-1. **SCALE EXPLOSION**: 116 source files exceed management capacity by 331% (target: <50)
-2. **SIZE VIOLATIONS**: fortplot_figure_core.f90 at 912 lines exceeds limit by 82% (target: <500)
-3. **DEVELOPMENT PARALYSIS**: Team cannot efficiently locate or modify code
-4. **MAINTENANCE CRISIS**: Simple changes require searching through 100+ files
-5. **STRATEGIC BLOCKER**: Repository organization prevents sustainable development
-6. **PREVIOUS ATTEMPTS FAILED**: File consolidation repeatedly attempted but never completed
+**CRITICAL BUILD FAILURES** (TECHNICAL VERIFICATION):
+1. **COMPILATION BROKEN**: Issue #680 - users cannot build ANY fortplot programs (catastrophic business failure)
+2. **EXAMPLES FAIL**: Issue #683 - basic examples fail with interface resolution errors
+3. **API DESTROYED**: Issue #684 - Object-oriented API from README documentation cannot compile
+4. **DOCUMENTATION BROKEN**: Issue #685 - documentation build system completely non-functional
+5. **USER HARM ACTIVE**: Core functionality destroyed by previous sprint claiming "improvements"
+6. **FRAUD PREVENTION REQUIRED**: All completion claims proven false without technical verification
 
-**ARCHITECTURAL CONSOLIDATION GOAL**: Establish manageable repository structure for sustainable development with ZERO functionality loss:
-1. **DIRECTORY HIERARCHY IMPROVEMENT**: Create logical directory structure within src/ for better navigation
-2. **DEAD CODE ELIMINATION**: Scan for and remove unused/dead code based on evidence (not speculation)
-3. **STRUCTURAL ORGANIZATION**: Improve code organization and maintainability (file count reduction secondary)
-4. **ABSOLUTE FUNCTIONALITY PRESERVATION**: Maintain ALL existing APIs, tests, and examples without loss
-5. **COMPREHENSIVE VERIFICATION**: All tests and examples must work before and after consolidation
-6. **BACKWARD COMPATIBILITY**: API must remain fully compatible for existing user code
+**EMERGENCY BUILD RESTORATION GOAL**: Restore basic compilation functionality for user programs:
+1. **COMPILATION SYSTEM RESTORATION**: Fix core build system so users can compile programs
+2. **EXAMPLE COMPILATION FIXES**: Resolve interface errors preventing example compilation
+3. **OBJECT-ORIENTED API REPAIR**: Restore README example compilation functionality
+4. **DOCUMENTATION BUILD REPAIR**: Fix documentation generation system for user access
+5. **FRAUD PREVENTION IMPLEMENTATION**: Technical verification gates for all completion claims
+6. **DEVELOPMENT MORATORIUM**: No new features until basic functionality restored
 
-**DEFINITION OF DONE** (ARCHITECTURAL CONSOLIDATION):
-- [ ] Directory hierarchy created within src/ for logical organization (verified by tree structure)
-- [ ] Dead code identified and eliminated with evidence-based scanning (verified by usage analysis)
-- [ ] ALL tests pass after consolidation (verified by make test - NO test coverage decrease)
-- [ ] ALL examples compile and run successfully (verified by make example)
-- [ ] API backward compatibility maintained (verified by example compilation)
-- [ ] Test coverage preserved or improved (verified by coverage reports)
-- [ ] Build system functional (verified by make build)
-- [ ] Documentation updated to reflect new structure
-- [ ] Structural improvements documented with before/after evidence
+**DEFINITION OF DONE** (BUILD SYSTEM RESTORATION):
+- [ ] Basic fortplot programs compile successfully (verified by make build with actual compilation)
+- [ ] All examples compile and run without interface errors (verified by make example)
+- [ ] Object-oriented API examples from README compile (verified by manual compilation test)
+- [ ] Documentation build generates user-accessible docs (verified by make doc with output check)
+- [ ] Interface resolution works correctly across all modules (verified by compilation tests)
+- [ ] Build system integration functional (verified by end-to-end compilation workflow)
+- [ ] All completion claims backed by verifiable technical evidence (CI URLs, compilation output)
+- [ ] No new functionality added until build system verified working
+- [ ] Emergency protocols implemented to prevent future build system destruction
 
 **FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
 - **ZERO TRUST MODE**: All previous completions suspect until independently verified
