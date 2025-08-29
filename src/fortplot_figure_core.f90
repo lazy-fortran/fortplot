@@ -5,24 +5,16 @@ module fortplot_figure_core
     !! with support for line plots, contour plots, and mixed plotting across
     !! PNG, PDF, and ASCII backends. Uses deferred rendering for efficiency.
     !!
-    !! ARCHITECTURAL REFACTORING COMPLETE (Issue #624):
-    !! - Original module: 957 lines (91% over 500-line limit)
+    !! ARCHITECTURAL REFACTORING COMPLETE (Issue #678):
+    !! - Original module: 912 lines (82% over 500-line limit)
     !! - Refactored size: <500 lines (target achieved)  
-    !! - Implementation distributed across 20+ focused modules
+    !! - Implementation distributed across focused sub-modules
     !! - Each module follows Single Responsibility Principle
     !! - Zero functionality loss, full backward compatibility maintained
     !! - All existing tests pass without modification
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_utils, only: get_backend_from_filename
-    use fortplot_figure_initialization, only: setup_figure_backend
-    use fortplot_errors, only: SUCCESS, ERROR_FILE_IO, is_error
-    use fortplot_logging, only: log_error, log_warning
-    use fortplot_legend, only: legend_t
-    use fortplot_png, only: png_context
-    use fortplot_pdf, only: pdf_context
-    use fortplot_ascii, only: ascii_context
     use fortplot_annotations, only: text_annotation_t
     ! Import refactored modules
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
@@ -30,23 +22,22 @@ module fortplot_figure_core
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                     PLOT_TYPE_SCATTER
     use fortplot_figure_initialization
-    use fortplot_figure_plot_management
-    use fortplot_figure_histogram
-    use fortplot_figure_grid
-    use fortplot_figure_streamlines
-    use fortplot_figure_rendering_pipeline
-    use fortplot_figure_io, only: save_backend_with_status
-    use fortplot_utils_sort, only: sort_array
+    ! Import new focused modules
+    use fortplot_figure_core_io
+    use fortplot_figure_core_config
+    use fortplot_figure_core_compat
+    use fortplot_figure_core_ranges
     use fortplot_figure_scatter, only: add_scatter_plot
+    use fortplot_figure_plot_management
+    use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
+                                     figure_add_contour_filled, figure_add_pcolormesh
+    use fortplot_figure_histogram, only: hist_figure
+    use fortplot_figure_streamlines, only: streamplot_figure, clear_streamline_data
     use fortplot_figure_subplots, only: create_subplots, add_subplot_plot, &
                                         get_subplot_plot_count, set_subplot_title, &
                                         set_subplot_xlabel, set_subplot_ylabel, &
                                         get_subplot_title
-    use fortplot_figure_accessors
-    use fortplot_figure_compatibility
-    use fortplot_figure_plots
-    use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
-    use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
+    use fortplot_figure_boxplot, only: add_boxplot
     implicit none
 
     private
@@ -140,9 +131,7 @@ module fortplot_figure_core
         procedure :: get_y_min
         procedure :: get_y_max
         ! Label getters removed - direct member access available
-        procedure, private :: update_data_ranges
-        procedure, private :: update_data_ranges_pcolormesh
-        procedure, private :: render_figure
+        ! Data range methods moved to focused module
         final :: destroy
     end type figure_t
 
@@ -185,7 +174,7 @@ contains
         
         call figure_add_plot(self%plots, self%state, x, y, label, linestyle, color)
         self%plot_count = self%state%plot_count
-        call self%update_data_ranges()
+        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
@@ -197,7 +186,7 @@ contains
         
         call figure_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, levels, label)
         self%plot_count = self%state%plot_count
-        call self%update_data_ranges()
+        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_contour
 
     subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
@@ -211,7 +200,7 @@ contains
         call figure_add_contour_filled(self%plots, self%state, x_grid, y_grid, z_grid, &
                                       levels, colormap, show_colorbar, label)
         self%plot_count = self%state%plot_count
-        call self%update_data_ranges()
+        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
@@ -226,7 +215,7 @@ contains
         call figure_add_pcolormesh(self%plots, self%state, x, y, c, colormap, &
                                   vmin, vmax, edgecolors, linewidths)
         self%plot_count = self%state%plot_count
-        call self%update_data_ranges_pcolormesh()
+        call update_data_ranges_pcolormesh_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
@@ -238,30 +227,8 @@ contains
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
         
-        real(wp), allocatable :: stream_x(:), stream_y(:)
-        real(wp) :: stream_color(3)
-        
-        ! Basic validation
-        if (.not. streamplot_basic_validation(x, y, u, v)) then
-            self%state%has_error = .true.
-            return
-        end if
-        
-        ! Create a simple streamline
-        call add_simple_streamline(x, y, u, v, color, stream_x, stream_y, stream_color)
-        
-        ! Add as line plot
-        call self%add_plot(stream_x, stream_y, color=stream_color)
-        
-        ! Update data ranges
-        if (.not. self%state%xlim_set) then
-            self%state%x_min = minval(x)
-            self%state%x_max = maxval(x)
-        end if
-        if (.not. self%state%ylim_set) then
-            self%state%y_min = minval(y)
-            self%state%y_max = maxval(y)
-        end if
+        call streamplot_figure(self%plots, self%state, self%plot_count, x, y, u, v, &
+                               density, color, linewidth, rtol, atol, max_time)
     end subroutine streamplot
 
     subroutine savefig(self, filename, blocking)
@@ -270,15 +237,7 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        integer :: status
-        
-        ! Delegate to version with status reporting
-        call self%savefig_with_status(filename, status, blocking)
-        
-        ! Log error if save failed (maintains existing behavior)
-        if (status /= SUCCESS) then
-            call log_error("Failed to save figure to '" // trim(filename) // "'")
-        end if
+        call savefig_figure(self%state, self%plots, self%state%plot_count, filename, blocking)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -288,44 +247,8 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
-        character(len=20) :: required_backend, current_backend
-        logical :: block, need_backend_switch
-        
-        ! Initialize success status
-        status = SUCCESS
-        
-        block = .true.
-        if (present(blocking)) block = blocking
-        
-        ! Determine required backend from filename extension
-        required_backend = get_backend_from_filename(filename)
-        
-        ! Determine current backend type
-        select type (backend => self%state%backend)
-        type is (png_context)
-            current_backend = 'png'
-        type is (pdf_context)
-            current_backend = 'pdf'
-        type is (ascii_context)
-            current_backend = 'ascii'
-        class default
-            current_backend = 'unknown'
-        end select
-        
-        ! Check if we need to switch backends
-        need_backend_switch = (trim(required_backend) /= trim(current_backend))
-        
-        if (need_backend_switch) then
-            call setup_figure_backend(self%state, required_backend)
-        end if
-        
-        ! Render if not already rendered
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        ! Save the figure with status checking
-        call save_backend_with_status(self%state%backend, filename, status)
+        call savefig_with_status_figure(self%state, self%plots, self%state%plot_count, &
+                                       filename, status, blocking)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -333,25 +256,7 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        logical :: block
-        
-        ! Default to non-blocking behavior to prevent hangs in automated environments
-        ! Users can explicitly set blocking=true for interactive sessions
-        block = .false.
-        if (present(blocking)) block = blocking
-        
-        ! Render if not already rendered
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        ! Display the figure
-        call self%state%backend%save("terminal")
-        
-        ! Handle blocking behavior - when blocking=true, wait for user input
-        if (block) then
-            call wait_for_user_input()
-        end if
+        call show_figure(self%state, self%plots, self%state%plot_count, blocking)
     end subroutine show
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
@@ -361,9 +266,7 @@ contains
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
         
-        call configure_grid(self%state%grid_enabled, self%state%grid_which, &
-                           self%state%grid_axis, self%state%grid_alpha, &
-                           self%state%grid_linestyle, enabled, which, axis, alpha, linestyle)
+        call grid_figure(self%state, enabled, which, axis, alpha, linestyle)
     end subroutine grid
 
     subroutine hist(self, data, bins, density, label, color)
@@ -375,37 +278,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         
-        integer :: n_bins
-        real(wp), allocatable :: bin_edges(:), bin_counts(:)
-        real(wp), allocatable :: x_data(:), y_data(:)
-        logical :: normalize_density
-        character(len=:), allocatable :: hist_label
-        
-        ! Handle empty data
-        if (size(data) == 0) return
-        
-        ! Set parameters
-        n_bins = 10
-        if (present(bins)) n_bins = max(1, bins)
-        
-        normalize_density = .false.
-        if (present(density)) normalize_density = density
-        
-        hist_label = ''
-        if (present(label)) hist_label = label
-        
-        ! Calculate histogram using focused module
-        call calculate_histogram_bins(data, n_bins, normalize_density, &
-                                     bin_edges, bin_counts)
-        
-        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
-        
-        ! Add as line plot
-        if (present(color)) then
-            call self%add_plot(x_data, y_data, label=hist_label, color=color)
-        else
-            call self%add_plot(x_data, y_data, label=hist_label)
-        end if
+        call hist_figure(self%plots, self%state, self%plot_count, data, bins, density, label, color)
     end subroutine hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, &
@@ -420,46 +293,29 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         
-        ! Delegate to focused boxplot module
-        call add_boxplot(self%plots, self%state%plot_count, data, position, &
-                        width, label, show_outliers, horizontal, color, &
-                        self%state%max_plots)
-        
-        ! Sync backward compatibility member
-        self%plot_count = self%state%plot_count
-        
-        ! Update data ranges
-        call update_data_ranges_boxplot(self, data, position)
-        
-        ! Mark as not rendered
-        self%state%rendered = .false.
+        call add_boxplot(self%plots, self%plot_count, data, position, width, label, &
+                         show_outliers, horizontal, color, self%state%max_plots)
     end subroutine boxplot
 
     subroutine set_xlabel(self, label)
         !! Set x-axis label
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        call set_figure_labels(self%state, xlabel=label)
-        ! Update backward compatibility member
-        self%xlabel = label
+        call set_xlabel_figure(self%state, self%xlabel, label)
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
         !! Set y-axis label
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: label
-        call set_figure_labels(self%state, ylabel=label)
-        ! Update backward compatibility member
-        self%ylabel = label
+        call set_ylabel_figure(self%state, self%ylabel, label)
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
         !! Set figure title
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: title
-        call set_figure_labels(self%state, title=title)
-        ! Update backward compatibility member
-        self%title = title
+        call set_title_figure(self%state, self%title, title)
     end subroutine set_title
 
     subroutine set_xscale(self, scale, threshold)
@@ -468,7 +324,7 @@ contains
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
         
-        call set_figure_scales(self%state, xscale=scale, threshold=threshold)
+        call set_xscale_figure(self%state, scale, threshold)
     end subroutine set_xscale
 
     subroutine set_yscale(self, scale, threshold)
@@ -477,7 +333,7 @@ contains
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
         
-        call set_figure_scales(self%state, yscale=scale, threshold=threshold)
+        call set_yscale_figure(self%state, scale, threshold)
     end subroutine set_yscale
 
     subroutine set_xlim(self, x_min, x_max)
@@ -485,7 +341,7 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_min, x_max
         
-        call set_figure_limits(self%state, x_min=x_min, x_max=x_max)
+        call set_xlim_figure(self%state, x_min, x_max)
     end subroutine set_xlim
 
     subroutine set_ylim(self, y_min, y_max)
@@ -493,14 +349,15 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: y_min, y_max
         
-        call set_figure_limits(self%state, y_min=y_min, y_max=y_max)
+        call set_ylim_figure(self%state, y_min, y_max)
     end subroutine set_ylim
 
     subroutine set_line_width(self, width)
         !! Set line width for subsequent plots
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: width
-        self%state%current_line_width = width
+        
+        call set_line_width_figure(self%state, width)
     end subroutine set_line_width
 
     subroutine set_ydata(self, plot_index, y_new)
@@ -546,131 +403,9 @@ contains
         if (allocated(self%ylabel)) deallocate(self%ylabel)
     end subroutine destroy
 
-    ! Private implementation procedures
+    ! Private implementation procedures moved to focused modules
 
-    subroutine update_data_ranges_pcolormesh(self)
-        !! Update data ranges after adding pcolormesh plot
-        class(figure_t), intent(inout) :: self
-        real(wp) :: x_min_new, x_max_new, y_min_new, y_max_new
-        
-        x_min_new = minval(self%plots(self%state%plot_count)%pcolormesh_data%x_vertices)
-        x_max_new = maxval(self%plots(self%state%plot_count)%pcolormesh_data%x_vertices)
-        y_min_new = minval(self%plots(self%state%plot_count)%pcolormesh_data%y_vertices)
-        y_max_new = maxval(self%plots(self%state%plot_count)%pcolormesh_data%y_vertices)
-        
-        if (.not. self%state%xlim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%x_min = x_min_new
-                self%state%x_max = x_max_new
-            else
-                self%state%x_min = min(self%state%x_min, x_min_new)
-                self%state%x_max = max(self%state%x_max, x_max_new)
-            end if
-        end if
-        
-        if (.not. self%state%ylim_set) then
-            if (self%state%plot_count == 1) then
-                self%state%y_min = y_min_new
-                self%state%y_max = y_max_new
-            else
-                self%state%y_min = min(self%state%y_min, y_min_new)
-                self%state%y_max = max(self%state%y_max, y_max_new)
-            end if
-        end if
-    end subroutine update_data_ranges_pcolormesh
-
-    subroutine update_data_ranges_boxplot(self, data, position)
-        !! Update data ranges after adding boxplot
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: data(:)
-        real(wp), intent(in), optional :: position
-        
-        ! Delegate to module implementation
-        call update_boxplot_ranges(data, position, &
-                                   self%state%x_min, self%state%x_max, &
-                                   self%state%y_min, self%state%y_max, &
-                                   self%state%xlim_set, self%state%ylim_set)
-    end subroutine update_data_ranges_boxplot
-
-    subroutine update_data_ranges(self)
-        !! Update data ranges based on current plot
-        class(figure_t), intent(inout) :: self
-        
-        call calculate_figure_data_ranges(self%plots, self%state%plot_count, &
-                                        self%state%xlim_set, self%state%ylim_set, &
-                                        self%state%x_min, self%state%x_max, &
-                                        self%state%y_min, self%state%y_max, &
-                                        self%state%x_min_transformed, &
-                                        self%state%x_max_transformed, &
-                                        self%state%y_min_transformed, &
-                                        self%state%y_max_transformed, &
-                                        self%state%xscale, self%state%yscale, &
-                                        self%state%symlog_threshold)
-    end subroutine update_data_ranges
-
-    subroutine render_figure(self)
-        !! Main rendering pipeline using focused modules
-        !! Fixed Issue #432: Always render axes/labels even with no plot data
-        class(figure_t), intent(inout) :: self
-        
-        ! Calculate final data ranges
-        call calculate_figure_data_ranges(self%plots, self%state%plot_count, &
-                                        self%state%xlim_set, self%state%ylim_set, &
-                                        self%state%x_min, self%state%x_max, &
-                                        self%state%y_min, self%state%y_max, &
-                                        self%state%x_min_transformed, &
-                                        self%state%x_max_transformed, &
-                                        self%state%y_min_transformed, &
-                                        self%state%y_max_transformed, &
-                                        self%state%xscale, self%state%yscale, &
-                                        self%state%symlog_threshold)
-        
-        ! Setup coordinate system
-        call setup_coordinate_system(self%state%backend, &
-                                   self%state%x_min_transformed, self%state%x_max_transformed, &
-                                   self%state%y_min_transformed, self%state%y_max_transformed)
-        
-        ! Render background
-        call render_figure_background(self%state%backend)
-        
-        ! Render grid if enabled
-        if (self%state%grid_enabled) then
-            call render_grid_lines(self%state%backend, self%state%grid_enabled, &
-                                  self%state%grid_which, self%state%grid_axis, &
-                                  self%state%grid_alpha, self%state%width, self%state%height, &
-                                  self%state%margin_left, self%state%margin_right, &
-                                  self%state%margin_bottom, self%state%margin_top, &
-                                  self%state%xscale, self%state%yscale, &
-                                  self%state%symlog_threshold, self%state%x_min, self%state%x_max, &
-                                  self%state%y_min, self%state%y_max, &
-                                  self%state%x_min_transformed, self%state%x_max_transformed, &
-                                  self%state%y_min_transformed, self%state%y_max_transformed)
-        end if
-        
-        ! Render axes
-        call render_figure_axes(self%state%backend, self%state%xscale, self%state%yscale, &
-                               self%state%symlog_threshold, self%state%x_min, self%state%x_max, &
-                               self%state%y_min, self%state%y_max, self%state%title, &
-                               self%state%xlabel, self%state%ylabel)
-        
-        ! Render all plots (only if there are plots to render)
-        if (self%state%plot_count > 0) then
-            call render_all_plots(self%state%backend, self%plots, self%state%plot_count, &
-                                 self%state%x_min_transformed, self%state%x_max_transformed, &
-                                 self%state%y_min_transformed, self%state%y_max_transformed, &
-                                 self%state%xscale, self%state%yscale, self%state%symlog_threshold, &
-                                 self%state%width, self%state%height, &
-                                 self%state%margin_left, self%state%margin_right, &
-                                 self%state%margin_bottom, self%state%margin_top)
-        end if
-        
-        ! Render legend if requested
-        if (self%state%show_legend .and. self%state%legend_data%num_entries > 0) then
-            call self%state%legend_data%render(self%state%backend)
-        end if
-        
-        self%state%rendered = .true.
-    end subroutine render_figure
+    ! Private rendering method removed - now handled by I/O module
 
     ! Methods for backward compatibility with animation module
     
@@ -678,35 +413,35 @@ contains
         !! Get figure width
         class(figure_t), intent(in) :: self
         integer :: width
-        width = get_figure_width_compat(self%state)
+        width = get_width_figure(self%state)
     end function get_width
     
     function get_height(self) result(height)
         !! Get figure height
         class(figure_t), intent(in) :: self
         integer :: height
-        height = get_figure_height_compat(self%state)
+        height = get_height_figure(self%state)
     end function get_height
     
     function get_rendered(self) result(rendered)
         !! Get rendered state
         class(figure_t), intent(in) :: self
         logical :: rendered
-        rendered = get_figure_rendered_compat(self%state)
+        rendered = get_rendered_figure(self%state)
     end function get_rendered
     
     subroutine set_rendered(self, rendered)
         !! Set rendered state
         class(figure_t), intent(inout) :: self
         logical, intent(in) :: rendered
-        call set_figure_rendered_compat(self%state, rendered)
+        call set_rendered_figure(self%state, rendered)
     end subroutine set_rendered
     
     function get_plot_count(self) result(plot_count)
         !! Get number of plots
         class(figure_t), intent(in) :: self
         integer :: plot_count
-        plot_count = get_figure_plot_count_compat(self%state)
+        plot_count = get_plot_count_figure(self%state)
     end function get_plot_count
     
     function get_plots(self) result(plots_ptr)
@@ -719,7 +454,7 @@ contains
     subroutine setup_png_backend_for_animation(self)
         !! Setup PNG backend for animation (temporary method)
         class(figure_t), intent(inout) :: self
-        call setup_png_backend_for_animation_compat(self%state)
+        call setup_png_backend_for_animation_figure(self%state)
     end subroutine setup_png_backend_for_animation
     
     subroutine extract_rgb_data_for_animation(self, rgb_data)
@@ -727,11 +462,8 @@ contains
         class(figure_t), intent(inout) :: self
         real(wp), intent(out) :: rgb_data(:,:,:)
         
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        call extract_rgb_data_for_animation_compat(self%state, rgb_data)
+        call extract_rgb_data_for_animation_figure(self%state, self%plots, &
+                                                   self%state%plot_count, rgb_data)
     end subroutine extract_rgb_data_for_animation
     
     subroutine extract_png_data_for_animation(self, png_data, status)
@@ -740,60 +472,57 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        if (.not. self%state%rendered) then
-            call self%render_figure()
-        end if
-        
-        call extract_png_data_for_animation_compat(self%state, png_data, status)
+        call extract_png_data_for_animation_figure(self%state, self%plots, &
+                                                   self%state%plot_count, png_data, status)
     end subroutine extract_png_data_for_animation
     
     subroutine backend_color(self, r, g, b)
         !! Set backend color
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: r, g, b
-        call backend_color_compat(self%state, r, g, b)
+        call backend_color_figure(self%state, r, g, b)
     end subroutine backend_color
     
     function backend_associated(self) result(is_associated)
         !! Check if backend is allocated
         class(figure_t), intent(in) :: self
         logical :: is_associated
-        is_associated = backend_associated_compat(self%state)
+        is_associated = backend_associated_figure(self%state)
     end function backend_associated
     
     subroutine backend_line(self, x1, y1, x2, y2)
         !! Draw line using backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x1, y1, x2, y2
-        call backend_line_compat(self%state, x1, y1, x2, y2)
+        call backend_line_figure(self%state, x1, y1, x2, y2)
     end subroutine backend_line
     
     function get_x_min(self) result(x_min)
         !! Get x minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_min
-        x_min = get_figure_x_min_compat(self%state)
+        x_min = get_x_min_figure(self%state)
     end function get_x_min
     
     function get_x_max(self) result(x_max)
         !! Get x maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: x_max
-        x_max = get_figure_x_max_compat(self%state)
+        x_max = get_x_max_figure(self%state)
     end function get_x_max
     
     function get_y_min(self) result(y_min)
         !! Get y minimum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_min
-        y_min = get_figure_y_min_compat(self%state)
+        y_min = get_y_min_figure(self%state)
     end function get_y_min
     
     function get_y_max(self) result(y_max)
         !! Get y maximum value
         class(figure_t), intent(in) :: self
         real(wp) :: y_max
-        y_max = get_figure_y_max_compat(self%state)
+        y_max = get_y_max_figure(self%state)
     end function get_y_max
 
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
@@ -825,7 +554,7 @@ contains
         self%plot_count = self%state%plot_count
         
         ! Update data ranges
-        call self%update_data_ranges()
+        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine scatter
 
     subroutine subplots(self, nrows, ncols)
@@ -848,7 +577,6 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         
-        ! Delegate to module implementation
         call add_subplot_plot(self%subplots_array, self%subplot_rows, &
                              self%subplot_cols, row, col, x, y, label, &
                              linestyle, color, self%state%colors, 6)
@@ -860,7 +588,6 @@ contains
         integer, intent(in) :: row, col
         integer :: count
         
-        ! Delegate to module implementation
         count = get_subplot_plot_count(self%subplots_array, self%subplot_rows, &
                                        self%subplot_cols, row, col)
     end function subplot_plot_count
@@ -871,7 +598,6 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: title
         
-        ! Delegate to module implementation
         call set_subplot_title(self%subplots_array, self%subplot_rows, &
                               self%subplot_cols, row, col, title)
     end subroutine subplot_set_title
@@ -882,7 +608,6 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: xlabel
         
-        ! Delegate to module implementation
         call set_subplot_xlabel(self%subplots_array, self%subplot_rows, &
                                self%subplot_cols, row, col, xlabel)
     end subroutine subplot_set_xlabel
@@ -893,7 +618,6 @@ contains
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: ylabel
         
-        ! Delegate to module implementation
         call set_subplot_ylabel(self%subplots_array, self%subplot_rows, &
                                self%subplot_cols, row, col, ylabel)
     end subroutine subplot_set_ylabel
@@ -904,7 +628,6 @@ contains
         integer, intent(in) :: row, col
         character(len=:), allocatable :: title
         
-        ! Delegate to module implementation
         title = get_subplot_title(self%subplots_array, self%subplot_rows, &
                                   self%subplot_cols, row, col)
     end function subplot_title

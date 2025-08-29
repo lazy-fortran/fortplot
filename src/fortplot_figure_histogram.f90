@@ -5,10 +5,13 @@ module fortplot_figure_histogram
     !! Extracted from fortplot_figure_core to improve modularity
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_plot_data, only: plot_data_t
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_plots, only: figure_add_plot
     implicit none
     
     private
-    public :: calculate_histogram_bins, create_histogram_line_data
+    public :: calculate_histogram_bins, create_histogram_line_data, hist_figure
     
 contains
     
@@ -95,5 +98,38 @@ contains
         y_data(4 * n_bins + 1) = 0.0_wp
         
     end subroutine create_histogram_line_data
+
+    subroutine hist_figure(plots, state, plot_count, data, bins, density, label, color)
+        !! Add histogram to figure plots array
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        real(wp), intent(in) :: data(:)
+        integer, intent(in), optional :: bins
+        logical, intent(in), optional :: density
+        character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: color(3)
+        
+        integer :: n_bins
+        logical :: normalize_density
+        real(wp), allocatable :: bin_edges(:), bin_counts(:), x_data(:), y_data(:)
+        
+        ! Set defaults
+        n_bins = 10
+        if (present(bins)) n_bins = bins
+        
+        normalize_density = .false.
+        if (present(density)) normalize_density = density
+        
+        ! Calculate histogram
+        call calculate_histogram_bins(data, n_bins, normalize_density, bin_edges, bin_counts)
+        
+        ! Create line data for visualization
+        call create_histogram_line_data(bin_edges, bin_counts, x_data, y_data)
+        
+        ! Add as line plot
+        call figure_add_plot(plots, state, x_data, y_data, label, color=color)
+        plot_count = plot_count + 1
+    end subroutine hist_figure
 
 end module fortplot_figure_histogram
