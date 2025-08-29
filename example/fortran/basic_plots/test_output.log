@@ -1,0 +1,6 @@
+fpm: Entering directory '/home/ert/code/fortplot'
+Project is up to date
+ === Basic Plots ===
+ Created: simple_plot.png/pdf/txt
+ Created: multi_line.png/pdf/txt
+fpm: Leaving directory '/home/ert/code/fortplot'

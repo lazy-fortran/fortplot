@@ -1,0 +1,6 @@
+fpm: Entering directory '/home/ert/code/fortplot'
+Project is up to date
+ [ERROR] pcolormesh: z dimensions must match x and y
+ [ERROR] pcolormesh: z dimensions must match x and y
+ [ERROR] pcolormesh: z dimensions must match x and y
+fpm: Leaving directory '/home/ert/code/fortplot'

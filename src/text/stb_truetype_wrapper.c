@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "../thirdparty/stb_truetype.h"
+#include "../../thirdparty/stb_truetype.h"
 
 /* Fortran-compatible font info structure */
 typedef struct {
