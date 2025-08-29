@@ -303,7 +303,8 @@ contains
             elseif (size(z, 1) == ny .and. size(z, 2) == nx) then
                 call log_warning("add_surface: vertex-centered z dimensions appear transposed")
             else
-                call log_error("add_surface: z must have dimensions (nx-1, ny-1) for cell-centered or (nx, ny) for vertex-centered data")
+                call log_error("add_surface: z must have dimensions (nx-1, ny-1) for " // &
+                              "cell-centered or (nx, ny) for vertex-centered data")
                 return
             end if
         end if
