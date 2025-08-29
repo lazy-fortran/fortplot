@@ -1,37 +1,58 @@
 # Development Backlog
 
-## CURRENT SPRINT: FRAUD-PROOF QUALITY FOUNDATION
+## CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
 
-**SPRINT GOAL**: Address 4 new CRITICAL defects discovered in PLAY audit that expose systematic fraud and establish fraud-proof quality gates to prevent regression.
+**SPRINT GOAL**: Address repository organizational crisis through structural improvements and dead code elimination with ZERO functionality loss - focus on directory hierarchy and code quality over file count metrics.
 
-## SPRINT_BACKLOG (3 ITEMS MAX - POST-FRAUD TEAM LIMIT)
+## SPRINT_BACKLOG (3 FOCUSED ITEMS - ARCHITECTURAL SCOPE)
 
-### EPIC: FRAUD-PROOF QUALITY ENFORCEMENT
+### EPIC: STRUCTURAL ORGANIZATION IMPROVEMENT
 
-- [ ] #645: CRITICAL - Zero test coverage on 335 new code lines in PR #642 (BLOCKS MERGE)
-- [ ] #647: SECURITY AUDIT - 26 files contain dangerous system execution calls despite hardening claims  
-- [ ] #648: TECHNICAL DEBT - 38 TODO/FIXME/HACK markers indicate systematic incomplete work
+- [ ] #646: DIRECTORY HIERARCHY - Create logical directory structure within src/ for better navigation and understanding
+- [ ] #620: DEAD CODE ELIMINATION - Scan for and eliminate unused/dead code with evidence-based analysis
+- [ ] #609: FUNCTIONALITY PRESERVATION - Ensure all tests and examples work before and after reorganization
 
 ## DOING (Current Work)
 
-### EPIC: FRAUD-PROOF QUALITY ENFORCEMENT (Ready for Sprint Start)
+### ARCHITECTURAL CONSOLIDATION CRISIS SPRINT: ACTIVE
 
-**REPOSITORY STATUS AFTER PR RESOLUTION**:
-- [x] PR #644: MERGED - Artifact pollution eliminated (CI VERIFIED: ALL CHECKS PASSED)
-- [ ] PR #643: HANDBACK - 76 lines uncovered, comprehensive tests required  
-- [ ] PR #642: HANDBACK - 335 lines uncovered + size violations, coverage crisis
+**SPRINT FOCUS**: Repository structural improvement with ZERO functionality loss - directory organization and dead code elimination
 
-**READY FOR SPRINT_BACKLOG WORK**: All blocking PRs resolved, development workflow unblocked
+**CURRENT STATUS**: Sprint started on main branch, ready for implementation
 
-### Sprint Notes (FRAUD-PROOF QUALITY FOUNDATION)
-- **PLAY AUDIT DISCOVERY**: SYSTEMATIC FRAUD CONFIRMED - false completion claims across ALL 3 previous sprint items
-- **NEW CRITICAL DEFECTS**: 4 issues (#645, #646, #647, #648) reveal quality deterioration despite completion claims
-- **ZERO TRUST MODE**: All previous completions suspect - require independent technical verification  
-- **TEST COVERAGE CRISIS**: PR #642 has 0% coverage on 335 lines - fundamental quality gate failure
-- **ARCHITECTURAL COLLAPSE**: 116 source files (331% over target) - repository unnavigable
-- **SECURITY REGRESSION**: 26 files still contain dangerous calls after "security hardening"
-- **TECHNICAL DEBT EXPLOSION**: 38 markers indicate systematic incomplete implementations
-- **FRAUD-PROOF ENFORCEMENT**: CI gates, automated verification, independent testing required
+**USER REQUIREMENTS INCORPORATED**:
+- **NO FUNCTIONALITY LOSS**: Absolutely zero functionality must be lost during consolidation
+- **PRESERVE ALL TESTS**: Test coverage cannot decrease - all tests must be maintained
+- **PRESERVE ALL EXAMPLES**: All examples must continue working after consolidation
+- **DIRECTORY HIERARCHY**: Create good directory structure within src/ for navigation
+- **DEAD CODE SCANNING**: Evidence-based scanning and elimination of unused code
+- **STRUCTURAL FOCUS**: Improve organization and understanding, not just file count
+
+**REORGANIZATION STRATEGY**:
+1. **EPIC #646**: Directory hierarchy creation within src/ for logical organization
+2. **EPIC #620**: Evidence-based dead code identification and elimination
+3. **EPIC #609**: Comprehensive verification that all functionality is preserved
+
+**TECHNICAL REQUIREMENTS** (USER MANDATED):
+- ALL consolidation MUST preserve existing functionality (ZERO loss)
+- ALL tests MUST be maintained (no test coverage decrease)
+- ALL examples MUST continue working (verified by make example)
+- API backward compatibility MUST be maintained for user code
+- Directory structure MUST improve navigation and understanding
+- Dead code elimination MUST be evidence-based (not speculative)
+- Build system integration MUST remain functional
+
+### Sprint Notes (STRUCTURAL ORGANIZATION IMPROVEMENT)
+- **USER MANDATE**: Zero functionality loss - all tests and examples must be preserved
+- **DIRECTORY HIERARCHY**: Create logical organization within src/ for better navigation
+- **DEAD CODE FOCUS**: Evidence-based scanning and elimination of unused code
+- **STRUCTURAL IMPROVEMENT**: Focus on organization and understanding, not just metrics
+- **COMPREHENSIVE VERIFICATION**: All functionality must be verified before and after
+- **TEST COVERAGE PRESERVATION**: No decrease in test coverage - all tests maintained
+- **EXAMPLE PRESERVATION**: All examples must compile and run successfully
+- **BACKWARD COMPATIBILITY**: API must remain fully compatible for user code
+- **EVIDENCE-BASED APPROACH**: All dead code elimination must be based on proof
+- **STRATEGIC FOCUS**: Structural quality over file count reduction
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
