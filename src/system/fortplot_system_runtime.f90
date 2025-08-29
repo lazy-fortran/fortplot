@@ -367,67 +367,24 @@ contains
     end subroutine check_directory_exists
     
     subroutine create_single_directory(path, success)
-        !! Create a single directory level (parent must exist)
+        !! Create a single directory level using C interface
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
-        character(len=512) :: test_file, parent_path
-        integer :: unit, iostat, i, last_sep
-        logical :: parent_exists
-        character(len=256) :: env_value
-        integer :: status
-        logical :: is_ci
+        integer(c_int) :: result
+        
+        interface
+            function create_directory_windows_c(path) bind(c, name='create_directory_windows_c')
+                import :: c_char, c_int
+                character(kind=c_char), intent(in) :: path(*)
+                integer(c_int) :: create_directory_windows_c
+            end function create_directory_windows_c
+        end interface
         
         success = .false.
         
-        ! Get parent directory
-        last_sep = 0
-        do i = len_trim(path), 1, -1
-            if (path(i:i) == '/' .or. path(i:i) == '\') then
-                last_sep = i - 1
-                exit
-            end if
-        end do
-        
-        ! Check if parent exists (or if this is a root-level directory)
-        if (last_sep > 0) then
-            parent_path = path(1:last_sep)
-            call check_directory_exists(parent_path, parent_exists)
-            if (.not. parent_exists) then
-                return
-            end if
-        end if
-        
-        ! For CI environments, use system mkdir directly
-        is_ci = .false.
-        call get_environment_variable("CI", env_value, status=status)
-        if (status == 0 .and. (trim(env_value) == "true" .or. trim(env_value) == "1")) then
-            is_ci = .true.
-        end if
-        
-        call get_environment_variable("GITHUB_ACTIONS", env_value, status=status)
-        if (status == 0 .and. (trim(env_value) == "true" .or. trim(env_value) == "1")) then
-            is_ci = .true.
-        end if
-        
-        if (is_ci) then
-            ! In CI, we can use mkdir command safely
-            call use_system_mkdir_ci(path, success)
-            if (success) return
-        end if
-        
-        ! Try to create directory by creating a test file in it
-        if (is_windows()) then
-            write(test_file, '(A,A)') trim(path), '\.fortplot_mkdir_test'
-        else
-            write(test_file, '(A,A)') trim(path), '/.fortplot_mkdir_test'
-        end if
-        
-        ! This will create the directory if possible
-        open(newunit=unit, file=trim(test_file), status='replace', iostat=iostat)
-        if (iostat == 0) then
-            close(unit, status='delete')
-            success = .true.
-        end if
+        ! Use C interface to create directory
+        result = create_directory_windows_c(trim(path) // c_null_char)
+        success = (result /= 0)
     end subroutine create_single_directory
     
     subroutine use_system_mkdir_ci(path, success)
