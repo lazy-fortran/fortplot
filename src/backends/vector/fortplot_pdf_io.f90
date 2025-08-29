@@ -4,6 +4,7 @@ module fortplot_pdf_io
     
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
+    use fortplot_security, only: safe_create_directory
     implicit none
     private
     
@@ -24,17 +25,24 @@ module fortplot_pdf_io
 contains
 
     subroutine write_pdf_file(this, filename)
-        !! Write PDF context to file
+        !! Write PDF context to file with graceful error handling and directory creation
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: filename
         integer :: unit, ios
+        
+        ! Ensure output directory exists before attempting to write
+        call ensure_output_directory_exists(filename)
         
         ! Open file for writing
         open(newunit=unit, file=filename, status='replace', &
              form='formatted', action='write', iostat=ios)
         
         if (ios /= 0) then
-            error stop "Failed to open PDF file for writing"
+            ! Graceful error handling - log error but don't crash
+            write(*, '(A,A,A,I0)') 'WARNING: Failed to open PDF file for writing: ', &
+                trim(filename), ', iostat=', ios
+            write(*, '(A)') 'PDF backend: Continuing with graceful degradation'
+            return  ! Return gracefully instead of ERROR STOP
         end if
         
         ! Write PDF document
@@ -258,5 +266,37 @@ contains
             end if
         end do
     end subroutine write_string_to_unit
+
+    subroutine ensure_output_directory_exists(filename)
+        !! Ensure the directory for the output file exists
+        !! Cross-platform implementation using security module
+        character(len=*), intent(in) :: filename
+        character(len=512) :: dir_path
+        integer :: last_sep, i
+        logical :: success
+        
+        ! Extract directory path from filename
+        dir_path = ""
+        last_sep = 0
+        
+        do i = len_trim(filename), 1, -1
+            if (filename(i:i) == '/' .or. filename(i:i) == '\') then
+                last_sep = i - 1
+                exit
+            end if
+        end do
+        
+        if (last_sep > 0) then
+            dir_path = filename(1:last_sep)
+            
+            ! Use security module for safe directory creation
+            call safe_create_directory(dir_path, success)
+            
+            if (.not. success) then
+                write(*, '(A,A)') 'WARNING: Could not ensure directory exists: ', trim(dir_path)
+                write(*, '(A)') 'File writing may fail, but continuing gracefully'
+            end if
+        end if
+    end subroutine ensure_output_directory_exists
 
 end module fortplot_pdf_io

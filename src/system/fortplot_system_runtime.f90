@@ -176,6 +176,8 @@ contains
         if (index(normalized_path, 'build/test') > 0 .or. &
             index(normalized_path, 'build\test') > 0 .or. &
             index(normalized_path, 'fortplot_test_') > 0 .or. &
+            index(normalized_path, 'output/test') > 0 .or. &
+            index(normalized_path, 'output\test') > 0 .or. &
             index(normalized_path, 'output/example') > 0 .or. &
             index(normalized_path, 'output\example') > 0 .or. &
             index(normalized_path, '/tmp/fortplot_test_') > 0 .or. &
