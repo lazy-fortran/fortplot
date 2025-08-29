@@ -6,7 +6,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST = 
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs verify-functionality verify-setup
 
 # Default target
 all: build
@@ -174,6 +174,23 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/boxplot_demo
 	@mkdir -p output/example/fortran/grid_demo
 
+# Comprehensive functionality preservation verification (Issue #609)
+verify-functionality:
+	@echo "Running comprehensive functionality preservation verification..."
+	@echo "Issue #609: Comprehensive Functionality Preservation Verification System"
+	./scripts/verify_functionality_preservation.sh
+
+# Setup verification environment only
+verify-setup:
+	@echo "Setting up functionality verification environment..."
+	./scripts/verify_functionality_preservation.sh --setup
+
+# Run verification tests with fraud-proof evidence generation
+verify-with-evidence: verify-functionality
+	@echo "Verification complete - technical evidence generated"
+	@echo "Evidence directory: test/output/verification/evidence/"
+	@ls -la test/output/verification/evidence/ || true
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -186,6 +203,9 @@ help:
 	@echo "  test-ci          - Run CI-optimized tests (skip heavy I/O, MPEG tests)"
 	@echo "  validate-output  - Run functional output validation tests"
 	@echo "  test-docs        - Test documentation examples"
+	@echo "  verify-functionality - Run comprehensive functionality preservation verification"
+	@echo "  verify-setup     - Setup functionality verification environment"
+	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
 	@echo "  coverage         - Generate coverage report"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
