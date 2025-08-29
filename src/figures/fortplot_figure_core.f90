@@ -37,7 +37,6 @@ module fortplot_figure_core
                                         get_subplot_plot_count, set_subplot_title, &
                                         set_subplot_xlabel, set_subplot_ylabel, &
                                         get_subplot_title
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
     use fortplot_figure_accessors
     use fortplot_figure_compatibility
     use fortplot_figure_plots
@@ -54,9 +53,12 @@ module fortplot_figure_core
     use fortplot_figure_animation, only: setup_figure_png_backend_for_animation, &
                                         extract_figure_rgb_data_for_animation, &
                                         extract_figure_png_data_for_animation
-=======
-    use fortplot_figure_boxplot, only: add_boxplot
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
+    use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
+                                                    setup_coordinate_system, &
+                                                    render_figure_background, &
+                                                    render_figure_axes, &
+                                                    render_all_plots
+    use fortplot_figure_grid, only: render_grid_lines
     implicit none
 
     private
@@ -149,6 +151,8 @@ module fortplot_figure_core
         procedure :: get_x_max
         procedure :: get_y_min
         procedure :: get_y_max
+        ! Private rendering method
+        procedure :: render_figure
         ! Label getters removed - direct member access available
         ! Data range methods moved to focused module
         final :: destroy
@@ -424,7 +428,6 @@ contains
 
     ! Private implementation procedures moved to focused modules
 
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
     subroutine update_data_ranges_pcolormesh(self)
         !! Update data ranges after adding pcolormesh plot - delegate to ranges module
         class(figure_t), intent(inout) :: self
@@ -526,9 +529,6 @@ contains
         
         self%state%rendered = .true.
     end subroutine render_figure
-=======
-    ! Private rendering method removed - now handled by I/O module
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
 
     ! Methods for backward compatibility with animation module
     
@@ -536,51 +536,31 @@ contains
     function get_width(self) result(width)
         class(figure_t), intent(in) :: self
         integer :: width
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         width = get_figure_width_property(self%state)
-=======
-        width = get_width_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_width
     
     function get_height(self) result(height)
         class(figure_t), intent(in) :: self
         integer :: height
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         height = get_figure_height_property(self%state)
-=======
-        height = get_height_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_height
     
     function get_rendered(self) result(rendered)
         class(figure_t), intent(in) :: self
         logical :: rendered
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         rendered = get_figure_rendered_property(self%state)
-=======
-        rendered = get_rendered_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_rendered
     
     subroutine set_rendered(self, rendered)
         class(figure_t), intent(inout) :: self
         logical, intent(in) :: rendered
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         call set_figure_rendered_property(self%state, rendered)
-=======
-        call set_rendered_figure(self%state, rendered)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine set_rendered
     
     function get_plot_count(self) result(plot_count)
         class(figure_t), intent(in) :: self
         integer :: plot_count
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         plot_count = get_figure_plot_count_property(self%state)
-=======
-        plot_count = get_plot_count_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_plot_count
     
     function get_plots(self) result(plots_ptr)
@@ -592,27 +572,18 @@ contains
     ! Animation support - delegate to animation module
     subroutine setup_png_backend_for_animation(self)
         class(figure_t), intent(inout) :: self
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         call setup_figure_png_backend_for_animation(self%state)
-=======
-        call setup_png_backend_for_animation_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine setup_png_backend_for_animation
     
     subroutine extract_rgb_data_for_animation(self, rgb_data)
         class(figure_t), intent(inout) :: self
         real(wp), intent(out) :: rgb_data(:,:,:)
         
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         if (.not. self%state%rendered) then
             call self%render_figure()
         end if
         
         call extract_figure_rgb_data_for_animation(self%state, rgb_data, self%state%rendered)
-=======
-        call extract_rgb_data_for_animation_figure(self%state, self%plots, &
-                                                   self%state%plot_count, rgb_data)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine extract_rgb_data_for_animation
     
     subroutine extract_png_data_for_animation(self, png_data, status)
@@ -620,87 +591,54 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         if (.not. self%state%rendered) then
             call self%render_figure()
         end if
         
         call extract_figure_png_data_for_animation(self%state, png_data, status, self%state%rendered)
-=======
-        call extract_png_data_for_animation_figure(self%state, self%plots, &
-                                                   self%state%plot_count, png_data, status)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine extract_png_data_for_animation
     
     ! Backend interface and coordinate accessors - delegate to properties module
     subroutine backend_color(self, r, g, b)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: r, g, b
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         call figure_backend_color_property(self%state, r, g, b)
-=======
-        call backend_color_figure(self%state, r, g, b)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine backend_color
     
     function backend_associated(self) result(is_associated)
         class(figure_t), intent(in) :: self
         logical :: is_associated
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         is_associated = figure_backend_associated_property(self%state)
-=======
-        is_associated = backend_associated_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function backend_associated
     
     subroutine backend_line(self, x1, y1, x2, y2)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x1, y1, x2, y2
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         call figure_backend_line_property(self%state, x1, y1, x2, y2)
-=======
-        call backend_line_figure(self%state, x1, y1, x2, y2)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end subroutine backend_line
     
     function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self
         real(wp) :: x_min
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         x_min = get_figure_x_min_property(self%state)
-=======
-        x_min = get_x_min_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_x_min
     
     function get_x_max(self) result(x_max)
         class(figure_t), intent(in) :: self
         real(wp) :: x_max
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         x_max = get_figure_x_max_property(self%state)
-=======
-        x_max = get_x_max_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_x_max
     
     function get_y_min(self) result(y_min)
         class(figure_t), intent(in) :: self
         real(wp) :: y_min
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         y_min = get_figure_y_min_property(self%state)
-=======
-        y_min = get_y_min_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_y_min
     
     function get_y_max(self) result(y_max)
         class(figure_t), intent(in) :: self
         real(wp) :: y_max
-<<<<<<< HEAD:src/figures/fortplot_figure_core.f90
         y_max = get_figure_y_max_property(self%state)
-=======
-        y_max = get_y_max_figure(self%state)
->>>>>>> fix-647-security-audit:src/fortplot_figure_core.f90
     end function get_y_max
 
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
