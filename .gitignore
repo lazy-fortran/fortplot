@@ -11,6 +11,7 @@ build*
 /*.jpg
 /*.bmp
 /*.txt
+/*.log
 !CMakeLists.txt
 *.mod
 
@@ -82,6 +83,7 @@ bar_chart_demo_temp
 test_*.png
 test_*.pdf
 test_*.txt
+test_*.log
 test_*.ppm
 vicky_*.png
 vicky_*.pdf
