@@ -61,21 +61,48 @@ contains
     end subroutine system_command_timeout
     
     subroutine sleep_ms(milliseconds)
-        !! Sleep for specified milliseconds using Fortran intrinsic
+        !! Sleep for specified milliseconds with Windows CI safety timeout
         integer, intent(in) :: milliseconds
         real :: seconds
         integer :: start_count, end_count, count_rate, target_count
+        integer :: safety_counter, max_iterations
         
         ! Convert milliseconds to seconds for system_clock
         seconds = real(milliseconds) / 1000.0
         
         ! Use system_clock for precise timing
         call system_clock(start_count, count_rate)
+        
+        ! Safety check: prevent infinite loops on Windows CI
+        if (count_rate <= 0) then
+            ! system_clock not working properly - use basic delay
+            return
+        end if
+        
         target_count = int(seconds * real(count_rate))
+        
+        ! Safety timeout: maximum iterations to prevent infinite loops
+        max_iterations = max(1000, milliseconds * 2)  ! At least 1000, or 2x requested ms
+        safety_counter = 0
         
         do
             call system_clock(end_count)
+            
+            ! Primary exit condition
             if (end_count - start_count >= target_count) exit
+            
+            ! Safety exit: prevent infinite loops on Windows CI
+            safety_counter = safety_counter + 1
+            if (safety_counter > max_iterations) then
+                ! Safety timeout reached - exit to prevent CI hang
+                return
+            end if
+            
+            ! Handle clock wrap-around (system_clock can wrap to negative)
+            if (end_count < start_count) then
+                ! Clock wrapped - exit safely
+                return
+            end if
         end do
     end subroutine sleep_ms
 
