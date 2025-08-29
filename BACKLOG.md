@@ -2,52 +2,57 @@
 
 ## CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
 
-**SPRINT GOAL**: Address unmanageable repository scale crisis that blocks all development progress - consolidate 116 source files to <50 files while maintaining functionality.
+**SPRINT GOAL**: Address repository organizational crisis through structural improvements and dead code elimination with ZERO functionality loss - focus on directory hierarchy and code quality over file count metrics.
 
 ## SPRINT_BACKLOG (3 FOCUSED ITEMS - ARCHITECTURAL SCOPE)
 
-### EPIC: SOURCE FILE CONSOLIDATION CRISIS
+### EPIC: STRUCTURAL ORGANIZATION IMPROVEMENT
 
-- [ ] #646: ARCHITECTURAL CRISIS - Consolidate 116 source files to <50 maximum (Repository unnavigable at current scale)
-- [ ] #620: CRITICAL - Split fortplot_figure_core.f90 from 912 lines to <500 line modules (82% architectural violation)  
-- [ ] #609: CI ENFORCEMENT - Establish automated file count limits to prevent re-accumulation (Technical enforcement gates)
+- [ ] #646: DIRECTORY HIERARCHY - Create logical directory structure within src/ for better navigation and understanding
+- [ ] #620: DEAD CODE ELIMINATION - Scan for and eliminate unused/dead code with evidence-based analysis
+- [ ] #609: FUNCTIONALITY PRESERVATION - Ensure all tests and examples work before and after reorganization
 
 ## DOING (Current Work)
 
 ### ARCHITECTURAL CONSOLIDATION CRISIS SPRINT: ACTIVE
 
-**SPRINT FOCUS**: Repository scale crisis blocks all development - 116 source files exceed management capacity by 331%
+**SPRINT FOCUS**: Repository structural improvement with ZERO functionality loss - directory organization and dead code elimination
 
-**CURRENT STATUS**: Planning phase complete, ready for implementation
+**CURRENT STATUS**: Planning phase updated with user requirements, ready for implementation
 
-**ARCHITECTURAL EVIDENCE**:
-- **FILE COUNT CRISIS**: 116 source files (target: <50) - repository unnavigable
-- **SIZE VIOLATIONS**: fortplot_figure_core.f90 at 912 lines (82% over 500-line limit)
-- **DEVELOPMENT PARALYSIS**: Team cannot locate or modify files efficiently
-- **MAINTENANCE CRISIS**: Code changes require searching through 100+ files
+**USER REQUIREMENTS INCORPORATED**:
+- **NO FUNCTIONALITY LOSS**: Absolutely zero functionality must be lost during consolidation
+- **PRESERVE ALL TESTS**: Test coverage cannot decrease - all tests must be maintained
+- **PRESERVE ALL EXAMPLES**: All examples must continue working after consolidation
+- **DIRECTORY HIERARCHY**: Create good directory structure within src/ for navigation
+- **DEAD CODE SCANNING**: Evidence-based scanning and elimination of unused code
+- **STRUCTURAL FOCUS**: Improve organization and understanding, not just file count
 
-**CONSOLIDATION STRATEGY**:
-1. **EPIC #646**: Systematic file consolidation by functional area (116→<50 files)
-2. **EPIC #620**: Core module splitting (912→<500 lines per module)  
-3. **EPIC #609**: Automated enforcement to prevent re-accumulation
+**REORGANIZATION STRATEGY**:
+1. **EPIC #646**: Directory hierarchy creation within src/ for logical organization
+2. **EPIC #620**: Evidence-based dead code identification and elimination
+3. **EPIC #609**: Comprehensive verification that all functionality is preserved
 
-**TECHNICAL REQUIREMENTS**:
-- All consolidation MUST preserve existing functionality
-- Test suite MUST pass after each consolidation step
-- API compatibility MUST be maintained for user code
+**TECHNICAL REQUIREMENTS** (USER MANDATED):
+- ALL consolidation MUST preserve existing functionality (ZERO loss)
+- ALL tests MUST be maintained (no test coverage decrease)
+- ALL examples MUST continue working (verified by make example)
+- API backward compatibility MUST be maintained for user code
+- Directory structure MUST improve navigation and understanding
+- Dead code elimination MUST be evidence-based (not speculative)
 - Build system integration MUST remain functional
 
-### Sprint Notes (ARCHITECTURAL CONSOLIDATION CRISIS)
-- **REPOSITORY SCALE CRISIS**: 116 source files exceed management capacity by 331%
-- **DEVELOPMENT PARALYSIS**: Team cannot efficiently locate or modify code
-- **ARCHITECTURAL DEBT CRITICAL**: fortplot_figure_core.f90 at 912 lines (82% violation)
-- **MAINTENANCE EMERGENCY**: Simple changes require searching 100+ files
-- **CONSOLIDATION REQUIRED**: Must reduce to <50 files for sustainable development
-- **FUNCTIONALITY PRESERVATION**: All consolidation must maintain API compatibility
-- **AUTOMATED ENFORCEMENT**: CI gates needed to prevent re-accumulation
-- **STRATEGIC PRIORITY**: Repository organization over new features
-- **DUPLICATE CLEANUP**: Issues #632, #647, #664 consolidated (technical verification)
-- **TEAM FOCUS**: Architecture foundation required before feature development
+### Sprint Notes (STRUCTURAL ORGANIZATION IMPROVEMENT)
+- **USER MANDATE**: Zero functionality loss - all tests and examples must be preserved
+- **DIRECTORY HIERARCHY**: Create logical organization within src/ for better navigation
+- **DEAD CODE FOCUS**: Evidence-based scanning and elimination of unused code
+- **STRUCTURAL IMPROVEMENT**: Focus on organization and understanding, not just metrics
+- **COMPREHENSIVE VERIFICATION**: All functionality must be verified before and after
+- **TEST COVERAGE PRESERVATION**: No decrease in test coverage - all tests maintained
+- **EXAMPLE PRESERVATION**: All examples must compile and run successfully
+- **BACKWARD COMPATIBILITY**: API must remain fully compatible for user code
+- **EVIDENCE-BASED APPROACH**: All dead code elimination must be based on proof
+- **STRATEGIC FOCUS**: Structural quality over file count reduction
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
