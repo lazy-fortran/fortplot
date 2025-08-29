@@ -1,66 +1,66 @@
 # Development Backlog
 
-## CURRENT SPRINT: ARCHITECTURAL CONSOLIDATION CRISIS
+## CURRENT SPRINT: EMERGENCY USER FUNCTIONALITY RECOVERY
 
-**SPRINT GOAL**: Address repository organizational crisis through structural improvements and dead code elimination with ZERO functionality loss - focus on directory hierarchy and code quality over file count metrics.
+**SPRINT GOAL**: Restore broken user functionality and eliminate verification blockers through targeted defect remediation with fraud-proof technical verification.
 
-## SPRINT_BACKLOG (3 FOCUSED ITEMS - ARCHITECTURAL SCOPE)
+## SPRINT_BACKLOG (3 CRITICAL USER FUNCTIONALITY ISSUES)
 
-### EPIC: STRUCTURAL ORGANIZATION IMPROVEMENT
+### EPIC: USER FUNCTIONALITY RESTORATION
 
-- [x] #646: DIRECTORY HIERARCHY - Create logical directory structure within src/ for better navigation and understanding
-- [ ] #620: DEAD CODE ELIMINATION - Scan for and eliminate unused/dead code with evidence-based analysis
-- [ ] #609: FUNCTIONALITY PRESERVATION - Ensure all tests and examples work before and after reorganization
+- [ ] #675: USER COMPILATION SYSTEM BROKEN - cannot build simple programs against library (MAJOR user blocker)
+- [ ] #676: TEST SUITE PERFORMANCE REGRESSION - hangs/timeout blocks all verification (CRITICAL verification blocker)
+- [ ] #674: WORKSPACE POLLUTION DISASTER - 138 scattered artifacts make repository unnavigable (MAJOR developer experience)
 
 ## DOING (Current Work)
 
-### ARCHITECTURAL CONSOLIDATION CRISIS SPRINT: ACTIVE
+### EMERGENCY USER FUNCTIONALITY RECOVERY SPRINT: ACTIVE
 
-**SPRINT FOCUS**: Repository structural improvement with ZERO functionality loss - directory organization and dead code elimination
+**SPRINT FOCUS**: Restore user compilation system, fix test suite hangs, eliminate workspace pollution
 
-**CURRENT STATUS**: Sprint started on main branch, ready for implementation
+**CURRENT STATUS**: Emergency recovery sprint initiated after architectural sprint delivered negative user value
 
-**USER REQUIREMENTS INCORPORATED**:
-- **NO FUNCTIONALITY LOSS**: Absolutely zero functionality must be lost during consolidation
-- **PRESERVE ALL TESTS**: Test coverage cannot decrease - all tests must be maintained
-- **PRESERVE ALL EXAMPLES**: All examples must continue working after consolidation
-- **DIRECTORY HIERARCHY**: Create good directory structure within src/ for navigation
-- **DEAD CODE SCANNING**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL FOCUS**: Improve organization and understanding, not just file count
+**EMERGENCY RECOVERY REQUIREMENTS**:
+- **USER COMPILATION RESTORATION**: Users must be able to compile basic programs against library
+- **TEST SUITE FUNCTIONALITY**: Test suite must complete in reasonable time without hangs
+- **WORKSPACE CLEANLINESS**: Root directory must contain only essential project files
+- **FRAUD-PROOF VERIFICATION**: All completion claims require technical evidence
+- **NO NEW FUNCTIONALITY**: Focus exclusively on fixing broken existing functionality
+- **USER VALUE MEASUREMENT**: Success measured by working user workflows
 
-**REORGANIZATION STRATEGY**:
-1. **EPIC #646**: Directory hierarchy creation within src/ for logical organization
-2. **EPIC #620**: Evidence-based dead code identification and elimination
-3. **EPIC #609**: Comprehensive verification that all functionality is preserved
+**RECOVERY STRATEGY**:
+1. **EPIC #675**: Fix user compilation system - restore module paths and library linking
+2. **EPIC #676**: Resolve test suite performance regression - eliminate hangs and timeouts
+3. **EPIC #674**: Clean workspace pollution - move all artifacts to proper directories
 
-**TECHNICAL REQUIREMENTS** (USER MANDATED):
-- ALL consolidation MUST preserve existing functionality (ZERO loss)
-- ALL tests MUST be maintained (no test coverage decrease)
-- ALL examples MUST continue working (verified by make example)
-- API backward compatibility MUST be maintained for user code
-- Directory structure MUST improve navigation and understanding
-- Dead code elimination MUST be evidence-based (not speculative)
-- Build system integration MUST remain functional
+**TECHNICAL REQUIREMENTS** (FRAUD-PROOF):
+- ALL fixes MUST be verified by actual user workflow demonstration
+- ALL completion claims MUST include technical evidence (CI logs, test outputs)
+- ALL changes MUST preserve existing working functionality (regression testing)
+- Build system integration MUST be functional for end users
+- Test suite MUST complete in <30 seconds for development workflow
+- Repository workspace MUST contain only essential files in root directory
 
-### Sprint Notes (STRUCTURAL ORGANIZATION IMPROVEMENT)
-- **USER MANDATE**: Zero functionality loss - all tests and examples must be preserved
-- **DIRECTORY HIERARCHY**: Create logical organization within src/ for better navigation
-- **DEAD CODE FOCUS**: Evidence-based scanning and elimination of unused code
-- **STRUCTURAL IMPROVEMENT**: Focus on organization and understanding, not just metrics
-- **COMPREHENSIVE VERIFICATION**: All functionality must be verified before and after
-- **TEST COVERAGE PRESERVATION**: No decrease in test coverage - all tests maintained
-- **EXAMPLE PRESERVATION**: All examples must compile and run successfully
-- **BACKWARD COMPATIBILITY**: API must remain fully compatible for user code
-- **EVIDENCE-BASED APPROACH**: All dead code elimination must be based on proof
-- **STRATEGIC FOCUS**: Structural quality over file count reduction
+### Sprint Notes (EMERGENCY USER FUNCTIONALITY RECOVERY)
+- **STRATEGIC PIVOT**: Abandon architectural work due to team proven incompetence
+- **USER FUNCTIONALITY FOCUS**: Restore broken compilation system, test suite, workspace cleanliness
+- **FRAUD-PROOF VERIFICATION**: All completion claims require technical evidence
+- **USER VALUE PRIORITIZATION**: Success measured by working user workflows, not internal metrics
+- **CONSERVATIVE SCOPE**: Maximum 3 issues based on demonstrated team limitations
+- **NO NEW FEATURES**: Focus exclusively on fixing broken existing functionality
+- **TECHNICAL VERIFICATION**: Require working examples and CI evidence for all completions
+- **TEAM COMPETENCE RESTRICTIONS**: Simple targeted fixes only, no complex architectural changes
+- **REGRESSION PREVENTION**: All changes must preserve existing working functionality
+- **WORKSPACE PROFESSIONALISM**: Eliminate scattered artifacts that make repository unusable
 
 ## PRODUCT_BACKLOG (CONSOLIDATED DEFECT REPOSITORY)
 
-**STRATEGIC ARCHITECTURAL DEFECTS** (After Quality Foundation):
-- [ ] #646: ARCHITECTURAL CRISIS - 116 source files exceed target by 331% (SUPERSEDES #626)
+**DEFERRED ARCHITECTURAL WORK** (After User Functionality Restored):
+- [ ] #646: ARCHITECTURAL CRISIS - 118 source files exceed target by 336% (DEFERRED due to team incompetence)
+- [ ] #620: DEAD CODE ELIMINATION - Evidence-based scanning and elimination (DEFERRED - team cannot handle structural changes)
+- [ ] #609: FUNCTIONALITY PRESERVATION - Comprehensive verification system (DEFERRED - focus on fixing broken functionality first)
 - [ ] #623: PROCESS - False completion fraud pattern requires systematic prevention
-- [ ] #609: CI ENFORCEMENT - File count limits and automated prevention (CRITICAL after fraud detection)
-- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (subsumed by #646)
+- [ ] #606: MODULE CONSOLIDATION - 9 fortplot_doc_* modules → 3 files maximum (DEFERRED due to demonstrated architectural incompetence)
 
 **DEFERRED TECHNICAL DEFECTS** (After Repository Reduction):
 - [ ] #618: SECURITY - system/popen calls in 8 files require secure replacement
@@ -128,6 +128,15 @@
 - [ ] Enhanced Feature Implementation (boxplot improvements)
 
 ## DONE
+
+**ARCHITECTURAL CONSOLIDATION CRISIS SPRINT** (CATASTROPHIC FAILURE - NEGATIVE USER VALUE):
+- [x] ARCHITECTURAL CONSOLIDATION CRISIS SPRINT (STRATEGIC FAILURE - delivered negative user value)
+  - **CLAIMED**: Directory hierarchy creation, dead code elimination, functionality preservation
+  - **REALITY**: File count INCREASED (116→118), test suite broken, user compilation destroyed
+  - **USER IMPACT**: Users cannot compile basic programs, test suite hangs, workspace polluted with 138 artifacts
+  - **TEAM ASSESSMENT**: Incompetent at architectural changes, systematic false completion claims
+  - **STRATEGIC DECISION**: Abandon architectural work, focus on user functionality restoration
+  - **FRAUD EVIDENCE**: Issues #673-#676 document comprehensive failure across all objectives
 
 **PLAY AUDIT REVELATION: ALL RECENT COMPLETIONS FRAUDULENT**
 - [x] #621: ARTIFACT POLLUTION ELIMINATION - RESOLVED: PR #644 merged (CI VERIFIED: ALL CHECKS PASSED, 103+ artifacts eliminated, comprehensive .gitignore patterns added)
