@@ -7,6 +7,7 @@ module fortplot_functionality_verification
         validate_file_size, validate_png_format, validate_pdf_format, &
         validate_ascii_format
     use fortplot_errors, only: SUCCESS, ERROR_INVALID_INPUT
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
     
     private
@@ -121,6 +122,7 @@ contains
         character(len=*), intent(in) :: baseline_dir
         character(len=*), intent(in) :: output_dir
         character(len=*), intent(in) :: evidence_dir
+        logical :: dir_success  ! SECURITY: For safe directory creation
         
         this%baseline_directory = baseline_dir
         this%output_directory = output_dir
@@ -131,10 +133,26 @@ contains
         this%performance_baseline_time = 0.0_wp
         this%baseline_count = 0
         
-        ! Ensure directories exist
-        call execute_command_line('mkdir -p ' // trim(baseline_dir))
-        call execute_command_line('mkdir -p ' // trim(output_dir))
-        call execute_command_line('mkdir -p ' // trim(evidence_dir))
+        ! Ensure directories exist using secure directory creation API
+        ! SECURITY FIX: Replace execute_command_line with safe directory creation
+        
+        call create_directory_runtime(baseline_dir, dir_success)
+        if (.not. dir_success) then
+            ! Directory creation may fail but continue with verification
+            ! Test system will handle missing directories appropriately
+        end if
+        
+        call create_directory_runtime(output_dir, dir_success)
+        if (.not. dir_success) then
+            ! Directory creation may fail but continue with verification
+            ! Test system will handle missing directories appropriately
+        end if
+        
+        call create_directory_runtime(evidence_dir, dir_success)
+        if (.not. dir_success) then
+            ! Directory creation may fail but continue with verification
+            ! Test system will handle missing directories appropriately
+        end if
     end subroutine initialize_verifier
     
     !> Load baseline data for comparison
