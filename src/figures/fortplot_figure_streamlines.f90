@@ -6,11 +6,12 @@ module fortplot_figure_streamlines
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t
+    use fortplot_figure_initialization, only: figure_state_t
     implicit none
     
     private
     public :: add_simple_streamline, clear_streamline_data
-    public :: streamplot_basic_validation
+    public :: streamplot_basic_validation, streamplot_figure
     
 contains
     
@@ -74,5 +75,31 @@ contains
             deallocate(streamlines)
         end if
     end subroutine clear_streamline_data
+
+    subroutine streamplot_figure(plots, state, plot_count, x, y, u, v, &
+                                density, color, linewidth, rtol, atol, max_time)
+        !! Add streamline plot to figure (basic implementation)
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(inout) :: plot_count
+        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in), optional :: density
+        real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: linewidth
+        real(wp), intent(in), optional :: rtol, atol, max_time
+        
+        real(wp), allocatable :: stream_x(:), stream_y(:)
+        real(wp) :: stream_color(3)
+        
+        ! Basic validation
+        if (.not. streamplot_basic_validation(x, y, u, v)) return
+        
+        ! Generate streamline data
+        call add_simple_streamline(x, y, u, v, color, stream_x, stream_y, stream_color)
+        
+        ! For now, this is a placeholder - proper implementation would add streamlines to plots
+        ! and update plot_count properly
+        ! plot_count = plot_count + 1
+    end subroutine streamplot_figure
 
 end module fortplot_figure_streamlines

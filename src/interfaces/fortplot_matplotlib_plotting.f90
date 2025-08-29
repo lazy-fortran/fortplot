@@ -6,6 +6,8 @@ module fortplot_matplotlib_plotting
     use fortplot_figure_core, only: figure_t
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
+    use fortplot_plotting_advanced, only: bar_impl, barh_impl
+    use fortplot_plotting, only: add_scatter_2d, errorbar_impl => errorbar, add_3d_plot_impl => add_3d_plot
     
     implicit none
     private
@@ -85,8 +87,8 @@ contains
         bar_align = 'center'
         if (present(align)) bar_align = align
         
-        ! Bar plot not yet implemented in figure_core - use line plot as placeholder
-        call fig%add_plot(x, height, label=label)
+        ! Use proper bar plot implementation from advanced plotting module
+        call bar_impl(fig, x, height, width, label, color)
     end subroutine bar
 
     subroutine barh(y, width, height, left, label, color, edgecolor, align)
@@ -123,8 +125,8 @@ contains
         bar_align = 'center'
         if (present(align)) bar_align = align
         
-        ! Horizontal bar plot not yet implemented in figure_core - use line plot as placeholder
-        call fig%add_plot(width, y, label=label)
+        ! Use proper horizontal bar plot implementation from advanced plotting module
+        call barh_impl(fig, y, width, height, label, color)
     end subroutine barh
 
     subroutine hist(data, bins, density, label, color)
@@ -243,8 +245,10 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         call ensure_fig_init()
-        ! Scatter plot not yet implemented in figure_core - use line plot as placeholder
-        call fig%add_plot(x, y, label=label, linestyle='none')
+        ! Use proper scatter plot implementation from plotting module
+        call add_scatter_2d(fig, x, y, s=s, c=c, label=label, marker=marker, &
+                            markersize=markersize, color=color, colormap=colormap, &
+                            vmin=vmin, vmax=vmax, show_colorbar=show_colorbar)
     end subroutine add_scatter
 
     subroutine add_plot(x, y, label, linestyle)
@@ -326,8 +330,9 @@ contains
         capsize_local = 3.0d0
         if (present(capsize)) capsize_local = capsize
         
-        ! Errorbar plot not yet fully implemented in figure_core - use line plot as placeholder  
-        call fig%add_plot(x, y, label=label_local, linestyle=linestyle_local)
+        ! Use proper errorbar plot implementation from plotting module
+        call errorbar_impl(fig, x, y, xerr=xerr, yerr=yerr, label=label_local, &
+                           marker=marker_local, color=color)
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, markersize)
@@ -374,8 +379,9 @@ contains
         markersize_local = 6.0d0
         if (present(markersize)) markersize_local = markersize
         
-        ! 3D plot not yet implemented in figure_core - use 2D projection as placeholder
-        call fig%add_plot(x, y, label=label_local, linestyle=linestyle_local)
+        ! Use proper 3D plot implementation from plotting module
+        call add_3d_plot_impl(fig, x, y, z, label=label_local, linestyle=linestyle_local, &
+                              linewidth=linewidth_local, markersize=markersize_local)
     end subroutine add_3d_plot
 
 end module fortplot_matplotlib_plotting

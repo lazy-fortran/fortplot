@@ -431,32 +431,28 @@ contains
     end subroutine create_single_directory
     
     subroutine use_system_mkdir_ci(path, success)
-        !! Use system mkdir in CI environments only
+        !! SECURITY FIX: Pure Fortran directory creation - no system calls
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
-        character(len=1024) :: command
-        integer :: exitstat, cmdstat
-        character(len=256) :: cmdmsg
+        logical :: debug_enabled
         
         success = .false.
+        debug_enabled = is_debug_enabled()
         
-        ! Build safe mkdir command for CI environments
-        if (is_windows()) then
-            write(command, '(A,A,A)') 'mkdir "', trim(path), '" 2>NUL'
-        else
-            write(command, '(A,A,A)') 'mkdir -p "', trim(path), '" 2>/dev/null'
+        if (debug_enabled) then
+            write(*,'(A,A)') 'SECURITY: Using safe Fortran-only directory creation for: ', trim(path)
         end if
         
-        ! TEMPORARY FIX for Issue #637: Enable directory creation in CI/development
-        ! This allows tests to create necessary directories until build system is fixed
-        ! TODO: Remove when build system pre-creates directories properly
-        if (len_trim(command) > 0 .and. len_trim(command) < 500) then
-            ! Execute safe mkdir command in CI environments only
-            call execute_command_line(trim(command), wait=.true., exitstat=exitstat, &
-                                     cmdstat=cmdstat, cmdmsg=cmdmsg)
-            success = (cmdstat == 0 .and. exitstat == 0)
-        else
-            success = .false.
+        ! SECURITY FIX: Replace execute_command_line with pure Fortran implementation
+        ! Use the existing recursive directory creation that doesn't use system calls
+        call create_directory_recursive(path, success)
+        
+        if (debug_enabled) then
+            if (success) then
+                write(*,'(A)') 'SECURITY: Safe directory creation succeeded'
+            else
+                write(*,'(A)') 'SECURITY: Safe directory creation failed - parent may need to be created'
+            end if
         end if
     end subroutine use_system_mkdir_ci
     
