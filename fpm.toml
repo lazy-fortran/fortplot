@@ -12,7 +12,7 @@ auto-examples = true
 module-naming = false
 
 [install]
-library = false
+library = true
 test = false
 
 [fortran]
