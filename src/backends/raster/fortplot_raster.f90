@@ -1,6 +1,5 @@
 module fortplot_raster
-    !! Main raster plotting context and drawing operations
-    !! Reduced from 931 lines to ~350 lines by extracting specialized modules
+    !! Main raster plotting context - reduced from 931 lines by extracting specialized modules
     use iso_c_binding
     use fortplot_context, only: plot_context, setup_canvas
     use fortplot_constants, only: EPSILON_COMPARE
@@ -33,13 +32,10 @@ module fortplot_raster
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
 
-    ! raster_image_t now imported from fortplot_raster_core
-
     ! Raster plotting context - backend-agnostic bitmap operations
     type, extends(plot_context) :: raster_context
         type(raster_image_t) :: raster
-        ! Plot area calculations (using common margin functionality)
-        type(plot_margins_t) :: margins
+        type(plot_margins_t) :: margins  ! Common margin functionality
         type(plot_area_t) :: plot_area
     contains
         procedure :: line => raster_draw_line
@@ -54,8 +50,7 @@ module fortplot_raster
         procedure :: fill_quad => raster_fill_quad_context
         procedure :: draw_arrow => raster_draw_arrow
         procedure :: get_ascii_output => raster_get_ascii_output
-        
-        !! New polymorphic methods to eliminate SELECT TYPE
+        ! Polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => raster_get_width_scale
         procedure :: get_height_scale => raster_get_height_scale
         procedure :: fill_heatmap => raster_fill_heatmap_context
@@ -74,10 +69,6 @@ module fortplot_raster
     end type raster_context
 
 contains
-
-    ! Core raster management functions moved to fortplot_raster_core
-
-
     function create_raster_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
         type(raster_context) :: ctx
@@ -85,9 +76,7 @@ contains
         call setup_canvas(ctx, width, height)
 
         ctx%raster = create_raster_image(width, height)
-
-        ! Set up matplotlib-style margins using common module
-        ctx%margins = plot_margins_t()  ! Use defaults
+        ctx%margins = plot_margins_t()  ! matplotlib-style margins
         call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
     end function create_raster_canvas
 
@@ -95,8 +84,6 @@ contains
         class(raster_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: px1, py1, px2, py2
-
-
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates
         px1 = (x1 - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
@@ -139,8 +126,6 @@ contains
         end if
     end subroutine raster_set_line_width
 
-    ! raster_set_line_style moved to fortplot_raster_core
-
     subroutine raster_set_line_style_context(this, style)
         !! Set line style for raster context
         class(raster_context), intent(inout) :: this
@@ -157,7 +142,6 @@ contains
         integer(1) :: r, g, b
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
-
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
 
@@ -277,8 +261,6 @@ contains
                               this%x_min, this%x_max, this%y_min, this%y_max, x_quad, y_quad)
     end subroutine raster_fill_quad_context
 
-    ! fill_triangle and fill_horizontal_line moved to fortplot_raster_rendering
-
     subroutine raster_draw_arrow(this, x, y, dx, dy, size, style)
         !! Draw arrow head for streamplot arrows in raster backend
         class(raster_context), intent(inout) :: this
@@ -376,7 +358,6 @@ contains
                                 x_grid, y_grid, z_grid, z_min, z_max)
     end subroutine raster_fill_heatmap_context
 
-    ! Legend methods - delegate to specialized module
     subroutine raster_render_legend_specialized_context(this, legend, legend_x, legend_y)
         use fortplot_legend, only: legend_t
         class(raster_context), intent(inout) :: this
@@ -410,7 +391,6 @@ contains
         call raster_calculate_legend_position(legend, x, y)
     end subroutine raster_calculate_legend_position_context
 
-    ! RGB and PNG data methods - delegate to specialized module
     subroutine raster_extract_rgb_data_context(this, width, height, rgb_data)
         use, intrinsic :: iso_fortran_env, only: real64
         class(raster_context), intent(in) :: this
@@ -467,8 +447,6 @@ contains
                                         x_min, x_max, y_min, y_max, &
                                         title, xlabel, ylabel)
     end subroutine raster_draw_axes_and_labels_context
-    
-    ! Tick and label drawing functions moved to fortplot_raster_axes
 
     subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)
         !! Save current coordinate system
@@ -500,7 +478,5 @@ contains
         ! Raster axes are rendered as part of draw_axes_and_labels_backend
         ! Implementation needed - see issue #495
     end subroutine raster_render_axes
-
-    ! render_title_centered moved to fortplot_raster_axes
 
 end module fortplot_raster
