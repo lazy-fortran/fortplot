@@ -1,0 +1,15 @@
+name = "fortplot_user_template"
+version = "0.1.0"
+license = "MIT"
+author = "Your Name"
+maintainer = "your.email@domain.com"
+
+[build]
+auto-executables = true
+
+[fortran]
+implicit-typing = false
+
+# Fortplot dependency - users should copy this to their projects
+[[dependencies]]
+fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
