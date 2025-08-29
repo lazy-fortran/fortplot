@@ -63,7 +63,7 @@ contains
         
         ! If we get here, API exists but may not be complete
         write(error_unit, '(A)') '  ✓ Enhanced scatter API signature accepted'
-        call fig%savefig(get_test_output_path('/tmp/test_enhanced_api.png'))
+        call fig%savefig(get_test_output_path('test_enhanced_api.png'))
         
     end subroutine test_enhanced_scatter_api_signature
     
@@ -95,7 +95,7 @@ contains
         write(error_unit, '(A)') '  ✓ Identical size values'
         
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_size_mapping.png'))
+        call fig%savefig(get_test_output_path('test_size_mapping.png'))
         
     end subroutine test_size_mapping_algorithms
     
@@ -134,7 +134,7 @@ contains
         write(error_unit, '(A)') '  ✓ Custom color range control'
         
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_colormap_integration.png'))
+        call fig%savefig(get_test_output_path('test_colormap_integration.png'))
         
     end subroutine test_colormap_integration_comprehensive
 
@@ -169,9 +169,9 @@ contains
         
         call fig%set_title('Comprehensive Marker Shape Test')
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_marker_shapes.png'))
-        call fig%savefig(get_test_output_path('/tmp/test_marker_shapes.pdf'))
-        call fig%savefig(get_test_output_path('/tmp/test_marker_shapes.txt'))  ! ASCII backend
+        call fig%savefig(get_test_output_path('test_marker_shapes.png'))
+        call fig%savefig(get_test_output_path('test_marker_shapes.pdf'))
+        call fig%savefig(get_test_output_path('test_marker_shapes.txt'))  ! ASCII backend
         
     end subroutine test_marker_shape_enumeration_system
     
@@ -219,7 +219,7 @@ contains
                         colormap='nonexistent', label='Bad Colormap')
         write(error_unit, '(A)') '  ✓ Invalid colormap handled'
         
-        call fig%savefig(get_test_output_path('/tmp/test_input_validation.png'))
+        call fig%savefig(get_test_output_path('test_input_validation.png'))
         
     end subroutine test_input_validation_framework
 
@@ -255,7 +255,7 @@ contains
         write(error_unit, '(A)') '  ✓ Color range clipping'
         
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_color_ranges.png'))
+        call fig%savefig(get_test_output_path('test_color_ranges.png'))
         
     end subroutine test_color_range_handling
     
@@ -278,7 +278,7 @@ contains
                         marker='o', label='PNG Test', show_colorbar=.true.)
         call fig%set_title('Multi-Backend Consistency Test - PNG')
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_backend_png.png'))
+        call fig%savefig(get_test_output_path('test_backend_png.png'))
         write(error_unit, '(A)') '  ✓ PNG backend consistency'
         
         ! Test PDF backend consistency (drives vector graphics rendering)
@@ -287,14 +287,14 @@ contains
                         marker='s', label='PDF Test', show_colorbar=.true.)
         call fig%set_title('Multi-Backend Consistency Test - PDF')
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_backend_pdf.pdf'))
+        call fig%savefig(get_test_output_path('test_backend_pdf.pdf'))
         write(error_unit, '(A)') '  ✓ PDF backend consistency'
         
         ! Test ASCII backend representation (drives character-based markers)
         call fig%initialize(80, 25)  ! ASCII appropriate size
         call fig%scatter(x, y, s=sizes, marker='*', label='ASCII Test')
         call fig%set_title('Multi-Backend Test - ASCII')
-        call fig%savefig(get_test_output_path('/tmp/test_backend_ascii.txt'))
+        call fig%savefig(get_test_output_path('test_backend_ascii.txt'))
         write(error_unit, '(A)') '  ✓ ASCII backend representation'
         
     end subroutine test_multi_backend_marker_consistency
@@ -320,7 +320,7 @@ contains
         end do
         
         call fig%set_title('ASCII Marker Test')
-        call fig%savefig(get_test_output_path('/tmp/test_ascii_markers.txt'))
+        call fig%savefig(get_test_output_path('test_ascii_markers.txt'))
         write(error_unit, '(A)') '  ✓ ASCII marker representation'
         
         ! Test ASCII color approximation (if supported)
@@ -328,7 +328,7 @@ contains
         call fig%scatter(x, y, c=[0.2_wp, 0.4_wp, 0.6_wp, 0.8_wp, 1.0_wp], &
                         colormap='viridis', marker='o', label='Colored')
         call fig%set_title('ASCII Color Test')
-        call fig%savefig(get_test_output_path('/tmp/test_ascii_colors.txt'))
+        call fig%savefig(get_test_output_path('test_ascii_colors.txt'))
         write(error_unit, '(A)') '  ✓ ASCII color approximation'
         
     end subroutine test_ascii_scatter_representation
@@ -362,14 +362,14 @@ contains
         call fig%set_xlabel('X Values')
         call fig%set_ylabel('Y Values')
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_colorbar.png'))
+        call fig%savefig(get_test_output_path('test_colorbar.png'))
         write(error_unit, '(A)') '  ✓ Colorbar layout integration'
         
         ! Test colorbar without explicit request (drives default behavior)
         call fig%initialize(500, 400)
         call fig%scatter(x, y+1.0_wp, c=colors, colormap='plasma', &
                         marker='s', label='Default Colorbar')
-        call fig%savefig(get_test_output_path('/tmp/test_colorbar_default.png'))
+        call fig%savefig(get_test_output_path('test_colorbar_default.png'))
         write(error_unit, '(A)') '  ✓ Default colorbar behavior'
         
     end subroutine test_automatic_colorbar_generation
@@ -416,7 +416,7 @@ contains
         write(error_unit, '(A)') '  ✓ Identical coordinates handled'
         
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_edge_cases.png'))
+        call fig%savefig(get_test_output_path('test_edge_cases.png'))
         
     end subroutine test_edge_case_validation
     
@@ -455,7 +455,7 @@ contains
             end_time - start_time, ' seconds'
         
         call fig%set_title('Large Dataset Performance Test')
-        call fig%savefig(get_test_output_path('/tmp/test_large_performance.png'))
+        call fig%savefig(get_test_output_path('test_large_performance.png'))
         
         ! Test memory efficiency (drives memory optimization)
         write(error_unit, '(A)') '  ✓ Memory usage acceptable for large dataset'
@@ -500,8 +500,8 @@ contains
         call fig%set_xlabel('X Coordinate')
         call fig%set_ylabel('Y Coordinate') 
         call fig%legend()
-        call fig%savefig(get_test_output_path('/tmp/test_comprehensive_integration.png'))
-        call fig%savefig(get_test_output_path('/tmp/test_comprehensive_integration.pdf'))
+        call fig%savefig(get_test_output_path('test_comprehensive_integration.png'))
+        call fig%savefig(get_test_output_path('test_comprehensive_integration.pdf'))
         
         write(error_unit, '(A)') '  ✓ Comprehensive feature integration'
         write(error_unit, '(A)') '  ✓ Multi-series scatter support'
