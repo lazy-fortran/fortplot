@@ -36,5 +36,5 @@ exclude = "fortplot_pdf_text.f90"
 
 [[test]]
 name = "edge_cases_432"
-source-dir = "."
+source-dir = "test/edge_cases"
 main = "test_simple_edge_cases.f90"
