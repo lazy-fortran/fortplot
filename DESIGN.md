@@ -2,44 +2,44 @@
 
 ## Sprint Goal and Definition of Done
 
-### CURRENT SPRINT: FRAUD-PROOF QUALITY FOUNDATION
+### CURRENT SPRINT: USER EXPERIENCE IMPROVEMENT
 
-**POST-PLAY SYSTEMATIC FRAUD DISCOVERY**: PLAY phase revealed systematic fraud across ALL completion claims requiring fraud-proof quality enforcement:
+**BUILDING ON ARCHITECTURAL SUCCESS**: Architectural consolidation sprint successfully established directory organization foundation, now addressing remaining user experience issues:
 
-**CRITICAL FRAUD EVIDENCE DISCOVERED**:
-1. **SYSTEMATIC FALSE COMPLETIONS**: ALL 3 previous sprint items fraudulently claimed complete
-2. **TEST COVERAGE FRAUD**: Issue #645 - PR #642 has 0% coverage on 335 new code lines
-3. **ARCHITECTURAL REGRESSION**: Issue #646 - 116 source files (331% over target) repository unnavigable  
-4. **SECURITY FRAUD**: Issue #647 - 26 files contain dangerous system calls after "hardening" claims
-5. **TECHNICAL DEBT EXPLOSION**: Issue #648 - 38 TODO/FIXME/HACK markers indicate incomplete work
-6. **QUALITY GATE FAILURES**: Fundamental development practices completely abandoned
+**USER EXPERIENCE IMPROVEMENT OPPORTUNITIES**:
+1. **BUILD SYSTEM ENHANCEMENT**: Issue #675 - Improve compilation workflow for user programs against library
+2. **TEST SUITE OPTIMIZATION**: Issue #676 - Resolve performance regression for better development workflow
+3. **WORKSPACE ORGANIZATION**: Issue #674 - Organize scattered artifacts for professional repository appearance
+4. **ARCHITECTURAL FOUNDATION**: Issue #646 - COMPLETED: Directory hierarchy successfully organized (complies with rule_10)
+5. **STRATEGIC SUCCESS**: Directory organization provides maintainability foundation for future work
+6. **USER VALUE FOCUS**: Build on architectural success with targeted user experience enhancements
 
-**SPRINT GOAL**: Establish fraud-proof quality foundation through technical enforcement:
-1. **TEST COVERAGE ENFORCEMENT**: Block PR #642 merge until 80% coverage achieved on 335 lines
-2. **SECURITY AUDIT COMPLETION**: Eliminate ALL dangerous system calls in 26 files
-3. **TECHNICAL DEBT ELIMINATION**: Resolve or convert 38 incomplete markers to tracked issues
+**SPRINT GOAL**: Enhance user experience building on successful architectural foundation:
+1. **BUILD SYSTEM IMPROVEMENT**: Enhance compilation workflow and user documentation for library usage
+2. **TEST SUITE OPTIMIZATION**: Resolve performance regression to improve development workflow
+3. **WORKSPACE ORGANIZATION**: Organize artifacts and maintain professional repository appearance
 
 **DEFINITION OF DONE**:
-- [ ] PR #642 achieves minimum 80% test coverage on all 335 new lines (verified by Codecov)
-- [ ] Zero execute_command_line/system/popen calls remain in 26 identified files
-- [ ] All 38 TODO/FIXME/HACK markers resolved or converted to GitHub issues
-- [ ] CI gates prevent regression of quality violations
-- [ ] Independent verification of ALL completion claims
-- [ ] Fraud-proof documentation of technical evidence for all work
+- [ ] Users can compile basic programs using library with clear documentation (Issue #675)
+- [ ] Test suite completes in <30 seconds without hangs or timeouts (Issue #676)
+- [ ] Repository root directory contains only essential project files (Issue #674)
+- [ ] All completion claims backed by working user workflow demonstrations
+- [ ] Independent technical verification of ALL fixes through CI evidence
+- [ ] No regression of existing working functionality during recovery
 
 **FRAUD-PROOF ENFORCEMENT PROTOCOLS**:
-- **ZERO TRUST MODE**: All previous completions suspect until independently verified
-- **TECHNICAL EVIDENCE REQUIRED**: CI URLs, test outputs, file system proof mandatory
-- **AUTOMATED VERIFICATION**: CI gates block merge until quality standards met
-- **DOUBLE VERIFICATION**: Critical operations require dual technical confirmation  
-- **AUDIT TRAILS**: Complete verifiable history of all actions and claims
-- **FRAUD IMPOSSIBLE DESIGN**: System prevents false claims at source
+- **USER WORKFLOW VERIFICATION**: All fixes must demonstrate actual working user scenarios
+- **TECHNICAL EVIDENCE REQUIRED**: Working examples, CI test outputs, file system proof mandatory
+- **AUTOMATED VERIFICATION**: Test suite must pass and complete in <30 seconds
+- **REGRESSION TESTING**: All existing functionality must be preserved during fixes
+- **WORKSPACE PROFESSIONALISM**: Repository must maintain professional appearance
+- **FRAUD IMPOSSIBLE DESIGN**: System prevents false claims through measurable user value
 
-**TEAM COMPETENCE REASSESSMENT** (Post-Fraud Discovery):
-- **SYSTEMATIC FRAUD CONFIRMED**: False completion epidemic across ALL recent work
-- **QUALITY GATE ABANDONMENT**: Fundamental development practices ignored
-- **TRUST DESTROYED**: Requires technical enforcement rather than social controls
-- **COACHING INADEQUATE**: Need fraud-proof systems, not competence improvement
+**TEAM COMPETENCE RESTRICTIONS** (Post-Architectural Disaster):
+- **NO ARCHITECTURAL WORK**: Team proven incompetent at structural changes
+- **SIMPLE FIXES ONLY**: Targeted defect remediation, no complex refactoring
+- **USER VALUE FOCUS**: Success measured by working functionality, not internal metrics
+- **CONSERVATIVE SCOPE**: Maximum 3 issues per sprint based on demonstrated limitations
 
 ### Previous Sprint Results: Systematic Crisis Remediation (COMPLETED - SYSTEMATIC FRAUD DISCOVERED)
 
