@@ -86,7 +86,7 @@ contains
         print *, ""
         print *, "Test 1: Diagonal Lines (45-degree)"
         
-        filename = get_test_output_path("output/test/aa_diagonal.png")
+        filename = get_test_output_path("aa_diagonal.png")
         
         ! Generate diagonal line data
         do i = 1, 100
@@ -139,7 +139,7 @@ contains
         print *, ""
         print *, "Test 2: Curved Lines (Sinusoidal)"
         
-        filename = get_test_output_path("output/test/aa_curved.png")
+        filename = get_test_output_path("aa_curved.png")
         
         ! Generate curved line data
         do i = 1, 200
@@ -192,7 +192,7 @@ contains
         print *, ""
         print *, "Test 3: Fine Patterns (High-frequency)"
         
-        filename = get_test_output_path("output/test/aa_patterns.png")
+        filename = get_test_output_path("aa_patterns.png")
         
         ! Generate fine pattern data
         do i = 1, 300
@@ -247,7 +247,7 @@ contains
         print *, ""
         print *, "Test 4: Text Rendering"
         
-        filename = get_test_output_path("output/test/aa_text.png")
+        filename = get_test_output_path("aa_text.png")
         
         ! Generate simple data
         do i = 1, 10
@@ -301,7 +301,7 @@ contains
         print *, ""
         print *, "Test 5: Grid Lines"
         
-        filename = get_test_output_path("output/test/aa_grid.png")
+        filename = get_test_output_path("aa_grid.png")
         
         ! Generate data
         do i = 1, 50
