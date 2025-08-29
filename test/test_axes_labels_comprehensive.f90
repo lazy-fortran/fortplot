@@ -22,8 +22,8 @@ program test_axes_labels_comprehensive
     call title('Linear Scale Test - All Elements')
     call xlabel('Input Values (x)')
     call ylabel('Linear Response (2x+1)')
-    call savefig('test_linear_axes_comprehensive.png')
-    call savefig('test_linear_axes_comprehensive.txt')
+    call savefig("test/output/test_linear_axes_comprehensive.png")
+    call savefig("test/output/test_linear_axes_comprehensive.txt")
     
     ! Test 2: Log scale with proper formatting
     print *, "Testing log scale with scientific notation..."
@@ -33,8 +33,8 @@ program test_axes_labels_comprehensive
     call title('Log Scale Test - Scientific Labels')
     call xlabel('Input Index')
     call ylabel('Exponential Growth')
-    call savefig('test_log_axes_comprehensive.png')
-    call savefig('test_log_axes_comprehensive.txt')
+    call savefig("test/output/test_log_axes_comprehensive.png")
+    call savefig("test/output/test_log_axes_comprehensive.txt")
     
     print *, ""
     print *, "VERIFICATION CHECKLIST:"

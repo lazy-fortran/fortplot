@@ -30,7 +30,7 @@ program test_ascii
     else
         print *, "SKIPPED: show() on Windows (prevents CI hang)"
         ! Test that we can save to file instead
-        call ascii_fig%savefig("test_ascii_output.txt")
+        call ascii_fig%savefig("test/output/test_ascii_output.txt")
     end if
 
     print *, ""

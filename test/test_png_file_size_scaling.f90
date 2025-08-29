@@ -66,7 +66,7 @@ contains
         type(figure_t) :: plt
         
         call plt%initialize(800, 600)
-        call plt%savefig('test_empty.png')
+        call plt%savefig("test/output/test_empty.png")
         
         file_size = get_file_size('test_empty.png')
     end subroutine test_empty_plot
@@ -83,7 +83,7 @@ contains
         y = x
         
         call plt%add_plot(x, y)
-        call plt%savefig('test_simple.png')
+        call plt%savefig("test/output/test_simple.png")
         
         file_size = get_file_size('test_simple.png')
         
@@ -117,7 +117,7 @@ contains
         call plt%set_ylabel('Y Axis with Long Label')
         call plt%set_title('Complex Plot with Multiple Lines and Labels')
         
-        call plt%savefig('test_complex.png')
+        call plt%savefig("test/output/test_complex.png")
         
         file_size = get_file_size('test_complex.png')
         

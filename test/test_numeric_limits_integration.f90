@@ -36,7 +36,7 @@ program test_numeric_limits_integration
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")  ! This should trigger clamping
-    call fig%savefig('test_limits_fixed_log.png')
+    call fig%savefig("test/output/test_limits_fixed_log.png")
     
     !---------------------------------------------------------------------
     ! Test 2: ASCII output for verification
@@ -50,7 +50,7 @@ program test_numeric_limits_integration
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")  ! This should trigger clamping
-    call fig%savefig('test_limits_fixed_ascii.txt')
+    call fig%savefig("test/output/test_limits_fixed_ascii.txt")
     
     !---------------------------------------------------------------------
     ! Test 3: More reasonable extreme values
@@ -67,7 +67,7 @@ program test_numeric_limits_integration
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_limits_no_clamp.png')
+    call fig%savefig("test/output/test_limits_no_clamp.png")
     
     !---------------------------------------------------------------------
     ! Test 4: Y-axis extreme range
@@ -84,7 +84,7 @@ program test_numeric_limits_integration
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis (log scale)")
     call fig%set_yscale("log")  ! This should trigger Y clamping
-    call fig%savefig('test_limits_y_extreme.png')
+    call fig%savefig("test/output/test_limits_y_extreme.png")
     
     !---------------------------------------------------------------------
     ! Summary

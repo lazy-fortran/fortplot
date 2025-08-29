@@ -64,7 +64,7 @@ contains
         call legend()
         
         print *, "  Saving to PNG file..."
-        call savefig('test_legend_basic.png')
+        call savefig("test/output/test_legend_basic.png")
         
         ! Windows-compatible: Allow time for file system operations
         call windows_safe_delay(100)
@@ -147,7 +147,7 @@ contains
         call add_plot(x, y2, label="Square root", linestyle="--s")
         call add_plot(x, y3, label="Logarithm", linestyle=":^")
         call legend()
-        call savefig('test_legend_markers.png')
+        call savefig("test/output/test_legend_markers.png")
         call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend_markers.png')
@@ -188,7 +188,7 @@ contains
         call add_plot(x, y1, label="cos(x)")
         call add_plot(x, y2, label="0.5*sin(x)")
         call legend(position="upper right")
-        call savefig('test_legend.pdf')
+        call savefig("test/output/test_legend.pdf")
         call windows_safe_delay(150)  ! Extra delay for PDF operations
         
         val = validate_file_exists('test_legend.pdf')
@@ -230,7 +230,7 @@ contains
         call add_plot(x, y1, label="Linear")
         call add_plot(x, y2, label="Sqrt")
         call legend()
-        call savefig('test_legend.txt')
+        call savefig("test/output/test_legend.txt")
         call windows_safe_delay(100)  ! Windows file system delay
         
         val = validate_file_exists('test_legend.txt')
@@ -239,7 +239,7 @@ contains
             
             ! Check if legend text appears in file
             found_legend = .false.
-            open(newunit=unit, file='test_legend.txt', status='old', action='read')
+            open(newunit=unit, file='test/output/test_legend.txt', status='old', action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit

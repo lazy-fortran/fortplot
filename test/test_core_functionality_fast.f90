@@ -67,7 +67,7 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")
         call legend()
-        call savefig('test_basic_comprehensive.png')
+        call savefig("test/output/test_basic_comprehensive.png")
         
         ! Verify comprehensive functionality
         val = validate_file_exists('test_basic_comprehensive.png')
@@ -122,7 +122,7 @@ contains
         call xlabel("X (linear)")
         call ylabel("Y (log scale)")
         call legend()
-        call savefig('test_axis_comprehensive.png')
+        call savefig("test/output/test_axis_comprehensive.png")
         
         ! Verify comprehensive axis functionality
         val = validate_file_exists('test_axis_comprehensive.png')
@@ -171,7 +171,7 @@ contains
         call xlabel("X")
         call ylabel("Y = X²")
         call legend()
-        call savefig('test_backend_comprehensive.png')
+        call savefig("test/output/test_backend_comprehensive.png")
         
         val = validate_file_exists('test_backend_comprehensive.png')
         png_ok = val%passed
@@ -184,14 +184,14 @@ contains
         call figure(figsize=[60.0_wp, 20.0_wp])
         call plot(x, y, label="ASCII test", linestyle="*-")
         call title("ASCII Backend Test")
-        call savefig('test_backend_comprehensive.txt')
+        call savefig("test/output/test_backend_comprehensive.txt")
         
         val = validate_file_exists('test_backend_comprehensive.txt')
         ascii_ok = val%passed
         if (ascii_ok) then
             ! Verify ASCII contains expected content
             found_content = .false.
-            open(newunit=unit, file='test_backend_comprehensive.txt', status='old', action='read')
+            open(newunit=unit, file='test/output/test_backend_comprehensive.txt', status='old', action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit

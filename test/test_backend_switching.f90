@@ -28,7 +28,7 @@ program test_backend_switching
     print *, "Test 1: PNG backend -> PDF file"
     call fig%initialize(80, 24, backend='png')  ! Explicitly use PNG backend
     call fig%add_plot(x, y)
-    call fig%savefig('test_png_to_pdf.pdf')  ! Should auto-switch to PDF
+    call fig%savefig("test/output/test_png_to_pdf.pdf")  ! Should auto-switch to PDF
     
     validation = validate_pdf_format('test_png_to_pdf.pdf')
     if (validation%passed) then
@@ -43,7 +43,7 @@ program test_backend_switching
     print *, "Test 2: PDF backend -> PNG file"
     call fig%initialize(80, 24, backend='pdf')  ! Explicitly use PDF backend
     call fig%add_plot(x, y*2.0_wp)
-    call fig%savefig('test_pdf_to_png.png')  ! Should auto-switch to PNG
+    call fig%savefig("test/output/test_pdf_to_png.png")  ! Should auto-switch to PNG
     
     validation = validate_png_format('test_pdf_to_png.png')
     if (validation%passed) then
@@ -58,7 +58,7 @@ program test_backend_switching
     print *, "Test 3: ASCII backend -> PDF file"
     call fig%initialize(80, 24, backend='ascii')  ! Use ASCII backend
     call fig%add_plot(x, y*0.5_wp)
-    call fig%savefig('test_ascii_to_pdf.pdf')  ! Should auto-switch to PDF
+    call fig%savefig("test/output/test_ascii_to_pdf.pdf")  ! Should auto-switch to PDF
     
     validation = validate_pdf_format('test_ascii_to_pdf.pdf')
     if (validation%passed) then
@@ -75,7 +75,7 @@ program test_backend_switching
     call fig%add_plot(x, cos(x))
     
     ! Save as PDF
-    call fig%savefig('test_multi.pdf')
+    call fig%savefig("test/output/test_multi.pdf")
     validation = validate_pdf_format('test_multi.pdf')
     if (.not. validation%passed) then
         print *, "  ❌ Failed PDF:", trim(validation%message)
@@ -83,7 +83,7 @@ program test_backend_switching
     end if
     
     ! Save same figure as PNG
-    call fig%savefig('test_multi.png')
+    call fig%savefig("test/output/test_multi.png")
     validation = validate_png_format('test_multi.png')
     if (.not. validation%passed) then
         print *, "  ❌ Failed PNG:", trim(validation%message)

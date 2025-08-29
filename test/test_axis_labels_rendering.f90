@@ -68,22 +68,22 @@ contains
         call title('Linear Scale Test')
         call xlabel('X Values')
         call ylabel('Y = X²')
-        call savefig('test_linear_labels.png')
-        call savefig('test_linear_labels.txt')
+        call savefig("test/output/test_linear_labels.png")
+        call savefig("test/output/test_linear_labels.txt")
         
         ! Basic check that files were created
         passed = .true.
         msg = ''
         
         ! Verify PNG was created (actual pixel verification would require image reading)
-        inquire(file='test_linear_labels.png', exist=passed)
+        inquire(file="test/output/test_linear_labels.png", exist=passed)
         if (.not. passed) then
             msg = 'PNG file not created'
             return
         end if
         
         ! Verify ASCII was created
-        inquire(file='test_linear_labels.txt', exist=passed)
+        inquire(file="test/output/test_linear_labels.txt", exist=passed)
         if (.not. passed) then
             msg = 'ASCII file not created'
             return
@@ -109,14 +109,14 @@ contains
         call title('Log Scale Test')
         call xlabel('Linear X')
         call ylabel('Exponential Y (log scale)')
-        call savefig('test_log_labels.png')
-        call savefig('test_log_labels.txt')
+        call savefig("test/output/test_log_labels.png")
+        call savefig("test/output/test_log_labels.txt")
         
         passed = .true.
         msg = ''
         
         ! Verify files were created
-        inquire(file='test_log_labels.png', exist=passed)
+        inquire(file="test/output/test_log_labels.png", exist=passed)
         if (.not. passed) then
             msg = 'Log scale PNG not created'
             return
@@ -143,14 +143,14 @@ contains
         call title('Symlog Scale Test')
         call xlabel('X Values')
         call ylabel('Y = X³ - 100X')
-        call savefig('test_symlog_labels.png')
-        call savefig('test_symlog_labels.txt')
+        call savefig("test/output/test_symlog_labels.png")
+        call savefig("test/output/test_symlog_labels.txt")
         
         passed = .true.
         msg = ''
         
         ! Verify files were created
-        inquire(file='test_symlog_labels.png', exist=passed)
+        inquire(file="test/output/test_symlog_labels.png", exist=passed)
         if (.not. passed) then
             msg = 'Symlog scale PNG not created'
             return

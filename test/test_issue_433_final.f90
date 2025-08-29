@@ -26,7 +26,7 @@ program test_issue_433_final
     call plot(x, y, label="limits")
     call title("Numeric Limits Test")
     call set_xscale("log")  ! Log scale should handle huge range
-    call savefig("numeric_limits_fixed.png")
+    call savefig("test/output/numeric_limits_fixed.png")
     
     print *, "✓ Plot generated: numeric_limits_fixed.png"
     print *, "✓ Should show proper plot with clamping info above"

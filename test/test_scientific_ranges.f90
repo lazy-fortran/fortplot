@@ -24,7 +24,7 @@ program test_scientific_ranges
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_scientific_range.png')
+    call fig%savefig("test/output/test_scientific_range.png")
     
     ! ASCII for verification
     call fig%initialize(80, 24, 'ascii')
@@ -33,7 +33,7 @@ program test_scientific_ranges
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_scientific_range.txt')
+    call fig%savefig("test/output/test_scientific_range.txt")
     
     !---------------------------------------------------------------------
     ! Test 2: Physics/engineering range
@@ -49,7 +49,7 @@ program test_scientific_ranges
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_engineering_range.png')
+    call fig%savefig("test/output/test_engineering_range.png")
     
     !---------------------------------------------------------------------  
     ! Test 3: At the edge of clamping (should just barely not clamp)
@@ -65,7 +65,7 @@ program test_scientific_ranges
     call fig%set_xlabel("X axis (log scale)")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_edge_clamp_range.png')
+    call fig%savefig("test/output/test_edge_clamp_range.png")
     
     print *, ""
     print *, "============================================="
