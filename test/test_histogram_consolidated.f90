@@ -62,7 +62,7 @@ contains
         call fig%set_xlabel("Value")
         call fig%set_ylabel("Frequency")
         
-        filename = get_test_output_path('histogram_consolidated.png')
+        filename = 'test/output/histogram_consolidated.png'
         if (should_use_memory_backend()) then
             call fig%savefig(filename)
         else
@@ -92,9 +92,9 @@ contains
         call fig%initialize(200, 150)
         call fig%hist(single_data, bins=1)
         if (should_use_memory_backend()) then
-            call fig%savefig(get_test_output_path('histogram_single.png'))
+            call fig%savefig('test/output/histogram_single.png')
         else
-            call fig%savefig(get_test_output_path('histogram_single.png'))
+            call fig%savefig('test/output/histogram_single.png')
         end if
         
         ! Test uniform data
@@ -102,9 +102,9 @@ contains
         call fig%initialize(200, 150)
         call fig%hist(uniform_data, bins=3)
         if (should_use_memory_backend()) then
-            call fig%savefig(get_test_output_path('histogram_uniform.png'))
+            call fig%savefig('test/output/histogram_uniform.png')
         else
-            call fig%savefig(get_test_output_path('histogram_uniform.png'))
+            call fig%savefig('test/output/histogram_uniform.png')
         end if
         
         print *, "✓ Single data point: PASS"
@@ -128,9 +128,9 @@ contains
         call fig%initialize(200, 150)
         call fig%hist(negative_data, bins=3)
         if (should_use_memory_backend()) then
-            call fig%savefig(get_test_output_path('histogram_negative.png'))
+            call fig%savefig('test/output/histogram_negative.png')
         else
-            call fig%savefig(get_test_output_path('histogram_negative.png'))
+            call fig%savefig('test/output/histogram_negative.png')
         end if
         
         ! Test mixed positive/negative
@@ -141,9 +141,9 @@ contains
         call fig%initialize(200, 150)
         call fig%hist(mixed_data, bins=4)
         if (should_use_memory_backend()) then
-            call fig%savefig(get_test_output_path('histogram_mixed.png'))
+            call fig%savefig('test/output/histogram_mixed.png')
         else
-            call fig%savefig(get_test_output_path('histogram_mixed.png'))
+            call fig%savefig('test/output/histogram_mixed.png')
         end if
         
         print *, "✓ Negative values: PASS"
@@ -168,9 +168,9 @@ contains
         call fig%hist(realistic_data, bins=4)
         call fig%set_title("User Acceptance Test")
         if (should_use_memory_backend()) then
-            call fig%savefig(get_test_output_path('histogram_uat.png'))
+            call fig%savefig('test/output/histogram_uat.png')
         else
-            call fig%savefig(get_test_output_path('histogram_uat.png'))
+            call fig%savefig('test/output/histogram_uat.png')
         end if
         
         print *, "✓ User acceptance scenario: PASS"
