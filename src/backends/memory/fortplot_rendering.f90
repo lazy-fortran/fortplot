@@ -312,8 +312,31 @@ contains
         real(wp) :: c_value, vmin, vmax
         integer :: i, j, nx, ny
         
+        ! Safety check: ensure pcolormesh data is properly initialized
+        if (.not. allocated(plot_data%pcolormesh_data%c_values) .or. &
+            .not. allocated(plot_data%pcolormesh_data%x_vertices) .or. &
+            .not. allocated(plot_data%pcolormesh_data%y_vertices)) then
+            ! Pcolormesh data not properly initialized - skip rendering
+            return
+        end if
+        
         nx = size(plot_data%pcolormesh_data%c_values, 2)
         ny = size(plot_data%pcolormesh_data%c_values, 1)
+        
+        ! Additional safety: ensure arrays have consistent sizes
+        if (nx <= 0 .or. ny <= 0) then
+            ! Invalid array dimensions - skip rendering
+            return
+        end if
+        
+        ! Verify vertex arrays have correct dimensions (ny+1, nx+1)
+        if (size(plot_data%pcolormesh_data%x_vertices, 1) /= ny + 1 .or. &
+            size(plot_data%pcolormesh_data%x_vertices, 2) /= nx + 1 .or. &
+            size(plot_data%pcolormesh_data%y_vertices, 1) /= ny + 1 .or. &
+            size(plot_data%pcolormesh_data%y_vertices, 2) /= nx + 1) then
+            ! Vertex arrays have incorrect dimensions - skip rendering
+            return
+        end if
         
         vmin = plot_data%pcolormesh_data%vmin
         vmax = plot_data%pcolormesh_data%vmax
