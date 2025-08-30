@@ -14,7 +14,7 @@ program test_simple_edge_cases
     print *, "Zero-size array test"
     call figure()
     call plot(x_empty, y_empty)
-    call savefig('test_zero_matplotlib.png')
+    call savefig("test/output/test_zero_matplotlib.png")
     
     ! Test 2: Single point
     x_single = [5.0_wp]
@@ -22,7 +22,7 @@ program test_simple_edge_cases
     print *, "Single point test"
     call figure()
     call plot(x_single, y_single)
-    call savefig('test_single_matplotlib.png')
+    call savefig("test/output/test_single_matplotlib.png")
     
     print *, "Tests completed - check output files"
     

@@ -22,7 +22,7 @@ program test_legend_empty_label_fix
     call plot(x, y2, label='Line 2')
     call plot(x, y3)  ! No label - should not create legend entry
     call legend()
-    call savefig('test_empty_label_1.png')
+    call savefig("test/output/test_empty_label_1.png")
     print *, "  ✓ Created test_empty_label_1.png (should show 2 legend entries)"
     
     ! Test 2: Empty string labels should not create entries
@@ -32,7 +32,7 @@ program test_legend_empty_label_fix
     call plot(x, y2, label='')  ! Empty label - should not create entry
     call plot(x, y3)  ! No label
     call legend()
-    call savefig('test_empty_label_2.png')
+    call savefig("test/output/test_empty_label_2.png")
     print *, "  ✓ Created test_empty_label_2.png (should show 1 legend entry)"
     
     ! Test 3: All unlabeled plots
@@ -42,7 +42,7 @@ program test_legend_empty_label_fix
     call plot(x, y2)
     call plot(x, y3)
     call legend()
-    call savefig('test_empty_label_3.png')
+    call savefig("test/output/test_empty_label_3.png")
     print *, "  ✓ Created test_empty_label_3.png (should show no legend)"
     
     ! Test 4: Scatter plots with empty labels
@@ -52,7 +52,7 @@ program test_legend_empty_label_fix
     call scatter(x, y2, label='')  ! Empty label - should not create entry
     call scatter(x, y3)  ! No label
     call legend()
-    call savefig('test_empty_label_scatter.png')
+    call savefig("test/output/test_empty_label_scatter.png")
     print *, "  ✓ Created test_empty_label_scatter.png (should show 1 legend entry)"
     
     ! Test 5: Multiple scatter plots to test comprehensive fix
@@ -63,7 +63,7 @@ program test_legend_empty_label_fix
     call scatter(x, y2 * 1.1_wp)  ! No label
     call scatter(x, y3, label='Dataset 2')
     call legend()
-    call savefig('test_empty_label_multi_scatter.png')
+    call savefig("test/output/test_empty_label_multi_scatter.png")
     print *, "  ✓ Created test_empty_label_multi_scatter.png (should show 2 legend entries)"
     
     ! Test 6: Mixed plot and scatter (the most common use case)
@@ -74,7 +74,7 @@ program test_legend_empty_label_fix
     call plot(x, y3 * 0.7_wp)  ! No label
     call scatter(x, y3, label='Scatter Data')
     call legend()
-    call savefig('test_empty_label_mixed.png')
+    call savefig("test/output/test_empty_label_mixed.png")
     print *, "  ✓ Created test_empty_label_mixed.png (should show 2 legend entries)"
     
     print *, ""

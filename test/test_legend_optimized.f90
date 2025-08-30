@@ -53,7 +53,7 @@ contains
         call add_plot(x, y2, label="Linear: 2x+5") 
         call add_plot(x, y3, label="Square root")
         call legend(position="upper left")  ! Test positioning
-        call savefig('test_legend_optimized.png')
+        call savefig("test/output/test_legend_optimized.png")
         
         ! Validate PNG creation
         val = validate_file_exists('test_legend_optimized.png')
@@ -76,13 +76,13 @@ contains
         call add_plot(x(1:10), y1(1:10), label="Quadratic")
         call add_plot(x(1:10), y2(1:10), label="Linear")
         call legend()
-        call savefig('test_legend_optimized.txt')
+        call savefig("test/output/test_legend_optimized.txt")
         
         ! Comprehensive ASCII validation
         val = validate_file_exists('test_legend_optimized.txt')
         if (val%passed) then
             found_legend = .false.
-            open(newunit=unit, file='test_legend_optimized.txt', status='old', action='read')
+            open(newunit=unit, file='test/output/test_legend_optimized.txt', status='old', action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
