@@ -23,6 +23,7 @@ module fortplot_figure_core_io
                                                     render_figure_axes, &
                                                     render_all_plots
     use fortplot_figure_grid, only: render_grid_lines
+    use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
     use fortplot_plot_data, only: plot_data_t
@@ -33,18 +34,22 @@ module fortplot_figure_core_io
 
 contains
 
-    subroutine savefig_figure(state, plots, plot_count, filename, blocking)
+    subroutine savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count)
         !! Save figure to file (backward compatibility version)
+        use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
         
         integer :: status
         
         ! Delegate to version with status reporting
-        call savefig_with_status_figure(state, plots, plot_count, filename, status, blocking)
+        call savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
+                                        annotations, annotation_count)
         
         ! Log error if save failed (maintains existing behavior)
         if (status /= SUCCESS) then
@@ -52,14 +57,18 @@ contains
         end if
     end subroutine savefig_figure
     
-    subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking)
+    subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
+                                          annotations, annotation_count)
         !! Save figure to file with error status reporting
+        use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
         
         character(len=20) :: required_backend, current_backend
         logical :: block, need_backend_switch
@@ -92,21 +101,24 @@ contains
             call setup_figure_backend(state, required_backend)
         end if
         
-        ! Render if not already rendered
+        ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count)
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
         end if
         
         ! Save the figure with status checking
         call save_backend_with_status(state%backend, filename, status)
     end subroutine savefig_with_status_figure
 
-    subroutine show_figure(state, plots, plot_count, blocking)
+    subroutine show_figure(state, plots, plot_count, blocking, annotations, annotation_count)
         !! Display the figure
+        use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
         
         logical :: block
         
@@ -115,9 +127,9 @@ contains
         block = .false.
         if (present(blocking)) block = blocking
         
-        ! Render if not already rendered
+        ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count)
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
         end if
         
         ! Display the figure
@@ -129,12 +141,16 @@ contains
         end if
     end subroutine show_figure
 
-    subroutine render_figure_impl(state, plots, plot_count)
+    subroutine render_figure_impl(state, plots, plot_count, annotations, annotation_count)
         !! Main rendering pipeline implementation
         !! Fixed Issue #432: Always render axes/labels even with no plot data
+        !! Fixed Issue #844: ASCII annotation functionality
+        use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
         
         ! Calculate final data ranges
         call calculate_figure_data_ranges(plots, plot_count, &
@@ -190,6 +206,18 @@ contains
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call state%legend_data%render(state%backend)
+        end if
+        
+        ! Render annotations if any exist (Issue #844: ASCII annotation functionality)
+        if (present(annotations) .and. present(annotation_count)) then
+            if (annotation_count > 0) then
+                call render_figure_annotations(state%backend, annotations, annotation_count, &
+                                              state%x_min, state%x_max, &
+                                              state%y_min, state%y_max, &
+                                              state%width, state%height, &
+                                              state%margin_left, state%margin_right, &
+                                              state%margin_bottom, state%margin_top)
+            end if
         end if
         
         state%rendered = .true.
