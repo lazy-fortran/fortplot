@@ -35,6 +35,10 @@ module fortplot_annotation_types
         real(wp) :: y = 0.0_wp
         integer :: coord_type = COORD_DATA
         
+        ! Validation status to prevent duplicate warnings
+        logical :: validated = .false.
+        logical :: valid = .true.
+        
         ! Typography properties
         real(wp) :: font_size = 12.0_wp
         real(wp) :: rotation = 0.0_wp
@@ -106,6 +110,10 @@ contains
         annotation%arrow_y = 0.0_wp
         annotation%arrow_coord_type = COORD_DATA
         annotation%arrowstyle = ''
+        
+        ! Initialize validation status
+        annotation%validated = .false.
+        annotation%valid = .true.
     end function create_text_annotation
 
     subroutine destroy_text_annotation(annotation)
