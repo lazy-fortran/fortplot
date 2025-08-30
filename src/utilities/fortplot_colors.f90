@@ -1,13 +1,6 @@
 module fortplot_colors
-    !! Color parsing and management for matplotlib-compatible color syntax
-    !! 
-    !! Supports:
-    !! - Hex colors: #FF0000, #F00
-    !! - RGB tuples: (1.0, 0.5, 0.0), (255, 128, 0)
-    !! - Named colors: red, blue, green, etc.
-    !! - Single letters: r, g, b, c, m, y, k, w
-    !! - RGBA with alpha channel support
-    !! - Performance optimization through caching
+    !! Color parsing and management
+    !! Author: fortplot contributors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_logging, only: log_warning
@@ -20,29 +13,20 @@ module fortplot_colors
     public :: rgb_to_hsv, rgb_to_lab
     public :: apply_colormap_to_array
     
-    ! Color type for unified representation
     type :: color_t
-        real(wp) :: r = 0.0_wp
-        real(wp) :: g = 0.0_wp  
-        real(wp) :: b = 0.0_wp
-        real(wp) :: a = 1.0_wp  ! Alpha channel
+        real(wp) :: r = 0.0_wp, g = 0.0_wp, b = 0.0_wp, a = 1.0_wp
         logical :: valid = .false.
     end type color_t
     
-    ! Color cache for performance optimization
     type :: color_cache_entry_t
         character(len=256) :: color_string = ""
         integer :: string_length = 0
         type(color_t) :: color
         logical :: used = .false.
     end type color_cache_entry_t
-    
-    ! Cache parameters
     integer, parameter :: MAX_CACHE_SIZE = 1000
     type(color_cache_entry_t) :: color_cache(MAX_CACHE_SIZE)
-    integer :: cache_size = 0
-    integer :: cache_hits = 0
-    integer :: cache_requests = 0
+    integer :: cache_size = 0, cache_hits = 0, cache_requests = 0
     
     ! Named color constants - CSS4/matplotlib standard colors
     integer, parameter :: NUM_NAMED_COLORS = 20
@@ -55,31 +39,16 @@ module fortplot_colors
     ]
     
     real(wp), parameter :: named_color_values(3, NUM_NAMED_COLORS) = reshape([ &
-        1.0_wp, 0.0_wp, 0.0_wp,  & ! red
-        0.0_wp, 0.5_wp, 0.0_wp,  & ! green (CSS4 green, not lime)
-        0.0_wp, 0.0_wp, 1.0_wp,  & ! blue
-        0.0_wp, 1.0_wp, 1.0_wp,  & ! cyan
-        1.0_wp, 0.0_wp, 1.0_wp,  & ! magenta
-        1.0_wp, 1.0_wp, 0.0_wp,  & ! yellow
-        0.0_wp, 0.0_wp, 0.0_wp,  & ! black
-        1.0_wp, 1.0_wp, 1.0_wp,  & ! white
-        0.5_wp, 0.5_wp, 0.5_wp,  & ! gray
-        1.0_wp, 0.647_wp, 0.0_wp, & ! orange
-        0.5_wp, 0.0_wp, 0.5_wp,  & ! purple
-        0.647_wp, 0.165_wp, 0.165_wp, & ! brown
-        1.0_wp, 0.753_wp, 0.796_wp, & ! pink
-        0.5_wp, 0.5_wp, 0.0_wp,  & ! olive
-        0.0_wp, 0.0_wp, 0.5_wp,  & ! navy
-        0.0_wp, 1.0_wp, 0.0_wp,  & ! lime
-        0.0_wp, 0.5_wp, 0.5_wp,  & ! teal
-        0.753_wp, 0.753_wp, 0.753_wp, & ! silver
-        0.5_wp, 0.0_wp, 0.0_wp,  & ! maroon
-        0.294_wp, 0.0_wp, 0.51_wp  & ! indigo
+        1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.5_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, &
+        1.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp, 1.0_wp, 1.0_wp, &
+        0.5_wp, 0.5_wp, 0.5_wp, 1.0_wp, 0.647_wp, 0.0_wp, 0.5_wp, 0.0_wp, 0.5_wp, 0.647_wp, 0.165_wp, 0.165_wp, &
+        1.0_wp, 0.753_wp, 0.796_wp, 0.5_wp, 0.5_wp, 0.0_wp, 0.0_wp, 0.0_wp, 0.5_wp, 0.0_wp, 1.0_wp, 0.0_wp, &
+        0.0_wp, 0.5_wp, 0.5_wp, 0.753_wp, 0.753_wp, 0.753_wp, 0.5_wp, 0.0_wp, 0.0_wp, 0.294_wp, 0.0_wp, 0.51_wp &
     ], [3, NUM_NAMED_COLORS])
     
     ! Single letter color mapping (matplotlib compatible)
     character(len=1), parameter :: single_letters(8) = ['r', 'g', 'b', 'c', 'm', 'y', 'k', 'w']
-    integer, parameter :: letter_to_named(8) = [1, 2, 3, 4, 5, 6, 7, 8]  ! Map to named_color_values indices
+    integer, parameter :: letter_to_named(8) = [1, 2, 3, 4, 5, 6, 7, 8]
     
 contains
 
@@ -101,35 +70,23 @@ contains
     end subroutine parse_color
     
     subroutine parse_color_rgba(color_str, rgba, success)
-        !! Parse color string to RGBA values [0,1] including alpha channel
         character(len=*), intent(in) :: color_str
         real(wp), intent(out) :: rgba(4)
         logical, intent(out) :: success
-        
         type(color_t) :: color
-        
-        call parse_color_internal(color_str, color)
-        success = color%valid
-        if (success) then
-            rgba = [color%r, color%g, color%b, color%a]
-        else
-            rgba = [0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp]
-        end if
+        call parse_color_internal(color_str, color); success = color%valid
+        if (success) then; rgba = [color%r, color%g, color%b, color%a]
+        else; rgba = [0.0_wp, 0.0_wp, 0.0_wp, 1.0_wp]; end if
     end subroutine parse_color_rgba
     
     function is_valid_color(color_str) result(is_valid)
-        !! Check if color string is valid without full parsing
         character(len=*), intent(in) :: color_str
         logical :: is_valid
-        
         type(color_t) :: color
-        
-        call parse_color_internal(color_str, color)
-        is_valid = color%valid
+        call parse_color_internal(color_str, color); is_valid = color%valid
     end function is_valid_color
     
     subroutine parse_color_internal(color_str, color)
-        !! Internal color parsing with caching
         character(len=*), intent(in) :: color_str
         type(color_t), intent(out) :: color
         
@@ -137,16 +94,10 @@ contains
         character(len=:), allocatable :: trimmed_str
         
         cache_requests = cache_requests + 1
-        
-        ! Trim and convert to lowercase for consistent lookup
-        trimmed_str = trim(adjustl(color_str))
-        call to_lowercase(trimmed_str)
-        
-        ! Check cache first
+        trimmed_str = trim(adjustl(color_str)); call to_lowercase(trimmed_str)
         cache_idx = find_in_cache(trimmed_str)
         if (cache_idx > 0) then
-            cache_hits = cache_hits + 1
-            color = color_cache(cache_idx)%color
+            cache_hits = cache_hits + 1; color = color_cache(cache_idx)%color
             return
         end if
         
@@ -252,27 +203,19 @@ contains
     end function parse_hex_digit_pair
     
     function hex_digit_to_int(hex_char, value) result(success)
-        !! Convert single hex character to integer
         character(len=1), intent(in) :: hex_char
         integer, intent(out) :: value
         logical :: success
-        
         success = .true.
         select case (hex_char)
-        case ('0':'9')
-            value = ichar(hex_char) - ichar('0')
-        case ('a':'f')
-            value = ichar(hex_char) - ichar('a') + 10
-        case ('A':'F')
-            value = ichar(hex_char) - ichar('A') + 10
-        case default
-            success = .false.
-            value = 0
+        case ('0':'9'); value = ichar(hex_char) - ichar('0')
+        case ('a':'f'); value = ichar(hex_char) - ichar('a') + 10
+        case ('A':'F'); value = ichar(hex_char) - ichar('A') + 10
+        case default; success = .false.; value = 0
         end select
     end function hex_digit_to_int
     
     subroutine parse_rgb_tuple(tuple_str, color)
-        !! Parse RGB/RGBA tuple: (1.0, 0.5, 0.0), (255, 128, 0), (1.0, 0.5, 0.0, 0.8)
         character(len=*), intent(in) :: tuple_str
         type(color_t), intent(out) :: color
         
@@ -282,17 +225,12 @@ contains
         character(len=50) :: value_str
         integer :: iostat
         
-        ! Extract content between parentheses
         content = trim(tuple_str(2:len_trim(tuple_str)-1))
+        n_values = 0; start_pos = 1
         
-        ! Parse comma-separated values
-        n_values = 0
-        start_pos = 1
-        
-        do i = 1, 4  ! Maximum 4 values (RGBA)
+        do i = 1, 4
             comma_pos = index(content(start_pos:), ',')
             if (comma_pos == 0) then
-                ! Last value
                 end_pos = len_trim(content)
             else
                 end_pos = start_pos + comma_pos - 2

@@ -1,17 +1,6 @@
 module fortplot_figure_core
-    !! Core figure management module (architecturally refactored for SOLID principles)
-    !! 
-    !! This module provides the main user interface for creating scientific plots
-    !! with support for line plots, contour plots, and mixed plotting across
-    !! PNG, PDF, and ASCII backends. Uses deferred rendering for efficiency.
-    !!
-    !! ARCHITECTURAL STATUS (Issue #678):
-    !! - Current module: 751 lines (50% over 500-line limit)
-    !! - COMPLIANCE VIOLATION: Exceeds architectural limits by 251 lines
-    !! - Implementation partially distributed across focused sub-modules
-    !! - Further refactoring required to achieve Single Responsibility Principle
-    !! - Full backward compatibility maintained
-    !! - All existing tests pass without modification
+    !! Core figure management module
+    !! Author: fortplot contributors
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -67,36 +56,15 @@ module fortplot_figure_core
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
     type :: figure_t
-        !! Main figure class - coordinates plotting operations
-        !! Now uses composition of focused modules for better organization
         type(figure_state_t) :: state
-        
-        ! Store all plot data for deferred rendering
         type(plot_data_t), allocatable :: plots(:)
-        
-        ! Streamline data
         type(plot_data_t), allocatable :: streamlines(:)
-        
-        ! Arrow data for streamplot
         type(arrow_data_t), allocatable :: arrow_data(:)
-        
-        ! Text annotations support (Issue #184)
         type(text_annotation_t), allocatable :: annotations(:)
-        integer :: annotation_count = 0
-        integer :: max_annotations = 1000
-        
-        ! Subplot support
-        integer :: subplot_rows = 0
-        integer :: subplot_cols = 0
-        integer :: current_subplot = 1
+        integer :: annotation_count = 0, max_annotations = 1000
+        integer :: subplot_rows = 0, subplot_cols = 0, current_subplot = 1
         type(subplot_data_t), allocatable :: subplots_array(:,:)
-        
-        ! Backward compatibility: expose labels directly for test access
-        character(len=:), allocatable :: title
-        character(len=:), allocatable :: xlabel
-        character(len=:), allocatable :: ylabel
-        
-        ! Backward compatibility: expose commonly accessed state members
+        character(len=:), allocatable :: title, xlabel, ylabel
         integer :: plot_count = 0
         
     contains
@@ -181,7 +149,6 @@ contains
         self%subplot_cols = 0
         self%current_subplot = 1
         
-        ! Clear backward compatibility members
         if (allocated(self%title)) deallocate(self%title)
         if (allocated(self%xlabel)) deallocate(self%xlabel)
         if (allocated(self%ylabel)) deallocate(self%ylabel)
@@ -189,31 +156,26 @@ contains
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
-        !! Add a line plot to the figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
-        
         call figure_add_plot(self%plots, self%state, x, y, label, linestyle, color)
         self%plot_count = self%state%plot_count
         call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
-        !! Add a contour plot to the figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
-        
         call figure_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, levels, label)
         self%plot_count = self%state%plot_count
         call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine add_contour
 
     subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
-        !! Add a filled contour plot with color mapping
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -242,43 +204,32 @@ contains
     end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
-        !! Add streamline plot to figure using basic algorithm
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
-        real(wp), intent(in), optional :: density
-        real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: linewidth
-        real(wp), intent(in), optional :: rtol, atol, max_time
-        
+        real(wp), intent(in), optional :: density, color(3), linewidth, rtol, atol, max_time
         call streamplot_figure(self%plots, self%state, self%plot_count, x, y, u, v, &
                                density, color, linewidth, rtol, atol, max_time)
     end subroutine streamplot
 
     subroutine savefig(self, filename, blocking)
-        !! Save figure to file (backward compatibility version)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
-        
         call savefig_figure(self%state, self%plots, self%state%plot_count, filename, blocking)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
-        !! Save figure to file with error status reporting
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
-        
         call savefig_with_status_figure(self%state, self%plots, self%state%plot_count, &
                                        filename, status, blocking)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
-        !! Display the figure
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
-        
         call show_figure(self%state, self%plots, self%state%plot_count, blocking)
     end subroutine show
 
@@ -351,44 +302,34 @@ contains
     end subroutine set_xscale
 
     subroutine set_yscale(self, scale, threshold)
-        !! Set y-axis scale type
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
-        
         call set_yscale_figure(self%state, scale, threshold)
     end subroutine set_yscale
 
     subroutine set_xlim(self, x_min, x_max)
-        !! Set x-axis limits
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_min, x_max
-        
         call set_xlim_figure(self%state, x_min, x_max)
     end subroutine set_xlim
 
     subroutine set_ylim(self, y_min, y_max)
-        !! Set y-axis limits
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: y_min, y_max
-        
         call set_ylim_figure(self%state, y_min, y_max)
     end subroutine set_ylim
 
     subroutine set_line_width(self, width)
-        !! Set line width for subsequent plots
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: width
-        
         call set_line_width_figure(self%state, width)
     end subroutine set_line_width
 
     subroutine set_ydata(self, plot_index, y_new)
-        !! Update y data for an existing plot
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: plot_index
         real(wp), intent(in) :: y_new(:)
-        
         call update_plot_ydata(self%plots, self%state%plot_count, plot_index, y_new)
     end subroutine set_ydata
 
@@ -467,11 +408,7 @@ contains
     end subroutine update_data_ranges
 
     subroutine render_figure(self)
-        !! Main rendering pipeline using focused modules
-        !! Fixed Issue #432: Always render axes/labels even with no plot data
         class(figure_t), intent(inout) :: self
-        
-        ! Calculate final data ranges
         call calculate_figure_data_ranges(self%plots, self%state%plot_count, &
                                         self%state%xlim_set, self%state%ylim_set, &
                                         self%state%x_min, self%state%x_max, &
@@ -482,16 +419,10 @@ contains
                                         self%state%y_max_transformed, &
                                         self%state%xscale, self%state%yscale, &
                                         self%state%symlog_threshold)
-        
-        ! Setup coordinate system
         call setup_coordinate_system(self%state%backend, &
                                    self%state%x_min_transformed, self%state%x_max_transformed, &
                                    self%state%y_min_transformed, self%state%y_max_transformed)
-        
-        ! Render background
         call render_figure_background(self%state%backend)
-        
-        ! Render grid if enabled
         if (self%state%grid_enabled) then
             call render_grid_lines(self%state%backend, self%state%grid_enabled, &
                                   self%state%grid_which, self%state%grid_axis, &
@@ -504,8 +435,6 @@ contains
                                   self%state%x_min_transformed, self%state%x_max_transformed, &
                                   self%state%y_min_transformed, self%state%y_max_transformed)
         end if
-        
-        ! Render axes
         call render_figure_axes(self%state%backend, self%state%xscale, self%state%yscale, &
                                self%state%symlog_threshold, self%state%x_min, self%state%x_max, &
                                self%state%y_min, self%state%y_max, self%state%title, &
