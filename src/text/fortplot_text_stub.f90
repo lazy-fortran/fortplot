@@ -56,13 +56,25 @@ contains
             end select
         end if
         
-        ! Add text annotation to current figure
-        call add_text_annotation(global_figure, x, y, text_content, &
-                                coord_type=coord_type_str, &
-                                font_size=font_size, &
-                                rotation=rotation, &
-                                ha=merge(ha, alignment, present(ha)), &
-                                bbox=has_bbox)
+        ! Determine horizontal alignment
+        block
+            character(len=:), allocatable :: ha_str
+            if (present(ha)) then
+                ha_str = ha
+            else if (present(alignment)) then
+                ha_str = alignment
+            else
+                ha_str = ''
+            end if
+            
+            ! Add text annotation to current figure
+            call add_text_annotation(global_figure, x, y, text_content, &
+                                    coord_type=coord_type_str, &
+                                    font_size=font_size, &
+                                    rotation=rotation, &
+                                    ha=ha_str, &
+                                    bbox=has_bbox)
+        end block
     end subroutine text
 
     subroutine annotate(text_content, xy, xytext, xy_coord_type, xytext_coord_type, &
