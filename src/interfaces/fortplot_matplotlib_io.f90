@@ -51,7 +51,9 @@ contains
         integer, intent(in), optional :: dpi
         
         integer :: fig_num, fig_dpi
-        real(8), dimension(2) :: size
+        real(8), dimension(2) :: size, safe_size
+        integer :: width_px, height_px
+        real(8) :: scale_factor
         character(len=256) :: msg
         
         ! Set defaults
@@ -75,20 +77,40 @@ contains
             return
         end if
         
+        ! Calculate pixel dimensions and validate against MAX_SAFE_PIXELS
+        ! Issue #833: Prevent excessive PNG dimensions from causing warnings
+        width_px = nint(size(1) * fig_dpi)
+        height_px = nint(size(2) * fig_dpi)
+        safe_size = size
+        
+        if (width_px > 10000 .or. height_px > 10000) then
+            ! Scale down dimensions to fit within safe limits while preserving aspect ratio
+            scale_factor = min(10000.0d0 / width_px, 10000.0d0 / height_px)
+            safe_size(1) = size(1) * scale_factor
+            safe_size(2) = size(2) * scale_factor
+            width_px = nint(safe_size(1) * fig_dpi)
+            height_px = nint(safe_size(2) * fig_dpi)
+            
+            write(msg, '(A,F6.1,A,F6.1,A,F6.1,A,F6.1,A)') &
+                "Figure size ", size(1), "x", size(2), &
+                " inches scaled to ", safe_size(1), "x", safe_size(2), &
+                " to prevent PNG backend issues"
+            call log_warning(trim(msg))
+        end if
+        
         ! Log figure creation
         write(msg, '(A,I0,A,F6.2,A,F6.2,A,I0,A)') &
-            "Creating figure ", fig_num, " with size ", size(1), "x", size(2), &
+            "Creating figure ", fig_num, " with size ", safe_size(1), "x", safe_size(2), &
             " inches at ", fig_dpi, " DPI"
         call log_info(trim(msg))
         
-        ! Re-initialize global figure with new settings
+        ! Re-initialize global figure with safe dimensions
         if (allocated(fig)) then
             deallocate(fig)
         end if
         
         allocate(figure_t :: fig)
-        call fig%initialize(width=nint(size(1)*fig_dpi), &
-                          height=nint(size(2)*fig_dpi))
+        call fig%initialize(width=width_px, height=height_px)
     end subroutine figure
 
     subroutine subplot(nrows, ncols, index)
@@ -97,6 +119,7 @@ contains
         integer, intent(in) :: nrows, ncols, index
         
         character(len=256) :: msg
+        logical, save :: subplot_warning_shown = .false.
         
         call ensure_global_figure_initialized()
         
@@ -118,8 +141,10 @@ contains
         
         ! Note: Current implementation doesn't support multiple subplots
         ! This is a stub for API compatibility
-        if (index > 1) then
+        ! Issue #833: Show warning only once to reduce noise
+        if (index > 1 .and. .not. subplot_warning_shown) then
             call log_warning("subplot: Multiple subplots not yet implemented")
+            subplot_warning_shown = .true.
         end if
     end subroutine subplot
 
@@ -188,6 +213,7 @@ contains
         logical :: gui_available
         character(len=256) :: display_var
         integer :: status
+        logical, save :: ssh_warning_shown = .false.
         
         gui_available = .false.
         
@@ -198,9 +224,11 @@ contains
         end if
         
         ! Check for SSH without X forwarding
+        ! Issue #833: Show warning only once to reduce noise in automated testing
         call get_environment_variable("SSH_CLIENT", display_var, status=status)
-        if (status == 0 .and. .not. gui_available) then
+        if (status == 0 .and. .not. gui_available .and. .not. ssh_warning_shown) then
             call log_warning("SSH session detected without X forwarding")
+            ssh_warning_shown = .true.
         end if
     end function is_gui_available
 
@@ -212,13 +240,18 @@ contains
         logical :: is_blocking, success
         integer :: status, unit
         real :: start_time, current_time
+        logical, save :: no_gui_warning_shown = .false.
         
         is_blocking = .false.
         if (present(blocking)) is_blocking = blocking
         
         ! Check GUI availability
+        ! Issue #833: Show warning only once to reduce noise in automated testing
         if (.not. is_gui_available()) then
-            call log_warning("No GUI available, saving to show_output.png instead")
+            if (.not. no_gui_warning_shown) then
+                call log_warning("No GUI available, saving to show_output.png instead")
+                no_gui_warning_shown = .true.
+            end if
             call fig%savefig("show_output.png")
             return
         end if
