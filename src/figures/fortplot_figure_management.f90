@@ -29,7 +29,7 @@ module fortplot_figure_management
     implicit none
 
     private
-    public :: figure_initialize, figure_destroy, figure_savefig, figure_savefig_with_status
+    public :: figure_initialize, figure_destroy, figure_clear, figure_savefig, figure_savefig_with_status
     public :: figure_show, figure_clear_streamlines, figure_setup_png_backend_for_animation
     public :: figure_extract_rgb_data_for_animation, figure_extract_png_data_for_animation
     public :: figure_subplots, figure_subplot_plot, figure_subplot_plot_count
@@ -130,6 +130,48 @@ contains
         
         call show_figure(state, plots, plot_count, blocking)
     end subroutine figure_show
+
+    subroutine figure_clear(state, plots, streamlines, subplots_array, &
+                           subplot_rows, subplot_cols, current_subplot, &
+                           title_target, xlabel_target, ylabel_target, &
+                           plot_count, annotation_count)
+        !! Clear the figure to prepare for reuse (preserving backend settings)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
+        integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot
+        character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
+        integer, intent(inout) :: plot_count, annotation_count
+        
+        ! Clear plot data
+        plot_count = 0
+        
+        ! Clear streamlines data if allocated
+        if (allocated(streamlines)) deallocate(streamlines)
+        
+        ! Clear subplot data if allocated
+        if (allocated(subplots_array)) deallocate(subplots_array)
+        subplot_rows = 0
+        subplot_cols = 0
+        current_subplot = 1
+        
+        ! Clear labels in backward compatibility members
+        if (allocated(title_target)) deallocate(title_target)
+        if (allocated(xlabel_target)) deallocate(xlabel_target)
+        if (allocated(ylabel_target)) deallocate(ylabel_target)
+        
+        ! Clear labels in state
+        if (allocated(state%title)) deallocate(state%title)
+        if (allocated(state%xlabel)) deallocate(state%xlabel)
+        if (allocated(state%ylabel)) deallocate(state%ylabel)
+        
+        ! Clear annotation count
+        annotation_count = 0
+        
+        ! Reset rendered state to allow new rendering
+        state%rendered = .false.
+    end subroutine figure_clear
 
     subroutine figure_clear_streamlines(streamlines)
         !! Clear streamline data
