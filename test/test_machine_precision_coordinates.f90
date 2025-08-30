@@ -55,7 +55,10 @@ contains
         print *, "  Epsilon:", eps
         print *, "  Status: Plot should render with visible axes and title"
         
-        success = .true.  ! If we reach here without error, the test passed
+        ! This test actually verifies that no runtime errors occur with epsilon coordinates
+        ! Success is determined by reaching this point without segfault or error_stop
+        ! Test passes if we reach here without runtime errors
+        success = .true.
     end function test_epsilon_scale_coordinates
     
     function test_mixed_precision_ranges() result(success)
@@ -84,6 +87,7 @@ contains
         print *, "  Y range:", minval(y), "to", maxval(y), "(diff:", maxval(y) - minval(y), ")"
         print *, "  Status: Should show normal X axis, expanded Y axis for epsilon range"
         
+        ! Test passes if we reach here without runtime errors
         success = .true.
     end function test_mixed_precision_ranges
     
@@ -119,6 +123,7 @@ contains
         print *, "  Epsilon:", eps
         print *, "  Status: Should expand ranges appropriately for visualization"
         
+        ! Test passes if we reach here without runtime errors
         success = .true.
     end function test_epsilon_differences
     
@@ -148,6 +153,7 @@ contains
         print *, "  Y range:", minval(y), "to", maxval(y), "(diff:", maxval(y) - minval(y), ")"
         print *, "  Status: Should use absolute margin expansion for near-zero ranges"
         
+        ! Test passes if we reach here without runtime errors
         success = .true.
     end function test_near_zero_epsilon_ranges
     
@@ -179,6 +185,7 @@ contains
         print *, "  Y range:", minval(y), "to", maxval(y), "(diff:", maxval(y) - minval(y), ")"
         print *, "  Status: Should use relative margin expansion for large-scale ranges"
         
+        ! Test passes if we reach here without runtime errors
         success = .true.
     end function test_large_scale_epsilon_ranges
 

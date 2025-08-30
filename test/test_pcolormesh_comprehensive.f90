@@ -87,7 +87,8 @@ contains
         test_result = .not. error%is_error()
         call run_test("Original segfault case dimension check", test_result, &
             "Should accept x(6), y(5), c(5,4) as valid C-style pattern")
-        test_result = .true.  ! Since no error expected, skip error message test
+        ! If no error occurred, then error message test is not applicable
+        test_result = .not. error%is_error()  ! Test passes if no error was generated
         call run_test("Error message content validation", test_result, &
             "No error message expected for valid C-style dimensions")
             
