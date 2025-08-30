@@ -217,7 +217,14 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        call figure_savefig(self%state, self%plots, self%state%plot_count, filename, blocking)
+        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
+        if (.not. self%state%rendered) then
+            call figure_render(self%state, self%plots, self%state%plot_count, &
+                              self%annotations, self%annotation_count)
+        end if
+        
+        call figure_savefig(self%state, self%plots, self%state%plot_count, filename, blocking, &
+                            self%annotations, self%annotation_count)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -227,8 +234,15 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
+        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
+        if (.not. self%state%rendered) then
+            call figure_render(self%state, self%plots, self%state%plot_count, &
+                              self%annotations, self%annotation_count)
+        end if
+        
         call figure_savefig_with_status(self%state, self%plots, self%state%plot_count, &
-                                        filename, status, blocking)
+                                        filename, status, blocking, &
+                                        self%annotations, self%annotation_count)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -236,7 +250,14 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        call figure_show(self%state, self%plots, self%state%plot_count, blocking)
+        ! Render with annotations before showing (Issue #844: ASCII annotation functionality)
+        if (.not. self%state%rendered) then
+            call figure_render(self%state, self%plots, self%state%plot_count, &
+                              self%annotations, self%annotation_count)
+        end if
+        
+        call figure_show(self%state, self%plots, self%state%plot_count, blocking, &
+                         self%annotations, self%annotation_count)
     end subroutine show
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
@@ -372,13 +393,13 @@ contains
     end subroutine setup_png_backend_for_animation
     subroutine extract_rgb_data_for_animation(self, rgb_data)
         class(figure_t), intent(inout) :: self; real(wp), intent(out) :: rgb_data(:,:,:)
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count)
+        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count, self%annotations, self%annotation_count)
         call figure_extract_rgb_data_for_animation(self%state, rgb_data, self%state%rendered)
     end subroutine extract_rgb_data_for_animation
     subroutine extract_png_data_for_animation(self, png_data, status)
         class(figure_t), intent(inout) :: self; integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count)
+        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count, self%annotations, self%annotation_count)
         call figure_extract_png_data_for_animation(self%state, png_data, status, self%state%rendered)
     end subroutine extract_png_data_for_animation
     ! Backend interface and coordinate accessors - delegate to properties module
