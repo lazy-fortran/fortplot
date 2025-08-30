@@ -11,17 +11,17 @@ module fortplot_parameter_validation
     implicit none
     private
     
-    ! Public interface
-    public :: validate_plot_dimensions
-    public :: validate_color_values
-    public :: validate_array_bounds
-    public :: validate_file_path
-    public :: validate_numeric_parameters
-    public :: validation_warning
-    public :: validation_error
-    public :: set_warning_mode
-    public :: parameter_validation_result_t
-    public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
+    ! Warning modes (must be defined before types that use them)
+    integer, parameter :: WARNING_MODE_ALL = 0      ! Show all warnings
+    integer, parameter :: WARNING_MODE_ERRORS = 1   ! Show only errors
+    integer, parameter :: WARNING_MODE_SILENT = 2   ! Suppress all output
+    
+    ! Validation context type for controlling validation behavior
+    type :: validation_context_t
+        integer :: warning_mode = WARNING_MODE_ALL
+        logical :: suppress_output = .false.
+        character(len=64) :: context_name = ""
+    end type
     
     ! Validation result type for structured reporting
     type :: parameter_validation_result_t
@@ -32,10 +32,25 @@ module fortplot_parameter_validation
         integer :: error_code
     end type
     
-    ! Warning modes
-    integer, parameter :: WARNING_MODE_ALL = 0      ! Show all warnings
-    integer, parameter :: WARNING_MODE_ERRORS = 1   ! Show only errors
-    integer, parameter :: WARNING_MODE_SILENT = 2   ! Suppress all output
+    ! Public interface
+    public :: validate_plot_dimensions
+    public :: validate_plot_dimensions_with_context
+    public :: validate_color_values
+    public :: validate_array_bounds
+    public :: validate_file_path
+    public :: validate_numeric_parameters
+    public :: validation_warning
+    public :: validation_error
+    public :: validation_warning_with_context
+    public :: validation_error_with_context
+    public :: default_validation_context
+    public :: set_warning_mode
+    public :: validation_context_t
+    public :: parameter_validation_result_t
+    public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
+    ! Helper functions (Issue #875: Made public for direct testing)
+    public :: is_nan_safe
+    public :: is_finite_safe
     
     ! Current warning mode (can be changed by advanced users)
     integer :: current_warning_mode = WARNING_MODE_ALL
@@ -51,8 +66,15 @@ module fortplot_parameter_validation
 contains
     
     ! Set warning output mode for advanced users
+    ! DEPRECATED: Use validation_context_t instead for thread-safe operation
     subroutine set_warning_mode(mode)
         integer, intent(in) :: mode
+        
+        ! Issue #871: Global state deprecated for thread safety
+        print *, "[DEPRECATED] set_warning_mode: Global warning state violates thread safety."
+        print *, "             Use validation_context_t parameter in new validation functions."
+        print *, "             This function will be removed in v2.0."
+        
         if (mode >= WARNING_MODE_ALL .and. mode <= WARNING_MODE_SILENT) then
             current_warning_mode = mode
         else
@@ -89,15 +111,101 @@ contains
         end if
     end subroutine validation_error
     
+    ! Context-aware warning output (NEW: eliminates global state dependency)
+    subroutine validation_warning_with_context(message, context_param, validation_ctx)
+        character(len=*), intent(in) :: message
+        character(len=*), intent(in), optional :: context_param
+        type(validation_context_t), intent(in), optional :: validation_ctx
+        
+        type(validation_context_t) :: ctx
+        
+        ! Use provided context or default
+        if (present(validation_ctx)) then
+            ctx = validation_ctx
+        else
+            ctx = validation_context_t()  ! Default context
+        end if
+        
+        ! Respect context-specific warning mode
+        if (ctx%warning_mode == WARNING_MODE_SILENT .or. ctx%suppress_output) return
+        
+        if (present(context_param)) then
+            print *, "Warning [", trim(context_param), "]: ", trim(message)
+        else if (len_trim(ctx%context_name) > 0) then
+            print *, "Warning [", trim(ctx%context_name), "]: ", trim(message)
+        else
+            print *, "Warning: ", trim(message)
+        end if
+    end subroutine validation_warning_with_context
+    
+    ! Context-aware error output (NEW: eliminates global state dependency)
+    subroutine validation_error_with_context(message, context_param, validation_ctx)
+        character(len=*), intent(in) :: message
+        character(len=*), intent(in), optional :: context_param
+        type(validation_context_t), intent(in), optional :: validation_ctx
+        
+        type(validation_context_t) :: ctx
+        
+        ! Use provided context or default
+        if (present(validation_ctx)) then
+            ctx = validation_ctx
+        else
+            ctx = validation_context_t()  ! Default context
+        end if
+        
+        ! Respect context-specific warning mode (errors shown unless silent)
+        if (ctx%warning_mode == WARNING_MODE_SILENT .or. ctx%suppress_output) return
+        
+        if (present(context_param)) then
+            print *, "Error [", trim(context_param), "]: ", trim(message)
+        else if (len_trim(ctx%context_name) > 0) then
+            print *, "Error [", trim(ctx%context_name), "]: ", trim(message)
+        else
+            print *, "Error: ", trim(message)
+        end if
+    end subroutine validation_error_with_context
+    
+    ! Helper function to create default validation context with current global state
+    ! TRANSITIONAL: Bridges legacy global state to new context-based approach
+    function default_validation_context() result(ctx)
+        type(validation_context_t) :: ctx
+        
+        ctx%warning_mode = current_warning_mode
+        ctx%suppress_output = .false.
+        ctx%context_name = ""
+    end function default_validation_context
+    
     ! Validate plot dimensions (width, height, figsize)
+    ! LEGACY: Uses global state - prefer validate_plot_dimensions_with_context
     function validate_plot_dimensions(width, height, context) result(validation)
         real(wp), intent(in) :: width, height
         character(len=*), intent(in), optional :: context
         type(parameter_validation_result_t) :: validation
+        
+        ! Issue #871: Delegate to context-aware version using current global state
+        validation = validate_plot_dimensions_with_context(width, height, &
+                                                          default_validation_context(), context)
+    end function validate_plot_dimensions
+    
+    ! Context-aware plot dimensions validation (NEW: eliminates global state dependency)
+    function validate_plot_dimensions_with_context(width, height, validation_ctx, context) result(validation)
+        real(wp), intent(in) :: width, height
+        type(validation_context_t), intent(in), optional :: validation_ctx
+        character(len=*), intent(in), optional :: context
+        type(parameter_validation_result_t) :: validation
         character(len=64) :: ctx
+        type(validation_context_t) :: vctx
+        
+        ! Use provided context or default
+        if (present(validation_ctx)) then
+            vctx = validation_ctx
+        else
+            vctx = validation_context_t()  ! Default context
+        end if
         
         ctx = "plot_dimensions"
         if (present(context)) ctx = context
+        if (len_trim(vctx%context_name) > 0) ctx = vctx%context_name
         
         validation%context = ctx
         validation%is_valid = .true.
@@ -111,7 +219,7 @@ contains
             write(validation%message, '(A,F0.2,A,F0.2,A)') &
                 "Negative or zero plot dimensions: width=", width, ", height=", height, &
                 ". Dimensions must be positive."
-            call validation_error(validation%message, ctx)
+            call validation_error_with_context(validation%message, ctx, vctx)
             return
         end if
         
@@ -121,7 +229,7 @@ contains
             write(validation%message, '(A,F0.2,A,F0.2,A,F0.1,A)') &
                 "Very small plot dimensions: width=", width, ", height=", height, &
                 ". Consider dimensions >= ", MIN_PLOT_DIMENSION, " for better visibility."
-            call validation_warning(validation%message, ctx)
+            call validation_warning_with_context(validation%message, ctx, vctx)
         end if
         
         ! Check for unreasonably large dimensions
@@ -130,7 +238,7 @@ contains
             write(validation%message, '(A,F0.1,A,F0.1,A,F0.0,A)') &
                 "Very large plot dimensions: width=", width, ", height=", height, &
                 ". Consider dimensions <= ", MAX_PLOT_DIMENSION, " to avoid memory issues."
-            call validation_warning(validation%message, ctx)
+            call validation_warning_with_context(validation%message, ctx, vctx)
         end if
         
         ! Check for extreme aspect ratios
@@ -139,9 +247,9 @@ contains
             write(validation%message, '(A,F0.2,A)') &
                 "Extreme aspect ratio ", max(width/height, height/width), &
                 ". Plot may appear distorted."
-            call validation_warning(validation%message, ctx)
+            call validation_warning_with_context(validation%message, ctx, vctx)
         end if
-    end function validate_plot_dimensions
+    end function validate_plot_dimensions_with_context
     
     ! Validate color values (RGB components, alpha values)  
     function validate_color_values(red, green, blue, alpha, context) result(validation)

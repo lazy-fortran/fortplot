@@ -52,12 +52,21 @@ contains
         
         ! Process each annotation
         do i = 1, annotation_count
-            ! Validate annotation before rendering
-            call validate_annotation_for_rendering(annotations(i), valid_annotation, error_message)
-            if (.not. valid_annotation) then
-                call log_warning("Skipping invalid annotation " // &
-                               trim(adjustl(int_to_char(i))) // ": " // trim(error_message))
-                cycle
+            ! Skip re-validation if already validated at creation time (Issue #870: prevent duplicate warnings)
+            if (annotations(i)%validated) then
+                ! Use stored validation result to skip already-invalid annotations
+                if (.not. annotations(i)%valid) then
+                    cycle  ! Already warned at creation time, skip silently
+                end if
+                valid_annotation = .true.  ! Skip validation for already-validated annotations
+            else
+                ! Fallback validation for annotations created without validation
+                call validate_annotation_for_rendering(annotations(i), valid_annotation, error_message)
+                if (.not. valid_annotation) then
+                    call log_warning("Skipping invalid annotation " // &
+                                   trim(adjustl(int_to_char(i))) // ": " // trim(error_message))
+                    cycle
+                end if
             end if
             
             ! Transform coordinates to rendering coordinates
