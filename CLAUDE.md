@@ -4,7 +4,7 @@
 - 121 source files (target: 30-50)
 - 107 test files with massive redundancy
 - 182 scattered output artifacts
-- 100+ GitHub issues (many duplicates)
+- 142 GitHub issues (crisis level - 284% over 50 limit)
 - Team cannot navigate or maintain this complexity
 
 **MANDATORY CLEANUP PROTOCOLS BEFORE ANY NEW WORK**
@@ -120,6 +120,8 @@ The user explicitly requested this visual showcase. Breaking it again will cause
 - Update DESIGN.md with simplified architecture
 - Establish file count limits and enforcement
 - Define core vs peripheral module boundaries
+- **MANDATORY ISSUE COUNTING**: ALWAYS use `gh issue list --state open --limit 500 | wc -l` for accurate counts
+- **MANDATORY DUPLICATE SEARCH**: ALWAYS use `gh issue list --state open --limit 500 --search "keyword"` before filing issues
 
 **SERGEI (IMPLEMENTATION):**
 - Execute module consolidation
@@ -292,3 +294,80 @@ Team has demonstrated they cannot be trusted with:
 - User impact assessment (destroyed core functionality)
 
 FOLLOW THESE PROTOCOLS OR BE REPLACED.
+
+# 🚨 CRITICAL: GITHUB ISSUE COUNTING PROTOCOL
+
+## MANDATORY COMMANDS FOR ALL AGENTS
+
+**❌ WRONG - DEFAULT TRUNCATION:**
+```bash
+gh issue list --state open | wc -l  # Only shows first 30 issues!
+```
+
+**✅ CORRECT - ACCURATE COUNTING:**
+```bash
+gh issue list --state open --limit 500 | wc -l  # Shows actual count
+```
+
+**✅ CORRECT - DUPLICATE SEARCH:**
+```bash
+gh issue list --state open --limit 500 --search "keyword"  # Search open issues only
+```
+
+**✅ CORRECT - FULL LISTING:**
+```bash
+gh issue list --state open --limit 500  # See all open issues
+```
+
+## MANDATORY FOR ALL AGENTS:
+
+### CHRIS (ARCHITECT):
+- **ALWAYS** use `--limit 500` when counting issues for consolidation
+- **NEVER** trust default `gh issue list` without limit flag
+- Current reality: **142 open issues** (not 30!)
+
+### ALL AGENTS BEFORE FILING ISSUES:
+- **MANDATORY**: `gh issue list --state open --limit 500 --search "keyword"`
+- **VERIFY**: No open duplicates exist before creating new issues
+- **CRITICAL**: Default `gh issue list` only shows 30 issues of 142 total
+
+## REPOSITORY CRISIS REALITY:
+- **Actual open issues**: 142 issues (verified with --limit 500)
+- **Over limit by**: 284% (142 vs 50 limit)
+- **Management failure**: Issue explosion indicates systematic problems
+
+This protocol prevents the "30 issues" fraud that occurred due to CLI default truncation.
+
+# 🚨 CRITICAL: ISSUE MANAGEMENT PROTOCOL
+
+## NEVER ADD COMMENTS TO ISSUES - ALWAYS EDIT DESCRIPTIONS
+
+**❌ WRONG - CREATES CLUTTER:**
+```bash
+gh issue comment #N --body "update information"  # NEVER do this
+```
+
+**✅ CORRECT - EDIT DESCRIPTIONS:**
+```bash
+gh issue edit #N --body "updated description content"  # Always do this
+```
+
+## ISSUE DESCRIPTION REQUIREMENTS
+
+**ALL ISSUE DESCRIPTIONS MUST BE:**
+- **CONCISE**: No unnecessary words or explanations
+- **PRECISE**: Exact problem statement with specific details
+- **CLEAR**: Unambiguous language, no jargon without context  
+- **ACTIONABLE**: Clear next steps for resolution
+- **NO EMOJIS**: Professional, direct communication only
+
+## META-ISSUE MANAGEMENT
+
+**DESIGN (#702)**: Product architecture and strategic vision (NO concrete issues)
+**PRODUCT BACKLOG (#703)**: Prioritized open issues + completed sprint summaries
+**SPRINT BACKLOG (#704)**: Current sprint checklist only (purge DONE tasks immediately)
+
+**LENGTH LIMITS ENFORCED:**
+- Meta-issues: 1000 lines maximum
+- Regular issues: 500 lines maximum
+- Check with: `gh issue view #N --json body | jq -r '.body' | wc -l`
