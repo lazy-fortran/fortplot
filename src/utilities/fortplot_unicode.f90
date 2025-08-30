@@ -7,6 +7,7 @@ module fortplot_unicode
     private
     
     public :: escape_unicode_for_raster
+    public :: escape_unicode_for_ascii
     public :: unicode_codepoint_to_ascii
     public :: codepoint_to_lowercase_greek
     public :: codepoint_to_uppercase_greek
@@ -25,6 +26,70 @@ contains
         ! STB TrueType can handle Unicode directly, so just pass through
         escaped_text = input_text
     end subroutine escape_unicode_for_raster
+
+    subroutine escape_unicode_for_ascii(input_text, escaped_text)
+        !! Convert Unicode text to ASCII-compatible text for ASCII backend
+        !! Processes UTF-8 input and converts Unicode characters to readable ASCII equivalents
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: escaped_text
+        integer :: i, char_len, codepoint, out_pos
+        character(len=50) :: ascii_equiv
+        logical :: is_valid
+        
+        escaped_text = ""
+        i = 1
+        out_pos = 1
+        
+        do while (i <= len_trim(input_text) .and. out_pos <= len(escaped_text))
+            char_len = utf8_char_length(input_text(i:i))
+            
+            if (char_len == 1) then
+                ! ASCII character - copy directly
+                if (out_pos <= len(escaped_text)) then
+                    escaped_text(out_pos:out_pos) = input_text(i:i)
+                    out_pos = out_pos + 1
+                end if
+                i = i + 1
+            else if (char_len > 1 .and. i + char_len - 1 <= len_trim(input_text)) then
+                ! Unicode character - validate and convert
+                call check_utf8_sequence(input_text, i, is_valid, char_len)
+                
+                if (is_valid) then
+                    codepoint = utf8_to_codepoint(input_text, i)
+                    if (codepoint > 0) then
+                        call unicode_codepoint_to_ascii(codepoint, ascii_equiv)
+                        
+                        ! Append ASCII equivalent to output
+                        call append_to_output(escaped_text, ascii_equiv, out_pos)
+                    end if
+                end if
+                
+                i = i + char_len
+            else
+                ! Invalid or incomplete sequence - skip
+                i = i + 1
+            end if
+        end do
+    end subroutine escape_unicode_for_ascii
+
+    subroutine append_to_output(output, text_to_add, out_pos)
+        !! Helper subroutine to append text to output buffer
+        character(len=*), intent(inout) :: output
+        character(len=*), intent(in) :: text_to_add
+        integer, intent(inout) :: out_pos
+        integer :: i, text_len
+        
+        text_len = len_trim(text_to_add)
+        
+        do i = 1, text_len
+            if (out_pos <= len(output)) then
+                output(out_pos:out_pos) = text_to_add(i:i)
+                out_pos = out_pos + 1
+            else
+                exit  ! Output buffer full
+            end if
+        end do
+    end subroutine append_to_output
 
     subroutine unicode_codepoint_to_ascii(codepoint, ascii_equiv)
         !! Convert Unicode codepoint to ASCII equivalent

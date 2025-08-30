@@ -6,6 +6,7 @@ module fortplot_ascii_utils
     !!
     !! Author: fortplot contributors
     
+    use fortplot_unicode, only: escape_unicode_for_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -106,16 +107,19 @@ contains
     end function get_blend_char
 
     subroutine render_text_elements_to_canvas(canvas, text_elements, num_text_elements, plot_width, plot_height)
-        !! Render stored text elements onto the ASCII canvas
+        !! Render stored text elements onto the ASCII canvas with Unicode-to-ASCII conversion
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements, plot_width, plot_height
         integer :: i, j, text_len, char_idx
         character(len=1) :: text_char
+        character(len=500) :: ascii_text  ! Buffer for converted text
         
         ! Render each stored text element
         do i = 1, num_text_elements
-            text_len = len_trim(text_elements(i)%text)
+            ! Convert Unicode text to ASCII-compatible form for Issue #853 fix
+            call escape_unicode_for_ascii(text_elements(i)%text, ascii_text)
+            text_len = len_trim(ascii_text)
             
             ! Draw each character of the text
             do char_idx = 1, text_len
@@ -125,7 +129,7 @@ contains
                 if (j >= 1 .and. j <= plot_width .and. &
                     text_elements(i)%y >= 1 .and. text_elements(i)%y <= plot_height) then
                     
-                    text_char = text_elements(i)%text(char_idx:char_idx)
+                    text_char = ascii_text(char_idx:char_idx)
                     
                     ! Choose character based on text color (simple color mapping)
                     if (text_elements(i)%color_r > 0.7_wp) then
@@ -153,36 +157,44 @@ contains
     end subroutine render_text_elements_to_canvas
 
     subroutine print_centered_title(title, width)
-        !! Print centered title to terminal
+        !! Print centered title to terminal with Unicode-to-ASCII conversion
         character(len=*), intent(in) :: title
         integer, intent(in) :: width
         integer :: padding, title_len
         character(len=:), allocatable :: centered_title
+        character(len=500) :: ascii_title  ! Buffer for converted title
         
-        title_len = len_trim(title)
+        ! Convert Unicode title to ASCII-compatible form for Issue #853 fix
+        call escape_unicode_for_ascii(title, ascii_title)
+        
+        title_len = len_trim(ascii_title)
         if (title_len >= width) then
-            print '(A)', trim(title)
+            print '(A)', trim(ascii_title)
         else
             padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(title)
+            centered_title = repeat(' ', padding) // trim(ascii_title)
             print '(A)', centered_title
         end if
     end subroutine print_centered_title
 
     subroutine write_centered_title(unit, title, width)
-        !! Write centered title to file
+        !! Write centered title to file with Unicode-to-ASCII conversion
         integer, intent(in) :: unit
         character(len=*), intent(in) :: title
         integer, intent(in) :: width
         integer :: padding, title_len
         character(len=:), allocatable :: centered_title
+        character(len=500) :: ascii_title  ! Buffer for converted title
         
-        title_len = len_trim(title)
+        ! Convert Unicode title to ASCII-compatible form for Issue #853 fix
+        call escape_unicode_for_ascii(title, ascii_title)
+        
+        title_len = len_trim(ascii_title)
         if (title_len >= width) then
-            write(unit, '(A)') trim(title)
+            write(unit, '(A)') trim(ascii_title)
         else
             padding = (width - title_len) / 2
-            centered_title = repeat(' ', padding) // trim(title)
+            centered_title = repeat(' ', padding) // trim(ascii_title)
             write(unit, '(A)') centered_title
         end if
     end subroutine write_centered_title
