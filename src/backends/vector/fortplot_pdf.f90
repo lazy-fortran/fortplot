@@ -206,12 +206,10 @@ contains
         class(pdf_context), intent(inout) :: this
         call pdf_save_graphics_state(this%stream_writer)
     end subroutine save_graphics_state_wrapper
-    
     subroutine restore_graphics_state_wrapper(this)
         class(pdf_context), intent(inout) :: this
         call pdf_restore_graphics_state(this%stream_writer)
     end subroutine restore_graphics_state_wrapper
-    
     subroutine draw_pdf_marker_wrapper(this, x, y, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
@@ -252,21 +250,18 @@ contains
         character(len=:), allocatable :: output
         output = "PDF output (non-ASCII format)"
     end function pdf_get_ascii_output
-    
     real(wp) function get_width_scale_wrapper(this) result(scale)
         class(pdf_context), intent(in) :: this
         type(pdf_context_handle) :: local_ctx
         local_ctx = this%make_coord_context()
         scale = pdf_get_width_scale(local_ctx)
     end function get_width_scale_wrapper
-    
     real(wp) function get_height_scale_wrapper(this) result(scale)
         class(pdf_context), intent(in) :: this
         type(pdf_context_handle) :: local_ctx
         local_ctx = this%make_coord_context()
         scale = pdf_get_height_scale(local_ctx)
     end function get_height_scale_wrapper
-    
     subroutine fill_quad_wrapper(this, x_quad, y_quad)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
@@ -328,7 +323,6 @@ contains
             end do
         end do
     end subroutine fill_heatmap_wrapper
-    
     subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)
         class(pdf_context), intent(inout) :: this
         type(legend_entry_t), dimension(:), intent(in) :: entries
