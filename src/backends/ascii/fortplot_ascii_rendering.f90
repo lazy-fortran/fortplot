@@ -9,6 +9,7 @@ module fortplot_ascii_rendering
     use fortplot_logging, only: log_info, log_error
     use fortplot_ascii_utils, only: text_element_t, render_text_elements_to_canvas
     use fortplot_ascii_utils, only: print_centered_title, write_centered_title
+    use fortplot_unicode, only: escape_unicode_for_ascii
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -88,9 +89,13 @@ contains
             call print_centered_title(xlabel_text, plot_width)
         end if
         
-        ! Print ylabel (simple horizontal placement for now)
+        ! Print ylabel with Unicode-to-ASCII conversion
         if (allocated(ylabel_text)) then
-            print '(A)', ylabel_text
+            block
+                character(len=500) :: ascii_ylabel
+                call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+                print '(A)', trim(ascii_ylabel)
+            end block
         end if
     end subroutine output_to_terminal
     
@@ -130,9 +135,13 @@ contains
             call write_centered_title(unit, xlabel_text, plot_width)
         end if
         
-        ! Write ylabel to the left side of the plot if present
+        ! Write ylabel with Unicode-to-ASCII conversion
         if (allocated(ylabel_text)) then
-            write(unit, '(A)') ylabel_text
+            block
+                character(len=500) :: ascii_ylabel
+                call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
+                write(unit, '(A)') trim(ascii_ylabel)
+            end block
         end if
     end subroutine output_to_file
 
