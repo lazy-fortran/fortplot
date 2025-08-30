@@ -94,6 +94,7 @@ module fortplot_figure_core
         procedure :: set_ydata
         procedure :: legend => figure_legend
         procedure :: show
+        procedure :: clear
         procedure :: clear_streamlines
         procedure :: grid
         procedure :: hist
@@ -320,6 +321,14 @@ contains
         call figure_legend_operation(self%state%legend_data, self%state%show_legend, &
                                     self%plots, self%state%plot_count, location)
     end subroutine figure_legend
+    subroutine clear(self)
+        !! Clear the figure for reuse, preserving backend settings
+        class(figure_t), intent(inout) :: self
+        call figure_clear(self%state, self%plots, self%streamlines, &
+                         self%subplots_array, self%subplot_rows, self%subplot_cols, &
+                         self%current_subplot, self%title, self%xlabel, self%ylabel, &
+                         self%plot_count, self%annotation_count)
+    end subroutine clear
     subroutine clear_streamlines(self)
         class(figure_t), intent(inout) :: self
         call figure_clear_streamlines(self%streamlines)
