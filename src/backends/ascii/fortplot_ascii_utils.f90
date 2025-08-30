@@ -57,6 +57,23 @@ contains
         end select
     end function get_char_density
 
+    logical function is_graphics_character(char)
+        !! Check if character is a plot graphics element (not text)
+        !! Returns .true. for characters used in ASCII plots (lines, markers, etc.)
+        !! Returns .false. for text characters (letters, digits, most punctuation)
+        character(len=1), intent(in) :: char
+        
+        select case (char)
+        case ('.', ':', '-', '=', '+', 'o', '*', '#', '%', '@')
+            ! These are plot graphics characters that can be overwritten by text
+            is_graphics_character = .true.
+        case default
+            ! All other characters (letters, digits, most punctuation) are text
+            ! Text should not overwrite other text to prevent scrambling
+            is_graphics_character = .false.
+        end select
+    end function is_graphics_character
+
     character(len=1) function get_blend_char(char1, char2)
         character(len=1), intent(in) :: char1, char2
         
@@ -119,11 +136,17 @@ contains
                         text_char = text_char  ! Keep original for blue text
                     end if
                     
-                    ! Only overwrite space or lower density characters
-                    if (canvas(text_elements(i)%y, j) == ' ' .or. &
-                        get_char_density(text_char) > get_char_density(canvas(text_elements(i)%y, j))) then
+                    ! Fix for issue #852: Prevent text scrambling by implementing proper text layering
+                    ! Text elements should only overwrite empty spaces or plot graphics
+                    ! Never allow text to overwrite other text to prevent character mixing
+                    if (canvas(text_elements(i)%y, j) == ' ') then
+                        ! Always write text to empty spaces
+                        canvas(text_elements(i)%y, j) = text_char
+                    else if (is_graphics_character(canvas(text_elements(i)%y, j))) then
+                        ! Text has higher priority than plot graphics, can overwrite
                         canvas(text_elements(i)%y, j) = text_char
                     end if
+                    ! Existing text characters are never overwritten to prevent scrambling
                 end if
             end do
         end do
