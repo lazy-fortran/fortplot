@@ -10,6 +10,15 @@ module fortplot_file_operations
     implicit none
     private
 
+    ! Interface to C directory creation function
+    interface
+        function create_directory_windows_c(path) bind(c, name="create_directory_windows_c") result(success)
+            use, intrinsic :: iso_c_binding, only: c_char, c_int
+            character(c_char), intent(in) :: path(*)
+            integer(c_int) :: success
+        end function create_directory_windows_c
+    end interface
+
     public :: create_directory_runtime
     public :: delete_file_runtime
     public :: check_directory_exists
@@ -162,6 +171,7 @@ contains
 
     recursive subroutine create_directory_recursive(path, success)
         !! Recursively create directory path including parent directories
+        use, intrinsic :: iso_c_binding, only: c_null_char
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         character(len=512) :: parent_path, test_file
@@ -202,7 +212,14 @@ contains
             end if
         end if
         
-        ! Parse path segments for progressive creation (Windows and Unix/Linux)
+        ! Use Windows C function for robust directory creation on Windows
+        if (is_windows()) then
+            ! Call C function to create directory with proper Windows handling
+            success = (create_directory_windows_c(trim(path) // c_null_char) == 1)
+            return
+        end if
+        
+        ! Unix/Linux: Use progressive creation approach
         call parse_path_segments(path, path_segments, n_segments)
         
         ! Build path progressively and test
@@ -211,21 +228,13 @@ contains
             if (i == 1) then
                 current_path = trim(path_segments(1))
             else
-                if (is_windows()) then
-                    current_path = trim(current_path) // "\" // trim(path_segments(i))
-                else
-                    current_path = trim(current_path) // "/" // trim(path_segments(i))
-                end if
+                current_path = trim(current_path) // "/" // trim(path_segments(i))
             end if
             
             call check_directory_exists(current_path, dir_exists)
             if (.not. dir_exists) then
                 ! Try to test directory creation with a test file approach
-                if (is_windows()) then
-                    test_file = trim(current_path) // "\test_dir_creation.tmp"
-                else
-                    test_file = trim(current_path) // "/test_dir_creation.tmp"
-                end if
+                test_file = trim(current_path) // "/test_dir_creation.tmp"
                 
                 ! Try to open a file to test if we can create in this directory
                 open(newunit=unit, file=test_file, status='unknown', &
