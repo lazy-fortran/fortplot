@@ -1,6 +1,7 @@
 program test_axes_order_338
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
+    use fortplot_test_helpers, only: test_get_temp_path, test_initialize_environment
     implicit none
 
     type(pdf_context) :: ctx
@@ -9,6 +10,7 @@ program test_axes_order_338
 
     write(*, '(A)') "Testing axes/content order in PDF"
 
+    call test_initialize_environment("axes_order_338")
     ctx = create_pdf_canvas(600, 400)
     ctx%x_min = 0.0_wp
     ctx%x_max = 10.0_wp
@@ -42,8 +44,8 @@ program test_axes_order_338
         prev_y = y
     end do
 
-    call ctx%save("test_axes_order.pdf")
-    write(*, '(A)') "Generated test_axes_order.pdf"
+    call ctx%save(test_get_temp_path("test_axes_order.pdf"))
+    write(*, '(A)') "Generated test_axes_order.pdf in test output directory"
     write(*, '(A)') "Check: Should see both blue sine and red cosine curves with axes"
 
 end program test_axes_order_338

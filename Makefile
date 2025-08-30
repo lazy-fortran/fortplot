@@ -6,7 +6,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST = 
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance
 
 # Default target
 all: build
@@ -27,8 +27,8 @@ example: create_build_dirs
 debug:
 	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
-# Run tests
-test:
+# Run tests  
+test: create_test_dirs
 	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
 # Run fast tests for CI (skip heavy I/O and MPEG tests)
@@ -76,6 +76,7 @@ matplotlib: example_matplotlib
 clean:
 	echo y | fpm clean
 	rm -rf build/example
+	rm -rf build/test/output
 	find . \( -name "*.png" -o -name "*.pdf" -o -name "*.txt" \
 	       -o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \) \
 	       -not -name "CMakeLists.txt" -type f -exec rm -f {} \;
@@ -173,6 +174,10 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/disconnected_lines
 	@mkdir -p output/example/fortran/boxplot_demo
 	@mkdir -p output/example/fortran/grid_demo
+
+# Create test directories for isolated test artifacts (Issue #820)
+create_test_dirs:
+	@mkdir -p build/test/output
 
 # Comprehensive functionality preservation verification (Issue #609)
 verify-functionality:
