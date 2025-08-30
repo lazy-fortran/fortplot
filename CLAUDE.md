@@ -1,10 +1,87 @@
+# 🔒 DEPENDENCY INDEPENDENCE DESIGN PHILOSOPHY
+
+## CORE ARCHITECTURAL PRINCIPLE: MINIMAL EXTERNAL DEPENDENCIES
+
+**DESIGN PHILOSOPHY**: FortPlot is intentionally designed for maximum independence from external libraries to ensure:
+- **Deployment Simplicity**: Users can compile and run without complex dependency management
+- **Platform Portability**: Reduced reliance on platform-specific external libraries
+- **Maintenance Control**: Full control over implementation quality and bug fixes
+- **Distribution Ease**: Simpler packaging and distribution without external library coordination
+
+### INTENTIONAL CUSTOM IMPLEMENTATIONS
+
+The following custom implementations are **DELIBERATE DESIGN CHOICES**, not temporary solutions:
+
+#### **Custom ZLIB Implementation** (src/external/fortplot_zlib*)
+- **Purpose**: PNG compression without external zlib dependency
+- **Benefits**: Self-contained PNG generation, no system library requirements
+- **Status**: Core architectural component, not for replacement
+
+#### **Custom PNG Implementation** (src/backends/raster/)
+- **Purpose**: Direct PNG file generation without external PNG libraries
+- **Benefits**: Precise control over PNG output format and quality
+- **Status**: Essential for raster backend independence
+
+#### **Custom PDF Implementation** (src/backends/vector/fortplot_pdf.f90)
+- **Purpose**: Vector graphics output without external PDF libraries
+- **Benefits**: Lightweight PDF generation tailored to plotting needs
+- **Status**: Core vector backend, optimized for scientific plotting
+
+#### **Custom Font Handling** (stb_truetype integration)
+- **Purpose**: Text rendering with minimal external dependency (single-header library)
+- **Benefits**: Cross-platform text rendering without heavy font system dependencies
+- **Status**: Acceptable minimal dependency for complex font rendering
+
+### DEPENDENCY POLICY ENFORCEMENT
+
+#### **FORBIDDEN**: Issues Requesting External Library Adoption
+- **NO libpng replacement requests**: Custom PNG implementation is intentional
+- **NO zlib replacement requests**: Custom zlib implementation is intentional
+- **NO PDF library adoption**: Custom PDF implementation is intentional
+- **NO complex graphics library adoption**: Cairo, Skia, etc. violate independence principle
+
+#### **ACCEPTABLE**: Performance and Size Optimizations
+- **File size compliance**: Breaking large modules into focused components
+- **Performance improvements**: Algorithmic optimizations within custom implementations
+- **Memory efficiency**: Reducing memory usage in custom implementations
+- **Code organization**: Modular structure for maintainability
+
+#### **ENCOURAGED**: Self-Contained Enhancements
+- **Additional format support**: Extend custom backends (SVG, EPS, etc.)
+- **Compression improvements**: Enhance custom zlib implementation
+- **Rendering optimizations**: Improve custom graphics algorithms
+- **Platform support**: Ensure custom implementations work across platforms
+
+### ISSUE MANAGEMENT PROTOCOL
+
+#### **IMMEDIATE CLOSURE**: Dependency Replacement Requests
+Any issues requesting replacement of custom implementations with external libraries should be:
+1. **CLOSED IMMEDIATELY** with reference to this design philosophy
+2. **EXPLAINED** that custom implementations are intentional architectural choices
+3. **REDIRECTED** toward performance/size optimization within existing implementations
+
+#### **ARCHITECTURAL ALIGNMENT**: Development Focus
+All development should:
+- **RESPECT** the independence design philosophy
+- **ENHANCE** custom implementations rather than replacing them
+- **OPTIMIZE** existing solutions for size, performance, and maintainability
+- **EXTEND** capabilities within the self-contained architecture
+
+### META-ISSUE REFERENCES
+
+- **DESIGN (#702)**: Contains architectural vision including dependency independence
+- **PRODUCT BACKLOG (#703)**: Prioritizes improvements within independence constraints  
+- **SPRINT BACKLOG (#704)**: Current sprint work respecting design philosophy
+
+**This design philosophy is NON-NEGOTIABLE and guides all architectural decisions.**
+
 # 🚨 REPOSITORY COMPLEXITY CRISIS PROTOCOLS
 
 **REPOSITORY OVERWHELM ANALYSIS:**
 - 121 source files (target: 30-50)
 - 107 test files with massive redundancy
 - 182 scattered output artifacts
-- 142 GitHub issues (crisis level - 284% over 50 limit)
+- 49 GitHub issues (after cleanup from 142)
 - Team cannot navigate or maintain this complexity
 
 **MANDATORY CLEANUP PROTOCOLS BEFORE ANY NEW WORK**
