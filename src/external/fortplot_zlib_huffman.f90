@@ -141,14 +141,22 @@ contains
     end subroutine find_longest_match
     
     subroutine write_bits(buffer, bit_pos, byte_pos, value, num_bits)
-        !! Write bits to output buffer (LSB first)
+        !! Write bits to output buffer (LSB first) with bounds checking
         integer(int8), intent(inout) :: buffer(:)
         integer, intent(inout) :: bit_pos, byte_pos
         integer, intent(in) :: value, num_bits
         
-        integer :: i, bit
+        integer :: i, bit, buffer_size
+        
+        buffer_size = size(buffer)
         
         do i = 0, num_bits - 1
+            ! Bounds check to prevent buffer overrun
+            if (byte_pos > buffer_size) then
+                print *, "ERROR: Buffer overrun in write_bits - byte_pos:", byte_pos, "buffer_size:", buffer_size
+                return
+            end if
+            
             bit = iand(ishft(value, -i), 1)
             
             if (bit_pos == 0) then
