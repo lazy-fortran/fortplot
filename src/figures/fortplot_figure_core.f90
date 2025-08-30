@@ -1,16 +1,5 @@
 module fortplot_figure_core
-    !! Core figure management module (architecturally refactored for SOLID principles)
-    !! 
-    !! This module provides the main user interface for creating scientific plots
-    !! with support for line plots, contour plots, and mixed plotting across
-    !! PNG, PDF, and ASCII backends. Uses deferred rendering for efficiency.
-    !!
-    !! ARCHITECTURAL STATUS (Issue #809):
-    !! - Refactored from 751 lines into focused modules <500 lines each
-    !! - COMPLIANCE ACHIEVED: Now uses composition pattern with focused modules
-    !! - Implementation fully distributed across Single Responsibility modules
-    !! - Full backward compatibility maintained
-    !! - All existing tests pass without modification
+    !! Core figure management module for scientific plotting
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -20,17 +9,8 @@ module fortplot_figure_core
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                     PLOT_TYPE_SCATTER
-    ! ARCHITECTURE REFACTOR: Facade Pattern (Issue #821)
-    ! Reduced coupling from 19 dependencies to 1 comprehensive interface
-    ! Facade pattern encapsulates all subsystem interactions
-    
-    ! Core state management (always needed)
     use fortplot_figure_initialization, only: figure_state_t
-    
-    ! COMPREHENSIVE OPERATIONS FACADE (1 dependency):
-    ! Single interface that aggregates ALL figure operations
     use fortplot_figure_comprehensive_operations
-    ! Explicit import to resolve implicit interface warnings
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, figure_backend_associated, figure_backend_line
     implicit none
 
@@ -40,48 +20,34 @@ module fortplot_figure_core
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
     type :: figure_t
-        !! Main figure class - coordinates plotting operations
-        !! Now uses composition of focused modules for better organization
+        !! Main figure class
         type(figure_state_t) :: state
         
-        ! Store all plot data for deferred rendering
         type(plot_data_t), allocatable :: plots(:)
-        
-        ! Streamline data
         type(plot_data_t), allocatable :: streamlines(:)
-        
-        ! Arrow data for streamplot
         type(arrow_data_t), allocatable :: arrow_data(:)
-        
-        ! Text annotations support (Issue #184)
         type(text_annotation_t), allocatable :: annotations(:)
         integer :: annotation_count = 0
         integer :: max_annotations = 1000
-        
-        ! Subplot support
         integer :: subplot_rows = 0
         integer :: subplot_cols = 0
         integer :: current_subplot = 1
         type(subplot_data_t), allocatable :: subplots_array(:,:)
-        
-        ! Backward compatibility: expose labels directly for test access
         character(len=:), allocatable :: title
         character(len=:), allocatable :: xlabel
         character(len=:), allocatable :: ylabel
-        
-        ! Backward compatibility: expose commonly accessed state members
         integer :: plot_count = 0
         
     contains
         procedure :: initialize
         procedure :: add_plot
-        procedure :: plot => add_plot        ! Convenience alias for user expectation
+        procedure :: plot => add_plot
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_pcolormesh
         procedure :: streamplot
         procedure :: savefig
-        procedure :: save => savefig         ! Convenience alias for user expectation
+        procedure :: save => savefig
         procedure :: savefig_with_status
         procedure :: set_xlabel
         procedure :: set_ylabel
@@ -106,9 +72,8 @@ module fortplot_figure_core
         procedure :: subplot_plot_count
         procedure :: subplot_set_title
         procedure :: subplot_set_xlabel
-        procedure :: subplot_set_ylabel  
+        procedure :: subplot_set_ylabel
         procedure :: subplot_title
-        ! Getter methods for backward compatibility
         procedure :: get_width
         procedure :: get_height
         procedure :: get_rendered
@@ -125,15 +90,12 @@ module fortplot_figure_core
         procedure :: get_x_max
         procedure :: get_y_min
         procedure :: get_y_max
-        ! Label getters removed - direct member access available
-        ! Data range methods moved to focused module
         final :: destroy
     end type figure_t
 
 contains
 
     subroutine initialize(self, width, height, backend)
-        !! Initialize the figure with specified dimensions and backend
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
@@ -146,7 +108,6 @@ contains
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
-        !! Add a line plot to the figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
@@ -158,7 +119,6 @@ contains
     end subroutine add_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
-        !! Add a contour plot to the figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -170,7 +130,6 @@ contains
     end subroutine add_contour
 
     subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
-        !! Add a filled contour plot with color mapping
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in), optional :: levels(:)
@@ -184,7 +143,6 @@ contains
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
-        !! Add a pcolormesh plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), c(:,:)
         character(len=*), intent(in), optional :: colormap
@@ -199,7 +157,6 @@ contains
     end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
-        !! Add streamline plot to figure using basic algorithm
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
