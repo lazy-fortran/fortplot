@@ -60,7 +60,9 @@ contains
     subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
                                           annotations, annotation_count)
         !! Save figure to file with error status reporting
+        !! Added Issue #854: File path validation for user input safety
         use fortplot_annotations, only: text_annotation_t
+        use fortplot_parameter_validation, only: validate_file_path, parameter_validation_result_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
@@ -72,9 +74,17 @@ contains
         
         character(len=20) :: required_backend, current_backend
         logical :: block, need_backend_switch
+        type(parameter_validation_result_t) :: path_validation
         
         ! Initialize success status
         status = SUCCESS
+        
+        ! Validate filename path before proceeding
+        path_validation = validate_file_path(filename, check_parent=.true., context="savefig")
+        if (.not. path_validation%is_valid) then
+            status = ERROR_FILE_IO
+            return
+        end if
         
         block = .true.
         if (present(blocking)) block = blocking

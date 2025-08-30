@@ -80,16 +80,58 @@ contains
     
     subroutine initialize_figure_state(state, width, height, backend)
         !! Initialize figure state with specified parameters
+        !! Added Issue #854: Parameter validation for user input safety
+        use fortplot_parameter_validation, only: validate_plot_dimensions, validate_file_path, &
+                                               parameter_validation_result_t, validation_warning
         type(figure_state_t), intent(inout) :: state
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
         
-        if (present(width)) state%width = width
-        if (present(height)) state%height = height
+        type(parameter_validation_result_t) :: validation
+        real(wp) :: width_real, height_real
+        
+        ! Set dimensions with validation
+        if (present(width)) then
+            width_real = real(width, wp)
+            height_real = real(state%height, wp)
+            if (present(height)) height_real = real(height, wp)
+            
+            validation = validate_plot_dimensions(width_real, height_real, "figure_initialization")
+            if (validation%is_valid) then
+                state%width = width
+            else
+                ! Use default width on validation failure
+                state%width = 640
+            end if
+        end if
+        
+        if (present(height)) then
+            width_real = real(state%width, wp)
+            height_real = real(height, wp)
+            
+            validation = validate_plot_dimensions(width_real, height_real, "figure_initialization")
+            if (validation%is_valid) then
+                state%height = height
+            else
+                ! Use default height on validation failure
+                state%height = 480
+            end if
+        end if
         
         ! Initialize backend - default to PNG if not specified
         if (present(backend)) then
-            call initialize_backend(state%backend, backend, state%width, state%height)
+            ! Validate backend name (basic check for supported backends)
+            if (len_trim(backend) == 0) then
+                call validation_warning("Empty backend name provided, using default 'png'", &
+                                      "figure_initialization")
+                call initialize_backend(state%backend, 'png', state%width, state%height)
+            else if (backend /= 'png' .and. backend /= 'pdf' .and. backend /= 'ascii') then
+                call validation_warning("Unknown backend '" // trim(backend) // &
+                                      "', using default 'png'", "figure_initialization")
+                call initialize_backend(state%backend, 'png', state%width, state%height)
+            else
+                call initialize_backend(state%backend, backend, state%width, state%height)
+            end if
         else
             ! Default to PNG backend to prevent uninitialized backend
             if (.not. allocated(state%backend)) then
