@@ -104,8 +104,8 @@ contains
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         logical :: dir_exists, parent_exists
-        character(len=512) :: parent_path
-        integer :: i, last_sep
+        character(len=512) :: parent_path, test_file
+        integer :: i, last_sep, unit, iostat
         
         success = .false.
         
@@ -135,16 +135,28 @@ contains
             end if
         end if
         
-        ! For Windows CI testing - be more lenient about directory creation
-        ! The test should focus on the final file creation, not directory setup
-        if (is_windows()) then
-            ! On Windows, assume directory creation succeeds if parent exists
-            ! The actual PNG creation will handle directory creation as needed
+        ! Try to actually create or verify the directory exists
+        call check_directory_exists(path, dir_exists)
+        if (dir_exists) then
             success = .true.
         else
-            ! On Unix/Linux systems, use more robust checking
-            call check_directory_exists(path, dir_exists)
-            success = dir_exists
+            ! Try a simple test file approach for directory creation
+            test_file = trim(path)
+            if (is_windows()) then
+                test_file = trim(test_file) // "\test_dir_creation.tmp"
+            else
+                test_file = trim(test_file) // "/test_dir_creation.tmp"
+            end if
+            
+            ! Try to open a file to test if we can create in this directory
+            open(newunit=unit, file=test_file, status='unknown', &
+                 action='write', iostat=iostat)
+            if (iostat == 0) then
+                close(unit, status='delete')
+                success = .true.
+            else
+                success = .false.
+            end if
         end if
     end subroutine create_single_directory
 
@@ -190,12 +202,18 @@ contains
             end if
         end if
         
-        ! For CI/test environments, use a simpler approach
-        ! On Windows CI, the directory creation should be handled by the build system
+        ! For Windows CI environment, use simpler validation approach
         if (is_windows()) then
-            ! On Windows CI, assume directories can be created and rely on the build system
-            ! The actual directory structure will be created by the PNG backend when needed
-            success = .true.
+            ! First check if directory already exists
+            call check_directory_exists(path, dir_exists)
+            if (dir_exists) then
+                success = .true.
+                return
+            end if
+            
+            ! For Windows CI, try a minimal directory creation test
+            ! without complex recursive logic that might fail
+            call create_single_directory(path, success)
             return
         end if
         
