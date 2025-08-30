@@ -90,7 +90,6 @@ contains
         
         if (allocated(spiral_seeds)) deallocate(spiral_seeds)
     end subroutine streamplot_matplotlib
-
     subroutine integrate_matplotlib_style(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, &
                                          traj_x, traj_y, n_points, success)
         !! Integration following matplotlib's exact approach with pre-scaled velocity
@@ -168,9 +167,7 @@ contains
         if (allocated(forward_y)) deallocate(forward_y)
         if (allocated(backward_x)) deallocate(backward_x)
         if (allocated(backward_y)) deallocate(backward_y)
-        
     end subroutine integrate_matplotlib_style
-
     subroutine integrate_direction(xg0, yg0, u_grid, v_grid, speed_field, dmap, mask, direction, maxlength, &
                                   broken_streamlines, traj_x, traj_y, n_points, path_length)
         !! Integrate in one direction with RK12 adaptive step size exactly like matplotlib using pre-scaled velocity
