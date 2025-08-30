@@ -202,13 +202,42 @@ contains
             return
         end if
         
+        ! Check minimum size requirement if provided
+        if (present(min_size)) then
+            if (array_size < min_size) then
+                if (min_size > 0) then
+                    if (array_size == 0) then
+                        ! Zero array size with minimum requirement is an error
+                        validation%is_valid = .false.
+                        validation%error_code = 5
+                        write(validation%message, '(A,I0,A)') &
+                            "Array size is zero but minimum required size is ", min_size, "."
+                        call validation_error(validation%message, ctx)
+                        return
+                    else
+                        ! Non-zero array size below minimum is a warning
+                        validation%has_warning = .true.
+                        write(validation%message, '(A,I0,A,I0,A)') &
+                            "Array size ", array_size, " is below recommended minimum ", min_size, "."
+                        call validation_warning(validation%message, ctx)
+                    end if
+                else
+                    validation%has_warning = .true.
+                    validation%message = "Minimum size requirement is non-positive."
+                    call validation_warning(validation%message, ctx)
+                end if
+            end if
+        end if
+        
         ! Check bounds overflow if max_index is provided
-        if (present(max_index) .and. max_index > array_size) then
-            validation%is_valid = .false.
-            validation%error_code = 6
-            validation%message = "Index would exceed array bounds."
-            call validation_error(validation%message, ctx)
-            return
+        if (present(max_index)) then
+            if (max_index > array_size) then
+                validation%is_valid = .false.
+                validation%error_code = 6
+                validation%message = "Index would exceed array bounds."
+                call validation_error(validation%message, ctx)
+                return
+            end if
         end if
         
         ! Warn about very large arrays
@@ -363,7 +392,7 @@ contains
         
         ! Check for extreme ranges that might cause numerical issues
         if (nan_count == 0 .and. inf_count == 0 .and. size(values) > 1) then
-            if (maxval(values) - minval(values) > 1.0e30_wp) then
+            if (maxval(values) - minval(values) >= 1.0e30_wp) then
                 validation%has_warning = .true.
                 write(validation%message, '(A,A,A,ES10.2,A)') &
                     trim(param), " range is extremely large (", &
