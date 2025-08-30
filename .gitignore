@@ -12,6 +12,7 @@ build*
 /*.bmp
 /*.txt
 /*.log
+/*.ppm
 !CMakeLists.txt
 *.mod
 
