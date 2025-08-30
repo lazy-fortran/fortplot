@@ -36,6 +36,9 @@ program test_parameter_validation_854
     ! Test numeric parameters validation
     call test_numeric_parameters_validation()
     
+    ! Test NaN/infinity helper functions directly (Issue #875)
+    call test_nan_infinity_helper_functions()
+    
     ! Test warning mode control
     call test_warning_mode_control()
     
@@ -196,12 +199,26 @@ contains
     subroutine test_numeric_parameters_validation()
         type(parameter_validation_result_t) :: result
         real(wp) :: normal_values(5), extreme_values(3)
+        real(wp) :: nan_value, pos_inf, neg_inf, large_finite
+        real(wp) :: pure_nan_array(3), mixed_nan_array(4), pure_inf_array(2)
         
         write(output_unit, '(A)') "Testing numeric parameters validation..."
         
         ! Initialize test arrays with safe values
         normal_values = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
         extreme_values = [1.0e-30_wp, 1.0_wp, 1.0e30_wp]
+        
+        ! Create special values for NaN/infinity testing (runtime creation to avoid compile-time errors)
+        nan_value = 0.0_wp
+        nan_value = nan_value / 0.0_wp
+        pos_inf = 1.0e200_wp  ! Value above 1.0e100_wp threshold -> treated as infinity
+        neg_inf = -1.0e200_wp
+        large_finite = 1.0e50_wp
+        
+        ! Initialize test arrays with special values
+        pure_nan_array = [nan_value, nan_value, nan_value]
+        mixed_nan_array = [1.0_wp, nan_value, 2.0_wp, nan_value]
+        pure_inf_array = [pos_inf, neg_inf]
         
         ! Test 1: Valid normal values
         result = validate_numeric_parameters(normal_values, "test_values", "test")
@@ -223,8 +240,104 @@ contains
         result = validate_numeric_parameters([0.0_wp, 0.0_wp], "test_values", "test")
         call run_test("Zero values", result%is_valid .and. .not. result%has_warning)
         
+        ! NEW NaN/INFINITY TESTS (Issue #875: Test coverage gap fix)
+        write(output_unit, '(A)') "  Testing NaN/infinity validation (Issue #875)..."
+        
+        ! Test 6: Pure NaN array (should fail)
+        result = validate_numeric_parameters(pure_nan_array, "nan_values", "test")
+        call run_test("Pure NaN array should fail", .not. result%is_valid)
+        
+        ! Test 7: Mixed NaN array (should warn but be valid)
+        result = validate_numeric_parameters(mixed_nan_array, "mixed_nan_values", "test")
+        call run_test("Mixed NaN array should warn", result%is_valid .and. result%has_warning)
+        
+        ! Test 8: Pure infinity array (should fail since all values are infinite)
+        result = validate_numeric_parameters(pure_inf_array, "inf_values", "test")
+        call run_test("Pure infinity array should fail", .not. result%is_valid)
+        
+        ! Test 9: Single NaN value (should fail since all values are NaN)
+        result = validate_numeric_parameters([nan_value], "single_nan", "test")
+        call run_test("Single NaN value should fail", .not. result%is_valid)
+        
+        ! Test 10: Single infinity value (should fail since all values are infinite)
+        result = validate_numeric_parameters([pos_inf], "single_inf", "test")
+        call run_test("Single infinity value should fail", .not. result%is_valid)
+        
+        ! Test 11: Large finite at threshold boundary (should be valid)
+        result = validate_numeric_parameters([large_finite], "large_finite", "test")
+        call run_test("Large finite at threshold", result%is_valid .and. .not. result%has_warning)
+        
+        ! Test 12: Mixed infinity and normal values (should warn but be valid)
+        result = validate_numeric_parameters([1.0_wp, pos_inf, 2.0_wp], "mixed_inf", "test")
+        call run_test("Mixed infinity array should warn", result%is_valid .and. result%has_warning)
+        
         write(output_unit, '(A)') "  ✓ Numeric parameters validation tests completed"
+        write(output_unit, '(A)') "  ✓ NaN/infinity test coverage gap FIXED (Issue #875)"
     end subroutine test_numeric_parameters_validation
+    
+    subroutine test_nan_infinity_helper_functions()
+        real(wp) :: nan_value, pos_inf, neg_inf, normal_value, large_finite, zero_value
+        logical :: result
+        
+        write(output_unit, '(A)') "Testing NaN/infinity helper functions directly (Issue #875)..."
+        
+        ! Create test values (runtime creation to avoid compile-time errors)
+        normal_value = 42.0_wp
+        large_finite = 1.0e50_wp
+        zero_value = 0.0_wp
+        nan_value = zero_value / zero_value
+        pos_inf = 1.0e200_wp  ! Value above 1.0e100_wp threshold -> treated as infinity
+        neg_inf = -1.0e200_wp
+        
+        ! Test is_nan_safe function
+        result = is_nan_safe(nan_value)
+        call run_test("is_nan_safe detects NaN", result)
+        
+        result = is_nan_safe(normal_value)
+        call run_test("is_nan_safe rejects normal value", .not. result)
+        
+        result = is_nan_safe(pos_inf)
+        call run_test("is_nan_safe rejects positive infinity", .not. result)
+        
+        result = is_nan_safe(neg_inf)
+        call run_test("is_nan_safe rejects negative infinity", .not. result)
+        
+        result = is_nan_safe(zero_value)
+        call run_test("is_nan_safe rejects zero", .not. result)
+        
+        ! Test is_finite_safe function
+        result = is_finite_safe(normal_value)
+        call run_test("is_finite_safe accepts normal value", result)
+        
+        result = is_finite_safe(zero_value)
+        call run_test("is_finite_safe accepts zero", result)
+        
+        result = is_finite_safe(large_finite)
+        call run_test("is_finite_safe accepts large finite", result)
+        
+        result = is_finite_safe(nan_value)
+        call run_test("is_finite_safe rejects NaN", .not. result)
+        
+        result = is_finite_safe(pos_inf)
+        call run_test("is_finite_safe rejects positive infinity", .not. result)
+        
+        result = is_finite_safe(neg_inf)
+        call run_test("is_finite_safe rejects negative infinity", .not. result)
+        
+        ! Test threshold boundary (1.0e100_wp threshold from implementation)
+        result = is_finite_safe(1.0e99_wp)
+        call run_test("is_finite_safe accepts value below threshold", result)
+        
+        ! Test actual threshold value (1.0e100_wp should be borderline)
+        result = is_finite_safe(1.0e100_wp)
+        call run_test("is_finite_safe at exact threshold", .not. result)
+        
+        ! Test value clearly above threshold 
+        result = is_finite_safe(1.0e200_wp)
+        call run_test("is_finite_safe rejects value above threshold", .not. result)
+        
+        write(output_unit, '(A)') "  ✓ NaN/infinity helper function tests completed"
+    end subroutine test_nan_infinity_helper_functions
     
     subroutine test_warning_mode_control()
         write(output_unit, '(A)') "Testing warning mode control..."

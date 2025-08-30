@@ -6,7 +6,9 @@ module fortplot_plot_annotations
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
+    use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS, &
+        validate_annotation
+    use fortplot_logging, only: log_warning
 
     implicit none
 
@@ -32,6 +34,8 @@ contains
         character(len=*), intent(in), optional :: weight, style
         
         type(text_annotation_t) :: annotation
+        logical :: valid_annotation
+        character(len=256) :: error_message
         
         ! Set annotation properties
         annotation%x = x
@@ -66,13 +70,24 @@ contains
         if (present(weight)) annotation%weight = weight
         if (present(style)) annotation%style = style
         
-        ! Add annotation to figure
-        if (.not. allocated(self%annotations)) then
-            allocate(self%annotations(self%max_annotations))
-        end if
+        ! Validate annotation at creation time (Issue #870: prevent duplicate warnings)
+        call validate_annotation(annotation, valid_annotation, error_message)
+        annotation%validated = .true.
+        annotation%valid = valid_annotation
         
-        self%annotation_count = self%annotation_count + 1
-        self%annotations(self%annotation_count) = annotation
+        ! Only add valid annotations to prevent rendering issues
+        if (valid_annotation) then
+            ! Add annotation to figure
+            if (.not. allocated(self%annotations)) then
+                allocate(self%annotations(self%max_annotations))
+            end if
+            
+            self%annotation_count = self%annotation_count + 1
+            self%annotations(self%annotation_count) = annotation
+        else
+            ! Issue warning once at creation time, not during rendering
+            call log_warning("Skipping invalid annotation: " // trim(error_message))
+        end if
     end subroutine add_text_annotation
 
     subroutine add_arrow_annotation(self, text, xy, xytext, xy_coord_type, xytext_coord_type, &
@@ -90,6 +105,8 @@ contains
         real(wp), intent(in), optional :: alpha
         
         type(text_annotation_t) :: annotation
+        logical :: valid_annotation
+        character(len=256) :: error_message
         
         ! Set annotation properties
         annotation%x = xytext(1)
@@ -134,13 +151,24 @@ contains
         if (present(color)) annotation%color = color
         if (present(alpha)) annotation%alpha = alpha
         
-        ! Add annotation to figure
-        if (.not. allocated(self%annotations)) then
-            allocate(self%annotations(self%max_annotations))
-        end if
+        ! Validate annotation at creation time (Issue #870: prevent duplicate warnings)
+        call validate_annotation(annotation, valid_annotation, error_message)
+        annotation%validated = .true.
+        annotation%valid = valid_annotation
         
-        self%annotation_count = self%annotation_count + 1
-        self%annotations(self%annotation_count) = annotation
+        ! Only add valid annotations to prevent rendering issues
+        if (valid_annotation) then
+            ! Add annotation to figure
+            if (.not. allocated(self%annotations)) then
+                allocate(self%annotations(self%max_annotations))
+            end if
+            
+            self%annotation_count = self%annotation_count + 1
+            self%annotations(self%annotation_count) = annotation
+        else
+            ! Issue warning once at creation time, not during rendering
+            call log_warning("Skipping invalid annotation: " // trim(error_message))
+        end if
     end subroutine add_arrow_annotation
 
 end module fortplot_plot_annotations
