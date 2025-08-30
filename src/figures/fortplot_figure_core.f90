@@ -20,31 +20,18 @@ module fortplot_figure_core
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                     PLOT_TYPE_SCATTER
-    use fortplot_figure_initialization
-    ! Import new focused modules
-    use fortplot_figure_core_io
-    use fortplot_figure_core_config
-    use fortplot_figure_core_compat
-    use fortplot_figure_core_ranges
-    use fortplot_figure_scatter, only: add_scatter_plot
-    use fortplot_figure_plot_management
-    use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
-                                     figure_add_contour_filled, figure_add_pcolormesh
-    use fortplot_figure_histogram, only: hist_figure
-    use fortplot_figure_streamlines, only: streamplot_figure, clear_streamline_data
-    use fortplot_figure_subplots, only: create_subplots, add_subplot_plot, &
-                                        get_subplot_plot_count, set_subplot_title, &
-                                        set_subplot_xlabel, set_subplot_ylabel, &
-                                        get_subplot_title
-    use fortplot_figure_accessors
-    use fortplot_figure_compatibility
-    use fortplot_figure_plots
-    use fortplot_figure_boxplot, only: add_boxplot, update_boxplot_ranges
-    use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
-    ! Import new focused modules for better organization
-    use fortplot_figure_properties_new
-    use fortplot_figure_operations
-    use fortplot_figure_management
+    ! ARCHITECTURE REFACTOR: Facade Pattern (Issue #821)
+    ! Reduced coupling from 19 dependencies to 1 comprehensive interface
+    ! Facade pattern encapsulates all subsystem interactions
+    
+    ! Core state management (always needed)
+    use fortplot_figure_initialization, only: figure_state_t
+    
+    ! COMPREHENSIVE OPERATIONS FACADE (1 dependency):
+    ! Single interface that aggregates ALL figure operations
+    use fortplot_figure_comprehensive_operations
+    ! Explicit import to resolve implicit interface warnings
+    use fortplot_figure_comprehensive_operations, only: figure_backend_color, figure_backend_associated, figure_backend_line
     implicit none
 
     private
