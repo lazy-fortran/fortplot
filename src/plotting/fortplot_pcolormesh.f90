@@ -81,18 +81,19 @@ contains
         self%ny = size(c_data, 1)
         self%nx = size(c_data, 2)
         
-        ! Check if coordinate arrays match this interpretation
+        ! Check if coordinate arrays match Fortran-style interpretation
         if (size(x_coords) == self%nx + 1 .and. size(y_coords) == self%ny + 1) then
             ! Fortran-style matches perfectly - proceed
-            ! This is the preferred convention
-        ! Try C-style interpretation: z(nx, ny) -> swap dimensions
+            ! This is the preferred convention: z(ny, nx) with x(nx+1), y(ny+1)
+        ! Try C-style interpretation: z(nx, ny) -> swap dimensions for validation only
         elseif (size(x_coords) == self%ny + 1 .and. size(y_coords) == self%nx + 1) then
-            ! C-style dimension pattern detected - swap our interpretation
-            ! User provided z(nx, ny) where we expected z(ny, nx)
+            ! C-style dimension pattern detected - user provided z(nx, ny)
+            ! This means they want x(ny+1), y(nx+1) which is what they provided
+            ! We need to swap our internal interpretation to match their convention
             temp_dim = self%nx
             self%nx = self%ny 
             self%ny = temp_dim
-            ! Now dimensions should work correctly
+            ! Now self%nx and self%ny reflect the user's intended dimensions
         else
             ! Neither convention works - this is a true dimension error
             if (present(error)) then
@@ -277,10 +278,11 @@ contains
     end subroutine get_quad_vertices
     
     subroutine validate_pcolormesh_grid(x_coords, y_coords, c_data, error)
-        !! Validate grid dimensions for pcolormesh
+        !! Validate grid dimensions for pcolormesh with flexible dimension support
         !!
-        !! For regular grids: x(nx+1), y(ny+1), C(ny,nx)
-        !! For flat shading: vertices define quad corners
+        !! Accepts both Fortran-style and C-style dimension conventions:
+        !! - Fortran: C(ny,nx) with x(nx+1), y(ny+1)  
+        !! - C-style: C(nx,ny) with x(nx+1), y(ny+1)
         real(wp), intent(in) :: x_coords(:)
         real(wp), intent(in) :: y_coords(:)
         real(wp), intent(in) :: c_data(:,:)
@@ -288,31 +290,24 @@ contains
         
         integer :: nx, ny
         
+        ! Try Fortran-style interpretation first
         ny = size(c_data, 1)
         nx = size(c_data, 2)
         
-        if (size(x_coords) /= nx + 1) then
+        ! Check if dimensions match either valid convention
+        if ((size(x_coords) == nx + 1 .and. size(y_coords) == ny + 1) .or. &  ! Fortran style
+            (size(x_coords) == ny + 1 .and. size(y_coords) == nx + 1)) then   ! C-style
+            ! Valid dimension pattern - set success
+            if (present(error)) call error%clear_error()
+        else
+            ! Invalid dimension pattern
             if (present(error)) then
                 call error%set_error(ERROR_DIMENSION_MISMATCH, &
-                    "pcolormesh: x coordinate array size must be nx+1")
+                    "pcolormesh: coordinate arrays incompatible with data dimensions")
             else
                 call log_error(ERROR_DIMENSION_MISMATCH, "validate_pcolormesh_grid")
             end if
-            return
         end if
-        
-        if (size(y_coords) /= ny + 1) then
-            if (present(error)) then
-                call error%set_error(ERROR_DIMENSION_MISMATCH, &
-                    "pcolormesh: y coordinate array size must be ny+1")
-            else
-                call log_error(ERROR_DIMENSION_MISMATCH, "validate_pcolormesh_grid")
-            end if
-            return
-        end if
-        
-        ! Set success status
-        if (present(error)) call error%clear_error()
     end subroutine validate_pcolormesh_grid
     
     subroutine create_regular_mesh_grid(x_1d, y_1d, x_2d, y_2d)
