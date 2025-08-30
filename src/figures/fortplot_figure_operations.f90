@@ -34,6 +34,7 @@ module fortplot_figure_operations
                                                     render_figure_axes, &
                                                     render_all_plots
     use fortplot_figure_grid, only: render_grid_lines
+    use fortplot_annotation_rendering, only: render_figure_annotations
     implicit none
 
     private
@@ -264,12 +265,16 @@ contains
         call grid_figure(state, enabled, which, axis, alpha, linestyle)
     end subroutine figure_grid_operation
 
-    subroutine figure_render(state, plots, plot_count)
+    subroutine figure_render(state, plots, plot_count, annotations, annotation_count)
         !! Main rendering pipeline using focused modules
         !! Fixed Issue #432: Always render axes/labels even with no plot data
+        !! Fixed Issue #844: ASCII annotation functionality
+        use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
         
         ! Calculate final data ranges
         call calculate_figure_data_ranges(plots, plot_count, &
@@ -325,6 +330,18 @@ contains
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call state%legend_data%render(state%backend)
+        end if
+        
+        ! Render annotations if any exist (Issue #844: ASCII annotation functionality)
+        if (present(annotations) .and. present(annotation_count)) then
+            if (annotation_count > 0) then
+                call render_figure_annotations(state%backend, annotations, annotation_count, &
+                                              state%x_min, state%x_max, &
+                                              state%y_min, state%y_max, &
+                                              state%width, state%height, &
+                                              state%margin_left, state%margin_right, &
+                                              state%margin_bottom, state%margin_top)
+            end if
         end if
         
         state%rendered = .true.
