@@ -68,7 +68,7 @@ contains
         call plt%initialize(800, 600)
         call plt%savefig("test/output/test_empty.png")
         
-        file_size = get_file_size('test_empty.png')
+        file_size = get_file_size('test/output/test_empty.png')
     end subroutine test_empty_plot
     
     subroutine test_simple_plot(file_size)
@@ -85,7 +85,7 @@ contains
         call plt%add_plot(x, y)
         call plt%savefig("test/output/test_simple.png")
         
-        file_size = get_file_size('test_simple.png')
+        file_size = get_file_size('test/output/test_simple.png')
         
         deallocate(x, y)
     end subroutine test_simple_plot
@@ -119,7 +119,7 @@ contains
         
         call plt%savefig("test/output/test_complex.png")
         
-        file_size = get_file_size('test_complex.png')
+        file_size = get_file_size('test/output/test_complex.png')
         
         deallocate(x, y1, y2, y3)
     end subroutine test_complex_plot

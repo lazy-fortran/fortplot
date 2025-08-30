@@ -56,9 +56,9 @@ contains
         call savefig("test/output/test_legend_optimized.png")
         
         ! Validate PNG creation
-        val = validate_file_exists('test_legend_optimized.png')
+        val = validate_file_exists('test/output/test_legend_optimized.png')
         if (val%passed) then
-            val = validate_file_size('test_legend_optimized.png', min_size=5000)
+            val = validate_file_size('test/output/test_legend_optimized.png', min_size=5000)
             if (val%passed) then
                 print *, "  ✓ Legend functionality verified (PNG)"
             else
@@ -79,7 +79,7 @@ contains
         call savefig("test/output/test_legend_optimized.txt")
         
         ! Comprehensive ASCII validation
-        val = validate_file_exists('test_legend_optimized.txt')
+        val = validate_file_exists('test/output/test_legend_optimized.txt')
         if (val%passed) then
             found_legend = .false.
             open(newunit=unit, file='test/output/test_legend_optimized.txt', status='old', action='read')
