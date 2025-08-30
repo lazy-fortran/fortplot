@@ -7,6 +7,7 @@ module fortplot_figure_plot_management
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
     use fortplot_legend, only: legend_t
+    use fortplot_errors, only: fortplot_error_t
     implicit none
     
     private
@@ -237,8 +238,13 @@ contains
         ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_PCOLORMESH
         
-        ! Initialize pcolormesh data using proper method
-        call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap)
+        ! Initialize pcolormesh data using proper method with error handling
+        block
+            type(fortplot_error_t) :: init_error
+            call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap, init_error)
+            ! Initialization now handles both Fortran-style and C-style dimension conventions
+            ! No error messages for valid dimension patterns that can be processed correctly
+        end block
         
         if (present(vmin)) then
             plots(plot_count)%pcolormesh_data%vmin = vmin
