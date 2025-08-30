@@ -202,15 +202,7 @@ contains
             end if
         end if
         
-        ! For Windows CI, use simpler directory handling
-        if (is_windows()) then
-            ! Check if directory already exists
-            call check_directory_exists(path, dir_exists)
-            success = dir_exists
-            return
-        end if
-        
-        ! Parse path segments for progressive creation (Unix/Linux only)
+        ! Parse path segments for progressive creation (Windows and Unix/Linux)
         call parse_path_segments(path, path_segments, n_segments)
         
         ! Build path progressively and test
@@ -219,13 +211,21 @@ contains
             if (i == 1) then
                 current_path = trim(path_segments(1))
             else
-                current_path = trim(current_path) // "/" // trim(path_segments(i))
+                if (is_windows()) then
+                    current_path = trim(current_path) // "\" // trim(path_segments(i))
+                else
+                    current_path = trim(current_path) // "/" // trim(path_segments(i))
+                end if
             end if
             
             call check_directory_exists(current_path, dir_exists)
             if (.not. dir_exists) then
                 ! Try to test directory creation with a test file approach
-                test_file = trim(current_path) // "/test_dir_creation.tmp"
+                if (is_windows()) then
+                    test_file = trim(current_path) // "\test_dir_creation.tmp"
+                else
+                    test_file = trim(current_path) // "/test_dir_creation.tmp"
+                end if
                 
                 ! Try to open a file to test if we can create in this directory
                 open(newunit=unit, file=test_file, status='unknown', &
