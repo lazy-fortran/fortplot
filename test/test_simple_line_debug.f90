@@ -7,7 +7,7 @@ program test_simple_line_debug
     implicit none
     
     type(png_context) :: ctx
-    character(len=*), parameter :: output_file = "test_simple_line_debug.png"
+    character(len=*), parameter :: output_file = "test/output/test_simple_line_debug.png"
     
     ! Create small PNG for debugging
     ctx = create_png_canvas(200, 200)

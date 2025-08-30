@@ -40,7 +40,7 @@ contains
         call title('Linear Scale Test')
         call legend()
         
-        filename = 'test_linear_scale.png'
+        filename = 'test/output/test_linear_scale.png'
         call savefig(filename)
         
         call test_result(.true., "Linear scale plot created successfully")
@@ -128,7 +128,7 @@ contains
         call title('Mixed Scale Test (Linear X, Log Y)')
         call legend()
         
-        filename = 'test_mixed_scale.png'
+        filename = 'test/output/test_mixed_scale.png'
         call savefig(filename)
         
         call test_result(.true., "Mixed scale plot created successfully")

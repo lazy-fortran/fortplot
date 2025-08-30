@@ -50,7 +50,7 @@ contains
                                              -1.0_wp, 1.0_wp, -1.0_wp, 1.0_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_symmetric.png')
+        call ctx%save('test/output/title_test_symmetric.png')
         
         ! Test with asymmetric data range - title should appear in same visual position
         ctx = create_png_canvas(400, 300)
@@ -65,9 +65,9 @@ contains
                                              1000.0_wp, 2000.0_wp, -5000.0_wp, -4000.0_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_asymmetric.png')
+        call ctx%save('test/output/title_test_asymmetric.png')
         
-        print *, "    Created test images: title_test_symmetric.png, title_test_asymmetric.png"
+        print *, "    Created test images: test/output/title_test_symmetric.png, test/output/title_test_asymmetric.png"
     end subroutine test_title_consistency
 
     subroutine test_extreme_coordinates()
@@ -90,9 +90,9 @@ contains
                                              1.0e-6_wp, 2.0e-6_wp, 1.0e6_wp, 2.0e6_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_extreme.png')
+        call ctx%save('test/output/title_test_extreme.png')
         
-        print *, "    Created test image: title_test_extreme.png"
+        print *, "    Created test image: test/output/title_test_extreme.png"
     end subroutine test_extreme_coordinates
 
 end program test_title_centering_fix

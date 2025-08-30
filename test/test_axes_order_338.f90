@@ -42,8 +42,8 @@ program test_axes_order_338
         prev_y = y
     end do
 
-    call ctx%save("test_axes_order.pdf")
-    write(*, '(A)') "Generated test_axes_order.pdf"
+    call ctx%save("test/output/test_axes_order.pdf")
+    write(*, '(A)') "Generated test/output/test_axes_order.pdf"
     write(*, '(A)') "Check: Should see both blue sine and red cosine curves with axes"
 
 end program test_axes_order_338

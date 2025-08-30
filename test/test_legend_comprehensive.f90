@@ -99,8 +99,8 @@ contains
         print *, "-------------------------------------"
         
         positions = ["upper right", "upper left ", "lower right", "lower left "]
-        filenames = ["test_legend_pos_ur.png", "test_legend_pos_ul.png", &
-                     "test_legend_pos_lr.png", "test_legend_pos_ll.png"]
+        filenames = ["test/output/test_legend_pos_ur.png", "test/output/test_legend_pos_ul.png", &
+                     "test/output/test_legend_pos_lr.png", "test/output/test_legend_pos_ll.png"]
         
         x = [(real(i, wp), i=1, 10)]
         y = sin(x)

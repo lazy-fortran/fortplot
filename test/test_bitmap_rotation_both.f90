@@ -63,16 +63,16 @@ program test_bitmap_rotation_both
     call bitmap_to_png_buffer(full_rotation_bitmap, width, height, full_png_buffer)
     
     ! Write PNG files
-    call write_png_file("test_rotation_original.png", width, height, png_buffer)
-    call write_png_file("test_rotation_clockwise.png", height, width, cw_png_buffer)
-    call write_png_file("test_rotation_counter_clockwise.png", height, width, ccw_png_buffer)
-    call write_png_file("test_rotation_180.png", width, height, full_png_buffer)
+    call write_png_file("test/output/test_rotation_original.png", width, height, png_buffer)
+    call write_png_file("test/output/test_rotation_clockwise.png", height, width, cw_png_buffer)
+    call write_png_file("test/output/test_rotation_counter_clockwise.png", height, width, ccw_png_buffer)
+    call write_png_file("test/output/test_rotation_180.png", width, height, full_png_buffer)
     
     print *, "SUCCESS: Both rotation directions working correctly"
-    print *, "  Created test_rotation_original.png"
-    print *, "  Created test_rotation_clockwise.png"
-    print *, "  Created test_rotation_counter_clockwise.png"
-    print *, "  Created test_rotation_180.png"
+    print *, "  Created test/output/test_rotation_original.png"
+    print *, "  Created test/output/test_rotation_clockwise.png"
+    print *, "  Created test/output/test_rotation_counter_clockwise.png"
+    print *, "  Created test/output/test_rotation_180.png"
     
     deallocate(bitmap, cw_bitmap, ccw_bitmap, full_rotation_bitmap)
     deallocate(png_buffer, cw_png_buffer, ccw_png_buffer, full_png_buffer)
