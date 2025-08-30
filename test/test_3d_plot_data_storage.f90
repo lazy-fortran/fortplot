@@ -26,36 +26,18 @@ contains
         plot_data%plot_type = PLOT_TYPE_LINE
         plot_data%x = x
         plot_data%y = y
-        ! Note: plot_data_t currently doesn't have z field for 3D line plots
-        ! This test documents that 3D support is not yet implemented in the current data structure
-        ! plot_data%z = z  ! Z coordinate support not yet implemented
-        plot_data%label = "3D test data"
+        ! Note: This test verifies current 2D plot_data_t structure
+        ! 3D support (z field) is not yet implemented - this is expected behavior
+        plot_data%label = "2D test data (3D support pending)"
         
-        ! Assert - Currently expect failure since z is not implemented
-        ! Enable when z field is added to plot_data_t
-        ! if (.not. allocated(plot_data%z)) then
-        !     error stop "plot_data_t should support z coordinate allocation"
-        ! end if
-        
-        ! Current working assertion: verify x and y data are stored correctly
+        ! Test current implementation: verify x and y data are stored correctly
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
             error stop "plot_data_t should support x and y coordinate allocation"
         end if
         
-        ! Enable when z field is implemented
-        ! if (size(plot_data%z) /= 5) then
-        !     error stop "z array size mismatch"
-        ! end if
-        
-        ! Current working assertions
         if (size(plot_data%x) /= 5 .or. size(plot_data%y) /= 5) then
             error stop "x or y array size mismatch"
         end if
-        
-        ! Enable when z field is implemented
-        ! if (abs(plot_data%z(3) - 1.5_wp) > 1e-10_wp) then
-        !     error stop "z coordinate value mismatch"
-        ! end if
         
         ! Current working assertions with platform-safe tolerance
         if (abs(plot_data%x(3) - 3.0_wp) > get_windows_safe_tolerance(1e-10_wp)) then
@@ -76,12 +58,7 @@ contains
         plot_data%y = y
         ! Don't allocate z for 2D plots
         
-        ! Assert - Enable when z field is added to plot_data_t
-        ! if (allocated(plot_data%z)) then
-        !     error stop "2D plots should not have z allocated by default"
-        ! end if
-        
-        ! Current working assertion: verify basic fields are working
+        ! Test current 2D-only implementation: z field not yet supported
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
             error stop "2D plots should have x and y allocated"
         end if
@@ -93,20 +70,10 @@ contains
         !! Enable when plot_data_t has z field and is_3d() method
         type(plot_data_t) :: plot_data
         
-        ! Test 2D plot - basic functionality test for now
+        ! Test current 2D plot implementation
         allocate(plot_data%x(3), plot_data%y(3))
-        ! Enable when is_3d() method exists
-        ! if (plot_data%is_3d()) then
-        !     error stop "2D plot incorrectly detected as 3D"
-        ! end if
         
-        ! Test 3D plot - Enable when z field exists
-        ! allocate(plot_data%z(3))
-        ! if (.not. plot_data%is_3d()) then
-        !     error stop "3D plot not detected when z is allocated"
-        ! end if
-        
-        ! Current working assertion - verify basic allocation works
+        ! Verify basic allocation works (3D detection not yet implemented)
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
             error stop "plot_data_t should support basic x and y allocation"
         end if
