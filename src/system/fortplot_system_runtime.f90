@@ -178,6 +178,11 @@ contains
             index(normalized_path, 'fortplot_test_') > 0 .or. &
             index(normalized_path, 'output/example') > 0 .or. &
             index(normalized_path, 'output\example') > 0 .or. &
+            index(normalized_path, 'test/output') > 0 .or. &
+            index(normalized_path, 'test\output') > 0 .or. &
+            trim(normalized_path) == 'test' .or. &
+            trim(normalized_path) == 'test/output' .or. &
+            trim(normalized_path) == 'test\output' .or. &
             index(normalized_path, '/tmp/fortplot_test_') > 0 .or. &
             index(normalized_path, '\tmp\fortplot_test_') > 0) then
             is_test_path = .true.

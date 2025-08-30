@@ -44,7 +44,7 @@ contains
         call my_fig%initialize(600, 400)
         call my_fig%add_plot(x_data, y_data, label="Spacing test")
         call my_fig%set_title("X-axis Label Spacing Test")
-        call my_fig%savefig(get_test_output_path("build/test/x_axis_spacing_test.png"))
+        call my_fig%savefig('test/output/x_axis_spacing_test.png')
         
         print *, "Generated: /tmp/x_axis_spacing_test.png"
         print *, "Expected: X-axis labels should not touch the axis line"
@@ -67,7 +67,7 @@ contains
         call my_fig%initialize(600, 400)
         call my_fig%add_plot(x_data, y_data, label="Alignment test")
         call my_fig%set_title("Y-axis Label Alignment Test")
-        call my_fig%savefig(get_test_output_path("build/test/y_axis_alignment_test.png"))
+        call my_fig%savefig('test/output/y_axis_alignment_test.png')
         
         print *, "Generated: /tmp/y_axis_alignment_test.png"
         print *, "Expected: Y-axis labels should be right-aligned"
@@ -91,7 +91,7 @@ contains
         call my_fig%add_plot(x_data, y_data, label="Long labels test")
         call my_fig%set_yscale("log")
         call my_fig%set_title("Long Label Overlap Test")
-        call my_fig%savefig(get_test_output_path("build/test/long_labels_test.png"))
+        call my_fig%savefig('test/output/long_labels_test.png')
         
         print *, "Generated: /tmp/long_labels_test.png"
         print *, "Expected: Scientific notation labels should not overlap axis"
@@ -114,7 +114,7 @@ contains
         call my_fig%initialize(600, 400)
         call my_fig%add_plot(x_data, y_data, label="Alignment test")
         call my_fig%set_title("Tick Mark Alignment Test")
-        call my_fig%savefig(get_test_output_path("build/test/tick_alignment_test.png"))
+        call my_fig%savefig('test/output/tick_alignment_test.png')
         
         print *, "Generated: /tmp/tick_alignment_test.png"
         print *, "Expected: X-axis labels centered under tick marks"

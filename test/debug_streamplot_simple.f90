@@ -57,7 +57,7 @@ program debug_streamplot_simple
     end if
     
     ! Save debug output
-    call fig%savefig('debug_streamplot_simple.png')
-    call fig%savefig('debug_streamplot_simple.txt')
+    call fig%savefig("test/output/debug_streamplot_simple.png")
+    call fig%savefig("test/output/debug_streamplot_simple.txt")
     
 end program debug_streamplot_simple

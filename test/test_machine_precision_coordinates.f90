@@ -48,7 +48,7 @@ contains
         call title("Machine Precision Coordinate Test")
         call xlabel("X values (epsilon scale)")
         call ylabel("Y values (epsilon scale)")
-        call savefig("test_epsilon_coordinates.png")
+        call savefig("test/output/test_epsilon_coordinates.png")
         
         print *, "  Range:", minval(x), "to", maxval(x)
         print *, "  Difference:", maxval(x) - minval(x)
@@ -78,7 +78,7 @@ contains
         call title("Mixed Precision Range Test")
         call xlabel("Normal X range")
         call ylabel("Epsilon Y range")
-        call savefig("test_mixed_precision.png")
+        call savefig("test/output/test_mixed_precision.png")
         
         print *, "  X range:", minval(x), "to", maxval(x), "(diff:", maxval(x) - minval(x), ")"
         print *, "  Y range:", minval(y), "to", maxval(y), "(diff:", maxval(y) - minval(y), ")"
@@ -111,7 +111,7 @@ contains
         call title("Epsilon Differences Test")
         call xlabel("X around 100 (epsilon scale)")
         call ylabel("Y around 100 (10x epsilon scale)")
-        call savefig("test_epsilon_differences.png")
+        call savefig("test/output/test_epsilon_differences.png")
         
         print *, "  Base value:", base_val
         print *, "  X range:", minval(x), "to", maxval(x), "(diff:", maxval(x) - minval(x), ")"
@@ -142,7 +142,7 @@ contains
         call title("Near-Zero Epsilon Range Test")
         call xlabel("X near zero (epsilon)")
         call ylabel("Y near zero (2x epsilon)")
-        call savefig("test_near_zero_epsilon.png")
+        call savefig("test/output/test_near_zero_epsilon.png")
         
         print *, "  X range:", minval(x), "to", maxval(x), "(diff:", maxval(x) - minval(x), ")"
         print *, "  Y range:", minval(y), "to", maxval(y), "(diff:", maxval(y) - minval(y), ")"
@@ -172,7 +172,7 @@ contains
         call title("Large-Scale Epsilon Range Test")
         call xlabel("X around 1e6 (epsilon scale)")
         call ylabel("Y around 1e6 (5x epsilon scale)")
-        call savefig("test_large_scale_epsilon.png")
+        call savefig("test/output/test_large_scale_epsilon.png")
         
         print *, "  Large value:", large_val
         print *, "  X range:", minval(x), "to", maxval(x), "(diff:", maxval(x) - minval(x), ")"

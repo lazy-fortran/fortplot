@@ -16,7 +16,7 @@ program test_user_workflow
     call ylabel("y") 
     call xlim(0.0_wp, 10.0_wp)
     call ylim(-1.0_wp, 1.0_wp)
-    call savefig("test_plot.png")
+    call savefig("test/output/test_plot.png")
 
     print *, "Test completed successfully"
 end program test_user_workflow

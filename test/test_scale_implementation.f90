@@ -153,21 +153,21 @@ contains
         call set_xscale('invalid_scale')
         call set_yscale('invalid_scale')
         call plot(x, y)
-        call savefig('test_invalid_scale.png')
+        call savefig("test/output/test_invalid_scale.png")
         
         ! Test 2: Very small symlog threshold
         call figure(figsize=[4.0d0, 3.0d0])
         call set_xscale('symlog', 0.001_wp)
         call set_yscale('symlog', 0.001_wp)
         call plot(x, y)
-        call savefig('test_small_threshold.png')
+        call savefig("test/output/test_small_threshold.png")
         
         ! Test 3: Switching scales after plotting
         call figure(figsize=[4.0d0, 3.0d0])
         call plot(x, y)
         call set_xscale('log')
         call set_yscale('log')
-        call savefig('test_scale_switch.png')
+        call savefig("test/output/test_scale_switch.png")
         
         call test_result(test_passed, "Edge cases handled gracefully")
     end subroutine

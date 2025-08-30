@@ -289,7 +289,7 @@ contains
         call fig%hist(large_data, bins=50)
         call fig%set_title('Large Dataset (10K points)')
         
-        filename = get_test_output_path('/tmp/histogram_large.png')
+        filename = 'test/output/histogram_large.png'
         if (should_use_memory_backend()) then
             call fast_savefig(fig, filename)
         else
@@ -321,14 +321,14 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(data, bins=100)  ! Reduced from 500 for speed
         call fig%set_title('Many Bins Test')
-        filename = get_test_output_path('/tmp/histogram_many_bins.png')
+        filename = 'test/output/histogram_many_bins.png'
         call fig%savefig(filename)
         
         ! Test with minimal bins
         call fig%initialize(600, 400)
         call fig%hist(data, bins=1)
         call fig%set_title('Single Bin Test')
-        filename = get_test_output_path('/tmp/histogram_one_bin.png')
+        filename = 'test/output/histogram_one_bin.png'
         call fig%savefig(filename)
         
         ! Test with very wide range data
@@ -338,7 +338,7 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(data, bins=20)
         call fig%set_title('Wide Range Data')
-        filename = get_test_output_path('/tmp/histogram_wide_range.png')
+        filename = 'test/output/histogram_wide_range.png'
         call fig%savefig(filename)
         
         call end_test()
@@ -364,7 +364,7 @@ contains
             call fig%hist(data, bins=20)
             call fig%set_title('Memory Test')
             
-            filename = get_test_output_path('/tmp/histogram_memory.png')
+            filename = 'test/output/histogram_memory.png'
             call fig%savefig(filename)
             
             deallocate(data)
@@ -379,7 +379,7 @@ contains
         call fig%hist(data(1000:2000), bins=30, label='Second Half')
         call fig%legend()
         call fig%set_title('Overlapping Histograms')
-        filename = get_test_output_path('/tmp/histogram_overlapping.png')
+        filename = 'test/output/histogram_overlapping.png'
         call fig%savefig(filename)
         
         deallocate(data)

@@ -33,7 +33,7 @@ program test_user_compilation
     
     ! Test save functionality (this creates directories)
     print *, "Testing save functionality..."
-    call fig%savefig("test_user_output.png")
+    call fig%savefig("test/output/test_user_output.png")
     
     print *, "SUCCESS: User compilation and basic functionality working"
     print *, "This confirms FPM build directories are consistent"

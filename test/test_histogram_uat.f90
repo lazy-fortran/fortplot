@@ -77,14 +77,14 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(data)
         call fig%set_title('Basic hist() API Test')
-        filename = get_test_output_path('/tmp/histogram_hist_basic.png')
+        filename = 'test/output/histogram_hist_basic.png'
         call fig%savefig(filename)
         
         ! Test histogram() function (module-level function)
         call figure(figsize=[600.0_wp, 400.0_wp])
         call histogram(data)
         call title('Basic histogram() API Test') 
-        filename = get_test_output_path('/tmp/histogram_function_basic.png')
+        filename = 'test/output/histogram_function_basic.png'
         call savefig(filename)
         
         ! Test with optional parameters
@@ -92,7 +92,7 @@ contains
         call fig%hist(data, bins=15, density=.true., label='Test Data')
         call fig%legend()
         call fig%set_title('hist() with Optional Parameters')
-        filename = get_test_output_path('/tmp/histogram_options.png')
+        filename = 'test/output/histogram_options.png'
         call fig%savefig(filename)
         
         call end_test()
@@ -114,28 +114,28 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(single_data)
         call fig%set_title('Single Value Histogram')
-        filename = get_test_output_path('/tmp/histogram_single_value.png')
+        filename = 'test/output/histogram_single_value.png'
         call fig%savefig(filename)
         
         ! Test identical values
         call fig%initialize(600, 400)
         call fig%hist(identical_data)
         call fig%set_title('Identical Values Histogram')
-        filename = get_test_output_path('/tmp/histogram_identical_values.png')
+        filename = 'test/output/histogram_identical_values.png'
         call fig%savefig(filename)
         
         ! Test extreme values
         call fig%initialize(600, 400)
         call fig%hist(extreme_data)
         call fig%set_title('Extreme Values Histogram')
-        filename = get_test_output_path('/tmp/histogram_extreme_values.png')
+        filename = 'test/output/histogram_extreme_values.png'
         call fig%savefig(filename)
         
         ! Test very small bins
         call fig%initialize(600, 400)
         call fig%hist(extreme_data, bins=2)
         call fig%set_title('Very Few Bins')
-        filename = get_test_output_path('/tmp/histogram_few_bins.png')
+        filename = 'test/output/histogram_few_bins.png'
         call fig%savefig(filename)
         
         call end_test()
@@ -155,21 +155,21 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(empty_data)
         call fig%set_title('Empty Data Test')
-        filename = get_test_output_path('/tmp/histogram_empty_data.png')
+        filename = 'test/output/histogram_empty_data.png'
         call fig%savefig(filename)
         
         ! Test invalid bins (negative)
         call fig%initialize(600, 400)
         call fig%hist(data, bins=-5)
         call fig%set_title('Invalid Bins Test')
-        filename = get_test_output_path('/tmp/histogram_invalid_bins.png')
+        filename = 'test/output/histogram_invalid_bins.png'
         call fig%savefig(filename)
         
         ! Test zero bins
         call fig%initialize(600, 400)
         call fig%hist(data, bins=0)
         call fig%set_title('Zero Bins Test')
-        filename = get_test_output_path('/tmp/histogram_zero_bins.png')
+        filename = 'test/output/histogram_zero_bins.png'
         call fig%savefig(filename)
         
         call end_test()
@@ -193,21 +193,21 @@ contains
         call fig%initialize(600, 400)
         call fig%hist(data, bins=10)
         call fig%set_title('PNG Backend Test')
-        filename = get_test_output_path('/tmp/histogram_backend.png')
+        filename = 'test/output/histogram_backend.png'
         call fig%savefig(filename)
         
         ! Test PDF backend
         call fig%initialize(600, 400)
         call fig%hist(data, bins=10)
         call fig%set_title('PDF Backend Test')
-        filename = get_test_output_path('/tmp/histogram_backend.pdf')
+        filename = 'test/output/histogram_backend.pdf'
         call fig%savefig(filename)
         
         ! Test ASCII backend
         call fig%initialize(80, 24)
         call fig%hist(data, bins=10)
         call fig%set_title('ASCII Backend Test')
-        filename = get_test_output_path('/tmp/histogram_backend.txt')
+        filename = 'test/output/histogram_backend.txt'
         call fig%savefig(filename)
         
         call end_test()
@@ -233,19 +233,19 @@ contains
         ! Test the exact example from the hist() documentation
         call figure(figsize=[8.0_wp, 6.0_wp])
         call hist(data_values, bins=20, label='Distribution')
-        filename = get_test_output_path('/tmp/doc_example_hist.png')
+        filename = 'test/output/doc_example_hist.png'
         call savefig(filename)
         
         ! Test the exact example from the histogram() documentation
         call figure(figsize=[8.0_wp, 6.0_wp])
         call histogram(data_values, bins=20, label='Distribution')
-        filename = get_test_output_path('/tmp/doc_example_histogram.png')
+        filename = 'test/output/doc_example_histogram.png'
         call savefig(filename)
         
         ! Test object-oriented API as documented
         call fig%initialize(800, 600)
         call fig%hist(data_values, bins=20, label='Distribution')
-        filename = get_test_output_path('/tmp/doc_example_oo.png')
+        filename = 'test/output/doc_example_oo.png'
         call fig%savefig(filename)
         
         call end_test()

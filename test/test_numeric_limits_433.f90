@@ -35,7 +35,7 @@ program test_numeric_limits_433
     call fig%set_title("Numeric Limits Test - Linear Scale")
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis") 
-    call fig%savefig('test_limits_linear.png')
+    call fig%savefig("test/output/test_limits_linear.png")
     
     !---------------------------------------------------------------------
     ! Test 2: Log scale with extreme range (should work)
@@ -48,7 +48,7 @@ program test_numeric_limits_433
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_limits_log.png')
+    call fig%savefig("test/output/test_limits_log.png")
     
     !---------------------------------------------------------------------
     ! Test 3: ASCII backend for easier debugging
@@ -61,7 +61,7 @@ program test_numeric_limits_433
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_limits_ascii.txt')
+    call fig%savefig("test/output/test_limits_ascii.txt")
     
     !---------------------------------------------------------------------
     ! Test 4: Controlled extreme values
@@ -77,7 +77,7 @@ program test_numeric_limits_433
     call fig%set_xlabel("X axis")
     call fig%set_ylabel("Y axis")
     call fig%set_xscale("log")
-    call fig%savefig('test_controlled_extreme.png')
+    call fig%savefig("test/output/test_controlled_extreme.png")
     
     !---------------------------------------------------------------------
     ! Summary

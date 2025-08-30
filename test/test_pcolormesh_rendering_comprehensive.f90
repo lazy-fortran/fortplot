@@ -83,10 +83,10 @@ contains
         call figure()
         call pcolormesh(x, y, c)
         call title('ASCII Backend Test')
-        call savefig('test_rendering_ascii.txt')
+        call savefig("test/output/test_rendering_ascii.txt")
         
         ! Verify ASCII file contains visible characters
-        open(newunit=unit, file='test_rendering_ascii.txt', status='old', iostat=iostat)
+        open(newunit=unit, file='test/output/test_rendering_ascii.txt', status='old', iostat=iostat)
         if (iostat /= 0) then
             test_passed = .false.
             error_msg = "ASCII backend failed to create output file"
@@ -144,7 +144,7 @@ contains
         call title('PNG Backend Test')
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
-        call savefig('test_rendering.png')
+        call savefig("test/output/test_rendering.png")
         
         ! Verify PNG file size is reasonable
         file_size = get_file_size('test_rendering.png')
@@ -180,7 +180,7 @@ contains
         call figure()
         call pcolormesh(x, y, c, colormap='coolwarm')
         call title('PDF Backend Test')
-        call savefig('test_rendering.pdf')
+        call savefig("test/output/test_rendering.pdf")
         
         ! Verify PDF file exists and has content
         file_size = get_file_size('test_rendering.pdf')
@@ -221,7 +221,7 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='viridis')
-        call savefig('test_rendering_basic.png')
+        call savefig("test/output/test_rendering_basic.png")
         
         ! Verify file creation
         if (.not. file_exists('test_rendering_basic.png')) then
@@ -273,7 +273,7 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='viridis')
-        call savefig('test_enhanced_gradient.png')
+        call savefig("test/output/test_enhanced_gradient.png")
         
         ! Verify substantial file size (high resolution should be larger)
         file_size = get_file_size('test_enhanced_gradient.png')
@@ -318,7 +318,7 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='coolwarm')
-        call savefig('test_enhanced_sinusoidal.png')
+        call savefig("test/output/test_enhanced_sinusoidal.png")
         
         file_size = get_file_size('test_enhanced_sinusoidal.png')
         if (file_size < 2000) then
@@ -362,7 +362,7 @@ contains
         call xlabel('X coordinate')
         call ylabel('Y coordinate')
         call pcolormesh(x, y, c, colormap='plasma')
-        call savefig('test_enhanced_radial.png')
+        call savefig("test/output/test_enhanced_radial.png")
         
         file_size = get_file_size('test_enhanced_radial.png')
         if (file_size < 2000) then
@@ -412,7 +412,7 @@ contains
         call figure()
         call pcolormesh(x_grid, y_grid, z_grid)
         call title('Dimension Consistency Test - ASCII')
-        call savefig('test_dim_consistency_ascii.txt')
+        call savefig("test/output/test_dim_consistency_ascii.txt")
         
         ascii_ok = file_exists('test_dim_consistency_ascii.txt')
         if (.not. ascii_ok) then
@@ -425,7 +425,7 @@ contains
         call figure()  
         call pcolormesh(x_grid, y_grid, z_grid)
         call title('Dimension Consistency Test - Raster')
-        call savefig('test_dim_consistency_raster.ppm')
+        call savefig("test/output/test_dim_consistency_raster.ppm")
         
         raster_ok = file_exists('test_dim_consistency_raster.ppm')
         if (.not. raster_ok) then

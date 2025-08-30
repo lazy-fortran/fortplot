@@ -74,7 +74,7 @@ contains
         call ylabel("Y Coordinate")
         
         ! Test PNG backend (covers high-resolution + dimension consistency)
-        call savefig('test_pcolormesh_consolidated.png')
+        call savefig("test/output/test_pcolormesh_consolidated.png")
         val = validate_file_exists('test_pcolormesh_consolidated.png')
         png_ok = val%passed
         if (png_ok) then
@@ -86,7 +86,7 @@ contains
         call figure(figsize=[60.0_wp, 20.0_wp])
         call pcolormesh(x, y, z)
         call title("ASCII Pcolormesh Test") 
-        call savefig('test_pcolormesh_consolidated.txt')
+        call savefig("test/output/test_pcolormesh_consolidated.txt")
         val = validate_file_exists('test_pcolormesh_consolidated.txt')
         ascii_ok = val%passed
         
@@ -135,7 +135,7 @@ contains
         call xlabel("Time / Parameter")
         call ylabel("Response / Measurement")
         call legend()
-        call savefig('test_scientific_consolidated.png')
+        call savefig("test/output/test_scientific_consolidated.png")
         
         val = validate_file_exists('test_scientific_consolidated.png')
         if (val%passed) then
@@ -196,7 +196,7 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")  
         call legend()
-        call savefig('test_edge_cases_consolidated.png')
+        call savefig("test/output/test_edge_cases_consolidated.png")
         
         val = validate_file_exists('test_edge_cases_consolidated.png')
         if (val%passed) then

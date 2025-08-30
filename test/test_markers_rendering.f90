@@ -31,7 +31,7 @@ program test_markers_rendering
     call fig%set_title('Test: Markers Only')
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
-    call fig%savefig('test_markers_only_validation.png')
+    call fig%savefig("test/output/test_markers_only_validation.png")
     
     validation = validate_file_exists('test_markers_only_validation.png')
     test_passed = validation%passed
@@ -49,7 +49,7 @@ program test_markers_rendering
     call fig%set_title('Test: Lines with Markers')
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
-    call fig%savefig('test_lines_markers_validation.png')
+    call fig%savefig("test/output/test_lines_markers_validation.png")
     
     validation = validate_file_exists('test_lines_markers_validation.png')
     test_passed = validation%passed
@@ -70,7 +70,7 @@ program test_markers_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%legend()
-    call fig%savefig('test_multiple_markers_validation.png')
+    call fig%savefig("test/output/test_multiple_markers_validation.png")
     
     validation = validate_file_exists('test_multiple_markers_validation.png')
     test_passed = validation%passed
@@ -92,7 +92,7 @@ program test_markers_rendering
     call fig%set_xlabel('X')
     call fig%set_ylabel('Y')
     call fig%legend()
-    call fig%savefig('test_combined_validation.png')
+    call fig%savefig("test/output/test_combined_validation.png")
     
     validation = validate_file_exists('test_combined_validation.png')
     test_passed = validation%passed
@@ -112,7 +112,7 @@ program test_markers_rendering
     call fig%set_ylabel('Y')
     call fig%set_xlim(0.0_wp, 10.0_wp)
     call fig%set_ylim(0.0_wp, 10.0_wp)
-    call fig%savefig('test_single_point_validation.png')
+    call fig%savefig("test/output/test_single_point_validation.png")
     
     validation = validate_file_exists('test_single_point_validation.png')
     test_passed = validation%passed
@@ -142,7 +142,7 @@ program test_markers_rendering
     call fig%set_xlim(0.0_wp, 11.0_wp)
     call fig%set_ylim(0.0_wp, 11.0_wp)
     call fig%legend()
-    call fig%savefig('test_all_markers_validation.png')
+    call fig%savefig("test/output/test_all_markers_validation.png")
     
     validation = validate_file_exists('test_all_markers_validation.png')
     test_passed = validation%passed

@@ -97,11 +97,12 @@ contains
     
     subroutine ensure_test_directory(unique_suffix)
         !! Ensure test directory exists with proper error handling
+        !! Modified to use test/output/ directory structure per issue #774
         character(len=*), intent(in), optional :: unique_suffix
         character(len=512) :: base_temp
         character(len=:), allocatable :: suffix
         integer :: status
-        logical :: success
+        logical :: success, base_exists
         
         if (test_dir_created .and. len_trim(current_test_dir) > 0) return
         
@@ -112,61 +113,85 @@ contains
             suffix = test_get_unique_suffix()
         end if
         
-        ! Build platform-appropriate temp directory path
+        ! CRITICAL: Issue #774 - All test artifacts go to test/output/ directory
+        ! Primary location: test/output/{test_name}/
+        current_test_dir = "test/output/" // TEMP_DIR_PREFIX // trim(suffix)
         if (is_windows()) then
-            call get_environment_variable("TEMP", base_temp, status=status)
-            if (status /= 0 .or. len_trim(base_temp) == 0) then
-                call get_environment_variable("TMP", base_temp, status=status)
-                if (status /= 0 .or. len_trim(base_temp) == 0) then
-                    ! Use current directory as fallback on Windows
-                    base_temp = "."
-                end if
-            end if
-            current_test_dir = trim(base_temp) // "\" // TEMP_DIR_PREFIX // trim(suffix)
             current_test_dir = normalize_path_separators(current_test_dir, .true.)
-        else
-            ! Always use /tmp on Unix systems - it exists and is writable
-            current_test_dir = "/tmp/" // TEMP_DIR_PREFIX // trim(suffix)
         end if
         
         ! Validate the generated path
         if (.not. is_safe_path(current_test_dir)) then
-            print *, "ERROR: Generated invalid temp directory path"
-            current_test_dir = TEMP_DIR_PREFIX // trim(suffix)
+            print *, "ERROR: Generated invalid test output directory path"
+            current_test_dir = "test/output/" // TEMP_DIR_PREFIX // "fallback"
         end if
         
-        ! Try to create or use the directory
-        call create_directory_runtime(current_test_dir, success)
-        if (success) then
-            test_dir_created = .true.
+        ! First ensure test/output/ exists
+        call create_directory_runtime("test", success)
+        if (.not. success) then
+            inquire(file="test/.", exist=base_exists)
         else
-            ! Check if directory already exists
-            inquire(file=trim(current_test_dir)//"/." , exist=test_dir_created)
-            if (.not. test_dir_created) then
-                ! Try build/test directory which should exist
-                current_test_dir = "build/test/" // TEMP_DIR_PREFIX // trim(suffix)
-                if (is_windows()) then
-                    current_test_dir = normalize_path_separators(current_test_dir, .true.)
-                end if
-                call create_directory_runtime(current_test_dir, success)
-                test_dir_created = success
-                
-                if (.not. success) then
-                    ! Check if build/test exists
-                    inquire(file="build/test/." , exist=test_dir_created)
-                    if (test_dir_created) then
-                        current_test_dir = "build/test"
-                        if (is_windows()) then
-                            current_test_dir = normalize_path_separators(current_test_dir, .true.)
-                        end if
-                    else
-                        ! Ultimate fallback: use current directory
-                        current_test_dir = "."
-                        test_dir_created = .true.
-                    end if
+            base_exists = .true.
+        end if
+        
+        if (base_exists) then
+            call create_directory_runtime("test/output", success)
+            if (.not. success) then
+                inquire(file="test/output/.", exist=base_exists)
+            else
+                base_exists = .true.
+            end if
+        end if
+        
+        ! Now create the specific test directory
+        if (base_exists) then
+            call create_directory_runtime(current_test_dir, success)
+            if (success) then
+                test_dir_created = .true.
+            else
+                ! Check if directory already exists
+                inquire(file=trim(current_test_dir)//"/." , exist=test_dir_created)
+            end if
+        end if
+        
+        ! Fallback to build/test if test/output/ creation failed
+        if (.not. test_dir_created) then
+            current_test_dir = "build/test/" // TEMP_DIR_PREFIX // trim(suffix)
+            if (is_windows()) then
+                current_test_dir = normalize_path_separators(current_test_dir, .true.)
+            end if
+            call create_directory_runtime("build", success)
+            if (success .or. inquire_directory("build")) then
+                call create_directory_runtime("build/test", success)
+                if (success .or. inquire_directory("build/test")) then
+                    call create_directory_runtime(current_test_dir, success)
+                    test_dir_created = success .or. inquire_directory(current_test_dir)
                 end if
             end if
         end if
+        
+        ! Ultimate fallback: use test/output directly without subdirectory
+        if (.not. test_dir_created) then
+            current_test_dir = "test/output"
+            if (is_windows()) then
+                current_test_dir = normalize_path_separators(current_test_dir, .true.)
+            end if
+            inquire(file=trim(current_test_dir)//"/.", exist=test_dir_created)
+            if (.not. test_dir_created) then
+                ! Last resort: current directory (but warn)
+                print *, "WARNING: Could not create test/output/ directory, using current directory"
+                current_test_dir = "."
+                test_dir_created = .true.
+            end if
+        end if
+        
+    contains
+        
+        logical function inquire_directory(dir) result(exists)
+            character(len=*), intent(in) :: dir
+            inquire(file=trim(dir)//"/.", exist=exists)
+        end function inquire_directory
+        
     end subroutine ensure_test_directory
     
     function test_get_temp_path(filename) result(full_path)

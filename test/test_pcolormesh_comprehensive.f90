@@ -422,9 +422,9 @@ contains
         call figure()
         call pcolormesh(x_coords, y_coords, c_data)
         call title('Comprehensive Test Integration')
-        call savefig('test_pcolormesh_comprehensive_integration.png')
+        call savefig("test/output/test_pcolormesh_comprehensive_integration.png")
         
-        inquire(file='test_pcolormesh_comprehensive_integration.png', exist=file_exists)
+        inquire(file="test/output/test_pcolormesh_comprehensive_integration.png", exist=file_exists)
         test_result = file_exists
         call run_test("Main interface integration", test_result, &
             "Should create plot through main fortplot interface")

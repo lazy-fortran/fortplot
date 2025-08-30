@@ -129,7 +129,7 @@ program test_scatter_performance
     end if
     
     ! Save output for visual verification
-    call fig%savefig('test_scatter_performance.png')
+    call fig%savefig("test/output/test_scatter_performance.png")
     
     print *, ''
     print *, '=== ALL SCATTER PERFORMANCE TESTS PASSED ==='

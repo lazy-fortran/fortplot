@@ -59,8 +59,8 @@ program debug_streamplot_circular
     end if
     
     ! Save debug output
-    call fig%savefig('debug_streamplot_circular.png')
-    call fig%savefig('debug_streamplot_circular.txt')
+    call fig%savefig("test/output/debug_streamplot_circular.png")
+    call fig%savefig("test/output/debug_streamplot_circular.txt")
     
     print *, 'Debug files saved: debug_streamplot_circular.png/txt'
     

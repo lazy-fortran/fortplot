@@ -55,7 +55,7 @@ contains
         call title("Scatter Plot Test")
         call xlabel("X values")
         call ylabel("Y values")
-        call savefig("test_scatter.png")
+        call savefig("test/output/test_scatter.png")
         call log_info("  scatter plot test complete")
     end subroutine test_scatter
     
@@ -66,7 +66,7 @@ contains
         call title("Bar Plot Test")
         call xlabel("Categories")
         call ylabel("Values")
-        call savefig("test_bar.png")
+        call savefig("test/output/test_bar.png")
         call log_info("  bar plot test complete")
     end subroutine test_bar
     
@@ -77,7 +77,7 @@ contains
         call title("Horizontal Bar Plot Test")
         call xlabel("Values")
         call ylabel("Categories")
-        call savefig("test_barh.png")
+        call savefig("test/output/test_barh.png")
         call log_info("  horizontal bar plot test complete")
     end subroutine test_barh
     
@@ -88,7 +88,7 @@ contains
         call title("Histogram Test")
         call xlabel("Values")
         call ylabel("Frequency")
-        call savefig("test_hist.png")
+        call savefig("test/output/test_hist.png")
         call log_info("  histogram test complete")
     end subroutine test_hist
     
@@ -98,7 +98,7 @@ contains
         call plot(x, y)
         call text(5.0d0, 25.0d0, "Test annotation")
         call title("Text Annotation Test")
-        call savefig("test_text.png")
+        call savefig("test/output/test_text.png")
         call log_info("  text annotation test complete")
     end subroutine test_text
     
@@ -108,7 +108,7 @@ contains
         call plot(x, y)
         call annotate("Peak", [5.0d0, 25.0d0], [3.0d0, 30.0d0])
         call title("Arrow Annotation Test")
-        call savefig("test_annotate.png")
+        call savefig("test/output/test_annotate.png")
         call log_info("  arrow annotation test complete")
     end subroutine test_annotate
     

@@ -5,6 +5,7 @@ program test_core_functionality_fast
     
     use iso_fortran_env, only: wp => real64
     use fortplot
+    use fortplot_test_helpers, only: test_savefig, test_initialize_figure, test_get_temp_path
     use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
     implicit none
     
@@ -46,6 +47,7 @@ contains
         integer :: i
         logical :: test_ok
         type(validation_result_t) :: val
+        character(len=:), allocatable :: output_path
         
         total = total + 1
         
@@ -67,12 +69,14 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")
         call legend()
-        call savefig('test_basic_comprehensive.png')
+        
+        output_path = test_get_temp_path("test_basic_comprehensive.png")
+        call savefig(output_path)
         
         ! Verify comprehensive functionality
-        val = validate_file_exists('test_basic_comprehensive.png')
+        val = validate_file_exists(output_path)
         if (val%passed) then
-            val = validate_file_size('test_basic_comprehensive.png', min_size=10000)
+            val = validate_file_size(output_path, min_size=10000)
             test_ok = val%passed
         else
             test_ok = .false.
@@ -96,6 +100,7 @@ contains
         integer :: i
         logical :: test_ok
         type(validation_result_t) :: val
+        character(len=:), allocatable :: output_path
         
         total = total + 1
         
@@ -122,12 +127,14 @@ contains
         call xlabel("X (linear)")
         call ylabel("Y (log scale)")
         call legend()
-        call savefig('test_axis_comprehensive.png')
+        
+        output_path = test_get_temp_path("test_axis_comprehensive.png")
+        call savefig(output_path)
         
         ! Verify comprehensive axis functionality
-        val = validate_file_exists('test_axis_comprehensive.png')
+        val = validate_file_exists(output_path)
         if (val%passed) then
-            val = validate_file_size('test_axis_comprehensive.png', min_size=12000)
+            val = validate_file_size(output_path, min_size=12000)
             test_ok = val%passed
         else
             test_ok = .false.
@@ -154,6 +161,7 @@ contains
         character(len=200) :: line
         integer :: unit, iostat
         logical :: found_content
+        character(len=:), allocatable :: png_path, ascii_path
         
         total = total + 1
         
@@ -171,12 +179,14 @@ contains
         call xlabel("X")
         call ylabel("Y = X²")
         call legend()
-        call savefig('test_backend_comprehensive.png')
         
-        val = validate_file_exists('test_backend_comprehensive.png')
+        png_path = test_get_temp_path("test_backend_comprehensive.png")
+        call savefig(png_path)
+        
+        val = validate_file_exists(png_path)
         png_ok = val%passed
         if (png_ok) then
-            val = validate_file_size('test_backend_comprehensive.png', min_size=8000)
+            val = validate_file_size(png_path, min_size=8000)
             png_ok = val%passed
         end if
         
@@ -184,14 +194,16 @@ contains
         call figure(figsize=[60.0_wp, 20.0_wp])
         call plot(x, y, label="ASCII test", linestyle="*-")
         call title("ASCII Backend Test")
-        call savefig('test_backend_comprehensive.txt')
         
-        val = validate_file_exists('test_backend_comprehensive.txt')
+        ascii_path = test_get_temp_path("test_backend_comprehensive.txt")
+        call savefig(ascii_path)
+        
+        val = validate_file_exists(ascii_path)
         ascii_ok = val%passed
         if (ascii_ok) then
             ! Verify ASCII contains expected content
             found_content = .false.
-            open(newunit=unit, file='test_backend_comprehensive.txt', status='old', action='read')
+            open(newunit=unit, file=ascii_path, status='old', action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
