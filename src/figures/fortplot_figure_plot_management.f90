@@ -19,46 +19,53 @@ contains
     subroutine validate_plot_data(x, y, label)
         !! Validate plot data and provide informative warnings for edge cases
         !! Added for Issue #432: Better user feedback for problematic data
+        !! Fixed Issue #833: Reduced warning verbosity for constant data
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label
         character(len=100) :: label_str
+        logical :: has_label
         
         ! Prepare label for messages
         if (present(label)) then
             label_str = "'" // trim(label) // "'"
+            has_label = len_trim(label) > 0
         else
             label_str = "(unlabeled plot)"
+            has_label = .false.
         end if
         
-        ! Check for zero-size arrays
+        ! Check for zero-size arrays (always warn)
         if (size(x) == 0 .or. size(y) == 0) then
             print *, "Warning: Plot data ", trim(label_str), " contains zero-size arrays."
             print *, "         The plot will show axes and labels but no data points."
             return
         end if
         
-        ! Check for mismatched array sizes
+        ! Check for mismatched array sizes (always warn)
         if (size(x) /= size(y)) then
             print *, "Warning: Plot data ", trim(label_str), " has mismatched array sizes:"
             print *, "         x has ", size(x), " elements, y has ", size(y), " elements."
             print *, "         Only the common size will be plotted."
         end if
         
-        ! Check for single point case
+        ! Check for single point case (informational only)
         if (size(x) == 1 .and. size(y) == 1) then
             print *, "Info: Plot data ", trim(label_str), " contains a single point."
             print *, "      Automatic scaling will add margins for visibility."
         end if
         
-        ! Check for constant values (might be hard to see)
-        if (size(x) > 1 .and. abs(maxval(x) - minval(x)) < 1.0e-10_wp) then
-            print *, "Warning: All x values in plot ", trim(label_str), " are identical."
-            print *, "         This may result in a vertical line or poor visualization."
-        end if
-        
-        if (size(y) > 1 .and. abs(maxval(y) - minval(y)) < 1.0e-10_wp) then
-            print *, "Warning: All y values in plot ", trim(label_str), " are identical."
-            print *, "         This may result in a horizontal line or poor visualization."
+        ! Check for constant values - only warn for labeled plots (user intentional data)
+        ! Unlabeled plots are often test data where constant values are expected
+        if (has_label) then
+            if (size(x) > 1 .and. abs(maxval(x) - minval(x)) < 1.0e-10_wp) then
+                print *, "Warning: All x values in plot ", trim(label_str), " are identical."
+                print *, "         This may result in a vertical line or poor visualization."
+            end if
+            
+            if (size(y) > 1 .and. abs(maxval(y) - minval(y)) < 1.0e-10_wp) then
+                print *, "Warning: All y values in plot ", trim(label_str), " are identical."
+                print *, "         This may result in a horizontal line or poor visualization."
+            end if
         end if
     end subroutine validate_plot_data
     
