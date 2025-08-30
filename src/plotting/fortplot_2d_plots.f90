@@ -44,7 +44,9 @@ contains
 
     subroutine add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker)
         !! Add line plot data with comprehensive validation
-        !! Refactored to be under 100 lines (QADS compliance)
+        !! Enhanced Issue #854: Added comprehensive parameter validation
+        use fortplot_parameter_validation, only: validate_numeric_parameters, validate_color_values, &
+                                               validate_array_bounds, parameter_validation_result_t
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, color_str, marker
@@ -52,12 +54,40 @@ contains
         
         integer :: plot_idx
         type(coordinate_validation_result_t) :: validation
+        type(parameter_validation_result_t) :: param_validation
         
         ! Validate coordinate arrays (Issue #436 fix)
         validation = validate_coordinate_arrays(x, y, "add_line_plot_data")
         if (.not. validation%is_valid) then
             call log_error(trim(validation%message))
             return  ! Skip adding invalid data
+        end if
+        
+        ! Issue #854: Validate numeric parameters for NaN/infinity
+        param_validation = validate_numeric_parameters(x, "x_coordinates", "add_line_plot_data")
+        if (.not. param_validation%is_valid) then
+            call log_error("X coordinates: " // trim(param_validation%message))
+            return
+        end if
+        
+        param_validation = validate_numeric_parameters(y, "y_coordinates", "add_line_plot_data")  
+        if (.not. param_validation%is_valid) then
+            call log_error("Y coordinates: " // trim(param_validation%message))
+            return
+        end if
+        
+        ! Issue #854: Validate array bounds
+        param_validation = validate_array_bounds(size(x), min_size=1, context="add_line_plot_data")
+        if (.not. param_validation%is_valid) then
+            call log_error("Array bounds: " // trim(param_validation%message))
+            return
+        end if
+        
+        ! Issue #854: Validate color values if provided
+        if (present(color_rgb)) then
+            param_validation = validate_color_values(color_rgb(1), color_rgb(2), color_rgb(3), &
+                                                   context="add_line_plot_data")
+            ! Don't return on color validation failure - just warn and continue with default colors
         end if
         
         ! For single points, suggest using markers for better visibility
