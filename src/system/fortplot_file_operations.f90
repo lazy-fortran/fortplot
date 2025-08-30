@@ -202,18 +202,11 @@ contains
             end if
         end if
         
-        ! For Windows CI environment, use simpler validation approach
+        ! For Windows CI, use simpler directory handling
         if (is_windows()) then
-            ! First check if directory already exists
+            ! Check if directory already exists
             call check_directory_exists(path, dir_exists)
-            if (dir_exists) then
-                success = .true.
-                return
-            end if
-            
-            ! For Windows CI, try a minimal directory creation test
-            ! without complex recursive logic that might fail
-            call create_single_directory(path, success)
+            success = dir_exists
             return
         end if
         
