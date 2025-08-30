@@ -393,13 +393,15 @@ contains
     end subroutine setup_png_backend_for_animation
     subroutine extract_rgb_data_for_animation(self, rgb_data)
         class(figure_t), intent(inout) :: self; real(wp), intent(out) :: rgb_data(:,:,:)
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count, self%annotations, self%annotation_count)
+        if (.not. self%state%rendered) call figure_render(self%state, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count)
         call figure_extract_rgb_data_for_animation(self%state, rgb_data, self%state%rendered)
     end subroutine extract_rgb_data_for_animation
     subroutine extract_png_data_for_animation(self, png_data, status)
         class(figure_t), intent(inout) :: self; integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, self%state%plot_count, self%annotations, self%annotation_count)
+        if (.not. self%state%rendered) call figure_render(self%state, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count)
         call figure_extract_png_data_for_animation(self%state, png_data, status, self%state%rendered)
     end subroutine extract_png_data_for_animation
     ! Backend interface and coordinate accessors - delegate to properties module
