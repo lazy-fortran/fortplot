@@ -147,7 +147,7 @@ contains
         call savefig("test/output/test_rendering.png")
         
         ! Verify PNG file size is reasonable
-        file_size = get_file_size('test_rendering.png')
+        file_size = get_file_size('test/output/test_rendering.png')
         if (file_size < 1000) then  ! PNG should be substantial
             test_passed = .false.
             error_msg = "PNG backend produced file too small or empty"
@@ -183,7 +183,7 @@ contains
         call savefig("test/output/test_rendering.pdf")
         
         ! Verify PDF file exists and has content
-        file_size = get_file_size('test_rendering.pdf')
+        file_size = get_file_size('test/output/test_rendering.pdf')
         if (file_size < 500) then  ! PDF should have substantial content
             test_passed = .false.
             error_msg = "PDF backend produced file too small or empty"
@@ -224,7 +224,7 @@ contains
         call savefig("test/output/test_rendering_basic.png")
         
         ! Verify file creation
-        if (.not. file_exists('test_rendering_basic.png')) then
+        if (.not. file_exists('test/output/test_rendering_basic.png')) then
             test_passed = .false.
             error_msg = "Basic pcolormesh pattern failed to generate"
             return
@@ -276,7 +276,7 @@ contains
         call savefig("test/output/test_enhanced_gradient.png")
         
         ! Verify substantial file size (high resolution should be larger)
-        file_size = get_file_size('test_enhanced_gradient.png')
+        file_size = get_file_size('test/output/test_enhanced_gradient.png')
         if (file_size < 2000) then
             test_passed = .false.
             error_msg = "Enhanced gradient resolution too low or failed"
@@ -320,7 +320,7 @@ contains
         call pcolormesh(x, y, c, colormap='coolwarm')
         call savefig("test/output/test_enhanced_sinusoidal.png")
         
-        file_size = get_file_size('test_enhanced_sinusoidal.png')
+        file_size = get_file_size('test/output/test_enhanced_sinusoidal.png')
         if (file_size < 2000) then
             test_passed = .false.
             error_msg = "Enhanced sinusoidal pattern generation failed"
@@ -364,7 +364,7 @@ contains
         call pcolormesh(x, y, c, colormap='plasma')
         call savefig("test/output/test_enhanced_radial.png")
         
-        file_size = get_file_size('test_enhanced_radial.png')
+        file_size = get_file_size('test/output/test_enhanced_radial.png')
         if (file_size < 2000) then
             test_passed = .false.
             error_msg = "Enhanced radial pattern generation failed"
@@ -414,7 +414,7 @@ contains
         call title('Dimension Consistency Test - ASCII')
         call savefig("test/output/test_dim_consistency_ascii.txt")
         
-        ascii_ok = file_exists('test_dim_consistency_ascii.txt')
+        ascii_ok = file_exists('test/output/test_dim_consistency_ascii.txt')
         if (.not. ascii_ok) then
             test_passed = .false.
             error_msg = "ASCII backend rejected z_grid(ny,nx) dimensions"
@@ -427,7 +427,7 @@ contains
         call title('Dimension Consistency Test - Raster')
         call savefig("test/output/test_dim_consistency_raster.ppm")
         
-        raster_ok = file_exists('test_dim_consistency_raster.ppm')
+        raster_ok = file_exists('test/output/test_dim_consistency_raster.ppm')
         if (.not. raster_ok) then
             test_passed = .false.
             error_msg = "Raster backend rejected z_grid(ny,nx) dimensions"

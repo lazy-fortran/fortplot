@@ -16,8 +16,13 @@ module fortplot_ascii
     use fortplot_ascii_elements, only: draw_ascii_marker, fill_ascii_heatmap, draw_ascii_arrow
     use fortplot_ascii_elements, only: render_ascii_legend_specialized, calculate_ascii_legend_dimensions
     use fortplot_ascii_elements, only: set_ascii_legend_border_width, calculate_ascii_legend_position
-    use fortplot_ascii_elements, only: extract_ascii_rgb_data, get_ascii_png_data, prepare_ascii_3d_data
-    use fortplot_ascii_elements, only: render_ascii_ylabel, draw_ascii_axes_and_labels, render_ascii_axes
+    use fortplot_ascii_elements, only: draw_ascii_axes_and_labels
+    use fortplot_ascii_backend_support, only: extract_ascii_rgb_data, get_ascii_png_data, prepare_ascii_3d_data
+    use fortplot_ascii_backend_support, only: render_ascii_ylabel, render_ascii_axes
+    use fortplot_ascii_rendering, only: output_to_terminal, output_to_file
+    use fortplot_ascii_rendering, only: ascii_finalize => ascii_finalize, ascii_get_output
+    use fortplot_ascii_primitives, only: ascii_draw_line_primitive, ascii_fill_quad_primitive
+    use fortplot_ascii_primitives, only: ascii_draw_text_primitive
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -41,14 +46,14 @@ module fortplot_ascii
         procedure :: text => ascii_draw_text
         procedure :: set_line_width => ascii_set_line_width
         procedure :: set_line_style => ascii_set_line_style
-        procedure :: save => ascii_finalize
+        procedure :: save => ascii_save
         procedure :: set_title => ascii_set_title
         procedure :: draw_marker => ascii_draw_marker
         procedure :: set_marker_colors => ascii_set_marker_colors
         procedure :: set_marker_colors_with_alpha => ascii_set_marker_colors_with_alpha
         procedure :: fill_heatmap => ascii_fill_heatmap
         procedure :: draw_arrow => ascii_draw_arrow
-        procedure :: get_ascii_output => ascii_get_output
+        procedure :: get_ascii_output => ascii_get_output_method
         
         !! New polymorphic methods to eliminate SELECT TYPE
         procedure :: get_width_scale => ascii_get_width_scale
@@ -70,10 +75,6 @@ module fortplot_ascii
     
     character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
     character(len=*), parameter :: BOX_CHARS = '-|+++++++'
-    
-    ! Color filtering thresholds
-    real(wp), parameter :: LIGHT_COLOR_THRESHOLD = 0.8_wp
-    real(wp), parameter :: MEDIUM_COLOR_THRESHOLD = 0.7_wp
     
 contains
 
@@ -113,66 +114,10 @@ contains
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         
-        real(wp) :: dx, dy, length, step_x, step_y, x, y
-        integer :: steps, i, px, py
-        character(len=1) :: line_char
-        real(wp) :: luminance
-        
-        ! Calculate luminance for better character selection
-        ! Using standard luminance formula
-        luminance = 0.299_wp * this%current_r + 0.587_wp * this%current_g + 0.114_wp * this%current_b
-        
-        ! Select character based on color dominance and luminance
-        ! Don't skip any colors - render everything
-        if (luminance > 0.9_wp) then
-            ! Very bright colors still get rendered with lighter characters
-            line_char = ':'
-        else if (this%current_g > 0.7_wp) then
-            line_char = '@'
-        else if (this%current_g > 0.3_wp) then
-            line_char = '#'
-        else if (this%current_b > 0.7_wp) then
-            line_char = '*'
-        else if (this%current_b > 0.3_wp) then
-            line_char = 'o'
-        else if (this%current_r > 0.7_wp) then
-            line_char = '%'
-        else if (this%current_r > 0.3_wp) then
-            line_char = '+'
-        else
-            line_char = '.'
-        end if
-        
-        dx = x2 - x1
-        dy = y2 - y1
-        length = sqrt(dx*dx + dy*dy)
-        
-        if (length < 1e-6_wp) return
-        
-        steps = max(int(length * 4), max(abs(int(dx)), abs(int(dy)))) + 1
-        step_x = dx / real(steps, wp)
-        step_y = dy / real(steps, wp)
-        
-        x = x1
-        y = y1
-        
-        do i = 0, steps
-            ! Map to usable plot area (excluding 1-char border on each side)
-            px = int((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
-            py = (this%plot_height - 1) - int((y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
-            
-            
-            if (px >= 2 .and. px <= this%plot_width - 1 .and. py >= 2 .and. py <= this%plot_height - 1) then
-                if (this%canvas(py, px) == ' ') then
-                    this%canvas(py, px) = line_char
-                else if (this%canvas(py, px) /= line_char) then
-                    this%canvas(py, px) = get_blend_char(this%canvas(py, px), line_char)
-                end if
-            end if
-            
-            x = x + step_x
-            y = y + step_y
-        end do
+        call ascii_draw_line_primitive(this%canvas, x1, y1, x2, y2, &
+                                      this%x_min, this%x_max, this%y_min, this%y_max, &
+                                      this%plot_width, this%plot_height, &
+                                      this%current_r, this%current_g, this%current_b)
     end subroutine ascii_draw_line
     
     subroutine ascii_set_color(this, r, g, b)
@@ -214,41 +159,19 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         integer :: text_x, text_y
-        character(len=500) :: processed_text
-        integer :: processed_len
-        
-        ! Process LaTeX commands to Unicode
-        call process_latex_in_text(text, processed_text, processed_len)
+        character(len=:), allocatable :: processed_text
         
         ! Store text element for later rendering
         if (this%num_text_elements < size(this%text_elements)) then
             this%num_text_elements = this%num_text_elements + 1
             
-            ! Convert coordinates - check if already in screen coordinates
-            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
-                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
-                ! Already in screen coordinates (e.g., from legend)
-                text_x = nint(x)
-                text_y = nint(y)
-            else
-                ! Convert from data coordinates to canvas coordinates
-                text_x = nint((x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_width, wp))
-                text_y = nint((this%y_max - y) / (this%y_max - this%y_min) * real(this%plot_height, wp))
-            end if
+            call ascii_draw_text_primitive(text_x, text_y, processed_text, &
+                                          x, y, text, &
+                                          this%x_min, this%x_max, this%y_min, this%y_max, &
+                                          this%plot_width, this%plot_height, &
+                                          this%current_r, this%current_g, this%current_b)
             
-            ! Clamp to canvas bounds
-            ! For legend text (already in screen coordinates), don't truncate based on length
-            if (x >= 1.0_wp .and. x <= real(this%plot_width, wp) .and. &
-                y >= 1.0_wp .and. y <= real(this%plot_height, wp)) then
-                ! For legend text, only clamp starting position, let text extend as needed
-                text_x = max(1, min(text_x, this%plot_width))
-            else
-                ! For other text, prevent overflow
-                text_x = max(1, min(text_x, this%plot_width - processed_len))
-            end if
-            text_y = max(1, min(text_y, this%plot_height))
-            
-            this%text_elements(this%num_text_elements)%text = processed_text(1:processed_len)
+            this%text_elements(this%num_text_elements)%text = processed_text
             this%text_elements(this%num_text_elements)%x = text_x
             this%text_elements(this%num_text_elements)%y = text_y
             this%text_elements(this%num_text_elements)%color_r = this%current_r
@@ -270,105 +193,15 @@ contains
         this%title_set = .true.
     end subroutine ascii_set_title
     
-    subroutine ascii_finalize(this, filename)
+    subroutine ascii_save(this, filename)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         
-        integer :: unit, ios
-        character(len=512) :: error_msg
-        
-        if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
-            call output_to_terminal(this)
-        else
-            open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
-            
-            if (ios /= 0) then
-                call log_error("Cannot save ASCII file '" // trim(filename) // "': " // trim(error_msg))
-                ! Fall back to terminal output
-                call log_info("Falling back to terminal output due to file error")
-                call output_to_terminal(this)
-                return
-            end if
-            
-            call output_to_file(this, unit)
-            close(unit)
-            call log_info("Unicode plot saved to '" // trim(filename) // "'")
-        end if
-    end subroutine ascii_finalize
-    
-    subroutine output_to_terminal(this)
-        class(ascii_context), intent(inout) :: this
-        integer :: i, j
-        
-        ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this%canvas, this%text_elements, &
-                                            this%num_text_elements, &
-                                            this%plot_width, this%plot_height)
-        
-        if (allocated(this%title_text)) then
-            print '(A)', ''  ! Empty line before title
-            call print_centered_title(this%title_text, this%plot_width)
-        end if
-        
-        print '(A)', '+' // repeat('-', this%plot_width) // '+'
-        do i = 1, this%plot_height
-            write(*, '(A)', advance='no') '|'
-            do j = 1, this%plot_width
-                write(*, '(A)', advance='no') this%canvas(i, j)
-            end do
-            print '(A)', '|'
-        end do
-        
-        print '(A)', '+' // repeat('-', this%plot_width) // '+'
-        
-        ! Print xlabel below the plot if present
-        if (allocated(this%xlabel_text)) then
-            call print_centered_title(this%xlabel_text, this%plot_width)
-        end if
-        
-        ! Print ylabel (simple horizontal placement for now)
-        if (allocated(this%ylabel_text)) then
-            print '(A)', this%ylabel_text
-        end if
-    end subroutine output_to_terminal
-    
-    subroutine output_to_file(this, unit)
-        class(ascii_context), intent(inout) :: this
-        integer, intent(in) :: unit
-        integer :: i, j
-        
-        ! Render text elements to canvas before output
-        call render_text_elements_to_canvas(this%canvas, this%text_elements, &
-                                            this%num_text_elements, &
-                                            this%plot_width, this%plot_height)
-        
-        if (allocated(this%title_text)) then
-            write(unit, '(A)') ''  ! Empty line before title
-            call write_centered_title(unit, this%title_text, this%plot_width)
-        end if
-        
-        write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
-        do i = 1, this%plot_height
-            write(unit, '(A)', advance='no') '|'
-            do j = 1, this%plot_width
-                write(unit, '(A)', advance='no') this%canvas(i, j)
-            end do
-            write(unit, '(A)') '|'
-        end do
-        
-        write(unit, '(A)') '+' // repeat('-', this%plot_width) // '+'
-        
-        ! Write xlabel below the plot if present
-        if (allocated(this%xlabel_text)) then
-            call write_centered_title(unit, this%xlabel_text, this%plot_width)
-        end if
-        
-        ! Write ylabel to the left side of the plot if present
-        if (allocated(this%ylabel_text)) then
-            write(unit, '(A)') this%ylabel_text
-        end if
-    end subroutine output_to_file
-
+        call ascii_finalize(this%canvas, this%text_elements, this%num_text_elements, &
+                           this%plot_width, this%plot_height, &
+                           this%title_text, this%xlabel_text, this%ylabel_text, &
+                           filename)
+    end subroutine ascii_save
 
     subroutine ascii_draw_marker(this, x, y, style)
         class(ascii_context), intent(inout) :: this
@@ -429,28 +262,13 @@ contains
                              this%has_rendered_arrows, this%uses_vector_arrows, this%has_triangular_arrows)
     end subroutine ascii_draw_arrow
 
-    function ascii_get_output(this) result(output)
+    function ascii_get_output_method(this) result(output)
         !! Get the complete ASCII canvas as a string
         class(ascii_context), intent(in) :: this
         character(len=:), allocatable :: output
-        character(len=1000) :: line_buffer
-        integer :: i, j, total_len, line_len
         
-        ! Calculate total length needed
-        total_len = this%height * (this%width + 1)  ! +1 for newline per row
-        allocate(character(len=total_len) :: output)
-        
-        output = ""
-        do i = 1, this%height
-            line_buffer = ""
-            do j = 1, this%width
-                line_buffer(j:j) = this%canvas(i, j)
-            end do
-            line_len = len_trim(line_buffer(:this%width))
-            if (line_len == 0) line_len = 1  ! Ensure at least one character
-            output = output // line_buffer(1:line_len) // new_line('a')
-        end do
-    end function ascii_get_output
+        output = ascii_get_output(this%canvas, this%width, this%height)
+    end function ascii_get_output_method
 
     function ascii_get_width_scale(this) result(scale)
         !! Get width scaling factor for coordinate transformation
@@ -483,49 +301,10 @@ contains
         class(ascii_context), intent(inout) :: this
         real(wp), intent(in) :: x_quad(4), y_quad(4)
         
-        integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
-        character(len=1) :: fill_char
-        real(wp) :: color_intensity
-        integer :: char_index
-        
-        ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
-        do i = 1, 4
-            ! Map to usable plot area (excluding 1-char border on each side)
-            px(i) = int((x_quad(i) - this%x_min) / &
-                (this%x_max - this%x_min) * real(this%plot_width - 3, wp)) + 2
-            py(i) = (this%plot_height - 1) - int((y_quad(i) - this%y_min) / &
-                (this%y_max - this%y_min) * real(this%plot_height - 3, wp))
-        end do
-        
-        ! Calculate color intensity from RGB values (luminance formula)
-        color_intensity = 0.299_wp * this%current_r + 0.587_wp * this%current_g + &
-            0.114_wp * this%current_b
-        
-        ! Map color intensity to ASCII character index with proper low-intensity handling
-        if (color_intensity <= 0.001_wp) then
-            char_index = 1  ! Space for zero intensity
-        else
-            ! Map 0.0-1.0 intensity to full character range 1-len(ASCII_CHARS)
-            char_index = min(len(ASCII_CHARS), max(1, int(color_intensity * len(ASCII_CHARS)) + 1))
-        end if
-        
-        fill_char = ASCII_CHARS(char_index:char_index)
-        
-        ! Fill bounding rectangle with bounds checking
-        min_x = max(2, min(minval(px), this%plot_width - 1))
-        max_x = max(2, min(maxval(px), this%plot_width - 1))  
-        min_y = max(2, min(minval(py), this%plot_height - 1))
-        max_y = max(2, min(maxval(py), this%plot_height - 1))
-        
-        do j = min_y, max_y
-            do i = min_x, max_x
-                ! Use density-aware character selection
-                if (this%canvas(j, i) == ' ' .or. &
-                    get_char_density(fill_char) > get_char_density(this%canvas(j, i))) then
-                    this%canvas(j, i) = fill_char
-                end if
-            end do
-        end do
+        call ascii_fill_quad_primitive(this%canvas, x_quad, y_quad, &
+                                      this%x_min, this%x_max, this%y_min, this%y_max, &
+                                      this%plot_width, this%plot_height, &
+                                      this%current_r, this%current_g, this%current_b)
     end subroutine ascii_fill_quad
 
     subroutine ascii_render_legend_specialized(this, legend, legend_x, legend_y)
@@ -658,7 +437,6 @@ contains
                                          title, xlabel, ylabel, &
                                          z_min, z_max, has_3d_plots)
         !! Draw axes and labels for ASCII backend
-        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -667,62 +445,15 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        real(wp) :: x_tick_positions(MAX_TICKS), y_tick_positions(MAX_TICKS)
-        integer :: num_x_ticks, num_y_ticks, i
-        character(len=50) :: tick_label
-        real(wp) :: tick_x, tick_y
-        
-        ! Suppress unused parameter warnings
-        if (present(z_min) .and. present(z_max)) then
-            if (z_min < -huge(z_min) .or. z_max > huge(z_max)) then
-                ! This condition is never true, but suppresses unused parameter warnings
-            end if
-        end if
-        if (.not. has_3d_plots) then
-            ! Reference has_3d_plots to suppress warning
-        end if
-        
-        ! ASCII backend: explicitly set title and draw simple axes
-        if (present(title)) then
-            if (allocated(title)) then
-                call this%set_title(title)
-            end if
-        end if
-        
-        ! Draw axes
-        call this%line(x_min, y_min, x_max, y_min)
-        call this%line(x_min, y_min, x_min, y_max)
-        
-        ! Generate tick marks and labels for ASCII
-        ! X-axis ticks (drawn as characters along bottom axis)
-        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
-        do i = 1, num_x_ticks
-            tick_x = x_tick_positions(i)
-            ! For ASCII, draw tick marks as characters in the text output
-            tick_label = format_tick_label(tick_x, xscale)
-            call this%text(tick_x, y_min - 0.05_wp * (y_max - y_min), trim(tick_label))
-        end do
-        
-        ! Y-axis ticks (drawn as characters along left axis)
-        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
-        do i = 1, num_y_ticks
-            tick_y = y_tick_positions(i)
-            tick_label = format_tick_label(tick_y, yscale)
-            call this%text(x_min - 0.1_wp * (x_max - x_min), tick_y, trim(tick_label))
-        end do
-        
-        ! Store xlabel and ylabel for rendering outside the plot frame
-        if (present(xlabel)) then
-            if (allocated(xlabel)) then
-                this%xlabel_text = xlabel
-            end if
-        end if
-        
-        if (present(ylabel)) then
-            if (allocated(ylabel)) then
-                this%ylabel_text = ylabel
-            end if
-        end if
+        ! Call the module version with all required parameters
+        call draw_ascii_axes_and_labels(this%canvas, xscale, yscale, symlog_threshold, &
+                                       x_min, x_max, y_min, y_max, &
+                                       title, xlabel, ylabel, &
+                                       z_min, z_max, has_3d_plots, &
+                                       this%current_r, this%current_g, this%current_b, &
+                                       this%plot_width, this%plot_height, &
+                                       this%title_text, this%xlabel_text, this%ylabel_text, &
+                                       this%text_elements, this%num_text_elements)
     end subroutine ascii_draw_axes_and_labels
 
     subroutine ascii_save_coordinates(this, x_min, x_max, y_min, y_max)

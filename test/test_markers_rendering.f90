@@ -33,7 +33,7 @@ program test_markers_rendering
     call fig%set_ylabel('Y')
     call fig%savefig("test/output/test_markers_only_validation.png")
     
-    validation = validate_file_exists('test_markers_only_validation.png')
+    validation = validate_file_exists('test/output/test_markers_only_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1
@@ -51,7 +51,7 @@ program test_markers_rendering
     call fig%set_ylabel('Y')
     call fig%savefig("test/output/test_lines_markers_validation.png")
     
-    validation = validate_file_exists('test_lines_markers_validation.png')
+    validation = validate_file_exists('test/output/test_lines_markers_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1
@@ -72,7 +72,7 @@ program test_markers_rendering
     call fig%legend()
     call fig%savefig("test/output/test_multiple_markers_validation.png")
     
-    validation = validate_file_exists('test_multiple_markers_validation.png')
+    validation = validate_file_exists('test/output/test_multiple_markers_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1
@@ -94,7 +94,7 @@ program test_markers_rendering
     call fig%legend()
     call fig%savefig("test/output/test_combined_validation.png")
     
-    validation = validate_file_exists('test_combined_validation.png')
+    validation = validate_file_exists('test/output/test_combined_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1
@@ -114,7 +114,7 @@ program test_markers_rendering
     call fig%set_ylim(0.0_wp, 10.0_wp)
     call fig%savefig("test/output/test_single_point_validation.png")
     
-    validation = validate_file_exists('test_single_point_validation.png')
+    validation = validate_file_exists('test/output/test_single_point_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1
@@ -144,7 +144,7 @@ program test_markers_rendering
     call fig%legend()
     call fig%savefig("test/output/test_all_markers_validation.png")
     
-    validation = validate_file_exists('test_all_markers_validation.png')
+    validation = validate_file_exists('test/output/test_all_markers_validation.png')
     test_passed = validation%passed
     if (test_passed) then
         pass_count = pass_count + 1

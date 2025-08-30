@@ -69,10 +69,10 @@ contains
         ! Windows-compatible: Allow time for file system operations
         call windows_safe_delay(100)
         
-        val = validate_file_exists('test_legend_basic.png')
+        val = validate_file_exists('test/output/test_legend_basic.png')
         if (val%passed) then
             print *, "  ✓ Basic legend PNG created"
-            val = validate_file_size('test_legend_basic.png', min_size=5000)
+            val = validate_file_size('test/output/test_legend_basic.png', min_size=5000)
             if (val%passed) then
                 print *, "  ✓ PNG file size indicates content present"
             else
@@ -99,8 +99,8 @@ contains
         print *, "-------------------------------------"
         
         positions = ["upper right", "upper left ", "lower right", "lower left "]
-        filenames = ["test_legend_pos_ur.png", "test_legend_pos_ul.png", &
-                     "test_legend_pos_lr.png", "test_legend_pos_ll.png"]
+        filenames = ["test/output/test_legend_pos_ur.png", "test/output/test_legend_pos_ul.png", &
+                     "test/output/test_legend_pos_lr.png", "test/output/test_legend_pos_ll.png"]
         
         x = [(real(i, wp), i=1, 10)]
         y = sin(x)
@@ -150,10 +150,10 @@ contains
         call savefig("test/output/test_legend_markers.png")
         call windows_safe_delay(100)  ! Windows file system delay
         
-        val = validate_file_exists('test_legend_markers.png')
+        val = validate_file_exists('test/output/test_legend_markers.png')
         if (val%passed) then
             print *, "  ✓ Legend with markers created"
-            val = validate_file_size('test_legend_markers.png', min_size=5000)
+            val = validate_file_size('test/output/test_legend_markers.png', min_size=5000)
             if (val%passed) then
                 print *, "  ✓ Marker legend has sufficient content"
             else
@@ -191,10 +191,10 @@ contains
         call savefig("test/output/test_legend.pdf")
         call windows_safe_delay(150)  ! Extra delay for PDF operations
         
-        val = validate_file_exists('test_legend.pdf')
+        val = validate_file_exists('test/output/test_legend.pdf')
         if (val%passed) then
             print *, "  ✓ PDF with legend created"
-            val = validate_file_size('test_legend.pdf', min_size=3000)
+            val = validate_file_size('test/output/test_legend.pdf', min_size=3000)
             if (val%passed) then
                 print *, "  ✓ PDF has legend content"
             else
@@ -233,7 +233,7 @@ contains
         call savefig("test/output/test_legend.txt")
         call windows_safe_delay(100)  ! Windows file system delay
         
-        val = validate_file_exists('test_legend.txt')
+        val = validate_file_exists('test/output/test_legend.txt')
         if (val%passed) then
             print *, "  ✓ ASCII with legend created"
             
