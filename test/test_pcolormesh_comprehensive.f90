@@ -1,9 +1,5 @@
 program test_pcolormesh_comprehensive
-    !! Comprehensive pcolormesh test consolidating all core functionality and error handling
-    !! Replaces: test_pcolormesh_430_regression.f90, test_pcolormesh_segfault_430.f90,
-    !!           test_pcolormesh_bounds_safety.f90, test_pcolormesh_exact_segfault.f90,
-    !!           test_pcolormesh_unallocated_access.f90, test_pcolormesh_integration_430.f90
-    !! Tests issue #430 fixes, dimension validation, memory safety, and integration
+    !! Comprehensive pcolormesh test - Issue #430 fixes, validation, memory safety
     
     use fortplot_pcolormesh, only: pcolormesh_t, validate_pcolormesh_grid
     use fortplot_errors, only: fortplot_error_t, ERROR_DIMENSION_MISMATCH
@@ -19,10 +15,6 @@ program test_pcolormesh_comprehensive
     passed_tests = 0
     
     print *, "=== COMPREHENSIVE PCOLORMESH TEST SUITE ==="
-    print *, ""
-    print *, "Testing issue #430 segfault fixes, dimension validation,"
-    print *, "memory safety, bounds checking, and integration"
-    print *, ""
     
     ! Core error handling and safety tests
     call test_issue_430_scenarios()
@@ -37,18 +29,11 @@ program test_pcolormesh_comprehensive
     print *, ""
     print *, "=== COMPREHENSIVE TEST SUMMARY ==="
     write(*, '(A, I0, A, I0, A)') "Passed: ", passed_tests, "/", total_tests, " tests"
-    
     if (all_tests_passed) then
-        print *, ""
         print *, "SUCCESS: All pcolormesh core functionality tests PASSED!"
-        print *, "Issue #430 segmentation fault completely fixed."
-        print *, "All error handling, validation, and safety checks working."
-        
-        ! Additional fraud investigation for Issue #698
         call test_issue_698_fraud_investigation()
         stop 0
     else
-        print *, ""
         print *, "FAILURE: Some core functionality tests failed!"
         stop 1
     end if
@@ -87,29 +72,21 @@ contains
         logical :: test_result
         integer :: i, j
         
-        ! Initialize problematic data from bug report
         do i = 1, 6
             x_coords(i) = real(i-1, wp)
         end do
-        
         do i = 1, 5  
             y_coords(i) = real(i-1, wp)
         end do
-        
         do i = 1, 5
             do j = 1, 4
                 c_data(i, j) = real(i * j, wp)
             end do
         end do
-        
-        ! This should fail gracefully, NOT crash
         call mesh%initialize_regular_grid(x_coords, y_coords, c_data, error=error)
-        
         test_result = error%is_error()
         call run_test("Original segfault case dimension check", test_result, &
             "Should catch x(6) dimension mismatch with c(5,4)")
-            
-        ! Verify specific error message content
         test_result = index(error%message, "x_coords size must be") > 0
         call run_test("Error message content validation", test_result, &
             "Error message should explain dimension requirement")
@@ -139,7 +116,6 @@ contains
         call run_test("Unallocated get_quad_vertices safety", test_result, &
             "Should return zeros for unallocated vertex arrays")
             
-        ! Test with zero-size allocated arrays
         allocate(mesh%c_values(0, 0))
         call mesh%get_data_range()
         test_result = (mesh%vmin == 0.0_wp .and. mesh%vmax == 1.0_wp)
@@ -148,18 +124,9 @@ contains
     end subroutine test_unallocated_access
 
     subroutine test_dimension_mismatches()
-        !! Test all types of dimension mismatches comprehensively
-        
-        ! Test x too short: x(3) with c(3,3) should be x(4)
         call test_x_dimension_error(3, 4, 3, 3, "x too short")
-        
-        ! Test x too long: x(5) with c(3,3) should be x(4) 
         call test_x_dimension_error(5, 4, 3, 3, "x too long")
-        
-        ! Test y too short: y(3) with c(3,3) should be y(4)
         call test_y_dimension_error(4, 3, 3, 3, "y too short")
-        
-        ! Test y too long: y(5) with c(3,3) should be y(4)
         call test_y_dimension_error(4, 5, 3, 3, "y too long")
     end subroutine test_dimension_mismatches
 
@@ -232,29 +199,21 @@ contains
     end subroutine test_dimension_validation
 
     subroutine test_validation_function_directly()
-        !! Test validate_pcolormesh_grid function directly
         real(wp) :: x_valid(4), y_valid(3), c_valid(2,3)
         real(wp) :: x_invalid(5), y_invalid(3), c_invalid(2,3)
         type(fortplot_error_t) :: error
         logical :: test_result
         
-        ! Setup valid data
         x_valid = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
         y_valid = [0.0_wp, 1.0_wp, 2.0_wp] 
         c_valid = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp], [2, 3])
-        
-        ! Test valid case passes
         call validate_pcolormesh_grid(x_valid, y_valid, c_valid, error)
         test_result = .not. error%is_error()
         call run_test("Validation accepts valid dimensions", test_result, &
             "Valid x(4), y(3), c(2,3) should pass validation")
-            
-        ! Setup invalid data
-        x_invalid = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]  ! Too many elements
+        x_invalid = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp]
         y_invalid = [0.0_wp, 1.0_wp, 2.0_wp]
         c_invalid = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp], [2, 3])
-        
-        ! Test invalid case fails
         call validate_pcolormesh_grid(x_invalid, y_invalid, c_invalid, error)
         test_result = error%is_error()
         call run_test("Validation rejects invalid dimensions", test_result, &
@@ -262,16 +221,11 @@ contains
     end subroutine test_validation_function_directly
 
     subroutine test_memory_safety()
-        !! Test memory safety and bounds checking
-        print *, ""
-        print *, "3. Testing Memory Safety and Bounds Checking"
-        
         call test_bounds_safety()
         call test_edge_case_access()
     end subroutine test_memory_safety
 
     subroutine test_bounds_safety()
-        !! Test bounds safety in mesh operations
         type(pcolormesh_t) :: mesh
         real(wp) :: x_quad(4), y_quad(4)
         logical :: test_result
@@ -345,12 +299,9 @@ contains
             "Minimal 1x1 mesh should initialize successfully")
         
         if (.not. error%is_error()) then
-            ! Test data range computation
             test_result = (mesh%vmin == 5.0_wp .and. mesh%vmax == 5.0_wp)
             call run_test("Single cell data range", test_result, &
                 "Should compute correct range for single value")
-            
-            ! Test quad vertices
             call mesh%get_quad_vertices(1, 1, x_quad, y_quad)
             test_result = (abs(x_quad(1) - 0.0_wp) < 1e-10_wp)
             call run_test("Single cell quad vertices", test_result, &
@@ -359,15 +310,12 @@ contains
     end subroutine test_single_cell_mesh
 
     subroutine test_large_mesh_boundaries()
-        !! Test boundary conditions on larger mesh
         type(pcolormesh_t) :: mesh
         real(wp) :: x_coords(6), y_coords(5), c_data(4,5)
         real(wp) :: x_quad(4), y_quad(4)
         type(fortplot_error_t) :: error
         logical :: test_result
         integer :: i, j
-        
-        ! Create valid large mesh data
         do i = 1, 6
             x_coords(i) = real(i-1, wp) * 0.5_wp
         end do
@@ -440,21 +388,17 @@ contains
     end subroutine test_minimal_valid_cases
 
     subroutine test_2x2_mesh()
-        !! Test 2x2 data mesh (3x3 coordinates)
         type(pcolormesh_t) :: mesh
         real(wp) :: x_coords(3), y_coords(3), c_data(2,2)
         type(fortplot_error_t) :: error
         logical :: test_result
-        
         x_coords = [0.0_wp, 1.0_wp, 2.0_wp]
         y_coords = [0.0_wp, 1.0_wp, 2.0_wp]
         c_data = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp], [2, 2])
-        
         call mesh%initialize_regular_grid(x_coords, y_coords, c_data, error=error)
         test_result = .not. error%is_error()
         call run_test("2x2 mesh validation", test_result, &
             "2x2 data mesh should be valid")
-        
         if (.not. error%is_error()) then
             test_result = (mesh%vmin == 1.0_wp .and. mesh%vmax == 4.0_wp)
             call run_test("2x2 mesh data range", test_result, &
@@ -463,7 +407,6 @@ contains
     end subroutine test_2x2_mesh
 
     subroutine test_3x3_mesh()
-        !! Test 3x3 data mesh (4x4 coordinates)
         type(pcolormesh_t) :: mesh
         real(wp) :: x_coords(4), y_coords(4), c_data(3,3)
         type(fortplot_error_t) :: error
