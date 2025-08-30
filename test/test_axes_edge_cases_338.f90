@@ -2,11 +2,14 @@ program test_axes_edge_cases_338
     !! Test edge cases for PDF axes rendering fix (Issue #338)
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
+    use fortplot_test_helpers, only: test_get_temp_path, test_initialize_environment
     implicit none
 
     type(pdf_context) :: ctx
 
     write(*, '(A)') "Testing PDF axes edge cases for Issue #338"
+
+    call test_initialize_environment("axes_edge_cases_338")
 
     ! Test 1: Multiple coordinate changes
     ctx = create_pdf_canvas(600, 400)
@@ -24,7 +27,7 @@ program test_axes_edge_cases_338
     ctx%y_max = 3.0_wp
     
     call ctx%render_axes("Test 1b", "X2", "Y2")
-    call ctx%save("test_edge_case_1.pdf")
+    call ctx%save(test_get_temp_path("test_edge_case_1.pdf"))
 
     ! Test 2: Degenerate coordinate system
     ctx = create_pdf_canvas(600, 400)
@@ -34,7 +37,7 @@ program test_axes_edge_cases_338
     ctx%y_max = 2.0_wp
     
     call ctx%render_axes("Degenerate X", "X", "Y")
-    call ctx%save("test_edge_case_2.pdf")
+    call ctx%save(test_get_temp_path("test_edge_case_2.pdf"))
 
     ! Test 3: Multiple explicit axes calls
     ctx = create_pdf_canvas(600, 400)
@@ -45,9 +48,9 @@ program test_axes_edge_cases_338
     
     call ctx%render_axes("First", "X1", "Y1")
     call ctx%render_axes("Second", "X2", "Y2")  ! Should be ignored
-    call ctx%save("test_edge_case_3.pdf")
+    call ctx%save(test_get_temp_path("test_edge_case_3.pdf"))
 
-    write(*, '(A)') "Edge case tests completed:"
+    write(*, '(A)') "Edge case tests completed in test output directory:"
     write(*, '(A)') "- test_edge_case_1.pdf: Multiple coordinate changes"
     write(*, '(A)') "- test_edge_case_2.pdf: Degenerate coordinates (should have no axes)"
     write(*, '(A)') "- test_edge_case_3.pdf: Multiple axes calls (should use first)"

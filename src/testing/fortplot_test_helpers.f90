@@ -113,9 +113,9 @@ contains
             suffix = test_get_unique_suffix()
         end if
         
-        ! CRITICAL: Issue #774 - All test artifacts go to test/output/ directory
-        ! Primary location: test/output/{test_name}/
-        current_test_dir = "test/output/" // TEMP_DIR_PREFIX // trim(suffix)
+        ! CRITICAL: Issue #820 - All test artifacts go to build/test/output/ directory
+        ! Primary location: build/test/output/{test_name}/
+        current_test_dir = "build/test/output/" // TEMP_DIR_PREFIX // trim(suffix)
         if (is_windows()) then
             current_test_dir = normalize_path_separators(current_test_dir, .true.)
         end if
@@ -123,21 +123,30 @@ contains
         ! Validate the generated path
         if (.not. is_safe_path(current_test_dir)) then
             print *, "ERROR: Generated invalid test output directory path"
-            current_test_dir = "test/output/" // TEMP_DIR_PREFIX // "fallback"
+            current_test_dir = "build/test/output/" // TEMP_DIR_PREFIX // "fallback"
         end if
         
-        ! First ensure test/output/ exists
-        call create_directory_runtime("test", success)
+        ! First ensure build/test/output/ exists
+        call create_directory_runtime("build", success)
         if (.not. success) then
-            inquire(file="test/.", exist=base_exists)
+            inquire(file="build/.", exist=base_exists)
         else
             base_exists = .true.
         end if
         
         if (base_exists) then
-            call create_directory_runtime("test/output", success)
+            call create_directory_runtime("build/test", success)
             if (.not. success) then
-                inquire(file="test/output/.", exist=base_exists)
+                inquire(file="build/test/.", exist=base_exists)
+            else
+                base_exists = .true.
+            end if
+        end if
+        
+        if (base_exists) then
+            call create_directory_runtime("build/test/output", success)
+            if (.not. success) then
+                inquire(file="build/test/output/.", exist=base_exists)
             else
                 base_exists = .true.
             end if
@@ -154,32 +163,32 @@ contains
             end if
         end if
         
-        ! Fallback to build/test if test/output/ creation failed
+        ! Fallback to test/output if build/test/output/ creation failed  
         if (.not. test_dir_created) then
-            current_test_dir = "build/test/" // TEMP_DIR_PREFIX // trim(suffix)
+            current_test_dir = "test/output/" // TEMP_DIR_PREFIX // trim(suffix)
             if (is_windows()) then
                 current_test_dir = normalize_path_separators(current_test_dir, .true.)
             end if
-            call create_directory_runtime("build", success)
-            if (success .or. inquire_directory("build")) then
-                call create_directory_runtime("build/test", success)
-                if (success .or. inquire_directory("build/test")) then
+            call create_directory_runtime("test", success)
+            if (success .or. inquire_directory("test")) then
+                call create_directory_runtime("test/output", success)
+                if (success .or. inquire_directory("test/output")) then
                     call create_directory_runtime(current_test_dir, success)
                     test_dir_created = success .or. inquire_directory(current_test_dir)
                 end if
             end if
         end if
         
-        ! Ultimate fallback: use test/output directly without subdirectory
+        ! Ultimate fallback: use build/test/output directly without subdirectory
         if (.not. test_dir_created) then
-            current_test_dir = "test/output"
+            current_test_dir = "build/test/output"
             if (is_windows()) then
                 current_test_dir = normalize_path_separators(current_test_dir, .true.)
             end if
             inquire(file=trim(current_test_dir)//"/.", exist=test_dir_created)
             if (.not. test_dir_created) then
                 ! Last resort: current directory (but warn)
-                print *, "WARNING: Could not create test/output/ directory, using current directory"
+                print *, "WARNING: Could not create build/test/output/ directory, using current directory"
                 current_test_dir = "."
                 test_dir_created = .true.
             end if
