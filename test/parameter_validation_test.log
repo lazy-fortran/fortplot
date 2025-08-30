@@ -1,0 +1,83 @@
+fpm: Entering directory '/home/ert/code/fortplot'
+Project is up to date
+=== COMPREHENSIVE PARAMETER VALIDATION TEST SUITE (Issue #854) ===
+
+Testing user input safety across all validation categories:
+- Plot dimensions validation
+- Color values validation
+- Array bounds validation
+- File path validation
+- Numeric parameter validation (NaN/infinity handling)
+
+Testing plot dimensions validation...
+  ✓ PASS: Valid normal dimensions (8x6)
+ Error [test]: Negative or zero plot dimensions: width=.00, height=6.00. Dimensions must be positive.
+  ✓ PASS: Zero width dimension
+ Error [test]: Negative or zero plot dimensions: width=8.00, height=-6.00. Dimensions must be positive.
+  ✓ PASS: Negative height dimension
+ Warning [test]: Very small plot dimensions: width=.05, height=.05. Consider dimensions >= .1 for better visibility.
+  ✓ PASS: Very small dimensions
+ Warning [test]: Very large plot dimensions: width=2000.0, height=1500.0. Consider dimensions <= 1000. to avoid memory issues.
+  ✓ PASS: Very large dimensions
+ Warning [test]: Extreme aspect ratio 25.00. Plot may appear distorted.
+  ✓ PASS: Extreme aspect ratio
+  ✓ Plot dimensions validation tests completed
+Testing color values validation...
+  ✓ PASS: Valid RGB values
+  ✓ PASS: Valid RGBA values
+ Warning [test]: Color components outside range [0.0,1.0]. Will be clamped.
+  ✓ PASS: Out of range values
+  ✓ PASS: Edge case values
+ Warning [test]: Color components outside range [0.0,1.0]. Will be clamped.
+ Warning [test]: Alpha component outside range [0.0,1.0]. Will be clamped.
+  ✓ PASS: Extreme out of range values
+  ✓ Color values validation tests completed
+Testing array bounds validation...
+  ✓ PASS: Valid array size
+ Error [test]: Negative array size not allowed.
+  ✓ PASS: Negative array size
+ Error [test]: Array size is zero but minimum required size is 1.
+  ✓ PASS: Zero size with minimum required
+ Warning [test]: Array size 5 is below recommended minimum 10.
+  ✓ PASS: Below minimum size
+ Error [test]: Index would exceed array bounds.
+  ✓ PASS: Out of bounds index
+ Warning [test]: Very large array may cause memory issues.
+  ✓ PASS: Very large array
+  ✓ PASS: Valid bounds access
+  ✓ Array bounds validation tests completed
+Testing file path validation...
+  ✓ PASS: Valid file path
+ Error [test]: Empty file path provided.
+  ✓ PASS: Empty file path
+ Error [test]: File path too long: 5000 characters (max 4096).
+  ✓ PASS: Very long file path
+ Error [test]: File path contains null characters.
+  ✓ PASS: Path with null character
+ Warning [test]: File path contains '..' which may access parent directories.
+  ✓ PASS: Path traversal attempt
+  ✓ PASS: Normal relative path
+  ✓ PASS: Absolute path
+  ✓ File path validation tests completed
+Testing numeric parameters validation...
+  ✓ PASS: Valid normal numeric values
+  ✓ PASS: Single valid value
+ Warning [test]: test_values range is extremely large (range =   1.00E+30). Consider scaling data.
+  ✓ PASS: Extreme range values
+  ✓ PASS: Simple range values
+  ✓ PASS: Zero values
+  ✓ Numeric parameters validation tests completed
+Testing warning mode control...
+  ✓ PASS: Set silent mode
+  ✓ PASS: Set errors only mode
+  ✓ PASS: Set all warnings mode
+ Warning [set_warning_mode]: Invalid warning mode, using default (all warnings)
+  ✓ PASS: Invalid warning mode
+  ✓ Warning mode control tests completed
+
+=== PARAMETER VALIDATION TEST SUMMARY ===
+Passed: 34/34 tests
+
+SUCCESS: All parameter validation tests PASSED!
+Issue #854 implementation complete - comprehensive user input safety achieved.
+fpm: Leaving directory '/home/ert/code/fortplot'
