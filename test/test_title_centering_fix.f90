@@ -5,6 +5,7 @@ program test_title_centering_fix
     !! regardless of the data coordinate range, matching matplotlib behavior.
     use fortplot
     use fortplot_png, only: png_context, create_png_canvas
+    use fortplot_test_helpers, only: test_get_temp_path, test_initialize_environment
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -13,6 +14,8 @@ program test_title_centering_fix
     logical :: test_passed = .true.
 
     print *, "Running PNG title centering regression test..."
+
+    call test_initialize_environment("title_centering_fix")
 
     ! Test 1: Verify titles are consistently positioned with different data ranges
     call test_title_consistency()
@@ -50,7 +53,7 @@ contains
                                              -1.0_wp, 1.0_wp, -1.0_wp, 1.0_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_symmetric.png')
+        call ctx%save(test_get_temp_path('title_test_symmetric.png'))
         
         ! Test with asymmetric data range - title should appear in same visual position
         ctx = create_png_canvas(400, 300)
@@ -65,9 +68,9 @@ contains
                                              1000.0_wp, 2000.0_wp, -5000.0_wp, -4000.0_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_asymmetric.png')
+        call ctx%save(test_get_temp_path('title_test_asymmetric.png'))
         
-        print *, "    Created test images: title_test_symmetric.png, title_test_asymmetric.png"
+        print *, "    Created test images in test output directory: title_test_symmetric.png, title_test_asymmetric.png"
     end subroutine test_title_consistency
 
     subroutine test_extreme_coordinates()
@@ -90,9 +93,9 @@ contains
                                              1.0e-6_wp, 2.0e-6_wp, 1.0e6_wp, 2.0e6_wp, &
                                              title=title_text, xlabel=xlabel_text, ylabel=ylabel_text, &
                                              has_3d_plots=.false.)
-        call ctx%save('title_test_extreme.png')
+        call ctx%save(test_get_temp_path('title_test_extreme.png'))
         
-        print *, "    Created test image: title_test_extreme.png"
+        print *, "    Created test image in test output directory: title_test_extreme.png"
     end subroutine test_extreme_coordinates
 
 end program test_title_centering_fix
