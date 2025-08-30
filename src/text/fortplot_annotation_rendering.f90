@@ -13,7 +13,6 @@ module fortplot_annotation_rendering
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context, only: plot_context
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
-    use fortplot_annotation_coordinates, only: transform_annotation_coordinates
     use fortplot_logging, only: log_info, log_warning
     implicit none
     
