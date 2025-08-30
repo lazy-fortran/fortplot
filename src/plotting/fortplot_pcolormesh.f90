@@ -71,26 +71,33 @@ contains
         character(len=*), intent(in), optional :: colormap
         type(fortplot_error_t), intent(out), optional :: error
         
-        integer :: i, j
+        integer :: i, j, temp_dim
         
-        ! Validate dimensions
-        self%nx = size(c_data, 2)
+        ! Flexible dimension validation for pcolormesh
+        ! Handle both Fortran-style and C-style dimension conventions gracefully
+        ! The key insight: if the dimensions allow valid mesh construction, proceed
+        
+        ! Try Fortran-style interpretation: z(ny, nx)
         self%ny = size(c_data, 1)
+        self%nx = size(c_data, 2)
         
-        if (size(x_coords) /= self%nx + 1) then
+        ! Check if coordinate arrays match this interpretation
+        if (size(x_coords) == self%nx + 1 .and. size(y_coords) == self%ny + 1) then
+            ! Fortran-style matches perfectly - proceed
+            ! This is the preferred convention
+        ! Try C-style interpretation: z(nx, ny) -> swap dimensions
+        elseif (size(x_coords) == self%ny + 1 .and. size(y_coords) == self%nx + 1) then
+            ! C-style dimension pattern detected - swap our interpretation
+            ! User provided z(nx, ny) where we expected z(ny, nx)
+            temp_dim = self%nx
+            self%nx = self%ny 
+            self%ny = temp_dim
+            ! Now dimensions should work correctly
+        else
+            ! Neither convention works - this is a true dimension error
             if (present(error)) then
                 call error%set_error(ERROR_DIMENSION_MISMATCH, &
-                    "pcolormesh: x_coords size must be nx+1")
-            else
-                call log_error(ERROR_DIMENSION_MISMATCH, "initialize_regular_grid")
-            end if
-            return
-        end if
-        
-        if (size(y_coords) /= self%ny + 1) then
-            if (present(error)) then
-                call error%set_error(ERROR_DIMENSION_MISMATCH, &
-                    "pcolormesh: y_coords size must be ny+1")  
+                    "pcolormesh: coordinate arrays incompatible with data dimensions")
             else
                 call log_error(ERROR_DIMENSION_MISMATCH, "initialize_regular_grid")
             end if

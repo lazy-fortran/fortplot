@@ -81,25 +81,29 @@ contains
         nx = size(x)
         ny = size(y)
         
-        ! For pcolormesh, z should have dimensions (ny-1, nx-1) for cell-centered data
-        ! or (ny, nx) for vertex-centered data (following Fortran column-major order)
-        if (size(z, 1) /= ny-1 .or. size(z, 2) /= nx-1) then
-            ! Check for vertex-centered data
-            if (size(z, 1) == ny .and. size(z, 2) == nx) then
-                call log_info("pcolormesh: using vertex-centered data")
-            ! Check for incorrect C-style ordering
-            elseif (size(z, 1) == nx-1 .and. size(z, 2) == ny-1) then
-                call log_warning("pcolormesh: z dimensions appear to use C-style (row-major) ordering")
-                call log_warning("pcolormesh: expected Fortran-style z(ny-1, nx-1), got z(nx-1, ny-1)")
-            elseif (size(z, 1) == nx .and. size(z, 2) == ny) then
-                call log_warning("pcolormesh: vertex-centered data uses C-style ordering")
-                call log_warning("pcolormesh: expected Fortran-style z(ny, nx), got z(nx, ny)")
-            else
-                call log_error("pcolormesh: z must have dimensions (ny-1, nx-1) for " // &
-                              "cell-centered or (ny, nx) for vertex-centered data")
-                return
-            end if
+        ! Validate z dimensions for pcolormesh compatibility
+        ! Accept any reasonable dimension convention that can be processed correctly
+        ! Only error on truly incompatible dimensions that cannot be handled
+        
+        ! Check for common valid dimension patterns:
+        ! 1. (ny-1, nx-1) - cell-centered Fortran-style
+        ! 2. (ny, nx) - vertex-centered Fortran-style  
+        ! 3. (nx-1, ny-1) - cell-centered C-style (can be handled)
+        ! 4. (nx, ny) - vertex-centered C-style (can be handled)
+        
+        if (.not. (size(z, 1) == ny-1 .and. size(z, 2) == nx-1) .and. &  ! Fortran cell-centered
+            .not. (size(z, 1) == ny .and. size(z, 2) == nx) .and. &      ! Fortran vertex-centered
+            .not. (size(z, 1) == nx-1 .and. size(z, 2) == ny-1) .and. & ! C-style cell-centered
+            .not. (size(z, 1) == nx .and. size(z, 2) == ny)) then        ! C-style vertex-centered
+            
+            ! Only error on truly incompatible dimensions
+            call log_error("pcolormesh: z dimensions incompatible with x,y grid. " // &
+                          "Expected one of: z(ny-1,nx-1), z(ny,nx), z(nx-1,ny-1), or z(nx,ny)")
+            return
         end if
+        
+        ! All valid dimension patterns proceed without warnings
+        ! The downstream processing handles all these conventions correctly
         
         ! Set default values
         shading_local = 'flat'
@@ -294,25 +298,29 @@ contains
         nx = size(x)
         ny = size(y)
         
-        ! For surface plots, z should have dimensions (ny-1, nx-1) for cell-centered data
-        ! or (ny, nx) for vertex-centered data (following Fortran column-major order)
-        if (size(z, 1) /= ny-1 .or. size(z, 2) /= nx-1) then
-            ! Check for vertex-centered data
-            if (size(z, 1) == ny .and. size(z, 2) == nx) then
-                call log_info("add_surface: using vertex-centered data")
-            ! Check for incorrect C-style ordering
-            elseif (size(z, 1) == nx-1 .and. size(z, 2) == ny-1) then
-                call log_warning("add_surface: z dimensions appear to use C-style (row-major) ordering")
-                call log_warning("add_surface: expected Fortran-style z(ny-1, nx-1), got z(nx-1, ny-1)")
-            elseif (size(z, 1) == nx .and. size(z, 2) == ny) then
-                call log_warning("add_surface: vertex-centered data uses C-style ordering")
-                call log_warning("add_surface: expected Fortran-style z(ny, nx), got z(nx, ny)")
-            else
-                call log_error("add_surface: z must have dimensions (ny-1, nx-1) for " // &
-                              "cell-centered or (ny, nx) for vertex-centered data")
-                return
-            end if
+        ! Validate z dimensions for surface plot compatibility
+        ! Accept any reasonable dimension convention that can be processed correctly
+        ! Only error on truly incompatible dimensions that cannot be handled
+        
+        ! Check for common valid dimension patterns:
+        ! 1. (ny-1, nx-1) - cell-centered Fortran-style
+        ! 2. (ny, nx) - vertex-centered Fortran-style  
+        ! 3. (nx-1, ny-1) - cell-centered C-style (can be handled)
+        ! 4. (nx, ny) - vertex-centered C-style (can be handled)
+        
+        if (.not. (size(z, 1) == ny-1 .and. size(z, 2) == nx-1) .and. &  ! Fortran cell-centered
+            .not. (size(z, 1) == ny .and. size(z, 2) == nx) .and. &      ! Fortran vertex-centered
+            .not. (size(z, 1) == nx-1 .and. size(z, 2) == ny-1) .and. & ! C-style cell-centered
+            .not. (size(z, 1) == nx .and. size(z, 2) == ny)) then        ! C-style vertex-centered
+            
+            ! Only error on truly incompatible dimensions
+            call log_error("add_surface: z dimensions incompatible with x,y grid. " // &
+                          "Expected one of: z(ny-1,nx-1), z(ny,nx), z(nx-1,ny-1), or z(nx,ny)")
+            return
         end if
+        
+        ! All valid dimension patterns proceed without warnings
+        ! The downstream processing handles all these conventions correctly
         
         ! Set default values
         colormap_local = 'viridis'
