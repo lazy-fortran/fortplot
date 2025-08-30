@@ -48,6 +48,9 @@ module fortplot_parameter_validation
     public :: validation_context_t
     public :: parameter_validation_result_t
     public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
+    ! Helper functions (Issue #875: Made public for direct testing)
+    public :: is_nan_safe
+    public :: is_finite_safe
     
     ! Current warning mode (can be changed by advanced users)
     integer :: current_warning_mode = WARNING_MODE_ALL
