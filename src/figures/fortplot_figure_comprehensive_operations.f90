@@ -36,7 +36,7 @@ module fortplot_figure_comprehensive_operations
     public :: figure_grid_operation, figure_render
     
     ! Management module functions
-    public :: figure_initialize, figure_destroy, figure_savefig, figure_savefig_with_status
+    public :: figure_initialize, figure_destroy, figure_clear, figure_savefig, figure_savefig_with_status
     public :: figure_show, figure_clear_streamlines
     public :: figure_subplots, figure_subplot_plot, figure_subplot_plot_count
     public :: figure_subplot_set_title, figure_subplot_set_xlabel, figure_subplot_set_ylabel
