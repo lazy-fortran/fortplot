@@ -121,9 +121,9 @@ contains
         output_data(pos+1) = int(z'9C', int8)
         pos = pos + 2
         
-        ! Generate simple uncompressed DEFLATE blocks
+        ! Generate compressed DEFLATE blocks using Huffman coding
         compressed_len = 1
-        call compress_with_uncompressed_blocks(input_data, input_len, compressed_data, compressed_len)
+        call compress_with_fixed_huffman(input_data, input_len, compressed_data, compressed_len)
         
         ! Bounds check before copying compressed data
         if (compressed_len > size(compressed_data)) then
