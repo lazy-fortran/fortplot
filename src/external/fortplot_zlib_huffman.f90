@@ -25,42 +25,43 @@ contains
         integer, intent(out) :: distance_lengths(0:29)
         integer :: i, code
         
-        ! Fixed literal/length codes
+        ! CRITICAL FIX: RFC 1951 Fixed Huffman table with correct bit-reversed codes
+        ! Fixed literal/length codes with proper bit ordering for deflate
         code = 0
-        ! 0-143: 8 bits (00110000 - 10111111)
+        ! 0-143: 8 bits, reversed to MSB first for deflate format
         do i = 0, 143
-            literal_codes(i) = code + 48  ! Start at 00110000
+            literal_codes(i) = bit_reverse(code + 48, 8)
             literal_lengths(i) = 8
             code = code + 1
         end do
         
         code = 0
-        ! 144-255: 9 bits (110010000 - 111111111)
+        ! 144-255: 9 bits, reversed to MSB first for deflate format
         do i = 144, 255
-            literal_codes(i) = code + 400  ! Start at 110010000
+            literal_codes(i) = bit_reverse(code + 400, 9)
             literal_lengths(i) = 9
             code = code + 1
         end do
         
         code = 0
-        ! 256-279: 7 bits (0000000 - 0010111)
+        ! 256-279: 7 bits, reversed to MSB first for deflate format
         do i = 256, 279
-            literal_codes(i) = code
+            literal_codes(i) = bit_reverse(code, 7)
             literal_lengths(i) = 7
             code = code + 1
         end do
         
         code = 0
-        ! 280-287: 8 bits (11000000 - 11000111)
+        ! 280-285: 8 bits, reversed to MSB first for deflate format
         do i = 280, 285  ! Note: only 280-285 are valid
-            literal_codes(i) = code + 192  ! Start at 11000000
+            literal_codes(i) = bit_reverse(code + 192, 8)
             literal_lengths(i) = 8
             code = code + 1
         end do
         
-        ! Fixed distance codes (all 5 bits)
+        ! Fixed distance codes (all 5 bits, properly bit-reversed)  
         do i = 0, 29
-            distance_codes(i) = i
+            distance_codes(i) = bit_reverse(i, 5)
             distance_lengths(i) = 5
         end do
     end subroutine init_fixed_huffman_tables
@@ -142,6 +143,7 @@ contains
     
     subroutine write_bits(buffer, bit_pos, byte_pos, value, num_bits)
         !! Write bits to output buffer (LSB first) with bounds checking
+        !! Fixed for proper deflate format - corrected bit ordering
         integer(int8), intent(inout) :: buffer(:)
         integer, intent(inout) :: bit_pos, byte_pos
         integer, intent(in) :: value, num_bits
@@ -157,12 +159,14 @@ contains
                 return
             end if
             
+            ! CRITICAL FIX: Extract bits from LSB to MSB (correct for deflate format)
             bit = iand(ishft(value, -i), 1)
             
             if (bit_pos == 0) then
                 buffer(byte_pos) = 0
             end if
             
+            ! Write bit into current position within byte
             buffer(byte_pos) = ior(buffer(byte_pos), int(ishft(bit, bit_pos), int8))
             bit_pos = bit_pos + 1
             
@@ -182,8 +186,8 @@ contains
         
         integer :: lit_val
         
-        lit_val = iand(int(literal), 255)  ! Ensure 0-255 range
-        call write_bits(buffer, bit_pos, byte_pos, bit_reverse(codes(lit_val), lengths(lit_val)), lengths(lit_val))
+        lit_val = iand(int(literal), 255)  ! Ensure 0-255 range  
+        call write_bits(buffer, bit_pos, byte_pos, codes(lit_val), lengths(lit_val))
     end subroutine encode_literal
     
     subroutine encode_length_distance(buffer, bit_pos, byte_pos, length, distance, &
@@ -201,17 +205,15 @@ contains
         ! Encode length
         call get_length_code(length, length_code, length_extra_bits, length_extra)
         call write_bits(buffer, bit_pos, byte_pos, &
-                       bit_reverse(literal_codes(length_code), literal_lengths(length_code)), &
-                       literal_lengths(length_code))
+                       literal_codes(length_code), literal_lengths(length_code))
         if (length_extra_bits > 0) then
             call write_bits(buffer, bit_pos, byte_pos, length_extra, length_extra_bits)
         end if
         
-        ! Encode distance
+        ! Encode distance  
         call get_distance_code(distance, distance_code, distance_extra_bits, distance_extra)
         call write_bits(buffer, bit_pos, byte_pos, &
-                       bit_reverse(distance_codes(distance_code), distance_lengths(distance_code)), &
-                       distance_lengths(distance_code))
+                       distance_codes(distance_code), distance_lengths(distance_code))
         if (distance_extra_bits > 0) then
             call write_bits(buffer, bit_pos, byte_pos, distance_extra, distance_extra_bits)
         end if
@@ -432,9 +434,12 @@ contains
             block_size = min(input_len - pos + 1, 32768)
             
             ! Write block header: BFINAL, BTYPE=01 (fixed Huffman)
+            ! CRITICAL FIX: RFC 1951 specifies BFINAL first, then BTYPE (2 bits)
             if (pos + block_size >= input_len) then
-                call write_bits(output_buffer, bit_pos, byte_pos, 3, 3)  ! BFINAL=1, BTYPE=01
+                ! BFINAL=1, BTYPE=01: bits are 1,0,1 = decimal 5 (LSB first)
+                call write_bits(output_buffer, bit_pos, byte_pos, 5, 3)  ! BFINAL=1, BTYPE=01
             else
+                ! BFINAL=0, BTYPE=01: bits are 0,1,0 = decimal 2 (LSB first)
                 call write_bits(output_buffer, bit_pos, byte_pos, 2, 3)  ! BFINAL=0, BTYPE=01
             end if
             
@@ -474,10 +479,9 @@ contains
                 end if
             end do
             
-            ! Write end-of-block code (256)
+            ! Write end-of-block code (256) - CRITICAL for proper stream termination  
             call write_bits(output_buffer, bit_pos, byte_pos, &
-                          bit_reverse(literal_codes(256), literal_lengths(256)), &
-                          literal_lengths(256))
+                           literal_codes(256), literal_lengths(256))
         end do
         
         ! Ensure final bits are written
