@@ -315,19 +315,19 @@ contains
         tick_length = PDF_TICK_SIZE
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
         
-        ! Draw X-axis ticks (bottom of plot area)
+        ! Draw X-axis ticks (bottom of plot area) — draw inward into frame
         do i = 1, num_x
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 x_positions(i), bottom_y, &
-                x_positions(i), bottom_y - tick_length
+                x_positions(i), bottom_y + tick_length
             ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
         end do
         
-        ! Draw Y-axis ticks (left side of plot area)
+        ! Draw Y-axis ticks (left side of plot area) — draw inward into frame
         do i = 1, num_y
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
                 plot_left, y_positions(i), &
-                plot_left - tick_length, y_positions(i)
+                plot_left + tick_length, y_positions(i)
             ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
         end do
     end subroutine draw_pdf_tick_marks_with_area
