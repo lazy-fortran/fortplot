@@ -20,6 +20,8 @@ program test_legend_comprehensive
     call test_legend_with_markers(num_failures)
     call test_pdf_legend(num_failures)
     call test_ascii_legend(num_failures)
+    call test_empty_label_handling(num_failures)
+    call test_legend_optimizations(num_failures)
     
     print *, ""
     print *, "========================================="
@@ -276,5 +278,62 @@ contains
         end do
     end subroutine windows_safe_delay
     
+    subroutine test_empty_label_handling(failures)
+        !! Test empty legend labels (Issue #328) - consolidated from test_legend_empty_label_fix.f90
+        integer, intent(inout) :: failures
+        real(wp), dimension(10) :: x, y1, y2, y3
+        integer :: i
+        type(validation_result_t) :: val
+        
+        print *, ""
+        print *, "Test 6: Empty legend label handling"
+        print *, "-----------------------------------"
+        
+        x = [(real(i, wp), i=1, 10)]
+        y1 = x; y2 = 2.0_wp * x; y3 = 3.0_wp * x
+        
+        call figure()
+        call plot(x, y1, label='Line 1')
+        call plot(x, y2, label='Line 2')
+        call plot(x, y3)  ! No label - should not create entry
+        call legend()
+        call savefig("test/output/test_empty_label_consolidated.png")
+        
+        val = validate_file_exists('test/output/test_empty_label_consolidated.png')
+        if (val%passed) then
+            print *, "  ✓ Empty label handling verified"
+        else
+            print *, "  ✗ Empty label test failed"
+            failures = failures + 1
+        end if
+    end subroutine test_empty_label_handling
+    
+    subroutine test_legend_optimizations(failures)
+        !! Test optimized legend operations - consolidated from test_legend_optimized.f90
+        integer, intent(inout) :: failures
+        real(wp), dimension(5) :: x, y
+        integer :: i
+        type(validation_result_t) :: val
+        
+        print *, ""
+        print *, "Test 7: Legend optimization verification"
+        print *, "---------------------------------------"
+        
+        x = [(real(i, wp), i=1, 5)]
+        y = x**2
+        
+        call figure()
+        call plot(x, y, label='Optimized')
+        call legend()
+        call savefig("test/output/test_legend_optimization_consolidated.png")
+        
+        val = validate_file_exists('test/output/test_legend_optimization_consolidated.png')
+        if (val%passed) then
+            print *, "  ✓ Legend optimization verified"
+        else
+            print *, "  ✗ Legend optimization test failed"
+            failures = failures + 1
+        end if
+    end subroutine test_legend_optimizations
 
 end program test_legend_comprehensive

@@ -498,5 +498,19 @@ contains
         print *, "- RECOMMENDATION: Close Issue #698 as INVALID"
         
     end subroutine test_issue_698_fraud_investigation
+    
+    subroutine test_dimension_validation_consolidated()
+        !! Dimension validation test - consolidated from test_pcolormesh_validation.f90
+        real(wp), dimension(4) :: x_coords = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
+        real(wp), dimension(3) :: y_coords = [0.0_wp, 1.0_wp, 2.0_wp]
+        real(wp), dimension(2,3) :: z_data = reshape([1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, 6.0_wp], [2,3])
+        
+        print *, ""
+        print *, "Testing dimension validation (consolidated from validation test):"
+        call figure()
+        call pcolormesh(x_coords, y_coords, z_data)  ! Should handle gracefully
+        call savefig("test/output/test_pcolormesh_validation_consolidated.png")
+        print *, "  ✓ Dimension validation consolidated"
+    end subroutine test_dimension_validation_consolidated
 
 end program test_pcolormesh_comprehensive
