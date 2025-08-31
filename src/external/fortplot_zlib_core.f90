@@ -121,10 +121,10 @@ contains
         output_data(pos+1) = int(z'9C', int8)
         pos = pos + 2
         
-        ! CRITICAL FIX: Use reliable uncompressed blocks for FFmpeg compatibility
-        ! Fixed Huffman has complex bit ordering issues - use proven uncompressed method
+        ! WORKING FIX: Use existing fixed Huffman compression (from commit 2b65a2d)
+        ! This was working in PR #964 before later commits broke it
         compressed_len = 1
-        call compress_with_uncompressed_blocks_efficient(input_data, input_len, compressed_data, compressed_len)
+        call compress_with_fixed_huffman(input_data, input_len, compressed_data, compressed_len)
         
         ! Bounds check before copying compressed data
         if (compressed_len > size(compressed_data)) then
