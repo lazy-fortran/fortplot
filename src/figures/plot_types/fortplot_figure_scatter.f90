@@ -90,6 +90,9 @@ contains
             plots(plot_count)%marker = 'o'  ! Default circle
         end if
         
+        ! Explicitly avoid connecting lines in scatter context
+        plots(plot_count)%linestyle = 'none'
+        
         ! Set label for legend
         if (present(label)) then
             plots(plot_count)%label = label

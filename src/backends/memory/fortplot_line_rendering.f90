@@ -49,10 +49,14 @@ contains
             y_scaled(i) = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
         end do
         
-        ! Check if we need to use linestyle
+        ! Check if we need to use linestyle; respect 'none' (markers only)
         if (allocated(plot_data%linestyle) .and. len_trim(plot_data%linestyle) > 0) then
-            call draw_line_with_style(backend, x_scaled, y_scaled, &
-                                    plot_data%linestyle, '')
+            select case (trim(plot_data%linestyle))
+            case ('none', 'None')
+                ! Skip drawing connecting lines; markers rendered separately
+            case default
+                call draw_line_with_style(backend, x_scaled, y_scaled, plot_data%linestyle, '')
+            end select
         else
             call render_solid_line(backend, x_scaled, y_scaled)
         end if
