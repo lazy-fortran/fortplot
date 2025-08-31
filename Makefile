@@ -6,7 +6,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST = 
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry
 
 # Default target
 all: build
@@ -45,6 +45,8 @@ test-ci:
 	@fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
 	@fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
 	@fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@# Regression guard for Issue #985 (PDF coordinate mapping)
+	@fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
@@ -195,6 +197,48 @@ verify-with-evidence: verify-functionality
 	@echo "Verification complete - technical evidence generated"
 	@echo "Evidence directory: test/output/verification/evidence/"
 	@ls -la test/output/verification/evidence/ || true
+
+# --- GitHub issue/PR helpers for Codex loop ---
+issue-branch:
+	@if [ -z "$(ISSUE)" ]; then echo "ISSUE=<number> required"; exit 2; fi
+	@echo "Creating branch for issue #$(ISSUE)"
+	@./scripts/issue_branch.sh $(ISSUE)
+
+issue-open-pr:
+	@if [ -z "$(ISSUE)" ]; then echo "ISSUE=<number> required"; exit 2; fi
+	@./scripts/issue_open_pr.sh $(ISSUE)
+
+pr-merge:
+	@if [ -z "$(PR)" ]; then echo "PR=<number> required"; exit 2; fi
+	@./scripts/pr_merge.sh $(PR) $(ARGS)
+
+pr-cleanup:
+	@if [ -z "$(PR)" ]; then echo "PR=<number> required"; exit 2; fi
+	@./scripts/pr_cleanup.sh $(PR)
+
+issue-loop:
+	@label=$${LABEL-__all__}; \
+	if [ "$$label" = "__all__" ]; then \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-999999}; \
+	else \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-999999}; \
+	fi
+
+issue-loop-dry:
+	@label=$${LABEL-__all__}; \
+	if [ "$$label" = "__all__" ]; then \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-999999} --dry-run; \
+	else \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-999999} --dry-run; \
+	fi
+
+issue-loop-auto:
+	@label=$${LABEL-__all__}; \
+	if [ "$$label" = "__all__" ]; then \
+		CLEAN_FORCE=1 ./scripts/issue_orchestrate_auto.sh --all --limit $${LIMIT:-999999}; \
+	else \
+		CLEAN_FORCE=1 ./scripts/issue_orchestrate_auto.sh --label "$$label" --limit $${LIMIT:-999999}; \
+	fi
 
 # File size compliance verification - fraud prevention
 verify-size-compliance:

@@ -41,33 +41,39 @@ contains
         real(wp) :: x_range, y_range
         real(wp) :: x_scale, y_scale
         real(wp), parameter :: EPSILON = 1.0e-10_wp
+        real(wp) :: left, right, bottom, top
         
         ! Calculate data ranges with epsilon protection
         x_range = ctx%x_max - ctx%x_min
         y_range = ctx%y_max - ctx%y_min
         
-        ! Handle degenerate cases first
+        ! Frame edges
+        left   = real(ctx%plot_area%left,  wp)
+        right  = real(ctx%plot_area%left + ctx%plot_area%width,  wp)
+        bottom = real(ctx%plot_area%bottom, wp)
+        top    = real(ctx%plot_area%bottom + ctx%plot_area%height, wp)
+
+        ! Map X using independent scale (center if degenerate)
         if (abs(x_range) < EPSILON) then
-            pdf_x = real(ctx%plot_area%left, wp) + real(ctx%plot_area%width, wp) * 0.5_wp
+            pdf_x = left + (right - left) * 0.5_wp
+        else
+            x_scale = (right - left) / x_range
+            pdf_x = (x - ctx%x_min) * x_scale + left
         end if
-        
+
+        ! Map Y using independent scale (center if degenerate)
         if (abs(y_range) < EPSILON) then
-            pdf_y = real(ctx%plot_area%bottom, wp) + &
-                    real(ctx%plot_area%height, wp) * 0.5_wp
+            pdf_y = bottom + (top - bottom) * 0.5_wp
+        else
+            y_scale = (top - bottom) / y_range
+            pdf_y = (y - ctx%y_min) * y_scale + bottom
         end if
-        
-        if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
-        
-        ! Calculate independent scales for each axis to fill available plot area
-        ! This fixes both scale regression and missing markers issues
-        x_scale = real(ctx%plot_area%width, wp) / x_range
-        y_scale = real(ctx%plot_area%height, wp) / y_range
-        
-        ! Transform coordinates using independent scales to fill plot area
-        pdf_x = (x - ctx%x_min) * x_scale + real(ctx%plot_area%left, wp)
-        
-        ! PDF coordinates: Y=0 at bottom, so transform data coordinates directly
-        pdf_y = (y - ctx%y_min) * y_scale + real(ctx%plot_area%bottom, wp)
+
+        ! Clamp to frame bounds to avoid tiny floating errors leaking past frame
+        if (pdf_x < left)  pdf_x = left
+        if (pdf_x > right) pdf_x = right
+        if (pdf_y < bottom) pdf_y = bottom
+        if (pdf_y > top)    pdf_y = top
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
@@ -233,8 +239,7 @@ contains
     subroutine safe_coordinate_transform(x, y, x_min, x_max, y_min, y_max, &
                                         plot_left, plot_width, plot_bottom, plot_height, &
                                         pdf_x, pdf_y)
-        !! Safe coordinate transformation to fill available plot area
-        !! Restored to use independent scales for X and Y axes - fixes markers and scaling
+        !! Safe coordinate transformation using independent x/y scales
         real(wp), intent(in) :: x, y
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: plot_left, plot_width, plot_bottom, plot_height
@@ -242,30 +247,25 @@ contains
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         real(wp) :: x_range, y_range
         real(wp) :: x_scale, y_scale
-        
         ! Calculate ranges with epsilon protection
         x_range = x_max - x_min
         y_range = y_max - y_min
-        
-        ! Handle degenerate cases
+
+        ! Map X using independent scale (center if degenerate)
         if (abs(x_range) < EPSILON) then
             pdf_x = plot_left + plot_width * 0.5_wp
+        else
+            x_scale = plot_width / x_range
+            pdf_x = (x - x_min) * x_scale + plot_left
         end if
-        
+
+        ! Map Y using independent scale (center if degenerate)
         if (abs(y_range) < EPSILON) then
             pdf_y = plot_bottom + plot_height * 0.5_wp
+        else
+            y_scale = plot_height / y_range
+            pdf_y = (y - y_min) * y_scale + plot_bottom
         end if
-        
-        if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
-        
-        ! Calculate independent scales for each axis to fill available plot area
-        x_scale = plot_width / x_range
-        y_scale = plot_height / y_range
-        
-        ! Transform coordinates using independent scales to fill plot area
-        pdf_x = (x - x_min) * x_scale + plot_left
-        pdf_y = (y - y_min) * y_scale + plot_bottom
-        
     end subroutine safe_coordinate_transform
     
 end module fortplot_pdf_coordinate

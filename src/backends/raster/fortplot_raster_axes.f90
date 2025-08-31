@@ -14,6 +14,7 @@ module fortplot_raster_axes
 
     private
     public :: raster_draw_axes_and_labels, raster_render_ylabel
+    public :: compute_title_position
 
 contains
 
@@ -277,22 +278,33 @@ contains
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
         
-        ! Process LaTeX commands and Unicode
-        call process_latex_in_text(title_text, processed_text, processed_len)
-        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
-        
-        ! Calculate title position centered over plot area
-        ! X position: center of plot area horizontally
-        title_px = real(plot_area%left + plot_area%width / 2, wp)
-        
-        ! Y position: above plot area (like matplotlib)  
-        ! Place title approximately 30 pixels above the plot area
-        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+        ! Compute title position (centered like matplotlib)
+        call compute_title_position(plot_area, title_text, processed_text, processed_len, escaped_text, title_px, title_py)
         
         ! Get current color and render title directly in pixel coordinates
         call raster%get_color_bytes(r, g, b)
         call render_text_to_image(raster%image_data, width, height, &
                                  int(title_px), int(title_py), trim(escaped_text), r, g, b)
     end subroutine render_title_centered
+
+    subroutine compute_title_position(plot_area, title_text, processed_text, processed_len, escaped_text, title_px, title_py)
+        !! Compute centered title position and return processed/escaped text
+        !! Exposed for reuse and testing; keeps render routine small and focused
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: title_text
+        character(len=*), intent(out) :: processed_text
+        integer, intent(out) :: processed_len
+        character(len=*), intent(out) :: escaped_text
+        real(wp), intent(out) :: title_px, title_py
+
+        integer :: text_width
+
+        call process_latex_in_text(title_text, processed_text, processed_len)
+        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+
+        text_width = calculate_text_width(trim(escaped_text))
+        title_px = real(plot_area%left + plot_area%width / 2 - text_width / 2, wp)
+        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+    end subroutine compute_title_position
 
 end module fortplot_raster_axes

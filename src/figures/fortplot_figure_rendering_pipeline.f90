@@ -7,7 +7,7 @@ module fortplot_figure_rendering_pipeline
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_markers
     use fortplot_legend, only: legend_t
@@ -55,6 +55,11 @@ contains
                 call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
                                              x_min_data, x_max_data, y_min_data, y_max_data)
                 
+            case (PLOT_TYPE_SCATTER)
+                ! Scatter uses same x/y range computation as line plots
+                call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
+                                             x_min_data, x_max_data, y_min_data, y_max_data)
+
             case (PLOT_TYPE_CONTOUR)
                 call process_contour_plot_ranges(plots(i), first_plot, has_valid_data, &
                                                 x_min_data, x_max_data, y_min_data, y_max_data)
@@ -62,6 +67,7 @@ contains
             case (PLOT_TYPE_PCOLORMESH)
                 call process_pcolormesh_ranges(plots(i), first_plot, has_valid_data, &
                                               x_min_data, x_max_data, y_min_data, y_max_data)
+                                              
             end select
         end do
         
@@ -400,6 +406,15 @@ contains
                                       xscale, yscale, symlog_threshold)
                 end if
                 
+            case (PLOT_TYPE_SCATTER)
+                ! Scatter plots render only markers (no connecting line)
+                if (allocated(plots(i)%marker)) then
+                    call render_markers(backend, plots(i), &
+                                      x_min_transformed, x_max_transformed, &
+                                      y_min_transformed, y_max_transformed, &
+                                      xscale, yscale, symlog_threshold)
+                end if
+
             case (PLOT_TYPE_CONTOUR)
                 call render_contour_plot(backend, plots(i), &
                                        x_min_transformed, x_max_transformed, &
@@ -415,6 +430,7 @@ contains
                                           y_min_transformed, y_max_transformed, &
                                           xscale, yscale, symlog_threshold, &
                                           width, height, margin_right)
+                                          
             end select
         end do
     end subroutine render_all_plots
