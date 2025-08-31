@@ -41,26 +41,38 @@ contains
         real(wp) :: x_range, y_range
         real(wp) :: x_scale, y_scale
         real(wp), parameter :: EPSILON = 1.0e-10_wp
+        real(wp) :: left, right, bottom, top
         
         ! Calculate data ranges with epsilon protection
         x_range = ctx%x_max - ctx%x_min
         y_range = ctx%y_max - ctx%y_min
         
         ! Handle degenerate cases first (center in plot area)
+        left  = real(ctx%plot_area%left,  wp)
+        right = real(ctx%plot_area%left + ctx%plot_area%width,  wp)
+        bottom = real(ctx%plot_area%bottom, wp)
+        top    = real(ctx%plot_area%bottom + ctx%plot_area%height, wp)
+
         if (abs(x_range) < EPSILON) then
-            pdf_x = real(ctx%plot_area%left, wp) + real(ctx%plot_area%width, wp) * 0.5_wp
+            pdf_x = left + (right - left) * 0.5_wp
         else
-            x_scale = real(ctx%plot_area%width, wp) / x_range
-            pdf_x = (x - ctx%x_min) * x_scale + real(ctx%plot_area%left, wp)
+            x_scale = (right - left) / x_range
+            pdf_x = (x - ctx%x_min) * x_scale + left
         end if
         
         if (abs(y_range) < EPSILON) then
-            pdf_y = real(ctx%plot_area%bottom, wp) + real(ctx%plot_area%height, wp) * 0.5_wp
+            pdf_y = bottom + (top - bottom) * 0.5_wp
         else
-            y_scale = real(ctx%plot_area%height, wp) / y_range
+            y_scale = (top - bottom) / y_range
             ! PDF coordinates: Y=0 at bottom, direct mapping
-            pdf_y = (y - ctx%y_min) * y_scale + real(ctx%plot_area%bottom, wp)
+            pdf_y = (y - ctx%y_min) * y_scale + bottom
         end if
+
+        ! Clamp to frame bounds to avoid tiny floating errors leaking past frame
+        if (pdf_x < left)  pdf_x = left
+        if (pdf_x > right) pdf_x = right
+        if (pdf_y < bottom) pdf_y = bottom
+        if (pdf_y > top)    pdf_y = top
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)

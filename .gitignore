@@ -94,6 +94,10 @@ vicky_*.pdf
 vicky_*.txt
 title_test_*.png
 
+# Stray compiled test binaries that must never be tracked
+/test_basic_user_workflow
+/test_readme_promises
+
 # Additional root directory artifact prevention
 debug_*.png
 debug_*.pdf
