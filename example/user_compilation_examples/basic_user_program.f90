@@ -21,7 +21,7 @@ program basic_user_program
     end do
     
     ! Create a basic plot
-    call figure(figsize=[800.0_wp, 600.0_wp])
+    call figure(figsize=[8.0_wp, 6.0_wp])
     call plot(x, y_sin, label="sin(x)", linestyle="b-")
     call plot(x, y_cos, label="cos(x)", linestyle="r--")
     call title("Basic User Program - Trigonometric Functions")
