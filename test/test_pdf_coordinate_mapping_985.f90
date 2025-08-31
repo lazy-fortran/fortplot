@@ -95,7 +95,7 @@ contains
     logical function parse_frame(stream, left, bottom, width, height) result(ok)
         character(len=*), intent(in) :: stream
         real(wp), intent(out) :: left, bottom, width, height
-        integer :: p, q
+        integer :: p, q, ios
         character(len=:), allocatable :: line
         ok = .false.
         left = 0.0_wp; bottom = 0.0_wp; width = 0.0_wp; height = 0.0_wp
@@ -109,7 +109,8 @@ contains
         end do
         if (q < 1) q = 1
         line = adjustl(stream(q:p-1))
-        ok = parse_four_reals(line, left, bottom, width, height)
+        read(line, *, iostat=ios) left, bottom, width, height
+        ok = (ios == 0)
     end function parse_frame
 
     logical function is_path_line(line) result(yes)
@@ -126,18 +127,10 @@ contains
     logical function parse_first_two_reals(line, a, b) result(ok)
         character(len=*), intent(in) :: line
         real(wp), intent(out) :: a, b
-        integer :: i1, i2, i3
-        character(len=:), allocatable :: s1, s2
+        integer :: ios
         ok = .false.
-        call split_tokens(line, i1, i2, i3)
-        if (i1 == 0 .or. i2 == 0) return
-        s1 = line(1:i1-1)
-        s2 = line(i1+1:i2-1)
-        read(s1, *, iostat=i3) a
-        if (i3 /= 0) return
-        read(s2, *, iostat=i3) b
-        if (i3 /= 0) return
-        ok = .true.
+        read(line, *, iostat=ios) a, b
+        if (ios == 0) ok = .true.
     end function parse_first_two_reals
 
     logical function parse_four_reals(line, a, b, c, d) result(ok)
@@ -208,7 +201,7 @@ contains
         end if
         read(unit) bytes
         close(unit)
-        allocate(text(sz))
+        allocate(character(len=sz) :: text)
         do i = 1, sz
             ! Convert signed byte to unsigned code point [0,255]
             call byte_to_char(bytes(i), text(i:i))
