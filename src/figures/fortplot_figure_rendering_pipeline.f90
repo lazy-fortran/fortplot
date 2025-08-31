@@ -55,6 +55,11 @@ contains
                 call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
                                              x_min_data, x_max_data, y_min_data, y_max_data)
                 
+            case (PLOT_TYPE_SCATTER)
+                ! Scatter uses same x/y range computation as line plots
+                call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
+                                             x_min_data, x_max_data, y_min_data, y_max_data)
+
             case (PLOT_TYPE_CONTOUR)
                 call process_contour_plot_ranges(plots(i), first_plot, has_valid_data, &
                                                 x_min_data, x_max_data, y_min_data, y_max_data)
