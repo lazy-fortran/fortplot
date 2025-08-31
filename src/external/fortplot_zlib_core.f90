@@ -108,95 +108,22 @@ contains
         integer :: data_fingerprint, byte_frequencies(0:255), unique_bytes, middle_variance
         integer :: line_count_estimate, non_zero_regions, byte_value
         
-        ! Emergency fix: Use massive buffer sizes to prevent CI crashes
-        ! TODO: Fix fundamental compression algorithm buffer management
-        ! The compression algorithm has serious buffer management issues
-        allocate(output_data(max(input_len * 8 + 100000, 100000)))
-        allocate(compressed_data(max(input_len * 8 + 50000, 100000)))
+        ! Simplified reliable implementation: allocate conservative buffer sizes
+        allocate(output_data(input_len * 2 + 1000))
+        allocate(compressed_data(input_len * 2 + 1000))
         
         pos = 1
         
-        ! zlib header (2 bytes)
-        output_data(pos) = int(z'78', int8)     ! CMF (Compression Method and flags)
-        output_data(pos+1) = int(z'5E', int8)   ! FLG (preset dictionary flag)
+        ! Write standard ZLIB header (RFC 1950)
+        ! CMF = 0x78: CM=8 (deflate), CINFO=7 (32K window size)
+        ! FLG = 0x9C: FCHECK=28, FDICT=0, FLEVEL=2
+        output_data(pos) = int(z'78', int8)
+        output_data(pos+1) = int(z'9C', int8)
         pos = pos + 2
         
-        ! Use content-adaptive compression for variable PNG sizes with FFmpeg compatibility
-        ! This produces PNG files with sizes proportional to actual visual content complexity
-        compressed_len = 1  ! Initialize starting position for compression
-        
-        ! Implement PNG file size scaling based on data fingerprinting
-        ! This directly addresses Issue #915 requirement for content-proportional PNG file sizes
-        
-        ! Create a more sophisticated data fingerprint to distinguish plot types
-        
-        ! Initialize counters
-        byte_frequencies = 0
-        unique_bytes = 0
-        middle_variance = 0
-        non_zero_regions = 0
-        
-        ! Analyze different aspects of the PNG data to create distinct fingerprints
-        sample_region_size = min(input_len, 20000)  ! Sample up to 20KB for analysis
-        
-        ! Count byte frequency distribution (more complex plots have more varied bytes)
-        do i = 1, sample_region_size, 25
-            byte_value = iand(int(input_data(i)), 255)  ! Ensure 0-255 range
-            byte_frequencies(byte_value) = byte_frequencies(byte_value) + 1
-        end do
-        
-        ! Count unique byte values (proxy for content variety)
-        do i = 0, 255
-            if (byte_frequencies(i) > 0) unique_bytes = unique_bytes + 1
-        end do
-        
-        ! Analyze middle section of data for line patterns (complex plots have more variation)
-        if (input_len > 500000) then
-            do i = input_len/3, min(input_len*2/3, input_len-10), 100
-                if (abs(int(input_data(i)) - int(input_data(i+5))) > 10) then
-                    middle_variance = middle_variance + 1
-                end if
-            end do
-        end if
-        
-        ! Count non-zero regions (plot content vs background)
-        do i = 1, sample_region_size, 200
-            byte_value = iand(int(input_data(i)), 255)  ! Ensure 0-255 range
-            if (byte_value /= 0 .and. byte_value /= 255) then
-                non_zero_regions = non_zero_regions + 1
-            end if
-        end do
-        
-        ! Create composite fingerprint score
-        data_fingerprint = unique_bytes * 2 + middle_variance + non_zero_regions
-        complexity_score = mod(data_fingerprint + input_len/10000, 100)
-        
-        ! Content fingerprinting complete - proceeding with size scaling
-        
-        ! Use standard compression for base size
-        call compress_with_uncompressed_blocks_improved(input_data, input_len, compressed_data, compressed_len)
-        
-        ! Create intentional size scaling through controlled padding based on fingerprint
-        ! This ensures predictable size differences for testing purposes
-        if (data_fingerprint > 400) then
-            ! Very high content fingerprint: Largest files (complex plots)
-            padding_size = 12000  ! ~12KB additional padding for complex plots
-        else if (data_fingerprint > 60) then
-            ! Medium content fingerprint: Medium files (simple plots)
-            padding_size = 6000  ! ~6KB additional padding for simple plots
-        else if (data_fingerprint > 40) then
-            ! Low content fingerprint: Small files
-            padding_size = 2000  ! ~2KB additional padding for basic plots
-        else
-            ! Very low content fingerprint: Smallest files (empty plots)
-            padding_size = 800   ! ~800B additional padding for empty plots
-        end if
-        
-        ! Add controlled padding to create size differences
-        do j = 1, min(padding_size, size(compressed_data) - compressed_len - 100)
-            compressed_data(compressed_len + j) = int(z'00', int8)  ! null padding
-        end do
-        compressed_len = compressed_len + min(padding_size, size(compressed_data) - compressed_len - 100)
+        ! Generate simple uncompressed DEFLATE blocks
+        compressed_len = 1
+        call compress_with_uncompressed_blocks(input_data, input_len, compressed_data, compressed_len)
         
         ! Bounds check before copying compressed data
         if (compressed_len > size(compressed_data)) then
@@ -249,8 +176,7 @@ contains
     end function calculate_adler32
 
     subroutine compress_with_uncompressed_blocks(input_data, input_len, output_buffer, output_pos)
-        !! Create valid uncompressed deflate blocks for PNG compatibility
-        !! This produces valid but larger PNG files until Huffman compression is fixed
+        !! Create valid uncompressed deflate blocks - simplified reliable implementation
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
         integer(int8), intent(inout) :: output_buffer(:)
@@ -265,15 +191,15 @@ contains
         remaining = input_len
         
         do while (remaining > 0)
-            ! Determine block size (use smaller blocks for better compatibility)
-            block_size = min(remaining, 32768)  ! 32KB blocks for better compatibility
+            ! Use maximum block size to minimize complexity (65535 is max for uncompressed)
+            block_size = min(remaining, 65535)
             
-            ! Write block header (3 bits: BFINAL + BTYPE)
+            ! Write block header (BFINAL + BTYPE)
             if (remaining <= block_size) then
-                ! BFINAL=1, BTYPE=00 (uncompressed, final block)
+                ! Final block (BFINAL=1, BTYPE=00)
                 output_buffer(byte_pos) = 1_int8
             else
-                ! BFINAL=0, BTYPE=00 (uncompressed, not final)
+                ! Non-final block (BFINAL=0, BTYPE=00)
                 output_buffer(byte_pos) = 0_int8
             end if
             byte_pos = byte_pos + 1
@@ -285,7 +211,6 @@ contains
             byte_pos = byte_pos + 2
             
             ! Write NLEN (one's complement of LEN, 2 bytes, little endian)
-            ! RFC 1951: NLEN is the one's complement of LEN
             nlen_field = iand(not(len_field), z'FFFF')
             output_buffer(byte_pos) = int(iand(nlen_field, z'FF'), int8)
             output_buffer(byte_pos + 1) = int(iand(ishft(nlen_field, -8), z'FF'), int8)
@@ -332,14 +257,18 @@ contains
             end if
             
             ! Write block header (3 bits: BFINAL + BTYPE)
+            ! For uncompressed blocks, we need to align to byte boundary after 3-bit header
             if (remaining <= block_size) then
-                ! BFINAL=1, BTYPE=00 (uncompressed, final block)
+                ! BFINAL=1, BTYPE=00 (uncompressed, final block): bits 00000001
                 output_buffer(byte_pos) = 1_int8
             else
-                ! BFINAL=0, BTYPE=00 (uncompressed, not final)
+                ! BFINAL=0, BTYPE=00 (uncompressed, not final): bits 00000000
                 output_buffer(byte_pos) = 0_int8
             end if
             byte_pos = byte_pos + 1
+            
+            ! For uncompressed blocks, skip any remaining bits in current byte to align to byte boundary
+            ! (This is required by RFC 1951 for uncompressed block format)
             
             ! Write LEN (2 bytes, little endian)
             len_field = block_size
@@ -348,7 +277,8 @@ contains
             byte_pos = byte_pos + 2
             
             ! Write NLEN (one's complement of LEN, 2 bytes, little endian)
-            nlen_field = iand(not(len_field), z'FFFF')
+            ! RFC 1951: NLEN = ~LEN (one's complement of LEN as 16-bit value)
+            nlen_field = iand(ieor(len_field, z'FFFF'), z'FFFF')
             output_buffer(byte_pos) = int(iand(nlen_field, z'FF'), int8)
             output_buffer(byte_pos + 1) = int(iand(ishft(nlen_field, -8), z'FF'), int8)
             byte_pos = byte_pos + 2
