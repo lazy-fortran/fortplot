@@ -2,7 +2,7 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context, only: setup_canvas
     use fortplot_raster, only: raster_context, create_raster_canvas, raster_draw_axes_and_labels, raster_render_ylabel
-    use fortplot_zlib, only: zlib_compress, crc32_calculate
+    use fortplot_zlib_core, only: zlib_compress, crc32_calculate
     use fortplot_logging, only: log_error, log_info
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
