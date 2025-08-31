@@ -89,7 +89,7 @@ contains
         call ctx%stream_writer%add_to_stream("0 0 0 RG")
         
         ctx%margins = plot_margins_t()
-        call calculate_plot_area(width, height, ctx%margins, ctx%plot_area)
+        call calculate_pdf_plot_area(width, height, ctx%margins, ctx%plot_area)
         
         call ctx%update_coord_context()
     end function create_pdf_canvas
@@ -496,5 +496,21 @@ contains
         ! Mark axes as rendered
         this%axes_rendered = .true.
     end subroutine render_pdf_axes_wrapper
+    
+    subroutine calculate_pdf_plot_area(canvas_width, canvas_height, margins, plot_area)
+        !! Calculate plot area for PDF backend (mathematical coordinates: Y=0 at bottom)
+        !! This corrects the coordinate system mismatch from the image-based calculation
+        integer, intent(in) :: canvas_width, canvas_height
+        type(plot_margins_t), intent(in) :: margins
+        type(plot_area_t), intent(out) :: plot_area
+        
+        ! Calculate positions for mathematical coordinate system (Y=0 at bottom)
+        plot_area%left = int(margins%left * real(canvas_width, wp))
+        plot_area%width = int(margins%right * real(canvas_width, wp)) - plot_area%left
+        
+        ! For PDF mathematical coordinates (Y=0 at bottom), use direct calculation
+        plot_area%bottom = int(margins%bottom * real(canvas_height, wp))
+        plot_area%height = int(margins%top * real(canvas_height, wp)) - plot_area%bottom
+    end subroutine calculate_pdf_plot_area
     
 end module fortplot_pdf
