@@ -141,7 +141,7 @@ contains
     end subroutine find_longest_match
     
     subroutine write_bits(buffer, bit_pos, byte_pos, value, num_bits)
-        !! Write bits to output buffer (LSB first) with enhanced bounds checking
+        !! Write bits to output buffer (LSB first) with bounds checking
         integer(int8), intent(inout) :: buffer(:)
         integer, intent(inout) :: bit_pos, byte_pos
         integer, intent(in) :: value, num_bits
@@ -151,9 +151,9 @@ contains
         buffer_size = size(buffer)
         
         do i = 0, num_bits - 1
-            ! Enhanced bounds check with safety margin
-            if (byte_pos >= buffer_size) then
-                print *, "ERROR: Buffer overrun prevented - byte_pos:", byte_pos, "buffer_size:", buffer_size
+            ! Bounds check to prevent buffer overrun
+            if (byte_pos > buffer_size) then
+                print *, "ERROR: Buffer overrun in write_bits - byte_pos:", byte_pos, "buffer_size:", buffer_size
                 return
             end if
             
@@ -169,11 +169,6 @@ contains
             if (bit_pos == 8) then
                 bit_pos = 0
                 byte_pos = byte_pos + 1
-                ! Additional bounds check after increment
-                if (byte_pos > buffer_size .and. i < num_bits - 1) then
-                    print *, "ERROR: Buffer overrun after bit boundary - stopping write"
-                    return
-                end if
             end if
         end do
     end subroutine write_bits
@@ -418,7 +413,6 @@ contains
         integer :: pos, match_len, match_dist
         integer :: bit_pos, byte_pos
         integer :: block_size, block_start
-        integer :: original_match_len, hash_pos
         
         ! Initialize fixed Huffman tables
         call init_fixed_huffman_tables(literal_codes, literal_lengths, &
@@ -444,14 +438,8 @@ contains
                 call write_bits(output_buffer, bit_pos, byte_pos, 2, 3)  ! BFINAL=0, BTYPE=01
             end if
             
-            ! Compress block data with bounds checking
+            ! Compress block data
             do while (pos <= block_start + block_size - 1 .and. pos <= input_len)
-                ! Safety check to prevent buffer overrun
-                if (byte_pos >= size(output_buffer) - 32) then
-                    print *, "WARNING: Approaching buffer limit - terminating compression early"
-                    exit
-                end if
-                
                 ! Try to find a match
                 call find_longest_match(input_data, pos, input_len, &
                                        hash_table, hash_chain, match_len, match_dist)
@@ -463,17 +451,15 @@ contains
                                               literal_codes, literal_lengths, &
                                               distance_codes, distance_lengths)
                     
-                    ! Fixed: Store match_len before loop and update hash safely
-                    original_match_len = match_len
-                    
-                    do hash_pos = pos, pos + original_match_len - 1
-                        if (hash_pos <= input_len - 2) then
+                    ! Update hash table for all matched positions
+                    do while (match_len > 0)
+                        if (pos <= input_len - 2) then
                             call update_hash_table(hash_table, hash_chain, &
-                                                 calculate_hash(input_data, hash_pos, input_len), hash_pos)
+                                                 calculate_hash(input_data, pos, input_len), pos)
                         end if
+                        pos = pos + 1
+                        match_len = match_len - 1
                     end do
-                    
-                    pos = pos + original_match_len
                 else
                     ! Encode literal
                     call encode_literal(output_buffer, bit_pos, byte_pos, &
