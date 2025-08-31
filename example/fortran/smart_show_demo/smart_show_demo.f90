@@ -24,7 +24,7 @@ program smart_show_demo
     end do
 
     ! Create figure and add plot
-    call figure(figsize=[600.0_wp, 400.0_wp])
+    call figure(figsize=[6.0_wp, 4.0_wp])
     call title('Smart Show Demo - Damped Oscillation')
     call xlabel('Time')
     call ylabel('Amplitude')
