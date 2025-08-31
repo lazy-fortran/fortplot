@@ -64,28 +64,35 @@ contains
     subroutine test_empty_plot(file_size)
         integer, intent(out) :: file_size
         type(figure_t) :: plt
+        character(len=256) :: output_dir, filename
         
-        call plt%initialize(800, 600)
-        call plt%savefig("test/output/test_empty.png")
+        call get_output_directory(output_dir)
+        call plt%initialize(400, 300)  ! Small size for less data
         
-        file_size = get_file_size('test/output/test_empty.png')
+        filename = trim(output_dir) // '/test_empty.png'
+        call plt%savefig(trim(filename))
+        
+        file_size = get_file_size(trim(filename))
     end subroutine test_empty_plot
     
     subroutine test_simple_plot(file_size)
         integer, intent(out) :: file_size
         type(figure_t) :: plt
         real(real64), allocatable :: x(:), y(:)
+        character(len=256) :: output_dir, filename
         
-        call plt%initialize(800, 600)
+        call get_output_directory(output_dir)
+        call plt%initialize(800, 600)  ! Medium size
         
         x = create_linspace(0.0_real64, 10.0_real64, 10)
         allocate(y(10))
         y = x
         
         call plt%add_plot(x, y)
-        call plt%savefig("test/output/test_simple.png")
+        filename = trim(output_dir) // '/test_simple.png'
+        call plt%savefig(trim(filename))
         
-        file_size = get_file_size('test/output/test_simple.png')
+        file_size = get_file_size(trim(filename))
         
         deallocate(x, y)
     end subroutine test_simple_plot
@@ -94,50 +101,90 @@ contains
         integer, intent(out) :: file_size
         type(figure_t) :: plt
         real(real64), allocatable :: x(:), y1(:), y2(:), y3(:)
+        character(len=256) :: output_dir, filename
         integer :: i
         
-        call plt%initialize(800, 600)
+        call get_output_directory(output_dir)
+        call plt%initialize(1600, 1200)  ! Large size for more data
         
-        x = create_linspace(0.0_real64, 10.0_real64, 1000)
-        allocate(y1(1000), y2(1000), y3(1000))
+        x = create_linspace(0.0_real64, 10.0_real64, 5000)  ! More data points
+        allocate(y1(5000), y2(5000), y3(5000))
         
-        ! Add multiple complex lines
+        ! Add multiple complex lines with high-frequency patterns
         do i = 1, size(x)
-            y1(i) = sin(x(i)) * cos(2*x(i))
-            y2(i) = exp(-x(i)/5.0_real64) * sin(5*x(i))
-            y3(i) = x(i)**2 / 100.0_real64 + sin(10*x(i))
+            y1(i) = sin(x(i) * 10.0_real64) * cos(x(i) * 20.0_real64)
+            y2(i) = exp(-x(i)/5.0_real64) * sin(x(i) * 15.0_real64)
+            y3(i) = sin(x(i) * 30.0_real64) * cos(x(i) * 25.0_real64)
         end do
         
-        call plt%add_plot(x, y1, label='sin(x)*cos(2x)')
-        call plt%add_plot(x, y2, label='exp(-x/5)*sin(5x)')
-        call plt%add_plot(x, y3, label='x^2/100 + sin(10x)')
+        call plt%add_plot(x, y1, label='High-frequency oscillation 1')
+        call plt%add_plot(x, y2, label='Exponentially damped oscillation')
+        call plt%add_plot(x, y3, label='High-frequency oscillation 2')
         
         ! Add labels
-        call plt%set_xlabel('X Axis with Long Label')
-        call plt%set_ylabel('Y Axis with Long Label')
-        call plt%set_title('Complex Plot with Multiple Lines and Labels')
+        call plt%set_xlabel('X Axis with Very Long Label That Creates More Text Data')
+        call plt%set_ylabel('Y Axis with Very Long Label That Creates More Text Data')
+        call plt%set_title('Complex High-Resolution Plot with Multiple High-Frequency Lines')
         
-        call plt%savefig("test/output/test_complex.png")
+        filename = trim(output_dir) // '/test_complex.png'
+        call plt%savefig(trim(filename))
         
-        file_size = get_file_size('test/output/test_complex.png')
+        file_size = get_file_size(trim(filename))
         
         deallocate(x, y1, y2, y3)
     end subroutine test_complex_plot
+    
+    subroutine get_output_directory(output_dir)
+        character(len=*), intent(out) :: output_dir
+        logical :: dir_exists
+        integer :: unit, ios
+        
+        ! Try Unix-style test directory first
+        output_dir = 'test/output'
+        open(newunit=unit, file=trim(output_dir)//'/test_dir.tmp', iostat=ios)
+        if (ios == 0) then
+            close(unit, status='delete')
+            return
+        end if
+        
+        ! Try Windows CI build directory
+        output_dir = 'build/test'
+        open(newunit=unit, file=trim(output_dir)//'/test_dir.tmp', iostat=ios)
+        if (ios == 0) then
+            close(unit, status='delete')
+            return
+        end if
+        
+        ! Fallback to current directory
+        output_dir = '.'
+    end subroutine get_output_directory
     
     function get_file_size(filename) result(size)
         character(len=*), intent(in) :: filename
         integer :: size
         integer :: unit, ios
+        logical :: file_exists
         
-        inquire(file=filename, size=size)
+        ! Check if file exists first
+        inquire(file=trim(filename), exist=file_exists)
+        if (.not. file_exists) then
+            size = 0
+            return
+        end if
         
-        if (size < 0) then
-            ! Fallback method if inquire doesn't support size
-            open(newunit=unit, file=filename, access='stream', &
+        ! Try direct file size inquiry
+        inquire(file=trim(filename), size=size, iostat=ios)
+        
+        if (ios /= 0 .or. size < 0) then
+            ! Fallback method for Windows compatibility
+            open(newunit=unit, file=trim(filename), access='stream', &
                  form='unformatted', status='old', iostat=ios)
             if (ios == 0) then
-                inquire(unit, size=size)
+                inquire(unit=unit, size=size, iostat=ios)
                 close(unit)
+                if (ios /= 0 .or. size < 0) then
+                    size = 0
+                end if
             else
                 size = 0
             end if

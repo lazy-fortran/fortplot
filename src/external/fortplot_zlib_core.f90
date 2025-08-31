@@ -6,7 +6,7 @@ module fortplot_zlib_core
     implicit none
     
     private
-    public :: zlib_compress, crc32_calculate
+    public :: zlib_compress, crc32_calculate, calculate_adler32
     
     ! CRC32 lookup table (standard polynomial 0xEDB88320)
     integer(int32), parameter :: crc_table(0:255) = [ &
@@ -168,7 +168,8 @@ contains
         b = 0_int32
         
         do i = 1, data_len
-            a = mod(a + int(data(i), int32), 65521_int32)
+            ! Convert signed int8 to unsigned byte value (0-255)
+            a = mod(a + int(iand(int(data(i), int32), z'FF'), int32), 65521_int32)
             b = mod(b + a, 65521_int32)
         end do
         
