@@ -315,9 +315,9 @@ contains
         ! Set color
         call backend%color(entry%color(1), entry%color(2), entry%color(3))
         
-        ! Draw line if style permits
+        ! Draw line if style permits (treat 'none'/'None' as no line)
         if (allocated(entry%linestyle)) then
-            if (entry%linestyle /= 'None') then
+            if (trim(entry%linestyle) /= 'None' .and. trim(entry%linestyle) /= 'none') then
                 call backend%line(line_x1, line_center_y, line_x2, line_center_y)
             end if
         else
@@ -331,9 +331,12 @@ contains
         class(plot_context), intent(inout) :: backend
         real(wp), intent(in) :: line_x1, line_x2, line_center_y
         
-        ! Draw marker in the middle of the line
+        ! Draw marker in the middle of the line, using entry color
         if (allocated(entry%marker)) then
-            if (entry%marker /= 'None') then
+            if (trim(entry%marker) /= 'None' .and. trim(entry%marker) /= 'none' .and. &
+                len_trim(entry%marker) > 0) then
+                call backend%set_marker_colors(entry%color(1), entry%color(2), entry%color(3), &
+                                               entry%color(1), entry%color(2), entry%color(3))
                 call backend%draw_marker((line_x1 + line_x2) / 2.0_wp, &
                                         line_center_y, entry%marker)
             end if
