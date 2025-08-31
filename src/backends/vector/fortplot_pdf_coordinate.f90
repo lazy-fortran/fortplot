@@ -47,24 +47,25 @@ contains
         x_range = ctx%x_max - ctx%x_min
         y_range = ctx%y_max - ctx%y_min
         
-        ! Handle degenerate cases first (center in plot area)
-        left  = real(ctx%plot_area%left,  wp)
-        right = real(ctx%plot_area%left + ctx%plot_area%width,  wp)
+        ! Frame edges
+        left   = real(ctx%plot_area%left,  wp)
+        right  = real(ctx%plot_area%left + ctx%plot_area%width,  wp)
         bottom = real(ctx%plot_area%bottom, wp)
         top    = real(ctx%plot_area%bottom + ctx%plot_area%height, wp)
 
+        ! Map X using independent scale (center if degenerate)
         if (abs(x_range) < EPSILON) then
             pdf_x = left + (right - left) * 0.5_wp
         else
             x_scale = (right - left) / x_range
             pdf_x = (x - ctx%x_min) * x_scale + left
         end if
-        
+
+        ! Map Y using independent scale (center if degenerate)
         if (abs(y_range) < EPSILON) then
             pdf_y = bottom + (top - bottom) * 0.5_wp
         else
             y_scale = (top - bottom) / y_range
-            ! PDF coordinates: Y=0 at bottom, direct mapping
             pdf_y = (y - ctx%y_min) * y_scale + bottom
         end if
 
@@ -246,19 +247,20 @@ contains
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         real(wp) :: x_range, y_range
         real(wp) :: x_scale, y_scale
-        
+
         ! Calculate ranges with epsilon protection
         x_range = x_max - x_min
         y_range = y_max - y_min
-        
-        ! Handle degenerate cases by centering
+
+        ! Map X using independent scale (center if degenerate)
         if (abs(x_range) < EPSILON) then
             pdf_x = plot_left + plot_width * 0.5_wp
         else
             x_scale = plot_width / x_range
             pdf_x = (x - x_min) * x_scale + plot_left
         end if
-        
+
+        ! Map Y using independent scale (center if degenerate)
         if (abs(y_range) < EPSILON) then
             pdf_y = plot_bottom + plot_height * 0.5_wp
         else
