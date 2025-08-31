@@ -28,40 +28,32 @@ module fortplot_file_operations
 contains
 
     subroutine create_directory_runtime(path, success)
-        !! Create directory with security restrictions
-        !! SECURITY: Only allows creation of test output directories
+        !! Create directory with comprehensive security validation
+        !! Issue #903: Allow legitimate user directories while preserving security
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         logical :: debug_enabled
-        logical :: is_test_path
+        logical :: is_allowed_path
         character(len=512) :: normalized_path
         
         success = .false.
         debug_enabled = is_debug_enabled()
-        
-        ! SECURITY: Check if this is a safe test output path
-        is_test_path = .false.
         normalized_path = path
         
-        ! Allow only specific test-related paths
-        if (index(normalized_path, 'build/test') > 0 .or. &
-            index(normalized_path, 'build\test') > 0 .or. &
-            index(normalized_path, 'fortplot_test_') > 0 .or. &
-            index(normalized_path, 'output/example') > 0 .or. &
-            index(normalized_path, 'output\example') > 0 .or. &
-            index(normalized_path, 'test/output') > 0 .or. &
-            index(normalized_path, 'test\output') > 0 .or. &
-            trim(normalized_path) == 'test' .or. &
-            trim(normalized_path) == 'test/output' .or. &
-            trim(normalized_path) == 'test\output' .or. &
-            index(normalized_path, '/tmp/fortplot_test_') > 0 .or. &
-            index(normalized_path, '\tmp\fortplot_test_') > 0) then
-            is_test_path = .true.
+        ! SECURITY LAYER 1: Basic path safety validation
+        if (.not. is_basic_safe_path(normalized_path)) then
+            if (debug_enabled) then
+                write(*,'(A,A)') 'SECURITY: Unsafe path blocked by security validation: ', trim(path)
+            end if
+            success = .false.
+            return
         end if
         
-        if (.not. is_test_path) then
+        ! SECURITY LAYER 2: Path whitelist for allowed directory creation
+        call check_allowed_path(normalized_path, is_allowed_path)
+        if (.not. is_allowed_path) then
             if (debug_enabled) then
-                write(*,'(A,A)') 'SECURITY: Non-test directory creation blocked: ', trim(path)
+                write(*,'(A,A)') 'SECURITY: Directory creation not allowed for path: ', trim(path)
             end if
             success = .false.
             return
@@ -71,8 +63,8 @@ contains
         call create_directory_recursive(path, success)
         
         if (.not. success .and. debug_enabled) then
-            write(*,'(A,A)') 'WARNING: Could not create test directory: ', trim(path)
-            write(*,'(A)') '  Test directories should be pre-created by the build system'
+            write(*,'(A,A)') 'WARNING: Could not create directory: ', trim(path)
+            write(*,'(A)') '  Check filesystem permissions and parent directory existence'
         end if
     end subroutine create_directory_runtime
 
@@ -212,47 +204,136 @@ contains
             end if
         end if
         
-        ! Use Windows C function for robust directory creation on Windows
-        if (is_windows()) then
-            ! Call C function to create directory with proper Windows handling
-            success = (create_directory_windows_c(trim(path) // c_null_char) == 1)
-            return
-        end if
-        
-        ! Unix/Linux: Use progressive creation approach
-        call parse_path_segments(path, path_segments, n_segments)
-        
-        ! Build path progressively and test
-        current_path = ""
-        do i = 1, n_segments
-            if (i == 1) then
-                current_path = trim(path_segments(1))
-            else
-                current_path = trim(current_path) // "/" // trim(path_segments(i))
-            end if
-            
-            call check_directory_exists(current_path, dir_exists)
-            if (.not. dir_exists) then
-                ! Try to test directory creation with a test file approach
-                test_file = trim(current_path) // "/test_dir_creation.tmp"
-                
-                ! Try to open a file to test if we can create in this directory
-                open(newunit=unit, file=test_file, status='unknown', &
-                     action='write', iostat=iostat)
-                if (iostat == 0) then
-                    close(unit, status='delete')
-                    ! If we can create the test file, the directory exists or was created
-                    dir_exists = .true.
-                else
-                    ! Could not create test file, directory creation failed
-                    success = .false.
-                    return
-                end if
-            end if
-        end do
+        ! Use C function for robust directory creation on all platforms
+        ! Note: create_directory_windows_c has both Windows and Unix implementations
+        success = (create_directory_windows_c(trim(path) // c_null_char) == 1)
         
         ! Final check
         call check_directory_exists(path, success)
     end subroutine create_directory_recursive
+
+    subroutine check_allowed_path(path, is_allowed)
+        !! Check if directory path is allowed for creation
+        !! Issue #903: Intelligent path whitelist for user experience
+        character(len=*), intent(in) :: path
+        logical, intent(out) :: is_allowed
+        character(len=512) :: normalized_path
+        
+        normalized_path = trim(path)
+        is_allowed = .false.
+        
+        ! EXISTING TEST PATHS (preserve all current functionality)
+        if (index(normalized_path, 'build/test') > 0 .or. &
+            index(normalized_path, 'build\test') > 0 .or. &
+            index(normalized_path, 'fortplot_test_') > 0 .or. &
+            index(normalized_path, 'output/example') > 0 .or. &
+            index(normalized_path, 'output\example') > 0 .or. &
+            index(normalized_path, 'test/output') > 0 .or. &
+            index(normalized_path, 'test\output') > 0 .or. &
+            trim(normalized_path) == 'test' .or. &
+            trim(normalized_path) == 'test/output' .or. &
+            trim(normalized_path) == 'test\output' .or. &
+            index(normalized_path, '/tmp/fortplot_test_') > 0 .or. &
+            index(normalized_path, '\tmp\fortplot_test_') > 0) then
+            is_allowed = .true.
+            return
+        end if
+        
+        ! COMMON USER DIRECTORIES (Issue #903: Enable basic user workflow)
+        call check_user_directory_patterns(normalized_path, is_allowed)
+    end subroutine check_allowed_path
+
+    subroutine check_user_directory_patterns(path, is_allowed)
+        !! Check if path matches common user directory patterns
+        !! Issue #903: Support matplotlib-like directory auto-creation
+        character(len=*), intent(in) :: path
+        logical, intent(out) :: is_allowed
+        character(len=512) :: first_component
+        integer :: first_slash
+        
+        is_allowed = .false.
+        
+        ! Extract first path component for pattern matching
+        first_slash = index(path, '/')
+        if (first_slash == 0) first_slash = index(path, '\')
+        
+        if (first_slash > 0) then
+            first_component = path(1:first_slash-1)
+        else
+            first_component = path
+        end if
+        
+        ! SCIENTIFIC/ANALYSIS DIRECTORIES
+        if (trim(first_component) == 'results' .or. &
+            trim(first_component) == 'plots' .or. &
+            trim(first_component) == 'figures' .or. &
+            trim(first_component) == 'output' .or. &
+            trim(first_component) == 'data' .or. &
+            trim(first_component) == 'analysis' .or. &
+            trim(first_component) == 'images' .or. &
+            trim(first_component) == 'graphics' .or. &
+            trim(first_component) == 'visualization' .or. &
+            trim(first_component) == 'charts') then
+            is_allowed = .true.
+            return
+        end if
+        
+        ! RELATIVE SUBDIRECTORIES (no leading slash, no traversal)
+        if (len_trim(path) > 0 .and. path(1:1) /= '/' .and. path(1:1) /= '\') then
+            ! Allow relative paths that don't contain directory traversal
+            if (index(path, '../') == 0 .and. index(path, '..\') == 0) then
+                is_allowed = .true.
+                return
+            end if
+        end if
+    end subroutine check_user_directory_patterns
+
+    function is_basic_safe_path(path) result(safe)
+        !! Basic path safety validation to prevent common security issues
+        !! Issue #903: Simplified security validation to avoid circular dependencies
+        character(len=*), intent(in) :: path
+        logical :: safe
+        
+        safe = .true.
+        
+        ! Check for empty path
+        if (len_trim(path) == 0) then
+            safe = .false.
+            return
+        end if
+        
+        ! Check for directory traversal attacks
+        if (index(path, '../') > 0 .or. index(path, '..\') > 0) then
+            safe = .false.
+            return
+        end if
+        
+        ! Check for absolute system paths that should be blocked
+        if (index(path, '/etc/') == 1 .or. index(path, '/sys/') == 1 .or. &
+            index(path, '/proc/') == 1 .or. index(path, '/dev/') == 1) then
+            safe = .false.
+            return
+        end if
+        
+        ! Check for dangerous characters that could enable shell injection
+        if (index(path, ';') > 0 .or. index(path, '&') > 0 .or. &
+            index(path, '|') > 0 .or. index(path, '`') > 0 .or. &
+            index(path, '$') > 0 .or. index(path, '(') > 0 .or. &
+            index(path, ')') > 0 .or. index(path, '<') > 0 .or. &
+            index(path, '>') > 0 .or. index(path, '*') > 0 .or. &
+            index(path, '?') > 0 .or. index(path, '!') > 0) then
+            safe = .false.
+            return
+        end if
+        
+        ! Check for null characters
+        if (index(path, char(0)) > 0) then
+            safe = .false.
+            return
+        end if
+        
+        ! Path is safe
+        safe = .true.
+    end function is_basic_safe_path
 
 end module fortplot_file_operations
