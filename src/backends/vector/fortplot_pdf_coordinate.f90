@@ -247,7 +247,6 @@ contains
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         real(wp) :: x_range, y_range
         real(wp) :: x_scale, y_scale
-
         ! Calculate ranges with epsilon protection
         x_range = x_max - x_min
         y_range = y_max - y_min
