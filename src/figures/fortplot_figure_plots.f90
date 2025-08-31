@@ -12,6 +12,7 @@ module fortplot_figure_plots
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_plot_management
     use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_format_parser, only: parse_format_string
     implicit none
 
     private
@@ -30,6 +31,7 @@ contains
         
         real(wp) :: plot_color(3)
         character(len=:), allocatable :: ls
+        character(len=20) :: parsed_marker, parsed_linestyle
         
         ! Determine color
         if (present(color)) then
@@ -38,16 +40,24 @@ contains
             plot_color = state%colors(:, mod(state%plot_count, 6) + 1)
         end if
         
-        ! Determine linestyle
+        ! Parse linestyle to extract marker and actual linestyle
         if (present(linestyle)) then
-            ls = linestyle
+            call parse_format_string(linestyle, parsed_marker, parsed_linestyle)
+            if (len_trim(parsed_linestyle) > 0) then
+                ls = trim(parsed_linestyle)
+            else
+                ! If only a marker was specified, do not draw connecting lines
+                ls = 'none'
+            end if
         else
             ls = '-'
+            parsed_marker = ''
         end if
         
         ! Add the plot data using focused module
         call add_line_plot_data(plots, state%plot_count, state%max_plots, &
-                               state%colors, x, y, label, ls, plot_color, marker='')
+                               state%colors, x, y, label, ls, plot_color, &
+                               marker=trim(parsed_marker))
     end subroutine figure_add_plot
 
     subroutine figure_add_contour(plots, state, x_grid, y_grid, z_grid, levels, label)
