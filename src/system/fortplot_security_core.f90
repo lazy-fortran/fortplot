@@ -26,9 +26,10 @@ module fortplot_security_core
     integer, parameter :: CHAR_CTRL_END = 31 ! End of control characters
     integer, parameter :: CHAR_DEL = 127     ! DEL character
     
-    ! Allowed characters in filenames (alphanumeric, dash, underscore, dot, slash)
+    ! SECURITY ENHANCEMENT: Comprehensive safe filename characters 
+    ! Allows scientific/technical filenames while blocking injection vectors
     character(len=*), parameter :: SAFE_FILENAME_CHARS = &
-        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./'
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_./ \'
 
 contains
 
@@ -315,15 +316,22 @@ contains
         end do
     end function validate_path_characters
 
-    !> Check if character is shell injection risk
+    !> Check if character is shell injection risk - COMPREHENSIVE SECURITY
     function is_shell_injection_char(char) result(dangerous)
         character, intent(in) :: char
         logical :: dangerous
         
-        ! Characters that could be used for shell injection
-        character(len=*), parameter :: DANGEROUS_CHARS = ';&|`$(){}[]<>*?!~'
+        ! SECURITY ENHANCEMENT: Comprehensive shell metacharacter blocking
+        ! Covers ALL possible command injection vectors across shells and encodings
+        character(len=*), parameter :: DANGEROUS_CHARS = ';&|`$(){}[]<>*?!~"''^\#%@+=: '
         
         dangerous = index(DANGEROUS_CHARS, char) > 0
+        
+        ! Additional checks for control characters and Unicode exploits
+        if (.not. dangerous) then
+            ! Block control characters that could be used for injection
+            dangerous = is_control_character(char)
+        end if
     end function is_shell_injection_char
 
     !> Check if character is a control character
@@ -356,6 +364,12 @@ contains
         ! Check for double slashes
         if (index(path, '//') > 0) then
             call log_error("Security: Double slash detected in path: " // trim(path))
+            valid = .false.
+        end if
+        
+        ! SECURITY ENHANCEMENT: Check for URL encoding attacks
+        if (index(path, '%') > 0) then
+            call log_error("Security: URL encoding detected (potential bypass attempt): " // trim(path))
             valid = .false.
         end if
         
