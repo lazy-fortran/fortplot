@@ -98,7 +98,9 @@ contains
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
-        
+        ! Ensure coordinate context reflects latest figure ranges and plot area
+        call this%update_coord_context()
+
         call normalize_to_pdf_coords(this%coord_ctx, x1, y1, pdf_x1, pdf_y1)
         call normalize_to_pdf_coords(this%coord_ctx, x2, y2, pdf_x2, pdf_y2)
         call this%stream_writer%draw_vector_line(pdf_x1, pdf_y1, pdf_x2, pdf_y2)
@@ -151,6 +153,8 @@ contains
         integer :: processed_len
         
         call process_latex_in_text(text, processed_text, processed_len)
+        ! Keep context in sync for text coordinate normalization as well
+        call this%update_coord_context()
         call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
         call draw_mixed_font_text(this%core_ctx, pdf_x, pdf_y, processed_text(1:processed_len))
     end subroutine draw_pdf_text_wrapper
