@@ -242,8 +242,12 @@ contains
         allocate(text_bitmap(text_width, text_height, 3))
         text_bitmap = -1_1  ! Initialize to white
         
-        ! Render text horizontally to bitmap (at origin)
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, 0, ylabel)
+        ! Render text horizontally to bitmap. The text renderer expects
+        ! the y coordinate to be the text baseline. Use `text_height` as
+        ! the baseline so the full glyphs are drawn inside the bitmap
+        ! before rotation (prevents top-row clipping that caused the
+        ! ylabel to appear partially erased/white in PNG outputs).
+        call render_text_to_bitmap(text_bitmap, text_width, text_height, 1, text_height, ylabel)
         
         ! Allocate rotated bitmap (dimensions swapped for 90° rotation)
         rotated_width = text_height
