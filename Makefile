@@ -235,9 +235,9 @@ issue-loop-dry:
 issue-loop-auto:
 	@label=$${LABEL-__all__}; \
 	if [ "$$label" = "__all__" ]; then \
-		CLEAN_FORCE=1 ./scripts/issue_loop.sh --autonomous --all --limit $${LIMIT:-999999}; \
+		CLEAN_FORCE=1 ./scripts/issue_orchestrate_auto.sh --all --limit $${LIMIT:-999999}; \
 	else \
-		CLEAN_FORCE=1 ./scripts/issue_loop.sh --autonomous --label "$$label" --limit $${LIMIT:-999999}; \
+		CLEAN_FORCE=1 ./scripts/issue_orchestrate_auto.sh --label "$$label" --limit $${LIMIT:-999999}; \
 	fi
 
 # File size compliance verification - fraud prevention
