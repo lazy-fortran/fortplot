@@ -1,13 +1,15 @@
 program test_png_overflow
-    !! Test PNG dimension overflow handling
+    !! Test PNG dimension overflow handling with automatic validation
     use fortplot_context, only: plot_context
     use fortplot_matplotlib, only: figure, savefig, plot
     use fortplot_utils, only: initialize_backend
+    use fortplot_png_validation, only: validate_png_file
     use iso_fortran_env, only: wp => real64
     implicit none
     
     real(wp) :: x(100), y(100)
     integer :: i
+    logical :: file_exists
     
     print *, "Testing PNG dimension overflow handling..."
     
@@ -22,7 +24,8 @@ program test_png_overflow
     call figure(figsize=[8.0_wp, 6.0_wp])
     call plot(x, y)
     call savefig("test/output/test_normal.png")
-    print *, "  Normal PNG saved successfully"
+    call validate_png_file("test/output/test_normal.png", "PNG overflow test - normal dimensions")
+    print *, "  Normal PNG saved and validated successfully"
     
     ! Test 2: Large pixel values mistakenly used as inches
     ! This would create 64000x48000 pixels and should trigger overflow
@@ -30,21 +33,24 @@ program test_png_overflow
     call figure(figsize=[640.0_wp, 480.0_wp])
     call plot(x, y)
     call savefig("test/output/test_overflow.png")
-    print *, "  Large dimension PNG saved (should handle overflow)"
+    call validate_png_file("test/output/test_overflow.png", "PNG overflow test - large dimensions")
+    print *, "  Large dimension file saved and validated (may be PDF fallback)"
     
     ! Test 3: Edge case at validation boundary (50x50 inches * 100 = 5000x5000 pixels)
     print *, "Test 3: Edge case dimensions (50x50)"
     call figure(figsize=[50.0_wp, 50.0_wp])
     call plot(x, y)
     call savefig("test/output/test_edge.png")
-    print *, "  Edge case PNG saved"
+    call validate_png_file("test/output/test_edge.png", "PNG overflow test - edge case dimensions")
+    print *, "  Edge case file saved and validated (may be PDF fallback)"
     
     ! Test 4: Just over validation boundary (51x51 inches * 100 = 5100x5100 pixels)
     print *, "Test 4: Over boundary dimensions (51x51)"
     call figure(figsize=[51.0_wp, 51.0_wp])
     call plot(x, y)
     call savefig("test/output/test_over.png")
-    print *, "  Over boundary PNG handled"
+    call validate_png_file("test/output/test_over.png", "PNG overflow test - over boundary dimensions")
+    print *, "  Over boundary file handled and validated (may be PDF fallback)"
     
     print *, "All tests completed!"
     

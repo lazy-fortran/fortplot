@@ -3,6 +3,7 @@ program test_bitmap_to_png_buffer
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_cw
     use fortplot_png_encoder, only: bitmap_to_png_buffer
     use fortplot_png, only: write_png_file
+    use fortplot_png_validation, only: validate_png_file
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -57,7 +58,9 @@ program test_bitmap_to_png_buffer
     
     ! Write actual PNG files using the real PNG writer
     call write_png_file("test_bitmap_original.png", width, height, png_buffer)
+    call validate_png_file("test_bitmap_original.png", "Bitmap PNG test - original")
     call write_png_file("test_bitmap_rotated.png", height, width, rotated_png_buffer)
+    call validate_png_file("test_bitmap_rotated.png", "Bitmap PNG test - rotated")
     
     print *, "SUCCESS: PNG buffer conversion tests passed"
     print *, "  bitmap_to_png_buffer format validated"

@@ -1,6 +1,7 @@
 module fortplot_animation_validation
     use iso_fortran_env, only: real64, wp => real64
-    use fortplot_animation_constants
+    use fortplot_animation_core, only: MIN_VALID_VIDEO_SIZE, MIN_EXPECTED_VIDEO_SIZE, &
+        MAX_FILENAME_LENGTH, MAX_RETRY_ATTEMPTS, BASE_RETRY_DELAY_MS
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private

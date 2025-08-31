@@ -1,7 +1,6 @@
 module fortplot_animation_core
     use iso_fortran_env, only: real64, wp => real64
     use iso_c_binding, only: c_char, c_int, c_null_char
-    use fortplot_animation_constants
     use fortplot_constants, only: MILLISECONDS_PER_SECOND
     use fortplot_figure_core, only: figure_t, plot_data_t
     ! savefig is part of figure_t, not rendering module
@@ -10,6 +9,17 @@ module fortplot_animation_core
     use fortplot_logging, only: log_error, log_info, log_warning
     implicit none
     private
+
+    ! Animation configuration constants (consolidated from fortplot_animation_constants)
+    integer, parameter, public :: DEFAULT_FRAME_INTERVAL_MS = 50
+    integer, parameter, public :: DEFAULT_ANIMATION_FPS = 10
+    integer, parameter, public :: MIN_VALID_VIDEO_SIZE = 100
+    integer, parameter, public :: MIN_EXPECTED_VIDEO_SIZE = 1000
+    integer, parameter, public :: MAX_FILENAME_LENGTH = 255
+    
+    ! Enhanced recovery constants for exponential backoff
+    integer, parameter, public :: MAX_RETRY_ATTEMPTS = 3
+    integer, parameter, public :: BASE_RETRY_DELAY_MS = 100
 
     ! Animation callback interface
     abstract interface

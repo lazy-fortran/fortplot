@@ -7,7 +7,9 @@ module fortplot_matplotlib_plotting
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_plotting_advanced, only: bar_impl, barh_impl
-    use fortplot_plotting, only: add_scatter_2d, errorbar_impl => errorbar, add_3d_plot_impl => add_3d_plot
+    use fortplot_scatter_plots, only: add_scatter_2d
+    use fortplot_errorbar_plots, only: errorbar_impl => errorbar
+    use fortplot_3d_plots, only: add_3d_plot_impl => add_3d_plot
     
     implicit none
     private

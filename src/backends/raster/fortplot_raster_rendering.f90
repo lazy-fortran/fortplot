@@ -6,7 +6,7 @@ module fortplot_raster_rendering
     use fortplot_margins, only: plot_area_t
     use fortplot_colormap, only: colormap_value_to_color
     use fortplot_interpolation, only: interpolate_z_bilinear
-    use fortplot_raster_drawing, only: color_to_byte, draw_filled_quad_raster
+    use fortplot_raster_primitives, only: color_to_byte, draw_filled_quad_raster
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 

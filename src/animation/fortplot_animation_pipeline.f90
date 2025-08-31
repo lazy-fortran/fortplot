@@ -1,8 +1,9 @@
 module fortplot_animation_pipeline
     use iso_fortran_env, only: real64, wp => real64
-    use fortplot_animation_constants
+    use fortplot_animation_core, only: animation_t, DEFAULT_FRAME_INTERVAL_MS, DEFAULT_ANIMATION_FPS, &
+        MIN_VALID_VIDEO_SIZE, MIN_EXPECTED_VIDEO_SIZE, MAX_FILENAME_LENGTH, &
+        MAX_RETRY_ATTEMPTS, BASE_RETRY_DELAY_MS
     use fortplot_constants, only: MILLISECONDS_PER_SECOND
-    use fortplot_animation_core, only: animation_t
     use fortplot_animation_rendering, only: render_frame_to_png
     use fortplot_animation_validation, only: validate_generated_video_enhanced
     use fortplot_pipe, only: open_ffmpeg_pipe, write_png_to_pipe, close_ffmpeg_pipe
