@@ -1,5 +1,32 @@
 module fortplot_figure_core
     !! Core figure management module for scientific plotting
+    !!
+    !! ARCHITECTURAL DESIGN:
+    !! ====================
+    !! This module implements the Facade Pattern to provide a clean, unified
+    !! interface for figure operations while delegating complex functionality
+    !! to specialized modules.
+    !!
+    !! DESIGN PATTERNS USED:
+    !! - Facade Pattern: Single entry point hiding subsystem complexity
+    !! - Delegation Pattern: Methods delegate to specialized operations modules
+    !! - Strategy Pattern: Backend selection for rendering
+    !! - State Pattern: Figure state management through figure_state_t
+    !!
+    !! ARCHITECTURAL BENEFITS:
+    !! - Clean separation between interface and implementation
+    !! - Reduced coupling through dependency injection
+    !! - Maintainable code through clear responsibility boundaries
+    !! - Extensible design supporting new plot types and backends
+    !!
+    !! MODULE ORGANIZATION:
+    !! - Core Type Definition (lines 40-120)
+    !! - Core Operations (lines 123-195) 
+    !! - I/O Operations (lines 198-245)
+    !! - Configuration Methods (lines 248-327)
+    !! - Property Accessors (lines 347-419)
+    !! - Advanced Plotting (lines 421-451)
+    !! - Subplot Operations (lines 453-500)
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -19,8 +46,17 @@ module fortplot_figure_core
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
+    !!=============================================================================
+    !! CORE TYPE DEFINITION SECTION
+    !! Defines the main figure_t type with all state and behavior
+    !!=============================================================================
+    
     type :: figure_t
-        !! Main figure class
+        !! Main figure class implementing Facade Pattern for plotting operations
+        !!
+        !! This type provides a unified interface for all figure operations while
+        !! delegating implementation details to specialized modules. The design 
+        !! follows object-oriented principles with clear separation of concerns.
         type(figure_state_t) :: state
         
         type(plot_data_t), allocatable :: plots(:)
@@ -95,6 +131,11 @@ module fortplot_figure_core
 
 contains
 
+    !!=============================================================================
+    !! CORE OPERATIONS SECTION  
+    !! Essential figure operations: initialization, basic plotting, core functionality
+    !!=============================================================================
+
     subroutine initialize(self, width, height, backend)
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: width, height
@@ -168,6 +209,11 @@ contains
                                          density, color, linewidth, rtol, atol, max_time)
     end subroutine streamplot
 
+    !!=============================================================================
+    !! I/O OPERATIONS SECTION
+    !! Figure output operations: saving, displaying, rendering
+    !!=============================================================================
+    
     subroutine savefig(self, filename, blocking)
         !! Save figure to file (backward compatibility version)
         class(figure_t), intent(inout) :: self
@@ -217,6 +263,11 @@ contains
                          self%annotations, self%annotation_count)
     end subroutine show
 
+    !!=============================================================================
+    !! CONFIGURATION METHODS SECTION
+    !! Figure styling and configuration: labels, scales, limits, appearance
+    !!=============================================================================
+    
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
         !! Enable/disable and configure grid lines
         class(figure_t), intent(inout) :: self
@@ -317,7 +368,11 @@ contains
                            self%title, self%xlabel, self%ylabel)
     end subroutine destroy
 
-    ! Property accessors - delegate to properties module
+    !!=============================================================================
+    !! PROPERTY ACCESSORS SECTION
+    !! Figure state access and backend interface methods
+    !!=============================================================================
+    
     function get_width(self) result(width)
         class(figure_t), intent(in) :: self; integer :: width
         width = figure_get_width(self%state)
@@ -391,6 +446,11 @@ contains
         y_max = figure_get_y_max(self%state)
     end function get_y_max
 
+    !!=============================================================================
+    !! ADVANCED PLOTTING SECTION
+    !! Specialized plot types: scatter, histograms, statistical plots
+    !!=============================================================================
+    
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
                       colormap, alpha, edgecolor, facecolor, linewidth, &
                       vmin, vmax, label, show_colorbar)
@@ -423,6 +483,11 @@ contains
         call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
     end subroutine scatter
 
+    !!=============================================================================
+    !! SUBPLOT OPERATIONS SECTION
+    !! Multi-panel figure management and subplot-specific operations
+    !!=============================================================================
+    
     subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: nrows, ncols
         call figure_subplots(self%subplots_array, self%subplot_rows, &
