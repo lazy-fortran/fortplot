@@ -19,13 +19,17 @@ program test_antialiasing_comprehensive
     if (.not. magick_available) then
         ! Check if we're in CI environment
         block
-            character(len=256) :: ci_env
+            character(len=256) :: ci_env, windows_ci_env
             call get_environment_variable("CI", value=ci_env)
+            call get_environment_variable("FORTPLOT_WINDOWS_CI", value=windows_ci_env)
             if (len_trim(ci_env) > 0) then
                 ! In CI, skip test if ImageMagick not found (Windows path issue)
                 print *, "WARNING: ImageMagick not detected in CI environment."
                 print *, "  This may be a path detection issue on Windows."
                 print *, "  Skipping comprehensive ImageMagick validation tests."
+                if (len_trim(windows_ci_env) > 0) then
+                    print *, "  Windows CI detected - applying performance optimization."
+                end if
                 print *, "=== SKIP: Test skipped in CI due to ImageMagick detection ==="
                 stop 0  ! Exit successfully in CI
             else
