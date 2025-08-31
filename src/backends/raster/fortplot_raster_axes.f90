@@ -273,6 +273,7 @@ contains
         character(len=*), intent(in) :: title_text
         
         real(wp) :: title_px, title_py
+        integer :: text_width
         integer(1) :: r, g, b
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
@@ -282,11 +283,12 @@ contains
         call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
         
         ! Calculate title position centered over plot area
-        ! X position: center of plot area horizontally
-        title_px = real(plot_area%left + plot_area%width / 2, wp)
+        ! Compute text width to center horizontally (left coordinate = center - width/2)
+        text_width = calculate_text_width(trim(escaped_text))
+        title_px = real(plot_area%left + plot_area%width / 2 - text_width / 2, wp)
         
-        ! Y position: above plot area (like matplotlib)  
-        ! Place title approximately 30 pixels above the plot area
+        ! Y position: above plot area (like matplotlib)
+        ! Place title approximately TITLE_VERTICAL_OFFSET pixels above the plot area
         title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
         
         ! Get current color and render title directly in pixel coordinates
