@@ -239,6 +239,14 @@ contains
             return
         end if
         
+        ! ANIMATION OUTPUT PATHS (Issue #938: Enable animation directory creation)
+        if (index(normalized_path, 'output/example/fortran/animation') > 0 .or. &
+            index(normalized_path, 'output\example\fortran\animation') > 0 .or. &
+            index(normalized_path, 'animation') > 0) then
+            is_allowed = .true.
+            return
+        end if
+        
         ! COMMON USER DIRECTORIES (Issue #903: Enable basic user workflow)
         call check_user_directory_patterns(normalized_path, is_allowed)
     end subroutine check_allowed_path
