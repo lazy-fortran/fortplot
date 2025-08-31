@@ -71,29 +71,29 @@ contains
         character(len=*), intent(in), optional :: colormap
         type(fortplot_error_t), intent(out), optional :: error
         
-        integer :: i, j, temp_dim
+        integer :: i, j
+        integer :: data_ny, data_nx
+        logical :: needs_transpose
         
-        ! Flexible dimension validation for pcolormesh
+        ! Enhanced dimension validation for pcolormesh
         ! Handle both Fortran-style and C-style dimension conventions gracefully
-        ! The key insight: if the dimensions allow valid mesh construction, proceed
+        ! Store original data dimensions for proper transposition
+        data_ny = size(c_data, 1)
+        data_nx = size(c_data, 2)
         
-        ! Try Fortran-style interpretation: z(ny, nx)
-        self%ny = size(c_data, 1)
-        self%nx = size(c_data, 2)
-        
-        ! Check if coordinate arrays match Fortran-style interpretation
-        if (size(x_coords) == self%nx + 1 .and. size(y_coords) == self%ny + 1) then
-            ! Fortran-style matches perfectly - proceed
-            ! This is the preferred convention: z(ny, nx) with x(nx+1), y(ny+1)
-        ! Try C-style interpretation: z(nx, ny) -> swap dimensions for validation only
-        elseif (size(x_coords) == self%ny + 1 .and. size(y_coords) == self%nx + 1) then
-            ! C-style dimension pattern detected - user provided z(nx, ny)
-            ! This means they want x(ny+1), y(nx+1) which is what they provided
-            ! We need to swap our internal interpretation to match their convention
-            temp_dim = self%nx
-            self%nx = self%ny 
-            self%ny = temp_dim
-            ! Now self%nx and self%ny reflect the user's intended dimensions
+        ! Check if coordinate arrays match Fortran-style interpretation: c(ny, nx)
+        if (size(x_coords) == data_nx + 1 .and. size(y_coords) == data_ny + 1) then
+            ! Fortran-style convention: c(ny, nx) with x(nx+1), y(ny+1)
+            self%ny = data_ny
+            self%nx = data_nx
+            needs_transpose = .false.
+        ! Check C-style interpretation: c(nx, ny) -> need to transpose data
+        elseif (size(x_coords) == data_ny + 1 .and. size(y_coords) == data_nx + 1) then
+            ! C-style convention detected: user provided c(nx, ny) with x(nx+1), y(ny+1) 
+            ! where nx is actually data_ny and ny is actually data_nx
+            self%nx = data_ny  ! What user calls nx is our nx  
+            self%ny = data_nx  ! What user calls ny is our ny
+            needs_transpose = .true.
         else
             ! Neither convention works - this is a true dimension error
             if (present(error)) then
@@ -122,8 +122,18 @@ contains
             end do
         end do
         
-        ! Copy color data
-        self%c_values = c_data
+        ! Copy color data with proper transposition if needed
+        if (needs_transpose) then
+            ! Transpose data for C-style convention: c_data(nx,ny) -> self%c_values(ny,nx)
+            do i = 1, self%ny
+                do j = 1, self%nx
+                    self%c_values(i, j) = c_data(j, i)
+                end do
+            end do
+        else
+            ! Direct copy for Fortran-style convention
+            self%c_values = c_data
+        end if
         
         ! Set colormap
         if (present(colormap)) then
