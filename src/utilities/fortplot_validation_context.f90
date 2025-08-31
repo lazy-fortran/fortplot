@@ -46,6 +46,11 @@ module fortplot_validation_context
     ! Current warning mode (can be changed by advanced users)
     integer :: current_warning_mode = WARNING_MODE_ALL
     
+    ! Warning deduplication system to prevent spam
+    character(len=512), allocatable :: issued_warnings(:)
+    integer :: warning_count = 0
+    integer, parameter :: MAX_TRACKED_WARNINGS = 1000
+    
 contains
     
     ! Set warning output mode for advanced users
@@ -66,17 +71,44 @@ contains
         end if
     end subroutine set_warning_mode
     
-    ! Output warning message with context
+    ! Output warning message with context (with spam prevention)
     subroutine validation_warning(message, context)
         character(len=*), intent(in) :: message
         character(len=*), intent(in), optional :: context
+        character(len=512) :: warning_key
+        integer :: i
+        logical :: already_warned
         
         if (current_warning_mode == WARNING_MODE_SILENT) return
         
+        ! Create unique warning key for deduplication
         if (present(context)) then
-            print *, "Warning [", trim(context), "]: ", trim(message)
+            warning_key = trim(context) // ": " // trim(message)
         else
-            print *, "Warning: ", trim(message)
+            warning_key = trim(message)
+        end if
+        
+        ! Check if we've already issued this warning
+        already_warned = .false.
+        if (allocated(issued_warnings)) then
+            do i = 1, warning_count
+                if (trim(issued_warnings(i)) == trim(warning_key)) then
+                    already_warned = .true.
+                    exit
+                end if
+            end do
+        end if
+        
+        ! Only show warning if it's the first occurrence
+        if (.not. already_warned) then
+            ! Track this warning for future deduplication
+            call track_warning(warning_key)
+            
+            if (present(context)) then
+                print *, "Warning [", trim(context), "]: ", trim(message)
+            else
+                print *, "Warning: ", trim(message)
+            end if
         end if
     end subroutine validation_warning
     
@@ -157,5 +189,29 @@ contains
         ctx%suppress_output = .false.
         ctx%context_name = ""
     end function default_validation_context
+    
+    ! Private helper to track issued warnings for spam prevention
+    subroutine track_warning(warning_key)
+        character(len=*), intent(in) :: warning_key
+        character(len=512), allocatable :: temp_warnings(:)
+        integer :: i
+        
+        if (.not. allocated(issued_warnings)) then
+            allocate(issued_warnings(MAX_TRACKED_WARNINGS))
+            warning_count = 0
+        end if
+        
+        ! Add warning if we have space
+        if (warning_count < MAX_TRACKED_WARNINGS) then
+            warning_count = warning_count + 1
+            issued_warnings(warning_count) = warning_key
+        else
+            ! If buffer is full, shift warnings and add new one
+            do i = 1, MAX_TRACKED_WARNINGS - 1
+                issued_warnings(i) = issued_warnings(i + 1)
+            end do
+            issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
+        end if
+    end subroutine track_warning
     
 end module fortplot_validation_context
