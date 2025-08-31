@@ -78,18 +78,21 @@ module fortplot_zlib_core
 contains
 
     function crc32_calculate(data, data_len) result(crc)
-        !! Calculate CRC32 checksum using standard polynomial
+        !! Calculate CRC32 checksum using standard algorithm (matches Python zlib.crc32)
         integer(int8), intent(in) :: data(*)
         integer, intent(in) :: data_len
         integer(int32) :: crc
         integer :: i
         integer(int8) :: byte_val
+        integer :: tbl_index
         
         crc = not(0_int32)  ! Initialize to 0xFFFFFFFF
         
         do i = 1, data_len
             byte_val = data(i)
-            crc = ieor(ishft(crc, 8), crc_table(iand(ieor(crc, int(byte_val, int32)), z'FF')))
+            ! Standard CRC32 algorithm: (crc >> 8) ^ table[(crc ^ byte) & 0xFF]
+            tbl_index = iand(ieor(crc, int(byte_val, int32)), z'FF')
+            crc = ieor(ishft(crc, -8), crc_table(tbl_index))
         end do
         
         crc = not(crc)
