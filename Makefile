@@ -45,6 +45,8 @@ test-ci:
 	@fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
 	@fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
 	@fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@# Regression guard for Issue #985 (PDF coordinate mapping)
+	@fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
