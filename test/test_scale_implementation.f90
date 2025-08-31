@@ -3,6 +3,7 @@ program test_scale_implementation
     !! Tests linear, log, and symlog scales with proper axis transformations
     use fortplot
     use iso_fortran_env, only: wp => real64
+    use fortplot_test_helpers, only: test_get_temp_path
     implicit none
     
     integer :: test_count = 0, passed_count = 0
@@ -40,7 +41,7 @@ contains
         call title('Linear Scale Test')
         call legend()
         
-        filename = 'test_linear_scale.png'
+        filename = test_get_temp_path('test_linear_scale.png')
         call savefig(filename)
         
         call test_result(.true., "Linear scale plot created successfully")
@@ -68,7 +69,7 @@ contains
         call title('Logarithmic Scale Test')
         call legend()
         
-        filename = 'test_log_scale.png'
+        filename = test_get_temp_path('test_log_scale.png')
         call savefig(filename)
         
         call test_result(.true., "Log scale plot created successfully")
@@ -97,7 +98,7 @@ contains
         call title('Symmetric Logarithmic Scale Test')
         call legend()
         
-        filename = 'test_symlog_scale.png'
+        filename = test_get_temp_path('test_symlog_scale.png')
         call savefig(filename)
         
         call test_result(.true., "Symlog scale plot created successfully")
@@ -128,7 +129,7 @@ contains
         call title('Mixed Scale Test (Linear X, Log Y)')
         call legend()
         
-        filename = 'test_mixed_scale.png'
+        filename = test_get_temp_path('test_mixed_scale.png')
         call savefig(filename)
         
         call test_result(.true., "Mixed scale plot created successfully")

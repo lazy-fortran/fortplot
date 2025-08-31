@@ -10,6 +10,7 @@ program test_unicode_corruption_853
     use fortplot_unicode, only: unicode_codepoint_to_ascii, utf8_to_codepoint, utf8_char_length
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_test_helpers, only: test_get_temp_path
     implicit none
     
     ! Constants for Greek letter testing
@@ -127,7 +128,7 @@ contains
     subroutine test_ascii_backend_unicode_handling()
         !! Test the actual ASCII backend handling of Unicode text
         !! This is currently expected to FAIL, demonstrating the bug
-        character(len=256) :: test_filename = "test_unicode_853_bug.txt"
+        character(len=256) :: test_filename
         real(wp), parameter :: x_data(3) = [1.0_wp, 2.0_wp, 3.0_wp]
         real(wp), parameter :: y_data(3) = [1.0_wp, 4.0_wp, 9.0_wp]
         integer :: unit, ios
@@ -144,7 +145,8 @@ contains
         call add_plot(x_data, y_data, label="Data: μ values")
         call legend("upper left")
         
-        ! Save to ASCII format
+        ! Save to ASCII format in managed test output directory
+        test_filename = test_get_temp_path("test_unicode_853_bug.txt")
         call savefig(test_filename)
         
         ! Read the file content to check for corruption

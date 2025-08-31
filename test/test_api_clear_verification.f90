@@ -3,6 +3,7 @@ program test_api_clear_verification
     !! Tests that figure_t%clear() method is available and functional
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_test_helpers, only: test_get_temp_path
     implicit none
     
     type(figure_t) :: fig
@@ -31,8 +32,8 @@ program test_api_clear_verification
     print *, "✓ Second plot created after clear"
     
     ! Save the final plot to verify it shows only the second plot
-    call fig%savefig("api_clear_test.png")
-    print *, "✓ Final plot saved as api_clear_test.png"
+    call fig%savefig(test_get_temp_path("api_clear_test.png"))
+    print *, "✓ Final plot saved as ", trim(test_get_temp_path("api_clear_test.png"))
     print *, "   (Should show only the second plot - linear relationship)"
     
     print *, ""
