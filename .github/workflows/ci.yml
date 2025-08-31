@@ -12,6 +12,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Root artifact hygiene check (Issue #990)
+      run: |
+        bash scripts/check_root_artifacts.sh
+
     - name: Setup Fortran Package Manager
       run: |
         # Try multiple mirrors and retry mechanisms for resilient FPM installation
