@@ -5,6 +5,7 @@
 !
 ! Issue #854: Parameter validation warnings for user input safety
 ! Issue #871: Thread-safe validation using context system
+! Issue #901: Intelligent directory creation to eliminate warning spam
 !
 module fortplot_validation_core
     use, intrinsic :: iso_fortran_env, only: wp => real64
@@ -12,6 +13,7 @@ module fortplot_validation_core
                                           validation_warning, validation_error, &
                                           validation_warning_with_context, validation_error_with_context, &
                                           default_validation_context
+    use fortplot_file_operations, only: create_directory_runtime, check_directory_exists
     implicit none
     private
     
@@ -200,18 +202,47 @@ contains
             call validation_warning(validation%message, ctx)
         end if
         
-        ! Check parent directory if requested
+        ! Check and create parent directory if requested
         if (check_parent_dir) then
             last_slash = max(index(file_path, "/", back=.true.), &
                            index(file_path, "\", back=.true.))
             if (last_slash > 0) then
                 parent_dir = file_path(1:last_slash-1)
-                ! This is where we would check if parent directory exists
-                ! For now, just provide informational message
-                call validation_warning("Parent directory existence not verified: " // &
-                                       parent_dir, ctx)
+                call ensure_parent_directory(parent_dir, ctx, validation)
             end if
         end if
     end function validate_file_path
+    
+    ! Private helper: Intelligently handle parent directory creation
+    ! Issue #901: Eliminate warning spam by creating directories when safe
+    subroutine ensure_parent_directory(parent_dir, ctx, validation)
+        character(len=*), intent(in) :: parent_dir
+        character(len=*), intent(in) :: ctx
+        type(parameter_validation_result_t), intent(inout) :: validation
+        logical :: dir_exists, creation_success
+        
+        ! First check if directory already exists
+        call check_directory_exists(parent_dir, dir_exists)
+        
+        if (dir_exists) then
+            ! Directory exists, no action needed
+            return
+        end if
+        
+        ! Directory doesn't exist, try to create it
+        call create_directory_runtime(parent_dir, creation_success)
+        
+        if (creation_success) then
+            ! Directory created successfully - no warning needed
+            return
+        else
+            ! Creation failed - issue a helpful warning
+            validation%has_warning = .true.
+            write(validation%message, '(A,A,A)') &
+                "Could not create parent directory '", trim(parent_dir), &
+                "'. Ensure parent directories exist or have write permissions."
+            call validation_warning(validation%message, ctx)
+        end if
+    end subroutine ensure_parent_directory
     
 end module fortplot_validation_core
