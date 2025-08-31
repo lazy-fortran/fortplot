@@ -84,18 +84,16 @@ contains
         safe_size = size
         
         if (width_px > 10000 .or. height_px > 10000) then
-            ! Scale down dimensions to fit within safe limits while preserving aspect ratio
-            scale_factor = min(10000.0d0 / width_px, 10000.0d0 / height_px)
-            safe_size(1) = size(1) * scale_factor
-            safe_size(2) = size(2) * scale_factor
+            ! Issue #786: Instead of scaling down, warn about large dimensions but use original size
+            ! Let the backend handle large images appropriately (PNG fallback to PDF)
+            write(msg, '(A,F6.1,A,F6.1,A,I0,A,I0,A)') &
+                "Large figure size ", size(1), "x", size(2), &
+                " inches (", width_px, "x", height_px, " pixels) may cause memory issues"
+            call log_warning(trim(msg))
+            ! Keep original dimensions - don't scale down
+            safe_size = size
             width_px = nint(safe_size(1) * fig_dpi)
             height_px = nint(safe_size(2) * fig_dpi)
-            
-            write(msg, '(A,F6.1,A,F6.1,A,F6.1,A,F6.1,A)') &
-                "Figure size ", size(1), "x", size(2), &
-                " inches scaled to ", safe_size(1), "x", safe_size(2), &
-                " to prevent PNG backend issues"
-            call log_warning(trim(msg))
         end if
         
         ! Log figure creation

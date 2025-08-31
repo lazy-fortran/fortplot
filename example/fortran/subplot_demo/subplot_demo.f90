@@ -25,11 +25,11 @@ program subplot_demo
     real(wp), parameter :: OSCILLATION_FREQ = 2.0_wp
     real(wp), parameter :: QUADRATIC_SCALE = 50.0_wp
     
-    ! Named constants for figure dimensions
-    integer, parameter :: FIG_2X2_WIDTH = 800
-    integer, parameter :: FIG_2X2_HEIGHT = 600
-    integer, parameter :: FIG_1X3_WIDTH = 900
-    integer, parameter :: FIG_1X3_HEIGHT = 300
+    ! Named constants for figure dimensions (in inches)
+    real(wp), parameter :: FIG_2X2_WIDTH = 8.0_wp   ! 8 inches
+    real(wp), parameter :: FIG_2X2_HEIGHT = 6.0_wp  ! 6 inches  
+    real(wp), parameter :: FIG_1X3_WIDTH = 9.0_wp   ! 9 inches
+    real(wp), parameter :: FIG_1X3_HEIGHT = 3.0_wp  ! 3 inches
 
     real(wp), allocatable :: x(:), y(:)
     real(wp), allocatable :: x2(:), y2(:)
@@ -49,7 +49,7 @@ program subplot_demo
     end do
 
     ! Example 1: 2x2 subplot grid
-    call figure(figsize=[real(FIG_2X2_WIDTH, wp), real(FIG_2X2_HEIGHT, wp)])
+    call figure(figsize=[FIG_2X2_WIDTH, FIG_2X2_HEIGHT])
     
     print *, 'Creating 2x2 subplot example...'
     
@@ -84,7 +84,7 @@ program subplot_demo
     call savefig('output/example/fortran/subplot_demo/subplot_2x2_demo.png')
 
     ! Example 2: 1x3 subplot layout
-    call figure(figsize=[real(FIG_1X3_WIDTH, wp), real(FIG_1X3_HEIGHT, wp)])
+    call figure(figsize=[FIG_1X3_WIDTH, FIG_1X3_HEIGHT])
     
     print *, 'Creating 1x3 subplot example...'
     
