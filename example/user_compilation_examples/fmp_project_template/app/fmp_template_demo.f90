@@ -23,7 +23,7 @@ program main
     end do
     
     ! Create professional-looking plot
-    call figure(figsize=[1000.0_wp, 700.0_wp])
+    call figure(figsize=[10.0_wp, 7.0_wp])
     call plot(x, y1, label="Damped sine", linestyle="b-")
     call plot(x, y2, label="Damped cosine", linestyle="r--")
     call plot(x, y3, label="Exponential decay", linestyle="g:")

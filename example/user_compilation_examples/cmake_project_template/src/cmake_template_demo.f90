@@ -37,7 +37,7 @@ contains
             y_cubic(i) = 0.01_wp * x(i)**3
         end do
         
-        call figure(figsize=[800.0_wp, 600.0_wp])
+        call figure(figsize=[8.0_wp, 6.0_wp])
         call plot(x, y_linear, label="Linear", linestyle="b-")
         call plot(x, y_quadratic, label="Quadratic", linestyle="r--")
         call plot(x, y_cubic, label="Cubic", linestyle="g:")
@@ -69,7 +69,7 @@ contains
             y_err(i) = 0.05_wp * y_theory(i)  ! 5% error bars
         end do
         
-        call figure(figsize=[1000.0_wp, 600.0_wp])
+        call figure(figsize=[10.0_wp, 6.0_wp])
         call subplot(1, 2, 1)
         call errorbar(x, y_exp, yerr=y_err, label="Experimental", &
                       capsize=3.0_wp, marker="o")
@@ -105,7 +105,7 @@ contains
                         0.25_wp * sin(5.0_wp * t(i))
         end do
         
-        call figure(figsize=[900.0_wp, 500.0_wp])
+        call figure(figsize=[9.0_wp, 5.0_wp])
         call plot(t, signal, label="Composite Signal", linestyle="b-")
         call title("CMake Demo - Multiple Format Output")
         call xlabel("Time (s)")

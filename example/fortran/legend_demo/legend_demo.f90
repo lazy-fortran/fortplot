@@ -58,7 +58,8 @@ contains
         y2 = log(x)
         
         ! Upper left position
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        ! NOTE: figsize units are in inches (like matplotlib), not pixels
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("Legend: Upper Left")
         call add_plot(x, y1, label="√x")
         call add_plot(x, y2, label="ln(x)")
@@ -68,7 +69,7 @@ contains
         call savefig('output/example/fortran/legend_demo/legend_upper_left.txt')
         
         ! Upper right position (default)
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("Legend: Upper Right")
         call add_plot(x, y1, label="√x")
         call add_plot(x, y2, label="ln(x)")
@@ -78,7 +79,7 @@ contains
         call savefig('output/example/fortran/legend_demo/legend_upper_right.txt')
         
         ! Lower left position
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("Legend: Lower Left")
         call add_plot(x, y1, label="√x")
         call add_plot(x, y2, label="ln(x)")
@@ -88,7 +89,7 @@ contains
         call savefig('output/example/fortran/legend_demo/legend_lower_left.txt')
         
         ! Lower right position
-        call figure(figsize=[640.0_wp, 480.0_wp])
+        call figure(figsize=[6.4_wp, 4.8_wp])
         call title("Legend: Lower Right")
         call add_plot(x, y1, label="√x")
         call add_plot(x, y2, label="ln(x)")

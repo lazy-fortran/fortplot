@@ -56,6 +56,7 @@ contains
         cx = cos(x)
         
         ! Multi-line plot using OO interface
+        ! NOTE: figsize units are in inches (like matplotlib), not pixels
         call figure(figsize=[8.0_wp, 6.0_wp])
         call xlabel("x")
         call ylabel("y")
