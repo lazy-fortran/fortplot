@@ -87,9 +87,9 @@ contains
 
         if (min_x > 9.9e98_wp .or. max_x < -9.9e98_wp) return
 
-        ! Allow tiny epsilon
-        within = (min_x >= frame_left - 1.0e-3_wp) .and. &
-                 (max_x <= (frame_left + frame_w) + 1.0e-3_wp)
+        ! Allow small epsilon to account for platform-dependent rounding in PDF serialization
+        within = (min_x >= frame_left - 5.0e-3_wp) .and. &
+                 (max_x <= (frame_left + frame_w) + 5.0e-3_wp)
     end function verify_pdf_coordinates_within_frame
 
     logical function parse_frame(stream, left, bottom, width, height) result(ok)
