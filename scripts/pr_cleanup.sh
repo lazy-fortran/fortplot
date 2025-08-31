@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec /home/ert/code/prompts/scripts/pr_cleanup.sh "$@"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$script_dir/../../prompts/scripts/pr_cleanup.sh" "$@"
