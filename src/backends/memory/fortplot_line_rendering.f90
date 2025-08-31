@@ -40,6 +40,9 @@ contains
         n = size(plot_data%x)
         allocate(x_scaled(n), y_scaled(n))
         
+        ! CRITICAL FIX #857: Set line color from plot data before drawing
+        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        
         ! Apply scaling transformations
         do i = 1, n
             x_scaled(i) = apply_scale_transform(plot_data%x(i), xscale, symlog_threshold)

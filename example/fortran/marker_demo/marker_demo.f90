@@ -35,8 +35,8 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")
         
-        ! Scatter plot with markers (pyplot-fortran style)
-        call add_plot(x, y, linestyle='o', label='Data Points')
+        ! Scatter plot with markers (using proper scatter function)
+        call scatter(x, y, label='Data Points', marker='o')
         
         ! Add trend line for context
         call add_plot(x, sin(x), linestyle='-', label='Sin(x) Reference')
@@ -70,11 +70,11 @@ contains
         call xlabel("X Values")
         call ylabel("Y Values")
         
-        ! Draw each marker type with data (pyplot-fortran style)
-        call add_plot(x1, y1, linestyle='o', label='Circle')
-        call add_plot(x2, y2, linestyle='s', label='Square')
-        call add_plot(x3, y3, linestyle='D', label='Diamond')
-        call add_plot(x4, y4, linestyle='x', label='Cross')
+        ! Draw each marker type with data (using proper scatter function)
+        call scatter(x1, y1, label='Circle', marker='o')
+        call scatter(x2, y2, label='Square', marker='s')
+        call scatter(x3, y3, label='Diamond', marker='D')
+        call scatter(x4, y4, label='Cross', marker='x')
         
         call legend()
         call savefig('output/example/fortran/marker_demo/all_marker_types.png')
@@ -103,10 +103,10 @@ contains
         call xlabel("X Position")
         call ylabel("Y Position")
         
-        ! Different marker types with automatic color cycling (pyplot-fortran style)
-        call add_plot(x1, y1, linestyle='o', label='Blue circles')
-        call add_plot(x2, y2, linestyle='s', label='Green squares')
-        call add_plot(x3, y3, linestyle='D', label='Orange diamonds')
+        ! Different marker types with automatic color cycling (using proper scatter function)
+        call scatter(x1, y1, label='Blue circles', marker='o')
+        call scatter(x2, y2, label='Green squares', marker='s')
+        call scatter(x3, y3, label='Orange diamonds', marker='D')
         
         call legend()
         call savefig('output/example/fortran/marker_demo/marker_colors.png')
