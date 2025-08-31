@@ -114,17 +114,53 @@ fi
 
 # Run referenced tests if requested or if any tests are detected
 if (( ${#tests[@]} > 0 )) || [[ "$run_tests" == true ]]; then
-  for t in "${tests[@]:-}"; do
-    [[ -z "$t" ]] && continue
-    echo "Running referenced test target: $t" >&2
-    if timeout 5m fpm test --target "$t" >/tmp/issue_check_"$issue_num"_"$t".log 2>&1; then
-      evidence_msgs+=("test_target_pass: $t")
+  # Prefer explicit TEST_CMD if provided
+  if [[ -n "${TEST_CMD:-}" ]]; then
+    echo "Running TEST_CMD for referenced tests: ${TEST_CMD}" >&2
+    if timeout 10m bash -lc "$TEST_CMD" >/tmp/issue_check_"$issue_num"_suite.log 2>&1; then
+      evidence_msgs+=("test_cmd_pass: ${TEST_CMD}")
     else
       all_tests_pass=false
       relevant=true
-      evidence_msgs+=("test_target_fail: $t (see build log artifact if attached)")
+      evidence_msgs+=("test_cmd_fail: ${TEST_CMD}")
     fi
-  done
+  else
+    # Try per-target with known frameworks
+    for t in "${tests[@]:-}"; do
+      [[ -z "$t" ]] && continue
+      if command -v fpm >/dev/null 2>&1; then
+        echo "Running referenced test target via fpm: $t" >&2
+        if timeout 5m fpm test --target "$t" >/tmp/issue_check_"$issue_num"_"$t".log 2>&1; then
+          evidence_msgs+=("test_target_pass: $t")
+        else
+          all_tests_pass=false
+          relevant=true
+          evidence_msgs+=("test_target_fail: $t (fpm)")
+        fi
+      elif command -v pytest >/dev/null 2>&1; then
+        echo "Running referenced test via pytest -k: $t" >&2
+        if timeout 5m pytest -k "$t" >/tmp/issue_check_"$issue_num"_"$t".log 2>&1; then
+          evidence_msgs+=("pytest_k_pass: $t")
+        else
+          all_tests_pass=false
+          relevant=true
+          evidence_msgs+=("pytest_k_fail: $t")
+        fi
+      elif command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then
+        echo "Running npm test (no per-target filtering available): $t" >&2
+        if timeout 10m npm test --silent >/tmp/issue_check_"$issue_num"_npm.log 2>&1; then
+          evidence_msgs+=("npm_test_pass (generic)")
+        else
+          all_tests_pass=false
+          relevant=true
+          evidence_msgs+=("npm_test_fail (generic)")
+        fi
+      else
+        echo "No known test runner detected; skipping test execution for $t" >&2
+        evidence_msgs+=("test_skipped_no_runner: $t")
+      fi
+    done
+  fi
 fi
 
 # Decision logic
@@ -179,4 +215,3 @@ EOF
     exit 10
   fi
 fi
-

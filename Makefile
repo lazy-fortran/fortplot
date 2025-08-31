@@ -217,19 +217,27 @@ pr-cleanup:
 	@./scripts/pr_cleanup.sh $(PR)
 
 issue-loop:
-	@label=$${LABEL-codex-auto}; \
+	@label=$${LABEL-__all__}; \
 	if [ "$$label" = "__all__" ]; then \
-		./scripts/issue_loop.sh --all --limit $${LIMIT:-1}; \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-999999}; \
 	else \
-		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-1}; \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-999999}; \
 	fi
 
 issue-loop-dry:
-	@label=$${LABEL-codex-auto}; \
+	@label=$${LABEL-__all__}; \
 	if [ "$$label" = "__all__" ]; then \
-		./scripts/issue_loop.sh --all --limit $${LIMIT:-1} --dry-run; \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-999999} --dry-run; \
 	else \
-		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-1} --dry-run; \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-999999} --dry-run; \
+	fi
+
+issue-loop-auto:
+	@label=$${LABEL-__all__}; \
+	if [ "$$label" = "__all__" ]; then \
+		CLEAN_FORCE=1 ./scripts/issue_loop.sh --autonomous --all --limit $${LIMIT:-999999}; \
+	else \
+		CLEAN_FORCE=1 ./scripts/issue_loop.sh --autonomous --label "$$label" --limit $${LIMIT:-999999}; \
 	fi
 
 # File size compliance verification - fraud prevention
