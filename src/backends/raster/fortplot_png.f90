@@ -44,44 +44,75 @@ contains
     end subroutine png_finalize
 
     subroutine png_get_png_data(this, width, height, png_data, status)
-        !! Get PNG data from PNG context's raster data
+        !! Get PNG data from PNG context's raster data with error validation
         class(png_context), intent(in) :: this
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        call generate_png_data(width, height, this%raster%image_data, png_data)
-        status = 0
+        call generate_png_data_with_status(width, height, this%raster%image_data, png_data, status)
+        
+        ! Additional validation if compression succeeded
+        if (status == 0) then
+            if (.not. allocated(png_data) .or. size(png_data) < 100) then
+                status = -4
+                call log_error("PNG data validation failed - invalid output")
+                if (allocated(png_data)) deallocate(png_data)
+            end if
+        end if
     end subroutine png_get_png_data
 
-    ! Generate PNG data from image data
-    subroutine generate_png_data(width, height, image_data, png_buffer)
+    ! Generate PNG data from image data with error handling
+    subroutine generate_png_data_with_status(width, height, image_data, png_buffer, status)
         integer, intent(in) :: width, height
         integer(1), intent(in) :: image_data(:)
         integer(1), allocatable, intent(out) :: png_buffer(:)
-
-        integer(1) :: png_signature(8) = &
-            [int(-119,1), int(80,1), int(78,1), int(71,1), int(13,1), int(10,1), int(26,1), int(10,1)]
-        integer, parameter :: bit_depth = 8, color_type = 2
+        integer, intent(out) :: status
+        
         integer(int8), allocatable :: compressed_data(:)
         integer :: compressed_size, data_size
         integer(1), allocatable :: png_row_data(:)
         
+        status = 0
+        
         ! Convert RGB image data to PNG row format with filter bytes
         call convert_rgb_to_png_rows(width, height, image_data, png_row_data)
+        
+        if (.not. allocated(png_row_data)) then
+            status = -1
+            call log_error("PNG row data conversion failed")
+            return
+        end if
         
         data_size = size(png_row_data)
         compressed_data = zlib_compress(png_row_data, data_size, compressed_size)
         
         if (.not. allocated(compressed_data) .or. compressed_size <= 0) then
-            call log_error("PNG compression failed")
+            status = -2
+            call log_error("PNG compression failed - ZLIB error")
+            if (allocated(png_row_data)) deallocate(png_row_data)
             return
         end if
 
         call build_png_buffer(width, height, compressed_data, compressed_size, png_buffer)
         
+        if (.not. allocated(png_buffer)) then
+            status = -3
+            call log_error("PNG buffer construction failed")
+        end if
+        
         if (allocated(compressed_data)) deallocate(compressed_data)
         if (allocated(png_row_data)) deallocate(png_row_data)
+    end subroutine generate_png_data_with_status
+    
+    ! Legacy wrapper for backward compatibility
+    subroutine generate_png_data(width, height, image_data, png_buffer)
+        integer, intent(in) :: width, height
+        integer(1), intent(in) :: image_data(:)
+        integer(1), allocatable, intent(out) :: png_buffer(:)
+        integer :: status
+        
+        call generate_png_data_with_status(width, height, image_data, png_buffer, status)
     end subroutine generate_png_data
 
     ! Build complete PNG buffer from compressed data  
