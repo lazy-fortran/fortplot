@@ -2,7 +2,7 @@ module fortplot_png
     use iso_c_binding
     use fortplot_context, only: setup_canvas
     use fortplot_raster, only: raster_context, create_raster_canvas, raster_draw_axes_and_labels, raster_render_ylabel
-    use fortplot_zlib, only: zlib_compress, crc32_calculate
+    use fortplot_zlib_core, only: zlib_compress, crc32_calculate
     use fortplot_logging, only: log_error, log_info
     use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int32
     implicit none
@@ -107,7 +107,7 @@ contains
         png_buffer(pos:pos+7) = png_signature
         pos = pos + 8
         
-        ! Build IHDR data
+        ! Build IHDR data using the exact working approach
         w_be = to_big_endian(width)
         h_be = to_big_endian(height)
         ihdr_data(1:4) = transfer(w_be, ihdr_data(1:4))
@@ -214,15 +214,19 @@ contains
         integer(1), intent(in) :: data(:)
         integer, intent(in) :: data_len
         
-        integer :: length_be, crc_val, crc_be
+        integer :: length_be, crc_val, crc_be, i
         integer(1) :: type_bytes(4)
         
-        ! Convert chunk type to bytes
-        type_bytes = transfer(chunk_type, type_bytes)
+        ! Convert chunk type to bytes (using correct ASCII conversion)
+        do i = 1, 4
+            type_bytes(i) = int(iachar(chunk_type(i:i)), 1)
+        end do
         
-        ! Write length (big endian)
-        length_be = to_big_endian(data_len)
-        buffer(pos:pos+3) = transfer(length_be, buffer(pos:pos+3))
+        ! Write length (big endian) - write bytes directly
+        buffer(pos) = int(ibits(data_len, 24, 8), 1)
+        buffer(pos+1) = int(ibits(data_len, 16, 8), 1)
+        buffer(pos+2) = int(ibits(data_len, 8, 8), 1)
+        buffer(pos+3) = int(ibits(data_len, 0, 8), 1)
         pos = pos + 4
         
         ! Write chunk type
@@ -235,10 +239,12 @@ contains
             pos = pos + data_len
         end if
         
-        ! Calculate and write CRC
+        ! Calculate and write CRC (write bytes directly in big-endian order)
         crc_val = calculate_chunk_crc(type_bytes, data, data_len)
-        crc_be = to_big_endian(crc_val)
-        buffer(pos:pos+3) = transfer(crc_be, buffer(pos:pos+3))
+        buffer(pos) = int(ibits(crc_val, 24, 8), 1)
+        buffer(pos+1) = int(ibits(crc_val, 16, 8), 1)
+        buffer(pos+2) = int(ibits(crc_val, 8, 8), 1)
+        buffer(pos+3) = int(ibits(crc_val, 0, 8), 1)
         pos = pos + 4
     end subroutine write_chunk_to_buffer
 
@@ -330,6 +336,8 @@ contains
         if (allocated(full_data)) deallocate(full_data)
     end subroutine write_chunk
 
+
+
     function to_big_endian(value) result(be_value)
         integer, intent(in) :: value
         integer :: be_value
@@ -342,7 +350,6 @@ contains
 
         be_value = transfer(bytes, be_value)
     end function to_big_endian
-
 
     function calculate_crc32(data, len) result(crc)
         integer(1), intent(in) :: data(*)
