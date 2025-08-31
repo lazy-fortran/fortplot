@@ -91,7 +91,7 @@ jobs:
         echo Parallel threads: 2 (Windows CI optimization)
         echo Set FORTPLOT_DEBUG_TIMEOUT=1 for verbose logging
         echo ===============================================
-         timeout 300 /nobreak fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Test suite completed or timed out after 5 minutes"
+         timeout /t 300 /nobreak fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Test suite completed or timed out after 5 minutes"
     
     - name: Run antialiasing quality tests with ImageMagick (optional on Windows)
       continue-on-error: true
