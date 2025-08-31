@@ -118,9 +118,10 @@ contains
         output_data(pos+1) = int(z'5E', int8)   ! FLG (preset dictionary flag)
         pos = pos + 2
         
-        ! Compress data using fixed Huffman tables
+        ! TEMPORARY FIX: Use uncompressed deflate blocks for reliability
+        ! This ensures valid PNG files while the full Huffman implementation is debugged
         compressed_len = 1  ! Initialize starting position for compression
-        call compress_with_fixed_huffman(input_data, input_len, compressed_data, compressed_len)
+        call compress_with_uncompressed_blocks(input_data, input_len, compressed_data, compressed_len)
         
         ! Bounds check before copying compressed data
         if (compressed_len > size(compressed_data)) then
@@ -171,5 +172,58 @@ contains
         
         adler32 = ior(ishft(b, 16), a)
     end function calculate_adler32
+
+    subroutine compress_with_uncompressed_blocks(input_data, input_len, output_buffer, output_pos)
+        !! Create valid uncompressed deflate blocks for PNG compatibility
+        !! This produces valid but larger PNG files until Huffman compression is fixed
+        integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
+        integer(int8), intent(inout) :: output_buffer(:)
+        integer, intent(inout) :: output_pos
+        
+        integer :: pos, block_size, remaining
+        integer :: len_field, nlen_field
+        integer :: byte_pos
+        
+        pos = 1
+        byte_pos = output_pos
+        remaining = input_len
+        
+        do while (remaining > 0)
+            ! Determine block size (use smaller blocks for better compatibility)
+            block_size = min(remaining, 32768)  ! 32KB blocks for better compatibility
+            
+            ! Write block header (3 bits: BFINAL + BTYPE)
+            if (remaining <= block_size) then
+                ! BFINAL=1, BTYPE=00 (uncompressed, final block)
+                output_buffer(byte_pos) = 1_int8
+            else
+                ! BFINAL=0, BTYPE=00 (uncompressed, not final)
+                output_buffer(byte_pos) = 0_int8
+            end if
+            byte_pos = byte_pos + 1
+            
+            ! Write LEN (2 bytes, little endian)
+            len_field = block_size
+            output_buffer(byte_pos) = int(iand(len_field, z'FF'), int8)
+            output_buffer(byte_pos + 1) = int(iand(ishft(len_field, -8), z'FF'), int8)
+            byte_pos = byte_pos + 2
+            
+            ! Write NLEN (one's complement of LEN, 2 bytes, little endian)
+            ! RFC 1951: NLEN is the one's complement of LEN
+            nlen_field = iand(not(len_field), z'FFFF')
+            output_buffer(byte_pos) = int(iand(nlen_field, z'FF'), int8)
+            output_buffer(byte_pos + 1) = int(iand(ishft(nlen_field, -8), z'FF'), int8)
+            byte_pos = byte_pos + 2
+            
+            ! Copy raw data
+            output_buffer(byte_pos:byte_pos + block_size - 1) = input_data(pos:pos + block_size - 1)
+            byte_pos = byte_pos + block_size
+            pos = pos + block_size
+            remaining = remaining - block_size
+        end do
+        
+        output_pos = byte_pos
+    end subroutine compress_with_uncompressed_blocks
 
 end module fortplot_zlib_core
