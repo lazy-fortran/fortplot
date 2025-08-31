@@ -30,17 +30,16 @@ call ylim(-1.0_wp, 1.0_wp)   ! Set y-axis limits
 call savefig("plot.png")
 ```
 
-### Subplot Grids
+### Note: Subplot Grids (Not Yet Implemented)
 ```fortran
+! Note: Multiple subplots not yet implemented (Issue #XXX)
+! This feature is planned for future releases
+! Currently generates warning: "subplot: Multiple subplots not yet implemented"
 call figure(figsize=[8.0_wp, 6.0_wp])
-call subplot(2, 2, 1)  ! 2x2 grid, top-left
+call subplot(2, 2, 1)  ! Will show warning
 call plot(x, sin(x))
 call title("Sine Wave")
-
-call subplot(2, 2, 2)  ! Top-right
-call plot(x, cos(x))
-call title("Cosine Wave")
-call savefig("subplots.png")
+call savefig("single_plot.png")  ! Only first subplot will be saved
 ```
 
 ### Object-Oriented API
@@ -128,8 +127,10 @@ call add_3d_plot(x, y, z, label="3D Surface Curve")
 call title("3D Surface Plot")
 call savefig("surface_3d.png")
 
-! Note: pcolormesh for 2D heatmaps is available but currently
-! has dimension validation issues (see Issue #701)
+! pcolormesh for 2D heatmaps is available and working
+! Dimension validation issues were fixed in recent commits
+real(wp), dimension(10, 10) :: z_data
+call pcolormesh(x_grid, y_grid, z_data, colormap="viridis")
 ```
 
 #### Contour plot with colorbar
@@ -183,16 +184,27 @@ call savefig("log_plot.pdf")
 
 #### Text annotations with coordinate systems
 ```fortran
-! Note: Text annotation system is under development (Issue #491)
-! Current functionality supports basic plot elements
+! Text annotation system is FULLY IMPLEMENTED
+use fortplot
 type(figure_t) :: fig
 real(wp), dimension(50) :: x, y
-call fig%initialize()
-call fig%add_plot(x, y, label="Scientific Data")
-call fig%set_title("Annotated Scientific Plot")
-call fig%set_xlabel("X Variable")  
-call fig%set_ylabel("Y Variable")
-call fig%savefig("annotated_plot.png")
+integer :: i
+
+! Generate sample data
+x = [(real(i-1, wp) * 0.1_wp, i=1, 50)]
+y = sin(x)
+
+call figure(figsize=[8.0_wp, 6.0_wp])
+call add_plot(x, y, label="Scientific Data", linestyle="b-")
+call set_title("Annotated Scientific Plot")
+call set_xlabel("X Variable")
+call set_ylabel("Y Variable")
+
+! Add text annotations with different coordinate systems
+call add_text_annotation("Maximum", 1.57_wp, 1.0_wp, coord_type=COORD_DATA)
+call add_arrow_annotation("Peak→", 1.2_wp, 0.8_wp, 1.57_wp, 1.0_wp, coord_type=COORD_DATA)
+call add_text_annotation("Title Area", 0.5_wp, 0.95_wp, coord_type=COORD_FIGURE)
+call savefig("annotated_plot.png")
 ```
 
 #### Animation example
@@ -354,14 +366,14 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Legends with automatic positioning
 - [x] Scales: linear, log, symlog (with configurable threshold)
 - [x] Axis limits (`xlim`, `ylim`)
-- [x] Subplot grids (`subplot`) for multiple plots in a single figure
+- [ ] Subplot grids (`subplot`) - Not yet implemented (shows warning)
 - [x] Interactive display with `show()` (GUI detection for X11, Wayland, macOS, Windows)
 - [x] Animation support with `FuncAnimation` (requires `ffmpeg` for video formats)
   - **5-Layer Validation**: Comprehensive framework with size, header, semantic, and external tool checks
   - **False Positive Prevention**: Multi-criteria validation framework
 - [x] Unicode and LaTeX-style Greek letters (`\alpha`, `\beta`, `\gamma`, etc.) in all backends
 - [x] **Security features**: Executable stack protection, trampoline detection, path validation
-- [x] **Text annotations** (`text`, `annotate`) with multi-coordinate systems and typography
+- [x] **Text annotations** (`add_text_annotation`, `add_arrow_annotation`) with multi-coordinate systems and typography
 
 
 ## Module Architecture
