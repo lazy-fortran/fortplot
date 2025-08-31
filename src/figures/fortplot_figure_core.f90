@@ -19,14 +19,8 @@ module fortplot_figure_core
     !! - Maintainable code through clear responsibility boundaries
     !! - Extensible design supporting new plot types and backends
     !!
-    !! MODULE ORGANIZATION:
-    !! - Core Type Definition (lines 40-120)
-    !! - Core Operations (lines 123-195) 
-    !! - I/O Operations (lines 198-245)
-    !! - Configuration Methods (lines 248-327)
-    !! - Property Accessors (lines 347-419)
-    !! - Advanced Plotting (lines 421-451)
-    !! - Subplot Operations (lines 453-500)
+    !! DELEGATION ARCHITECTURE: All operations delegate to specialized modules
+    !! maintaining clean separation of concerns and architectural compliance.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -46,10 +40,7 @@ module fortplot_figure_core
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
-    !!=============================================================================
-    !! CORE TYPE DEFINITION SECTION
-    !! Defines the main figure_t type with all state and behavior
-    !!=============================================================================
+    !! CORE TYPE DEFINITION
     
     type :: figure_t
         !! Main figure class implementing Facade Pattern for plotting operations
@@ -131,21 +122,18 @@ module fortplot_figure_core
 
 contains
 
-    !!=============================================================================
-    !! CORE OPERATIONS SECTION  
-    !! Essential figure operations: initialization, basic plotting, core functionality
-    !!=============================================================================
+    !! CORE OPERATIONS - Delegated to specialized modules
 
     subroutine initialize(self, width, height, backend)
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
         
-        call figure_initialize(self%state, self%plots, self%streamlines, &
-                              self%subplots_array, self%subplot_rows, &
-                              self%subplot_cols, self%current_subplot, &
-                              self%title, self%xlabel, self%ylabel, &
-                              self%plot_count, width, height, backend)
+        call core_initialize(self%state, self%plots, self%streamlines, &
+                            self%subplots_array, self%subplot_rows, &
+                            self%subplot_cols, self%current_subplot, &
+                            self%title, self%xlabel, self%ylabel, &
+                            self%plot_count, width, height, backend)
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -154,9 +142,7 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         
-        call figure_add_plot_operation(self%plots, self%state, x, y, label, linestyle, color)
-        self%plot_count = self%state%plot_count
-        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
+        call core_add_plot(self%plots, self%state, x, y, label, linestyle, color, self%plot_count)
     end subroutine add_plot
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
@@ -165,9 +151,7 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         
-        call figure_add_contour_operation(self%plots, self%state, x_grid, y_grid, z_grid, levels, label)
-        self%plot_count = self%state%plot_count
-        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
+        call core_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, levels, label, self%plot_count)
     end subroutine add_contour
 
     subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, show_colorbar, label)
@@ -177,10 +161,8 @@ contains
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
         
-        call figure_add_contour_filled_operation(self%plots, self%state, x_grid, y_grid, z_grid, &
-                                                 levels, colormap, show_colorbar, label)
-        self%plot_count = self%state%plot_count
-        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
+        call core_add_contour_filled(self%plots, self%state, x_grid, y_grid, z_grid, &
+                                     levels, colormap, show_colorbar, label, self%plot_count)
     end subroutine add_contour_filled
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
@@ -191,10 +173,8 @@ contains
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
         
-        call figure_add_pcolormesh_operation(self%plots, self%state, x, y, c, colormap, &
-                                            vmin, vmax, edgecolors, linewidths)
-        self%plot_count = self%state%plot_count
-        call update_data_ranges_pcolormesh_figure(self%plots, self%state, self%state%plot_count)
+        call core_add_pcolormesh(self%plots, self%state, x, y, c, colormap, &
+                                vmin, vmax, edgecolors, linewidths, self%plot_count)
     end subroutine add_pcolormesh
 
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
@@ -205,14 +185,11 @@ contains
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
         
-        call figure_streamplot_operation(self%plots, self%state, self%plot_count, x, y, u, v, &
-                                         density, color, linewidth, rtol, atol, max_time)
+        call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
+                            density, color, linewidth, rtol, atol, max_time)
     end subroutine streamplot
 
-    !!=============================================================================
-    !! I/O OPERATIONS SECTION
-    !! Figure output operations: saving, displaying, rendering
-    !!=============================================================================
+    !! I/O OPERATIONS - Delegated to core I/O module
     
     subroutine savefig(self, filename, blocking)
         !! Save figure to file (backward compatibility version)
@@ -220,14 +197,8 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
-        if (.not. self%state%rendered) then
-            call figure_render(self%state, self%plots, self%state%plot_count, &
-                              self%annotations, self%annotation_count)
-        end if
-        
-        call figure_savefig(self%state, self%plots, self%state%plot_count, filename, blocking, &
-                            self%annotations, self%annotation_count)
+        call core_savefig(self%state, self%plots, self%state%plot_count, filename, blocking, &
+                         self%annotations, self%annotation_count)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -237,15 +208,9 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
-        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
-        if (.not. self%state%rendered) then
-            call figure_render(self%state, self%plots, self%state%plot_count, &
-                              self%annotations, self%annotation_count)
-        end if
-        
-        call figure_savefig_with_status(self%state, self%plots, self%state%plot_count, &
-                                        filename, status, blocking, &
-                                        self%annotations, self%annotation_count)
+        call core_savefig_with_status(self%state, self%plots, self%state%plot_count, &
+                                     filename, status, blocking, &
+                                     self%annotations, self%annotation_count)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -253,20 +218,11 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        ! Render with annotations before showing (Issue #844: ASCII annotation functionality)
-        if (.not. self%state%rendered) then
-            call figure_render(self%state, self%plots, self%state%plot_count, &
-                              self%annotations, self%annotation_count)
-        end if
-        
-        call figure_show(self%state, self%plots, self%state%plot_count, blocking, &
-                         self%annotations, self%annotation_count)
+        call core_show(self%state, self%plots, self%state%plot_count, blocking, &
+                      self%annotations, self%annotation_count)
     end subroutine show
 
-    !!=============================================================================
-    !! CONFIGURATION METHODS SECTION
-    !! Figure styling and configuration: labels, scales, limits, appearance
-    !!=============================================================================
+    !! CONFIGURATION METHODS - Delegated to core config module
     
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
         !! Enable/disable and configure grid lines
@@ -275,7 +231,7 @@ contains
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
         
-        call figure_grid_operation(self%state, enabled, which, axis, alpha, linestyle)
+        call core_grid(self%state, enabled, which, axis, alpha, linestyle)
     end subroutine grid
 
     subroutine hist(self, data, bins, density, label, color)
@@ -287,7 +243,7 @@ contains
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         
-        call figure_hist_operation(self%plots, self%state, self%plot_count, data, bins, density, label, color)
+        call core_hist(self%plots, self%state, self%plot_count, data, bins, density, label, color)
     end subroutine hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, &
@@ -302,154 +258,145 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         
-        call figure_boxplot_operation(self%plots, self%plot_count, data, position, width, label, &
-                                     show_outliers, horizontal, color, self%state%max_plots)
+        call core_boxplot(self%plots, self%plot_count, data, position, width, label, &
+                         show_outliers, horizontal, color, self%state%max_plots)
     end subroutine boxplot
 
     subroutine set_xlabel(self, label)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: label
-        call figure_set_xlabel_operation(self%state, self%xlabel, label)
+        call core_set_xlabel(self%state, self%xlabel, label)
     end subroutine set_xlabel
     subroutine set_ylabel(self, label)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: label
-        call figure_set_ylabel_operation(self%state, self%ylabel, label)
+        call core_set_ylabel(self%state, self%ylabel, label)
     end subroutine set_ylabel
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: title
-        call figure_set_title_operation(self%state, self%title, title)
+        call core_set_title(self%state, self%title, title)
     end subroutine set_title
     subroutine set_xscale(self, scale, threshold)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
-        call figure_set_xscale_operation(self%state, scale, threshold)
+        call core_set_xscale(self%state, scale, threshold)
     end subroutine set_xscale
     subroutine set_yscale(self, scale, threshold)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
-        call figure_set_yscale_operation(self%state, scale, threshold)
+        call core_set_yscale(self%state, scale, threshold)
     end subroutine set_yscale
     subroutine set_xlim(self, x_min, x_max)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x_min, x_max
-        call figure_set_xlim_operation(self%state, x_min, x_max)
+        call core_set_xlim(self%state, x_min, x_max)
     end subroutine set_xlim
     subroutine set_ylim(self, y_min, y_max)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: y_min, y_max
-        call figure_set_ylim_operation(self%state, y_min, y_max)
+        call core_set_ylim(self%state, y_min, y_max)
     end subroutine set_ylim
     subroutine set_line_width(self, width)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: width
-        call figure_set_line_width_operation(self%state, width)
+        call core_set_line_width(self%state, width)
     end subroutine set_line_width
     subroutine set_ydata(self, plot_index, y_new)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: plot_index
         real(wp), intent(in) :: y_new(:)
-        call figure_set_ydata_operation(self%plots, self%state%plot_count, plot_index, y_new)
+        call core_set_ydata(self%plots, self%state%plot_count, plot_index, y_new)
     end subroutine set_ydata
     subroutine figure_legend(self, location)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in), optional :: location
-        call figure_legend_operation(self%state%legend_data, self%state%show_legend, &
-                                    self%plots, self%state%plot_count, location)
+        call core_figure_legend(self%state, self%plots, self%state%plot_count, location)
     end subroutine figure_legend
     subroutine clear(self)
         !! Clear the figure for reuse, preserving backend settings
         class(figure_t), intent(inout) :: self
-        call figure_clear(self%state, self%plots, self%streamlines, &
-                         self%subplots_array, self%subplot_rows, self%subplot_cols, &
-                         self%current_subplot, self%title, self%xlabel, self%ylabel, &
-                         self%plot_count, self%annotation_count)
+        call core_clear(self%state, self%plots, self%streamlines, &
+                       self%subplots_array, self%subplot_rows, self%subplot_cols, &
+                       self%current_subplot, self%title, self%xlabel, self%ylabel, &
+                       self%plot_count, self%annotation_count)
     end subroutine clear
     subroutine clear_streamlines(self)
         class(figure_t), intent(inout) :: self
-        call figure_clear_streamlines(self%streamlines)
+        call core_clear_streamlines(self%streamlines)
     end subroutine clear_streamlines
     subroutine destroy(self)
         type(figure_t), intent(inout) :: self
-        call figure_destroy(self%state, self%plots, self%streamlines, &
-                           self%title, self%xlabel, self%ylabel)
+        call core_destroy(self%state, self%plots, self%streamlines, &
+                         self%title, self%xlabel, self%ylabel)
     end subroutine destroy
 
-    !!=============================================================================
-    !! PROPERTY ACCESSORS SECTION
-    !! Figure state access and backend interface methods
-    !!=============================================================================
+    !! PROPERTY ACCESSORS - Delegated to core accessors module
     
     function get_width(self) result(width)
         class(figure_t), intent(in) :: self; integer :: width
-        width = figure_get_width(self%state)
+        width = core_get_width(self%state)
     end function get_width
     function get_height(self) result(height)
         class(figure_t), intent(in) :: self; integer :: height
-        height = figure_get_height(self%state)
+        height = core_get_height(self%state)
     end function get_height
     function get_rendered(self) result(rendered)
         class(figure_t), intent(in) :: self; logical :: rendered
-        rendered = figure_get_rendered(self%state)
+        rendered = core_get_rendered(self%state)
     end function get_rendered
     subroutine set_rendered(self, rendered)
         class(figure_t), intent(inout) :: self; logical, intent(in) :: rendered
-        call figure_set_rendered(self%state, rendered)
+        call core_set_rendered(self%state, rendered)
     end subroutine set_rendered
     function get_plot_count(self) result(plot_count)
         class(figure_t), intent(in) :: self; integer :: plot_count
-        plot_count = figure_get_plot_count(self%state)
+        plot_count = core_get_plot_count(self%state)
     end function get_plot_count
     function get_plots(self) result(plots_ptr)
         class(figure_t), intent(in), target :: self; type(plot_data_t), pointer :: plots_ptr(:)
-        plots_ptr => figure_get_plots(self%plots)
+        plots_ptr => core_get_plots(self%plots)
     end function get_plots
     
     ! Animation support - delegate to animation module
     subroutine setup_png_backend_for_animation(self)
         class(figure_t), intent(inout) :: self
-        call figure_setup_png_backend_for_animation(self%state)
+        call core_setup_png_backend_for_animation(self%state)
     end subroutine setup_png_backend_for_animation
     subroutine extract_rgb_data_for_animation(self, rgb_data)
         class(figure_t), intent(inout) :: self; real(wp), intent(out) :: rgb_data(:,:,:)
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, &
-            self%state%plot_count, self%annotations, self%annotation_count)
-        call figure_extract_rgb_data_for_animation(self%state, rgb_data, self%state%rendered)
+        call core_extract_rgb_data_for_animation(self%state, rgb_data, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count, self%state%rendered)
     end subroutine extract_rgb_data_for_animation
     subroutine extract_png_data_for_animation(self, png_data, status)
         class(figure_t), intent(inout) :: self; integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        if (.not. self%state%rendered) call figure_render(self%state, self%plots, &
-            self%state%plot_count, self%annotations, self%annotation_count)
-        call figure_extract_png_data_for_animation(self%state, png_data, status, self%state%rendered)
+        call core_extract_png_data_for_animation(self%state, png_data, status, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count, self%state%rendered)
     end subroutine extract_png_data_for_animation
     ! Backend interface and coordinate accessors - delegate to properties module
     subroutine backend_color(self, r, g, b)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: r, g, b
-        call figure_backend_color(self%state, r, g, b)
+        call core_backend_color(self%state, r, g, b)
     end subroutine backend_color
     function backend_associated(self) result(is_associated)
         class(figure_t), intent(in) :: self; logical :: is_associated
-        is_associated = figure_backend_associated(self%state)
+        is_associated = core_backend_associated(self%state)
     end function backend_associated
     subroutine backend_line(self, x1, y1, x2, y2)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x1, y1, x2, y2
-        call figure_backend_line(self%state, x1, y1, x2, y2)
+        call core_backend_line(self%state, x1, y1, x2, y2)
     end subroutine backend_line
     function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self; real(wp) :: x_min
-        x_min = figure_get_x_min(self%state)
+        x_min = core_get_x_min(self%state)
     end function get_x_min
     function get_x_max(self) result(x_max)
         class(figure_t), intent(in) :: self; real(wp) :: x_max
-        x_max = figure_get_x_max(self%state)
+        x_max = core_get_x_max(self%state)
     end function get_x_max
     function get_y_min(self) result(y_min)
         class(figure_t), intent(in) :: self; real(wp) :: y_min
-        y_min = figure_get_y_min(self%state)
+        y_min = core_get_y_min(self%state)
     end function get_y_min
     function get_y_max(self) result(y_max)
         class(figure_t), intent(in) :: self; real(wp) :: y_max
-        y_max = figure_get_y_max(self%state)
+        y_max = core_get_y_max(self%state)
     end function get_y_max
 
-    !!=============================================================================
-    !! ADVANCED PLOTTING SECTION
-    !! Specialized plot types: scatter, histograms, statistical plots
-    !!=============================================================================
+    !! ADVANCED PLOTTING - Delegated to core advanced module
     
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
                       colormap, alpha, edgecolor, facecolor, linewidth, &
@@ -469,24 +416,13 @@ contains
         ! Get default color from state
         default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
         
-        ! Delegate to efficient scatter implementation
-        call figure_scatter_operation(self%plots, self%state%plot_count, &
-                                     x, y, s, c, marker, markersize, color, &
-                                     colormap, alpha, edgecolor, facecolor, &
-                                     linewidth, vmin, vmax, label, show_colorbar, &
-                                     default_color)
-        
-        ! Update figure state
-        self%plot_count = self%state%plot_count
-        
-        ! Update data ranges
-        call update_data_ranges_figure(self%plots, self%state, self%state%plot_count)
+        call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
+                         marker, markersize, color, colormap, alpha, edgecolor, &
+                         facecolor, linewidth, vmin, vmax, label, show_colorbar, &
+                         default_color)
     end subroutine scatter
 
-    !!=============================================================================
-    !! SUBPLOT OPERATIONS SECTION
-    !! Multi-panel figure management and subplot-specific operations
-    !!=============================================================================
+    !! SUBPLOT OPERATIONS - Delegated to management module
     
     subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: nrows, ncols

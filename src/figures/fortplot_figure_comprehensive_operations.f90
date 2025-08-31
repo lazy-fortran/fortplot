@@ -21,6 +21,11 @@ module fortplot_figure_comprehensive_operations
     use fortplot_figure_management
     use fortplot_figure_properties_new
     use fortplot_figure_core_ranges, only: update_data_ranges_figure, update_data_ranges_pcolormesh_figure
+    use fortplot_figure_core_operations
+    use fortplot_figure_core_config
+    use fortplot_figure_core_advanced
+    use fortplot_figure_core_accessors
+    use fortplot_figure_core_utils
 
     implicit none
     private
@@ -43,6 +48,7 @@ module fortplot_figure_comprehensive_operations
     public :: figure_subplot_title
     public :: figure_setup_png_backend_for_animation
     public :: figure_extract_rgb_data_for_animation, figure_extract_png_data_for_animation
+    public :: core_clear, core_clear_streamlines, core_destroy
     
     ! Properties module functions  
     public :: figure_get_width, figure_get_height, figure_get_rendered, figure_set_rendered
@@ -52,5 +58,28 @@ module fortplot_figure_comprehensive_operations
     
     ! Additional operations needed by core
     public :: update_data_ranges_figure, update_data_ranges_pcolormesh_figure
+    
+    ! Core operations extracted from main module
+    public :: core_initialize, core_add_plot, core_add_contour, core_add_contour_filled
+    public :: core_add_pcolormesh, core_streamplot, core_savefig, core_savefig_with_status
+    public :: core_show
+    
+    ! Configuration operations from core_config module
+    public :: core_set_xlabel, core_set_ylabel, core_set_title
+    public :: core_set_xscale, core_set_yscale, core_set_xlim, core_set_ylim
+    public :: core_set_line_width, core_grid
+    
+    ! Advanced plotting operations from core_advanced module
+    public :: core_scatter, core_hist, core_boxplot
+    
+    ! Property accessor operations from core_accessors module
+    public :: core_get_width, core_get_height, core_get_rendered, core_set_rendered
+    public :: core_get_plot_count, core_get_plots, core_get_x_min, core_get_x_max
+    public :: core_get_y_min, core_get_y_max, core_backend_color, core_backend_associated
+    public :: core_backend_line, core_setup_png_backend_for_animation
+    public :: core_extract_rgb_data_for_animation, core_extract_png_data_for_animation
+    
+    ! Utility operations from core_utils module
+    public :: core_set_ydata, core_figure_legend
 
 end module fortplot_figure_comprehensive_operations
