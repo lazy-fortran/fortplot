@@ -36,7 +36,10 @@ contains
         if (size(plot_data%x) == 0 .or. size(plot_data%y) == 0) return
         if (size(plot_data%x) /= size(plot_data%y)) return
         
-        ! Draw markers
+        ! Sync marker colors with plot color (edge and face)
+        call backend%set_marker_colors(plot_data%color(1), plot_data%color(2), plot_data%color(3), &
+                                       plot_data%color(1), plot_data%color(2), plot_data%color(3))
+        ! Keep backend current color in sync as well for backends that use it
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
         
         do i = 1, size(plot_data%x)
