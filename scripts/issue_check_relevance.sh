@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
 set -euo pipefail
-exec /home/ert/code/prompts/scripts/issue_check_relevance.sh "$@"
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$script_dir/../../prompts/scripts/issue_check_relevance.sh" "$@"
