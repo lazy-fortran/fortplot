@@ -39,9 +39,7 @@ contains
         real(wp), intent(in) :: x, y
         real(wp), intent(out) :: pdf_x, pdf_y
         real(wp) :: x_range, y_range
-        real(wp) :: x_scale, y_scale, common_scale
-        real(wp) :: effective_width, effective_height
-        real(wp) :: x_offset, y_offset
+        real(wp) :: x_scale, y_scale
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         
         ! Calculate data ranges with epsilon protection
@@ -60,28 +58,16 @@ contains
         
         if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
         
-        ! Calculate potential scales for each axis
+        ! Calculate independent scales for each axis to fill available plot area
+        ! This fixes both scale regression and missing markers issues
         x_scale = real(ctx%plot_area%width, wp) / x_range
         y_scale = real(ctx%plot_area%height, wp) / y_range
         
-        ! Use the smaller scale to preserve aspect ratio
-        common_scale = min(x_scale, y_scale)
-        
-        ! Calculate effective dimensions using common scale
-        effective_width = x_range * common_scale
-        effective_height = y_range * common_scale
-        
-        ! Center the plot within the plot area
-        x_offset = (real(ctx%plot_area%width, wp) - effective_width) * 0.5_wp
-        y_offset = (real(ctx%plot_area%height, wp) - effective_height) * 0.5_wp
-        
-        ! Transform coordinates with aspect ratio preservation
-        pdf_x = (x - ctx%x_min) * common_scale + &
-                real(ctx%plot_area%left, wp) + x_offset
+        ! Transform coordinates using independent scales to fill plot area
+        pdf_x = (x - ctx%x_min) * x_scale + real(ctx%plot_area%left, wp)
         
         ! PDF coordinates: Y=0 at bottom, so transform data coordinates directly
-        pdf_y = (y - ctx%y_min) * common_scale + &
-                real(ctx%plot_area%bottom, wp) + y_offset
+        pdf_y = (y - ctx%y_min) * y_scale + real(ctx%plot_area%bottom, wp)
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
@@ -247,17 +233,15 @@ contains
     subroutine safe_coordinate_transform(x, y, x_min, x_max, y_min, y_max, &
                                         plot_left, plot_width, plot_bottom, plot_height, &
                                         pdf_x, pdf_y)
-        !! Safe coordinate transformation with aspect ratio preservation
-        !! Updated to maintain correct aspect ratios like normalize_to_pdf_coords
+        !! Safe coordinate transformation to fill available plot area
+        !! Restored to use independent scales for X and Y axes - fixes markers and scaling
         real(wp), intent(in) :: x, y
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: plot_left, plot_width, plot_bottom, plot_height
         real(wp), intent(out) :: pdf_x, pdf_y
         real(wp), parameter :: EPSILON = 1.0e-10_wp
         real(wp) :: x_range, y_range
-        real(wp) :: x_scale, y_scale, common_scale
-        real(wp) :: effective_width, effective_height
-        real(wp) :: x_offset, y_offset
+        real(wp) :: x_scale, y_scale
         
         ! Calculate ranges with epsilon protection
         x_range = x_max - x_min
@@ -274,24 +258,13 @@ contains
         
         if (abs(x_range) < EPSILON .or. abs(y_range) < EPSILON) return
         
-        ! Calculate potential scales for each axis
+        ! Calculate independent scales for each axis to fill available plot area
         x_scale = plot_width / x_range
         y_scale = plot_height / y_range
         
-        ! Use the smaller scale to preserve aspect ratio
-        common_scale = min(x_scale, y_scale)
-        
-        ! Calculate effective dimensions using common scale
-        effective_width = x_range * common_scale
-        effective_height = y_range * common_scale
-        
-        ! Center the plot within the plot area
-        x_offset = (plot_width - effective_width) * 0.5_wp
-        y_offset = (plot_height - effective_height) * 0.5_wp
-        
-        ! Transform coordinates with aspect ratio preservation
-        pdf_x = (x - x_min) * common_scale + plot_left + x_offset
-        pdf_y = (y - y_min) * common_scale + plot_bottom + y_offset
+        ! Transform coordinates using independent scales to fill plot area
+        pdf_x = (x - x_min) * x_scale + plot_left
+        pdf_y = (y - y_min) * y_scale + plot_bottom
         
     end subroutine safe_coordinate_transform
     
