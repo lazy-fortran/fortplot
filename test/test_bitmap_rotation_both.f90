@@ -4,6 +4,7 @@ program test_bitmap_rotation_both
     use fortplot_png_encoder, only: bitmap_to_png_buffer
     use fortplot_png, only: write_png_file
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_test_helpers, only: test_get_temp_path
     implicit none
     
     integer(1), allocatable :: bitmap(:,:,:), cw_bitmap(:,:,:), ccw_bitmap(:,:,:), full_rotation_bitmap(:,:,:)
@@ -62,11 +63,11 @@ program test_bitmap_rotation_both
     call bitmap_to_png_buffer(ccw_bitmap, height, width, ccw_png_buffer)
     call bitmap_to_png_buffer(full_rotation_bitmap, width, height, full_png_buffer)
     
-    ! Write PNG files
-    call write_png_file("test_rotation_original.png", width, height, png_buffer)
-    call write_png_file("test_rotation_clockwise.png", height, width, cw_png_buffer)
-    call write_png_file("test_rotation_counter_clockwise.png", height, width, ccw_png_buffer)
-    call write_png_file("test_rotation_180.png", width, height, full_png_buffer)
+    ! Write PNG files (into test output directory)
+    call write_png_file(test_get_temp_path("test_rotation_original.png"), width, height, png_buffer)
+    call write_png_file(test_get_temp_path("test_rotation_clockwise.png"), height, width, cw_png_buffer)
+    call write_png_file(test_get_temp_path("test_rotation_counter_clockwise.png"), height, width, ccw_png_buffer)
+    call write_png_file(test_get_temp_path("test_rotation_180.png"), width, height, full_png_buffer)
     
     print *, "SUCCESS: Both rotation directions working correctly"
     print *, "  Created test_rotation_original.png"

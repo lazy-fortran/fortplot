@@ -4,6 +4,7 @@ program test_issue_885_reproduction
     
     use fortplot
     use iso_fortran_env, only: wp => real64
+    use fortplot_test_helpers, only: test_get_temp_path
     implicit none
     
     integer, parameter :: nx = 5, ny = 4
@@ -45,13 +46,13 @@ program test_issue_885_reproduction
     ! This should work without error messages, but currently shows confusing warnings
     call figure()
     call pcolormesh(x, y, z)
-    call savefig('test_issue_885_reproduction.png')
+    call savefig(test_get_temp_path('test_issue_885_reproduction.png'))
     
     print *, ""
     print *, "=== RESULT VERIFICATION ==="
     
     ! Verify the file was actually created (proving functionality works)
-    inquire(file='test_issue_885_reproduction.png', exist=file_exists)
+    inquire(file=test_get_temp_path('test_issue_885_reproduction.png'), exist=file_exists)
     
     if (file_exists) then
         print *, "✓ SUCCESS: PNG file created successfully (26KB expected)"

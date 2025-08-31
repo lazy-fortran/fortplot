@@ -48,6 +48,8 @@ test-ci:
 	@# Regression guard for Issue #985 (PDF coordinate mapping)
 	@fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@echo "CI essential test suite completed successfully"
+	@# Enforce repository cleanliness: no stray artifacts in root
+	@bash scripts/check_no_root_artifacts.sh
 
 # Run Python examples with fortplot (default mode)
 example_python:

@@ -5,6 +5,7 @@
 !
 program test_issue_854_reproduction
     use fortplot
+    use fortplot_test_helpers, only: test_get_temp_path
     use, intrinsic :: iso_fortran_env, only: wp => real64, output_unit
     implicit none
     
@@ -54,15 +55,15 @@ program test_issue_854_reproduction
     
     ! Save to multiple formats - this should trigger the Issue #854 scenario
     write(output_unit, '(A)') "Saving to PNG format:"
-    call savefig("test_issue_854_reproduction.png")
+    call savefig(test_get_temp_path("test_issue_854_reproduction.png"))
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to PDF format:"
-    call savefig("test_issue_854_reproduction.pdf")
+    call savefig(test_get_temp_path("test_issue_854_reproduction.pdf"))
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "Saving to ASCII format:"
-    call savefig("test_issue_854_reproduction.txt")
+    call savefig(test_get_temp_path("test_issue_854_reproduction.txt"))
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "=== Issue #854 Test Results ==="
