@@ -35,6 +35,8 @@ module fortplot_figure_management
     public :: figure_subplots, figure_subplot_plot, figure_subplot_plot_count
     public :: figure_subplot_set_title, figure_subplot_set_xlabel, figure_subplot_set_ylabel
     public :: figure_subplot_title
+    ! Core delegation wrappers
+    public :: core_clear, core_clear_streamlines, core_destroy
 
 contains
 
@@ -306,5 +308,41 @@ contains
         title = get_subplot_title(subplots_array, subplot_rows, &
                                   subplot_cols, row, col)
     end function figure_subplot_title
+
+    !!=============================================================================
+    !! CORE MODULE DELEGATION WRAPPERS
+    !! Simple wrapper procedures for core module delegation pattern
+    !!=============================================================================
+
+    subroutine core_clear(state, plots, streamlines, subplots_array, subplot_rows, &
+                         subplot_cols, current_subplot, title_target, xlabel_target, &
+                         ylabel_target, plot_count, annotation_count)
+        !! Clear the figure for reuse, preserving backend settings
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
+        integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot, plot_count
+        character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
+        integer, intent(inout) :: annotation_count
+        
+        call figure_clear(state, plots, streamlines, subplots_array, subplot_rows, &
+                         subplot_cols, current_subplot, title_target, xlabel_target, &
+                         ylabel_target, plot_count, annotation_count)
+    end subroutine core_clear
+
+    subroutine core_clear_streamlines(streamlines)
+        type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        call figure_clear_streamlines(streamlines)
+    end subroutine core_clear_streamlines
+
+    subroutine core_destroy(state, plots, streamlines, title_target, xlabel_target, ylabel_target)
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
+        character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
+        
+        call figure_destroy(state, plots, streamlines, title_target, xlabel_target, ylabel_target)
+    end subroutine core_destroy
 
 end module fortplot_figure_management
