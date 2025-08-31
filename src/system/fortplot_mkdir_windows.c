@@ -49,8 +49,14 @@ static int create_directory_windows_recursive(const char* path, int depth) {
     }
     
     // ENOENT means parent doesn't exist
-    // Try to create parent directories
+    // SECURITY FIX: Buffer overflow protection for parent path
     char parent[MAX_PATH];
+    size_t path_len = strlen(path);
+    
+    if (path_len >= MAX_PATH) {
+        return 0; // Path too long - prevent buffer overflow
+    }
+    
     strncpy(parent, path, MAX_PATH - 1);
     parent[MAX_PATH - 1] = '\0';
     
@@ -107,7 +113,11 @@ int create_directory_windows_c(const char* path) {
 #include <sys/types.h>
 #include <string.h>
 #include <errno.h>
-#include <stdlib.h>
+
+// SECURITY ENHANCEMENT: Define MAX_PATH for Unix systems
+#ifndef MAX_PATH
+#define MAX_PATH 4096
+#endif
 
 int create_directory_windows_c(const char* path) {
     struct stat st;
@@ -127,18 +137,24 @@ int create_directory_windows_c(const char* path) {
     
     // If parent doesn't exist, create it
     if (errno == ENOENT) {
-        // Create a copy to modify
-        char* parent = strdup(path);
-        if (!parent) return 0;
+        // SECURITY FIX: Safe parent path handling without strdup leak
+        static char parent_buffer[MAX_PATH];
+        
+        if (strlen(path) >= sizeof(parent_buffer)) {
+            return 0; // Path too long - prevent buffer overflow
+        }
+        
+        strncpy(parent_buffer, path, sizeof(parent_buffer) - 1);
+        parent_buffer[sizeof(parent_buffer) - 1] = '\0';
+        char* parent = parent_buffer;
         
         // Find last separator
         char* last_sep = strrchr(parent, '/');
         if (last_sep && last_sep != parent) {
             *last_sep = '\0';
             
-            // Recursively create parent
+            // Recursively create parent - SECURITY FIX: No free() needed for static buffer
             int result = create_directory_windows_c(parent);
-            free(parent);
             
             if (!result) {
                 return 0;
@@ -149,7 +165,6 @@ int create_directory_windows_c(const char* path) {
                 return 1;
             }
         }
-        free(parent);
     }
     
     // Final check

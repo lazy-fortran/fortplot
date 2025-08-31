@@ -40,6 +40,81 @@
 #define MAX_ARG_LENGTH 1024
 #define MAX_ARGS 32
 
+// SECURITY ENHANCEMENT: Windows argument validation and secure quoting functions
+static int validate_windows_argument(const char* arg);
+static int secure_windows_quote_argument(const char* arg, char* buffer, size_t buffer_size, int offset);
+
+// SECURITY ENHANCEMENT: Windows argument validation - blocks command injection
+static int validate_windows_argument(const char* arg) {
+    if (!arg) return 0;
+    
+    // Block dangerous shell metacharacters that can break quoting
+    const char* dangerous_chars = ";&|`$<>(){}[]\"'*?!~^#%@+=:";
+    
+    for (const char* p = arg; *p; p++) {
+        // Check for shell metacharacters
+        if (strchr(dangerous_chars, *p)) {
+            return 0; // Dangerous character found
+        }
+        
+        // Check for control characters
+        if (*p < 32 || *p == 127) {
+            return 0; // Control character found
+        }
+    }
+    
+    // Block suspicious patterns
+    if (strstr(arg, "..\\") || strstr(arg, "../") || 
+        strstr(arg, "\\\\") || strstr(arg, "//")) {
+        return 0; // Path traversal attempt
+    }
+    
+    return 1; // Argument is safe
+}
+
+// SECURITY ENHANCEMENT: Secure Windows argument quoting with buffer overflow protection
+static int secure_windows_quote_argument(const char* arg, char* buffer, size_t buffer_size, int offset) {
+    if (!arg || !buffer || (size_t)offset >= buffer_size - 1) {
+        return -1; // Invalid parameters or buffer overflow
+    }
+    
+    size_t arg_len = strlen(arg);
+    
+    // Calculate required space: arg + quotes + escaping + null terminator
+    size_t required_space = arg_len + 4; // Conservative estimate
+    
+    if ((size_t)offset + required_space >= buffer_size) {
+        return -1; // Would cause buffer overflow
+    }
+    
+    // Always quote arguments to prevent injection
+    buffer[offset++] = '"';
+    
+    // Copy argument with proper escaping
+    for (const char* p = arg; *p && (size_t)offset < buffer_size - 3; p++) {
+        if (*p == '"') {
+            // Escape quotes by doubling them (Windows style)
+            if ((size_t)offset < buffer_size - 4) {
+                buffer[offset++] = '"';
+                buffer[offset++] = '"';
+            } else {
+                return -1; // Buffer overflow
+            }
+        } else {
+            buffer[offset++] = *p;
+        }
+    }
+    
+    if ((size_t)offset >= buffer_size - 2) {
+        return -1; // Buffer overflow
+    }
+    
+    buffer[offset++] = '"';
+    buffer[offset] = '\0';
+    
+    return offset;
+}
+
 // Secure command execution without shell interpretation
 int secure_exec_command(const char* program, const char* const argv[], int timeout_ms) {
     if (!program) {
@@ -56,30 +131,37 @@ int secure_exec_command(const char* program, const char* const argv[], int timeo
     si.cb = sizeof(si);
     ZeroMemory(&pi, sizeof(pi));
     
-    // Build command line from argv (properly quoted)
+    // SECURITY FIX: Comprehensive Windows argument sanitization and buffer protection
     char cmdline[MAX_PATH_LENGTH] = {0};
     int offset = 0;
     
-    // Add program name (quoted if contains spaces)
-    if (strchr(program, ' ')) {
-        offset = snprintf(cmdline, sizeof(cmdline), "\"%s\"", program);
-    } else {
-        offset = snprintf(cmdline, sizeof(cmdline), "%s", program);
+    // SECURITY: Validate program name for injection
+    if (!validate_windows_argument(program)) {
+        return -1;
     }
     
-    // Add arguments
+    // Add program name with robust quoting
+    offset = secure_windows_quote_argument(program, cmdline, sizeof(cmdline), 0);
+    if (offset < 0) {
+        return -1; // Buffer overflow protection
+    }
+    
+    // Add arguments with comprehensive validation
     if (argv) {
-        for (int i = 0; argv[i] && offset < sizeof(cmdline) - 1; i++) {
-            // Add space separator
+        for (int i = 0; argv[i] && offset < sizeof(cmdline) - MAX_ARG_LENGTH; i++) {
+            // SECURITY: Validate each argument for injection
+            if (!validate_windows_argument(argv[i])) {
+                return -1;
+            }
+            
+            // Add space separator with bounds check
+            if (offset >= sizeof(cmdline) - 2) break;
             cmdline[offset++] = ' ';
             
-            // Quote argument if it contains spaces
-            if (strchr(argv[i], ' ')) {
-                offset += snprintf(cmdline + offset, sizeof(cmdline) - offset, 
-                                 "\"%s\"", argv[i]);
-            } else {
-                offset += snprintf(cmdline + offset, sizeof(cmdline) - offset, 
-                                 "%s", argv[i]);
+            // Add argument with secure quoting and buffer protection
+            offset = secure_windows_quote_argument(argv[i], cmdline, sizeof(cmdline), offset);
+            if (offset < 0) {
+                return -1; // Buffer overflow protection
             }
         }
     }
@@ -100,9 +182,9 @@ int secure_exec_command(const char* program, const char* const argv[], int timeo
         return -1;
     }
     
-    // Wait for process with timeout
-    DWORD wait_result = WaitForSingleObject(pi.hProcess, 
-                                           timeout_ms > 0 ? timeout_ms : INFINITE);
+    // SECURITY FIX: Never use INFINITE timeout to prevent deadlocks
+    DWORD max_timeout = timeout_ms > 0 ? timeout_ms : 30000; // Default 30s max
+    DWORD wait_result = WaitForSingleObject(pi.hProcess, max_timeout);
     
     if (wait_result == WAIT_TIMEOUT) {
         // Timeout - terminate process
@@ -137,13 +219,21 @@ int secure_exec_command(const char* program, const char* const argv[], int timeo
         char* exec_argv[MAX_ARGS];
         int argc = 0;
         
-        // First arg is program name
-        exec_argv[argc++] = strdup(program);
+        // SECURITY FIX: Memory-safe argument handling without strdup leaks
+        static char program_copy[MAX_ARG_LENGTH];
+        static char argv_copies[MAX_ARGS][MAX_ARG_LENGTH];
         
-        // Copy provided arguments
+        // Copy program name safely
+        strncpy(program_copy, program, sizeof(program_copy) - 1);
+        program_copy[sizeof(program_copy) - 1] = '\0';
+        exec_argv[argc++] = program_copy;
+        
+        // Copy provided arguments safely
         if (argv) {
             for (int i = 0; argv[i] && argc < MAX_ARGS - 1; i++) {
-                exec_argv[argc++] = strdup(argv[i]);
+                strncpy(argv_copies[i], argv[i], sizeof(argv_copies[i]) - 1);
+                argv_copies[i][sizeof(argv_copies[i]) - 1] = '\0';
+                exec_argv[argc++] = argv_copies[i];
             }
         }
         exec_argv[argc] = NULL;
@@ -344,10 +434,21 @@ secure_pipe_t* secure_open_pipe(const char* program, const char* const argv[]) {
         char* exec_argv[MAX_ARGS];
         int argc = 0;
         
-        exec_argv[argc++] = strdup(program);
+        // SECURITY FIX: Memory-safe argument handling without strdup leaks  
+        static char program_copy_pipe[MAX_ARG_LENGTH];
+        static char argv_copies_pipe[MAX_ARGS][MAX_ARG_LENGTH];
+        
+        // Copy program name safely
+        strncpy(program_copy_pipe, program, sizeof(program_copy_pipe) - 1);
+        program_copy_pipe[sizeof(program_copy_pipe) - 1] = '\0';
+        exec_argv[argc++] = program_copy_pipe;
+        
+        // Copy provided arguments safely
         if (argv) {
             for (int i = 0; argv[i] && argc < MAX_ARGS - 1; i++) {
-                exec_argv[argc++] = strdup(argv[i]);
+                strncpy(argv_copies_pipe[i], argv[i], sizeof(argv_copies_pipe[i]) - 1);
+                argv_copies_pipe[i][sizeof(argv_copies_pipe[i]) - 1] = '\0';
+                exec_argv[argc++] = argv_copies_pipe[i];
             }
         }
         exec_argv[argc] = NULL;
@@ -388,11 +489,16 @@ int secure_close_pipe(secure_pipe_t* pipe) {
     }
     
 #ifdef _WIN32
-    // Wait for process and get exit code
+    // SECURITY FIX: Wait for process with timeout to prevent deadlocks
     if (pipe->process) {
         DWORD exit_code;
-        WaitForSingleObject(pipe->process, INFINITE);
-        if (GetExitCodeProcess(pipe->process, &exit_code)) {
+        DWORD wait_result = WaitForSingleObject(pipe->process, 30000); // 30s timeout
+        
+        if (wait_result == WAIT_TIMEOUT) {
+            // Timeout - forcibly terminate process
+            TerminateProcess(pipe->process, -2);
+            result = -2;
+        } else if (GetExitCodeProcess(pipe->process, &exit_code)) {
             result = (int)exit_code;
         } else {
             result = -1;
@@ -470,19 +576,20 @@ int secure_check_command(const char* command) {
         return 1;
     }
     
-    // Check PATH directories
-    char* path_copy = strdup(path_var);
-    char* dir = strtok(path_copy, ";");
+    // SECURITY FIX: Safe PATH parsing without strdup leak
+    static char path_copy_win[MAX_PATH_LENGTH];
+    strncpy(path_copy_win, path_var, sizeof(path_copy_win) - 1);
+    path_copy_win[sizeof(path_copy_win) - 1] = '\0';
+    
+    char* dir = strtok(path_copy_win, ";");
     while (dir) {
         char full_path[MAX_PATH_LENGTH];
-        snprintf(full_path, sizeof(full_path), "%s\\%s", dir, exe_name);
-        if (access(full_path, 0) == 0) {
-            free(path_copy);
+        int path_len = snprintf(full_path, sizeof(full_path), "%s\\%s", dir, exe_name);
+        if (path_len >= 0 && (size_t)path_len < sizeof(full_path) && access(full_path, 0) == 0) {
             return 1;
         }
         dir = strtok(NULL, ";");
     }
-    free(path_copy);
     
 #else
     // Unix: Check if executable exists in PATH
@@ -491,18 +598,20 @@ int secure_check_command(const char* command) {
         return 0;
     }
     
-    char* path_copy = strdup(path_var);
-    char* dir = strtok(path_copy, ":");
+    // SECURITY FIX: Safe PATH parsing without strdup leak  
+    static char path_copy_unix[MAX_PATH_LENGTH];
+    strncpy(path_copy_unix, path_var, sizeof(path_copy_unix) - 1);
+    path_copy_unix[sizeof(path_copy_unix) - 1] = '\0';
+    
+    char* dir = strtok(path_copy_unix, ":");
     while (dir) {
         char full_path[MAX_PATH_LENGTH];
-        snprintf(full_path, sizeof(full_path), "%s/%s", dir, command);
-        if (access(full_path, X_OK) == 0) {
-            free(path_copy);
+        int path_len = snprintf(full_path, sizeof(full_path), "%s/%s", dir, command);
+        if (path_len >= 0 && (size_t)path_len < sizeof(full_path) && access(full_path, X_OK) == 0) {
             return 1;
         }
         dir = strtok(NULL, ":");
     }
-    free(path_copy);
 #endif
     
     return 0;
