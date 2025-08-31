@@ -6,7 +6,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST = 
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry
 
 # Default target
 all: build
@@ -197,6 +197,40 @@ verify-with-evidence: verify-functionality
 	@echo "Verification complete - technical evidence generated"
 	@echo "Evidence directory: test/output/verification/evidence/"
 	@ls -la test/output/verification/evidence/ || true
+
+# --- GitHub issue/PR helpers for Codex loop ---
+issue-branch:
+	@if [ -z "$(ISSUE)" ]; then echo "ISSUE=<number> required"; exit 2; fi
+	@echo "Creating branch for issue #$(ISSUE)"
+	@./scripts/issue_branch.sh $(ISSUE)
+
+issue-open-pr:
+	@if [ -z "$(ISSUE)" ]; then echo "ISSUE=<number> required"; exit 2; fi
+	@./scripts/issue_open_pr.sh $(ISSUE)
+
+pr-merge:
+	@if [ -z "$(PR)" ]; then echo "PR=<number> required"; exit 2; fi
+	@./scripts/pr_merge.sh $(PR) $(ARGS)
+
+pr-cleanup:
+	@if [ -z "$(PR)" ]; then echo "PR=<number> required"; exit 2; fi
+	@./scripts/pr_cleanup.sh $(PR)
+
+issue-loop:
+	@label=$${LABEL-codex-auto}; \
+	if [ "$$label" = "__all__" ]; then \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-1}; \
+	else \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-1}; \
+	fi
+
+issue-loop-dry:
+	@label=$${LABEL-codex-auto}; \
+	if [ "$$label" = "__all__" ]; then \
+		./scripts/issue_loop.sh --all --limit $${LIMIT:-1} --dry-run; \
+	else \
+		./scripts/issue_loop.sh --label "$$label" --limit $${LIMIT:-1} --dry-run; \
+	fi
 
 # File size compliance verification - fraud prevention
 verify-size-compliance:
