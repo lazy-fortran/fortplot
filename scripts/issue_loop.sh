@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 # Orchestrate issue-by-issue workflow for Codex sessions
-# - Select issues by label (opt-in), create branch, open PR (draft), and print next steps
-# Usage: scripts/issue_loop.sh [--label codex-auto] [--limit 1] [--dry-run]
+# - Select issues (default: all), create branch, open PR (draft), and print next steps
+# Usage: scripts/issue_loop.sh [--label <name>|--all] [--limit N] [--dry-run] [--autonomous]
 set -euo pipefail
 
-label="codex-auto"
-limit=1
+label=""          # default: all issues
+limit=999999      # default: process all fetched issues
 dry_run=0
+autonomous=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --label) label="$2"; shift 2;;
     --limit) limit="$2"; shift 2;;
     --all) label=""; shift 1;;
     --dry-run) dry_run=1; shift 1;;
+    --autonomous) autonomous=1; shift 1;;
     *) echo "Unknown arg: $1" >&2; exit 2;;
   esac
 done
-
-exit 0
 
 if ! command -v gh >/dev/null 2>&1; then
   echo "gh CLI not found. Install and run 'gh auth login'." >&2
@@ -71,7 +71,11 @@ ensure_clean_main_state() {
 if [[ $dry_run -eq 1 ]]; then
   echo "DRY_RUN: would ensure clean 'main' state"
 else
-  ensure_clean_main_state "before"
+  if [[ $autonomous -eq 1 ]]; then
+    CLEAN_FORCE=1 ensure_clean_main_state "before"
+  else
+    ensure_clean_main_state "before"
+  fi
 fi
 
 # Fetch candidate issues (open, optional label filter)
@@ -104,7 +108,11 @@ for num in $issues; do
   if [[ $dry_run -eq 1 ]]; then
     echo "DRY_RUN: would ensure clean 'main' state"
   else
-    ensure_clean_main_state "before"
+    if [[ $autonomous -eq 1 ]]; then
+      CLEAN_FORCE=1 ensure_clean_main_state "before"
+    else
+      ensure_clean_main_state "before"
+    fi
   fi
   # Early relevance check; auto-close if clearly obsolete
   echo "Pre-checking relevance of issue #$num..."
@@ -159,14 +167,18 @@ for num in $issues; do
   if [[ $dry_run -eq 1 ]]; then
     echo "DRY_RUN: would return to clean 'main' state"
   else
-    if [[ "${CLEAN_FORCE:-}" == "1" ]]; then
-      ensure_clean_main_state "after"
+    if [[ $autonomous -eq 1 ]]; then
+      CLEAN_FORCE=1 ensure_clean_main_state "after"
     else
-      read -r -p "AFTER: Return to clean 'main' and remove untracked files now? [y/N] " ans || ans="n"
-      if [[ "$ans" =~ ^[Yy]$ ]]; then
+      if [[ "${CLEAN_FORCE:-}" == "1" ]]; then
         ensure_clean_main_state "after"
       else
-        echo "Leaving current branch/state as-is per user choice." >&2
+        read -r -p "AFTER: Return to clean 'main' and remove untracked files now? [y/N] " ans || ans="n"
+        if [[ "$ans" =~ ^[Yy]$ ]]; then
+          ensure_clean_main_state "after"
+        else
+          echo "Leaving current branch/state as-is per user choice." >&2
+        fi
       fi
     fi
   fi
