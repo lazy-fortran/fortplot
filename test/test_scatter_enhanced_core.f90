@@ -22,7 +22,14 @@ program test_scatter_enhanced_core
     call test_colormap_integration_comprehensive()
     call test_color_range_handling()
     
-    write(error_unit, '(A)') 'RED PHASE CORE COMPLETE: Basic API tests ready for GREEN phase'
+    ! Consolidated from test_scatter_enhanced_advanced.f90
+    call test_large_dataset_performance()
+    call test_backend_consistency()
+    
+    ! Consolidated from test_scatter_performance.f90
+    call test_scatter_plot_count_efficiency()
+    
+    write(error_unit, '(A)') 'RED PHASE COMPLETE: All scatter tests consolidated and ready for GREEN phase'
     
 contains
 
@@ -246,5 +253,77 @@ contains
         call fig%savefig('test/output/test_color_ranges.png')
         
     end subroutine test_color_range_handling
+    
+    subroutine test_large_dataset_performance()
+        !! Performance test for large datasets - consolidated from test_scatter_enhanced_advanced.f90
+        integer, parameter :: n = 10000
+        real(wp) :: x(n), y(n)
+        integer :: i
+        real :: start_time, end_time
+        
+        write(error_unit, '(A)') 'Testing large dataset performance (10000 points)...'
+        
+        do i = 1, n
+            x(i) = real(i, wp) / real(n, wp)
+            y(i) = sin(20.0_wp * x(i)) + 0.1_wp * cos(100.0_wp * x(i))
+        end do
+        
+        call cpu_time(start_time)
+        call figure()
+        call scatter(x, y, label='Large Dataset')
+        call savefig('test/output/test_large_scatter.png')
+        call cpu_time(end_time)
+        
+        write(error_unit, '(A,F6.2,A)') '  ✓ Large dataset rendered in ', end_time - start_time, ' seconds'
+    end subroutine test_large_dataset_performance
+    
+    subroutine test_backend_consistency()
+        !! Multi-backend consistency test - consolidated from test_scatter_enhanced_advanced.f90
+        real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        real(wp) :: y(5) = [1.0_wp, 2.0_wp, 1.5_wp, 2.5_wp, 2.0_wp]
+        
+        write(error_unit, '(A)') 'Testing multi-backend marker consistency...'
+        
+        call figure()
+        call scatter(x, y, marker='o', label='Circles')
+        call savefig('test/output/test_scatter_png.png')
+        write(error_unit, '(A)') '  ✓ PNG backend consistency'
+        
+        call figure()
+        call scatter(x, y, marker='s', label='Squares')
+        call savefig('test/output/test_scatter_pdf.pdf')
+        write(error_unit, '(A)') '  ✓ PDF backend consistency'
+        
+        call figure()
+        call scatter(x, y, marker='*', label='Stars')
+        call savefig('test/output/test_scatter_ascii.txt')
+        write(error_unit, '(A)') '  ✓ ASCII backend representation'
+    end subroutine test_backend_consistency
+    
+    subroutine test_scatter_plot_count_efficiency()
+        !! Plot count efficiency test - consolidated from test_scatter_performance.f90
+        type(figure_t) :: fig
+        real(wp) :: x(100), y(100)
+        integer :: i, count_before, count_after
+        
+        ! Initialize arrays
+        do i = 1, 100
+            x(i) = real(i, wp)
+            y(i) = x(i)**2
+        end do
+        
+        write(error_unit, '(A)') 'Testing scatter plot count efficiency...'
+        
+        call fig%initialize(640, 480, 'png')
+        count_before = fig%get_plot_count()
+        call fig%scatter(x, y, label='Efficiency Test')
+        count_after = fig%get_plot_count()
+        
+        if (count_after - count_before == 1) then
+            write(error_unit, '(A)') '  ✓ Scatter creates single plot object (efficient)'
+        else
+            write(error_unit, '(A)') '  ✗ Scatter creates multiple plot objects (inefficient)'
+        end if
+    end subroutine test_scatter_plot_count_efficiency
 
 end program test_scatter_enhanced_core
