@@ -14,6 +14,7 @@ module fortplot_raster_axes
 
     private
     public :: raster_draw_axes_and_labels, raster_render_ylabel
+    public :: compute_title_position
 
 contains
 
