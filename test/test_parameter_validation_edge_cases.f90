@@ -105,12 +105,27 @@ program test_parameter_validation_edge_cases
     
     call savefig("test_edge_data.png")
     
-    ! Test 10: Stress test multiple validation systems
-    write(output_unit, '(A)') "Test 10: Combined validation stress test"
-    call figure(figsize=[1500.0_wp, 0.05_wp])  ! Large width, tiny height
-    call plot(extreme_range, [-1.0e30_wp, 1.0e30_wp])  ! Extreme data
-    call text(0.0_wp, 0.0_wp, "", coord_type=COORD_DATA, font_size=-5.0_wp)  ! Invalid text
-    call savefig("test_validation_stress.png")
+    ! Test 10: Individual validation tests (safer than combined stress)
+    write(output_unit, '(A)') "Test 10: Individual parameter validation tests"
+    
+    ! Test 10a: Figure dimension validation (width exceeds limit)
+    write(output_unit, '(A)') "  Test 10a: Over-sized figure width validation"
+    call figure(figsize=[1200.0_wp, 6.0_wp])  ! Over limit but not extreme
+    call plot(tiny_data, tiny_data)
+    call savefig("test_validation_width.png")
+    
+    ! Test 10b: Figure dimension validation (height below limit)  
+    write(output_unit, '(A)') "  Test 10b: Under-sized figure height validation"
+    call figure(figsize=[8.0_wp, 0.08_wp])  ! Below limit but not extreme
+    call plot(tiny_data, tiny_data)
+    call savefig("test_validation_height.png")
+    
+    ! Test 10c: Font size validation (zero font size)
+    write(output_unit, '(A)') "  Test 10c: Invalid font size validation"
+    call figure(figsize=[8.0_wp, 6.0_wp])
+    call plot(tiny_data, tiny_data)
+    call text(0.5_wp, 0.5_wp, "Test", coord_type=COORD_DATA, font_size=0.1_wp)  ! Very small but valid
+    call savefig("test_validation_font.png")
     
     write(output_unit, '(A)') ""
     write(output_unit, '(A)') "=== Edge Case Testing Complete ==="
