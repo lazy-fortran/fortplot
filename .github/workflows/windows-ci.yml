@@ -83,9 +83,12 @@ jobs:
       run: |
         echo Running all tests with built-in timeout protection...
         set FORTPLOT_ENABLE_FFMPEG=1
+        set OMP_NUM_THREADS=2
+        set FORTPLOT_WINDOWS_CI=1
         echo === Built-in timeout protection active ===
         echo FFmpeg pipe timeouts: 5 seconds
         echo System command timeouts: 3 seconds  
+        echo Parallel threads: 2 (Windows CI optimization)
         echo Set FORTPLOT_DEBUG_TIMEOUT=1 for verbose logging
         echo ===============================================
         fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"

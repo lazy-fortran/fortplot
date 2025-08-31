@@ -12,19 +12,21 @@ module fortplot_system_timeout
     public :: get_windows_timeout_ms
     public :: sleep_ms
 
-    ! Windows CI timeout settings
-    integer, parameter :: WINDOWS_CI_TIMEOUT_MS = 5000  ! 5 seconds max for any command
+    ! Windows CI timeout settings - reduced for aggressive performance
+    integer, parameter :: WINDOWS_CI_TIMEOUT_MS = 3000  ! 3 seconds max for any command (optimized)
     integer, parameter :: UNIX_DEFAULT_TIMEOUT_MS = 10000  ! 10 seconds for Unix
+    integer, parameter :: WINDOWS_CI_AGGRESSIVE_TIMEOUT_MS = 2000  ! 2 seconds for known slow operations
     
     ! SECURITY NOTE: C interface bindings removed for security compliance
 
 contains
 
     function get_windows_timeout_ms() result(timeout_ms)
-        !! Get appropriate timeout for Windows CI operations
+        !! Get appropriate timeout for Windows CI operations with aggressive optimization
         integer :: timeout_ms
-        character(len=256) :: ci_env
+        character(len=256) :: ci_env, windows_ci_env
         integer :: status
+        logical :: is_windows_ci
         
         ! Default timeout
         if (is_windows()) then
@@ -33,16 +35,28 @@ contains
             timeout_ms = UNIX_DEFAULT_TIMEOUT_MS
         end if
         
+        ! Check for Windows CI environment variable (set by workflow)
+        call get_environment_variable("FORTPLOT_WINDOWS_CI", windows_ci_env, status=status)
+        is_windows_ci = (status == 0 .and. len_trim(windows_ci_env) > 0)
+        
         ! Check if in CI - use shorter timeout
         call get_environment_variable("CI", ci_env, status=status)
         if (status == 0 .and. len_trim(ci_env) > 0) then
-            timeout_ms = WINDOWS_CI_TIMEOUT_MS  ! Force short timeout in CI
+            if (is_windows_ci) then
+                timeout_ms = WINDOWS_CI_AGGRESSIVE_TIMEOUT_MS  ! Extra aggressive for Windows CI
+            else
+                timeout_ms = WINDOWS_CI_TIMEOUT_MS  ! Force short timeout in CI
+            end if
             return
         end if
         
         call get_environment_variable("GITHUB_ACTIONS", ci_env, status=status)
         if (status == 0 .and. len_trim(ci_env) > 0) then
-            timeout_ms = WINDOWS_CI_TIMEOUT_MS  ! Force short timeout in GitHub Actions
+            if (is_windows_ci) then
+                timeout_ms = WINDOWS_CI_AGGRESSIVE_TIMEOUT_MS  ! Extra aggressive for Windows CI
+            else
+                timeout_ms = WINDOWS_CI_TIMEOUT_MS  ! Force short timeout in GitHub Actions
+            end if
             return
         end if
     end function get_windows_timeout_ms
@@ -61,14 +75,28 @@ contains
     end subroutine system_command_timeout
     
     subroutine sleep_ms(milliseconds)
-        !! Sleep for specified milliseconds with Windows CI safety timeout
+        !! Sleep for specified milliseconds with Windows CI safety timeout and performance optimization
         integer, intent(in) :: milliseconds
         real :: seconds
         integer :: start_count, end_count, count_rate, target_count
-        integer :: safety_counter, max_iterations
+        integer :: safety_counter, max_iterations, adjusted_sleep
+        character(len=256) :: windows_ci_env
+        integer :: status
+        logical :: is_windows_ci
+        
+        ! Check for Windows CI environment for performance optimization
+        call get_environment_variable("FORTPLOT_WINDOWS_CI", windows_ci_env, status=status)
+        is_windows_ci = (status == 0 .and. len_trim(windows_ci_env) > 0)
+        
+        ! Aggressive optimization for Windows CI
+        if (is_windows_ci) then
+            adjusted_sleep = min(milliseconds, 100)  ! Cap sleep at 100ms for Windows CI
+        else
+            adjusted_sleep = milliseconds
+        end if
         
         ! Convert milliseconds to seconds for system_clock
-        seconds = real(milliseconds) / 1000.0
+        seconds = real(adjusted_sleep) / 1000.0
         
         ! Use system_clock for precise timing
         call system_clock(start_count, count_rate)
@@ -82,7 +110,11 @@ contains
         target_count = int(seconds * real(count_rate))
         
         ! Safety timeout: maximum iterations to prevent infinite loops
-        max_iterations = max(1000, milliseconds * 2)  ! At least 1000, or 2x requested ms
+        if (is_windows_ci) then
+            max_iterations = max(500, adjusted_sleep)  ! Reduced iterations for Windows CI
+        else
+            max_iterations = max(1000, adjusted_sleep * 2)  ! Standard iterations
+        end if
         safety_counter = 0
         
         do
