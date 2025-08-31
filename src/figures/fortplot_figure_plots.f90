@@ -46,7 +46,8 @@ contains
             if (len_trim(parsed_linestyle) > 0) then
                 ls = trim(parsed_linestyle)
             else
-                ls = '-'  ! Default if only marker specified
+                ! If only a marker was specified, do not draw connecting lines
+                ls = 'none'
             end if
         else
             ls = '-'
