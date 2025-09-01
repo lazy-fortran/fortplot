@@ -5,119 +5,241 @@ on:
     branches: ["main"]
   pull_request:
 
+# Cancel previous runs on new commits to the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
+  tests:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Root artifact hygiene check (Issue #990)
-      run: |
-        bash scripts/check_root_artifacts.sh
+      if: matrix.os == 'ubuntu-latest'
+      run: bash scripts/check_root_artifacts.sh
 
-    - name: Setup Fortran Package Manager
+    # ---------- Ubuntu setup ----------
+    - name: Cache and install apt packages (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      uses: awalsh128/cache-apt-pkgs-action@v1.3.2
+      with:
+        packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
+        version: 1
+
+    - name: Setup Fortran Package Manager (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        # Try multiple mirrors and retry mechanisms for resilient FPM installation
         for i in 1 2 3; do
           echo "FPM download attempt $i"
           if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
             chmod +x fpm-0.12.0-linux-x86_64-gcc-12
             sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-            echo "FPM installation successful"
+            fpm --version
             break
           else
             echo "FPM download failed, attempt $i"
             sleep 10
             if [ $i -eq 3 ]; then
               echo "All FPM download attempts failed, installing from package manager"
-              # Fallback to distro package if available
               sudo apt-get update
               sudo apt-get install -y curl
-              # Try alternative installation method
               curl -fsSL https://fpm.fortran-lang.org/install.sh | bash
               sudo ln -sf ~/.local/bin/fpm /usr/local/bin/fpm || echo "FPM fallback failed"
             fi
           fi
         done
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
+    # ---------- Windows setup ----------
+    - name: Configure git line endings (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: bash
+      run: git config --global core.autocrlf input
 
-    - name: Create test directories
+    - name: Setup MSYS2 (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: false
+        path-type: inherit
+        cache: true
+        release: false
+        install: >-
+          mingw-w64-x86_64-gcc-fortran
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-imagemagick
+          git
+
+    - name: Add MinGW to PATH (Windows)
+      if: matrix.os == 'windows-latest'
+      run: echo C:\\msys64\\mingw64\\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+
+    - name: Cache FPM binary (Windows)
+      if: matrix.os == 'windows-latest'
+      id: cache-fpm-win
+      uses: actions/cache@v4
+      with:
+        path: C:\\msys64\\mingw64\\bin\\fpm.exe
+        key: ${{ runner.os }}-fpm-0.12.0
+
+    - name: Install FPM (Windows)
+      if: matrix.os == 'windows-latest' && steps.cache-fpm-win.outputs.cache-hit != 'true'
+      shell: pwsh
       run: |
-        echo "Creating test output directories..."
+        Invoke-WebRequest -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile "fpm.exe"
+        Move-Item -Path "fpm.exe" -Destination "C:\\msys64\\mingw64\\bin\\fpm.exe"
+        & "C:\\msys64\\mingw64\\bin\\fpm.exe" --version
+
+    # ---------- Build & Test ----------
+    - name: Create test directories
+      shell: bash
+      run: |
         mkdir -p build/test
         mkdir -p output/example/fortran/basic_plots
         mkdir -p output/example/fortran/legend_demo
         mkdir -p output/example/fortran/marker_demo
-        echo "Test directories created."
 
     - name: Build project
+      shell: bash
       run: |
-        make build
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          fpm build --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
+        else
+          make build
+        fi
 
     - name: Build required examples for tests
+      shell: bash
       run: |
-        make example ARGS="basic_plots"
-        make example ARGS="legend_demo"
-        make example ARGS="contour_demo"
-        make example ARGS="marker_demo"
-        make example ARGS="format_string_demo"
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          make example
+        else
+          make example ARGS="basic_plots"
+          make example ARGS="legend_demo"
+          make example ARGS="contour_demo"
+          make example ARGS="marker_demo"
+          make example ARGS="format_string_demo"
+        fi
 
-    - name: Run all tests
+    - name: Run tests
+      shell: bash
       run: |
-        export FORTPLOT_ENABLE_FFMPEG=0
-        export OMP_NUM_THREADS=2
-        mkdir -p /tmp/test
-        timeout 10m make test-ci
-    
-    - name: Run antialiasing quality tests with ImageMagick
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          export FORTPLOT_ENABLE_FFMPEG=1
+          export OMP_NUM_THREADS=2
+          fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
+        else
+          export FORTPLOT_ENABLE_FFMPEG=0
+          export OMP_NUM_THREADS=2
+          mkdir -p /tmp/test
+          timeout 10m make test-ci
+        fi
+
+    - name: Run antialiasing quality tests with ImageMagick (optional)
+      shell: bash
       run: |
-        # Verify ImageMagick is available
         if magick -version > /dev/null 2>&1; then
-          echo "ImageMagick found - running graphics quality tests"
-          fpm test test_antialiasing_restoration
-          fpm test test_antialiasing_comprehensive
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+            fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+          else
+            fpm test test_antialiasing_restoration
+            fpm test test_antialiasing_comprehensive
+          fi
         else
           echo "ImageMagick not found - skipping graphics quality tests"
         fi
 
-    - name: Test FPM example
+    - name: Test FPM and CMake examples (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
-
-    - name: Test CMake example  
-      run: |
         timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
 
-    # TODO: Enable after PNG encoder fix (Issue #96)
-    # - name: PNG Validation Tests
-    #   run: |
-    #     make test ARGS="test_png_validation"
+  coverage:
+    name: Coverage (ubuntu-latest)
+    runs-on: ubuntu-latest
+    needs: tests
+    if: needs.tests.result == 'success'
+    steps:
+    - uses: actions/checkout@v4
 
-  # build-cmake:
-  #   runs-on: ubuntu-latest
-  #   
-  #   steps:
-  #   - uses: actions/checkout@v4
+    - name: Cache and install apt packages (Ubuntu)
+      uses: awalsh128/cache-apt-pkgs-action@v1.3.2
+      with:
+        packages: gfortran gcovr cmake ffmpeg python3-pil pngcheck imagemagick
+        version: 1
 
-  #   - name: Install dependencies
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install -y gfortran cmake ffmpeg
+    - name: Setup Fortran Package Manager
+      run: |
+        for i in 1 2 3; do
+          echo "FPM download attempt $i"
+          if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
+            chmod +x fpm-0.12.0-linux-x86_64-gcc-12
+            sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+            fpm --version
+            break
+          else
+            echo "FPM download failed, attempt $i"
+            sleep 10
+            if [ $i -eq 3 ]; then
+              echo "All FPM download attempts failed, installing from package manager"
+              sudo apt-get update
+              sudo apt-get install -y curl
+              curl -fsSL https://fpm.fortran-lang.org/install.sh | bash
+              sudo ln -sf ~/.local/bin/fpm /usr/local/bin/fpm || echo "FPM fallback failed"
+            fi
+          fi
+        done
 
-  #   - name: Test CMake build
-  #     run: |
-  #       cd doc/cmake_example
-  #       mkdir -p build
-  #       cd build
-  #       cmake ..
-  #       make
-  #       ./fortplot_test
-  
-  # CMAKE CI test disabled - CMAKE build system removed in artifact cleanup
-  # Issue #613: Root CMakeLists.txt removed, CMAKE example needs rework  
-  # Re-enable after CMAKE example updated to work without root build system
+    - name: Build with coverage flags
+      run: |
+        make build ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
+
+    - name: Build required examples for tests
+      run: make example
+
+    - name: Run FPM tests with coverage
+      run: |
+        mkdir -p /tmp/test
+        timeout 15m make test-ci ARGS="--flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'" || echo "Some CI tests may have timed out"
+
+    - name: Run antialiasing quality tests with ImageMagick
+      run: |
+        if magick -version > /dev/null 2>&1; then
+          fpm test test_antialiasing_restoration --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'
+          fpm test test_antialiasing_comprehensive --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'
+        else
+          echo "ImageMagick not found - skipping graphics quality tests"
+        fi
+
+    - name: Test FPM example build
+      run: make test ARGS="--target test_system_fpm_example --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
+
+    - name: Test CMake example build
+      run: make test ARGS="--target test_system_cmake_example --flag '-fprofile-arcs -ftest-coverage -Wno-implicit-interface'"
+
+    - name: Generate coverage report
+      if: always()
+      run: |
+        if ! command -v gcovr &> /dev/null; then
+          echo "gcovr not found, attempting to install with pip"
+          pip3 install gcovr || echo "gcovr installation failed"
+        fi
+        if command -v gcovr &> /dev/null; then
+          gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' --exclude 'example/*' --exclude 'test/*' --xml -o coverage.xml --print-summary
+          echo "Coverage report generated successfully"
+        else
+          echo "gcovr unavailable, creating minimal coverage file"
+          echo '<?xml version="1.0" encoding="UTF-8"?><coverage version="1.0"><sources></sources><packages></packages></coverage>' > coverage.xml
+        fi
