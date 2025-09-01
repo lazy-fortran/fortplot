@@ -1,7 +1,5 @@
 module fortplot_pdf
-    !! PDF backend main interface - consolidated single coordinate system
-    !! Eliminates dual coordinate systems and function duplication
-    !! Uses plot area approach consistently throughout
+    !! PDF backend main interface (unified coordinates using plot area)
     
     use fortplot_pdf_core
     use fortplot_pdf_text
@@ -165,25 +163,14 @@ contains
         character(len=*), intent(in) :: filename
         logical :: file_success
         
-        ! Automatically render axes if they haven't been rendered yet
-        ! This provides better UX for low-level PDF API users
         call this%render_axes()
-        
-        ! Combine vector (stream_writer) and text (core_ctx) streams
-        ! Draw vector content first, then text so labels appear on top
         if (len_trim(this%core_ctx%stream_data) > 0) then
             this%core_ctx%stream_data = trim(this%stream_writer%content_stream)//new_line('a')//trim(this%core_ctx%stream_data)
         else
             this%core_ctx%stream_data = this%stream_writer%content_stream
         end if
         call write_pdf_file(this%core_ctx, filename, file_success)
-        
-        ! If file creation failed, continue without ERROR STOP
-        ! The wrapper functions will detect the missing file and handle appropriately
-        if (.not. file_success) then
-            ! Silent failure - let the wrapper detect and report the error
-            return
-        end if
+        if (.not. file_success) return
     end subroutine write_pdf_file_facade
     
     subroutine update_coord_context(this)
@@ -306,30 +293,17 @@ contains
         
         do i = 1, size(z_grid, 1) - 1
             do j = 1, size(z_grid, 2) - 1
-                ! Get cell value
                 value = z_grid(i, j)
-                
-                ! Handle edge case where z_max == z_min
                 if (abs(z_max - z_min) > EPSILON_COMPARE) then
                     norm_value = (value - z_min) / (z_max - z_min)
                 else
                     norm_value = 0.5_wp
                 end if
-                
-                ! Clamp to [0, 1] range for safety
                 norm_value = max(0.0_wp, min(1.0_wp, norm_value))
-                
-                ! Simple grayscale color (colormaps should be handled at higher level)
                 color = [norm_value, norm_value, norm_value]
-                
-                ! Set fill color using validated method
                 call this%stream_writer%write_color(color(1), color(2), color(3))
-                
-                ! Define quad corners
                 x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
                 y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
-                
-                ! Fill cell
                 call this%fill_quad(x_quad, y_quad)
             end do
         end do
@@ -508,20 +482,5 @@ contains
         this%axes_rendered = .true.
     end subroutine render_pdf_axes_wrapper
     
-    subroutine calculate_pdf_plot_area(canvas_width, canvas_height, margins, plot_area)
-        !! Calculate plot area for PDF backend (mathematical coordinates: Y=0 at bottom)
-        !! This corrects the coordinate system mismatch from the image-based calculation
-        integer, intent(in) :: canvas_width, canvas_height
-        type(plot_margins_t), intent(in) :: margins
-        type(plot_area_t), intent(out) :: plot_area
-        
-        ! Calculate positions for mathematical coordinate system (Y=0 at bottom)
-        plot_area%left = int(margins%left * real(canvas_width, wp))
-        plot_area%width = int(margins%right * real(canvas_width, wp)) - plot_area%left
-        
-        ! For PDF mathematical coordinates (Y=0 at bottom), use direct calculation
-        plot_area%bottom = int(margins%bottom * real(canvas_height, wp))
-        plot_area%height = int(margins%top * real(canvas_height, wp)) - plot_area%bottom
-    end subroutine calculate_pdf_plot_area
     
 end module fortplot_pdf
