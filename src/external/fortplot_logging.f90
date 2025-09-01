@@ -7,7 +7,7 @@ module fortplot_logging
     !! - Automatic CI detection: GITHUB_ACTIONS, CI, CONTINUOUS_INTEGRATION
     !! - FORTPLOT_FORCE_WARNINGS: Force warnings even in CI environments
     
-    use fortplot_string_utils, only: to_lowercase, parse_boolean_env
+    use fortplot_string_utils, only: parse_boolean_env
     implicit none
     private
     

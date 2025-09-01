@@ -6,6 +6,7 @@ module fortplot_utils
     !! by grouping related utility functions together.
     
     use fortplot_context, only: plot_context
+    use fortplot_string_utils, only: to_lowercase
     use fortplot_png, only: create_png_canvas
     use fortplot_pdf, only: create_pdf_canvas
     use fortplot_ascii, only: create_ascii_canvas
@@ -14,7 +15,7 @@ module fortplot_utils
     
     private
     public :: get_backend_from_filename, initialize_backend
-    public :: to_lowercase, ensure_directory_exists
+    public :: ensure_directory_exists
     
 contains
 
@@ -86,28 +87,8 @@ contains
         end select
     end subroutine initialize_backend
 
-    function to_lowercase(input) result(output)
-        !! Convert string to lowercase
-        !! 
-        !! @param input: Input string
-        !! @return output: Lowercase string
-        
-        character(len=*), intent(in) :: input
-        character(len=len(input)) :: output
-        integer :: i, char_code
-        
-        do i = 1, len(input)
-            char_code = iachar(input(i:i))
-            if (char_code >= 65 .and. char_code <= 90) then
-                ! Convert uppercase A-Z to lowercase a-z
-                output(i:i) = achar(char_code + 32)
-            else
-                output(i:i) = input(i:i)
-            end if
-        end do
-    end function to_lowercase
-
-    ! Note: boolean env parsing is provided by src/utilities/core/fortplot_string_utils.f90
+    ! Note: to_lowercase and boolean env parsing are provided by
+    ! src/utilities/core/fortplot_string_utils.f90
 
     subroutine ensure_directory_exists(filepath)
         !! Ensure output directory exists for a given filepath
