@@ -25,6 +25,15 @@ make example ARGS="pcolormesh_demo"
 - **Cell-centered data**: Each cell shows one data value
 - **Automatic scaling**: Data range mapped to colors
 
+## Array Dimensions (No-Warning Guide)
+
+- Standard scientific layout: provide `z(ny, nx)` with `x(nx+1)` and `y(ny+1)`.
+  This is the default convention and does not produce transpose warnings.
+- C-style layout `z(nx, ny)` is accepted as well; data are transposed internally
+  to match plotting axes. Coordinate arrays remain `x(nx+1)` and `y(ny+1)`.
+- Invalid shapes (that do not match either convention) are rejected with a clear
+  error explaining the expected dimensions.
+
 ## Key Differences from Contour
 
 - **Pcolormesh**: Shows actual data values as colored cells
@@ -113,4 +122,3 @@ Y coordinate
 > **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
-
