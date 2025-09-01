@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 def list_items(path):
@@ -43,3 +44,17 @@ def test_src_subfolder_item_limits():
         f"Folder item count exceeds guidance (> {soft_limit}) in: "
         + ", ".join(f"{path} ({count})" for path, count in violations)
     )
+
+
+def main() -> int:
+    try:
+        test_src_subfolder_item_limits()
+    except AssertionError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print("PASS: src/* subfolder item limits respected (≤20 soft, ≤50 hard)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
