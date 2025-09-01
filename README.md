@@ -327,7 +327,7 @@ fpm build --flag "-Wtrampolines -Werror=trampolines"
 # CMake: Automatic security flags (see CMakeLists.txt lines 36-47)
 cmake -B build && cmake --build build
 
-# Standard development (FPM default) 
+# Standard development (FPM default)
 make build  # Uses fpm.toml configuration
 ```
 
@@ -349,8 +349,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization with arrows
 - [x] Enhanced scatter plots (`scatter`) with size/color mapping and multiple marker shapes
-- [ ] Bar charts (`bar`) - Not yet implemented
-- [ ] Histograms (`hist`) - Not yet implemented
+- [x] Bar charts (`bar`, `barh`)
+- [x] Histograms (`hist`, `histogram`)
 - [ ] Images (`imshow`)
 
 ### Backends
