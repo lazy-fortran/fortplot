@@ -71,22 +71,16 @@ jobs:
         $msys2Dir = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) '_msys2'
         echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-    - name: Cache full MSYS2 installation (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: actions/cache@v4
-      with:
-        path: ${{ env.MSYS2_DIR }}
-        key: ${{ runner.os }}-msys2-full-${{ hashFiles('.github/workflows/ci.yml') }}
-
     - name: Setup MSYS2 (Windows)
       if: matrix.os == 'windows-latest'
+      id: msys2
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: false
+        update: true           # Ensure pacman state is fresh on first run
         path-type: inherit
-        cache: false           # Rely on folder cache for full install
-        release: false         # Reuse existing install if present
+        cache: true            # Use builtin package cache for reliability
+        release: true          # Install from release tarball into location
         location: ${{ env.MSYS2_DIR }}
         install: >-
           mingw-w64-x86_64-gcc-fortran
@@ -109,11 +103,13 @@ jobs:
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
         if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
-        $dest = Join-Path $msysLoc 'mingw64\bin\fpm.exe'
+        $destDir = Join-Path $msysLoc 'mingw64\bin'
+        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+        $dest = Join-Path $destDir 'fpm.exe'
         if (Test-Path $dest) {
           & $dest --version
         } else {
-          Invoke-WebRequest -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile $dest
+          Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile $dest
           & $dest --version
         }
 
