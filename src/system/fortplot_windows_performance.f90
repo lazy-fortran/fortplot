@@ -8,6 +8,7 @@ module fortplot_windows_performance
     
     use iso_fortran_env, only: int32, real64
     use iso_c_binding, only: c_char, c_int, c_null_char
+    use fortplot_string_utils, only: parse_boolean_env
     implicit none
     private
     
@@ -85,18 +86,18 @@ contains
         
         ! Check for performance override flags
         call get_environment_variable("FORTPLOT_USE_MEMORY_BACKEND", env_value, status=stat)
-        if (stat == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true")) then
-            global_config%use_memory_backend = .true.
+        if (stat == 0 .and. len_trim(env_value) > 0) then
+            if (parse_boolean_env(env_value)) global_config%use_memory_backend = .true.
         end if
         
         call get_environment_variable("FORTPLOT_BATCH_IO", env_value, status=stat)
-        if (stat == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true")) then
-            global_config%batch_file_operations = .true.
+        if (stat == 0 .and. len_trim(env_value) > 0) then
+            if (parse_boolean_env(env_value)) global_config%batch_file_operations = .true.
         end if
         
         call get_environment_variable("FORTPLOT_MINIMIZE_IO", env_value, status=stat)
-        if (stat == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true")) then
-            global_config%minimize_io = .true.
+        if (stat == 0 .and. len_trim(env_value) > 0) then
+            if (parse_boolean_env(env_value)) global_config%minimize_io = .true.
         end if
         
         ! Set optimal temp directory
@@ -113,7 +114,7 @@ contains
         
         ! Log configuration if in debug mode
         call get_environment_variable("FORTPLOT_DEBUG", env_value, status=stat)
-        if (stat == 0 .and. (trim(env_value) == "1" .or. trim(env_value) == "true")) then
+        if (stat == 0 .and. len_trim(env_value) > 0 .and. parse_boolean_env(env_value)) then
             print *, "Windows Performance Configuration:"
             print *, "  Memory backend: ", global_config%use_memory_backend
             print *, "  Batch I/O: ", global_config%batch_file_operations

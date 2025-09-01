@@ -107,6 +107,8 @@ contains
         end do
     end function to_lowercase
 
+    ! Note: boolean env parsing is provided by src/utilities/core/fortplot_string_utils.f90
+
     subroutine ensure_directory_exists(filepath)
         !! Ensure output directory exists for a given filepath
         !! Extracts the parent directory and creates it securely using
