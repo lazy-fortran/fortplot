@@ -33,7 +33,9 @@ class TestPdfTextVisibility(unittest.TestCase):
             self.assertGreater(os.path.getsize(pdf_path), 200, "PDF file too small (likely empty)")
 
             # Check uncompressed content stream for text drawing operators
-            data = open(pdf_path, 'rb').read()
+            # Read file safely and search for uncompressed text operators
+            with open(pdf_path, 'rb') as f:
+                data = f.read()
             # PDF produced by fortplot is plain-text streams; search in bytes
             self.assertIn(b" Tj", data, "No text show (Tj) operator found in PDF")
             self.assertIn(b" Tm", data, "No text matrix (Tm) operator found in PDF")
