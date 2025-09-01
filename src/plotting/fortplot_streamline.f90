@@ -2,6 +2,7 @@ module fortplot_streamline
     use fortplot_streamline_integrator, only: integration_params_t, dopri5_integrate
     use fortplot_streamline_placement, only: stream_mask_t, coordinate_mapper_t, generate_spiral_seeds
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_logging, only: log_error
     implicit none
     private
     
@@ -457,7 +458,9 @@ contains
         real(wp), intent(in) :: x, y
         
         if (.not. associated(current_velocity_context%u_func)) then
-            error stop 'ERROR: u_func not set in velocity context'
+            call log_error('streamline: u_func not set in velocity context')
+            u_vel = 0.0_wp
+            return
         end if
         
         u_vel = real(current_velocity_context%u_func(real(x), real(y)), wp)
@@ -472,7 +475,9 @@ contains
         real(wp), intent(in) :: x, y
         
         if (.not. associated(current_velocity_context%v_func)) then
-            error stop 'ERROR: v_func not set in velocity context'
+            call log_error('streamline: v_func not set in velocity context')
+            v_vel = 0.0_wp
+            return
         end if
         
         v_vel = real(current_velocity_context%v_func(real(x), real(y)), wp)
