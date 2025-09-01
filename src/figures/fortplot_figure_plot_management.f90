@@ -95,6 +95,8 @@ contains
         
         ! Store plot data
         plots(plot_count)%plot_type = PLOT_TYPE_LINE
+        if (allocated(plots(plot_count)%x)) deallocate(plots(plot_count)%x)
+        if (allocated(plots(plot_count)%y)) deallocate(plots(plot_count)%y)
         allocate(plots(plot_count)%x(size(x)))
         allocate(plots(plot_count)%y(size(y)))
         plots(plot_count)%x = x

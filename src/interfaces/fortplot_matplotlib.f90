@@ -3,27 +3,19 @@ module fortplot_matplotlib
     !! Main facade module that re-exports all matplotlib-style functions
     !!
     !! This module provides a unified interface to matplotlib-style plotting
-    !! by combining functionality from specialized submodules:
-    !! - fortplot_matplotlib_plotting: Basic plots (plot, scatter, bar, etc.)
-    !! - fortplot_matplotlib_contour: Field plots (contour, pcolormesh, etc.)
-    !! - fortplot_matplotlib_axes: Axis operations (labels, limits, scales)
-    !! - fortplot_matplotlib_io: Figure management (save, show, etc.)
+    !! by re-exporting the consolidated implementation from
+    !! `fortplot_matplotlib_advanced`. Public API remains stable while
+    !! internal modules are simplified.
     
-    use fortplot_matplotlib_plotting, only: &
+    use fortplot_matplotlib_advanced, only: &
         plot, scatter, errorbar, boxplot, &
         bar, barh, hist, histogram, &
-        add_plot, add_errorbar, add_scatter, add_3d_plot
-    
-    use fortplot_matplotlib_contour, only: &
+        add_plot, add_errorbar, add_scatter, add_3d_plot, &
         contour, contour_filled, pcolormesh, streamplot, &
-        add_contour, add_contour_filled, add_pcolormesh, add_surface
-    
-    use fortplot_matplotlib_axes, only: &
+        add_contour, add_contour_filled, add_pcolormesh, add_surface, &
         xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata
-    
-    use fortplot_matplotlib_io, only: &
+        set_line_width, set_ydata, &
         figure, subplot, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
     
