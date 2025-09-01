@@ -316,6 +316,10 @@ contains
         character(len=256) :: tick_cmd
         real(wp) :: tick_length, bottom_y
         
+        ! Ensure tick marks are stroked in black regardless of prior drawing state
+        call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%set_line_width(1.0_wp)
+
         tick_length = PDF_TICK_SIZE
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
         
