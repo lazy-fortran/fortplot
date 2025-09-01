@@ -352,22 +352,22 @@ contains
         
         integer :: i
         real(wp) :: label_x, label_y, bottom_y
-        real(wp) :: x_offset, y_offset
-        
-        x_offset = 5.0_wp   ! Offset for X labels below ticks
-        y_offset = 10.0_wp  ! Offset for Y labels left of ticks
+        real(wp), parameter :: TICK_CHAR_W = 6.0_wp   ! Approximate glyph width at PDF_TICK_LABEL_SIZE
+        real(wp), parameter :: X_TICK_GAP = 15.0_wp   ! Distance below plot for X tick labels
+        real(wp), parameter :: Y_TICK_GAP = 19.0_wp   ! Distance left of plot edge to end of Y tick labels
+
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
-        
-        ! Draw X-axis labels
+
+        ! Draw X-axis labels (center-aligned under each tick)
         do i = 1, num_x
-            label_x = x_positions(i) - 15.0_wp  ! Center horizontally
-            label_y = bottom_y - PDF_TICK_SIZE - x_offset - 10.0_wp
+            label_x = x_positions(i) - 0.5_wp * TICK_CHAR_W * real(len_trim(x_labels(i)), wp)
+            label_y = bottom_y - X_TICK_GAP
             call draw_pdf_text(ctx, label_x, label_y, trim(x_labels(i)))
         end do
-        
-        ! Draw Y-axis labels with overlap detection
+
+        ! Draw Y-axis labels with overlap detection (right-aligned to end at plot_left - Y_TICK_GAP)
         call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
-                                                     plot_left - PDF_TICK_SIZE - y_offset, 0.0_wp)
+                                                     plot_left - Y_TICK_GAP, 0.0_wp)
     end subroutine draw_pdf_tick_labels_with_area
 
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
@@ -392,20 +392,20 @@ contains
             end if
         end if
         
-        ! Draw X-axis label (centered at bottom)
+        ! Draw X-axis label (centered at bottom) — 50px below plot bottom
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
                           real(len_trim(xlabel), wp) * 3.0_wp
-                xlabel_y = plot_area_bottom - 35.0_wp
+                xlabel_y = plot_area_bottom - 50.0_wp
                 call draw_mixed_font_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if
         
-        ! Draw Y-axis label (rotated on left)
+        ! Draw Y-axis label (rotated on left) — end 98px left of plot
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
-                ylabel_x = plot_area_left - 45.0_wp
+                ylabel_x = plot_area_left - 98.0_wp
                 ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
                           real(len_trim(ylabel), wp) * 3.0_wp
                 call draw_rotated_mixed_font_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
