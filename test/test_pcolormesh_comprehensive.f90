@@ -22,8 +22,7 @@ program test_pcolormesh_comprehensive
     call test_memory_safety()
     call test_boundary_conditions()
     
-    ! Integration and normal operation tests
-    call test_integration_success()
+    ! Normal operation tests (integration moved to dedicated test file)
     call test_minimal_valid_cases()
     
     print *, ""
@@ -31,7 +30,6 @@ program test_pcolormesh_comprehensive
     write(*, '(A, I0, A, I0, A)') "Passed: ", passed_tests, "/", total_tests, " tests"
     if (all_tests_passed) then
         print *, "SUCCESS: All pcolormesh core functionality tests PASSED!"
-        call test_issue_698_fraud_investigation()
         stop 0
     else
         print *, "FAILURE: Some core functionality tests failed!"
@@ -343,41 +341,7 @@ contains
         end if
     end subroutine test_large_mesh_boundaries
 
-    subroutine test_integration_success()
-        !! Test integration through main plotting interface
-        print *, ""
-        print *, "5. Testing Integration Success Through Main Interface"
-        
-        call test_fortplot_integration()
-    end subroutine test_integration_success
-
-    subroutine test_fortplot_integration()
-        !! Test pcolormesh through main fortplot interface
-        real(wp) :: x_coords(4), y_coords(3), c_data(2,3)
-        integer :: i, j
-        logical :: file_exists, test_result
-        
-        ! Create valid test data
-        x_coords = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
-        y_coords = [0.0_wp, 0.5_wp, 1.0_wp]
-        
-        do i = 1, 2
-            do j = 1, 3
-                c_data(i, j) = real(i * j, wp)
-            end do
-        end do
-        
-        ! Test integration through main interface
-        call figure()
-        call pcolormesh(x_coords, y_coords, c_data)
-        call title('Comprehensive Test Integration')
-        call savefig("test/output/test_pcolormesh_comprehensive_integration.png")
-        
-        inquire(file="test/output/test_pcolormesh_comprehensive_integration.png", exist=file_exists)
-        test_result = file_exists
-        call run_test("Main interface integration", test_result, &
-            "Should create plot through main fortplot interface")
-    end subroutine test_fortplot_integration
+    ! Integration tests moved to test_pcolormesh_integration.f90
 
     subroutine test_minimal_valid_cases()
         !! Test various minimal but valid configurations
@@ -437,67 +401,7 @@ contains
         end if
     end subroutine test_3x3_mesh
 
-    subroutine test_issue_698_fraud_investigation()
-        !! Fraud investigation for Issue #698 segfault claims
-        type(pcolormesh_t) :: mesh
-        type(fortplot_error_t) :: error
-        real(wp), dimension(3,3) :: z
-        real(wp), dimension(3) :: x, y  ! WRONG dimensions - should cause validation error
-        real(wp), dimension(4) :: x_correct, y_correct  ! CORRECT dimensions  
-        logical :: test_result
-        integer :: i, j
-        
-        print *, ""
-        print *, "=== FRAUD INVESTIGATION: Issue #698 ==="
-        print *, "Claims: pcolormesh causes segmentation faults"
-        print *, "Testing exact scenario described in Issue #698"
-        
-        ! Initialize data exactly as described in Issue #698
-        x = [1.0_wp, 2.0_wp, 3.0_wp]
-        y = [1.0_wp, 2.0_wp, 3.0_wp] 
-        x_correct = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
-        y_correct = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
-        
-        do i = 1, 3
-            do j = 1, 3
-                z(i, j) = real(i + j, wp)
-            end do
-        end do
-        
-        ! Test 1: Reproduce claimed segfault scenario
-        call mesh%initialize_regular_grid(x, y, z, error=error)
-        
-        ! Should get dimension mismatch error, NOT segfault
-        test_result = error%is_error() .and. (error%status == ERROR_DIMENSION_MISMATCH)
-        call run_test("Issue #698 reproduction - proper error handling", test_result, &
-            "Should get validation error, NOT segfault")
-        
-        if (error%is_error()) then
-            print *, "✓ ERROR MESSAGE:", trim(error%message)
-            print *, "✓ NO SEGFAULT OCCURRED - proper error handling confirmed"
-        end if
-        
-        ! Test 2: Verify correct dimensions work fine
-        call mesh%initialize_regular_grid(x_correct, y_correct, z, error=error)
-        
-        test_result = .not. error%is_error()
-        call run_test("Issue #698 - correct dimensions work", test_result, &
-            "Correct dimensions should work fine")
-            
-        if (.not. error%is_error()) then
-            print *, "✓ POSITIVE CONTROL: Correct dimensions work perfectly"
-        end if
-        
-        print *, ""
-        print *, "FRAUD INVESTIGATION CONCLUSION:"
-        print *, "- Issue #698 claims are FALSE"
-        print *, "- No segfaults occur with any pcolormesh usage"
-        print *, "- Proper validation error handling working correctly"
-        print *, "- Confusion between validation errors and crashes"
-        print *, "- 26/26 pcolormesh tests pass - comprehensive evidence"
-        print *, "- RECOMMENDATION: Close Issue #698 as INVALID"
-        
-    end subroutine test_issue_698_fraud_investigation
+    ! Issue #698 reproduction moved to test_pcolormesh_issue_698_repro.f90
     
     subroutine test_dimension_validation_consolidated()
         !! Dimension validation test - consolidated from test_pcolormesh_validation.f90
