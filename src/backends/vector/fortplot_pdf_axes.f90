@@ -236,24 +236,28 @@ contains
         character(len=32), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
-        
+
         ! Setup data ranges
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                    x_min_adj, x_max_adj, y_min_adj, y_max_adj, xscale, yscale)
-        
+
         ! Generate tick data
         call generate_tick_data(ctx, x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
                                x_positions, y_positions, x_labels, y_labels, &
                                num_x_ticks, num_y_ticks, xscale, yscale, &
                                plot_area_left, plot_area_bottom, plot_area_width, plot_area_height)
-        
+
         ! Grid functionality removed - PDF plots now display without grid lines
-        
+
         ! Plot area parameters are now mandatory (non-optional)
-        
+
+        ! Ensure axes are drawn in black independent of prior plot color state
+        call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%set_line_width(1.0_wp)
+
         call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
                                      plot_area_width, plot_area_height, canvas_height)
-        
+
         call draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                           plot_area_left, plot_area_bottom, canvas_height)
         
