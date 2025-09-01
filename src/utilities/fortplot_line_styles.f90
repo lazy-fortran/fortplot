@@ -25,8 +25,8 @@ contains
         
         real(wp) :: dash_len, dot_len, gap_len
         
-        ! Base pattern dimensions (designed for PATTERN_SCALE_FACTOR = 5.0)
-        ! These values are scaled by 5.0 in raster rendering for proper appearance
+        ! Base pattern dimensions in abstract pattern units.
+        ! Raster rendering scales these by its PATTERN_SCALE_FACTOR to pixels.
         dash_len = 3.0_wp    ! 15 pixels when scaled - proper dash length
         dot_len = 0.4_wp     ! 2 pixels when scaled - visible dot
         gap_len = 1.0_wp     ! 5 pixels when scaled - clear separation

@@ -11,7 +11,10 @@ module fortplot_raster_line_styles
     public :: PATTERN_SCALE_FACTOR
 
     ! Named constant to replace magic number
-    real(wp), parameter :: PATTERN_SCALE_FACTOR = 5.0_wp
+    ! Pattern scaling factor controls how many pattern units correspond
+    ! to one pixel of geometric distance. Use a non-integer factor to
+    ! avoid aliasing where fixed 2px segments never enter gap regions.
+    real(wp), parameter :: PATTERN_SCALE_FACTOR = 1.3_wp
 
 contains
 
