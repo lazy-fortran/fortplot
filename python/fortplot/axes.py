@@ -6,7 +6,6 @@ Axes, labels, scales, and legend functionality for the fortplot
 Python interface.
 """
 
-import numpy as np
 import fortplot.fortplot_wrapper as _fortplot
 
 def title(label):

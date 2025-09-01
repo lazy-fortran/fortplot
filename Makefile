@@ -49,6 +49,8 @@ test-ci:
 	@fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
 	@python3 scripts/test_pdf_axes_color_black.py || exit 1
+	@# Security regression tests for Python bridge stdin handling (PR #1010)
+	@python3 scripts/test_python_bridge_security.py || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
