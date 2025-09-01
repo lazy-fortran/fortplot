@@ -5,14 +5,8 @@ fortplot.data - Data plotting functions
 Scatter plots and histograms for the fortplot Python interface.
 """
 
-import numpy as np
+from fortplot.core import _ensure_array  # reuse helper to avoid hard numpy dep
 import fortplot.fortplot_wrapper as _fortplot
-
-def _ensure_array(obj):
-    """Convert input to numpy array if not already an array (DRY helper)."""
-    if not isinstance(obj, np.ndarray):
-        return np.array(obj)
-    return obj
 
 def scatter(
     x,
