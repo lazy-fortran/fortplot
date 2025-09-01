@@ -295,7 +295,7 @@ help:
 
 # Prune remote-tracking branches and delete local merged branches (dry-run by default)
 git-prune:
-	@echo "Running safe git prune (dry-run). Use -- FORCE=1 to apply."
+	@echo "Running safe git prune (dry-run). Use FORCE=1 to apply."
 	@if [ "$(FORCE)" = "1" ]; then \
 		./scripts/git_prune.sh --force; \
 	else \
