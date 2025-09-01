@@ -306,6 +306,7 @@ target_link_libraries(your_target fortplot::fortplot)
 
 ```bash
 # Build with trampoline detection enabled
+# Requires Ninja generator (install package: ninja or ninja-build)
 cmake -S . -B build -G Ninja && cmake --build build -j
 # Library builds successfully = trampoline-free core code
 
