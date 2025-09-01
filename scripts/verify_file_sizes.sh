@@ -14,6 +14,7 @@ fi
 
 # Find all Fortran files and check sizes
 VIOLATIONS=0
+STRICT_TARGET_VIOLATIONS=0
 WARNINGS=0
 TOTAL_FILES=0
 
@@ -26,6 +27,12 @@ while IFS= read -r file_info; do
         echo "  CRITICAL: $file has $lines lines ($(( (lines - 1000) * 100 / 1000 ))% over hard limit)"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
+
+    # Enforce strict target for ASCII backend main file (regression guard for #747)
+    if [ "$file" = "src/backends/ascii/fortplot_ascii.f90" ] && [ "$lines" -gt 500 ]; then
+        echo "  STRICT:   $file exceeds 500-line target ($lines lines)"
+        STRICT_TARGET_VIOLATIONS=$((STRICT_TARGET_VIOLATIONS + 1))
+    fi
     TOTAL_FILES=$((TOTAL_FILES + 1))
 done < <(find src/ -name "*.f90" -exec wc -l {} \; | sort -nr)
 
@@ -34,7 +41,7 @@ echo "SIZE LIMIT WARNINGS (>500 lines):"
 while IFS= read -r file_info; do
     lines=$(echo "$file_info" | awk '{print $1}')
     file=$(echo "$file_info" | awk '{print $2}')
-    
+
     if [ "$lines" -gt 500 ] && [ "$lines" -le 1000 ]; then
         echo "  WARNING: $file has $lines lines ($(( (lines - 500) * 100 / 500 ))% over target)"
         WARNINGS=$((WARNINGS + 1))
@@ -46,11 +53,16 @@ echo "========================================="
 echo "FRAUD PREVENTION SUMMARY:"
 echo "  Total files: $TOTAL_FILES"
 echo "  Critical violations: $VIOLATIONS"
+echo "  Strict target violations: $STRICT_TARGET_VIOLATIONS (ASCII backend)"
 echo "  Size warnings: $WARNINGS"
 
 if [ "$VIOLATIONS" -gt 0 ]; then
     echo "  STATUS: CRITICAL - Hard limits exceeded"
     echo "  ACTION REQUIRED: Immediate refactoring needed"
+    exit 1
+elif [ "$STRICT_TARGET_VIOLATIONS" -gt 0 ]; then
+    echo "  STATUS: FAILURE - ASCII backend exceeds 500-line target"
+    echo "  ACTION REQUIRED: Refactor ASCII backend to <= 500 lines"
     exit 1
 elif [ "$WARNINGS" -gt 0 ]; then
     echo "  STATUS: WARNING - Target limits exceeded"
