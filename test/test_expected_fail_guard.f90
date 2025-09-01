@@ -6,8 +6,8 @@ program test_expected_fail_guard
 
     ! Try ripgrep first for speed; fall back to grep if unavailable.
     call execute_command_line( &
-        'rg -n --glob ''!**/test_expected_fail_guard.f90'' ' // &
-        '-F ''EXPECTED FAIL'' test', exitstat=stat)
+        'sh -lc ''root=$(git rev-parse --show-toplevel 2>/dev/null || echo .); ' // &
+        'rg -n --glob "!**/test_expected_fail_guard.f90" -F "EXPECTED FAIL" "$root/test"''', exitstat=stat)
 
     if (stat == 0) then
         print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
@@ -18,8 +18,8 @@ program test_expected_fail_guard
     else
         ! rg not available or other error; try grep -R as fallback
         call execute_command_line( &
-            'grep -R -n --exclude=test_expected_fail_guard.f90 ' // &
-            '-F ''EXPECTED FAIL'' test', exitstat=stat)
+            'sh -lc ''root=$(git rev-parse --show-toplevel 2>/dev/null || echo .); ' // &
+            'grep -R -n --exclude="*test_expected_fail_guard.f90" -F "EXPECTED FAIL" "$root/test"''', exitstat=stat)
         if (stat == 0) then
             print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
             stop 1
