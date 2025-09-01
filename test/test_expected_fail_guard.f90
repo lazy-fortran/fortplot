@@ -6,7 +6,7 @@ program test_expected_fail_guard
 
     ! Try ripgrep first for speed; fall back to grep if unavailable.
     call execute_command_line( &
-        'rg -n --glob ''!test/test_expected_fail_guard.f90'' ' // &
+        'rg -n --glob ''!**/test_expected_fail_guard.f90'' ' // &
         '-F ''EXPECTED FAIL'' test', exitstat=stat)
 
     if (stat == 0) then
