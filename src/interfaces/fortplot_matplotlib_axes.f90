@@ -64,7 +64,7 @@ contains
         !! - call grid(linestyle='--')  -> set grid line style
         logical, intent(in), optional :: enabled
         character(len=*), intent(in), optional :: which, axis, linestyle
-        real(8), intent(in), optional :: alpha
+        real(wp), intent(in), optional :: alpha
 
         call ensure_fig_init()
         call fig%grid(enabled, which, axis, alpha, linestyle)
