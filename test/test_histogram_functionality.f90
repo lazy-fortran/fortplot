@@ -20,7 +20,7 @@ program test_histogram_functionality
     integer :: test_count = 0
     integer :: pass_count = 0
     logical :: on_windows
-    logical, parameter :: HIST_ENABLED = .false.  ! hist() disabled pending issue #285
+    logical, parameter :: HIST_ENABLED = .true.   ! hist() implemented; enable tests (fixes #285)
 
     print *, "=== HISTOGRAM FUNCTIONALITY TESTS ==="
     
@@ -164,6 +164,9 @@ contains
         ! This should not crash with segmentation fault
         call fig%hist(data, bins=0)
         
+        ! Verify no plot was added
+        call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Zero bins adds no plots")
+        
         print *, '  PASS: Zero bins handled without segmentation fault'
         call end_test()
     end subroutine test_histogram_zero_bins
@@ -179,6 +182,9 @@ contains
         
         ! This should not crash with segmentation fault
         call fig%hist(data, bins=-5)
+        
+        ! Verify no plot was added
+        call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Negative bins adds no plots")
         
         print *, '  PASS: Negative bins handled without segmentation fault'
         call end_test()
