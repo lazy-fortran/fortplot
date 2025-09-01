@@ -2,6 +2,7 @@ module fortplot_zlib_huffman
     !! Huffman encoding and deflate compression functionality
     !! Split from fortplot_zlib.f90 for file size compliance (Issue #884)
     use, intrinsic :: iso_fortran_env, only: int8, int32
+    use fortplot_logging, only: log_error
     implicit none
     
     private
@@ -155,7 +156,7 @@ contains
         do i = 0, num_bits - 1
             ! Bounds check to prevent buffer overrun
             if (byte_pos > buffer_size) then
-                print *, "ERROR: Buffer overrun in write_bits - byte_pos:", byte_pos, "buffer_size:", buffer_size
+                call log_error('Compression error: buffer overrun in write_bits')
                 return
             end if
             
