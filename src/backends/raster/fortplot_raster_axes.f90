@@ -123,8 +123,9 @@ contains
             call process_latex_in_text(trim(tick_label), processed_text, processed_len)
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
+            ! Position x-tick label baseline 15 pixels below plot bottom (matplotlib-like)
             call render_text_to_image(raster%image_data, width, height, &
-                                    px - text_width/2, py + tick_length + 5, trim(escaped_text), text_r, text_g, text_b)
+                                    px - text_width/2, py + 15, trim(escaped_text), text_r, text_g, text_b)
         end do
     end subroutine raster_draw_x_axis_ticks
     
@@ -174,8 +175,10 @@ contains
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
             text_height = calculate_text_height(trim(escaped_text))
+            ! Right-align y-tick label so its right edge sits 19px left of plot area
+            ! With tick length 5px, set padding to 14px to achieve 19px total gap
             call render_text_to_image(raster%image_data, width, height, &
-                px - tick_length - text_width - 5, py - text_height/2, &
+                px - tick_length - text_width - 14, py - text_height/2, &
                 trim(escaped_text), text_r, text_g, text_b)
         end do
     end subroutine raster_draw_y_axis_ticks
