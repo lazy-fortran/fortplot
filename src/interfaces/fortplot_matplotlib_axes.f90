@@ -12,6 +12,7 @@ module fortplot_matplotlib_axes
     
     ! Export axis and annotation functions
     public :: xlabel, ylabel, title, legend
+    public :: grid
     public :: xlim, ylim
     public :: set_xscale, set_yscale
     public :: set_line_width, set_ydata
@@ -51,6 +52,23 @@ contains
         call ensure_fig_init()
         call fig%set_title(title_text)
     end subroutine title
+
+    subroutine grid(enabled, which, axis, alpha, linestyle)
+        !! Enable/disable and configure grid lines (pyplot-style)
+        !! Matches matplotlib semantics:
+        !! - call grid()                -> enable major grid on both axes
+        !! - call grid(.false.)         -> disable grid
+        !! - call grid(which='minor')   -> enable minor grid (when supported)
+        !! - call grid(axis='x')        -> grid on x only ('y' or 'both')
+        !! - call grid(alpha=0.5)       -> set grid transparency
+        !! - call grid(linestyle='--')  -> set grid line style
+        logical, intent(in), optional :: enabled
+        character(len=*), intent(in), optional :: which, axis, linestyle
+        real(8), intent(in), optional :: alpha
+
+        call ensure_fig_init()
+        call fig%grid(enabled, which, axis, alpha, linestyle)
+    end subroutine grid
 
     subroutine legend(position, box, fontsize)
         !! Add a legend to the global figure (pyplot-style)
