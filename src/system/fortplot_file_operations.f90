@@ -5,6 +5,7 @@ module fortplot_file_operations
     !! restrictions to prevent unauthorized filesystem access.
 
     use fortplot_os_detection, only: is_debug_enabled, is_windows
+    use fortplot_logging,      only: log_warning
     use fortplot_path_operations, only: parse_path_segments
 
     implicit none
@@ -43,7 +44,7 @@ contains
         ! SECURITY LAYER 1: Basic path safety validation
         if (.not. is_basic_safe_path(normalized_path)) then
             if (debug_enabled) then
-                write(*,'(A,A)') 'SECURITY: Unsafe path blocked by security validation: ', trim(path)
+                call log_warning('Security: Unsafe path blocked by validation')
             end if
             success = .false.
             return
@@ -53,7 +54,7 @@ contains
         call check_allowed_path(normalized_path, is_allowed_path)
         if (.not. is_allowed_path) then
             if (debug_enabled) then
-                write(*,'(A,A)') 'SECURITY: Directory creation not allowed for path: ', trim(path)
+                call log_warning('Security: Directory creation not allowed for requested path')
             end if
             success = .false.
             return
@@ -63,8 +64,7 @@ contains
         call create_directory_recursive(path, success)
         
         if (.not. success .and. debug_enabled) then
-            write(*,'(A,A)') 'WARNING: Could not create directory: ', trim(path)
-            write(*,'(A)') '  Check filesystem permissions and parent directory existence'
+            call log_warning('Directory creation failed (check permissions and parent existence)')
         end if
     end subroutine create_directory_runtime
 
