@@ -1,3 +1,7 @@
+! Consolidated (Issue #934)
+
+! ==== Begin: src/figures/core/fortplot_figure_core.f90 ====
+
 module fortplot_figure_core
     !! Core figure management module for scientific plotting
     !!
@@ -474,3 +478,5 @@ contains
     end function subplot_title
 
 end module fortplot_figure_core
+! ==== End: src/figures/core/fortplot_figure_core.f90 ====
+
