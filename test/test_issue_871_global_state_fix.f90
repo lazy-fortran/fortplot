@@ -42,8 +42,7 @@ program test_issue_871_global_state_fix
     
     ! Test 2: Legacy compatibility (still uses global state but with deprecation warning)
     write(output_unit, '(A)') ""
-    write(output_unit, '(A)') "Test 2: Legacy global state compatibility (with deprecation warning)"
-    call set_warning_mode(WARNING_MODE_ERRORS)
+    write(output_unit, '(A)') "Test 2: Legacy global state compatibility (without global mode)"
     result = validate_plot_dimensions(8.0_wp, 6.0_wp)
     if (result%is_valid .and. .not. result%has_warning) then
         write(output_unit, '(A)') "  ✓ PASS: Legacy function still works"

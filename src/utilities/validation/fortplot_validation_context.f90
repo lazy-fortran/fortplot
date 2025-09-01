@@ -38,7 +38,6 @@ module fortplot_validation_context
     public :: validation_warning_with_context
     public :: validation_error_with_context
     public :: default_validation_context
-    public :: set_warning_mode
     public :: validation_context_t
     public :: parameter_validation_result_t
     public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
@@ -53,23 +52,7 @@ module fortplot_validation_context
     
 contains
     
-    ! Set warning output mode for advanced users
-    ! DEPRECATED: Use validation_context_t instead for thread-safe operation
-    subroutine set_warning_mode(mode)
-        integer, intent(in) :: mode
-        
-        ! Issue #871: Global state deprecated for thread safety
-        print *, "[DEPRECATED] set_warning_mode: Global warning state violates thread safety."
-        print *, "             Use validation_context_t parameter in new validation functions."
-        print *, "             This function will be removed in v2.0."
-        
-        if (mode >= WARNING_MODE_ALL .and. mode <= WARNING_MODE_SILENT) then
-            current_warning_mode = mode
-        else
-            call validation_warning("Invalid warning mode, using default (all warnings)", &
-                                   "set_warning_mode")
-        end if
-    end subroutine set_warning_mode
+    ! DEPRECATED: validation_warning is legacy; prefer validation_warning_with_context
     
     ! Output warning message with context (with spam prevention)
     subroutine validation_warning(message, context)
@@ -112,6 +95,7 @@ contains
         end if
     end subroutine validation_warning
     
+    ! DEPRECATED: validation_error is legacy; prefer validation_error_with_context
     ! Output error message with context
     subroutine validation_error(message, context)
         character(len=*), intent(in) :: message
