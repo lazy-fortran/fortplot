@@ -7,6 +7,7 @@ module fortplot_logging
     !! - Automatic CI detection: GITHUB_ACTIONS, CI, CONTINUOUS_INTEGRATION
     !! - FORTPLOT_FORCE_WARNINGS: Force warnings even in CI environments
     
+    use fortplot_string_utils, only: parse_boolean_env
     implicit none
     private
     
@@ -183,41 +184,6 @@ contains
         end if
     end function detect_ci_environment
     
-    logical function parse_boolean_env(env_value)
-        !! Parse environment variable as boolean value
-        !! Supports: '1', 'true', 'yes', 'on' (case-insensitive) = .true.
-        !! All other values = .false.
-        character(len=*), intent(in) :: env_value
-        character(len=256) :: lower_value
-        
-        parse_boolean_env = .false.
-        
-        ! Convert to lowercase for comparison
-        lower_value = to_lowercase(trim(env_value))
-        
-        if (lower_value == '1' .or. &
-            lower_value == 'true' .or. &
-            lower_value == 'yes' .or. &
-            lower_value == 'on') then
-            parse_boolean_env = .true.
-        end if
-    end function parse_boolean_env
-    
-    function to_lowercase(input_string) result(output_string)
-        !! Convert string to lowercase
-        character(len=*), intent(in) :: input_string
-        character(len=len(input_string)) :: output_string
-        integer :: i, ascii_val
-        integer, parameter :: ASCII_A = 65, ASCII_Z = 90, CASE_OFFSET = 32
-        
-        output_string = input_string
-        do i = 1, len(input_string)
-            ascii_val = iachar(input_string(i:i))
-            if (ascii_val >= ASCII_A .and. ascii_val <= ASCII_Z) then
-                output_string(i:i) = achar(ascii_val + CASE_OFFSET)
-            end if
-        end do
-    end function to_lowercase
     
     logical function is_warnings_suppressed()
         !! Check if warnings are currently suppressed
