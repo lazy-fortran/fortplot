@@ -20,7 +20,7 @@ program test_histogram_functionality
     integer :: test_count = 0
     integer :: pass_count = 0
     logical :: on_windows
-    logical, parameter :: HIST_ENABLED = .false.  ! hist() disabled pending issue #285
+    logical, parameter :: HIST_ENABLED = .true.   ! hist() implemented; enable tests (fixes #285)
 
     print *, "=== HISTOGRAM FUNCTIONALITY TESTS ==="
     
