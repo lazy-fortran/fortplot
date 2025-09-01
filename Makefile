@@ -22,7 +22,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example
 
 # Default target
 all: build
@@ -146,33 +146,6 @@ doc:
         fi; \
     done
 
-# Generate coverage report
-coverage:
-	@echo "Cleaning old coverage data..."
-	# Be tolerant to permission or missing-file issues during cleanup
-	find . -name '*.gcda' -delete 2>/dev/null || true
-	find . -name '*.gcno' -delete 2>/dev/null || true
-	@echo "Building with coverage flags..."
-	fpm build --flag '-fprofile-arcs -ftest-coverage'
-	@echo "Running tests with coverage..."
-	fpm test --flag '-fprofile-arcs -ftest-coverage'
-	@echo "Generating coverage report..."
-	@echo "Attempting coverage generation with gcovr..." ; \
-	if gcovr --root . \
-	    --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' \
-	    --exclude 'example/*' --exclude 'test/*' --exclude 'app/*' \
-	    --keep --txt -o coverage.txt --print-summary 2>/dev/null ; then \
-	  echo "gcovr completed successfully" ; \
-	else \
-	  echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" ; \
-	  echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" ; \
-	  echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt ; \
-	fi
-	@echo "Cleaning up intermediate coverage files..."
-	find . -name '*.gcov.json.gz' -delete 2>/dev/null || true
-	find . -name '*.gcda' -delete 2>/dev/null || true
-	find . -name '*.gcno' -delete 2>/dev/null || true
-	@echo "Coverage analysis completed: coverage.txt"
 
 # Validate functional output generation
 validate-output: create_build_dirs
@@ -303,7 +276,6 @@ help:
 	@echo "  verify-setup     - Setup functionality verification environment"
 	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
 	@echo "  verify-size-compliance - File size fraud prevention verification"
-	@echo "  coverage         - Generate coverage report"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
