@@ -35,17 +35,12 @@ def test_src_subfolder_item_limits():
             violations.append((d, count))
 
     assert not hard_violations, (
-        "Hard limit exceeded (>",
-        hard_limit,
-        ") in: "
+        f"Hard limit exceeded (> {hard_limit}) in: "
         + ", ".join(f"{path} ({count})" for path, count in hard_violations)
     )
 
     # Soft limit is guidance; failing this test encourages keeping folders tidy.
     assert not violations, (
-        "Folder item count exceeds guidance (>",
-        soft_limit,
-        ") in: "
+        f"Folder item count exceeds guidance (> {soft_limit}) in: "
         + ", ".join(f"{path} ({count})" for path, count in violations)
     )
-
