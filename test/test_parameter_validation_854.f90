@@ -39,8 +39,8 @@ program test_parameter_validation_854
     ! Test NaN/infinity helper functions directly (Issue #875)
     call test_nan_infinity_helper_functions()
     
-    ! Test warning mode control
-    call test_warning_mode_control()
+    ! Warning mode control via global function removed (Issue #911)
+    ! Covered implicitly by context-aware APIs in other tests
     
     ! Summary
     write(output_unit, '(A)') ""
@@ -339,25 +339,8 @@ contains
         write(output_unit, '(A)') "  ✓ NaN/infinity helper function tests completed"
     end subroutine test_nan_infinity_helper_functions
     
-    subroutine test_warning_mode_control()
-        write(output_unit, '(A)') "Testing warning mode control..."
-        
-        ! Test setting warning modes
-        call set_warning_mode(WARNING_MODE_SILENT)
-        call run_test("Set silent mode", .true.)  ! Should not error
-        
-        call set_warning_mode(WARNING_MODE_ERRORS)
-        call run_test("Set errors only mode", .true.)  ! Should not error
-        
-        call set_warning_mode(WARNING_MODE_ALL)
-        call run_test("Set all warnings mode", .true.)  ! Should not error
-        
-        ! Test invalid warning mode (should warn and use default)
-        call set_warning_mode(999)
-        call run_test("Invalid warning mode", .true.)  ! Should handle gracefully
-        
-        write(output_unit, '(A)') "  ✓ Warning mode control tests completed"
-    end subroutine test_warning_mode_control
+    ! Note: set_warning_mode was deprecated and removed.
+    ! Tests now rely on validation_context_t in context-aware code paths.
     
     subroutine run_test(test_name, condition)
         character(len=*), intent(in) :: test_name
