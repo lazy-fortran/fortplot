@@ -156,23 +156,24 @@ coverage:
 	fpm build --flag '-fprofile-arcs -ftest-coverage'
 	@echo "Running tests with coverage..."
 	fpm test --flag '-fprofile-arcs -ftest-coverage'
-	@echo "Generating coverage report..."
+	@echo "Generating coverage reports (text + XML)..."
 	@echo "Attempting coverage generation with gcovr..." ; \
 	if gcovr --root . \
 	    --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' \
 	    --exclude 'example/*' --exclude 'test/*' --exclude 'app/*' \
-	    --keep --txt -o coverage.txt --print-summary 2>/dev/null ; then \
-	  echo "gcovr completed successfully" ; \
+	    --keep --txt -o coverage.txt --print-summary \
+	    --xml -o coverage.xml 2>/dev/null ; then \
+	  echo "gcovr completed successfully (coverage.txt, coverage.xml)" ; \
 	else \
 	  echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" ; \
 	  echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" ; \
 	  echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt ; \
+	  echo "<coverage></coverage>" > coverage.xml ; \
 	fi
 	@echo "Cleaning up intermediate coverage files..."
 	find . -name '*.gcov.json.gz' -delete 2>/dev/null || true
-	find . -name '*.gcda' -delete 2>/dev/null || true
-	find . -name '*.gcno' -delete 2>/dev/null || true
-	@echo "Coverage analysis completed: coverage.txt"
+	# Keep *.gcda/gcno so Codecov/gcovr can post-process if needed
+	@echo "Coverage analysis completed: coverage.txt, coverage.xml"
 
 # Validate functional output generation
 validate-output: create_build_dirs
