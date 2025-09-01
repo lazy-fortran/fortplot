@@ -399,7 +399,7 @@ contains
         integer, intent(in) :: unit_out
         character(len=*), intent(in) :: fortran_file, fortran_path
 
-        write(unit_out, '(A)') '🔷 **Fortran:** [' // trim(fortran_file) // &
+        write(unit_out, '(A)') '- Fortran: [' // trim(fortran_file) // &
                               '](' // trim(fortran_path) // ')'
     end subroutine write_fortran_link
 
