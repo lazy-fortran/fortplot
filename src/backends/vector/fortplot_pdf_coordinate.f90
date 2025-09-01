@@ -10,7 +10,7 @@ module fortplot_pdf_coordinate
                                    draw_pdf_x_marker
     use fortplot_plot_data, only: plot_data_t
     use fortplot_legend, only: legend_entry_t
-    use fortplot_margins, only: plot_area_t
+    use fortplot_margins, only: plot_area_t, plot_margins_t
     implicit none
     
     private
@@ -31,6 +31,7 @@ module fortplot_pdf_coordinate
     public :: pdf_set_legend_border_width, pdf_calculate_legend_position
     public :: pdf_extract_rgb_data, pdf_get_png_data
     public :: pdf_prepare_3d_data, pdf_render_ylabel
+    public :: calculate_pdf_plot_area
     
 contains
 
@@ -267,5 +268,18 @@ contains
             pdf_y = (y - y_min) * y_scale + plot_bottom
         end if
     end subroutine safe_coordinate_transform
-    
+
+    subroutine calculate_pdf_plot_area(canvas_width, canvas_height, margins, plot_area)
+        !! Calculate plot area for PDF backend (mathematical coordinates: Y=0 at bottom)
+        integer, intent(in) :: canvas_width, canvas_height
+        type(plot_margins_t), intent(in) :: margins
+        type(plot_area_t), intent(out) :: plot_area
+        ! Calculate positions for mathematical coordinate system (Y=0 at bottom)
+        plot_area%left = int(margins%left * real(canvas_width, wp))
+        plot_area%width = int(margins%right * real(canvas_width, wp)) - plot_area%left
+        ! For PDF mathematical coordinates (Y=0 at bottom), use direct calculation
+        plot_area%bottom = int(margins%bottom * real(canvas_height, wp))
+        plot_area%height = int(margins%top * real(canvas_height, wp)) - plot_area%bottom
+    end subroutine calculate_pdf_plot_area
+
 end module fortplot_pdf_coordinate
