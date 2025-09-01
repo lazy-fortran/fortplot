@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-2025]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -59,20 +59,20 @@ jobs:
 
     # ---------- Windows setup ----------
     - name: Configure git line endings (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       shell: bash
       run: git config --global core.autocrlf input
 
     - name: Define MSYS2_DIR (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        # Place a reusable MSYS2 install next to the workspace, e.g. D:\a\fortplot\_msys2
+        # Place a reusable MSYS2 install next to the workspace (works on C: or D:)
         $msys2Dir = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) '_msys2'
         echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Cache full MSYS2 installation (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       id: msys2_cache
       uses: actions/cache@v4
       with:
@@ -82,7 +82,7 @@ jobs:
           ${{ runner.os }}-msys2-full-MINGW64-
 
     - name: Setup MSYS2 (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       id: msys2
       uses: msys2/setup-msys2@v2
       with:
@@ -100,7 +100,7 @@ jobs:
           git
 
     - name: Add MinGW to PATH (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
         if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
@@ -108,7 +108,7 @@ jobs:
       shell: pwsh
 
     - name: Install FPM (Windows)
-      if: matrix.os == 'windows-latest'
+      if: runner.os == 'Windows'
       shell: pwsh
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
@@ -135,7 +135,7 @@ jobs:
     - name: Build project
       shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [ "$RUNNER_OS" = "Windows" ]; then
           fpm build --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
         else
           make build
@@ -154,7 +154,7 @@ jobs:
     - name: Run tests
       shell: bash
       run: |
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+        if [ "$RUNNER_OS" = "Windows" ]; then
           export FORTPLOT_ENABLE_FFMPEG=1
           export OMP_NUM_THREADS=2
           fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
@@ -169,7 +169,7 @@ jobs:
       shell: bash
       run: |
         if magick -version > /dev/null 2>&1; then
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "$RUNNER_OS" = "Windows" ]; then
             fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
             fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
           else
