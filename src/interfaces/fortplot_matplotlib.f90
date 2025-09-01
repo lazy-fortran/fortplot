@@ -3,11 +3,9 @@ module fortplot_matplotlib
     !! Main facade module that re-exports all matplotlib-style functions
     !!
     !! This module provides a unified interface to matplotlib-style plotting
-    !! by combining functionality from specialized submodules:
-    !! - fortplot_matplotlib_plotting: Basic plots (plot, scatter, bar, etc.)
-    !! - fortplot_matplotlib_contour: Field plots (contour, pcolormesh, etc.)
-    !! - fortplot_matplotlib_axes: Axis operations (labels, limits, scales)
-    !! - fortplot_matplotlib_io: Figure management (save, show, etc.)
+    !! by re-exporting the consolidated implementation from
+    !! `fortplot_matplotlib_advanced`. Public API remains stable while
+    !! internal modules are simplified.
     
     use fortplot_matplotlib_advanced, only: &
         plot, scatter, errorbar, boxplot, &
