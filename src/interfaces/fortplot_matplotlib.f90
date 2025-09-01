@@ -9,21 +9,15 @@ module fortplot_matplotlib
     !! - fortplot_matplotlib_axes: Axis operations (labels, limits, scales)
     !! - fortplot_matplotlib_io: Figure management (save, show, etc.)
     
-    use fortplot_matplotlib_plotting, only: &
+    use fortplot_matplotlib_advanced, only: &
         plot, scatter, errorbar, boxplot, &
         bar, barh, hist, histogram, &
-        add_plot, add_errorbar, add_scatter, add_3d_plot
-    
-    use fortplot_matplotlib_contour, only: &
+        add_plot, add_errorbar, add_scatter, add_3d_plot, &
         contour, contour_filled, pcolormesh, streamplot, &
-        add_contour, add_contour_filled, add_pcolormesh, add_surface
-    
-    use fortplot_matplotlib_axes, only: &
+        add_contour, add_contour_filled, add_pcolormesh, add_surface, &
         xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata
-    
-    use fortplot_matplotlib_io, only: &
+        set_line_width, set_ydata, &
         figure, subplot, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
     
