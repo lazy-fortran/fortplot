@@ -22,7 +22,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune
 
 # Default target
 all: build
@@ -261,6 +261,14 @@ verify-size-compliance:
 	@echo "Running file size fraud prevention verification..."
 	./scripts/verify_file_sizes.sh
 
+# Fortran procedural complexity budgets (Issue #937)
+verify-complexity:
+	@echo "Running Fortran procedure complexity verification..."
+	@chmod +x scripts/verify_complexity.sh
+	@MAX_TOTAL_PROCS=$${MAX_TOTAL_PROCS-2000} \
+	 MAX_PROCS_PER_FILE=$${MAX_PROCS_PER_FILE-60} \
+	 ./scripts/verify_complexity.sh src
+
 # Help target
 help:
 	@echo "Available targets:"
@@ -277,6 +285,7 @@ help:
 	@echo "  verify-setup     - Setup functionality verification environment"
 	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
 	@echo "  verify-size-compliance - File size fraud prevention verification"
+	@echo "  verify-complexity - Enforce procedure count budgets (Issue #937)"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"

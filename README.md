@@ -397,6 +397,17 @@ See [Module Architecture Guide](doc/module_architecture.md) for developer guidel
 make test
 ```
 
+### Complexity Budgets (Issue #937)
+```bash
+# Verify heuristic procedure count budgets
+make verify-complexity
+
+# Optional: override budgets
+MAX_TOTAL_PROCS=1800 MAX_PROCS_PER_FILE=50 make verify-complexity
+```
+
+Requires `ripgrep` (`rg`) to be installed and available on PATH.
+
 ### Control Warning Output
 ```bash
 # Suppress warnings for clean test output
