@@ -128,8 +128,10 @@ call title("3D Surface Plot")
 call savefig("surface_3d.png")
 
 ! pcolormesh for 2D heatmaps is available and working
-! Dimension validation issues were fixed in recent commits
-real(wp), dimension(10, 10) :: z_data
+! Array dimensions: z(ny,nx) with x(nx+1), y(ny+1) is the
+! standard scientific format and does NOT emit warnings.
+! C-style z(nx,ny) is also accepted; it is transposed internally.
+real(wp), dimension(10, 10) :: z_data  ! ny=10, nx=10
 call pcolormesh(x_grid, y_grid, z_data, colormap="viridis")
 ```
 
