@@ -199,6 +199,12 @@ jobs:
           echo "ImageMagick not found - skipping graphics quality tests"
         fi
 
+    - name: Test FPM and CMake examples (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
+        timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
+
   test-coverage:
     name: test-coverage
     runs-on: ubuntu-latest
@@ -233,9 +239,3 @@ jobs:
         with:
           name: coverage-txt
           path: coverage.txt
-
-    - name: Test FPM and CMake examples (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
-        timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
