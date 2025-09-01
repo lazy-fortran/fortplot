@@ -20,8 +20,8 @@ contains
         
         debug_enabled = .false.
         
-        ! Check for FORTPLOT_DEBUG_TIMEOUT environment variable
-        call get_environment_variable("FORTPLOT_DEBUG_TIMEOUT", debug_env, status=status)
+        ! Check for FORTPLOT_DEBUG environment variable
+        call get_environment_variable("FORTPLOT_DEBUG", debug_env, status=status)
         if (status == 0 .and. len_trim(debug_env) > 0) then
             if (trim(debug_env) == "1" .or. trim(debug_env) == "true") then
                 debug_enabled = .true.
