@@ -306,7 +306,8 @@ target_link_libraries(your_target fortplot::fortplot)
 
 ```bash
 # Build with trampoline detection enabled
-cmake -B build && cmake --build build
+# Requires Ninja generator (install package: ninja or ninja-build)
+cmake -S . -B build -G Ninja && cmake --build build -j
 # Library builds successfully = trampoline-free core code
 
 # Verify no executable stack segments
@@ -325,7 +326,7 @@ fpm build --flag "-Werror=trampolines" 2>/dev/null || echo "Trampoline detection
 fpm build --flag "-Wtrampolines -Werror=trampolines"
 
 # CMake: Automatic security flags (see CMakeLists.txt lines 36-47)
-cmake -B build && cmake --build build
+cmake -S . -B build -G Ninja && cmake --build build -j
 
 # Standard development (FPM default)
 make build  # Uses fpm.toml configuration
