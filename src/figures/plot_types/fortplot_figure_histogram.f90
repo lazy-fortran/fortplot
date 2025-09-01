@@ -117,11 +117,19 @@ contains
         ! Set defaults
         n_bins = 10
         if (present(bins)) n_bins = bins
-        
+
+        ! Guard against invalid inputs (graceful no-op)
+        if (size(data) == 0) then
+            return
+        end if
+        if (n_bins <= 0) then
+            return
+        end if
+
         normalize_density = .false.
         if (present(density)) normalize_density = density
-        
-        ! Calculate histogram
+
+        ! Calculate histogram (validated inputs)
         call calculate_histogram_bins(data, n_bins, normalize_density, bin_edges, bin_counts)
         
         ! Create line data for visualization
