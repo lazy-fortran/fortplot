@@ -45,7 +45,6 @@ module fortplot_figure_core
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
 
     !! CORE TYPE DEFINITION
-    
     type :: figure_t
         !! Main figure class implementing Facade Pattern for plotting operations
         !!
@@ -479,4 +478,3 @@ contains
 
 end module fortplot_figure_core
 ! ==== End: src/figures/core/fortplot_figure_core.f90 ====
-
