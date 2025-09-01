@@ -87,6 +87,7 @@ contains
         call ctx%stream_writer%add_to_stream("1 J")
         call ctx%stream_writer%add_to_stream("1 j")
         call ctx%stream_writer%add_to_stream("0 0 0 RG")
+        call ctx%stream_writer%add_to_stream("0 0 0 rg")
         
         ctx%margins = plot_margins_t()
         call calculate_pdf_plot_area(width, height, ctx%margins, ctx%plot_area)
@@ -168,7 +169,13 @@ contains
         ! This provides better UX for low-level PDF API users
         call this%render_axes()
         
-        this%core_ctx%stream_data = this%stream_writer%content_stream
+        ! Combine vector (stream_writer) and text (core_ctx) streams
+        ! Draw vector content first, then text so labels appear on top
+        if (len_trim(this%core_ctx%stream_data) > 0) then
+            this%core_ctx%stream_data = trim(this%stream_writer%content_stream)//new_line('a')//trim(this%core_ctx%stream_data)
+        else
+            this%core_ctx%stream_data = this%stream_writer%content_stream
+        end if
         call write_pdf_file(this%core_ctx, filename, file_success)
         
         ! If file creation failed, continue without ERROR STOP
