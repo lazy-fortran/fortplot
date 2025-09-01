@@ -5,7 +5,9 @@ program test_expected_fail_guard
     print *, 'Policy: Forbid use of "EXPECTED FAIL" markers in tests'
 
     ! Try ripgrep first for speed; fall back to grep if unavailable.
-    call execute_command_line('rg -n --glob "!test/test_expected_fail_guard.f90" "EXPECTED FAIL" test', exitstat=stat)
+    call execute_command_line( &
+        'rg -n --glob ''!test/test_expected_fail_guard.f90'' ' // &
+        '-F ''EXPECTED FAIL'' test', exitstat=stat)
 
     if (stat == 0) then
         print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
@@ -15,7 +17,9 @@ program test_expected_fail_guard
         stop 0
     else
         ! rg not available or other error; try grep -R as fallback
-        call execute_command_line('grep -R -n --exclude=test_expected_fail_guard.f90 "EXPECTED FAIL" test', exitstat=stat)
+        call execute_command_line( &
+            'grep -R -n --exclude=test_expected_fail_guard.f90 ' // &
+            '-F ''EXPECTED FAIL'' test', exitstat=stat)
         if (stat == 0) then
             print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
             stop 1
