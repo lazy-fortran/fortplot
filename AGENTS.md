@@ -12,7 +12,6 @@
 - Run examples: `make example` (Fortran), `make example_python`, `make example_matplotlib`.
 - Debug apps: `make debug` or `fpm run --target <app>`.
 - Tests: `make test` or `fpm test`; CI-fast set: `make test-ci`.
-- Coverage: `make coverage` (gcov/gcovr; results in `coverage.txt`).
 - Docs: `make doc` (FORD → `build/doc/index.html`).
 - Clean: `make clean`.
   Examples: `make test ARGS="--target test_public_api"`, `make example ARGS="basic_plots"`.
@@ -28,7 +27,6 @@
 - Framework: FPM auto-discovers tests in `test/`. Name new tests `test_<topic>.f90` and keep output in `build/test/output/`.
 - Run subsets: `fpm test --target <name>`.
 - Env controls: `FORTPLOT_SUPPRESS_WARNINGS=1 make test` (quiet), `FORTPLOT_FORCE_WARNINGS=1 make test`.
-- Coverage: prefer `make coverage` before submitting significant changes.
 
 ## Commit & Pull Request Guidelines
 - Commits: Conventional Commits style (`feat:`, `fix:`, `docs:`, `refactor:`, `cleanup:`). Example: `fix: resolve pcolormesh dimension validation (#600)`.
