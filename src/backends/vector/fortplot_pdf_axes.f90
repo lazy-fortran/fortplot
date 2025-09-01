@@ -392,7 +392,7 @@ contains
             end if
         end if
 
-        ! Draw X-axis label (centered at bottom) — 50px below plot bottom
+        ! Draw X-axis label (centered at bottom) - 50px below plot bottom
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
@@ -402,7 +402,7 @@ contains
             end if
         end if
 
-        ! Draw Y-axis label (rotated on left) — end 98px left of plot
+        ! Draw Y-axis label (rotated on left) - end 98px left of plot
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
                 ylabel_x = plot_area_left - 98.0_wp
