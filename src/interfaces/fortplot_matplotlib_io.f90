@@ -4,6 +4,7 @@ module fortplot_matplotlib_io
     
     use iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
+    use fortplot_figure_initialization, only: configure_figure_dimensions
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_security, only: safe_launch_viewer, safe_remove_file
@@ -102,13 +103,14 @@ contains
             " inches at ", fig_dpi, " DPI"
         call log_info(trim(msg))
         
-        ! Re-initialize global figure with safe dimensions
+        ! Re-initialize global figure and set dimensions without triggering validation
         if (allocated(fig)) then
             deallocate(fig)
         end if
-        
         allocate(figure_t :: fig)
-        call fig%initialize(width=width_px, height=height_px)
+        ! Initialize with defaults, then apply pixel dimensions directly
+        call fig%initialize()
+        call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
     end subroutine figure
 
     subroutine subplot(nrows, ncols, index)
