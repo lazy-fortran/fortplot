@@ -15,6 +15,7 @@ module fortplot_raster_axes
     private
     public :: raster_draw_axes_and_labels, raster_render_ylabel
     public :: compute_title_position
+    public :: compute_non_overlapping_mask  ! Exposed for focused testing
 
     ! Local spacing parameters for raster tick labels (pixels)
     ! X tick labels are positioned X_TICK_LABEL_PAD pixels below the tick end
@@ -23,6 +24,38 @@ module fortplot_raster_axes
     integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 14
 
 contains
+
+    pure subroutine compute_non_overlapping_mask(centers, widths, min_gap, keep)
+        !! Greedy selection to avoid horizontal label overlap
+        !! centers: label center positions (pixels)
+        !! widths: label widths (pixels)
+        !! min_gap: minimum gap between labels (pixels)
+        !! keep: output mask of which labels to draw
+        real(wp), intent(in) :: centers(:)
+        integer, intent(in) :: widths(:)
+        real(wp), intent(in) :: min_gap
+        logical, intent(out) :: keep(size(centers))
+        integer :: n, i
+        real(wp) :: last_right, left_i, right_i, gap
+
+        n = size(centers)
+        if (size(widths) /= n) then
+            keep = .false.
+            return
+        end if
+
+        keep = .false.
+        last_right = -1.0e30_wp
+        gap = max(0.0_wp, min_gap)
+        do i = 1, n
+            left_i  = centers(i) - 0.5_wp * real(widths(i), wp)
+            right_i = centers(i) + 0.5_wp * real(widths(i), wp)
+            if (left_i >= last_right + gap) then
+                keep(i) = .true.
+                last_right = right_i
+            end if
+        end do
+    end subroutine compute_non_overlapping_mask
 
     subroutine raster_draw_axes_and_labels(raster, width, height, plot_area, &
                                           xscale, yscale, symlog_threshold, &
@@ -106,35 +139,58 @@ contains
         real(wp) :: dummy_pattern(1), pattern_dist
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
+        ! For overlap guard
+        real(wp), allocatable :: centers(:)
+        integer, allocatable :: widths(:)
+        logical, allocatable :: keep(:)
+        character(len=128), allocatable :: labels(:)
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
         tick_length = TICK_MARK_LENGTH
         
         call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
-        do i = 1, num_x_ticks
-            tick_x = x_tick_positions(i)
-            px = int((tick_x - x_min) / (x_max - x_min) * real(plot_area%width, wp) + real(plot_area%left, wp))
-            py = plot_area%bottom + plot_area%height
-            
-            ! Draw tick mark
-            dummy_pattern = 0.0_wp
-            pattern_dist = 0.0_wp
-            call draw_styled_line(raster%image_data, width, height, &
-                                 real(px, wp), real(py, wp), real(px, wp), real(py + tick_length, wp), &
-                                 line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
-            
-            ! Draw tick label
-            tick_label = format_tick_label(tick_x, xscale)
-            call process_latex_in_text(trim(tick_label), processed_text, processed_len)
-            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
-            text_width = calculate_text_width(trim(escaped_text))
-            ! Position x-tick label baseline TICK_MARK_LENGTH + X_TICK_LABEL_PAD below plot bottom (matplotlib-like)
-            call render_text_to_image(raster%image_data, width, height, &
-                                     px - text_width/2, &
-                                     py + tick_length + X_TICK_LABEL_PAD, &
-                                     trim(escaped_text), text_r, text_g, text_b)
-        end do
+
+        if (num_x_ticks > 0) then
+            allocate(centers(num_x_ticks), widths(num_x_ticks), keep(num_x_ticks), labels(num_x_ticks))
+
+            do i = 1, num_x_ticks
+                tick_x = x_tick_positions(i)
+                centers(i) = (tick_x - x_min) / (x_max - x_min) * real(plot_area%width, wp) + real(plot_area%left, wp)
+                tick_label = format_tick_label(tick_x, xscale)
+                call process_latex_in_text(trim(tick_label), processed_text, processed_len)
+                call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+                labels(i) = trim(escaped_text)
+                widths(i) = max(0, calculate_text_width(labels(i)))
+            end do
+
+            call compute_non_overlapping_mask(centers, widths, 2.0_wp, keep)
+
+            do i = 1, num_x_ticks
+                px = int(centers(i))
+                py = plot_area%bottom + plot_area%height
+
+                ! Draw tick mark always
+                dummy_pattern = 0.0_wp
+                pattern_dist = 0.0_wp
+                call draw_styled_line(raster%image_data, width, height, &
+                                     real(px, wp), real(py, wp), real(px, wp), real(py + tick_length, wp), &
+                                     line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
+
+                if (keep(i)) then
+                    text_width = widths(i)
+                    call render_text_to_image(raster%image_data, width, height, &
+                                             px - text_width/2, &
+                                             py + tick_length + X_TICK_LABEL_PAD, &
+                                             labels(i), text_r, text_g, text_b)
+                end if
+            end do
+
+            if (allocated(centers)) deallocate(centers)
+            if (allocated(widths)) deallocate(widths)
+            if (allocated(keep)) deallocate(keep)
+            if (allocated(labels)) deallocate(labels)
+        end if
     end subroutine raster_draw_x_axis_ticks
     
     subroutine raster_draw_y_axis_ticks(raster, width, height, plot_area, yscale, symlog_threshold, &
