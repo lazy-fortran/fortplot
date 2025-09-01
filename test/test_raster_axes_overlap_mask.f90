@@ -58,6 +58,33 @@ program test_raster_axes_overlap_mask
         stop 4
     end if
 
+    ! Case 5: Negative min_gap is clamped to zero (touching allowed)
+    deallocate(centers, widths, keep)
+    allocate(centers(2), widths(2), keep(2))
+    centers = [10.0_wp, 20.0_wp]
+    widths  = [10, 10]
+    gap = -5.0_wp
+    call compute_non_overlapping_mask(centers, widths, gap, keep)
+    if (all(keep .eqv. [.true., .true.])) then
+        print *, 'PASS: Negative min_gap treated as zero (touching kept)'
+    else
+        print *, 'ERROR: Expected [T,T] when min_gap is negative (clamped to 0)'
+        stop 5
+    end if
+
+    ! Case 6: Zero-width labels never overlap; all should be kept
+    deallocate(centers, widths, keep)
+    allocate(centers(3), widths(3), keep(3))
+    centers = [10.0_wp, 10.0_wp, 10.0_wp]
+    widths  = [0, 0, 0]
+    gap = 0.0_wp
+    call compute_non_overlapping_mask(centers, widths, gap, keep)
+    if (all(keep)) then
+        print *, 'PASS: Zero-width labels all kept'
+    else
+        print *, 'ERROR: Expected all .true. for zero-width labels'
+        stop 6
+    end if
+
     print *, '=== Raster axes overlap mask tests PASSED ==='
 end program test_raster_axes_overlap_mask
-
