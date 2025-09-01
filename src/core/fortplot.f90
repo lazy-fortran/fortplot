@@ -46,7 +46,7 @@ module fortplot
     !!   call fig%initialize(800, 600)
     !!   call figure_add_plot(fig, x, y, label="data", linestyle='b-o')
     !!   call figure_add_contour(fig, x_grid, y_grid, z_field)
-    !!   call figure_legend(fig, )
+    !!   call figure_legend(fig)
     !!   call figure_savefig(fig, 'results.pdf')
     !!
     !! Author: fortplot contributors
