@@ -63,6 +63,21 @@ jobs:
       shell: bash
       run: git config --global core.autocrlf input
 
+    - name: Define MSYS2_DIR (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        # Place a reusable MSYS2 install next to the workspace, e.g. D:\a\fortplot\_msys2
+        $msys2Dir = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) '_msys2'
+        echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Cache full MSYS2 installation (Windows)
+      if: matrix.os == 'windows-latest'
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.MSYS2_DIR }}
+        key: ${{ runner.os }}-msys2-full-${{ hashFiles('.github/workflows/ci.yml') }}
+
     - name: Setup MSYS2 (Windows)
       if: matrix.os == 'windows-latest'
       uses: msys2/setup-msys2@v2
@@ -70,8 +85,9 @@ jobs:
         msystem: MINGW64
         update: false
         path-type: inherit
-        cache: true
-        release: false
+        cache: false           # Rely on folder cache for full install
+        release: false         # Reuse existing install if present
+        location: ${{ env.MSYS2_DIR }}
         install: >-
           mingw-w64-x86_64-gcc-fortran
           mingw-w64-x86_64-gcc
@@ -81,7 +97,10 @@ jobs:
 
     - name: Add MinGW to PATH (Windows)
       if: matrix.os == 'windows-latest'
-      run: echo C:\\msys64\\mingw64\\bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      run: |
+        $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
+        if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
+        echo (Join-Path $msysLoc 'mingw64\bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       shell: pwsh
 
     - name: Cache FPM binary (Windows)
