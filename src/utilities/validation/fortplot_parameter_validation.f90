@@ -18,7 +18,7 @@ module fortplot_parameter_validation
     ! Re-export context system for backward compatibility  
     use fortplot_validation_context, only: validation_warning, validation_error, &
                                           validation_warning_with_context, validation_error_with_context, &
-                                          default_validation_context, set_warning_mode, &
+                                          default_validation_context, &
                                           validation_context_t, parameter_validation_result_t, &
                                           WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
     implicit none
@@ -40,7 +40,6 @@ module fortplot_parameter_validation
     public :: validation_warning_with_context
     public :: validation_error_with_context
     public :: default_validation_context
-    public :: set_warning_mode
     public :: validation_context_t
     public :: parameter_validation_result_t
     public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
