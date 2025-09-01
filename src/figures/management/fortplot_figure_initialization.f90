@@ -148,12 +148,14 @@ contains
         state%ylim_set = .false.
         state%has_error = .false.
         
-        ! Proper legend initialization - allocate entries array
+        ! Proper legend initialization without manual deallocate
         state%legend_data%num_entries = 0
-        if (allocated(state%legend_data%entries)) then
-            deallocate(state%legend_data%entries)
-        end if
-        allocate(state%legend_data%entries(0))
+        block
+            use fortplot_legend, only: legend_entry_t
+            type(legend_entry_t), allocatable :: new_entries(:)
+            allocate(new_entries(0))
+            call move_alloc(new_entries, state%legend_data%entries)
+        end block
     end subroutine initialize_figure_state
     
     subroutine reset_figure_state(state)
@@ -164,19 +166,21 @@ contains
         state%rendered = .false.
         state%show_legend = .false.
         
-        ! Initialize legend data (safe initialization)
+        ! Initialize legend data (safe initialization without manual deallocate)
         state%legend_data%num_entries = 0
-        if (allocated(state%legend_data%entries)) then
-            deallocate(state%legend_data%entries)
-        end if
-        allocate(state%legend_data%entries(0))
+        block
+            use fortplot_legend, only: legend_entry_t
+            type(legend_entry_t), allocatable :: new_entries(:)
+            allocate(new_entries(0))
+            call move_alloc(new_entries, state%legend_data%entries)
+        end block
         
         ! Reset axis limits and labels
         state%xlim_set = .false.
         state%ylim_set = .false.
-        if (allocated(state%title)) deallocate(state%title)
-        if (allocated(state%xlabel)) deallocate(state%xlabel)
-        if (allocated(state%ylabel)) deallocate(state%ylabel)
+        state%title = ''
+        state%xlabel = ''
+        state%ylabel = ''
         
         state%has_error = .false.
     end subroutine reset_figure_state
@@ -186,8 +190,7 @@ contains
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: backend_name
         
-        ! Deallocate current backend and initialize new one
-        if (allocated(state%backend)) deallocate(state%backend)
+        ! Reinitialize backend; initialize_backend has intent(out) and will handle deallocation
         call initialize_backend(state%backend, backend_name, state%width, state%height)
         
         ! Force re-rendering with new backend
