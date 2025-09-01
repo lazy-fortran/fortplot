@@ -22,7 +22,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune
 
 # Default target
 all: build
@@ -282,6 +282,7 @@ help:
 	@echo "  release     - Build with optimizations"
 	@echo "  run-release - Run optimized build"
 	@echo "  help        - Show this help message"
+	@echo "  git-prune   - Safely prune remote-tracking and old merged local branches"
 	@echo ""
 	@echo "Pass additional fmp arguments using ARGS variable:"
 	@echo "  make example ARGS=\"basic_plots\""
@@ -291,3 +292,12 @@ help:
 	@echo "This project uses STB TrueType and STB Image Write for text and PNG compression."
 	@echo "All dependencies are included as header-only libraries."
 	@echo "No external packages required."
+
+# Prune remote-tracking branches and delete local merged branches (dry-run by default)
+git-prune:
+	@echo "Running safe git prune (dry-run). Use -- FORCE=1 to apply."
+	@if [ "$(FORCE)" = "1" ]; then \
+		./scripts/git_prune.sh --force; \
+	else \
+		./scripts/git_prune.sh; \
+	fi
