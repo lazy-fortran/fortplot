@@ -1,5 +1,21 @@
 # Allow additional arguments to be passed
 ARGS ?=
+# Enforce a hard timeout for all test invocations (accepts coreutils duration)
+# Can be overridden by environment: TEST_TIMEOUT=90s make test
+TEST_TIMEOUT ?= 120s
+
+# Cross-platform timeout detection: prefer GNU coreutils `timeout`, fallback to Homebrew `gtimeout`.
+# If neither exists, run without timeout (prints a notice once).
+TIMEOUT_BIN := $(shell command -v timeout 2>/dev/null || command -v gtimeout 2>/dev/null)
+ifeq ($(TIMEOUT_BIN),)
+  TIMEOUT_PREFIX :=
+  define _timeout_notice
+    @echo "[NOTICE] 'timeout' not found; running without enforced test timeout"
+  endef
+else
+  TIMEOUT_PREFIX := $(TIMEOUT_BIN) $(TEST_TIMEOUT)
+  _timeout_notice :=
+endif
 
 # FPM flags for different build targets
 FPM_FLAGS_LIB = --flag -fPIC
@@ -29,32 +45,35 @@ debug:
 
 # Run tests
 test: create_test_dirs
-	fpm test $(FPM_FLAGS_TEST) $(ARGS)
+	$(call _timeout_notice)
+	@echo "Running tests$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
+	$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
 # Run fast tests for CI (skip heavy I/O and MPEG tests)
 test-ci:
-	@echo "Running CI-optimized test suite (essential tests only)..."
+	$(call _timeout_notice)
+	@echo "Running CI-optimized test suite (essential tests only)$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
 	@echo "Testing core functionality, axes, backend basics"
-	@fpm test $(FPM_FLAGS_TEST) --target test_public_api || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_simple_validation || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_backend_switching || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_matplotlib_stubs || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_show_fallback_mechanisms || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_format_parser || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_figure_state_isolation || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
-	@fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_public_api || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_simple_validation || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_backend_switching || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_matplotlib_stubs || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_show_fallback_mechanisms || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_format_parser || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_figure_state_isolation || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
 	@# Regression guard for Issue #985 (PDF coordinate mapping)
-	@fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
-	@python3 scripts/test_pdf_axes_color_black.py || exit 1
+	@$(TIMEOUT_PREFIX) python3 scripts/test_pdf_axes_color_black.py || exit 1
 	@# Security regression tests for Python bridge stdin handling (PR #1010)
-	@python3 scripts/test_python_bridge_security.py || exit 1
+	@$(TIMEOUT_PREFIX) python3 scripts/test_python_bridge_security.py || exit 1
 	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
-	@fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)
-	@./scripts/test_pcolormesh_guard.sh || exit 1
+	@$(TIMEOUT_PREFIX) ./scripts/test_pcolormesh_guard.sh || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
