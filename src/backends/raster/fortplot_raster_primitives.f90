@@ -117,7 +117,8 @@ contains
         !! @return f Fractional part (x - floor(x))
         real(wp), intent(in) :: x
         real(wp) :: f
-        f = x - int(x)
+        ! Use floor for correct behavior with negative values
+        f = x - floor(x)
     end function fpart
 
     function rfpart(x) result(rf)
