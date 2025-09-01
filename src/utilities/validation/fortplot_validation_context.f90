@@ -64,7 +64,7 @@ contains
         character(len=512) :: warning_key
         logical :: emit
         
-        if (current_warning_mode == WARNING_MODE_SILENT) return
+        if (current_warning_mode /= WARNING_MODE_ALL) return
         
         ! Create unique warning key for deduplication
         if (present(context)) then
@@ -116,7 +116,7 @@ contains
         end if
         
         ! Respect context-specific warning mode
-        if (ctx%warning_mode == WARNING_MODE_SILENT .or. ctx%suppress_output) return
+        if (ctx%warning_mode /= WARNING_MODE_ALL .or. ctx%suppress_output) return
 
         ! Delegate to legacy deduplicating warning mechanism to avoid spam.
         if (present(context_param)) then
