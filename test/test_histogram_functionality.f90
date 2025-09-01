@@ -164,6 +164,9 @@ contains
         ! This should not crash with segmentation fault
         call fig%hist(data, bins=0)
         
+        ! Verify no plot was added
+        call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Zero bins adds no plots")
+        
         print *, '  PASS: Zero bins handled without segmentation fault'
         call end_test()
     end subroutine test_histogram_zero_bins
@@ -179,6 +182,9 @@ contains
         
         ! This should not crash with segmentation fault
         call fig%hist(data, bins=-5)
+        
+        ! Verify no plot was added
+        call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Negative bins adds no plots")
         
         print *, '  PASS: Negative bins handled without segmentation fault'
         call end_test()
