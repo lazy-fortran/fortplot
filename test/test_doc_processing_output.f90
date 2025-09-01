@@ -2,6 +2,7 @@ program test_doc_processing_output
     use fortplot_doc_processing, only: get_example_count, get_example_dir, get_example_name, process_example
     use fortplot_doc_output,     only: write_generated_outputs
     use fortplot_doc_core,       only: PATH_MAX_LEN
+    use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
     integer :: n, unit_out, ios
@@ -79,13 +80,12 @@ contains
     end subroutine assert_file_contains
 
     subroutine ensure_parent_dir_exists()
-        integer :: ierr
-        call execute_command_line('mkdir -p build/test/output', exitstat=ierr)
-        if (ierr /= 0) then
+        logical :: ok
+        call create_directory_runtime('build/test/output', ok)
+        if (.not. ok) then
             print *, 'FAIL: cannot create build/test/output directory'
             stop 1
         end if
     end subroutine ensure_parent_dir_exists
 
 end program test_doc_processing_output
-
