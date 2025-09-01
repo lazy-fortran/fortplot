@@ -147,6 +147,10 @@ jobs:
         mkdir -p output/example/fortran/legend_demo
         mkdir -p output/example/fortran/marker_demo
 
+    - name: Verify file size compliance (limits)
+      if: matrix.os == 'ubuntu-latest'
+      run: make verify-size-compliance
+
     - name: Build project
       shell: bash
       run: |
