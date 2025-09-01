@@ -12,22 +12,31 @@ OUT_FILE="$ROOT_DIR/output/python_bridge_demo.png"
 mkdir -p "$ROOT_DIR/output"
 
 # Locate bridge executable via the Python helper (avoids hardcoding build paths)
-BRIDGE_EXE=$(python3 - <<'PY'
-from pathlib import Path
-import sys
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'python'))
-from fortplot.fortplot_wrapper import FortplotModule  # type: ignore
-print(FortplotModule()._find_bridge_executable())
+# Use PYTHONPATH to include the repo's python/ directory (robust when running from stdin)
+BRIDGE_EXE=$(PYTHONPATH="$ROOT_DIR/python${PYTHONPATH+:$PYTHONPATH}" python3 - <<'PY'
+try:
+    from fortplot.fortplot_wrapper import FortplotModule  # type: ignore
+    print(FortplotModule()._find_bridge_executable())
+except Exception:
+    # Print nothing; caller will fall back
+    pass
 PY
 )
 
-if [ ! -x "$BRIDGE_EXE" ] && ! command -v "$BRIDGE_EXE" >/dev/null 2>&1; then
-  echo "Bridge executable not found: $BRIDGE_EXE" >&2
+# Fallback to a common build path if Python detection failed
+if [ -z "${BRIDGE_EXE:-}" ]; then
+  if [ -x "$ROOT_DIR/build/app/fortplot_python_bridge" ]; then
+    BRIDGE_EXE="$ROOT_DIR/build/app/fortplot_python_bridge"
+  fi
+fi
+
+if [ -z "${BRIDGE_EXE:-}" ] || { [ ! -x "$BRIDGE_EXE" ] && ! command -v "$BRIDGE_EXE" >/dev/null 2>&1; }; then
+  echo "Bridge executable not found or not executable: ${BRIDGE_EXE:-<empty>}" >&2
   exit 1
 fi
 
 # Run bridge with example commands
-timeout 10s bash -c "cat '$CMD_FILE' | '$BRIDGE_EXE'" || true
+timeout 10s bash -c "cat '$CMD_FILE' | '$BRIDGE_EXE'"
 
 # Validate output
 if [ ! -f "$OUT_FILE" ]; then
@@ -42,4 +51,3 @@ if [ "${size:-0}" -lt 1000 ]; then
 fi
 
 echo "✓ Python bridge example produced $OUT_FILE (${size} bytes)"
-
