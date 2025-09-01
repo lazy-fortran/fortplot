@@ -155,12 +155,15 @@ validate-output: create_build_dirs
 	fpm test $(FPM_FLAGS_TEST) --target test_output_validation
 	@echo "Functional output validation completed successfully"
 
-# Test documentation examples
+# Test documentation-related targets (run existing doc tests)
 test-docs: create_build_dirs
-	@echo "Running documentation example validation..."
+	$(call _timeout_notice)
+	@echo "Running documentation tests$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
 	@mkdir -p output/test
-	fpm test $(FPM_FLAGS_TEST) --target test_documentation_examples
-	@echo "Documentation example validation completed successfully"
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_doc_core || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_doc_processing_output || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_docs_index_pages || exit 1
+	@echo "Documentation tests completed successfully"
 
 # Run comprehensive functional tests
 test-functional: test validate-output test-docs

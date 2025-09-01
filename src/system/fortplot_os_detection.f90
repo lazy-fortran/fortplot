@@ -14,19 +14,19 @@ contains
 
     function is_debug_enabled() result(debug_enabled)
         !! Check if debug logging is enabled via environment variable
+        !! Uses a C helper wrapping getenv() to ensure dynamic updates
+        !! from the current process environment are observed reliably.
+        use, intrinsic :: iso_c_binding, only: c_int
         logical :: debug_enabled
-        character(len=256) :: debug_env
-        integer :: status
-        
-        debug_enabled = .false.
-        
-        ! Check for FORTPLOT_DEBUG environment variable
-        call get_environment_variable("FORTPLOT_DEBUG", debug_env, status=status)
-        if (status == 0 .and. len_trim(debug_env) > 0) then
-            if (trim(debug_env) == "1" .or. trim(debug_env) == "true") then
-                debug_enabled = .true.
-            end if
-        end if
+        interface
+            function fortplot_is_debug_enabled() bind(C, name="fortplot_is_debug_enabled") &
+                    result(res)
+                import :: c_int
+                integer(c_int) :: res
+            end function fortplot_is_debug_enabled
+        end interface
+
+        debug_enabled = (fortplot_is_debug_enabled() /= 0)
     end function is_debug_enabled
 
     function is_windows() result(windows)
