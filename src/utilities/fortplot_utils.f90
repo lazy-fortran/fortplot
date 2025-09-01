@@ -5,8 +5,7 @@ module fortplot_utils
     !! multiple plotting modules. Follows Interface Segregation Principle
     !! by grouping related utility functions together.
     
-    use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_context, only: plot_context, setup_canvas
+    use fortplot_context, only: plot_context
     use fortplot_png, only: create_png_canvas
     use fortplot_pdf, only: create_pdf_canvas
     use fortplot_ascii, only: create_ascii_canvas
