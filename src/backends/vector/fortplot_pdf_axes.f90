@@ -1,7 +1,7 @@
 module fortplot_pdf_axes
     !! PDF axes, grid, and tick drawing operations
     !! Handles plot frame, axes, tick marks, and grid lines
-    
+
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
                                 PDF_TICK_SIZE, PDF_LABEL_SIZE, &
@@ -11,7 +11,7 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
     implicit none
     private
-    
+
     ! Public procedures
     public :: draw_pdf_axes_and_labels
     public :: draw_pdf_3d_axes_frame
@@ -31,15 +31,15 @@ contains
         real(wp), intent(in) :: x_min_orig, x_max_orig, y_min_orig, y_max_orig
         real(wp), intent(out) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
         character(len=*), intent(in), optional :: xscale, yscale
-        
+
         real(wp) :: x_range, y_range
-        
+
         ! Initialize adjusted values
         x_min_adj = x_min_orig
         x_max_adj = x_max_orig
         y_min_adj = y_min_orig
         y_max_adj = y_max_orig
-        
+
         ! Apply log scaling if requested
         if (present(xscale)) then
             if (xscale == 'log' .and. x_min_adj > 0.0_wp) then
@@ -47,23 +47,23 @@ contains
                 x_max_adj = log10(x_max_adj)
             end if
         end if
-        
+
         if (present(yscale)) then
             if (yscale == 'log' .and. y_min_adj > 0.0_wp) then
                 y_min_adj = log10(y_min_adj)
                 y_max_adj = log10(y_max_adj)
             end if
         end if
-        
+
         ! Ensure valid ranges
         x_range = x_max_adj - x_min_adj
         y_range = y_max_adj - y_min_adj
-        
+
         if (abs(x_range) < 1.0e-10_wp) then
             x_min_adj = x_min_adj - 0.5_wp
             x_max_adj = x_max_adj + 0.5_wp
         end if
-        
+
         if (abs(y_range) < 1.0e-10_wp) then
             y_min_adj = y_min_adj - 0.5_wp
             y_max_adj = y_max_adj + 0.5_wp
@@ -83,21 +83,21 @@ contains
         integer, intent(out) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
-        
+
         ! Calculate number of ticks and allocate arrays
         call initialize_tick_arrays(plot_area_width, plot_area_height, num_x_ticks, num_y_ticks, &
                                    x_positions, y_positions, x_labels, y_labels)
-        
+
         ! Generate X axis ticks
         call generate_x_axis_ticks(data_x_min, data_x_max, num_x_ticks, plot_area_left, &
                                   plot_area_width, x_positions, x_labels, xscale)
-        
+
         ! Generate Y axis ticks
         call generate_y_axis_ticks(data_y_min, data_y_max, num_y_ticks, plot_area_bottom, &
                                   plot_area_height, y_positions, y_labels, yscale)
-        
+
     end subroutine generate_tick_data
-    
+
     subroutine initialize_tick_arrays(plot_width, plot_height, num_x_ticks, num_y_ticks, &
                                      x_positions, y_positions, x_labels, y_labels)
         !! Initialize tick count and allocate arrays
@@ -105,20 +105,20 @@ contains
         integer, intent(out) :: num_x_ticks, num_y_ticks
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
         character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
-        
+
         integer, parameter :: TARGET_TICKS = 8
-        
+
         ! Determine number of ticks using plot area dimensions
         num_x_ticks = min(TARGET_TICKS, max(2, int(plot_width / 50.0_wp)))
         num_y_ticks = min(TARGET_TICKS, max(2, int(plot_height / 40.0_wp)))
-        
+
         ! Allocate arrays
         allocate(x_positions(num_x_ticks))
         allocate(y_positions(num_y_ticks))
         allocate(x_labels(num_x_ticks))
         allocate(y_labels(num_y_ticks))
     end subroutine initialize_tick_arrays
-    
+
     subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, plot_width, &
                                     positions, labels, scale_type)
         !! Generate X axis tick positions and labels
@@ -127,13 +127,13 @@ contains
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
-        
+
         real(wp) :: data_range, data_step, tick_value
         integer :: i
         real(wp), parameter :: EPSILON = 1.0e-10_wp
-        
+
         data_range = data_max - data_min
-        
+
         ! Generate tick positions and labels
         if (abs(data_range) < EPSILON) then
             call handle_zero_range_ticks(data_min, num_ticks, plot_left + plot_width * 0.5_wp, &
@@ -142,16 +142,16 @@ contains
             data_step = data_range / real(num_ticks - 1, wp)
             do i = 1, num_ticks
                 tick_value = data_min + real(i - 1, wp) * data_step
-                
+
                 ! Convert to plot coordinates
                 positions(i) = plot_left + (tick_value - data_min) / data_range * plot_width
-                
+
                 ! Generate label
                 call format_tick_label(tick_value, labels(i), scale_type)
             end do
         end if
     end subroutine generate_x_axis_ticks
-    
+
     subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, plot_height, &
                                     positions, labels, scale_type)
         !! Generate Y axis tick positions and labels
@@ -160,13 +160,13 @@ contains
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
-        
+
         real(wp) :: data_range, data_step, tick_value
         integer :: i
         real(wp), parameter :: EPSILON = 1.0e-10_wp
-        
+
         data_range = data_max - data_min
-        
+
         ! Generate tick positions and labels
         if (abs(data_range) < EPSILON) then
             call handle_zero_range_ticks(data_min, num_ticks, plot_bottom + plot_height * 0.5_wp, &
@@ -175,16 +175,16 @@ contains
             data_step = data_range / real(num_ticks - 1, wp)
             do i = 1, num_ticks
                 tick_value = data_min + real(i - 1, wp) * data_step
-                
+
                 ! Convert to plot coordinates
                 positions(i) = plot_bottom + (tick_value - data_min) / data_range * plot_height
-                
+
                 ! Generate label
                 call format_tick_label(tick_value, labels(i), scale_type)
             end do
         end if
     end subroutine generate_y_axis_ticks
-    
+
     subroutine handle_zero_range_ticks(data_value, num_ticks, center_position, &
                                       positions, labels, scale_type)
         !! Handle ticks for zero or near-zero range data
@@ -193,21 +193,21 @@ contains
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
-        
+
         integer :: i
-        
+
         do i = 1, num_ticks
             positions(i) = center_position
             call format_tick_label(data_value, labels(i), scale_type)
         end do
     end subroutine handle_zero_range_ticks
-    
+
     subroutine format_tick_label(tick_value, label, scale_type)
         !! Format tick label based on scale type
         real(wp), intent(in) :: tick_value
         character(len=32), intent(out) :: label
         character(len=*), intent(in), optional :: scale_type
-        
+
         if (present(scale_type)) then
             if (scale_type == 'log') then
                 write(label, '(ES10.2)') 10.0_wp ** tick_value
@@ -231,7 +231,7 @@ contains
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, canvas_height
-        
+
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=32), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks
@@ -260,10 +260,10 @@ contains
 
         call draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x_ticks, num_y_ticks, &
                                           plot_area_left, plot_area_bottom, canvas_height)
-        
+
         call draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, y_labels, &
                                            num_x_ticks, num_y_ticks, plot_area_left, plot_area_bottom, canvas_height)
-        
+
         ! Draw title and axis labels
         if (present(title) .or. present(xlabel) .or. present(ylabel)) then
             call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
@@ -276,7 +276,7 @@ contains
         !! Draw 3D axes frame - see issue #494 for implementation roadmap
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
-        
+
         ! PDF backend does not support 3D axes projection
         ! 3D plots in PDF backend fall back to 2D projections handled by the
         ! standard 2D axes drawing functions. This is consistent with many
@@ -292,11 +292,11 @@ contains
         real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height, canvas_height
         character(len=256) :: frame_cmd
         real(wp) :: x1, y1
-        
+
         ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
         x1 = plot_left
         y1 = plot_bottom  ! No conversion needed - PDF Y=0 is at bottom
-        
+
         ! Draw rectangle frame
         write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') &
             x1, y1, plot_width, plot_height
@@ -311,18 +311,18 @@ contains
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         integer, intent(in) :: num_x, num_y
         real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
-        
+
         integer :: i
         character(len=256) :: tick_cmd
         real(wp) :: tick_length, bottom_y
-        
+
         ! Ensure tick marks are stroked in black regardless of prior drawing state
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
         call ctx%set_line_width(1.0_wp)
 
         tick_length = PDF_TICK_SIZE
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
-        
+
         ! Draw X-axis ticks (bottom of plot area) — draw inward into frame
         do i = 1, num_x
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
@@ -330,7 +330,7 @@ contains
                 x_positions(i), bottom_y + tick_length
             ctx%stream_data = ctx%stream_data // trim(adjustl(tick_cmd)) // new_line('a')
         end do
-        
+
         ! Draw Y-axis ticks (left side of plot area) — draw inward into frame
         do i = 1, num_y
             write(tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
@@ -349,7 +349,7 @@ contains
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
         real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
-        
+
         integer :: i
         real(wp) :: label_x, label_y, bottom_y
         real(wp), parameter :: TICK_CHAR_W = 6.0_wp   ! Approximate glyph width at PDF_TICK_LABEL_SIZE
@@ -377,11 +377,11 @@ contains
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
-        
+
         real(wp) :: title_x, title_y
         real(wp) :: xlabel_x, xlabel_y
         real(wp) :: ylabel_x, ylabel_y
-        
+
         ! Draw title (centered at top)
         if (present(title)) then
             if (len_trim(title) > 0) then
@@ -391,7 +391,7 @@ contains
                 call draw_pdf_text_bold(ctx, title_x, title_y, trim(title))
             end if
         end if
-        
+
         ! Draw X-axis label (centered at bottom) — 50px below plot bottom
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
@@ -401,7 +401,7 @@ contains
                 call draw_mixed_font_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if
-        
+
         ! Draw Y-axis label (rotated on left) — end 98px left of plot
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
@@ -420,18 +420,18 @@ contains
         character(len=*), intent(in) :: y_labels(:)
         integer, intent(in) :: num_y
         real(wp), intent(in) :: plot_left, canvas_height
-        
+
         real(wp) :: last_y_drawn
         real(wp) :: min_spacing
         integer :: i
         real(wp) :: label_x, label_y
-        
+
         min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
         last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn
-        
+
         do i = 1, num_y
             label_y = y_positions(i) - 3.0_wp  ! PDF Y=0 is at bottom, no conversion needed
-            
+
             ! Only draw if sufficient spacing from last label
             if (abs(label_y - last_y_drawn) >= min_spacing) then
                 label_x = plot_left - real(len_trim(y_labels(i)), wp) * 5.0_wp
