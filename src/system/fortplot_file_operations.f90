@@ -250,6 +250,37 @@ contains
         call check_user_directory_patterns(normalized_path, is_allowed)
     end subroutine check_allowed_path
 
+    logical function has_parent_segment(path) result(has_parent)
+        !! Detect '..' path segments robustly for both '/' and '\\' separators
+        character(len=*), intent(in) :: path
+        integer :: n
+        character(len=:), allocatable :: p
+        has_parent = .false.
+        n = len_trim(path)
+        if (n == 0) return
+        p = path(1:n)
+        if (trim(p) == '..') then
+            has_parent = .true.
+            return
+        end if
+        if (index(p, '../') > 0) then
+            has_parent = .true.
+            return
+        end if
+        if (index(p, '..\\') > 0) then
+            has_parent = .true.
+            return
+        end if
+        if (index(p, '/..') > 0) then
+            has_parent = .true.
+            return
+        end if
+        if (index(p, '\\..') > 0) then
+            has_parent = .true.
+            return
+        end if
+    end function has_parent_segment
+
     subroutine check_user_directory_patterns(path, is_allowed)
         !! Check if path matches common user directory patterns
         !! Issue #903: Support matplotlib-like directory auto-creation
@@ -287,8 +318,8 @@ contains
         
         ! RELATIVE SUBDIRECTORIES (no leading slash, no traversal)
         if (len_trim(path) > 0 .and. path(1:1) /= '/' .and. path(1:1) /= '\') then
-            ! Allow relative paths that don't contain directory traversal
-            if (index(path, '../') == 0 .and. index(path, '..\') == 0) then
+            ! Allow only if there is no parent directory segment
+            if (.not. has_parent_segment(path)) then
                 is_allowed = .true.
                 return
             end if
@@ -309,8 +340,8 @@ contains
             return
         end if
         
-        ! Check for directory traversal attacks
-        if (index(path, '../') > 0 .or. index(path, '..\') > 0) then
+        ! Check for directory traversal attacks (robust '..' detection)
+        if (has_parent_segment(path)) then
             safe = .false.
             return
         end if
