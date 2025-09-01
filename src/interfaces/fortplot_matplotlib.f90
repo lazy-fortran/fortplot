@@ -19,7 +19,7 @@ module fortplot_matplotlib
         add_contour, add_contour_filled, add_pcolormesh, add_surface
     
     use fortplot_matplotlib_axes, only: &
-        xlabel, ylabel, title, legend, &
+        xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata
     
@@ -44,7 +44,7 @@ module fortplot_matplotlib
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
     
     ! Axis and annotation functions
-    public :: xlabel, ylabel, title, legend
+    public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
     public :: text, annotate

@@ -86,7 +86,7 @@ module fortplot
     use fortplot_matplotlib, only: plot, contour, contour_filled, pcolormesh, streamplot, &
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
-                                   xlabel, ylabel, title, legend, &
+                                   xlabel, ylabel, title, legend, grid, &
                                    savefig, savefig_with_status, figure, subplot, &
                                    add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar, &
                                    add_3d_plot, add_surface, add_scatter, &
@@ -121,7 +121,7 @@ module fortplot
     
     ! Figure management and configuration
     public :: figure, subplot
-    public :: xlabel, ylabel, title, legend
+    public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
     public :: savefig, savefig_with_status
