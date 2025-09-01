@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Basic non-interactive validation of fortplot_python_bridge using an example command file.
+# Generates a small PNG and verifies it exists and is non-empty.
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CMD_FILE="$ROOT_DIR/example/python_bridge/commands_basic.txt"
+OUT_FILE="$ROOT_DIR/output/python_bridge_demo.png"
+
+# Ensure output dir exists
+mkdir -p "$ROOT_DIR/output"
+
+# Locate bridge executable via the Python helper (avoids hardcoding build paths)
+BRIDGE_EXE=$(python3 - <<'PY'
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'python'))
+from fortplot.fortplot_wrapper import FortplotModule  # type: ignore
+print(FortplotModule()._find_bridge_executable())
+PY
+)
+
+if [ ! -x "$BRIDGE_EXE" ] && ! command -v "$BRIDGE_EXE" >/dev/null 2>&1; then
+  echo "Bridge executable not found: $BRIDGE_EXE" >&2
+  exit 1
+fi
+
+# Run bridge with example commands
+timeout 10s bash -c "cat '$CMD_FILE' | '$BRIDGE_EXE'" || true
+
+# Validate output
+if [ ! -f "$OUT_FILE" ]; then
+  echo "Expected output file not created: $OUT_FILE" >&2
+  exit 2
+fi
+
+size=$(stat -c%s "$OUT_FILE" 2>/dev/null || wc -c < "$OUT_FILE")
+if [ "${size:-0}" -lt 1000 ]; then
+  echo "Output file too small (${size} bytes): $OUT_FILE" >&2
+  exit 3
+fi
+
+echo "✓ Python bridge example produced $OUT_FILE (${size} bytes)"
+
