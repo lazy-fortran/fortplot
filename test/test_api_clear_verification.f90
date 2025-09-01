@@ -31,8 +31,8 @@ program test_api_clear_verification
     print *, "✓ Second plot created after clear"
     
     ! Save the final plot to verify it shows only the second plot
-    call fig%savefig("api_clear_test.png")
-    print *, "✓ Final plot saved as api_clear_test.png"
+    call fig%savefig("test/output/api_clear_test.png")
+    print *, "✓ Final plot saved as test/output/api_clear_test.png"
     print *, "   (Should show only the second plot - linear relationship)"
     
     print *, ""
