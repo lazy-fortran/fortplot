@@ -252,13 +252,18 @@ contains
 
     logical function has_parent_segment(path) result(has_parent)
         !! Detect '..' path segments robustly for both '/' and '\\' separators
+        !! Normalize separators to '/' to avoid backslash-escape ambiguities
         character(len=*), intent(in) :: path
-        integer :: n
+        integer :: i, n
         character(len=:), allocatable :: p
         has_parent = .false.
         n = len_trim(path)
         if (n == 0) return
         p = path(1:n)
+        ! Normalize '\\' to '/'
+        do i = 1, len_trim(p)
+            if (p(i:i) == '\\') p(i:i) = '/'
+        end do
         if (trim(p) == '..') then
             has_parent = .true.
             return
@@ -267,15 +272,7 @@ contains
             has_parent = .true.
             return
         end if
-        if (index(p, '..\\') > 0) then
-            has_parent = .true.
-            return
-        end if
         if (index(p, '/..') > 0) then
-            has_parent = .true.
-            return
-        end if
-        if (index(p, '\\..') > 0) then
             has_parent = .true.
             return
         end if

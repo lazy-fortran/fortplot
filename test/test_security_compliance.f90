@@ -161,6 +161,8 @@ program test_security_compliance
     else
         print *, 'PASS: results/../plots correctly blocked'
     end if
+
+    ! Note: Windows-style separators are covered in platform-specific tests
     
     ! Test various command availability checks for different programs
     call check_command_available_runtime("fpm", available)
