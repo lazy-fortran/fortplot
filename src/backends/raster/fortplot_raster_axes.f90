@@ -16,6 +16,12 @@ module fortplot_raster_axes
     public :: raster_draw_axes_and_labels, raster_render_ylabel
     public :: compute_title_position
 
+    ! Local spacing parameters for raster tick labels (pixels)
+    ! X tick labels are positioned X_TICK_LABEL_PAD pixels below the tick end
+    ! Y tick labels are right-aligned with a gap of Y_TICK_LABEL_RIGHT_PAD from the tick end
+    integer, parameter :: X_TICK_LABEL_PAD = 10
+    integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 14
+
 contains
 
     subroutine raster_draw_axes_and_labels(raster, width, height, plot_area, &
@@ -123,9 +129,9 @@ contains
             call process_latex_in_text(trim(tick_label), processed_text, processed_len)
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
-            ! Position x-tick label baseline 15 pixels below plot bottom (matplotlib-like)
+            ! Position x-tick label baseline TICK_MARK_LENGTH + X_TICK_LABEL_PAD below plot bottom (matplotlib-like)
             call render_text_to_image(raster%image_data, width, height, &
-                                    px - text_width/2, py + 15, trim(escaped_text), text_r, text_g, text_b)
+                                    px - text_width/2, py + tick_length + X_TICK_LABEL_PAD, trim(escaped_text), text_r, text_g, text_b)
         end do
     end subroutine raster_draw_x_axis_ticks
     
@@ -175,10 +181,10 @@ contains
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
             text_height = calculate_text_height(trim(escaped_text))
-            ! Right-align y-tick label so its right edge sits 19px left of plot area
-            ! With tick length 5px, set padding to 14px to achieve 19px total gap
+            ! Right-align y-tick label so its right edge sits (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD)
+            ! pixels left of the plot area
             call render_text_to_image(raster%image_data, width, height, &
-                px - tick_length - text_width - 14, py - text_height/2, &
+                px - tick_length - text_width - Y_TICK_LABEL_RIGHT_PAD, py - text_height/2, &
                 trim(escaped_text), text_r, text_g, text_b)
         end do
     end subroutine raster_draw_y_axis_ticks
