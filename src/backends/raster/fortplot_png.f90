@@ -135,6 +135,9 @@ contains
         integer(1), allocatable :: png_buffer(:)
         integer :: png_unit, ios
         character(len=512) :: error_msg
+        character(len=1024) :: tmp_filename
+        integer :: clk_count, clk_rate, clk_max
+        logical :: renamed_ok
         
         call generate_png_data(width, height, image_data, png_buffer)
         
@@ -142,26 +145,45 @@ contains
             call log_error("Failed to generate PNG data for '" // trim(filename) // "'")
             return
         end if
-        
-        open(newunit=png_unit, file=filename, access='stream', form='unformatted', &
+
+        ! Create a unique temporary filename in the same directory for atomic write
+        call system_clock(clk_count, clk_rate, clk_max)
+        write(tmp_filename, '(A,".tmp.",I0)') trim(filename), clk_count
+
+        open(newunit=png_unit, file=trim(tmp_filename), access='stream', form='unformatted', &
              status='replace', iostat=ios, iomsg=error_msg)
-        
+
         if (ios /= 0) then
-            call log_error("Cannot save PNG file '" // trim(filename) // "': " // trim(error_msg))
+            call log_error("Cannot save PNG file '" // trim(tmp_filename) // "': " // trim(error_msg))
             if (allocated(png_buffer)) deallocate(png_buffer)
             return
         end if
-        
+
         write(png_unit, iostat=ios) png_buffer
         
         if (ios /= 0) then
-            call log_error("Failed to write PNG data to '" // trim(filename) // "'")
+            call log_error("Failed to write PNG data to '" // trim(tmp_filename) // "'")
             close(png_unit, status='delete')  ! Remove incomplete file
             if (allocated(png_buffer)) deallocate(png_buffer)
             return
         end if
         close(png_unit)
-        
+
+        ! Atomically move the temporary file into place (best-effort)
+        call rename(trim(tmp_filename), trim(filename))
+        ! Verify rename result
+        inquire(file=trim(filename), exist=renamed_ok)
+        if (.not. renamed_ok) then
+            call log_error("Failed to finalize PNG file '" // trim(filename) // "' via atomic rename")
+            ! Best-effort: try to clean up temp file
+            open(newunit=png_unit, file=trim(tmp_filename), status='old', iostat=ios)
+            if (ios == 0) then
+                close(png_unit, status='delete')
+            end if
+            if (allocated(png_buffer)) deallocate(png_buffer)
+            return
+        end if
+
         if (allocated(png_buffer)) deallocate(png_buffer)
         call log_info("PNG file '" // trim(filename) // "' created successfully!")
     end subroutine write_png_file
