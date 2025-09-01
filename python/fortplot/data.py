@@ -14,7 +14,23 @@ def _ensure_array(obj):
         return np.array(obj)
     return obj
 
-def scatter(x, y, c=None, s=None, label=""):
+def scatter(
+    x,
+    y,
+    c=None,
+    s=None,
+    label="",
+    marker=None,
+    alpha=None,
+    edgecolors=None,
+    linewidths=None,
+    markersize=None,
+    color=None,
+    colormap=None,
+    vmin=None,
+    vmax=None,
+    show_colorbar=None,
+):
     """Create a scatter plot.
     
     Parameters
@@ -23,11 +39,29 @@ def scatter(x, y, c=None, s=None, label=""):
         The horizontal and vertical coordinates of the data points.
         x and y must be the same size.
     c : array-like, optional
-        The color specification (currently not implemented).
-    s : array-like, optional  
-        The marker sizes (currently not implemented).
+        Color values per-point (accepted for API compatibility).
+    s : array-like, optional
+        Marker sizes per-point (accepted for API compatibility).
     label : str, optional
         Label for the plot, used in legend. Default is empty string.
+    marker : str, optional
+        Matplotlib-style marker specification (accepted for API compatibility).
+    alpha : float, optional
+        Global marker opacity in [0,1] (accepted for API compatibility).
+    edgecolors : str or tuple, optional
+        Edge color for markers (accepted for API compatibility).
+    linewidths : float or array-like, optional
+        Line width of marker edges (accepted for API compatibility).
+    markersize : float, optional
+        Marker size when using a uniform size (accepted for API compatibility).
+    color : tuple, optional
+        RGB triple in [0,1] for uniform color (accepted for API compatibility).
+    colormap : str, optional
+        Name of colormap when using scalar array `c` (accepted for API compatibility).
+    vmin, vmax : float, optional
+        Color scaling bounds (accepted for API compatibility).
+    show_colorbar : bool, optional
+        Whether to display a colorbar for scalar `c` (accepted for API compatibility).
         
     Examples
     --------
@@ -45,6 +79,9 @@ def scatter(x, y, c=None, s=None, label=""):
     """
     x = _ensure_array(x)
     y = _ensure_array(y)
+    # Forward to the Fortran bridge. The current bridge supports label;
+    # additional matplotlib-compatible kwargs are accepted here for API
+    # compatibility but may be ignored by the backend until fully mapped.
     _fortplot.fortplot.scatter(x, y, label)
 
 def histogram(data, bins=None, density=False, label=""):
