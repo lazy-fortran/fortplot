@@ -1,5 +1,4 @@
 program test_warning_dedup_cleanup
-    use, intrinsic :: iso_fortran_env, only: real64
     use fortplot_validation_context, only: validation_warning, &
         reset_warning_tracking, is_warning_tracking_active
     implicit none
@@ -22,4 +21,3 @@ program test_warning_dedup_cleanup
 
     print *, "PASS: Warning deduplication storage cleanup works"
 end program test_warning_dedup_cleanup
-

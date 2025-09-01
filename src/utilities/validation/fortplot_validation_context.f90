@@ -7,7 +7,6 @@
 ! Issue #871: Thread-safe validation context system
 !
 module fortplot_validation_context
-    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     private
     
@@ -180,7 +179,6 @@ contains
     ! Private helper to track issued warnings for spam prevention
     subroutine track_warning(warning_key)
         character(len=*), intent(in) :: warning_key
-        character(len=512), allocatable :: temp_warnings(:)
         integer :: i
         
         if (.not. allocated(issued_warnings)) then
