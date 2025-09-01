@@ -82,12 +82,12 @@ jobs:
           ${{ runner.os }}-msys2-full-MINGW64-
 
     - name: Setup MSYS2 (Windows)
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && steps.msys2_cache.outputs.cache-hit != 'true'
       id: msys2
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: ${{ steps.msys2_cache.outputs.cache-hit != 'true' }}
+        update: true            # Only runs on cache miss; safe to update
         path-type: inherit
         cache: true            # Use builtin package cache for reliability
         release: true          # Install from release tarball into location
