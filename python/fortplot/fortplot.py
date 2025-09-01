@@ -58,11 +58,34 @@ Optimized for scientific computing with efficient handling of:
 For more examples and documentation, see the fortplot GitHub repository.
 """
 
-# Import all functions from modular structure
+# Import core and lightweight axes directly (no heavy deps)
 from fortplot.core import figure, plot, savefig, show
 from fortplot.axes import title, xlabel, ylabel, legend, xlim, ylim
-from fortplot.advanced import contour, contourf, streamplot, pcolormesh
-from fortplot.data import scatter, histogram
+
+# Lazily import advanced and data functions to avoid hard numpy dependency
+def contour(*args, **kwargs):
+    from fortplot.advanced import contour as _contour
+    return _contour(*args, **kwargs)
+
+def contourf(*args, **kwargs):
+    from fortplot.advanced import contourf as _contourf
+    return _contourf(*args, **kwargs)
+
+def streamplot(*args, **kwargs):
+    from fortplot.advanced import streamplot as _streamplot
+    return _streamplot(*args, **kwargs)
+
+def pcolormesh(*args, **kwargs):
+    from fortplot.advanced import pcolormesh as _pcolormesh
+    return _pcolormesh(*args, **kwargs)
+
+def scatter(*args, **kwargs):
+    from fortplot.data import scatter as _scatter
+    return _scatter(*args, **kwargs)
+
+def histogram(*args, **kwargs):
+    from fortplot.data import histogram as _histogram
+    return _histogram(*args, **kwargs)
 
 # Maintain backward compatibility by exposing all functions at package level
 __all__ = [

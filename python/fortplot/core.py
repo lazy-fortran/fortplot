@@ -6,16 +6,27 @@ Core figure management and basic plotting functionality for the fortplot
 Python interface.
 """
 
-import numpy as np
 import fortplot.fortplot_wrapper as _fortplot
 
 DEFAULT_DPI = 100
 
 def _ensure_array(obj):
-    """Convert input to numpy array if not already an array (DRY helper)."""
-    if not isinstance(obj, np.ndarray):
-        return np.array(obj)
-    return obj
+    """Convert input to a sequence suitable for plotting.
+
+    Uses numpy if available; otherwise falls back to built-in list/tuple.
+    Avoids import-time numpy dependency for CI/minimal environments.
+    """
+    try:
+        import numpy as np  # local import to avoid hard dependency
+        return obj if isinstance(obj, np.ndarray) else np.array(obj)
+    except Exception:
+        # Accept common Python sequences without copying unnecessarily
+        if isinstance(obj, (list, tuple)):
+            return obj
+        try:
+            return list(obj)
+        except Exception:
+            return [obj]
 
 def figure(figsize=[6.4, 4.8]):
     """Create a new figure with specified dimensions.

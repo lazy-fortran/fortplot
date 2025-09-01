@@ -9,8 +9,25 @@ It uses ctypes to interface with the compiled Fortran library.
 import os
 import subprocess
 import tempfile
-import numpy as np
 from pathlib import Path
+
+
+def _to_array(seq):
+    """Coerce input to an indexable sequence.
+
+    Tries numpy if available; otherwise falls back to list().
+    Importing numpy lazily prevents import‑time dependency failures in CI
+    when only bridge discovery is needed.
+    """
+    try:
+        import numpy as _np  # local import to avoid hard dependency at import time
+        return _np.asarray(seq)
+    except Exception:
+        # Best‑effort fallback: ensure we can iterate over values
+        try:
+            return list(seq)
+        except Exception:
+            return [seq]
 
 class FortplotModule:
     """Real fortplot module that interfaces with Fortran bridge program."""
@@ -100,8 +117,8 @@ class FortplotModule:
         if not self.figure_initialized:
             self.figure()
         
-        x = np.asarray(x)
-        y = np.asarray(y)
+        x = _to_array(x)
+        y = _to_array(y)
         
         if len(x) != len(y):
             raise ValueError("x and y arrays must have the same length")
@@ -125,8 +142,8 @@ class FortplotModule:
         if not self.figure_initialized:
             self.figure()
         
-        x = np.asarray(x)
-        y = np.asarray(y)
+        x = _to_array(x)
+        y = _to_array(y)
         
         if len(x) != len(y):
             raise ValueError("x and y arrays must have the same length")
@@ -150,7 +167,7 @@ class FortplotModule:
         if not self.figure_initialized:
             self.figure()
         
-        data = np.asarray(data)
+        data = _to_array(data)
         
         self._send_command("HISTOGRAM")
         self._send_command(str(len(data)))
