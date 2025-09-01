@@ -423,6 +423,25 @@ The documentation is generated in `build/doc/index.html` and includes:
 
 **Browse documentation**: Open `file:///path/to/fortplot/build/doc/index.html`
 
+## Branch Naming & Lifecycle
+
+- Naming: use `fix/<topic>`, `feat/<topic>`, `docs/<topic>`, `refactor/<topic>`.
+- Scope: keep branches focused; one unit of change per branch.
+- Lifecycle: delete branches after merge; avoid long-lived topic branches.
+- Hygiene: regularly prune remote-tracking branches and local branches fully merged into `main`.
+
+Pruning helper:
+
+```bash
+# Dry-run: see what would be pruned
+make git-prune
+
+# Apply pruning (removes merged local branches older than 30 days)
+make git-prune FORCE=1
+```
+
+This keeps the repository navigable and avoids metadata bloat.
+
 ## Why though?
 
 Mostly for the lulz and to help make Fortran great again. In addition,
