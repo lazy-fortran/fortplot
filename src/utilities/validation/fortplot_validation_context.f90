@@ -41,6 +41,9 @@ module fortplot_validation_context
     public :: validation_context_t
     public :: parameter_validation_result_t
     public :: WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
+    ! Cleanup and inspection helpers (for tests and long-running apps)
+    public :: reset_warning_tracking
+    public :: is_warning_tracking_active
     
     ! Current warning mode (can be changed by advanced users)
     integer :: current_warning_mode = WARNING_MODE_ALL
@@ -197,5 +200,18 @@ contains
             issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
         end if
     end subroutine track_warning
+    
+    ! Reset and cleanup warning deduplication tracking to prevent permanent allocation
+    subroutine reset_warning_tracking()
+        if (allocated(issued_warnings)) then
+            deallocate(issued_warnings)
+        end if
+        warning_count = 0
+    end subroutine reset_warning_tracking
+    
+    ! Inquiry: check if warning tracking storage is currently allocated
+    logical function is_warning_tracking_active()
+        is_warning_tracking_active = allocated(issued_warnings)
+    end function is_warning_tracking_active
     
 end module fortplot_validation_context
