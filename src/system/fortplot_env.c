@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #ifdef __has_include
 #  if __has_include(<strings.h>)
 #    include <strings.h>
@@ -10,18 +11,24 @@
  * Return 1 if FORTPLOT_DEBUG is set to "1" or "true" (any case), else 0.
  * Using getenv ensures dynamic environment changes are visible during tests.
  */
+static int equals_icase(const char *a, const char *b) {
+    unsigned char ca, cb;
+    if (!a || !b) return 0;
+    while (*a && *b) {
+        ca = (unsigned char)*a;
+        cb = (unsigned char)*b;
+        if (tolower(ca) != tolower(cb)) return 0;
+        ++a; ++b;
+    }
+    return *a == '\0' && *b == '\0';
+}
+
 int fortplot_is_debug_enabled(void) {
     const char *v = getenv("FORTPLOT_DEBUG");
     if (!v || !*v) return 0;
     if (strcmp(v, "1") == 0) return 1;
-#ifdef strcasecmp
-    if (strcasecmp(v, "true") == 0) return 1;
-    if (strcasecmp(v, "false") == 0) return 0;
-#else
-    /* Fallback: case-sensitive checks if strcasecmp is unavailable */
-    if (strcmp(v, "true") == 0) return 1;
-    if (strcmp(v, "false") == 0) return 0;
-#endif
+    if (equals_icase(v, "true")) return 1;
+    if (equals_icase(v, "false")) return 0;
     if (strcmp(v, "0") == 0) return 0;
     return 0;
 }
