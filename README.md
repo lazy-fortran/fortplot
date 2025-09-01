@@ -349,8 +349,8 @@ pip install git+https://github.com/lazy-fortran/fortplot.git
 - [x] Pseudocolor mesh (`pcolormesh`) with color limits and edge colors
 - [x] Streamplots (`streamplot`) for vector field visualization with arrows
 - [x] Enhanced scatter plots (`scatter`) with size/color mapping and multiple marker shapes
-- [ ] Bar charts (`bar`) - Not yet implemented
-- [ ] Histograms (`hist`) - Not yet implemented
+- [x] Bar charts (`bar`, `barh`) – implemented
+- [x] Histograms (`hist`, `histogram`) – implemented
 - [ ] Images (`imshow`)
 
 ### Backends
