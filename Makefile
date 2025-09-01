@@ -51,6 +51,8 @@ test-ci:
 	@python3 scripts/test_pdf_axes_color_black.py || exit 1
 	@# Security regression tests for Python bridge stdin handling (PR #1010)
 	@python3 scripts/test_python_bridge_security.py || exit 1
+	@# Guard against redundant pcolormesh tests (Issue #897)
+	@./scripts/test_pcolormesh_guard.sh || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
