@@ -152,10 +152,10 @@ contains
     subroutine write_pdf_download_link(unit_out, example_name, media_file)
         integer, intent(in) :: unit_out
         character(len=*), intent(in) :: example_name, media_file
-        
+
         write(unit_out, '(A)') '[Download PDF](../../media/examples/' // &
                               trim(example_name) // '/' // &
-                              replace_extension(media_file, 'pdf') // ')'
+                              trim(replace_extension(media_file, 'pdf')) // ')'
     end subroutine write_pdf_download_link
 
     ! --------------------
