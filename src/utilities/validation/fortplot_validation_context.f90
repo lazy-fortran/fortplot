@@ -43,6 +43,7 @@ module fortplot_validation_context
     ! Cleanup and inspection helpers (for tests and long-running apps)
     public :: reset_warning_tracking
     public :: is_warning_tracking_active
+    public :: get_warning_count
     
     ! Current warning mode (can be changed by advanced users)
     integer :: current_warning_mode = WARNING_MODE_ALL
@@ -119,6 +120,7 @@ contains
         type(validation_context_t), intent(in), optional :: validation_ctx
         
         type(validation_context_t) :: ctx
+        character(len=64) :: eff_context
         
         ! Use provided context or default
         if (present(validation_ctx)) then
@@ -129,13 +131,16 @@ contains
         
         ! Respect context-specific warning mode
         if (ctx%warning_mode == WARNING_MODE_SILENT .or. ctx%suppress_output) return
-        
+
+        ! Delegate to legacy deduplicating warning mechanism to avoid spam.
         if (present(context_param)) then
-            print *, "Warning [", trim(context_param), "]: ", trim(message)
+            eff_context = context_param
+            call validation_warning(message, eff_context)
         else if (len_trim(ctx%context_name) > 0) then
-            print *, "Warning [", trim(ctx%context_name), "]: ", trim(message)
+            eff_context = ctx%context_name
+            call validation_warning(message, eff_context)
         else
-            print *, "Warning: ", trim(message)
+            call validation_warning(message)
         end if
     end subroutine validation_warning_with_context
     
@@ -211,5 +216,10 @@ contains
     logical function is_warning_tracking_active()
         is_warning_tracking_active = allocated(issued_warnings)
     end function is_warning_tracking_active
+
+    ! Inquiry: return number of tracked warnings (for tests and diagnostics)
+    integer function get_warning_count()
+        get_warning_count = warning_count
+    end function get_warning_count
     
 end module fortplot_validation_context
