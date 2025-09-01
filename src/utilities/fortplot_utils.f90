@@ -109,11 +109,35 @@ contains
     end function to_lowercase
 
     subroutine ensure_directory_exists(filepath)
-        !! Stub: Ensure directory exists for given filepath (see issue #492)
+        !! Ensure output directory exists for a given filepath
+        !! Extracts the parent directory and creates it securely using
+        !! the runtime file operations with path validation.
+        use fortplot_file_operations, only: create_directory_runtime, check_directory_exists
         character(len=*), intent(in) :: filepath
-        ! Stub implementation - directory creation would be OS-specific
-        ! In full implementation, extract directory path and create if needed
-        ! See issue #492 for implementation roadmap
+        character(len=512) :: dir
+        integer :: i
+        logical :: success, exists
+
+        dir = ''
+
+        ! Find last path separator (both '/' and '\\' supported)
+        do i = len_trim(filepath), 1, -1
+            if (filepath(i:i) == '/' .or. filepath(i:i) == '\\') then
+                if (i > 1) dir = filepath(1:i-1)
+                exit
+            end if
+        end do
+
+        ! If no directory component, nothing to do
+        if (len_trim(dir) == 0) return
+
+        ! If already exists, we're done
+        call check_directory_exists(trim(dir), exists)
+        if (exists) return
+
+        ! Create directory tree with security validation/whitelisting
+        call create_directory_runtime(trim(dir), success)
+        ! Intentionally no error STOP here; upstream will report failures
     end subroutine ensure_directory_exists
 
 end module fortplot_utils
