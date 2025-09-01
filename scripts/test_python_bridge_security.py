@@ -6,6 +6,7 @@ Covers:
 - Command length limit enforcement
 - Excessive array size rejection for PLOT
 - SAVEFIG empty path validation
+- `--help`/`-h` argument prints usage and exits
 
 Intended to be fast and run in CI-fast set.
 """
@@ -29,6 +30,20 @@ def run_bridge():
         bufsize=1,
     )
     return proc
+
+def test_help_argument_exits_quickly():
+    exe = FortplotModule()._find_bridge_executable()
+    result = subprocess.run(
+        [exe, "--help"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=5
+    )
+    out = result.stdout or ""
+    err = result.stderr or ""
+    combined = out + err
+    assert result.returncode == 0, f"--help should exit 0, got {result.returncode}. Output:\n{combined}"
+    assert "fortplot_python_bridge" in combined and "Usage:" in combined, (
+        "Help output missing expected markers. Output was:\n" + combined
+    )
+    print('✓ --help prints usage and exits')
 
 
 def test_long_command_rejected():
@@ -100,6 +115,7 @@ def test_savefig_empty_path_rejected():
 
 
 def main():
+    test_help_argument_exits_quickly()
     test_long_command_rejected()
     test_plot_excessive_array_size_rejected()
     test_savefig_empty_path_rejected()
@@ -108,4 +124,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
