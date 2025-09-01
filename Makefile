@@ -157,11 +157,17 @@ coverage:
 	@echo "Running tests with coverage..."
 	fpm test --flag '-fprofile-arcs -ftest-coverage'
 	@echo "Generating coverage report..."
-	@echo "Attempting coverage generation with gcovr..." && \
-	(gcovr --root . --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' --exclude 'example/*' --exclude 'test/*' --exclude 'app/*' --keep --txt -o coverage.txt --print-summary 2>/dev/null || \
-	 echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" && \
-	 echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" && \
-	 echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt)
+	@echo "Attempting coverage generation with gcovr..." ; \
+	if gcovr --root . \
+	    --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' \
+	    --exclude 'example/*' --exclude 'test/*' --exclude 'app/*' \
+	    --keep --txt -o coverage.txt --print-summary 2>/dev/null ; then \
+	  echo "gcovr completed successfully" ; \
+	else \
+	  echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" ; \
+	  echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" ; \
+	  echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt ; \
+	fi
 	@echo "Cleaning up intermediate coverage files..."
 	find . -name '*.gcov.json.gz' -delete 2>/dev/null || true
 	find . -name '*.gcda' -delete 2>/dev/null || true
