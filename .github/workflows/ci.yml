@@ -5,61 +5,160 @@ on:
     branches: ["main"]
   pull_request:
 
+# Cancel previous runs on new commits to the same PR/branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    
+  tests:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, windows-2025]
+    runs-on: ${{ matrix.os }}
+
     steps:
     - uses: actions/checkout@v4
 
     - name: Root artifact hygiene check (Issue #990)
-      run: |
-        bash scripts/check_root_artifacts.sh
+      if: matrix.os == 'ubuntu-latest'
+      run: bash scripts/check_root_artifacts.sh
 
-    - name: Setup Fortran Package Manager
+    # ---------- Ubuntu setup ----------
+    - name: Cache and install apt packages (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      uses: awalsh128/cache-apt-pkgs-action@v1.5.3
+      with:
+        packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
+        version: 1
+
+    - name: Setup Fortran Package Manager (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
-        # Try multiple mirrors and retry mechanisms for resilient FPM installation
         for i in 1 2 3; do
           echo "FPM download attempt $i"
           if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
             chmod +x fpm-0.12.0-linux-x86_64-gcc-12
             sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-            echo "FPM installation successful"
+            fpm --version
             break
           else
             echo "FPM download failed, attempt $i"
             sleep 10
             if [ $i -eq 3 ]; then
               echo "All FPM download attempts failed, installing from package manager"
-              # Fallback to distro package if available
               sudo apt-get update
               sudo apt-get install -y curl
-              # Try alternative installation method
               curl -fsSL https://fpm.fortran-lang.org/install.sh | bash
               sudo ln -sf ~/.local/bin/fpm /usr/local/bin/fpm || echo "FPM fallback failed"
             fi
           fi
         done
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
+    # ---------- Windows setup ----------
+    - name: Configure git line endings (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: git config --global core.autocrlf input
 
-    - name: Create test directories
+    - name: Define MSYS2_DIR (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
       run: |
-        echo "Creating test output directories..."
+        # Place a reusable MSYS2 install next to the workspace (works on C: or D:)
+        $msys2Dir = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) '_msys2'
+        echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Cache full MSYS2 installation (Windows)
+      if: runner.os == 'Windows'
+      id: msys2_cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.MSYS2_DIR }}
+        key: ${{ runner.os }}-msys2-full-MINGW64-${{ hashFiles('.github/workflows/ci.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-msys2-full-MINGW64-
+
+    - name: Detect existing MSYS2 installation
+      if: runner.os == 'Windows'
+      id: msys2_detect
+      shell: pwsh
+      run: |
+        $root = "$env:MSYS2_DIR"
+        $msysPath = Join-Path $root 'msys64'
+        if (Test-Path $msysPath) {
+          "present=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "Detected existing MSYS2 at $msysPath"
+        } else {
+          "present=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          Write-Host "No existing MSYS2 at $msysPath"
+        }
+
+    - name: Setup MSYS2 (Windows)
+      if: runner.os == 'Windows' && steps.msys2_detect.outputs.present != 'true'
+      id: msys2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true            # Only runs when MSYS2 not present; safe to update
+        path-type: inherit
+        cache: true            # Use builtin package cache for reliability
+        release: true          # Install from release tarball into location
+        location: ${{ env.MSYS2_DIR }}
+        install: >-
+          mingw-w64-x86_64-gcc-fortran
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-imagemagick
+          git
+
+    - name: Add MinGW to PATH (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
+        if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
+        echo (Join-Path $msysLoc 'mingw64\bin') | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      shell: pwsh
+
+    - name: Install FPM (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
+        if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
+        $destDir = Join-Path $msysLoc 'mingw64\bin'
+        if (-not (Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
+        $dest = Join-Path $destDir 'fpm.exe'
+        if (Test-Path $dest) {
+          & $dest --version
+        } else {
+          Invoke-WebRequest -UseBasicParsing -Uri "https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-windows-x86_64-gcc-12.exe" -OutFile $dest
+          & $dest --version
+        }
+
+    # ---------- Build & Test ----------
+    - name: Create test directories
+      shell: bash
+      run: |
         mkdir -p build/test
         mkdir -p output/example/fortran/basic_plots
         mkdir -p output/example/fortran/legend_demo
         mkdir -p output/example/fortran/marker_demo
-        echo "Test directories created."
 
     - name: Build project
+      shell: bash
       run: |
-        make build
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          fpm build --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
+        else
+          make build
+        fi
 
-    - name: Build required examples for tests
+    - name: Build required examples for tests (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
       run: |
         make example ARGS="basic_plots"
         make example ARGS="legend_demo"
@@ -67,57 +166,37 @@ jobs:
         make example ARGS="marker_demo"
         make example ARGS="format_string_demo"
 
-    - name: Run all tests
+    - name: Run tests
+      shell: bash
       run: |
-        export FORTPLOT_ENABLE_FFMPEG=0
-        export OMP_NUM_THREADS=2
-        mkdir -p /tmp/test
-        timeout 10m make test-ci
-    
-    - name: Run antialiasing quality tests with ImageMagick
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          export FORTPLOT_ENABLE_FFMPEG=1
+          export OMP_NUM_THREADS=2
+          fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
+        else
+          export FORTPLOT_ENABLE_FFMPEG=0
+          export OMP_NUM_THREADS=2
+          mkdir -p /tmp/test
+          timeout 10m make test-ci
+        fi
+
+    - name: Run antialiasing quality tests with ImageMagick (optional)
+      shell: bash
       run: |
-        # Verify ImageMagick is available
         if magick -version > /dev/null 2>&1; then
-          echo "ImageMagick found - running graphics quality tests"
-          fpm test test_antialiasing_restoration
-          fpm test test_antialiasing_comprehensive
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+            fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+          else
+            fpm test test_antialiasing_restoration
+            fpm test test_antialiasing_comprehensive
+          fi
         else
           echo "ImageMagick not found - skipping graphics quality tests"
         fi
 
-    - name: Test FPM example
+    - name: Test FPM and CMake examples (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
       run: |
         timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
-
-    - name: Test CMake example  
-      run: |
         timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
-
-    # TODO: Enable after PNG encoder fix (Issue #96)
-    # - name: PNG Validation Tests
-    #   run: |
-    #     make test ARGS="test_png_validation"
-
-  # build-cmake:
-  #   runs-on: ubuntu-latest
-  #   
-  #   steps:
-  #   - uses: actions/checkout@v4
-
-  #   - name: Install dependencies
-  #     run: |
-  #       sudo apt-get update
-  #       sudo apt-get install -y gfortran cmake ffmpeg
-
-  #   - name: Test CMake build
-  #     run: |
-  #       cd doc/cmake_example
-  #       mkdir -p build
-  #       cd build
-  #       cmake ..
-  #       make
-  #       ./fortplot_test
-  
-  # CMAKE CI test disabled - CMAKE build system removed in artifact cleanup
-  # Issue #613: Root CMakeLists.txt removed, CMAKE example needs rework  
-  # Re-enable after CMAKE example updated to work without root build system
