@@ -26,6 +26,7 @@ test/output/*
 example/*/*.png
 example/*/*.pdf
 example/*/*.txt
+!example/python_bridge/commands_basic.txt
 .aider*
 terminal
 *.pyc
