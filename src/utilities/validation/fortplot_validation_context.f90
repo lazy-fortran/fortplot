@@ -62,8 +62,7 @@ contains
         character(len=*), intent(in) :: message
         character(len=*), intent(in), optional :: context
         character(len=512) :: warning_key
-        integer :: i
-        logical :: already_warned
+        logical :: emit
         
         if (current_warning_mode == WARNING_MODE_SILENT) return
         
@@ -74,22 +73,9 @@ contains
             warning_key = trim(message)
         end if
         
-        ! Check if we've already issued this warning
-        already_warned = .false.
-        if (allocated(issued_warnings)) then
-            do i = 1, warning_count
-                if (trim(issued_warnings(i)) == trim(warning_key)) then
-                    already_warned = .true.
-                    exit
-                end if
-            end do
-        end if
-        
-        ! Only show warning if it's the first occurrence
-        if (.not. already_warned) then
-            ! Track this warning for future deduplication
-            call track_warning(warning_key)
-            
+        ! Atomically decide and record if we should emit this warning
+        emit = should_emit_warning(warning_key)
+        if (emit) then
             if (present(context)) then
                 print *, "Warning [", trim(context), "]: ", trim(message)
             else
@@ -180,46 +166,67 @@ contains
         ctx%suppress_output = .false.
         ctx%context_name = ""
     end function default_validation_context
-    
-    ! Private helper to track issued warnings for spam prevention
-    subroutine track_warning(warning_key)
+
+    ! Decide (atomically) if a warning should be emitted and record it if new
+    logical function should_emit_warning(warning_key)
         character(len=*), intent(in) :: warning_key
         integer :: i
-        
-        if (.not. allocated(issued_warnings)) then
-            allocate(issued_warnings(MAX_TRACKED_WARNINGS))
-            warning_count = 0
-        end if
-        
-        ! Add warning if we have space
-        if (warning_count < MAX_TRACKED_WARNINGS) then
-            warning_count = warning_count + 1
-            issued_warnings(warning_count) = warning_key
-        else
-            ! If buffer is full, shift warnings and add new one
-            do i = 1, MAX_TRACKED_WARNINGS - 1
-                issued_warnings(i) = issued_warnings(i + 1)
-            end do
-            issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
-        end if
-    end subroutine track_warning
+        logical :: found
+
+        found = .false.
+        critical
+            if (.not. allocated(issued_warnings)) then
+                allocate(issued_warnings(MAX_TRACKED_WARNINGS))
+                warning_count = 0
+            end if
+
+            if (warning_count > 0) then
+                do i = 1, warning_count
+                    if (trim(issued_warnings(i)) == trim(warning_key)) then
+                        found = .true.
+                        exit
+                    end if
+                end do
+            end if
+
+            if (.not. found) then
+                if (warning_count < MAX_TRACKED_WARNINGS) then
+                    warning_count = warning_count + 1
+                    issued_warnings(warning_count) = warning_key
+                else
+                    do i = 1, MAX_TRACKED_WARNINGS - 1
+                        issued_warnings(i) = issued_warnings(i + 1)
+                    end do
+                    issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
+                end if
+            end if
+        end critical
+
+        should_emit_warning = .not. found
+    end function should_emit_warning
     
     ! Reset and cleanup warning deduplication tracking to prevent permanent allocation
     subroutine reset_warning_tracking()
-        if (allocated(issued_warnings)) then
-            deallocate(issued_warnings)
-        end if
-        warning_count = 0
+        critical
+            if (allocated(issued_warnings)) then
+                deallocate(issued_warnings)
+            end if
+            warning_count = 0
+        end critical
     end subroutine reset_warning_tracking
     
     ! Inquiry: check if warning tracking storage is currently allocated
     logical function is_warning_tracking_active()
-        is_warning_tracking_active = allocated(issued_warnings)
+        critical
+            is_warning_tracking_active = allocated(issued_warnings)
+        end critical
     end function is_warning_tracking_active
 
     ! Inquiry: return number of tracked warnings (for tests and diagnostics)
     integer function get_warning_count()
-        get_warning_count = warning_count
+        critical
+            get_warning_count = warning_count
+        end critical
     end function get_warning_count
-    
+
 end module fortplot_validation_context
