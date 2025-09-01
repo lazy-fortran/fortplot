@@ -131,7 +131,9 @@ contains
             text_width = calculate_text_width(trim(escaped_text))
             ! Position x-tick label baseline TICK_MARK_LENGTH + X_TICK_LABEL_PAD below plot bottom (matplotlib-like)
             call render_text_to_image(raster%image_data, width, height, &
-                                    px - text_width/2, py + tick_length + X_TICK_LABEL_PAD, trim(escaped_text), text_r, text_g, text_b)
+                                     px - text_width/2, &
+                                     py + tick_length + X_TICK_LABEL_PAD, &
+                                     trim(escaped_text), text_r, text_g, text_b)
         end do
     end subroutine raster_draw_x_axis_ticks
     
@@ -184,8 +186,9 @@ contains
             ! Right-align y-tick label so its right edge sits (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD)
             ! pixels left of the plot area
             call render_text_to_image(raster%image_data, width, height, &
-                px - tick_length - text_width - Y_TICK_LABEL_RIGHT_PAD, py - text_height/2, &
-                trim(escaped_text), text_r, text_g, text_b)
+                                     px - tick_length - text_width - Y_TICK_LABEL_RIGHT_PAD, &
+                                     py - text_height/2, trim(escaped_text), &
+                                     text_r, text_g, text_b)
         end do
     end subroutine raster_draw_y_axis_ticks
     
@@ -271,8 +274,9 @@ contains
         y_pos = plot_area%bottom + plot_area%height / 2 - rotated_height / 2
         
         ! Composite the rotated text onto the main raster
-        call composite_bitmap_to_raster(raster%image_data, width, height, rotated_bitmap, &
-                                       rotated_width, rotated_height, x_pos, y_pos)
+        call composite_bitmap_to_raster(raster%image_data, width, height, &
+                                       rotated_bitmap, rotated_width, rotated_height, &
+                                       x_pos, y_pos)
         
         ! Clean up
         if (allocated(text_bitmap)) deallocate(text_bitmap)
@@ -297,7 +301,8 @@ contains
         ! Get current color and render title directly in pixel coordinates
         call raster%get_color_bytes(r, g, b)
         call render_text_to_image(raster%image_data, width, height, &
-                                 int(title_px), int(title_py), trim(escaped_text), r, g, b)
+                                 int(title_px), int(title_py), &
+                                 trim(escaped_text), r, g, b)
     end subroutine render_title_centered
 
     subroutine compute_title_position(plot_area, title_text, processed_text, processed_len, escaped_text, title_px, title_py)
