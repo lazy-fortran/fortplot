@@ -6,7 +6,6 @@ module fortplot_file_operations
 
     use fortplot_os_detection, only: is_debug_enabled, is_windows
     use fortplot_logging,      only: log_warning
-    use fortplot_path_operations, only: parse_path_segments
 
     implicit none
     private
