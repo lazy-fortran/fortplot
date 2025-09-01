@@ -74,6 +74,8 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)
 	@$(TIMEOUT_PREFIX) ./scripts/test_pcolormesh_guard.sh || exit 1
+	@# Enforce directory item limits for src/* subfolders (Issue #914)
+	@$(TIMEOUT_PREFIX) python3 scripts/test_directory_organization_limits.py || exit 1
 	@echo "CI essential test suite completed successfully"
 
 # Run Python examples with fortplot (default mode)
