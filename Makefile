@@ -99,8 +99,10 @@ run-release:
 
 # Build documentation with FORD
 doc:
-	# Ensure critical example media exist for docs (fixes #858)
+	# Ensure critical example media exist for docs (fixes #858, #1032)
+	# Generate streamplot and pcolormesh demos so images are available in docs
 	$(MAKE) example ARGS="streamplot_demo" >/dev/null
+	$(MAKE) example ARGS="pcolormesh_demo" >/dev/null
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to doc build directory AFTER running FORD
