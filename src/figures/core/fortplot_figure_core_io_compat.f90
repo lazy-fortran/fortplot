@@ -1,0 +1,577 @@
+! Consolidated (Issue #934)
+
+! ==== Begin: src/figures/core/fortplot_figure_core_io.f90 ====
+
+module fortplot_figure_core_io
+    !! Figure I/O and rendering operations module
+    !! 
+    !! This module contains figure save/show/render functionality
+    !! extracted from fortplot_figure_core for architectural compliance
+    !!
+    !! ARCHITECTURAL REFACTORING (Issue #678):
+    !! - Focused module for I/O operations
+    !! - Single Responsibility Principle compliance
+    !! - Clean separation from plot management
+
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_utils, only: get_backend_from_filename
+    use fortplot_figure_initialization, only: setup_figure_backend, figure_state_t
+    use fortplot_errors, only: SUCCESS, ERROR_FILE_IO, is_error
+    use fortplot_logging, only: log_error, log_warning
+    use fortplot_png, only: png_context
+    use fortplot_pdf, only: pdf_context
+    use fortplot_ascii, only: ascii_context
+    use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
+                                                    setup_coordinate_system, &
+                                                    render_figure_background, &
+                                                    render_figure_axes, &
+                                                    render_all_plots
+    use fortplot_figure_grid, only: render_grid_lines
+    use fortplot_annotation_rendering, only: render_figure_annotations
+    use fortplot_figure_io, only: save_backend_with_status
+    use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
+    use fortplot_plot_data, only: plot_data_t
+    implicit none
+
+    private
+    public :: savefig_figure, savefig_with_status_figure, show_figure, render_figure_impl
+
+contains
+
+    subroutine savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count)
+        !! Save figure to file (backward compatibility version)
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        character(len=*), intent(in) :: filename
+        logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+        
+        integer :: status
+        
+        ! Delegate to version with status reporting
+        call savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
+                                        annotations, annotation_count)
+        
+        ! Log error if save failed (maintains existing behavior)
+        if (status /= SUCCESS) then
+            call log_error("Failed to save figure to '" // trim(filename) // "'")
+        end if
+    end subroutine savefig_figure
+    
+    subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
+                                          annotations, annotation_count)
+        !! Save figure to file with error status reporting
+        !! Added Issue #854: File path validation for user input safety
+        use fortplot_annotations, only: text_annotation_t
+        use fortplot_parameter_validation, only: validate_file_path, parameter_validation_result_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: status
+        logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+        
+        character(len=20) :: required_backend, current_backend
+        logical :: block, need_backend_switch
+        type(parameter_validation_result_t) :: path_validation
+        
+        ! Initialize success status
+        status = SUCCESS
+        
+        ! Validate filename path before proceeding
+        path_validation = validate_file_path(filename, check_parent=.true., context="savefig")
+        if (.not. path_validation%is_valid) then
+            status = ERROR_FILE_IO
+            return
+        end if
+        
+        block = .true.
+        if (present(blocking)) block = blocking
+        
+        ! Determine required backend from filename extension
+        required_backend = get_backend_from_filename(filename)
+        
+        ! Determine current backend type
+        select type (backend => state%backend)
+        type is (png_context)
+            current_backend = 'png'
+        type is (pdf_context)
+            current_backend = 'pdf'
+        type is (ascii_context)
+            current_backend = 'ascii'
+        class default
+            current_backend = 'unknown'
+        end select
+        
+        ! Check if we need to switch backends
+        need_backend_switch = (trim(required_backend) /= trim(current_backend))
+        
+        if (need_backend_switch) then
+            call setup_figure_backend(state, required_backend)
+        end if
+        
+        ! Render if not already rendered (with annotations if provided)
+        if (.not. state%rendered) then
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+        end if
+        
+        ! Save the figure with status checking
+        call save_backend_with_status(state%backend, filename, status)
+    end subroutine savefig_with_status_figure
+
+    subroutine show_figure(state, plots, plot_count, blocking, annotations, annotation_count)
+        !! Display the figure
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(in), optional :: blocking
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+        
+        logical :: block
+        
+        ! Default to non-blocking behavior to prevent hangs in automated environments
+        ! Users can explicitly set blocking=true for interactive sessions
+        block = .false.
+        if (present(blocking)) block = blocking
+        
+        ! Render if not already rendered (with annotations if provided)
+        if (.not. state%rendered) then
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+        end if
+        
+        ! Display the figure
+        call state%backend%save("terminal")
+        
+        ! Handle blocking behavior - when blocking=true, wait for user input
+        if (block) then
+            call wait_for_user_input()
+        end if
+    end subroutine show_figure
+
+    subroutine render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+        !! Main rendering pipeline implementation
+        !! Fixed Issue #432: Always render axes/labels even with no plot data
+        !! Fixed Issue #844: ASCII annotation functionality
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+        
+        ! Calculate final data ranges
+        call calculate_figure_data_ranges(plots, plot_count, &
+                                        state%xlim_set, state%ylim_set, &
+                                        state%x_min, state%x_max, &
+                                        state%y_min, state%y_max, &
+                                        state%x_min_transformed, &
+                                        state%x_max_transformed, &
+                                        state%y_min_transformed, &
+                                        state%y_max_transformed, &
+                                        state%xscale, state%yscale, &
+                                        state%symlog_threshold)
+        
+        ! Setup coordinate system
+        call setup_coordinate_system(state%backend, &
+                                   state%x_min_transformed, state%x_max_transformed, &
+                                   state%y_min_transformed, state%y_max_transformed)
+        
+        ! Render background
+        call render_figure_background(state%backend)
+        
+        ! Render grid if enabled
+        if (state%grid_enabled) then
+            call render_grid_lines(state%backend, state%grid_enabled, &
+                                  state%grid_which, state%grid_axis, &
+                                  state%grid_alpha, state%width, state%height, &
+                                  state%margin_left, state%margin_right, &
+                                  state%margin_bottom, state%margin_top, &
+                                  state%xscale, state%yscale, &
+                                  state%symlog_threshold, state%x_min, state%x_max, &
+                                  state%y_min, state%y_max, &
+                                  state%x_min_transformed, state%x_max_transformed, &
+                                  state%y_min_transformed, state%y_max_transformed)
+        end if
+        
+        ! Render axes
+        call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                               state%symlog_threshold, state%x_min, state%x_max, &
+                               state%y_min, state%y_max, state%title, &
+                               state%xlabel, state%ylabel)
+        
+        ! Render all plots (only if there are plots to render)
+        if (plot_count > 0) then
+            call render_all_plots(state%backend, plots, plot_count, &
+                                 state%x_min_transformed, state%x_max_transformed, &
+                                 state%y_min_transformed, state%y_max_transformed, &
+                                 state%xscale, state%yscale, state%symlog_threshold, &
+                                 state%width, state%height, &
+                                 state%margin_left, state%margin_right, &
+                                 state%margin_bottom, state%margin_top)
+        end if
+        
+        ! Render legend if requested
+        if (state%show_legend .and. state%legend_data%num_entries > 0) then
+            call state%legend_data%render(state%backend)
+        end if
+        
+        ! Render annotations if any exist (Issue #844: ASCII annotation functionality)
+        if (present(annotations) .and. present(annotation_count)) then
+            if (annotation_count > 0) then
+                call render_figure_annotations(state%backend, annotations, annotation_count, &
+                                              state%x_min, state%x_max, &
+                                              state%y_min, state%y_max, &
+                                              state%width, state%height, &
+                                              state%margin_left, state%margin_right, &
+                                              state%margin_bottom, state%margin_top)
+            end if
+        end if
+        
+        state%rendered = .true.
+    end subroutine render_figure_impl
+
+end module fortplot_figure_core_io
+! ==== End: src/figures/core/fortplot_figure_core_io.f90 ====
+
+! ==== Begin: src/figures/core/fortplot_figure_core_config.f90 ====
+
+module fortplot_figure_core_config
+    !! Figure configuration operations module
+    !! 
+    !! This module contains figure configuration functionality (labels, scales, limits)
+    !! extracted from fortplot_figure_core for architectural compliance
+    !!
+    !! ARCHITECTURAL REFACTORING (Issue #678):
+    !! - Focused module for configuration operations
+    !! - Single Responsibility Principle compliance
+    !! - Clean separation from plot data management
+
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_figure_initialization
+    use fortplot_figure_grid
+    implicit none
+
+    private
+    public :: set_xlabel_figure, set_ylabel_figure, set_title_figure
+    public :: set_xscale_figure, set_yscale_figure, set_xlim_figure, set_ylim_figure
+    public :: set_line_width_figure, grid_figure
+    ! Configuration wrapper procedures for core module delegation
+    public :: core_set_xlabel, core_set_ylabel, core_set_title
+    public :: core_set_xscale, core_set_yscale, core_set_xlim, core_set_ylim
+    public :: core_set_line_width, core_grid
+
+contains
+
+    subroutine set_xlabel_figure(state, xlabel_compat, label)
+        !! Set x-axis label
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: xlabel_compat
+        character(len=*), intent(in) :: label
+        call set_figure_labels(state, xlabel=label)
+        ! Update backward compatibility member
+        xlabel_compat = label
+    end subroutine set_xlabel_figure
+
+    subroutine set_ylabel_figure(state, ylabel_compat, label)
+        !! Set y-axis label
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: ylabel_compat
+        character(len=*), intent(in) :: label
+        call set_figure_labels(state, ylabel=label)
+        ! Update backward compatibility member
+        ylabel_compat = label
+    end subroutine set_ylabel_figure
+
+    subroutine set_title_figure(state, title_compat, title)
+        !! Set figure title
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: title_compat
+        character(len=*), intent(in) :: title
+        call set_figure_labels(state, title=title)
+        ! Update backward compatibility member
+        title_compat = title
+    end subroutine set_title_figure
+
+    subroutine set_xscale_figure(state, scale, threshold)
+        !! Set x-axis scale type
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        
+        call set_figure_scales(state, xscale=scale, threshold=threshold)
+    end subroutine set_xscale_figure
+
+    subroutine set_yscale_figure(state, scale, threshold)
+        !! Set y-axis scale type
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        
+        call set_figure_scales(state, yscale=scale, threshold=threshold)
+    end subroutine set_yscale_figure
+
+    subroutine set_xlim_figure(state, x_min, x_max)
+        !! Set x-axis limits
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x_min, x_max
+        
+        call set_figure_limits(state, x_min=x_min, x_max=x_max)
+    end subroutine set_xlim_figure
+
+    subroutine set_ylim_figure(state, y_min, y_max)
+        !! Set y-axis limits
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: y_min, y_max
+        
+        call set_figure_limits(state, y_min=y_min, y_max=y_max)
+    end subroutine set_ylim_figure
+
+    subroutine set_line_width_figure(state, width)
+        !! Set line width for subsequent plots
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: width
+        state%current_line_width = width
+    end subroutine set_line_width_figure
+
+    subroutine grid_figure(state, enabled, which, axis, alpha, linestyle)
+        !! Enable/disable and configure grid lines
+        type(figure_state_t), intent(inout) :: state
+        logical, intent(in), optional :: enabled
+        character(len=*), intent(in), optional :: which, axis, linestyle
+        real(wp), intent(in), optional :: alpha
+        
+        call configure_grid(state%grid_enabled, state%grid_which, &
+                           state%grid_axis, state%grid_alpha, &
+                           state%grid_linestyle, enabled, which, axis, alpha, linestyle)
+    end subroutine grid_figure
+
+    !!=============================================================================
+    !! CORE MODULE DELEGATION PROCEDURES
+    !! Simple wrapper procedures for core module delegation pattern
+    !!=============================================================================
+
+    subroutine core_set_xlabel(state, xlabel_compat, label)
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: xlabel_compat
+        character(len=*), intent(in) :: label
+        call set_xlabel_figure(state, xlabel_compat, label)
+    end subroutine core_set_xlabel
+
+    subroutine core_set_ylabel(state, ylabel_compat, label)
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: ylabel_compat
+        character(len=*), intent(in) :: label
+        call set_ylabel_figure(state, ylabel_compat, label)
+    end subroutine core_set_ylabel
+
+    subroutine core_set_title(state, title_compat, title)
+        type(figure_state_t), intent(inout) :: state
+        character(len=:), allocatable, intent(inout) :: title_compat
+        character(len=*), intent(in) :: title
+        call set_title_figure(state, title_compat, title)
+    end subroutine core_set_title
+
+    subroutine core_set_xscale(state, scale, threshold)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        call set_xscale_figure(state, scale, threshold)
+    end subroutine core_set_xscale
+
+    subroutine core_set_yscale(state, scale, threshold)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in), optional :: threshold
+        call set_yscale_figure(state, scale, threshold)
+    end subroutine core_set_yscale
+
+    subroutine core_set_xlim(state, x_min, x_max)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x_min, x_max
+        call set_xlim_figure(state, x_min, x_max)
+    end subroutine core_set_xlim
+
+    subroutine core_set_ylim(state, y_min, y_max)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: y_min, y_max
+        call set_ylim_figure(state, y_min, y_max)
+    end subroutine core_set_ylim
+
+    subroutine core_set_line_width(state, width)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: width
+        call set_line_width_figure(state, width)
+    end subroutine core_set_line_width
+
+    subroutine core_grid(state, enabled, which, axis, alpha, linestyle)
+        type(figure_state_t), intent(inout) :: state
+        logical, intent(in), optional :: enabled
+        character(len=*), intent(in), optional :: which, axis, linestyle
+        real(wp), intent(in), optional :: alpha
+        call grid_figure(state, enabled, which, axis, alpha, linestyle)
+    end subroutine core_grid
+
+end module fortplot_figure_core_config
+! ==== End: src/figures/core/fortplot_figure_core_config.f90 ====
+
+! ==== Begin: src/figures/core/fortplot_figure_core_compat.f90 ====
+
+module fortplot_figure_core_compat
+    !! Figure backward compatibility and animation support module
+    !! 
+    !! This module contains backward compatibility and animation methods
+    !! extracted from fortplot_figure_core for architectural compliance
+    !!
+    !! ARCHITECTURAL REFACTORING (Issue #678):
+    !! - Focused module for backward compatibility operations
+    !! - Single Responsibility Principle compliance
+    !! - Clean separation from core plotting functionality
+
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_compatibility
+    use fortplot_figure_accessors
+    use fortplot_plot_data, only: plot_data_t
+    use fortplot_figure_core_io, only: render_figure_impl
+    implicit none
+
+    private
+    public :: get_width_figure, get_height_figure, get_rendered_figure, set_rendered_figure
+    public :: get_plot_count_figure, setup_png_backend_for_animation_figure
+    public :: extract_rgb_data_for_animation_figure, extract_png_data_for_animation_figure
+    public :: backend_color_figure, backend_associated_figure, backend_line_figure
+    public :: get_x_min_figure, get_x_max_figure, get_y_min_figure, get_y_max_figure
+
+contains
+
+    function get_width_figure(state) result(width)
+        !! Get figure width
+        type(figure_state_t), intent(in) :: state
+        integer :: width
+        width = get_figure_width_compat(state)
+    end function get_width_figure
+    
+    function get_height_figure(state) result(height)
+        !! Get figure height
+        type(figure_state_t), intent(in) :: state
+        integer :: height
+        height = get_figure_height_compat(state)
+    end function get_height_figure
+    
+    function get_rendered_figure(state) result(rendered)
+        !! Get rendered state
+        type(figure_state_t), intent(in) :: state
+        logical :: rendered
+        rendered = get_figure_rendered_compat(state)
+    end function get_rendered_figure
+    
+    subroutine set_rendered_figure(state, rendered)
+        !! Set rendered state
+        type(figure_state_t), intent(inout) :: state
+        logical, intent(in) :: rendered
+        call set_figure_rendered_compat(state, rendered)
+    end subroutine set_rendered_figure
+    
+    function get_plot_count_figure(state) result(plot_count)
+        !! Get number of plots
+        type(figure_state_t), intent(in) :: state
+        integer :: plot_count
+        plot_count = get_figure_plot_count_compat(state)
+    end function get_plot_count_figure
+    
+    subroutine setup_png_backend_for_animation_figure(state)
+        !! Setup PNG backend for animation (temporary method)
+        type(figure_state_t), intent(inout) :: state
+        call setup_png_backend_for_animation_compat(state)
+    end subroutine setup_png_backend_for_animation_figure
+    
+    subroutine extract_rgb_data_for_animation_figure(state, plots, plot_count, rgb_data)
+        !! Extract RGB data for animation
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        real(wp), intent(out) :: rgb_data(:,:,:)
+        
+        
+        if (.not. state%rendered) then
+            call render_figure_impl(state, plots, plot_count)
+        end if
+        
+        call extract_rgb_data_for_animation_compat(state, rgb_data)
+    end subroutine extract_rgb_data_for_animation_figure
+    
+    subroutine extract_png_data_for_animation_figure(state, plots, plot_count, png_data, status)
+        !! Extract PNG data for animation
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        
+        
+        if (.not. state%rendered) then
+            call render_figure_impl(state, plots, plot_count)
+        end if
+        
+        call extract_png_data_for_animation_compat(state, png_data, status)
+    end subroutine extract_png_data_for_animation_figure
+    
+    subroutine backend_color_figure(state, r, g, b)
+        !! Set backend color
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: r, g, b
+        call backend_color_compat(state, r, g, b)
+    end subroutine backend_color_figure
+    
+    function backend_associated_figure(state) result(is_associated)
+        !! Check if backend is allocated
+        type(figure_state_t), intent(in) :: state
+        logical :: is_associated
+        is_associated = backend_associated_compat(state)
+    end function backend_associated_figure
+    
+    subroutine backend_line_figure(state, x1, y1, x2, y2)
+        !! Draw line using backend
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x1, y1, x2, y2
+        call backend_line_compat(state, x1, y1, x2, y2)
+    end subroutine backend_line_figure
+    
+    function get_x_min_figure(state) result(x_min)
+        !! Get x minimum value
+        type(figure_state_t), intent(in) :: state
+        real(wp) :: x_min
+        x_min = get_figure_x_min_compat(state)
+    end function get_x_min_figure
+    
+    function get_x_max_figure(state) result(x_max)
+        !! Get x maximum value
+        type(figure_state_t), intent(in) :: state
+        real(wp) :: x_max
+        x_max = get_figure_x_max_compat(state)
+    end function get_x_max_figure
+    
+    function get_y_min_figure(state) result(y_min)
+        !! Get y minimum value
+        type(figure_state_t), intent(in) :: state
+        real(wp) :: y_min
+        y_min = get_figure_y_min_compat(state)
+    end function get_y_min_figure
+    
+    function get_y_max_figure(state) result(y_max)
+        !! Get y maximum value
+        type(figure_state_t), intent(in) :: state
+        real(wp) :: y_max
+        y_max = get_figure_y_max_compat(state)
+    end function get_y_max_figure
+
+end module fortplot_figure_core_compat
+! ==== End: src/figures/core/fortplot_figure_core_compat.f90 ====
+
