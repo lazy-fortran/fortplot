@@ -29,7 +29,7 @@ jobs:
     # ---------- Ubuntu setup ----------
     - name: Cache and install apt packages (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
-      uses: awalsh128/cache-apt-pkgs-action@v1.3.2
+      uses: awalsh128/cache-apt-pkgs-action@v1.5.3
       with:
         packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
         version: 1
@@ -175,7 +175,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Cache and install apt packages (Ubuntu)
-      uses: awalsh128/cache-apt-pkgs-action@v1.3.2
+      uses: awalsh128/cache-apt-pkgs-action@v1.5.3
       with:
         packages: gfortran gcovr cmake ffmpeg python3-pil pngcheck imagemagick
         version: 1
