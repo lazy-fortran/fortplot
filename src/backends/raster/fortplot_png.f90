@@ -135,6 +135,11 @@ contains
         integer(1), allocatable :: png_buffer(:)
         integer :: png_unit, ios
         character(len=512) :: error_msg
+        character(len=1024) :: tmp_filename
+        integer :: clk_count, clk_rate, clk_max
+        logical :: final_exists
+        logical :: tmp_exists
+        integer :: ios_tmp
         
         call generate_png_data(width, height, image_data, png_buffer)
         
@@ -142,26 +147,75 @@ contains
             call log_error("Failed to generate PNG data for '" // trim(filename) // "'")
             return
         end if
-        
-        open(newunit=png_unit, file=filename, access='stream', form='unformatted', &
+
+        ! Create a unique temporary filename in the same directory for atomic write
+        call system_clock(clk_count, clk_rate, clk_max)
+        write(tmp_filename, '(A,".tmp.",I0)') trim(filename), clk_count
+
+        open(newunit=png_unit, file=trim(tmp_filename), access='stream', form='unformatted', &
              status='replace', iostat=ios, iomsg=error_msg)
-        
+
         if (ios /= 0) then
-            call log_error("Cannot save PNG file '" // trim(filename) // "': " // trim(error_msg))
+            call log_error("Cannot save PNG file '" // trim(tmp_filename) // "': " // trim(error_msg))
             if (allocated(png_buffer)) deallocate(png_buffer)
             return
         end if
-        
+
         write(png_unit, iostat=ios) png_buffer
         
         if (ios /= 0) then
-            call log_error("Failed to write PNG data to '" // trim(filename) // "'")
+            call log_error("Failed to write PNG data to '" // trim(tmp_filename) // "'")
             close(png_unit, status='delete')  ! Remove incomplete file
             if (allocated(png_buffer)) deallocate(png_buffer)
             return
         end if
         close(png_unit)
-        
+
+        ! Atomically move the temporary file into place (best-effort)
+        call rename(trim(tmp_filename), trim(filename))
+        inquire(file=trim(tmp_filename), exist=tmp_exists)
+        if (tmp_exists) then
+            ! Some platforms (e.g., certain Windows runtimes) don't overwrite existing files on rename.
+            ! Fallback: delete destination if it exists, then try rename again; finally, last-resort copy.
+            open(newunit=png_unit, file=trim(filename), status='old', iostat=ios_tmp)
+            if (ios_tmp == 0) then
+                close(png_unit, status='delete')
+            end if
+
+            call rename(trim(tmp_filename), trim(filename))
+            inquire(file=trim(tmp_filename), exist=tmp_exists)
+            if (tmp_exists) then
+                ! Last-resort non-atomic fallback: write buffer directly to destination
+                open(newunit=png_unit, file=trim(filename), access='stream', form='unformatted', &
+                     status='replace', iostat=ios, iomsg=error_msg)
+                if (ios == 0) then
+                    write(png_unit, iostat=ios) png_buffer
+                    close(png_unit)
+                end if
+
+                if (ios /= 0) then
+                    call log_error("Failed to finalize PNG file '" // trim(filename) // "': " // trim(error_msg))
+                    ! Clean up temp file if it still exists
+                    open(newunit=png_unit, file=trim(tmp_filename), status='old', iostat=ios_tmp)
+                    if (ios_tmp == 0) close(png_unit, status='delete')
+                    if (allocated(png_buffer)) deallocate(png_buffer)
+                    return
+                end if
+
+                ! Cleanup: remove temp file after successful copy
+                open(newunit=png_unit, file=trim(tmp_filename), status='old', iostat=ios_tmp)
+                if (ios_tmp == 0) close(png_unit, status='delete')
+            end if
+        end if
+
+        ! Verify destination exists
+        inquire(file=trim(filename), exist=final_exists)
+        if (.not. final_exists) then
+            call log_error("Failed to finalize PNG file '" // trim(filename) // "'")
+            if (allocated(png_buffer)) deallocate(png_buffer)
+            return
+        end if
+
         if (allocated(png_buffer)) deallocate(png_buffer)
         call log_info("PNG file '" // trim(filename) // "' created successfully!")
     end subroutine write_png_file
