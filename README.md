@@ -31,9 +31,10 @@ call savefig("plot.png")
 
 ### Note: Subplot Grids (Not Yet Implemented)
 ```fortran
-! Note: Multiple subplots not yet implemented (Issue #XXX)
-! This feature is planned for future releases
-! Currently generates warning: "subplot: Multiple subplots not yet implemented"
+! Multiple subplots are not yet implemented.
+! Calling subplot(...) currently emits a warning and only
+! the first panel is rendered/saved. This feature is planned
+! for a future release.
 call figure(figsize=[8.0_wp, 6.0_wp])
 call subplot(2, 2, 1)  ! Will show warning
 call plot(x, sin(x))
