@@ -341,7 +341,7 @@ contains
         end if
     end subroutine test_large_mesh_boundaries
 
-    ! Integration tests moved to test_pcolormesh_integration.f90
+    ! Integration tests moved to test_mesh_integration_plot.f90
 
     subroutine test_minimal_valid_cases()
         !! Test various minimal but valid configurations
@@ -401,7 +401,7 @@ contains
         end if
     end subroutine test_3x3_mesh
 
-    ! Issue #698 reproduction moved to test_pcolormesh_issue_698_repro.f90
+    ! Issue #698 reproduction moved to test_issue_698_mesh_repro.f90
     
     subroutine test_dimension_validation_consolidated()
         !! Dimension validation test - consolidated from test_pcolormesh_validation.f90
