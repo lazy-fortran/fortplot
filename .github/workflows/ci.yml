@@ -37,22 +37,38 @@ jobs:
     - name: Setup Fortran Package Manager (Ubuntu)
       if: runner.os == 'Linux'
       run: |
+        set -euo pipefail
+        FPM_VER=v0.12.0
+        FPM_BIN="fpm-0.12.0-linux-x86_64-gcc-12"
+        # Ensure basic tools are present
+        sudo apt-get update -y
+        sudo apt-get install -y wget ca-certificates
         for i in 1 2 3; do
           echo "FPM download attempt $i"
-          if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12; then
-            chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-            sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
+          if wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/${FPM_VER}/${FPM_BIN}; then
+            chmod +x "${FPM_BIN}"
+            sudo mv "${FPM_BIN}" /usr/local/bin/fpm
+            command -v fpm
             fpm --version
             break
           else
             echo "FPM download failed, attempt $i"
             sleep 10
             if [ $i -eq 3 ]; then
-              echo "All FPM download attempts failed, installing from package manager"
-              sudo apt-get update
+              echo "All FPM download attempts failed, installing via official script"
               sudo apt-get install -y curl
               curl -fsSL https://fpm.fortran-lang.org/install.sh | bash
-              sudo ln -sf ~/.local/bin/fpm /usr/local/bin/fpm || echo "FPM fallback failed"
+              # Add local bin to PATH for this and subsequent steps
+              echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+              # Verify availability one way or the other
+              if command -v fpm >/dev/null 2>&1; then
+                fpm --version
+              elif [ -x "$HOME/.local/bin/fpm" ]; then
+                "$HOME/.local/bin/fpm" --version
+              else
+                echo "FPM installation failed" >&2
+                exit 1
+              fi
             fi
           fi
         done
