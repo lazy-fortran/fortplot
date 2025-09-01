@@ -23,19 +23,19 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Root artifact hygiene check (Issue #990)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       run: bash scripts/check_root_artifacts.sh
 
     # ---------- Ubuntu setup ----------
     - name: Cache and install apt packages (Ubuntu)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       uses: awalsh128/cache-apt-pkgs-action@v1.5.3
       with:
         packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
         version: 1
 
     - name: Setup Fortran Package Manager (Ubuntu)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         set -euo pipefail
         FPM_VER=v0.12.0
@@ -75,12 +75,12 @@ jobs:
 
     # ---------- Windows setup ----------
     - name: Configure git line endings (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       shell: bash
       run: git config --global core.autocrlf input
 
     - name: Define MSYS2_DIR (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       shell: pwsh
       run: |
         # Place a reusable MSYS2 install next to the workspace (works on C: or D:)
@@ -88,7 +88,7 @@ jobs:
         echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Cache full MSYS2 installation (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       id: msys2_cache
       uses: actions/cache@v4
       with:
@@ -98,7 +98,7 @@ jobs:
           ${{ runner.os }}-msys2-full-MINGW64-
 
     - name: Detect existing MSYS2 installation
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       id: msys2_detect
       shell: pwsh
       run: |
@@ -113,7 +113,7 @@ jobs:
         }
 
     - name: Setup MSYS2 (Windows)
-      if: ${{ runner.os == 'Windows' && steps.msys2_detect.outputs.present != 'true' }}
+      if: ${{ startsWith(matrix.os, 'windows') && steps.msys2_detect.outputs.present != 'true' }}
       id: msys2
       uses: msys2/setup-msys2@v2
       with:
@@ -131,7 +131,7 @@ jobs:
           git
 
     - name: Add MinGW to PATH (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
         if (-not $msysLoc) { $msysLoc = "$env:MSYS2_DIR" }
@@ -139,7 +139,7 @@ jobs:
       shell: pwsh
 
     - name: Install FPM (Windows)
-      if: ${{ runner.os == 'Windows' }}
+      if: startsWith(matrix.os, 'windows')
       shell: pwsh
       run: |
         $msysLoc = "${{ steps.msys2.outputs.msys2-location }}"
@@ -164,7 +164,7 @@ jobs:
         mkdir -p output/example/fortran/marker_demo
 
     - name: Verify file size compliance (limits)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       run: make verify-size-compliance
 
     - name: Build project
@@ -177,7 +177,7 @@ jobs:
         fi
 
     - name: Build required examples for tests (Linux only)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       shell: bash
       run: |
         make example ARGS="basic_plots"
@@ -216,7 +216,7 @@ jobs:
         fi
 
     - name: Test FPM and CMake examples (Ubuntu)
-      if: ${{ runner.os == 'Linux' }}
+      if: startsWith(matrix.os, 'ubuntu')
       run: |
         timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
         timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
