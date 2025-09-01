@@ -273,21 +273,13 @@ contains
         temp_y(1:old_size) = path_y(1:old_size)
         temp_t(1:old_size) = times(1:old_size)
         
-        ! Reallocate original arrays
-        if (allocated(path_x)) deallocate(path_x)
-        if (allocated(path_y)) deallocate(path_y)
-        if (allocated(times)) deallocate(times)
-        allocate(path_x(new_size), path_y(new_size), times(new_size))
-        
-        ! Copy back
-        path_x = temp_x
-        path_y = temp_y
-        times = temp_t
+        ! Replace originals using move_alloc to avoid manual deallocation
+        call move_alloc(from=temp_x, to=path_x)
+        call move_alloc(from=temp_y, to=path_y)
+        call move_alloc(from=temp_t, to=times)
         
         array_size = new_size
-        if (allocated(temp_x)) deallocate(temp_x)
-        if (allocated(temp_y)) deallocate(temp_y)
-        if (allocated(temp_t)) deallocate(temp_t)
+        ! temp_* are now unallocated after move_alloc
         
     end subroutine resize_arrays
 
@@ -306,20 +298,12 @@ contains
         temp_y = path_y(1:n_points)
         temp_t = times(1:n_points)
         
-        ! Reallocate with correct size
-        if (allocated(path_x)) deallocate(path_x)
-        if (allocated(path_y)) deallocate(path_y)
-        if (allocated(times)) deallocate(times)
-        allocate(path_x(n_points), path_y(n_points), times(n_points))
+        ! Replace originals using move_alloc to avoid manual deallocation
+        call move_alloc(from=temp_x, to=path_x)
+        call move_alloc(from=temp_y, to=path_y)
+        call move_alloc(from=temp_t, to=times)
         
-        ! Copy back
-        path_x = temp_x
-        path_y = temp_y
-        times = temp_t
-        
-        if (allocated(temp_x)) deallocate(temp_x)
-        if (allocated(temp_y)) deallocate(temp_y)
-        if (allocated(temp_t)) deallocate(temp_t)
+        ! temp_* are now unallocated after move_alloc
         
     end subroutine trim_arrays
 
