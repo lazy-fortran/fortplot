@@ -31,7 +31,7 @@ make example ARGS="pcolormesh_demo"
   This is the default convention and does not produce transpose warnings.
 - C-style layout `z(nx, ny)` is accepted as well; data are transposed internally
   to match plotting axes. Coordinate arrays remain `x(nx+1)` and `y(ny+1)`.
-/- Invalid shapes (that do not match either convention) are rejected with a clear
+- Invalid shapes (that do not match either convention) are rejected with a clear
   error explaining the expected dimensions.
 
 ## Key Differences from Contour
