@@ -1,6 +1,7 @@
 program test_expected_fail_guard
     implicit none
     integer :: stat
+    integer :: cmdstat
     logical :: has_test_dir
 
     print *, 'Policy: Forbid use of "EXPECTED FAIL" markers in tests'
@@ -15,7 +16,13 @@ program test_expected_fail_guard
 
     ! Try ripgrep first for speed; fall back to grep if unavailable.
     call execute_command_line( &
-        'sh -lc ''rg -n --glob "!**/test_expected_fail_guard.f90" -F "EXPECTED FAIL" test''', exitstat=stat)
+        'sh -lc ''rg -n --glob "!**/test_expected_fail_guard.f90" -F "EXPECTED FAIL" test''', &
+        exitstat=stat, cmdstat=cmdstat)
+
+    if (cmdstat /= 0) then
+        print *, 'SKIP: shell/rg unavailable; skipping EXPECTED FAIL guard'
+        stop 0
+    end if
 
     if (stat == 0) then
         print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
@@ -26,7 +33,12 @@ program test_expected_fail_guard
     else
         ! rg not available or other error; try grep -R as fallback
         call execute_command_line( &
-            'sh -lc ''grep -R -n --exclude="*test_expected_fail_guard.f90" -F "EXPECTED FAIL" test''', exitstat=stat)
+            'sh -lc ''grep -R -n --exclude="*test_expected_fail_guard.f90" -F "EXPECTED FAIL" test''', &
+            exitstat=stat, cmdstat=cmdstat)
+        if (cmdstat /= 0) then
+            print *, 'SKIP: Could not run text search tool (rg/grep)'
+            stop 0
+        end if
         if (stat == 0) then
             print *, 'FAIL: Found forbidden "EXPECTED FAIL" markers in tests'
             stop 1
