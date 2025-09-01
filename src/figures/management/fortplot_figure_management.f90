@@ -57,23 +57,34 @@ contains
         
         call initialize_figure_state(state, width, height, backend)
         
-        ! Allocate plots array
-        if (allocated(plots)) deallocate(plots)
-        allocate(plots(state%max_plots))
+        ! Allocate/resize plots array using move_alloc to avoid manual deallocate()
+        block
+            type(plot_data_t), allocatable :: new_plots(:)
+            allocate(new_plots(state%max_plots))
+            call move_alloc(new_plots, plots)
+        end block
         
-        ! Clear streamlines data if allocated
-        if (allocated(streamlines)) deallocate(streamlines)
+        ! Reset streamlines to zero-length using move_alloc (no manual deallocate)
+        block
+            type(plot_data_t), allocatable :: new_streamlines(:)
+            allocate(new_streamlines(0))
+            call move_alloc(new_streamlines, streamlines)
+        end block
         
-        ! Clear subplot data if allocated
-        if (allocated(subplots_array)) deallocate(subplots_array)
+        ! Reset subplot data to zero-size using move_alloc (no manual deallocate)
+        block
+            type(subplot_data_t), allocatable :: new_subplots(:,:)
+            allocate(new_subplots(0,0))
+            call move_alloc(new_subplots, subplots_array)
+        end block
         subplot_rows = 0
         subplot_cols = 0
         current_subplot = 1
         
-        ! Clear backward compatibility members
-        if (allocated(title_target)) deallocate(title_target)
-        if (allocated(xlabel_target)) deallocate(xlabel_target)
-        if (allocated(ylabel_target)) deallocate(ylabel_target)
+        ! Clear backward compatibility members via assignment (auto reallocation)
+        title_target = ''
+        xlabel_target = ''
+        ylabel_target = ''
         plot_count = 0
     end subroutine figure_initialize
 
@@ -84,19 +95,24 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
         character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
         
-        if (allocated(state%backend)) then
-            deallocate(state%backend)
-        end if
+        ! Backend is polymorphic allocatable; skip manual deallocation here.
         
-        if (allocated(plots)) deallocate(plots)
-        if (allocated(streamlines)) deallocate(streamlines)
-        if (allocated(state%title)) deallocate(state%title)
-        if (allocated(state%xlabel)) deallocate(state%xlabel)
-        if (allocated(state%ylabel)) deallocate(state%ylabel)
-        ! Clean up backward compatibility members
-        if (allocated(title_target)) deallocate(title_target)
-        if (allocated(xlabel_target)) deallocate(xlabel_target)
-        if (allocated(ylabel_target)) deallocate(ylabel_target)
+        ! Reset plots/streamlines to zero-length using move_alloc
+        block
+            type(plot_data_t), allocatable :: tmp_plots(:), tmp_streamlines(:)
+            allocate(tmp_plots(0))
+            allocate(tmp_streamlines(0))
+            call move_alloc(tmp_plots, plots)
+            call move_alloc(tmp_streamlines, streamlines)
+        end block
+        ! Clear labels via assignment (auto reallocation)
+        state%title = ''
+        state%xlabel = ''
+        state%ylabel = ''
+        ! Clean up backward compatibility members via assignment
+        title_target = ''
+        xlabel_target = ''
+        ylabel_target = ''
     end subroutine figure_destroy
 
     subroutine figure_savefig(state, plots, plot_count, filename, blocking, annotations, annotation_count)
@@ -160,24 +176,32 @@ contains
         ! Clear plot data
         plot_count = 0
         
-        ! Clear streamlines data if allocated
-        if (allocated(streamlines)) deallocate(streamlines)
+        ! Clear streamlines by moving in a zero-length allocation
+        block
+            type(plot_data_t), allocatable :: tmp_streamlines(:)
+            allocate(tmp_streamlines(0))
+            call move_alloc(tmp_streamlines, streamlines)
+        end block
         
-        ! Clear subplot data if allocated
-        if (allocated(subplots_array)) deallocate(subplots_array)
+        ! Clear subplot data by moving in a zero-size array
+        block
+            type(subplot_data_t), allocatable :: tmp_subplots(:,:)
+            allocate(tmp_subplots(0,0))
+            call move_alloc(tmp_subplots, subplots_array)
+        end block
         subplot_rows = 0
         subplot_cols = 0
         current_subplot = 1
         
-        ! Clear labels in backward compatibility members
-        if (allocated(title_target)) deallocate(title_target)
-        if (allocated(xlabel_target)) deallocate(xlabel_target)
-        if (allocated(ylabel_target)) deallocate(ylabel_target)
+        ! Clear labels in backward compatibility members via assignment
+        title_target = ''
+        xlabel_target = ''
+        ylabel_target = ''
         
-        ! Clear labels in state
-        if (allocated(state%title)) deallocate(state%title)
-        if (allocated(state%xlabel)) deallocate(state%xlabel)
-        if (allocated(state%ylabel)) deallocate(state%ylabel)
+        ! Clear labels in state via assignment
+        state%title = ''
+        state%xlabel = ''
+        state%ylabel = ''
         
         ! Clear annotation count
         annotation_count = 0
