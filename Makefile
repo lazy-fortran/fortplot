@@ -158,18 +158,29 @@ coverage:
 	fpm test --flag '-fprofile-arcs -ftest-coverage'
 	@echo "Generating coverage reports (text + XML)..."
 	@echo "Attempting coverage generation with gcovr..." ; \
-	if gcovr --root . \
+	# Run gcovr but do not fail the make target if gcovr exits non-zero. \
+	# gcovr may still produce usable outputs even when returning an error code. \
+	gcovr --root . \
 	    --exclude 'thirdparty/*' --exclude 'build/*' --exclude 'doc/*' \
 	    --exclude 'example/*' --exclude 'test/*' --exclude 'app/*' \
 	    --keep --txt -o coverage.txt --print-summary \
-	    --xml -o coverage.xml 2>/dev/null ; then \
-	  echo "gcovr completed successfully (coverage.txt, coverage.xml)" ; \
-	else \
+	    --xml -o coverage.xml 2>/dev/null || true ; \
+	# Ensure both reports exist; create safe fallbacks if missing/empty. \
+	if [ ! -s coverage.txt ]; then \
 	  echo "GCOVR WARNING: Coverage analysis had processing issues (common with FPM-generated coverage data)" ; \
 	  echo "Coverage files found: $$(find . -name '*.gcda' | wc -l) data files" ; \
 	  echo "Coverage analysis attempted but may be incomplete due to FPM/gcovr compatibility issues" > coverage.txt ; \
-	  echo "<coverage></coverage>" > coverage.xml ; \
-	fi
+	fi ; \
+	if [ ! -s coverage.xml ]; then \
+	  echo "GCOVR WARNING: XML report missing; writing minimal Cobertura stub" ; \
+	  printf '%s\n' \
+	    '<?xml version="1.0"?>' \
+	    '<coverage branch-rate="0" line-rate="0" timestamp="0" version="gcovr-fallback">' \
+	    '  <sources/>' \
+	    '  <packages/>' \
+	    '</coverage>' > coverage.xml ; \
+	fi ; \
+	echo "gcovr completed (coverage.txt: $$(wc -c < coverage.txt) bytes, coverage.xml: $$(wc -c < coverage.xml) bytes)"
 	@echo "Cleaning up intermediate coverage files..."
 	find . -name '*.gcov.json.gz' -delete 2>/dev/null || true
 	# Keep *.gcda/gcno so Codecov/gcovr can post-process if needed

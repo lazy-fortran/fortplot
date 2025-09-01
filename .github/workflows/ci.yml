@@ -245,11 +245,17 @@ jobs:
       run: |
         make coverage
 
-    - name: Upload coverage artifact
+    - name: Upload coverage artifact (text)
       uses: actions/upload-artifact@v4
       with:
         name: coverage
         path: coverage.txt
+
+    - name: Upload coverage artifact (xml)
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-xml
+        path: coverage.xml
 
     - name: Upload to Codecov
       uses: codecov/codecov-action@v4
@@ -257,3 +263,4 @@ jobs:
         files: coverage.xml
         fail_ci_if_error: true
         verbose: true
+        use_oidc: true
