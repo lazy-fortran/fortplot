@@ -23,6 +23,7 @@ program test_doc_processing_output
     out_file = 'build/test/output/test_doc_generated_basic_plots.md'
 
     call ensure_parent_dir_exists()
+    call ensure_media_stub_files()
 
     open(newunit=unit_out, file=trim(out_file), status='replace', iostat=ios)
     if (ios /= 0) then
@@ -87,5 +88,44 @@ contains
             stop 1
         end if
     end subroutine ensure_parent_dir_exists
+
+    subroutine ensure_media_stub_files()
+        !! Ensure required example media files exist so scanning is deterministic
+        logical :: ok
+        integer :: u, ios
+        
+        call create_directory_runtime('output/example/fortran/basic_plots', ok)
+        if (.not. ok) then
+            print *, 'FAIL: cannot create output/example/fortran/basic_plots'
+            stop 1
+        end if
+        
+        ! Create minimal ASCII file used in the generated output
+        open(newunit=u, file='output/example/fortran/basic_plots/simple_plot.txt', &
+             status='unknown', action='write', iostat=ios)
+        if (ios == 0) then
+            write(u, '(A)') 'simple ascii content'
+            close(u)
+        else
+            print *, 'FAIL: cannot create simple_plot.txt'
+            stop 1
+        end if
+        
+        ! Touch PNG and PDF so add_if_exists picks them up
+        call touch_empty_file('output/example/fortran/basic_plots/simple_plot.png')
+        call touch_empty_file('output/example/fortran/basic_plots/simple_plot.pdf')
+    end subroutine ensure_media_stub_files
+
+    subroutine touch_empty_file(path)
+        character(len=*), intent(in) :: path
+        integer :: u, ios
+        open(newunit=u, file=trim(path), status='unknown', action='write', iostat=ios)
+        if (ios == 0) then
+            close(u)
+        else
+            print *, 'FAIL: cannot create file: ', trim(path)
+            stop 1
+        end if
+    end subroutine touch_empty_file
 
 end program test_doc_processing_output
