@@ -136,6 +136,33 @@ program test_security_compliance
         print *, "FAIL: Non-test directory creation should be blocked"
         stop 1
     end if
+
+    ! Test directory traversal patterns are blocked
+    call create_directory_runtime('output/..', success)
+    if (success) then
+        print *, 'FAIL: Directory traversal output/.. should be blocked'
+        stop 1
+    else
+        print *, 'PASS: output/.. correctly blocked'
+    end if
+
+    call create_directory_runtime('foo/..', success)
+    if (success) then
+        print *, 'FAIL: Directory traversal foo/.. should be blocked'
+        stop 1
+    else
+        print *, 'PASS: foo/.. correctly blocked'
+    end if
+
+    call create_directory_runtime('results/../plots', success)
+    if (success) then
+        print *, 'FAIL: Directory traversal results/../plots should be blocked'
+        stop 1
+    else
+        print *, 'PASS: results/../plots correctly blocked'
+    end if
+
+    ! Note: Windows-style separators are covered in platform-specific tests
     
     ! Test various command availability checks for different programs
     call check_command_available_runtime("fpm", available)
