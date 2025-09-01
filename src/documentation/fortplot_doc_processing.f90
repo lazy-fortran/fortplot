@@ -411,7 +411,7 @@ contains
 
         if (python_exists) then
             write(unit_out, '(A)') ''
-            write(unit_out, '(A)') '🐍 **Python:** [' // trim(example_name) // &
+            write(unit_out, '(A)') '**Python:** [' // trim(example_name) // &
                                   '.py](' // GITHUB_BASE_URL // trim(python_path) // ')'
         end if
         write(unit_out, '(A)') ''
@@ -428,4 +428,3 @@ contains
     end subroutine write_source_code_block
 
 end module fortplot_doc_processing
-
