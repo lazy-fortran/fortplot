@@ -1,8 +1,17 @@
 program test_expected_fail_guard
     implicit none
     integer :: stat
+    logical :: has_test_dir
 
     print *, 'Policy: Forbid use of "EXPECTED FAIL" markers in tests'
+
+    ! If the 'test' directory is not visible from current working directory,
+    ! skip gracefully to keep this guard portable across runners.
+    inquire(file='test', exist=has_test_dir)
+    if (.not. has_test_dir) then
+        print *, 'SKIP: test directory not found; skipping EXPECTED FAIL guard'
+        stop 0
+    end if
 
     ! Try ripgrep first for speed; fall back to grep if unavailable.
     call execute_command_line( &
