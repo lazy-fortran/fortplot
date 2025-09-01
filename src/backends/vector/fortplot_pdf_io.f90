@@ -4,6 +4,7 @@ module fortplot_pdf_io
     
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
+    use fortplot_logging, only: log_error
     implicit none
     private
     
@@ -37,10 +38,11 @@ contains
              form='formatted', action='write', iostat=ios)
         
         if (ios /= 0) then
+            call log_error('pdf_io: failed to open file for writing: ' // trim(filename))
             if (present(success)) then
                 return  ! Return with success = .false.
             else
-                error stop "Failed to open PDF file for writing"
+                return
             end if
         end if
         
