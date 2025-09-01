@@ -26,19 +26,47 @@ int fortplot_is_debug_enabled(void) {
     return 0;
 }
 
+/*
+ * Portable environment mutators: set/unset variable at runtime.
+ * - POSIX: use setenv/unsetenv
+ * - Windows: use _putenv_s/putenv semantics (empty value unsets)
+ */
+static int fp_setenv_portable(const char *name, const char *value, int overwrite) {
+#if defined(_WIN32)
+    /* On Windows, environment is process-local; emulate overwrite semantics */
+    if (!overwrite) {
+        const char *cur = getenv(name);
+        if (cur && *cur) return 0;
+    }
+    /* _putenv_s returns 0 on success */
+    return _putenv_s(name, value ? value : "");
+#else
+    return setenv(name, value ? value : "", overwrite);
+#endif
+}
+
+static int fp_unsetenv_portable(const char *name) {
+#if defined(_WIN32)
+    /* Empty value removes the variable in the Windows CRT */
+    return _putenv_s(name, "");
+#else
+    return unsetenv(name);
+#endif
+}
+
 /* Convenience helpers for tests: safely set/unset FORTPLOT_DEBUG */
 int fortplot_debug_set_1(void) {
-    return setenv("FORTPLOT_DEBUG", "1", 1);
+    return fp_setenv_portable("FORTPLOT_DEBUG", "1", 1);
 }
 
 int fortplot_debug_set_true(void) {
-    return setenv("FORTPLOT_DEBUG", "true", 1);
+    return fp_setenv_portable("FORTPLOT_DEBUG", "true", 1);
 }
 
 int fortplot_debug_set_0(void) {
-    return setenv("FORTPLOT_DEBUG", "0", 1);
+    return fp_setenv_portable("FORTPLOT_DEBUG", "0", 1);
 }
 
 int fortplot_debug_unset(void) {
-    return unsetenv("FORTPLOT_DEBUG");
+    return fp_unsetenv_portable("FORTPLOT_DEBUG");
 }
