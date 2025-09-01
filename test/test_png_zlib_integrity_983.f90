@@ -1,12 +1,13 @@
 program test_png_zlib_integrity_983
-    use fortplot, only: figure, plot, savefig, wp
+    use fortplot, only: plot, savefig, wp
+    use iso_fortran_env, only: int64
     use fortplot_png_validation, only: validate_png_file
     implicit none
 
     character(len=*), parameter :: fn = 'test/output/png_zlib_integrity_983.png'
     logical :: exists
     integer :: unit
-    integer(8) :: fsize
+    integer(int64) :: fsize
 
     call plot([0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp], [0.0_wp, 1.0_wp, 0.0_wp, 1.0_wp])
     call savefig(fn)
@@ -24,7 +25,7 @@ program test_png_zlib_integrity_983
     close(unit)
 
     print *, 'PNG size (bytes):', fsize
-    if (fsize > 200000_8) then
+    if (fsize > 200000_int64) then
         print *, 'ERROR: PNG too large for simple plot (possible compression failure)'
         error stop 2
     end if
