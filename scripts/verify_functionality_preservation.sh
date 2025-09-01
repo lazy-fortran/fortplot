@@ -24,7 +24,10 @@ NC='\033[0m' # No Color
 
 # Function to log with timestamp
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$VERIFICATION_LOG"
+    # Ensure evidence directory exists before attempting to log
+    mkdir -p "$(dirname "${VERIFICATION_LOG}")" 2>/dev/null || true
+    # Log to file if available; never fail the script on tee errors
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$VERIFICATION_LOG" >/dev/null || echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
 }
 
 # Function to create verification directories
