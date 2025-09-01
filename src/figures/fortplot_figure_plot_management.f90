@@ -230,7 +230,7 @@ contains
         real(wp), intent(in), optional :: linewidths
         
         if (plot_count >= max_plots) then
-            print *, "Warning: Maximum number of plots reached"
+            call log_warning("Maximum number of plots reached")
             return
         end if
         
