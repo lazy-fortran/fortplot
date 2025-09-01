@@ -27,7 +27,7 @@ while IFS= read -r file_info; do
         echo "  CRITICAL: $file has $lines lines ($(( (lines - 1000) * 100 / 1000 ))% over hard limit)"
         VIOLATIONS=$((VIOLATIONS + 1))
     fi
-
+    
     # Enforce strict target for ASCII backend main file (regression guard for #747)
     if [ "$file" = "src/backends/ascii/fortplot_ascii.f90" ] && [ "$lines" -gt 500 ]; then
         echo "  STRICT:   $file exceeds 500-line target ($lines lines)"
@@ -41,7 +41,7 @@ echo "SIZE LIMIT WARNINGS (>500 lines):"
 while IFS= read -r file_info; do
     lines=$(echo "$file_info" | awk '{print $1}')
     file=$(echo "$file_info" | awk '{print $2}')
-
+    
     if [ "$lines" -gt 500 ] && [ "$lines" -le 1000 ]; then
         echo "  WARNING: $file has $lines lines ($(( (lines - 500) * 100 / 500 ))% over target)"
         WARNINGS=$((WARNINGS + 1))
