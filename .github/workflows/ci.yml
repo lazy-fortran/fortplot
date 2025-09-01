@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -205,37 +205,3 @@ jobs:
         timeout 2m fpm test --target test_system_fpm_example || echo "FPM example test skipped due to timeout"
         timeout 2m fpm test --target test_system_cmake_example || echo "CMake example test skipped due to timeout"
 
-  test-coverage:
-    name: test-coverage
-    runs-on: ubuntu-latest
-    concurrency:
-      group: ${{ github.workflow }}-coverage-${{ github.ref }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gfortran make
-          python3 -m pip install --upgrade pip
-          pip3 install gcovr
-
-      - name: Setup Fortran Package Manager (Ubuntu)
-        run: |
-          wget --timeout=30 --tries=2 https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
-          chmod +x fpm-0.12.0-linux-x86_64-gcc-12
-          sudo mv fpm-0.12.0-linux-x86_64-gcc-12 /usr/local/bin/fpm
-          fpm --version
-
-      - name: Run coverage
-        env:
-          TEST_TIMEOUT: 120s
-        run: |
-          make coverage
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-txt
-          path: coverage.txt
