@@ -3,7 +3,7 @@ ARGS ?=
 
 # FPM flags for different build targets
 FPM_FLAGS_LIB = --flag -fPIC
-FPM_FLAGS_TEST = 
+FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
 .PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry
@@ -27,7 +27,7 @@ example: create_build_dirs
 debug:
 	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
-# Run tests  
+# Run tests
 test: create_test_dirs
 	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 

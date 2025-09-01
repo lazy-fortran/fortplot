@@ -36,4 +36,3 @@ program test_quad_fill_edges
         stop 1
     end if
 end program test_quad_fill_edges
-
