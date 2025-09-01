@@ -6,6 +6,7 @@ module fortplot_figure_plot_management
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
     use fortplot_errors, only: fortplot_error_t
     implicit none
@@ -37,35 +38,35 @@ contains
         
         ! Check for zero-size arrays (always warn)
         if (size(x) == 0 .or. size(y) == 0) then
-            print *, "Warning: Plot data ", trim(label_str), " contains zero-size arrays."
-            print *, "         The plot will show axes and labels but no data points."
+            call log_warning("Plot data " // trim(label_str) // &
+                " contains zero-size arrays. The plot will show axes and labels but no data points.")
             return
         end if
         
         ! Check for mismatched array sizes (always warn)
         if (size(x) /= size(y)) then
-            print *, "Warning: Plot data ", trim(label_str), " has mismatched array sizes:"
-            print *, "         x has ", size(x), " elements, y has ", size(y), " elements."
-            print *, "         Only the common size will be plotted."
+            call log_warning("Plot data " // trim(label_str) // " has mismatched array sizes: " // &
+                trim(adjustl(transfer(size(x), '          '))) // " vs " // &
+                trim(adjustl(transfer(size(y), '          '))) // ". Only the common size will be plotted.")
         end if
         
         ! Check for single point case (informational only)
         if (size(x) == 1 .and. size(y) == 1) then
-            print *, "Info: Plot data ", trim(label_str), " contains a single point."
-            print *, "      Automatic scaling will add margins for visibility."
+            call log_info("Plot data " // trim(label_str) // &
+                " contains a single point. Automatic scaling will add margins for visibility.")
         end if
         
         ! Check for constant values - only warn for labeled plots (user intentional data)
         ! Unlabeled plots are often test data where constant values are expected
         if (has_label) then
             if (size(x) > 1 .and. abs(maxval(x) - minval(x)) < 1.0e-10_wp) then
-                print *, "Warning: All x values in plot ", trim(label_str), " are identical."
-                print *, "         This may result in a vertical line or poor visualization."
+                call log_warning("All x values in plot " // trim(label_str) // &
+                    " are identical. This may result in a vertical line or poor visualization.")
             end if
             
             if (size(y) > 1 .and. abs(maxval(y) - minval(y)) < 1.0e-10_wp) then
-                print *, "Warning: All y values in plot ", trim(label_str), " are identical."
-                print *, "         This may result in a horizontal line or poor visualization."
+                call log_warning("All y values in plot " // trim(label_str) // &
+                    " are identical. This may result in a horizontal line or poor visualization.")
             end if
         end if
     end subroutine validate_plot_data
@@ -83,7 +84,7 @@ contains
         real(wp), intent(in) :: color(3)
         
         if (plot_count >= max_plots) then
-            print *, "Warning: Maximum number of plots reached"
+            call log_warning("Maximum number of plots reached")
             return
         end if
         
@@ -130,7 +131,7 @@ contains
         character(len=*), intent(in), optional :: label
         
         if (plot_count >= max_plots) then
-            print *, "Warning: Maximum number of plots reached"
+            call log_warning("Maximum number of plots reached")
             return
         end if
         
@@ -174,7 +175,7 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         if (plot_count >= max_plots) then
-            print *, "Warning: Maximum number of plots reached"
+            call log_warning("Maximum number of plots reached")
             return
         end if
         
@@ -340,18 +341,21 @@ contains
         real(wp), intent(in) :: y_new(:)
         
         if (plot_index < 1 .or. plot_index > plot_count) then
-            print *, "Warning: Invalid plot index", plot_index
+            call log_warning("Invalid plot index: " // trim(adjustl(transfer(plot_index, '          '))))
             return
         end if
         
         if (.not. allocated(plots(plot_index)%y)) then
-            print *, "Warning: Plot", plot_index, "has no y data to update"
+            call log_warning("Plot " // trim(adjustl(transfer(plot_index, '          '))) // &
+                " has no y data to update")
             return
         end if
         
         if (size(y_new) /= size(plots(plot_index)%y)) then
-            print *, "Warning: New y data size", size(y_new), &
-                     "does not match existing size", size(plots(plot_index)%y)
+            call log_warning("New y data size " // &
+                trim(adjustl(transfer(size(y_new), '          '))) // &
+                " does not match existing size " // &
+                trim(adjustl(transfer(size(plots(plot_index)%y), '          '))))
             return
         end if
         
