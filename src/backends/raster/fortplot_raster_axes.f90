@@ -143,7 +143,8 @@ contains
         real(wp), allocatable :: centers(:)
         integer, allocatable :: widths(:)
         logical, allocatable :: keep(:)
-        character(len=128), allocatable :: labels(:)
+        ! Use generous buffer to avoid rare truncation of escaped labels
+        character(len=500), allocatable :: labels(:)
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
