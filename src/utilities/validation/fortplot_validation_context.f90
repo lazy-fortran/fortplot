@@ -174,59 +174,51 @@ contains
         logical :: found
 
         found = .false.
-        critical
-            if (.not. allocated(issued_warnings)) then
-                allocate(issued_warnings(MAX_TRACKED_WARNINGS))
-                warning_count = 0
-            end if
+        if (.not. allocated(issued_warnings)) then
+            allocate(issued_warnings(MAX_TRACKED_WARNINGS))
+            warning_count = 0
+        end if
 
-            if (warning_count > 0) then
-                do i = 1, warning_count
-                    if (trim(issued_warnings(i)) == trim(warning_key)) then
-                        found = .true.
-                        exit
-                    end if
-                end do
-            end if
-
-            if (.not. found) then
-                if (warning_count < MAX_TRACKED_WARNINGS) then
-                    warning_count = warning_count + 1
-                    issued_warnings(warning_count) = warning_key
-                else
-                    do i = 1, MAX_TRACKED_WARNINGS - 1
-                        issued_warnings(i) = issued_warnings(i + 1)
-                    end do
-                    issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
+        if (warning_count > 0) then
+            do i = 1, warning_count
+                if (trim(issued_warnings(i)) == trim(warning_key)) then
+                    found = .true.
+                    exit
                 end if
+            end do
+        end if
+
+        if (.not. found) then
+            if (warning_count < MAX_TRACKED_WARNINGS) then
+                warning_count = warning_count + 1
+                issued_warnings(warning_count) = warning_key
+            else
+                do i = 1, MAX_TRACKED_WARNINGS - 1
+                    issued_warnings(i) = issued_warnings(i + 1)
+                end do
+                issued_warnings(MAX_TRACKED_WARNINGS) = warning_key
             end if
-        end critical
+        end if
 
         should_emit_warning = .not. found
     end function should_emit_warning
     
     ! Reset and cleanup warning deduplication tracking to prevent permanent allocation
     subroutine reset_warning_tracking()
-        critical
-            if (allocated(issued_warnings)) then
-                deallocate(issued_warnings)
-            end if
-            warning_count = 0
-        end critical
+        if (allocated(issued_warnings)) then
+            deallocate(issued_warnings)
+        end if
+        warning_count = 0
     end subroutine reset_warning_tracking
     
     ! Inquiry: check if warning tracking storage is currently allocated
     logical function is_warning_tracking_active()
-        critical
-            is_warning_tracking_active = allocated(issued_warnings)
-        end critical
+        is_warning_tracking_active = allocated(issued_warnings)
     end function is_warning_tracking_active
 
     ! Inquiry: return number of tracked warnings (for tests and diagnostics)
     integer function get_warning_count()
-        critical
-            get_warning_count = warning_count
-        end critical
+        get_warning_count = warning_count
     end function get_warning_count
 
 end module fortplot_validation_context
