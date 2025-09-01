@@ -3,7 +3,7 @@ ARGS ?=
 
 # FPM flags for different build targets
 FPM_FLAGS_LIB = --flag -fPIC
-FPM_FLAGS_TEST = 
+FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
 .PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc coverage create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-size-compliance issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry
@@ -27,7 +27,7 @@ example: create_build_dirs
 debug:
 	fpm run $(FPM_FLAGS_TEST) $(ARGS)
 
-# Run tests  
+# Run tests
 test: create_test_dirs
 	fpm test $(FPM_FLAGS_TEST) $(ARGS)
 
@@ -51,6 +51,8 @@ test-ci:
 	@python3 scripts/test_pdf_axes_color_black.py || exit 1
 	@# Security regression tests for Python bridge stdin handling (PR #1010)
 	@python3 scripts/test_python_bridge_security.py || exit 1
+	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
+	@fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)
 	@./scripts/test_pcolormesh_guard.sh || exit 1
 	@echo "CI essential test suite completed successfully"
@@ -99,8 +101,10 @@ run-release:
 
 # Build documentation with FORD
 doc:
-	# Ensure critical example media exist for docs (fixes #858)
+	# Ensure critical example media exist for docs (fixes #858, #1032)
+	# Generate streamplot and pcolormesh demos so images are available in docs
 	$(MAKE) example ARGS="streamplot_demo" >/dev/null
+	$(MAKE) example ARGS="pcolormesh_demo" >/dev/null
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to doc build directory AFTER running FORD
