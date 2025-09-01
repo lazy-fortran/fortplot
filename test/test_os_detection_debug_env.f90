@@ -27,6 +27,13 @@ program test_os_detection_debug_env
     call set_env('FORTPLOT_DEBUG', 'true')
     call ensure(is_debug_enabled(), 'debug enabled when FORTPLOT_DEBUG=true')
 
+    ! Case-insensitivity checks
+    call set_env('FORTPLOT_DEBUG', 'TRUE')
+    call ensure(is_debug_enabled(), 'debug enabled when FORTPLOT_DEBUG=TRUE (case-insensitive)')
+
+    call set_env('FORTPLOT_DEBUG', 'False')
+    call ensure(.not. is_debug_enabled(), 'debug disabled when FORTPLOT_DEBUG=False (case-insensitive)')
+
     call set_env('FORTPLOT_DEBUG', '0')
     call ensure(.not. is_debug_enabled(), 'debug disabled when FORTPLOT_DEBUG=0')
 
