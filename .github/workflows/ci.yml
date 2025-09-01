@@ -71,13 +71,23 @@ jobs:
         $msys2Dir = Join-Path (Split-Path $env:GITHUB_WORKSPACE -Parent) '_msys2'
         echo "MSYS2_DIR=$msys2Dir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+    - name: Cache full MSYS2 installation (Windows)
+      if: matrix.os == 'windows-latest'
+      id: msys2_cache
+      uses: actions/cache@v4
+      with:
+        path: ${{ env.MSYS2_DIR }}
+        key: ${{ runner.os }}-msys2-full-MINGW64-${{ hashFiles('.github/workflows/ci.yml') }}
+        restore-keys: |
+          ${{ runner.os }}-msys2-full-MINGW64-
+
     - name: Setup MSYS2 (Windows)
       if: matrix.os == 'windows-latest'
       id: msys2
       uses: msys2/setup-msys2@v2
       with:
         msystem: MINGW64
-        update: true           # Ensure pacman state is fresh on first run
+        update: ${{ steps.msys2_cache.outputs.cache-hit != 'true' }}
         path-type: inherit
         cache: true            # Use builtin package cache for reliability
         release: true          # Install from release tarball into location
