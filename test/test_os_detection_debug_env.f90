@@ -6,7 +6,6 @@ program test_os_detection_debug_env
 
     implicit none
 
-    ! Use portable C putenv for setting/unsetting environment variables
     interface
         function c_putenv(s) bind(C, name="putenv") result(ret)
             import :: c_int, c_char
@@ -33,23 +32,35 @@ program test_os_detection_debug_env
 
 contains
 
+    ! Use portable C putenv with a persistent C buffer to avoid lifetime issues
     subroutine set_env(k, v)
         character(len=*), intent(in) :: k, v
         integer(c_int) :: rc
         character(len=:), allocatable :: kv
-        kv = trim(k)//'='//trim(v)
-        rc = c_putenv(kv//c_null_char)
+        call make_c_string(trim(k)//'='//trim(v), rc)
         call ensure(rc == 0, 'putenv succeeded for '//trim(k))
     end subroutine set_env
 
     subroutine unset_env(k)
         character(len=*), intent(in) :: k
         integer(c_int) :: rc
-        character(len=:), allocatable :: kv
-        kv = trim(k)//'='
-        rc = c_putenv(kv//c_null_char)
+        call make_c_string(trim(k)//'=', rc)
         call ensure(rc == 0, 'putenv unset succeeded for '//trim(k))
     end subroutine unset_env
+
+    subroutine make_c_string(txt, rc)
+        character(len=*), intent(in) :: txt
+        integer(c_int), intent(out) :: rc
+        character(kind=c_char), save :: buf(256)
+        integer :: i, n
+        n = len_trim(txt)
+        if (n > size(buf)-1) n = size(buf)-1
+        do i = 1, n
+            buf(i) = transfer(txt(i:i), buf(i))
+        end do
+        buf(n+1) = c_null_char
+        rc = c_putenv(buf)
+    end subroutine make_c_string
 
     subroutine ensure(cond, msg)
         logical, intent(in) :: cond
