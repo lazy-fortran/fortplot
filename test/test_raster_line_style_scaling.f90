@@ -13,7 +13,7 @@ contains
         real(wp) :: pattern_length
         real(wp) :: pattern_distance
         real(wp) :: segment_px
-        integer :: i, steps, gaps
+        integer :: i, steps, gaps, draws
         logical :: draw
 
         call get_line_pattern('--', pattern, pattern_size)
@@ -24,13 +24,19 @@ contains
         segment_px = 2.0_wp
         steps = 50
         gaps = 0
+        draws = 0
         do i = 1, steps
             draw = should_draw_at_distance(pattern_distance, pattern, pattern_size, pattern_length)
-            if (.not. draw) gaps = gaps + 1
+            if (.not. draw) then
+                gaps = gaps + 1
+            else
+                draws = draws + 1
+            end if
             pattern_distance = pattern_distance + segment_px * PATTERN_SCALE_FACTOR
         end do
 
         call assert_true(gaps > 0, 'Dashed pattern should produce gaps for 100px line')
+        call assert_true(draws > 0, 'Dashed pattern should also produce drawn segments')
         write(*,'(A)') 'PASS: Dashed pattern produced at least one gap'
     end subroutine test_dashed_pattern_has_gaps
 
@@ -44,4 +50,3 @@ contains
     end subroutine assert_true
 
 end program test_raster_line_style_scaling
-
