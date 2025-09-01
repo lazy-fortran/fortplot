@@ -65,8 +65,9 @@ contains
             this%fonts%get_helvetica_obj(), PDF_FONT_SIZE
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
-        ! Position text
-        write(text_cmd, '(F0.3, 1X, F0.3, " Td")') x, y
+        ! Position text using absolute positioning matrix
+        ! Use identity transform with translation (x,y)
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
         ! Show text
@@ -94,8 +95,13 @@ contains
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
         
-        ! Set initial position
-        write(text_cmd, '(F0.3, 1X, F0.3, " Td")') x, y
+        ! Select default font (Helvetica) for label-sized text
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+
+        ! Set initial absolute position
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
         ! Process text character by character
@@ -110,10 +116,16 @@ contains
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        character(len=256) :: font_cmd
         
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
         
+        ! Select default font (Helvetica) for label-sized text
+        write(font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
+        this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
+
         ! Set up rotation matrix
         call setup_rotated_text_matrix(this, x, y)
         
@@ -216,8 +228,8 @@ contains
             this%fonts%get_helvetica_obj(), PDF_FONT_SIZE
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
-        ! Position and show text
-        write(text_cmd, '(F0.3, 1X, F0.3, " Td")') x, y
+        ! Position and show text using absolute positioning
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         this%stream_data = this%stream_data // "(" // text // ") Tj" // new_line('a')
         
@@ -244,8 +256,8 @@ contains
             this%fonts%get_helvetica_obj(), PDF_TITLE_SIZE
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
-        ! Position and show text
-        write(text_cmd, '(F0.3, 1X, F0.3, " Td")') x, y
+        ! Position and show text using absolute positioning
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         this%stream_data = this%stream_data // "(" // text // ") Tj" // new_line('a')
         
