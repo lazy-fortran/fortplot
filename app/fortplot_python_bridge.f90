@@ -8,7 +8,6 @@ program fortplot_python_bridge
          is_finite_safe, parameter_validation_result_t
     use fortplot_validation_core, only: validate_file_path
     implicit none
-    
     integer, parameter :: MAX_CMD_LEN = 64
     integer, parameter :: MAX_STR_LEN = 256
     integer, parameter :: MAX_INPUT_ARRAY = 1000000
@@ -16,6 +15,32 @@ program fortplot_python_bridge
     character(len=MAX_STR_LEN) :: command
     real(wp), allocatable :: x(:), y(:), data(:)
     integer :: ios
+    ! Command-line handling
+    integer :: argc, i
+    character(len=64) :: arg
+
+    argc = command_argument_count()
+    if (argc > 0) then
+        do i = 1, argc
+            call get_command_argument(i, arg)
+            if (trim(adjustl(arg)) == '--help' .or. trim(adjustl(arg)) == '-h') then
+                write(*, '(A)') 'fortplot_python_bridge - stdin-driven plotting bridge'
+                write(*, '(A)') 'Usage:'
+                write(*, '(A)') '  - Run without arguments and communicate via stdin.'
+                write(*, '(A)') '  - Example sequence:'
+                write(*, '(A)') '      FIGURE'
+                write(*, '(A)') '      640 480'
+                write(*, '(A)') '      PLOT'
+                write(*, '(A)') '      <n> then n lines of x, then n lines of y'
+                write(*, '(A)') '      TITLE'
+                write(*, '(A)') '      <text>'
+                write(*, '(A)') '      SAVEFIG'
+                write(*, '(A)') '      <filename>'
+                write(*, '(A)') '      QUIT'
+                stop
+            end if
+        end do
+    end if
     
     ! Initialize figure
     call figure()
