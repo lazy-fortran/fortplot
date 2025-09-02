@@ -308,16 +308,22 @@ contains
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
 
-        integer :: i, j
+        integer :: i, j, nx, ny
         real(wp) :: x_quad(4), y_quad(4)
         real(wp) :: value, norm_value
         real(wp), dimension(3) :: color
 
         call this%update_coord_context()
 
-        do i = 1, size(z_grid, 1) - 1
-            do j = 1, size(z_grid, 2) - 1
-                value = z_grid(i, j)
+        nx = size(x_grid)
+        ny = size(y_grid)
+
+        ! Expect z_grid(ny, nx): align with raster backend and plotting API
+        if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
+
+        do i = 1, nx - 1
+            do j = 1, ny - 1
+                value = z_grid(j, i)
                 if (abs(z_max - z_min) > EPSILON_COMPARE) then
                     norm_value = (value - z_min) / (z_max - z_min)
                 else
