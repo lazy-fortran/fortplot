@@ -133,20 +133,28 @@ doc:
 	$(MAKE) example ARGS="save_animation_demo" >/dev/null
 	# Run FORD to generate documentation structure
 	ford doc.md
-	# Copy example media files to the path that matches FORD page-relative links
-	# NOTE: Pages live under build/doc/page/, so media must be at build/doc/page/media/
-	mkdir -p build/doc/page/media/examples
-	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
-	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/page/media/examples/ 2>/dev/null || true; fi
-	# Also copy directly from output directory if available (for local builds)
+	# Copy example media files to BOTH possible link roots used in pages
+	# Some pages link '../media/...' (relative to page/examples), others '../../media/...'
+	# So stage to: build/doc/page/media/... and build/doc/media/...
+	mkdir -p build/doc/page/media/examples build/doc/media/examples
+	# Copy from doc/media (populated in workflow) into both
+	if [ -d doc/media/examples ]; then \
+		cp -r doc/media/examples/* build/doc/page/media/examples/ 2>/dev/null || true; \
+		cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; \
+	fi
+	# Also copy directly from output directory (local builds) into both
 	for dir in output/example/fortran/*/; do \
 		if [ -d "$$dir" ]; then \
 			example_name=$$(basename "$$dir"); \
-			mkdir -p "build/doc/page/media/examples/$$example_name"; \
+			mkdir -p "build/doc/page/media/examples/$$example_name" "build/doc/media/examples/$$example_name"; \
 			cp "$$dir"*.png "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
 			cp "$$dir"*.txt "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
 			cp "$$dir"*.pdf "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
 			cp "$$dir"*.mp4 "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.png "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.txt "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.pdf "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
 		fi; \
 	done
 
