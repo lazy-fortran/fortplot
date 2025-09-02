@@ -147,3 +147,4 @@ test/output/**/*.exe
 test/output/**/*.out
 
 # Force CI rebuild
+!
