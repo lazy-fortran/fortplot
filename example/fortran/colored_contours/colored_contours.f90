@@ -10,22 +10,22 @@ program colored_contours_example
 contains
 
     subroutine default_gaussian_example()
-        real(wp), dimension(30) :: x_grid, y_grid
-        real(wp), dimension(30,30) :: z_grid
+        real(wp), dimension(60) :: x_grid, y_grid
+        real(wp), dimension(60,60) :: z_grid
         type(figure_t) :: fig
         integer :: i, j
 
         print *, "=== Default Colorblind-Safe Gaussian Example ==="
         
-        ! Generate grid
-        do i = 1, 30
-            x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
-            y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 29.0_wp
+        ! Generate grid - increased to 60x60 for smoother contours
+        do i = 1, 60
+            x_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 59.0_wp
+            y_grid(i) = -3.0_wp + (i-1) * 6.0_wp / 59.0_wp
         end do
 
         ! 2D Gaussian
-        do i = 1, 30
-            do j = 1, 30
+        do i = 1, 60
+            do j = 1, 60
                 z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
             end do
         end do
@@ -82,22 +82,22 @@ contains
     end subroutine plasma_saddle_example
 
     subroutine mixed_colormap_comparison()
-        real(wp), dimension(50) :: x_grid, y_grid
-        real(wp), dimension(50,50) :: z_grid
+        real(wp), dimension(80) :: x_grid, y_grid
+        real(wp), dimension(80,80) :: z_grid
         type(figure_t) :: fig1, fig2, fig3
         integer :: i, j
 
         print *, "=== Colormap Comparison ==="
         
-        ! Generate grid - increased resolution from 20x20 to 50x50
-        do i = 1, 50
-            x_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 49.0_wp
-            y_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 49.0_wp
+        ! Generate grid - increased resolution to 80x80 for smoother contours
+        do i = 1, 80
+            x_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 79.0_wp
+            y_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 79.0_wp
         end do
 
         ! Ripple function
-        do i = 1, 50
-            do j = 1, 50
+        do i = 1, 80
+            do j = 1, 80
                 z_grid(i,j) = sin(sqrt(x_grid(i)**2 + y_grid(j)**2) * 3.0_wp) * exp(-0.3_wp * sqrt(x_grid(i)**2 + y_grid(j)**2))
             end do
         end do
