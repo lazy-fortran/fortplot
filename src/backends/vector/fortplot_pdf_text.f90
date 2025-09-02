@@ -51,7 +51,7 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=:), allocatable :: escaped_text
-        character(len=256) :: text_cmd
+        character(len=1024) :: text_cmd
         integer :: escaped_len
         
         allocate(character(len=len(text)*6) :: escaped_text)
@@ -85,7 +85,7 @@ contains
         character(len=1024) :: text_cmd
         logical :: in_symbol_font
         integer :: i, text_pos, segment_pos
-        character(len=256) :: current_segment
+        character(len=512) :: current_segment
         
         in_symbol_font = .false.
         text_pos = 1
@@ -116,7 +116,7 @@ contains
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=256) :: font_cmd
+        character(len=1024) :: font_cmd
         
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
@@ -223,7 +223,7 @@ contains
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=256) :: text_cmd
+        character(len=1024) :: text_cmd
         
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
@@ -247,7 +247,7 @@ contains
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=256) :: text_cmd
+        character(len=1024) :: text_cmd
         character(len=:), allocatable :: escaped_text
         integer :: escaped_len
         

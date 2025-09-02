@@ -307,7 +307,7 @@ contains
         !! Draw the plot frame using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height, canvas_height
-        character(len=256) :: frame_cmd
+        character(len=2048) :: frame_cmd
         real(wp) :: x1, y1
 
         ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
@@ -330,7 +330,7 @@ contains
         real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
 
         integer :: i
-        character(len=256) :: tick_cmd
+        character(len=2048) :: tick_cmd
         real(wp) :: tick_length, bottom_y
 
         ! Ensure tick marks are stroked in black regardless of prior drawing state
