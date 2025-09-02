@@ -16,6 +16,7 @@ module fortplot_pdf
     use fortplot_margins, only: plot_margins_t, plot_area_t, calculate_plot_area
     use fortplot_constants, only: EPSILON_COMPARE
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_colormap, only: colormap_value_to_color
     implicit none
 
     private
@@ -310,7 +311,7 @@ contains
 
         integer :: i, j, nx, ny
         real(wp) :: x_quad(4), y_quad(4)
-        real(wp) :: value, norm_value
+        real(wp) :: value
         real(wp), dimension(3) :: color
 
         call this%update_coord_context()
@@ -324,13 +325,8 @@ contains
         do i = 1, nx - 1
             do j = 1, ny - 1
                 value = z_grid(j, i)
-                if (abs(z_max - z_min) > EPSILON_COMPARE) then
-                    norm_value = (value - z_min) / (z_max - z_min)
-                else
-                    norm_value = 0.5_wp
-                end if
-                norm_value = max(0.0_wp, min(1.0_wp, norm_value))
-                color = [norm_value, norm_value, norm_value]
+                ! Map data value to RGB using a default colormap to match raster behavior
+                call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
                 call this%stream_writer%write_color(color(1), color(2), color(3))
                 x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
                 y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
