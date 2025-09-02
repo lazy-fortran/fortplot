@@ -11,6 +11,7 @@ module fortplot_plot_contours
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_figure_plot_management, only: generate_default_contour_levels
     use fortplot_errors, only: fortplot_error_t, SUCCESS, ERROR_RESOURCE_LIMIT
     implicit none
     
@@ -88,6 +89,8 @@ contains
         if (present(levels)) then
             allocate(self%plots(plot_idx)%contour_levels(size(levels)))
             self%plots(plot_idx)%contour_levels = levels
+        else
+            call generate_default_contour_levels(self%plots(plot_idx))
         end if
         
         if (present(label) .and. len_trim(label) > 0) then
@@ -129,6 +132,8 @@ contains
         if (present(levels)) then
             allocate(self%plots(plot_idx)%contour_levels(size(levels)))
             self%plots(plot_idx)%contour_levels = levels
+        else
+            call generate_default_contour_levels(self%plots(plot_idx))
         end if
         
         ! Color properties
