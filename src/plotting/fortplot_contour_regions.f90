@@ -260,7 +260,7 @@ contains
         real(wp), intent(inout) :: contour_x(:), contour_y(:)
         integer, intent(inout) :: contour_count
         
-        real(wp) :: interp_level, t1, t2
+        real(wp) :: interp_level
         real(wp) :: x1, y1, x2, y2
         
         ! Use middle of level range for interpolation

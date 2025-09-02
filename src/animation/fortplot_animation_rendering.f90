@@ -33,28 +33,7 @@ contains
         call fig%extract_png_data_for_animation(png_data, status)
     end subroutine render_frame_to_png
 
-    subroutine setup_png_backend(fig)
-        type(figure_t), intent(inout) :: fig
-        
-        ! Use the savefig method which handles backend switching automatically
-        call fig%savefig('temp.png')
-        call fig%set_rendered(.false.)
-    end subroutine setup_png_backend
-
-    subroutine render_to_backend(fig)
-        type(figure_t), intent(inout) :: fig
-        
-        call render_figure_components(fig)
-    end subroutine render_to_backend
-
-    subroutine extract_png_data(fig, png_data, status)
-        type(figure_t), intent(inout) :: fig
-        integer(1), allocatable, intent(out) :: png_data(:)
-        integer, intent(out) :: status
-        
-        ! Use new method to get PNG data 
-        call fig%extract_png_data_for_animation(png_data, status)
-    end subroutine extract_png_data
+    ! Removed unused internal stubs: setup_png_backend, render_to_backend, extract_png_data
 
     subroutine render_figure_components(fig)
         type(figure_t), intent(inout) :: fig
@@ -103,11 +82,7 @@ contains
         end select
     end subroutine render_single_plot
 
-    subroutine mark_as_rendered(fig)
-        type(figure_t), intent(inout) :: fig
-        
-        call fig%set_rendered(.true.)
-    end subroutine mark_as_rendered
+    ! Removed unused mark_as_rendered
 
     subroutine render_line_plot(fig, plot_data)
         type(figure_t), intent(inout) :: fig

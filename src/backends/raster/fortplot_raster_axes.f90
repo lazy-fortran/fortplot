@@ -142,6 +142,7 @@ contains
         real(wp) :: dummy_pattern(1), pattern_dist
         real(wp) :: x_bottom_left, y_bottom_left, x_bottom_right, y_bottom_right
         real(wp) :: x_top_left, y_top_left
+        associate(dxmin=>x_min, dxmax=>x_max, dymin=>y_min, dymax=>y_max); end associate
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black axes
         dummy_pattern = 0.0_wp
@@ -196,6 +197,7 @@ contains
         ! Use generous buffer to avoid rare truncation of escaped labels
         character(len=500), allocatable :: labels(:)
         integer :: decimals
+        associate(dymin=>y_min, dymax=>y_max); end associate
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
@@ -281,6 +283,7 @@ contains
         integer :: processed_len
         integer :: decimals
         
+        associate(dxmin=>x_min, dxmax=>x_max); end associate
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
         tick_length = TICK_MARK_LENGTH
@@ -333,7 +336,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
         
-        integer :: px, py, text_width, text_height
+        integer :: px, py, text_width
         integer(1) :: text_r, text_g, text_b
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len

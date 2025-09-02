@@ -9,6 +9,7 @@
 module fortplot_parameter_validation
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use, intrinsic :: iso_fortran_env, only: int32
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     use fortplot_validation_context, only: validation_context_t, parameter_validation_result_t, &
                                           validation_warning, validation_error, &
                                           WARNING_MODE_ALL, WARNING_MODE_ERRORS, WARNING_MODE_SILENT
@@ -202,22 +203,19 @@ contains
     end function validate_numeric_parameters
     
     ! Safe NaN check that works across compilers
-    pure function is_nan_safe(value) result(is_nan)
+    function is_nan_safe(value) result(is_nan)
         real(wp), intent(in) :: value
         logical :: is_nan
         
-        ! NaN is the only value that is not equal to itself
-        is_nan = (value /= value)
+        is_nan = ieee_is_nan(value)
     end function is_nan_safe
     
     ! Safe finite check that works across compilers
-    pure function is_finite_safe(value) result(is_finite)
+    function is_finite_safe(value) result(is_finite)
         real(wp), intent(in) :: value
         logical :: is_finite
         
-        ! A finite value is neither NaN nor infinite
-        ! Use a large but safe threshold instead of huge(value)
-        is_finite = (value == value) .and. (abs(value) < 1.0e100_wp)
+        is_finite = ieee_is_finite(value)
     end function is_finite_safe
     
 end module fortplot_parameter_validation

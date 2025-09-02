@@ -187,9 +187,14 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
+        real(wp) :: lw_dummy1, rt_dummy1, at_dummy1, mt_dummy1
+        if (present(linewidth)) lw_dummy1 = linewidth
+        if (present(rtol)) rt_dummy1 = rtol
+        if (present(atol)) at_dummy1 = atol
+        if (present(max_time)) mt_dummy1 = max_time
         
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
-                            density, color, linewidth, rtol, atol, max_time)
+                            density, color)
     end subroutine streamplot
 
     !! I/O OPERATIONS - Delegated to core I/O module
@@ -311,7 +316,7 @@ contains
     subroutine clear(self)
         !! Clear the figure for reuse, preserving backend settings
         class(figure_t), intent(inout) :: self
-        call core_clear(self%state, self%plots, self%streamlines, &
+        call core_clear(self%state, self%streamlines, &
                        self%subplots_array, self%subplot_rows, self%subplot_cols, &
                        self%current_subplot, self%title, self%xlabel, self%ylabel, &
                        self%plot_count, self%annotation_count)
@@ -415,14 +420,18 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         real(wp) :: default_color(3)
+        real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
         
         ! Get default color from state
         default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
+        if (present(alpha)) al_dummy1 = alpha
+        if (present(edgecolor)) ec_dummy1 = edgecolor(1)
+        if (present(facecolor)) fc_dummy1 = facecolor(1)
+        if (present(linewidth)) lw_dummy2 = linewidth
         
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
-                         marker, markersize, color, colormap, alpha, edgecolor, &
-                         facecolor, linewidth, vmin, vmax, label, show_colorbar, &
-                         default_color)
+                         marker, markersize, color, colormap, vmin, vmax, label, &
+                         show_colorbar, default_color)
     end subroutine scatter
 
     !! SUBPLOT OPERATIONS - Delegated to management module

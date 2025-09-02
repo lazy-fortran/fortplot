@@ -91,13 +91,12 @@ contains
         
         if (.not. success) then
             ! Final fallback: try system mkdir command
-            call try_mkdir_command(dir_path, success)
+            call try_mkdir_command(success)
         end if
     end subroutine try_create_directory
 
     !> Try system mkdir command as fallback
-    subroutine try_mkdir_command(dir_path, success)
-        character(len=*), intent(in) :: dir_path
+    subroutine try_mkdir_command(success)
         logical, intent(out) :: success
         
         ! For security, we don't use execute_command_line
@@ -110,8 +109,9 @@ contains
         character(len=*), intent(in) :: dir_path
         logical, intent(out) :: success
         
-        character(len=MAX_PATH_LENGTH) :: path_parts(MAX_NESTED_DIRS)
+        character(len=MAX_PATH_LENGTH), allocatable :: path_parts(:)
         integer :: num_parts
+        allocate(path_parts(MAX_NESTED_DIRS))
         
         call split_path_into_parts(dir_path, path_parts, num_parts)
         
@@ -122,6 +122,7 @@ contains
         end if
         
         call create_directories_from_parts(path_parts, num_parts - 1, success)
+        if (allocated(path_parts)) deallocate(path_parts)
     end subroutine create_parent_directories
 
     !> Split directory path into components

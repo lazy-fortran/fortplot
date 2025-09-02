@@ -102,7 +102,14 @@ contains
         logical, intent(in), optional :: has_bbox
         
         character(len=16) :: xy_coord_str, xytext_coord_str
+        character(len=1) :: dummy_c
+        logical :: dummy_l
         real(wp), dimension(2) :: text_pos
+        ! Quiet unused optionals to keep stub warning-free
+        if (present(arrow_color)) dummy_c = arrow_color(1:1)
+        if (present(alignment)) dummy_c = alignment(1:1)
+        if (present(ha)) dummy_c = ha(1:1)
+        if (present(has_bbox)) dummy_l = has_bbox
         
         ! Check if global figure is allocated
         if (.not. allocated(global_figure)) then

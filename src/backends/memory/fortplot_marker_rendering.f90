@@ -26,6 +26,7 @@ contains
         
         real(wp) :: x_scaled, y_scaled
         integer :: i
+        associate(dxmin=>x_min_t, dxmax=>x_max_t, dymin=>y_min_t, dymax=>y_max_t); end associate
         
         if (.not. allocated(plot_data%marker)) return
         if (len_trim(plot_data%marker) == 0) return

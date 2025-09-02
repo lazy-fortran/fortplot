@@ -79,12 +79,14 @@ contains
     real(wp) function pdf_get_width_scale(ctx) result(scale)
         !! Get width scale - now returns 1.0 since page size matches figure size
         type(pdf_context_handle), intent(in) :: ctx
+        associate(dummy_ctxw => ctx%plot_area%width); end associate
         scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
     end function pdf_get_width_scale
     
     real(wp) function pdf_get_height_scale(ctx) result(scale)
         !! Get height scale - now returns 1.0 since page size matches figure size
         type(pdf_context_handle), intent(in) :: ctx
+        associate(dummy_h => ctx%plot_area%height); end associate
         scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
     end function pdf_get_height_scale
     
@@ -98,6 +100,7 @@ contains
         ! Simplified legend rendering
         integer :: i
         real(wp) :: y_pos
+        associate(dummy_w => width, dummy_h => height); end associate
         
         y_pos = y
         do i = 1, size(entries)
@@ -110,6 +113,7 @@ contains
         type(pdf_context_handle), intent(in) :: ctx
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(out) :: width, height
+        associate(dummy_ctxw => ctx%plot_area%width); end associate
         
         width = 100.0_wp
         height = real(size(entries), wp) * 20.0_wp
@@ -150,6 +154,7 @@ contains
         type(pdf_context_handle), intent(in) :: ctx
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
+        associate(dummy_ctxw => ctx%plot_area%width, dummy_w => width, dummy_h => height); end associate
         
         ! PDF doesn't have RGB pixel data - return white
         rgb_data = 1.0_wp
@@ -160,6 +165,7 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
+        associate(dummy_ctxw => ctx%plot_area%width, dummy_w => width, dummy_h => height); end associate
         
         ! PDF doesn't generate PNG data
         allocate(png_data(0))
@@ -169,6 +175,7 @@ contains
     subroutine pdf_prepare_3d_data(ctx, plots)
         type(pdf_context_handle), intent(inout) :: ctx
         type(plot_data_t), intent(in) :: plots(:)
+        associate(dummy_w => ctx%plot_area%width, dummy_n => size(plots)); end associate
         
         ! PDF doesn't support 3D - stub implementation
     end subroutine pdf_prepare_3d_data

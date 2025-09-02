@@ -282,7 +282,6 @@ contains
         character(len=50) :: tick_label
         real(wp) :: tick_x, tick_y
         integer :: decimals
-        real(wp) :: step
         real(wp) :: luminance
         character(len=1) :: line_char
         character(len=500) :: processed_title

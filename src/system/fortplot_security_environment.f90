@@ -272,6 +272,7 @@ contains
     function test_program_availability(program_name) result(available)
         character(len=*), intent(in) :: program_name
         logical :: available
+        associate(dp=>len_trim(program_name)); end associate
         
         ! Placeholder: In real implementation, this would safely test program availability
         available = .false.

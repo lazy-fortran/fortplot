@@ -158,7 +158,6 @@ contains
     pure function title_case(name) result(title)
         character(len=*), intent(in) :: name
         character(len=FILENAME_MAX_LEN) :: title
-        integer :: i
 
         title = name
         call replace_underscores_with_spaces(title)
@@ -231,4 +230,3 @@ contains
     end subroutine get_fortran_filename
 
 end module fortplot_doc_core
-

@@ -312,7 +312,7 @@ contains
     subroutine process_image_path(line, example_name)
         character(len=*), intent(inout) :: line
         character(len=*), intent(in) :: example_name
-        integer :: start_pos, end_pos, path_start, path_end
+        integer :: start_pos, path_start, path_end
         character(len=FILENAME_MAX_LEN) :: new_path, filename
 
         start_pos = index(line, '](')
@@ -362,6 +362,8 @@ contains
         integer, intent(in) :: start_pos, path_end
         character(len=*), intent(in) :: new_path
 
+        ! Reference path_end to keep interface noise-free
+        associate(unused_pe => path_end); end associate
         line = line(1:start_pos+1) // trim(new_path) // ')'
     end subroutine replace_path_in_line
 

@@ -38,6 +38,7 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
 
         real(wp) :: x_range, y_range
+        associate(dummy_ctx => ctx%width); end associate
 
         ! Initialize adjusted values
         x_min_adj = x_min_orig
@@ -91,6 +92,7 @@ contains
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
         real(wp), intent(in), optional :: symlog_threshold
 
+        associate(dummy_ctx => ctx%width); end associate
         ! Calculate number of ticks and allocate arrays
         call initialize_tick_arrays(plot_area_width, plot_area_height, num_x_ticks, num_y_ticks, &
                                    x_positions, y_positions, x_labels, y_labels)
@@ -319,6 +321,8 @@ contains
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
 
+        ! Reference unused arguments to keep interface stable
+        associate(d1=>ctx%width, d2=>x_min, d3=>x_max, d4=>y_min, d5=>y_max, d6=>z_min, d7=>z_max); end associate
         ! PDF backend does not support 3D axes projection
         ! 3D plots in PDF backend fall back to 2D projections handled by the
         ! standard 2D axes drawing functions. This is consistent with many
@@ -334,6 +338,7 @@ contains
         real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height, canvas_height
         character(len=2048) :: frame_cmd
         real(wp) :: x1, y1
+        associate(dch=>canvas_height); end associate
 
         ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
         x1 = plot_left
@@ -360,6 +365,7 @@ contains
         integer :: i
         character(len=2048) :: tick_cmd
         real(wp) :: tick_length, bottom_y
+        associate(dch=>canvas_height); end associate
 
         ! Ensure tick marks are stroked in black and solid regardless of prior drawing state
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -402,6 +408,7 @@ contains
         real(wp), parameter :: X_TICK_GAP = 15.0_wp   ! Distance below plot for X tick labels
         real(wp), parameter :: Y_TICK_GAP = 19.0_wp   ! Distance left of plot edge to end of Y tick labels
 
+        associate(dch=>canvas_height); end associate
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
 
         ! Draw X-axis labels (center-aligned under each tick)
@@ -502,6 +509,7 @@ contains
         real(wp) :: min_spacing
         integer :: i
         real(wp) :: label_x, label_y
+        associate(dch=>canvas_height); end associate
 
         min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
         last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn

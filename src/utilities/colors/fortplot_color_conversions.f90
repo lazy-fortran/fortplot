@@ -44,11 +44,11 @@ contains
         end if
         
         ! Hue
-        if (delta == 0.0_wp) then
+        if (abs(delta) <= epsilon(1.0_wp)) then
             hsv(1) = 0.0_wp
-        else if (max_val == r) then
+        else if (abs(max_val - r) <= epsilon(1.0_wp)) then
             hsv(1) = 60.0_wp * modulo((g - b) / delta, 6.0_wp)
-        else if (max_val == g) then
+        else if (abs(max_val - g) <= epsilon(1.0_wp)) then
             hsv(1) = 60.0_wp * ((b - r) / delta + 2.0_wp)
         else
             hsv(1) = 60.0_wp * ((r - g) / delta + 4.0_wp)
@@ -146,7 +146,7 @@ contains
         val_max = maxval(values)
         
         ! Avoid division by zero
-        if (val_max == val_min) then
+        if (abs(val_max - val_min) <= epsilon(1.0_wp)) then
             rgb_mapped = 0.5_wp  ! Mid-gray for uniform data
             return
         end if
