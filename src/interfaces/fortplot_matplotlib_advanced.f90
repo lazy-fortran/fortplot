@@ -329,12 +329,16 @@ contains
     end subroutine pcolormesh
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
+        use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
         real(8), dimension(:), intent(in) :: x, y
         real(8), dimension(:,:), intent(in) :: u, v
         real(8), intent(in), optional :: density, linewidth_scale, arrow_scale
         character(len=*), intent(in), optional :: colormap, label
-        real(8) :: density_local, linewidth_scale_local, arrow_scale_local
-        character(len=64) :: colormap_local, label_local
+        real(8) :: density_local
+        real, allocatable :: trajectories(:,:,:)
+        integer, allocatable :: traj_lengths(:)
+        integer :: n_traj, i, j
+        real(wp), allocatable :: traj_x(:), traj_y(:)
         integer :: nx, ny
         call ensure_fig_init()
         nx = size(x)
@@ -349,17 +353,20 @@ contains
         end if
         density_local = 1.0d0
         if (present(density)) density_local = density
-        linewidth_scale_local = 1.0d0
-        if (present(linewidth_scale)) linewidth_scale_local = linewidth_scale
-        arrow_scale_local = 1.0d0
-        if (present(arrow_scale)) arrow_scale_local = arrow_scale
-        colormap_local = 'viridis'
-        if (present(colormap)) colormap_local = colormap
-        label_local = ''
-        if (present(label)) label_local = label
-        call create_and_add_streamlines(x, y, u, v, density_local, &
-                                       linewidth_scale_local, arrow_scale_local, &
-                                       colormap_local, label_local)
+        ! Generate trajectories using matplotlib-compatible algorithm
+        call streamplot_matplotlib(x, y, u, v, density_local, trajectories, n_traj, traj_lengths)
+
+        ! Add each trajectory as a line plot
+        do i = 1, n_traj
+            if (traj_lengths(i) <= 1) cycle
+            allocate(traj_x(traj_lengths(i)), traj_y(traj_lengths(i)))
+            do j = 1, traj_lengths(i)
+                traj_x(j) = x(1) + real(trajectories(i, j, 1), wp) * (x(size(x)) - x(1)) / real(size(x) - 1, wp)
+                traj_y(j) = y(1) + real(trajectories(i, j, 2), wp) * (y(size(y)) - y(1)) / real(size(y) - 1, wp)
+            end do
+            call fig%add_plot(traj_x, traj_y)
+            deallocate(traj_x, traj_y)
+        end do
     end subroutine streamplot
 
     subroutine add_contour(x, y, z, levels, label)
@@ -485,19 +492,7 @@ contains
                                        show_colorbar=show_colorbar, label=label)
     end subroutine forward_contour_filled_params
 
-    subroutine create_and_add_streamlines(x, y, u, v, density, linewidth_scale, arrow_scale, colormap, label)
-        real(8), dimension(:), intent(in) :: x, y
-        real(8), dimension(:,:), intent(in) :: u, v
-        real(8), intent(in) :: density, linewidth_scale, arrow_scale
-        character(len=*), intent(in) :: colormap, label
-        ! Placeholder: create simple streamlines approximation via contour of potential
-        real(8), allocatable :: z(:,:)
-        integer :: nx, ny
-        nx = size(x); ny = size(y)
-        allocate(z(ny, nx))
-        z = 0.0d0
-        call fig%add_contour(x, y, z)
-    end subroutine create_and_add_streamlines
+    ! Removed placeholder create_and_add_streamlines; real implementation is in figure_t
 
     ! ----- Axes/Labels/Scales API ----------------------------------------
 
