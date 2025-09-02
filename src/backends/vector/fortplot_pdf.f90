@@ -131,11 +131,11 @@ contains
         case ('-', 'solid')
             dash_pattern = '[] 0 d'  ! Solid line (empty dash array)
         case ('--', 'dashed')
-            dash_pattern = '[15 5] 0 d'  ! 15 units on, 5 units off
+            dash_pattern = '[6 3] 0 d'  ! 6 on, 3 off (approx. Matplotlib)
         case (':', 'dotted')
-            dash_pattern = '[2 5] 0 d'  ! 2 units on, 5 units off
+            dash_pattern = '[1 3] 0 d'  ! 1 on, 3 off
         case ('-.', 'dashdot')
-            dash_pattern = '[15 5 2 5] 0 d'  ! dash-dot pattern
+            dash_pattern = '[6 3 1 3] 0 d'  ! dash-dot pattern
         case default
             dash_pattern = '[] 0 d'  ! Default to solid
         end select
