@@ -82,22 +82,22 @@ contains
     end subroutine plasma_saddle_example
 
     subroutine mixed_colormap_comparison()
-        real(wp), dimension(20) :: x_grid, y_grid
-        real(wp), dimension(20,20) :: z_grid
+        real(wp), dimension(50) :: x_grid, y_grid
+        real(wp), dimension(50,50) :: z_grid
         type(figure_t) :: fig1, fig2, fig3
         integer :: i, j
 
         print *, "=== Colormap Comparison ==="
         
-        ! Generate grid
-        do i = 1, 20
-            x_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 19.0_wp
-            y_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 19.0_wp
+        ! Generate grid - increased resolution from 20x20 to 50x50
+        do i = 1, 50
+            x_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 49.0_wp
+            y_grid(i) = -2.0_wp + (i-1) * 4.0_wp / 49.0_wp
         end do
 
         ! Ripple function
-        do i = 1, 20
-            do j = 1, 20
+        do i = 1, 50
+            do j = 1, 50
                 z_grid(i,j) = sin(sqrt(x_grid(i)**2 + y_grid(j)**2) * 3.0_wp) * exp(-0.3_wp * sqrt(x_grid(i)**2 + y_grid(j)**2))
             end do
         end do
