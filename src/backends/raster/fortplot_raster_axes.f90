@@ -170,6 +170,8 @@ contains
                                        x_min, x_max, y_min, y_max)
         !! Draw X-axis tick marks and labels
         use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
+            format_tick_value_consistent
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -193,6 +195,7 @@ contains
         logical, allocatable :: keep(:)
         ! Use generous buffer to avoid rare truncation of escaped labels
         character(len=500), allocatable :: labels(:)
+        integer :: decimals
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
@@ -203,10 +206,20 @@ contains
         if (num_x_ticks > 0) then
             allocate(centers(num_x_ticks), widths(num_x_ticks), keep(num_x_ticks), labels(num_x_ticks))
 
+            ! Determine decimals for linear scale based on tick spacing
+            decimals = 0
+            if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
+                decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
+            end if
+
             do i = 1, num_x_ticks
                 tick_x = x_tick_positions(i)
                 centers(i) = map_value_to_plot_x(tick_x, x_min, x_max, plot_area, xscale, symlog_threshold)
-                tick_label = format_tick_label(tick_x, xscale)
+                if (trim(xscale) == 'linear') then
+                    tick_label = format_tick_value_consistent(tick_x, decimals)
+                else
+                    tick_label = format_tick_label(tick_x, xscale)
+                end if
                 call process_latex_in_text(trim(tick_label), processed_text, processed_len)
                 call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
                 labels(i) = trim(escaped_text)
@@ -246,6 +259,8 @@ contains
                                        x_min, x_max, y_min, y_max)
         !! Draw Y-axis tick marks and labels
         use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
+            format_tick_value_consistent
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
@@ -264,12 +279,18 @@ contains
         real(wp) :: dummy_pattern(1), pattern_dist
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
+        integer :: decimals
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
         tick_length = TICK_MARK_LENGTH
         
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+        ! Determine decimals for linear scale based on tick spacing
+        decimals = 0
+        if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
+            decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
+        end if
         max_label_width = 0
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
@@ -284,7 +305,11 @@ contains
                                  line_r, line_g, line_b, 1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, pattern_dist)
             
             ! Draw tick label
-            tick_label = format_tick_label(tick_y, yscale)
+            if (trim(yscale) == 'linear') then
+                tick_label = format_tick_value_consistent(tick_y, decimals)
+            else
+                tick_label = format_tick_label(tick_y, yscale)
+            end if
             call process_latex_in_text(trim(tick_label), processed_text, processed_len)
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))

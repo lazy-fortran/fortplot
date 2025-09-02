@@ -14,6 +14,8 @@ module fortplot_tick_calculation
     private
     public :: calculate_tick_labels, calculate_nice_axis_limits
     public :: find_nice_tick_locations, determine_decimal_places_from_step
+    public :: determine_decimals_from_ticks
+    public :: format_tick_value_consistent
 
 contains
 
@@ -159,6 +161,27 @@ contains
             decimal_places = 4
         end if
     end function determine_decimal_places_from_step
+
+    function determine_decimals_from_ticks(tick_positions, n) result(decimal_places)
+        !! Determine decimal places from an array of tick positions.
+        !! Uses the smallest non-zero spacing as representative step.
+        real(wp), intent(in) :: tick_positions(:)
+        integer, intent(in) :: n
+        integer :: decimal_places
+        real(wp) :: step, d
+        integer :: i
+
+        decimal_places = 0
+        if (n < 2) return
+
+        step = abs(tick_positions(2) - tick_positions(1))
+        do i = 3, n
+            d = abs(tick_positions(i) - tick_positions(i-1))
+            if (d > 1.0e-12_wp) step = min(step, d)
+        end do
+
+        decimal_places = determine_decimal_places_from_step(step)
+    end function determine_decimals_from_ticks
 
     function format_tick_value_consistent(value, decimal_places) result(formatted)
         !! Format tick value with consistent decimal places for uniform appearance

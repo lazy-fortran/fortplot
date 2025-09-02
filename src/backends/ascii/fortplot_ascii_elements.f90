@@ -10,6 +10,8 @@ module fortplot_ascii_elements
     use fortplot_legend, only: legend_t, render_ascii_legend
     use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
+        format_tick_value_consistent
     use fortplot_plot_data, only: plot_data_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use, intrinsic :: iso_fortran_env, only: wp => real64, real64
@@ -281,6 +283,8 @@ contains
         integer :: num_x_ticks, num_y_ticks, i
         character(len=50) :: tick_label
         real(wp) :: tick_x, tick_y
+        integer :: decimals
+        real(wp) :: step
         real(wp) :: luminance
         character(len=1) :: line_char
         character(len=500) :: processed_title
@@ -336,10 +340,19 @@ contains
         ! Generate tick marks and labels for ASCII
         ! X-axis ticks (drawn as characters along bottom axis)
         call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
+        ! Determine decimals for linear scale based on tick spacing
+        decimals = 0
+        if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
+            decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
+        end if
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
             ! For ASCII, draw tick marks as characters in the text output
-            tick_label = format_tick_label(tick_x, xscale)
+            if (trim(xscale) == 'linear') then
+                tick_label = format_tick_value_consistent(tick_x, decimals)
+            else
+                tick_label = format_tick_label(tick_x, xscale)
+            end if
             call add_text_element(text_elements, num_text_elements, &
                                  tick_x, y_min - 0.05_wp * (y_max - y_min), trim(tick_label), &
                                  current_r, current_g, current_b, &
@@ -348,9 +361,18 @@ contains
         
         ! Y-axis ticks (drawn as characters along left axis)
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+        ! Determine decimals for linear scale based on tick spacing
+        decimals = 0
+        if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
+            decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
+        end if
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
-            tick_label = format_tick_label(tick_y, yscale)
+            if (trim(yscale) == 'linear') then
+                tick_label = format_tick_value_consistent(tick_y, decimals)
+            else
+                tick_label = format_tick_label(tick_y, yscale)
+            end if
             call add_text_element(text_elements, num_text_elements, &
                                  x_min - 0.1_wp * (x_max - x_min), tick_y, trim(tick_label), &
                                  current_r, current_g, current_b, &
