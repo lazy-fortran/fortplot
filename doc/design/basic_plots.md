@@ -1,3 +1,6 @@
+title: Basic Plots Design
+---
+
 # Basic Plots Implementation Design
 
 ## Overview

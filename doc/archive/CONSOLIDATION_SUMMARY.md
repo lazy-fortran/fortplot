@@ -1,3 +1,6 @@
+title: Documentation Consolidation Summary
+---
+
 # Documentation Consolidation Summary
 
 ## Issue #271: Consolidate duplicate documentation content

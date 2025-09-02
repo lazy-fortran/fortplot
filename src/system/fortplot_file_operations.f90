@@ -162,7 +162,7 @@ contains
 
     recursive subroutine create_directory_recursive(path, success)
         !! Recursively create directory path including parent directories
-        use, intrinsic :: iso_c_binding, only: c_null_char
+        use, intrinsic :: iso_c_binding, only: c_null_char, c_char
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         character(len=512) :: parent_path, test_file
@@ -205,7 +205,18 @@ contains
         
         ! Use C function for robust directory creation on all platforms
         ! Note: create_directory_windows_c has both Windows and Unix implementations
-        success = (create_directory_windows_c(trim(path) // c_null_char) == 1)
+        ! Build a C-compatible, null-terminated string with correct kind
+        block
+            integer :: n, i
+            character(kind=c_char), allocatable :: path_c(:)
+            n = len_trim(path)
+            allocate(path_c(n+1))
+            do i = 1, n
+                path_c(i) = transfer(path(i:i), path_c(i))
+            end do
+            path_c(n+1) = c_null_char
+            success = (create_directory_windows_c(path_c) == 1)
+        end block
         
         ! Final check
         call check_directory_exists(path, success)

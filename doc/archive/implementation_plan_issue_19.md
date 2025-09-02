@@ -1,3 +1,6 @@
+title: Implementation Plan (Issue #19)
+---
+
 # Implementation Plan for Issue #19: Add Comprehensive Docstrings to Public Interface
 
 ## Overview

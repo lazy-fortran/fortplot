@@ -1,3 +1,6 @@
+title: Axes and Layout Design
+---
+
 # Axes and Layout Implementation Design
 
 ## Overview
