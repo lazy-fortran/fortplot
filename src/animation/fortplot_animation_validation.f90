@@ -89,7 +89,8 @@ contains
         character(len=*), intent(in) :: filename
         integer, intent(in) :: file_size
         logical :: is_valid
-        
+        integer :: dummy_len
+        dummy_len = len_trim(filename)
         is_valid = (file_size > MIN_VALID_VIDEO_SIZE) .and. &
                    (file_size < 2000000000)  ! Max 2GB reasonable limit
     end function validate_basic_file_properties
@@ -232,6 +233,8 @@ contains
         integer, intent(in) :: file_size
         logical :: adequate
         integer :: min_expected
+        integer :: dummy_len
+        dummy_len = len_trim(filename)
         
         ! Calculate minimum expected size based on content
         ! For simple animations: ~200-500 bytes per frame minimum
