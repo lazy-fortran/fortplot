@@ -121,6 +121,7 @@ contains
 
         call process_band_segments(level_min, level_max)
 
+        ! Build topological graph and extract cycles for robust loops
         call finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
 
         contains
