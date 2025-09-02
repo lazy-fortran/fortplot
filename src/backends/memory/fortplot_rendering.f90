@@ -17,7 +17,6 @@ module fortplot_rendering
     public :: render_pcolormesh_plot
     public :: render_markers
     public :: render_solid_line
-    public :: transform_quad_to_screen
     public :: draw_filled_quad
     public :: draw_quad_edges
     public :: draw_single_point_marker
