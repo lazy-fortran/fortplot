@@ -5,12 +5,12 @@ module fortplot_contour_rendering
     !! contour level tracing, marching squares algorithm, and contour line drawing.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_context
-    use fortplot_scales, only: apply_scale_transform
-    use fortplot_colormap
-    use fortplot_contour_algorithms
-    use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
-    use fortplot_plot_data
+    use fortplot_context,          only: plot_context
+    use fortplot_scales,           only: apply_scale_transform
+    use fortplot_colormap,         only: colormap_value_to_color
+    use fortplot_contour_algorithms, only: calculate_marching_squares_config, get_contour_lines
+    use fortplot_contour_regions,  only: contour_region_t, contour_polygon_t, extract_contour_regions
+    use fortplot_plot_data,        only: plot_data_t
     implicit none
     
     private
@@ -32,15 +32,14 @@ contains
         
         real(wp) :: z_min, z_max
         real(wp), dimension(3) :: level_color
-        integer :: i, j, nx, ny, nlev
+        integer :: i, j, nlev
         real(wp) :: level
         
         ! Get data ranges
         z_min = minval(plot_data%z_grid)
         z_max = maxval(plot_data%z_grid)
         
-        nx = size(plot_data%x_grid)
-        ny = size(plot_data%y_grid)
+        ! grid sizes available via plot_data if needed
         
         ! If colored (filled) contours requested, render true filled regions
         ! using polygon decomposition between contour levels. This approximates
