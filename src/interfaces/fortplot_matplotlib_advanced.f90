@@ -371,6 +371,10 @@ contains
             call fig%add_plot(traj_x, traj_y, color=line_color)
             deallocate(traj_x, traj_y)
         end do
+
+        ! Clean up allocated trajectory data
+        if (allocated(trajectories)) deallocate(trajectories)
+        if (allocated(traj_lengths)) deallocate(traj_lengths)
     end subroutine streamplot
 
     subroutine add_contour(x, y, z, levels, label)
