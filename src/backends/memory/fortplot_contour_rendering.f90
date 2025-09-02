@@ -9,6 +9,7 @@ module fortplot_contour_rendering
     use fortplot_scales, only: apply_scale_transform
     use fortplot_colormap
     use fortplot_contour_algorithms
+    use fortplot_contour_regions, only: contour_region_t, contour_polygon_t, extract_contour_regions
     use fortplot_plot_data
     implicit none
     
@@ -41,12 +42,11 @@ contains
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)
         
-        ! If colored (filled) contours requested, render a filled background
-        ! using the backend heatmap fill for a smooth colormap field. This
-        ! provides a contourf-like visual while keeping implementation simple
-        ! and backend-agnostic. Contour lines are then overlaid (if present).
+        ! If colored (filled) contours requested, render true filled regions
+        ! using polygon decomposition between contour levels. This approximates
+        ! triangles via quads to reuse the existing backend fill_quad interface.
         if (plot_data%use_color_levels) then
-            call backend%fill_heatmap(plot_data%x_grid, plot_data%y_grid, plot_data%z_grid, z_min, z_max)
+            call render_filled_contour_regions(backend, plot_data, z_min, z_max)
         end if
 
         ! Render contour levels (lines)
@@ -77,8 +77,118 @@ contains
         
     end subroutine render_contour_plot
 
-    ! Note: filled polygon rendering to be implemented using
-    ! extract_contour_regions() once polygon fill support exists.
+    subroutine render_filled_contour_regions(backend, plot_data, z_min, z_max)
+        !! Render filled contour regions by extracting polygons per level band
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: z_min, z_max
+
+        real(wp), allocatable :: levels(:)
+        type(contour_region_t), allocatable :: regions(:)
+        real(wp), dimension(3) :: fill_color
+        integer :: i, j
+
+        ! Determine contour levels: use provided, else default 3 evenly spaced
+        if (allocated(plot_data%contour_levels) .and. size(plot_data%contour_levels) > 0) then
+            allocate(levels(size(plot_data%contour_levels)))
+            levels = plot_data%contour_levels
+        else
+            allocate(levels(3))
+            levels = [ z_min + 0.2_wp * (z_max - z_min), &
+                       z_min + 0.5_wp * (z_max - z_min), &
+                       z_min + 0.8_wp * (z_max - z_min) ]
+        end if
+
+        call sort_levels_inplace(levels)
+
+        ! Extract polygonal regions between levels
+        regions = extract_contour_regions(plot_data%x_grid, plot_data%y_grid, plot_data%z_grid, levels)
+
+        ! Fill each region with flat color based on mid-level value
+        do i = 1, size(regions)
+            call compute_region_color(regions(i)%level_min, regions(i)%level_max, &
+                                      z_min, z_max, plot_data%colormap, fill_color)
+
+            call backend%color(fill_color(1), fill_color(2), fill_color(3))
+
+            if (allocated(regions(i)%boundaries)) then
+                do j = 1, size(regions(i)%boundaries)
+                    call fill_polygon_with_quads(backend, regions(i)%boundaries(j))
+                end do
+            end if
+        end do
+
+        if (allocated(levels)) deallocate(levels)
+        if (allocated(regions)) then
+            do i = 1, size(regions)
+                if (allocated(regions(i)%boundaries)) then
+                    do j = 1, size(regions(i)%boundaries)
+                        if (allocated(regions(i)%boundaries(j)%x)) deallocate(regions(i)%boundaries(j)%x)
+                        if (allocated(regions(i)%boundaries(j)%y)) deallocate(regions(i)%boundaries(j)%y)
+                    end do
+                    deallocate(regions(i)%boundaries)
+                end if
+            end do
+            deallocate(regions)
+        end if
+    end subroutine render_filled_contour_regions
+
+    subroutine sort_levels_inplace(levels)
+        real(wp), intent(inout) :: levels(:)
+        integer :: a, b
+        real(wp) :: tmp
+        do a = 1, size(levels) - 1
+            do b = a + 1, size(levels)
+                if (levels(b) < levels(a)) then
+                    tmp = levels(a)
+                    levels(a) = levels(b)
+                    levels(b) = tmp
+                end if
+            end do
+        end do
+    end subroutine sort_levels_inplace
+
+    subroutine compute_region_color(level_min, level_max, z_min, z_max, cmap, color)
+        real(wp), intent(in) :: level_min, level_max, z_min, z_max
+        character(len=*), intent(in) :: cmap
+        real(wp), intent(out) :: color(3)
+        real(wp) :: mid
+        mid = 0.5_wp * (level_min + level_max)
+        ! Clamp mid into global z-range for safe colormap lookup
+        mid = max(z_min, min(z_max, mid))
+        call colormap_value_to_color(mid, z_min, z_max, cmap, color)
+    end subroutine compute_region_color
+
+    subroutine fill_polygon_with_quads(backend, poly)
+        !! Approximate polygon fill by triangle fan rendered as quads
+        class(plot_context), intent(inout) :: backend
+        type(contour_polygon_t), intent(in) :: poly
+        real(wp) :: xq(4), yq(4)
+        integer :: n, k
+        logical :: closed
+
+        if (.not. allocated(poly%x) .or. .not. allocated(poly%y)) return
+        n = min(size(poly%x), size(poly%y))
+        if (n < 3) return
+
+        ! If polygon is closed (last point repeats first), ignore final duplicate
+        closed = .false.
+        if (poly%is_closed) then
+            if (abs(poly%x(n) - poly%x(1)) < 1.0e-12_wp .and. &
+                abs(poly%y(n) - poly%y(1)) < 1.0e-12_wp) then
+                closed = .true.
+            end if
+        end if
+
+        if (closed) n = n - 1
+
+        ! Triangle fan around first vertex -> draw as degenerate quads
+        do k = 2, n - 1
+            xq = [ poly%x(1), poly%x(k), poly%x(k+1), poly%x(k+1) ]
+            yq = [ poly%y(1), poly%y(k), poly%y(k+1), poly%y(k+1) ]
+            call backend%fill_quad(xq, yq)
+        end do
+    end subroutine fill_polygon_with_quads
 
     subroutine render_default_contour_levels(backend, plot_data, z_min, z_max, &
                                            xscale, yscale, symlog_threshold, &
