@@ -14,9 +14,7 @@ module fortplot_line_rendering
     
     private
     public :: render_line_plot
-    public :: draw_line_with_style
     public :: render_solid_line
-    public :: render_patterned_line
     
 contains
     
@@ -49,41 +47,23 @@ contains
             y_scaled(i) = apply_scale_transform(plot_data%y(i), yscale, symlog_threshold)
         end do
         
-        ! Check if we need to use linestyle; respect 'none' (markers only)
+        ! Delegate line style handling to backend to avoid duplication and
+        ! ensure consistent dash/dot appearance across outputs.
         if (allocated(plot_data%linestyle) .and. len_trim(plot_data%linestyle) > 0) then
             select case (trim(plot_data%linestyle))
             case ('none', 'None')
                 ! Skip drawing connecting lines; markers rendered separately
             case default
-                call draw_line_with_style(backend, x_scaled, y_scaled, plot_data%linestyle, '')
+                call backend%set_line_style(trim(plot_data%linestyle))
+                call render_solid_line(backend, x_scaled, y_scaled)
             end select
         else
+            call backend%set_line_style('-')
             call render_solid_line(backend, x_scaled, y_scaled)
         end if
     end subroutine render_line_plot
 
-    subroutine draw_line_with_style(backend, x, y, linestyle, color)
-        !! Draw line with specific style (solid, dashed, etc.)
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in) :: linestyle
-        character(len=*), intent(in) :: color
-        
-        ! Set line properties - parsing color string to RGB would be needed here
-        ! For now, skip the color setting as it would require more complex parsing
-        
-        ! Draw line based on style
-        select case (trim(linestyle))
-        case ('--')
-            call render_patterned_line(backend, x, y, 'dashed')
-        case (':')
-            call render_patterned_line(backend, x, y, 'dotted')
-        case ('-.')
-            call render_patterned_line(backend, x, y, 'dashdot')
-        case default
-            call render_solid_line(backend, x, y)
-        end select
-    end subroutine draw_line_with_style
+    ! Removed style emulation here; styles are handled by backend
 
     subroutine render_solid_line(backend, x, y)
         !! Render a solid line connecting all points
@@ -98,115 +78,6 @@ contains
         end do
     end subroutine render_solid_line
 
-    subroutine render_patterned_line(backend, x, y, pattern)
-        !! Render a patterned line (dashed, dotted, dash-dot)
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in) :: pattern
-        
-        integer :: i
-        real(wp) :: segment_length, total_length, current_length
-        logical :: draw_segment
-        
-        if (size(x) < 2) return
-        
-        total_length = 0.0_wp
-        draw_segment = .true.
-        
-        ! Calculate total line length for pattern scaling
-        do i = 1, size(x) - 1
-            total_length = total_length + sqrt((x(i+1) - x(i))**2 + (y(i+1) - y(i))**2)
-        end do
-        
-        ! Set pattern parameters based on type
-        select case (trim(pattern))
-        case ('dashed')
-            segment_length = total_length / 20.0_wp
-        case ('dotted')
-            segment_length = total_length / 40.0_wp
-        case ('dashdot')
-            segment_length = total_length / 30.0_wp
-        case default
-            call render_solid_line(backend, x, y)
-            return
-        end select
-        
-        current_length = 0.0_wp
-        
-        do i = 1, size(x) - 1
-            call render_segment_with_pattern(backend, x(i), y(i), x(i+1), y(i+1), &
-                                           segment_length, current_length, draw_segment, pattern)
-        end do
-    end subroutine render_patterned_line
-
-    subroutine render_segment_with_pattern(backend, x1, y1, x2, y2, segment_length, &
-                                         current_length, draw_segment, pattern)
-        !! Render a single line segment with pattern
-        class(plot_context), intent(inout) :: backend
-        real(wp), intent(in) :: x1, y1, x2, y2
-        real(wp), intent(in) :: segment_length
-        real(wp), intent(inout) :: current_length
-        logical, intent(inout) :: draw_segment
-        character(len=*), intent(in) :: pattern
-        
-        real(wp) :: dx, dy, total_seg_length, step_size
-        real(wp) :: pattern_length, gap_length
-        integer :: num_steps, step
-        real(wp) :: x_current, y_current, x_next, y_next
-        real(wp) :: seg_progress
-        
-        dx = x2 - x1
-        dy = y2 - y1
-        total_seg_length = sqrt(dx**2 + dy**2)
-        
-        if (total_seg_length == 0.0_wp) return
-        
-        ! Set pattern-specific lengths
-        select case (trim(pattern))
-        case ('dashed')
-            pattern_length = segment_length
-            gap_length = segment_length
-        case ('dotted')
-            pattern_length = segment_length * 0.3_wp
-            gap_length = segment_length * 0.7_wp
-        case ('dashdot')
-            pattern_length = segment_length * 0.6_wp
-            gap_length = segment_length * 0.4_wp
-        case default
-            pattern_length = segment_length
-            gap_length = 0.0_wp
-        end select
-        
-        num_steps = max(1, int(total_seg_length / (segment_length * 0.1_wp)))
-        step_size = total_seg_length / real(num_steps, wp)
-        
-        x_current = x1
-        y_current = y1
-        
-        do step = 1, num_steps
-            seg_progress = real(step, wp) / real(num_steps, wp)
-            x_next = x1 + dx * seg_progress
-            y_next = y1 + dy * seg_progress
-            
-            current_length = current_length + step_size
-            
-            if (draw_segment) then
-                call backend%line(x_current, y_current, x_next, y_next)
-                if (current_length >= pattern_length) then
-                    current_length = 0.0_wp
-                    draw_segment = .false.
-                end if
-            else
-                ! Skip drawing this segment (gap)
-                if (current_length >= gap_length) then
-                    current_length = 0.0_wp
-                    draw_segment = .true.
-                end if
-            end if
-            
-            x_current = x_next
-            y_current = y_next
-        end do
-    end subroutine render_segment_with_pattern
+    ! Removed patterned rendering; use backend pattern implementation instead
 
 end module fortplot_line_rendering
