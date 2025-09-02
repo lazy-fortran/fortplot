@@ -8,6 +8,7 @@ program test_raster_log_tick_positions
 
     call test_log_y_spacing_equal()
     call test_symlog_y_symmetry()
+    call test_symlog_linear_region_near_zero()
     call test_log_x_spacing_equal()
 
     print *, 'Raster log/symlog tick mapping tests passed'
@@ -66,6 +67,39 @@ contains
         end if
     end subroutine test_symlog_y_symmetry
 
+    subroutine test_symlog_linear_region_near_zero()
+        !! Validate symlog behaves linearly near zero and relative spacing
+        type(plot_area_t) :: area
+        real(wp) :: y_min, y_max, thr
+        character(len=*), parameter :: scale = 'symlog'
+        real(wp) :: p100, p10, p5, p0, dl1, dl2, decade_span
+        real(wp), parameter :: tol = 5.0e-2_wp  ! 5% tolerance for ratio check
+
+        area%left = 80; area%bottom = 50; area%width = 400; area%height = 300
+        y_min = -1000.0_wp; y_max = 1000.0_wp; thr = 10.0_wp
+
+        p100 = map_value_to_plot_y(100.0_wp, y_min, y_max, area, scale, thr)
+        p10  = map_value_to_plot_y(10.0_wp,  y_min, y_max, area, scale, thr)
+        p5   = map_value_to_plot_y(5.0_wp,   y_min, y_max, area, scale, thr)
+        p0   = map_value_to_plot_y(0.0_wp,   y_min, y_max, area, scale, thr)
+
+        dl1 = abs(p10 - p5)
+        dl2 = abs(p5 - p0)
+
+        ! Near zero (linear region), spacing should be equal
+        if (abs(dl1 - dl2) > 1.0e-9_wp*max(1.0_wp, max(dl1, dl2))) then
+            print *, 'FAIL: symlog near-zero spacing not equal:', dl1, dl2
+            stop 1
+        end if
+
+        ! Ratio of decade (100->10) span to linear (10->5) span is ~0.2 for thr=10
+        decade_span = abs(p100 - p10)
+        if (abs(decade_span/dl1 - 0.2_wp) > tol) then
+            print *, 'FAIL: symlog decade-to-linear spacing ratio off:', decade_span, dl1
+            stop 1
+        end if
+    end subroutine test_symlog_linear_region_near_zero
+
     subroutine test_log_x_spacing_equal()
         type(plot_area_t) :: area
         real(wp) :: x_min, x_max, thr
@@ -92,4 +126,3 @@ contains
     end subroutine test_log_x_spacing_equal
 
 end program test_raster_log_tick_positions
-
