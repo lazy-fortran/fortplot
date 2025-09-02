@@ -64,11 +64,8 @@ contains
         real(wp), intent(in), optional :: vmin, vmax
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
-        
-        if (present(alpha)) then
-            real(wp) :: alpha_dummy
-            alpha_dummy = alpha
-        end if
+        real(wp) :: alpha_dummy1
+        if (present(alpha)) alpha_dummy1 = alpha
         call add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
                                   colormap, vmin, vmax, show_colorbar, alpha)
     end subroutine add_scatter_3d_impl
@@ -83,7 +80,9 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         integer :: plot_idx
+        real(wp) :: alpha_dummy2
         
+        if (present(alpha)) alpha_dummy2 = alpha
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
         
