@@ -16,12 +16,18 @@ module fortplot_raster_axes
     public :: raster_draw_axes_and_labels, raster_render_ylabel
     public :: compute_title_position
     public :: compute_non_overlapping_mask  ! Exposed for focused testing
+    public :: compute_ylabel_x_pos, y_tick_label_right_edge_at_axis
 
     ! Local spacing parameters for raster tick labels (pixels)
     ! X tick labels are positioned X_TICK_LABEL_PAD pixels below the tick end
     ! Y tick labels are right-aligned with a gap of Y_TICK_LABEL_RIGHT_PAD from the tick end
-    integer, parameter :: X_TICK_LABEL_PAD = 10
-    integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 14
+    integer, parameter :: X_TICK_LABEL_PAD = 14
+    integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 16
+    integer, parameter :: YLABEL_EXTRA_GAP = 10
+
+    ! Cache the maximum Y-tick label width measured during the last
+    ! raster_draw_y_axis_ticks() call so ylabel placement can avoid overlap
+    integer :: last_y_tick_max_width = 0
 
 contains
 
@@ -210,6 +216,7 @@ contains
         character(len=50) :: tick_label
         real(wp) :: tick_y
         integer :: tick_length, px, py, text_width, text_height
+        integer :: max_label_width
         real(wp) :: line_r, line_g, line_b
         integer(1) :: text_r, text_g, text_b
         real(wp) :: dummy_pattern(1), pattern_dist
@@ -221,6 +228,7 @@ contains
         tick_length = TICK_MARK_LENGTH
         
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+        max_label_width = 0
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
             px = plot_area%left
@@ -240,6 +248,7 @@ contains
             call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
             text_width = calculate_text_width(trim(escaped_text))
             text_height = calculate_text_height(trim(escaped_text))
+            if (text_width > max_label_width) max_label_width = text_width
             ! Right-align y-tick label so its right edge sits (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD)
             ! pixels left of the plot area
             call render_text_to_image(raster%image_data, width, height, &
@@ -247,6 +256,8 @@ contains
                                      py - text_height/2, trim(escaped_text), &
                                      text_r, text_g, text_b)
         end do
+        ! Persist the widest y-tick label width for ylabel placement
+        last_y_tick_max_width = max_label_width
     end subroutine raster_draw_y_axis_ticks
     
     subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, xlabel, ylabel)
@@ -327,7 +338,10 @@ contains
         call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, text_width, text_height)
         
         ! Calculate position for rotated text (left of plot area, centered vertically)
-        x_pos = plot_area%left - 40 - rotated_width / 2
+        ! Place ylabel to the left of the widest y-tick label plus a small gap,
+        ! also accounting for the tick mark length and label padding. This mimics
+        ! matplotlib by ensuring no overlap between ylabel and tick labels.
+        x_pos = compute_ylabel_x_pos(plot_area, rotated_width, last_y_tick_max_width)
         y_pos = plot_area%bottom + plot_area%height / 2 - rotated_height / 2
         
         ! Composite the rotated text onto the main raster
@@ -339,6 +353,32 @@ contains
         if (allocated(text_bitmap)) deallocate(text_bitmap)
         if (allocated(rotated_bitmap)) deallocate(rotated_bitmap)
     end subroutine raster_render_ylabel
+
+    pure function compute_ylabel_x_pos(plot_area, rotated_text_width, y_tick_max_width) result(x_pos)
+        !! Compute x position for ylabel such that it clears tick labels
+        !! plot_area: geometry of plotting area
+        !! rotated_text_width: width of the rotated ylabel bitmap (pixels)
+        !! y_tick_max_width: maximum width among y-tick labels (pixels)
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(in) :: rotated_text_width
+        integer, intent(in) :: y_tick_max_width
+        integer :: x_pos
+
+        integer :: clearance
+
+        clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max(0, y_tick_max_width) + YLABEL_EXTRA_GAP
+        x_pos = plot_area%left - clearance - rotated_text_width / 2
+    end function compute_ylabel_x_pos
+
+    pure function y_tick_label_right_edge_at_axis(plot_area) result(r_edge)
+        !! Right-most x coordinate of a y-tick label placed at the left axis tick
+        !! This matches raster_draw_y_axis_ticks alignment for the label whose
+        !! tick is at px = plot_area%left.
+        type(plot_area_t), intent(in) :: plot_area
+        integer :: r_edge
+
+        r_edge = plot_area%left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
+    end function y_tick_label_right_edge_at_axis
 
     subroutine render_title_centered(raster, width, height, plot_area, title_text)
         !! Render title centered horizontally over plot area (matplotlib-style positioning)
