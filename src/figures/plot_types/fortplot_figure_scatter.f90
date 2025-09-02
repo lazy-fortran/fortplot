@@ -15,8 +15,7 @@ module fortplot_figure_scatter
 contains
     
     subroutine add_scatter_plot(plots, plot_count, x, y, s, c, marker, &
-                                markersize, color, colormap, alpha, &
-                                edgecolor, facecolor, linewidth, &
+                                markersize, color, colormap, &
                                 vmin, vmax, label, show_colorbar, &
                                 default_color)
         !! Add a single efficient scatter plot object
@@ -26,15 +25,14 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
-        real(wp), intent(in), optional :: markersize, alpha, linewidth
+        real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: vmin, vmax
-        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+        real(wp), intent(in), optional :: color(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: default_color(3)
         
         type(plot_data_t), allocatable :: new_plots(:)
-        integer :: n, i
-        real(wp) :: actual_vmin, actual_vmax
+        integer :: n
         
         n = size(x)
         
@@ -70,7 +68,7 @@ contains
         
         ! Handle colors (c parameter or solid color)
         call setup_scatter_colors(plots(plot_count), n, c, color, &
-                                 facecolor, default_color, vmin, vmax)
+                                 default_color, vmin, vmax)
         
         ! Set colormap and colorbar options
         if (present(colormap)) then
@@ -130,13 +128,12 @@ contains
         end if
     end subroutine setup_scatter_sizes
     
-    subroutine setup_scatter_colors(plot, n, c, color, facecolor, &
-                                   default_color, vmin, vmax)
+    subroutine setup_scatter_colors(plot, n, c, color, default_color, vmin, vmax)
         !! Configure scatter plot colors and color mapping
         type(plot_data_t), intent(inout) :: plot
         integer, intent(in) :: n
         real(wp), intent(in), optional :: c(:)
-        real(wp), intent(in), optional :: color(3), facecolor(3), default_color(3)
+        real(wp), intent(in), optional :: color(3), default_color(3)
         real(wp), intent(in), optional :: vmin, vmax
         
         real(wp) :: cmin, cmax
@@ -177,8 +174,6 @@ contains
             ! Use solid color
             if (present(color)) then
                 plot%color = color
-            else if (present(facecolor)) then
-                plot%color = facecolor
             else if (present(default_color)) then
                 plot%color = default_color
             else

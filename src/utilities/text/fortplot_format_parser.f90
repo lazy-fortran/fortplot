@@ -33,7 +33,7 @@ contains
         ! Check for complete linestyle patterns first
         if (extract_linestyle_pattern(trimmed_str, linestyle)) then
             ! Extract any remaining marker
-            call extract_marker_from_remaining(trimmed_str, linestyle, marker)
+            call extract_marker_from_remaining(trimmed_str, marker)
         else
             ! No linestyle pattern found, check for marker only
             call extract_marker_only(trimmed_str, marker)
@@ -140,9 +140,9 @@ contains
         end if
     end function
 
-    subroutine extract_marker_from_remaining(format_str, linestyle, marker)
+    subroutine extract_marker_from_remaining(format_str, marker)
         !! Extract marker from format string after removing linestyle
-        character(len=*), intent(in) :: format_str, linestyle
+        character(len=*), intent(in) :: format_str
         character(len=*), intent(out) :: marker
         
         integer :: i
@@ -180,18 +180,6 @@ contains
         end do
     end subroutine
 
-    pure function is_linestyle_char(char) result(is_linestyle)
-        !! Check if character is part of linestyle syntax
-        character(len=1), intent(in) :: char
-        logical :: is_linestyle
-        
-        select case (char)
-        case ('-', '.', ':')
-            is_linestyle = .true.
-        case default
-            is_linestyle = .false.
-        end select
-    end function
 
     pure function is_named_linestyle(style_str) result(is_named)
         !! Check if string is a named linestyle parameter

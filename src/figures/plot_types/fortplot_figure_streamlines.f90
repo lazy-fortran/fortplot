@@ -43,7 +43,7 @@ contains
     end subroutine clear_streamline_data
 
     subroutine streamplot_figure(plots, state, plot_count, x, y, u, v, &
-                                density, color, linewidth, rtol, atol, max_time)
+                                density, color)
         !! Add streamline plot to figure - direct streamline generation
         use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
         use fortplot_plot_data, only: PLOT_TYPE_LINE
@@ -54,8 +54,6 @@ contains
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: linewidth
-        real(wp), intent(in), optional :: rtol, atol, max_time
         
         real(wp) :: plot_density, line_color(3)
         real, allocatable :: trajectories(:,:,:)

@@ -71,14 +71,13 @@ contains
         end if
     end subroutine validate_plot_data
     
-    subroutine add_line_plot_data(plots, plot_count, max_plots, colors, &
+    subroutine add_line_plot_data(plots, plot_count, max_plots, &
                                  x, y, label, linestyle, color, marker)
         !! Add line plot data to internal storage with edge case validation
         !! Fixed Issue #432: Added data validation for better user feedback
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         integer, intent(in) :: max_plots
-        real(wp), intent(in) :: colors(:,:)
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in) :: color(3)
@@ -342,23 +341,26 @@ contains
         integer, intent(in) :: plot_count
         integer, intent(in) :: plot_index
         real(wp), intent(in) :: y_new(:)
+        character(len=32) :: idx_str, new_sz, old_sz
         
         if (plot_index < 1 .or. plot_index > plot_count) then
-            call log_warning("Invalid plot index: " // trim(adjustl(transfer(plot_index, '          '))))
+            write(idx_str,'(I0)') plot_index
+            call log_warning("Invalid plot index: " // trim(adjustl(idx_str)))
             return
         end if
         
         if (.not. allocated(plots(plot_index)%y)) then
-            call log_warning("Plot " // trim(adjustl(transfer(plot_index, '          '))) // &
+            write(idx_str,'(I0)') plot_index
+            call log_warning("Plot " // trim(adjustl(idx_str)) // &
                 " has no y data to update")
             return
         end if
         
         if (size(y_new) /= size(plots(plot_index)%y)) then
-            call log_warning("New y data size " // &
-                trim(adjustl(transfer(size(y_new), '          '))) // &
-                " does not match existing size " // &
-                trim(adjustl(transfer(size(plots(plot_index)%y), '          '))))
+            write(new_sz,'(I0)') size(y_new)
+            write(old_sz,'(I0)') size(plots(plot_index)%y)
+            call log_warning("New y data size " // trim(adjustl(new_sz)) // &
+                " does not match existing size " // trim(adjustl(old_sz)))
             return
         end if
         

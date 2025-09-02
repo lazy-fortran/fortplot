@@ -160,13 +160,12 @@ contains
         call show_figure(state, plots, plot_count, blocking, annotations, annotation_count)
     end subroutine figure_show
 
-    subroutine figure_clear(state, plots, streamlines, subplots_array, &
+    subroutine figure_clear(state, streamlines, subplots_array, &
                            subplot_rows, subplot_cols, current_subplot, &
                            title_target, xlabel_target, ylabel_target, &
                            plot_count, annotation_count)
         !! Clear the figure to prepare for reuse (preserving backend settings)
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
         type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
         integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot
@@ -338,19 +337,18 @@ contains
     !! Simple wrapper procedures for core module delegation pattern
     !!=============================================================================
 
-    subroutine core_clear(state, plots, streamlines, subplots_array, subplot_rows, &
+    subroutine core_clear(state, streamlines, subplots_array, subplot_rows, &
                          subplot_cols, current_subplot, title_target, xlabel_target, &
                          ylabel_target, plot_count, annotation_count)
         !! Clear the figure for reuse, preserving backend settings
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
         type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
         integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot, plot_count
         character(len=:), allocatable, intent(inout) :: title_target, xlabel_target, ylabel_target
         integer, intent(inout) :: annotation_count
         
-        call figure_clear(state, plots, streamlines, subplots_array, subplot_rows, &
+        call figure_clear(state, streamlines, subplots_array, subplot_rows, &
                          subplot_cols, current_subplot, title_target, xlabel_target, &
                          ylabel_target, plot_count, annotation_count)
     end subroutine core_clear

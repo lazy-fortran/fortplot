@@ -22,6 +22,7 @@ contains
         logical, intent(out) :: success
         character(len=256) :: ci_env
         integer :: status
+        associate(dfn=>len_trim(filename)); end associate
         
         success = .false.
         
@@ -75,6 +76,7 @@ contains
         character(len=256) :: env_value
         integer :: status
         logical :: is_ci
+        associate(dpn=>len_trim(path)); end associate
         
         success = .false.
         

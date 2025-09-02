@@ -56,7 +56,7 @@ contains
         
         ! Add the plot data using focused module
         call add_line_plot_data(plots, state%plot_count, state%max_plots, &
-                               state%colors, x, y, label, ls, plot_color, &
+                               x, y, label, ls, plot_color, &
                                marker=trim(parsed_marker))
     end subroutine figure_add_plot
 
