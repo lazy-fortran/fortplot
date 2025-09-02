@@ -53,7 +53,9 @@ contains
         y_tick_max_width = 40
 
         x_pos = compute_ylabel_x_pos(area, rotated_text_width, y_tick_max_width)
-        expected = area%left - (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + y_tick_max_width + YLABEL_EXTRA_GAP) - rotated_text_width / 2
+        expected = area%left - (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + &
+                y_tick_max_width + YLABEL_EXTRA_GAP) - &
+                rotated_text_width / 2
         if (x_pos /= expected) then
             print *, 'FAIL: ylabel x position mismatch:', x_pos, expected
             stop 1
@@ -76,4 +78,3 @@ contains
     end subroutine test_y_tick_label_right_edge
 
 end program test_raster_label_layout_utils
-
