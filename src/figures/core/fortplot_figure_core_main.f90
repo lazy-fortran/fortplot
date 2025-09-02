@@ -187,6 +187,10 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
+        if (present(linewidth)) then; associate(_lw=>linewidth); end associate; end if
+        if (present(rtol)) then; associate(_rt=>rtol); end associate; end if
+        if (present(atol)) then; associate(_at=>atol); end associate; end if
+        if (present(max_time)) then; associate(_mt=>max_time); end associate; end if
         
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
                             density, color)
@@ -418,6 +422,11 @@ contains
         
         ! Get default color from state
         default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
+        
+        if (present(alpha)) then; associate(_al=>alpha); end associate; end if
+        if (present(edgecolor)) then; associate(_ec=>edgecolor(1)); end associate; end if
+        if (present(facecolor)) then; associate(_fc=>facecolor(1)); end associate; end if
+        if (present(linewidth)) then; associate(_lw=>linewidth); end associate; end if
         
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
                          marker, markersize, color, colormap, vmin, vmax, label, &
