@@ -20,7 +20,8 @@ contains
 
     pure function get_example_count() result(count)
         integer :: count
-        count = 18
+        ! Keep in sync with get_example_dir/name cases below
+        count = 17
     end function get_example_count
 
     pure subroutine get_example_dir(index, dir)
