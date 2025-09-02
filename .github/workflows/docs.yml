@@ -47,10 +47,10 @@ jobs:
           packages: ffmpeg
           version: 1.1
 
-      - name: Install BLAS runtime (libblas3)
+      - name: Install BLAS/LAPACK runtime
         run: |
           sudo apt-get update
-          sudo apt-get install -y libblas3
+          sudo apt-get install -y libblas3 liblapack3
 
       - name: Install dependencies
         run: |
