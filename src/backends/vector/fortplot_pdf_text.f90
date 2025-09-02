@@ -344,11 +344,12 @@ contains
         character(len=*), intent(in) :: input
         character(len=*), intent(out) :: output
         integer, intent(out) :: output_len
-        integer :: i, j
+        integer :: i, j, n
         character :: ch
         
+        n = len(input)
         j = 0
-        do i = 1, len_trim(input)
+        do i = 1, n
             ch = input(i:i)
             
             ! Escape special PDF characters
