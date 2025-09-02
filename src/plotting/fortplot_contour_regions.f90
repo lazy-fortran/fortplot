@@ -148,8 +148,9 @@ contains
                     if (pcount == 2) then
                         call add_pair(px(1), py(1), px(2), py(2))
                     else if (pcount == 4) then
-                        call add_pair(px(1), py(1), px(2), py(2))
-                        call add_pair(px(3), py(3), px(4), py(4))
+                        ! Ambiguous case - use center value to determine connectivity
+                        ! This resolves saddle point ambiguity
+                        call resolve_saddle_connection(x, y, z, level_min, level_max, px, py)
                     end if
                 end do
             end do
@@ -224,6 +225,49 @@ contains
             call move_alloc(ty, contour_y)
             contour_count = contour_count + 2
         end subroutine add_pair
+
+        subroutine resolve_saddle_connection(x, y, z, level_min, level_max, px, py)
+            real(wp), intent(in) :: x(4), y(4), z(4)
+            real(wp), intent(in) :: level_min, level_max
+            real(wp), intent(in) :: px(4), py(4)
+            real(wp) :: center_value, level_mid
+            logical :: in_band(4)
+            integer :: i
+            
+            ! Calculate center value (average of 4 corners)
+            center_value = 0.25_wp * (z(1) + z(2) + z(3) + z(4))
+            level_mid = 0.5_wp * (level_min + level_max)
+            
+            ! Determine which corners are in the band
+            do i = 1, 4
+                in_band(i) = (z(i) >= level_min .and. z(i) <= level_max)
+            end do
+            
+            ! Based on center value relative to band, connect appropriate pairs
+            if (center_value < level_mid) then
+                ! Connect edges that keep low values together
+                if (in_band(1) .eqv. in_band(3)) then
+                    ! Diagonal connection pattern 1
+                    call add_pair(px(1), py(1), px(2), py(2))
+                    call add_pair(px(3), py(3), px(4), py(4))
+                else
+                    ! Diagonal connection pattern 2
+                    call add_pair(px(1), py(1), px(4), py(4))
+                    call add_pair(px(2), py(2), px(3), py(3))
+                end if
+            else
+                ! Connect edges that keep high values together
+                if (in_band(1) .eqv. in_band(3)) then
+                    ! Diagonal connection pattern 2
+                    call add_pair(px(1), py(1), px(4), py(4))
+                    call add_pair(px(2), py(2), px(3), py(3))
+                else
+                    ! Diagonal connection pattern 1
+                    call add_pair(px(1), py(1), px(2), py(2))
+                    call add_pair(px(3), py(3), px(4), py(4))
+                end if
+            end if
+        end subroutine resolve_saddle_connection
 
     end subroutine extract_region_boundaries
 
