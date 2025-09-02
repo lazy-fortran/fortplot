@@ -3,6 +3,7 @@ module fortplot_colormap
     !! Provides color interpolation for different colormaps like matplotlib
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_color_definitions, only: to_lowercase
     use fortplot_constants, only: EPSILON_COMPARE
     implicit none
     
@@ -16,13 +17,17 @@ contains
         real(wp), intent(in) :: value
         character(len=*), intent(in) :: colormap
         real(wp), dimension(3), intent(out) :: color
-        
+        character(len=:), allocatable :: cmap
         real(wp) :: t
         
         ! Clamp value to [0,1]
         t = max(0.0_wp, min(1.0_wp, value))
+
+        ! Normalize colormap name (case-insensitive)
+        cmap = trim(colormap)
+        call to_lowercase(cmap)
         
-        select case (trim(colormap))
+        select case (cmap)
         case ('seaborn', 'colorblind', 'crest')
             call crest_colormap(t, color)
         case ('viridis')
@@ -169,12 +174,16 @@ contains
         end if
     end subroutine interpolate_colormap
 
-    pure function validate_colormap_name(colormap) result(is_valid)
+    function validate_colormap_name(colormap) result(is_valid)
         !! Validate if colormap name is supported
         character(len=*), intent(in) :: colormap
         logical :: is_valid
-        
-        select case (trim(colormap))
+        character(len=:), allocatable :: cmap
+
+        cmap = trim(colormap)
+        call to_lowercase(cmap)
+
+        select case (cmap)
         case ('seaborn', 'colorblind', 'crest', 'viridis', 'plasma', 'inferno', &
               'coolwarm', 'jet')
             is_valid = .true.
