@@ -9,6 +9,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
+    use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_scales, only: apply_scale_transform
     implicit none
@@ -409,8 +410,8 @@ contains
                 title_x = plot_area_left + plot_area_width * 0.5_wp - &
                          real(len_trim(title), wp) * 3.5_wp
                 title_y = plot_area_bottom + plot_area_height + 20.0_wp
-                ! Use mixed-font text with title size to support Unicode/Symbol
-                call draw_mixed_font_text(ctx, title_x, title_y, trim(title), PDF_TITLE_SIZE)
+                ! Process LaTeX commands to Unicode and render with mixed fonts
+                call render_mixed_text(ctx, title_x, title_y, trim(title), PDF_TITLE_SIZE)
             end if
         end if
 
@@ -420,7 +421,7 @@ contains
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
                           real(len_trim(xlabel), wp) * 3.0_wp
                 xlabel_y = plot_area_bottom - 50.0_wp
-                call draw_mixed_font_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
+                call render_mixed_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if
 
@@ -431,10 +432,39 @@ contains
                 ylabel_x = plot_area_left - 60.0_wp
                 ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
                           real(len_trim(ylabel), wp) * 3.0_wp
-                call draw_rotated_mixed_font_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
+                call render_rotated_mixed_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
             end if
         end if
     end subroutine draw_pdf_title_and_labels
+
+    subroutine render_mixed_text(ctx, x, y, text, font_size)
+        !! Helper: process LaTeX and render mixed-font text
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
+        character(len=512) :: processed
+        integer :: plen
+
+        call process_latex_in_text(text, processed, plen)
+        if (present(font_size)) then
+            call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
+        else
+            call draw_mixed_font_text(ctx, x, y, processed(1:plen))
+        end if
+    end subroutine render_mixed_text
+
+    subroutine render_rotated_mixed_text(ctx, x, y, text)
+        !! Helper: process LaTeX and render rotated mixed-font ylabel
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=512) :: processed
+        integer :: plen
+
+        call process_latex_in_text(text, processed, plen)
+        call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
+    end subroutine render_rotated_mixed_text
 
     subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left, canvas_height)
         !! Draw Y-axis labels with overlap detection to prevent clustering
