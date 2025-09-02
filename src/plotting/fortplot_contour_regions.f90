@@ -114,20 +114,118 @@ contains
         nx = size(x_grid)
         ny = size(y_grid)
         
-        ! Allocate working arrays for contour points
-        allocate(contour_x(2 * (nx + ny)))  ! Conservative estimate
-        allocate(contour_y(2 * (nx + ny)))
+        ! Collect boundary segments for the band using robust per-edge thresholding
+        allocate(contour_x(0))
+        allocate(contour_y(0))
         contour_count = 0
-        
-        ! Process grid using marching squares algorithm
-        call process_marching_squares(x_grid, y_grid, z_grid, level_min, level_max, &
-                                     contour_x, contour_y, contour_count)
-        
-        ! Create boundary polygon from collected contour points
+
+        call process_band_segments(level_min, level_max)
+
         call finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
-        
+
+        contains
+
+        subroutine process_band_segments(level_min, level_max)
+            real(wp), intent(in) :: level_min, level_max
+            integer :: nx, ny, i, j
+            real(wp) :: z(4), x(4), y(4)
+            real(wp) :: px(8), py(8)
+            integer :: pcount
+
+            nx = size(x_grid)
+            ny = size(y_grid)
+
+            do j = 1, ny - 1
+                do i = 1, nx - 1
+                    x(1) = x_grid(i)  ; y(1) = y_grid(j)  ; z(1) = z_grid(j    , i    )
+                    x(2) = x_grid(i+1); y(2) = y_grid(j)  ; z(2) = z_grid(j    , i + 1)
+                    x(3) = x_grid(i+1); y(3) = y_grid(j+1); z(3) = z_grid(j + 1, i + 1)
+                    x(4) = x_grid(i)  ; y(4) = y_grid(j+1); z(4) = z_grid(j + 1, i    )
+
+                    call collect_cell_band_intersections(x, y, z, level_min, level_max, px, py, pcount)
+
+                    if (pcount == 2) then
+                        call add_pair(px(1), py(1), px(2), py(2))
+                    else if (pcount == 4) then
+                        call add_pair(px(1), py(1), px(2), py(2))
+                        call add_pair(px(3), py(3), px(4), py(4))
+                    end if
+                end do
+            end do
+        end subroutine process_band_segments
+
+        subroutine collect_cell_band_intersections(x, y, z, level_min, level_max, px, py, pcount)
+            real(wp), intent(in) :: x(4), y(4), z(4)
+            real(wp), intent(in) :: level_min, level_max
+            real(wp), intent(out) :: px(8), py(8)
+            integer, intent(out) :: pcount
+            integer :: e
+            pcount = 0
+            do e = 1, 4
+                call add_edge_band_intersections(e, x, y, z, level_min, level_max, px, py, pcount)
+            end do
+        end subroutine collect_cell_band_intersections
+
+        subroutine add_edge_band_intersections(edge, x, y, z, level_min, level_max, px, py, pcount)
+            integer, intent(in) :: edge
+            real(wp), intent(in) :: x(4), y(4), z(4)
+            real(wp), intent(in) :: level_min, level_max
+            real(wp), intent(inout) :: px(8), py(8)
+            integer, intent(inout) :: pcount
+            integer :: a, b
+            real(wp) :: z1, z2, t
+            real(wp) :: x1, y1, x2, y2
+
+            select case (edge)
+            case (1); a = 1; b = 2
+            case (2); a = 2; b = 3
+            case (3); a = 3; b = 4
+            case (4); a = 4; b = 1
+            end select
+
+            z1 = z(a); z2 = z(b)
+            x1 = x(a); y1 = y(a)
+            x2 = x(b); y2 = y(b)
+
+            if ((z1 < level_min .and. z2 >= level_min) .or. (z2 < level_min .and. z1 >= level_min)) then
+                if (abs(z2 - z1) > EPSILON_GEOMETRY) then
+                    t = (level_min - z1) / (z2 - z1)
+                    pcount = pcount + 1
+                    px(pcount) = x1 + t * (x2 - x1)
+                    py(pcount) = y1 + t * (y2 - y1)
+                end if
+            end if
+
+            if ((z1 < level_max .and. z2 >= level_max) .or. (z2 < level_max .and. z1 >= level_max)) then
+                if (abs(z2 - z1) > EPSILON_GEOMETRY) then
+                    t = (level_max - z1) / (z2 - z1)
+                    pcount = pcount + 1
+                    px(pcount) = x1 + t * (x2 - x1)
+                    py(pcount) = y1 + t * (y2 - y1)
+                end if
+            end if
+        end subroutine add_edge_band_intersections
+
+        subroutine add_pair(x1, y1, x2, y2)
+            real(wp), intent(in) :: x1, y1, x2, y2
+            real(wp), allocatable :: tx(:), ty(:)
+            integer :: n
+            n = size(contour_x)
+            allocate(tx(n+2))
+            allocate(ty(n+2))
+            if (n > 0) then
+                tx(1:n) = contour_x
+                ty(1:n) = contour_y
+            end if
+            tx(n+1) = x1; ty(n+1) = y1
+            tx(n+2) = x2; ty(n+2) = y2
+            call move_alloc(tx, contour_x)
+            call move_alloc(ty, contour_y)
+            contour_count = contour_count + 2
+        end subroutine add_pair
+
     end subroutine extract_region_boundaries
-    
+
     subroutine process_marching_squares(x_grid, y_grid, z_grid, level_min, level_max, &
                                        contour_x, contour_y, contour_count)
         !! Process grid cells using marching squares algorithm
