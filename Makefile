@@ -244,7 +244,12 @@ verify-artifacts: create_build_dirs
 	    if command -v identify >/dev/null 2>&1; then c=$$(identify -format %k "$${f}" 2>/dev/null || echo 0); \
 	    elif command -v magick >/dev/null 2>&1; then c=$$(magick identify -format %k "$${f}" 2>/dev/null || echo 0); \
 	    else echo "Missing ImageMagick 'identify'" >&2; exit 2; fi; \
-	    echo "[colors] $$f => $$c"; [ "$${c}" -ge 16 ] || { echo "ERROR: $$f appears to have too few colors ($$c)" >&2; exit 1; }; \
+	    echo "[colors] $$f => $$c"; \
+	    # Expect contours (lines), not pcolormesh-like fills: cap unique colors to avoid blocky look; \
+	    # allow antialiasing wiggle room. Fail if suspiciously high. \
+	    if [ "$$c" -gt 1200 ]; then echo "ERROR: $$f has too many unique colors ($$c) — looks like pcolormesh" >&2; exit 1; fi; \
+	    # Also require it's not monochrome \
+	    if [ "$$c" -lt 8 ]; then echo "ERROR: $$f has too few unique colors ($$c) — contours may be missing" >&2; exit 1; fi; \
 	  fi; \
 	done; \
 	# Symlog .txt should include scientific or power-of-ten notation lines; \
