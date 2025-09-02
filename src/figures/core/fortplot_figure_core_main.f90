@@ -420,11 +420,10 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         real(wp) :: default_color(3)
+        real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
         
         ! Get default color from state
         default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
-        
-        real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
         if (present(alpha)) al_dummy1 = alpha
         if (present(edgecolor)) ec_dummy1 = edgecolor(1)
         if (present(facecolor)) fc_dummy1 = facecolor(1)
