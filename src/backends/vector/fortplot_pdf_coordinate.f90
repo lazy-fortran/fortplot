@@ -26,7 +26,6 @@ module fortplot_pdf_coordinate
     public :: pdf_context_handle
     public :: normalize_to_pdf_coords, safe_coordinate_transform
     public :: pdf_get_width_scale, pdf_get_height_scale
-    public :: pdf_fill_quad, pdf_fill_heatmap
     public :: pdf_render_legend_specialized, pdf_calculate_legend_dimensions
     public :: pdf_set_legend_border_width, pdf_calculate_legend_position
     public :: pdf_extract_rgb_data, pdf_get_png_data
@@ -89,58 +88,7 @@ contains
         scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
     end function pdf_get_height_scale
     
-    subroutine pdf_fill_quad(ctx, stream_writer, x_quad, y_quad)
-        type(pdf_context_handle), intent(in) :: ctx
-        type(*), intent(inout) :: stream_writer  ! Avoid circular dependency
-        real(wp), intent(in) :: x_quad(4), y_quad(4)
-        real(wp) :: px(4), py(4)
-        character(len=512) :: cmd
-        integer :: i
-        
-        ! Convert to PDF coordinates
-        do i = 1, 4
-            call normalize_to_pdf_coords(ctx, x_quad(i), y_quad(i), px(i), py(i))
-        end do
-        
-        ! Draw filled quadrilateral
-        write(cmd, '(8(F0.3, 1X), "m l l l h f")') px(1), py(1), px(2), py(2), px(3), py(3), px(4), py(4)
-        ! stream_writer%add_to_stream(trim(cmd)) - will be handled by caller
-    end subroutine pdf_fill_quad
-    
-    subroutine pdf_fill_heatmap(ctx, stream_writer, x_grid, y_grid, z_grid, z_min, z_max)
-        type(pdf_context_handle), intent(in) :: ctx
-        type(*), intent(inout) :: stream_writer  ! Avoid circular dependency
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
-        real(wp), intent(in) :: z_min, z_max
-        
-        integer :: i, j
-        real(wp) :: x_quad(4), y_quad(4)
-        real(wp) :: value, norm_value
-        real(wp), dimension(3) :: color
-        character(len=32) :: cmd
-        
-        do i = 1, size(z_grid, 1) - 1
-            do j = 1, size(z_grid, 2) - 1
-                ! Get normalized value
-                value = z_grid(i, j)
-                if (z_max > z_min) then
-                    norm_value = (value - z_min) / (z_max - z_min)
-                else
-                    norm_value = 0.5_wp
-                end if
-                
-                ! Simple grayscale color
-                color = [norm_value, norm_value, norm_value]
-                
-                ! Define quad corners
-                x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
-                y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
-                
-                ! Fill cell - caller handles actual drawing
-                call pdf_fill_quad(ctx, stream_writer, x_quad, y_quad)
-            end do
-        end do
-    end subroutine pdf_fill_heatmap
+    ! Removed unused pdf_fill_quad/pdf_fill_heatmap helpers (deprecated, not referenced)
     
     subroutine pdf_render_legend_specialized(ctx, entries, x, y, width, height)
         type(pdf_context_handle), intent(inout) :: ctx
