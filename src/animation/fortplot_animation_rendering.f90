@@ -82,11 +82,7 @@ contains
         end select
     end subroutine render_single_plot
 
-    subroutine mark_as_rendered(fig)
-        type(figure_t), intent(inout) :: fig
-        
-        call fig%set_rendered(.true.)
-    end subroutine mark_as_rendered
+    ! Removed unused mark_as_rendered
 
     subroutine render_line_plot(fig, plot_data)
         type(figure_t), intent(inout) :: fig
