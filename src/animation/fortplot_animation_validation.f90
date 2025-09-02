@@ -228,21 +228,7 @@ contains
         is_valid = (file_size > 1000)  ! Minimum for valid video container
     end function validate_container_structure
 
-    function validate_size_for_video_content(filename, file_size) result(adequate)
-        character(len=*), intent(in) :: filename
-        integer, intent(in) :: file_size
-        logical :: adequate
-        integer :: min_expected
-        integer :: dummy_len
-        dummy_len = len_trim(filename)
-        
-        ! Calculate minimum expected size based on content
-        ! For simple animations: ~200-500 bytes per frame minimum
-        ! Even heavily compressed H.264 should produce some data per frame
-        min_expected = MIN_EXPECTED_VIDEO_SIZE
-        
-        adequate = (file_size >= min_expected)
-    end function validate_size_for_video_content
+    ! Removed unused validate_size_for_video_content (internal)
 
     function validate_video_header_format(filename) result(valid_header)
         character(len=*), intent(in) :: filename
