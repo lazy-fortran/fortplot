@@ -19,31 +19,7 @@ module fortplot_pdf_text
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
     
-    ! Symbol font mappings
-    integer, parameter :: SYMBOL_ALPHA = 97      ! α (hex 61)
-    integer, parameter :: SYMBOL_BETA = 98       ! β (hex 62)
-    integer, parameter :: SYMBOL_GAMMA = 103     ! γ (hex 67)
-    integer, parameter :: SYMBOL_DELTA = 100     ! δ (hex 64)
-    integer, parameter :: SYMBOL_EPSILON = 101   ! ε (hex 65)
-    integer, parameter :: SYMBOL_ZETA = 122      ! ζ (hex 7A)
-    integer, parameter :: SYMBOL_ETA = 104       ! η (hex 68)
-    integer, parameter :: SYMBOL_THETA = 113     ! θ (hex 71)
-    integer, parameter :: SYMBOL_IOTA = 105      ! ι (hex 69)
-    integer, parameter :: SYMBOL_KAPPA = 107     ! κ (hex 6B)
-    integer, parameter :: SYMBOL_LAMBDA = 108    ! λ (hex 6C)
-    integer, parameter :: SYMBOL_MU = 109        ! μ (hex 6D)
-    integer, parameter :: SYMBOL_NU = 110        ! ν (hex 6E)
-    integer, parameter :: SYMBOL_XI = 120        ! ξ (hex 78)
-    integer, parameter :: SYMBOL_OMICRON = 111   ! ο (hex 6F)
-    integer, parameter :: SYMBOL_PI = 112        ! π (hex 70)
-    integer, parameter :: SYMBOL_RHO = 114       ! ρ (hex 72)
-    integer, parameter :: SYMBOL_SIGMA = 115     ! σ (hex 73)
-    integer, parameter :: SYMBOL_TAU = 116       ! τ (hex 74)
-    integer, parameter :: SYMBOL_UPSILON = 117   ! υ (hex 75)
-    integer, parameter :: SYMBOL_PHI = 102       ! φ (hex 66)
-    integer, parameter :: SYMBOL_CHI = 99        ! χ (hex 63)
-    integer, parameter :: SYMBOL_PSI = 121       ! ψ (hex 79)
-    integer, parameter :: SYMBOL_OMEGA = 119     ! ω (hex 77)
+    ! Removed unused Symbol font mapping constants to avoid duplication
 
 contains
 
@@ -369,63 +345,20 @@ contains
     end subroutine escape_pdf_string
 
     subroutine unicode_to_symbol_char(unicode_codepoint, symbol_char)
-        !! Convert Unicode codepoint to Symbol font character
+        !! Convert Unicode codepoint to Symbol font character using shared lookup
         integer, intent(in) :: unicode_codepoint
         character(len=*), intent(out) :: symbol_char
-        
+        character(len=8) :: esc
+        logical :: found
+
         symbol_char = ""
-        
-        ! Greek lowercase letters
-        select case(unicode_codepoint)
-        case(945)  ! α (alpha)
-            symbol_char = "\141"
-        case(946)  ! β (beta)
-            symbol_char = "\142"
-        case(947)  ! γ (gamma)
-            symbol_char = "\147"
-        case(948)  ! δ (delta)
-            symbol_char = "\144"
-        case(949)  ! ε (epsilon)
-            symbol_char = "\145"
-        case(950)  ! ζ (zeta)
-            symbol_char = "\172"
-        case(951)  ! η (eta)
-            symbol_char = "\150"
-        case(952)  ! θ (theta)
-            symbol_char = "\161"
-        case(953)  ! ι (iota)
-            symbol_char = "\151"
-        case(954)  ! κ (kappa)
-            symbol_char = "\153"
-        case(955)  ! λ (lambda)
-            symbol_char = "\154"
-        case(956)  ! μ (mu)
-            symbol_char = "\155"
-        case(957)  ! ν (nu)
-            symbol_char = "\156"
-        case(958)  ! ξ (xi)
-            symbol_char = "\170"
-        case(959)  ! ο (omicron)
-            symbol_char = "\157"
-        case(960)  ! π (pi)
-            symbol_char = "\160"
-        case(961)  ! ρ (rho)
-            symbol_char = "\162"
-        case(963)  ! σ (sigma)
-            symbol_char = "\163"
-        case(964)  ! τ (tau)
-            symbol_char = "\164"
-        case(965)  ! υ (upsilon)
-            symbol_char = "\165"
-        case(966)  ! φ (phi)
-            symbol_char = "\146"
-        case(967)  ! χ (chi)
-            symbol_char = "\143"
-        case(968)  ! ψ (psi)
-            symbol_char = "\171"
-        case(969)  ! ω (omega)
-            symbol_char = "\167"
-        end select
+        esc = ""
+        found = .false.
+
+        call lookup_lowercase_greek(unicode_codepoint, esc, found)
+        if (.not. found) call lookup_uppercase_greek(unicode_codepoint, esc, found)
+
+        if (found) symbol_char = trim(esc)
     end subroutine unicode_to_symbol_char
 
     subroutine unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
