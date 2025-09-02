@@ -31,7 +31,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       uses: awalsh128/cache-apt-pkgs-action@v1.5.3
       with:
-        packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick
+        packages: gfortran cmake make ffmpeg pngcheck python3-pil imagemagick poppler-utils ghostscript
         version: 1
 
     - name: Setup Fortran Package Manager (Ubuntu)
@@ -169,6 +169,12 @@ jobs:
         make example ARGS="contour_demo"
         make example ARGS="marker_demo"
         make example ARGS="format_string_demo"
+
+    - name: Verify artifacts (Linux only)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: |
+        make verify-artifacts
 
     - name: Run tests
       shell: bash

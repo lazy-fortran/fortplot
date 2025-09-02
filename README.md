@@ -2,7 +2,7 @@
 
 [![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
-Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran. This library is under active development, and the API is still subject to change. There are no external dependencies. Ironically, it also has a Python interface installable via `pip` (see below) as `fortplot.fortplot` that can be used as a drop-in replacement for `matplotlib.pyplot` for a limited set of features.
+Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran. This library is under active development, and the API is still subject to change. There are no external dependencies for building the library itself. For verifying PDF/PNG outputs, optional tooling is recommended (see Artifact Verification).
 
 ## Usage
 
@@ -183,6 +183,23 @@ call xlim(1.0e-3_wp, 1.0e3_wp)
 call ylim(-100.0_wp, 100.0_wp)
 call savefig("log_plot.pdf")
 ```
+
+## Build, Test, and Artifact Verification
+
+- Build: `make build` or `fpm build`
+- Tests: `make test` (full) or `make test-ci` (fast subset)
+- Examples: `make example` (Fortran), `make example_python`, `make example_matplotlib`
+
+### Artifact Verification (required for rendering changes)
+
+Use `make verify-artifacts` to run key examples and validate generated PDF/PNG/txt artifacts with strict checks.
+
+Dependencies for verification tools:
+- Arch Linux: `sudo pacman -S poppler ghostscript`
+- Ubuntu/Debian: `sudo apt-get install -y poppler-utils ghostscript`
+- macOS (Homebrew): `brew install poppler ghostscript`
+
+In PRs and issues for output-affecting fixes, include the exact commands run, artifact paths, and short excerpts from tools (e.g., `pdftotext`) as evidence.
 
 #### Text annotations with coordinate systems
 ```fortran
