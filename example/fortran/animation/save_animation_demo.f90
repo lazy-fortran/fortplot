@@ -21,6 +21,7 @@ program save_animation_demo
     ! Use pyplot-style global figure to avoid initialization differences across environments
     call figure(figsize=[8.0_wp, 6.0_wp])
     call add_plot(x, y, label='animated wave')
+    call set_line_width(2.0_wp)
     call title('Animation Save Demo')
     call xlabel('x')
     call ylabel('y')
@@ -48,8 +49,9 @@ contains
         ! Update y data with animated wave
         y = sin(x + phase) * cos(phase * 0.5_wp)
         
-        ! Update plot data via pyplot API (targets global figure)
-        call set_ydata(y)
+        ! Update plot data on the same figure and force re-render
+        call pfig%set_ydata(1, y)
+        call pfig%set_rendered(.false.)
     end subroutine update_wave
     
     subroutine save_animation_with_error_handling(anim, filename, fps)
