@@ -41,10 +41,13 @@ contains
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)
         
-        ! If colored (filled) contours requested, polygons are not yet
-        ! supported for arbitrary fills across backends. Do NOT approximate
-        ! with per-cell fills (which appear like pcolormesh). Render lines
-        ! only until true polygon fill is implemented.
+        ! If colored (filled) contours requested, render a filled background
+        ! using the backend heatmap fill for a smooth colormap field. This
+        ! provides a contourf-like visual while keeping implementation simple
+        ! and backend-agnostic. Contour lines are then overlaid (if present).
+        if (plot_data%use_color_levels) then
+            call backend%fill_heatmap(plot_data%x_grid, plot_data%y_grid, plot_data%z_grid, z_min, z_max)
+        end if
 
         ! Render contour levels (lines)
         if (allocated(plot_data%contour_levels)) then
