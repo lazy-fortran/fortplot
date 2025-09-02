@@ -62,7 +62,7 @@ Intelligent display mode selection based on environment.
 
 ## Animation
 
-### [Save Animation Demo](./save_animation.html)
+### [Save Animation Demo](./animation.html)
 Creating animated plots and saving to video files.
 
 
