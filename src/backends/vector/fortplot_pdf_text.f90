@@ -375,7 +375,7 @@ contains
         
         symbol_char = ""
         
-        ! Greek lowercase letters
+        ! Greek lowercase letters and uppercase via Symbol encoding
         select case(unicode_codepoint)
         case(945)  ! α (alpha)
             symbol_char = "\141"
@@ -425,6 +425,54 @@ contains
             symbol_char = "\171"
         case(969)  ! ω (omega)
             symbol_char = "\167"
+        case(913)  ! Α (Alpha)
+            symbol_char = "\101"
+        case(914)  ! Β (Beta)
+            symbol_char = "\102"
+        case(915)  ! Γ (Gamma)
+            symbol_char = "\107"
+        case(916)  ! Δ (Delta)
+            symbol_char = "\104"
+        case(917)  ! Ε (Epsilon)
+            symbol_char = "\105"
+        case(918)  ! Ζ (Zeta)
+            symbol_char = "\132"
+        case(919)  ! Η (Eta)
+            symbol_char = "\110"
+        case(920)  ! Θ (Theta)
+            symbol_char = "\121"
+        case(921)  ! Ι (Iota)
+            symbol_char = "\111"
+        case(922)  ! Κ (Kappa)
+            symbol_char = "\113"
+        case(923)  ! Λ (Lambda)
+            symbol_char = "\114"
+        case(924)  ! Μ (Mu)
+            symbol_char = "\115"
+        case(925)  ! Ν (Nu)
+            symbol_char = "\116"
+        case(926)  ! Ξ (Xi)
+            symbol_char = "\130"
+        case(927)  ! Ο (Omicron)
+            symbol_char = "\117"
+        case(928)  ! Π (Pi)
+            symbol_char = "\120"
+        case(929)  ! Ρ (Rho)
+            symbol_char = "\122"
+        case(931)  ! Σ (Sigma)
+            symbol_char = "\123"
+        case(932)  ! Τ (Tau)
+            symbol_char = "\124"
+        case(933)  ! Υ (Upsilon)
+            symbol_char = "\125"
+        case(934)  ! Φ (Phi)
+            symbol_char = "\106"
+        case(935)  ! Χ (Chi)
+            symbol_char = "\103"
+        case(936)  ! Ψ (Psi)
+            symbol_char = "\131"
+        case(937)  ! Ω (Omega)
+            symbol_char = "\127"
         end select
     end subroutine unicode_to_symbol_char
 
