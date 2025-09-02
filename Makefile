@@ -160,6 +160,12 @@ doc:
 			cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
 		fi; \
 	done
+	# Ensure animation.mp4 explicitly present at expected locations (robust fallback)
+	if [ -f output/example/fortran/animation/animation.mp4 ]; then \
+		mkdir -p build/doc/page/media/examples/animation build/doc/media/examples/animation; \
+		cp output/example/fortran/animation/animation.mp4 build/doc/page/media/examples/animation/ 2>/dev/null || true; \
+		cp output/example/fortran/animation/animation.mp4 build/doc/media/examples/animation/ 2>/dev/null || true; \
+	fi
 
 
 # Validate functional output generation
