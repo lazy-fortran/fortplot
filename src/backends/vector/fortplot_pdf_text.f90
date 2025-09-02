@@ -5,6 +5,7 @@ module fortplot_pdf_text
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_FONT_SIZE, PDF_LABEL_SIZE, &
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
+    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     implicit none
     private
     
@@ -77,27 +78,33 @@ contains
         this%stream_data = this%stream_data // "ET" // new_line('a')
     end subroutine draw_pdf_text
 
-    subroutine draw_mixed_font_text(this, x, y, text)
+    subroutine draw_mixed_font_text(this, x, y, text, font_size)
         !! Draw text with mixed fonts (Helvetica and Symbol)
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
         character(len=1024) :: text_cmd
         logical :: in_symbol_font
         integer :: i, text_pos, segment_pos
         character(len=512) :: current_segment
+        real(wp) :: fs
         
         in_symbol_font = .false.
         text_pos = 1
         segment_pos = 0
         current_segment = ""
         
+        ! Choose font size
+        fs = PDF_LABEL_SIZE
+        if (present(font_size)) fs = font_size
+
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
         
         ! Select default font (Helvetica) for label-sized text
         write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
+            this%fonts%get_helvetica_obj(), fs
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
 
         ! Set initial absolute position
@@ -105,32 +112,38 @@ contains
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
         ! Process text character by character
-        call process_text_segments(this, text, in_symbol_font)
+        call process_text_segments(this, text, in_symbol_font, fs)
         
         ! End text object
         this%stream_data = this%stream_data // "ET" // new_line('a')
     end subroutine draw_mixed_font_text
 
-    subroutine draw_rotated_mixed_font_text(this, x, y, text)
+    subroutine draw_rotated_mixed_font_text(this, x, y, text, font_size)
         !! Draw rotated text with mixed fonts (for Y-axis labels)
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
         character(len=1024) :: font_cmd
+        real(wp) :: fs
         
+        ! Choose font size
+        fs = PDF_LABEL_SIZE
+        if (present(font_size)) fs = font_size
+
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
         
         ! Select default font (Helvetica) for label-sized text
         write(font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
+            this%fonts%get_helvetica_obj(), fs
         this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
 
         ! Set up rotation matrix
         call setup_rotated_text_matrix(this, x, y)
         
         ! Process rotated text segments
-        call process_rotated_text_segments(this, text)
+        call process_rotated_text_segments(this, text, fs)
         
         ! End text object
         this%stream_data = this%stream_data // "ET" // new_line('a')
@@ -147,74 +160,105 @@ contains
         this%stream_data = this%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
     end subroutine setup_rotated_text_matrix
 
-    subroutine process_text_segments(this, text, in_symbol_font)
+    subroutine process_text_segments(this, text, in_symbol_font, font_size)
         !! Process text segments for mixed font rendering
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
         logical, intent(inout) :: in_symbol_font
-        integer :: i, codepoint
-        character(len=4) :: utf_char
+        real(wp), intent(in) :: font_size
+        integer :: i, codepoint, char_len
         character(len=8) :: symbol_char
         character(len=8) :: escaped_char
         integer :: esc_len
-        
-        do i = 1, len_trim(text)
-            ! Get Unicode codepoint for character
-            codepoint = iachar(text(i:i))
-            
-            ! Check if character needs Symbol font
-            call unicode_to_symbol_char(codepoint, symbol_char)
-            
-            if (len_trim(symbol_char) > 0) then
-                ! Switch to Symbol font if needed
-                if (.not. in_symbol_font) then
-                    call switch_to_symbol_font(this)
-                    in_symbol_font = .true.
+        logical :: is_valid
+
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+
+            if (char_len <= 1) then
+                ! ASCII fast-path
+                codepoint = ichar(text(i:i))
+                call unicode_to_symbol_char(codepoint, symbol_char)
+                if (len_trim(symbol_char) > 0) then
+                    if (.not. in_symbol_font) then
+                        call switch_to_symbol_font(this, font_size)
+                        in_symbol_font = .true.
+                    end if
+                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                else
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this, font_size)
+                        in_symbol_font = .false.
+                    end if
+                    escaped_char = ''
+                    esc_len = 0
+                    call escape_pdf_string(text(i:i), escaped_char, esc_len)
+                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
                 end if
-                ! Output symbol character
-                this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                i = i + 1
             else
-                ! Switch to Helvetica if needed
-                if (in_symbol_font) then
-                    call switch_to_helvetica_font(this)
-                    in_symbol_font = .false.
+                ! Multi-byte UTF-8: validate and decode
+                call check_utf8_sequence(text, i, is_valid, char_len)
+                if (is_valid .and. i + char_len - 1 <= len_trim(text)) then
+                    codepoint = utf8_to_codepoint(text, i)
+                else
+                    codepoint = 0
                 end if
-                ! Output regular character with PDF escaping for (, ), and \
-                escaped_char = ''
-                esc_len = 0
-                call escape_pdf_string(text(i:i), escaped_char, esc_len)
-                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+
+                call unicode_to_symbol_char(codepoint, symbol_char)
+                if (len_trim(symbol_char) > 0) then
+                    if (.not. in_symbol_font) then
+                        call switch_to_symbol_font(this, font_size)
+                        in_symbol_font = .true.
+                    end if
+                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                else
+                    ! Fallback: switch to Helvetica and emit '?'
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this, font_size)
+                        in_symbol_font = .false.
+                    end if
+                    escaped_char = ''
+                    esc_len = 0
+                    call escape_pdf_string('?', escaped_char, esc_len)
+                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+                end if
+                i = i + max(1, char_len)
             end if
         end do
     end subroutine process_text_segments
 
-    subroutine process_rotated_text_segments(this, text)
+    subroutine process_rotated_text_segments(this, text, font_size)
         !! Process text segments for rotated mixed font rendering
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
         logical :: in_symbol_font
         
         in_symbol_font = .false.
         
         ! Process the text similarly to non-rotated version
-        call process_text_segments(this, text, in_symbol_font)
+        call process_text_segments(this, text, in_symbol_font, font_size)
     end subroutine process_rotated_text_segments
 
-    subroutine switch_to_symbol_font(this)
+    subroutine switch_to_symbol_font(this, font_size)
         class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: font_size
         character(len=64) :: font_cmd
         
         write(font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_symbol_obj(), PDF_FONT_SIZE
+            this%fonts%get_symbol_obj(), font_size
         this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
     end subroutine switch_to_symbol_font
 
-    subroutine switch_to_helvetica_font(this)
+    subroutine switch_to_helvetica_font(this, font_size)
         class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: font_size
         character(len=64) :: font_cmd
         
         write(font_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_helvetica_obj(), PDF_FONT_SIZE
+            this%fonts%get_helvetica_obj(), font_size
         this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
     end subroutine switch_to_helvetica_font
 
