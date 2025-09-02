@@ -407,8 +407,11 @@ contains
 
         integer :: clearance
 
+        ! Place the RIGHT edge of the rotated ylabel at a fixed clearance
+        ! from the y-tick label right edge. Since composite uses top-left
+        ! anchoring, subtract the full rotated_text_width here.
         clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max(0, y_tick_max_width) + YLABEL_EXTRA_GAP
-        x_pos = plot_area%left - clearance - rotated_text_width / 2
+        x_pos = plot_area%left - clearance - rotated_text_width
     end function compute_ylabel_x_pos
 
     pure function y_tick_label_right_edge_at_axis(plot_area) result(r_edge)
