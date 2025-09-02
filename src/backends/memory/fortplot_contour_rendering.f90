@@ -81,15 +81,15 @@ contains
     end subroutine render_contour_plot
 
     subroutine render_filled_contour_regions(backend, plot_data, z_min, z_max)
-        !! Render filled contour regions by extracting polygons per level band
+        !! Render filled contour regions using cell-by-cell filling
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot_data
         real(wp), intent(in) :: z_min, z_max
 
         real(wp), allocatable :: levels(:)
-        type(contour_region_t), allocatable :: regions(:)
         real(wp), dimension(3) :: fill_color
-        integer :: i, j
+        integer :: i, j, k, nx, ny
+        real(wp) :: cell_value, x_quad(4), y_quad(4)
 
         ! Determine contour levels: use provided, else default 3 evenly spaced
         if (allocated(plot_data%contour_levels) .and. size(plot_data%contour_levels) > 0) then
@@ -103,36 +103,68 @@ contains
         end if
 
         call sort_levels_inplace(levels)
+        
+        nx = size(plot_data%x_grid)
+        ny = size(plot_data%y_grid)
 
-        ! Extract polygonal regions between levels
-        regions = extract_contour_regions(plot_data%x_grid, plot_data%y_grid, plot_data%z_grid, levels)
-
-        ! Fill each region with flat color based on mid-level value
-        do i = 1, size(regions)
-            call compute_region_color(regions(i)%level_min, regions(i)%level_max, &
-                                      z_min, z_max, plot_data%colormap, fill_color)
-
-            call backend%color(fill_color(1), fill_color(2), fill_color(3))
-
-            if (allocated(regions(i)%boundaries)) then
-                call fill_region_even_odd(backend, regions(i)%boundaries)
-            end if
+        ! Fill each grid cell based on its value relative to contour levels
+        do j = 1, ny - 1
+            do i = 1, nx - 1
+                ! Get the average value of the cell (center value)
+                cell_value = 0.25_wp * (plot_data%z_grid(j, i) + plot_data%z_grid(j, i+1) + &
+                                        plot_data%z_grid(j+1, i) + plot_data%z_grid(j+1, i+1))
+                
+                ! Determine which contour band this cell belongs to
+                call get_level_color(cell_value, levels, z_min, z_max, plot_data%colormap, fill_color)
+                
+                ! Set color and fill the cell
+                call backend%color(fill_color(1), fill_color(2), fill_color(3))
+                
+                x_quad = [plot_data%x_grid(i), plot_data%x_grid(i+1), &
+                         plot_data%x_grid(i+1), plot_data%x_grid(i)]
+                y_quad = [plot_data%y_grid(j), plot_data%y_grid(j), &
+                         plot_data%y_grid(j+1), plot_data%y_grid(j+1)]
+                         
+                call backend%fill_quad(x_quad, y_quad)
+            end do
         end do
 
         if (allocated(levels)) deallocate(levels)
-        if (allocated(regions)) then
-            do i = 1, size(regions)
-                if (allocated(regions(i)%boundaries)) then
-                    do j = 1, size(regions(i)%boundaries)
-                        if (allocated(regions(i)%boundaries(j)%x)) deallocate(regions(i)%boundaries(j)%x)
-                        if (allocated(regions(i)%boundaries(j)%y)) deallocate(regions(i)%boundaries(j)%y)
-                    end do
-                    deallocate(regions(i)%boundaries)
+    end subroutine render_filled_contour_regions
+    
+    subroutine get_level_color(value, levels, z_min, z_max, cmap, color)
+        !! Get color for a value based on contour levels
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: levels(:)
+        real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in) :: cmap
+        real(wp), intent(out) :: color(3)
+        
+        integer :: i, n_levels
+        real(wp) :: level_value
+        
+        n_levels = size(levels)
+        
+        ! Find which band the value falls into
+        if (value < levels(1)) then
+            ! Below first level - use color for minimum
+            level_value = z_min
+        else if (value >= levels(n_levels)) then
+            ! Above last level - use color for maximum
+            level_value = z_max
+        else
+            ! Between levels - find the appropriate band
+            do i = 1, n_levels - 1
+                if (value >= levels(i) .and. value < levels(i+1)) then
+                    level_value = 0.5_wp * (levels(i) + levels(i+1))
+                    exit
                 end if
             end do
-            deallocate(regions)
         end if
-    end subroutine render_filled_contour_regions
+        
+        ! Get color from colormap
+        call colormap_value_to_color(level_value, z_min, z_max, cmap, color)
+    end subroutine get_level_color
 
     subroutine sort_levels_inplace(levels)
         real(wp), intent(inout) :: levels(:)
