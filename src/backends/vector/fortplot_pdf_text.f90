@@ -214,20 +214,36 @@ contains
                     end if
                     this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
                 else
-                    ! Fallback: switch to Helvetica and emit '?'
-                    if (in_symbol_font) then
-                        call switch_to_helvetica_font(this, font_size)
-                        in_symbol_font = .false.
-                    end if
-                    escaped_char = ''
-                    esc_len = 0
-                    call escape_pdf_string('?', escaped_char, esc_len)
-                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+                    ! Try mapping to a PDF-encodable escape in Helvetica (WinAnsi)
+                    call emit_pdf_escape_or_fallback(this, codepoint, font_size)
                 end if
                 i = i + max(1, char_len)
             end if
         end do
     end subroutine process_text_segments
+
+    subroutine emit_pdf_escape_or_fallback(this, codepoint, font_size)
+        class(pdf_context_core), intent(inout) :: this
+        integer, intent(in) :: codepoint
+        real(wp), intent(in) :: font_size
+        character(len=8) :: escape_seq
+        character(len=8) :: escaped_char
+        integer :: esc_len
+
+        call unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
+        if (len_trim(escape_seq) > 0) then
+            ! Ensure Helvetica font is active and emit octal escape directly
+            call switch_to_helvetica_font(this, font_size)
+            this%stream_data = this%stream_data // "(" // trim(escape_seq) // ") Tj" // new_line('a')
+        else
+            ! Fallback: switch to Helvetica and emit '?'
+            call switch_to_helvetica_font(this, font_size)
+            escaped_char = ''
+            esc_len = 0
+            call escape_pdf_string('?', escaped_char, esc_len)
+            this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+        end if
+    end subroutine emit_pdf_escape_or_fallback
 
     subroutine process_rotated_text_segments(this, text, font_size)
         !! Process text segments for rotated mixed font rendering
@@ -420,6 +436,23 @@ contains
         escape_seq = ""
         found = .false.
         
+        ! Map selected Latin-1 Supplement superscripts commonly used in labels
+        if (.not. found) then
+            select case(codepoint)
+            case(179)  ! U+00B3 SUPERSCRIPT THREE
+                escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
+                found = .true.
+            case(178)  ! U+00B2 SUPERSCRIPT TWO
+                escape_seq = "\\262"
+                found = .true.
+            case(185)  ! U+00B9 SUPERSCRIPT ONE
+                escape_seq = "\\271"
+                found = .true.
+            case default
+                found = .false.
+            end select
+        end if
+
         ! Try lowercase Greek
         if (.not. found) then
             call lookup_lowercase_greek(codepoint, escape_seq, found)

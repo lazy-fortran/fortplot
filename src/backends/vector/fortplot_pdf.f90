@@ -290,9 +290,17 @@ contains
             call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), px(i), py(i))
         end do
 
-        ! Draw filled quadrilateral
-        write(cmd, '(8(F0.3, 1X), "m l l l h f")') px(1), py(1), px(2), py(2), px(3), py(3), px(4), py(4)
-        call this%stream_writer%add_to_stream(trim(cmd))
+        ! Draw filled quadrilateral using explicit operators to avoid parser ambiguity
+        write(cmd, '(F0.3,1X,F0.3)') px(1), py(1)
+        call this%stream_writer%add_to_stream(trim(cmd)//' m')
+        write(cmd, '(F0.3,1X,F0.3)') px(2), py(2)
+        call this%stream_writer%add_to_stream(trim(cmd)//' l')
+        write(cmd, '(F0.3,1X,F0.3)') px(3), py(3)
+        call this%stream_writer%add_to_stream(trim(cmd)//' l')
+        write(cmd, '(F0.3,1X,F0.3)') px(4), py(4)
+        call this%stream_writer%add_to_stream(trim(cmd)//' l')
+        call this%stream_writer%add_to_stream('h')
+        call this%stream_writer%add_to_stream('f')
     end subroutine fill_quad_wrapper
 
     subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max)
