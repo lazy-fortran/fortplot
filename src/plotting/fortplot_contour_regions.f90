@@ -144,13 +144,14 @@ contains
         ny = size(y_grid)
         
         ! Process each grid cell
+        ! Note: z_grid is indexed as (ny, nx) i.e., (y, x)
         do j = 1, ny - 1
             do i = 1, nx - 1
-                ! Get corner values for current cell
-                corner_values(1) = z_grid(i, j)       ! Bottom-left
-                corner_values(2) = z_grid(i+1, j)     ! Bottom-right
-                corner_values(3) = z_grid(i+1, j+1)   ! Top-right
-                corner_values(4) = z_grid(i, j+1)     ! Top-left
+                ! Get corner values for current cell (y-major indexing)
+                corner_values(1) = z_grid(j    , i    )  ! Bottom-left
+                corner_values(2) = z_grid(j    , i + 1)  ! Bottom-right
+                corner_values(3) = z_grid(j + 1, i + 1)  ! Top-right
+                corner_values(4) = z_grid(j + 1, i    )  ! Top-left
                 
                 ! Calculate marching squares case
                 grid_case = calculate_marching_squares_case(corner_values, level_min, level_max)
