@@ -234,6 +234,19 @@ verify-artifacts: create_build_dirs
 	# A couple PNG size checks as non-empty proxy; \
 	check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000; \
 	check_png_size output/example/fortran/line_styles/line_styles.png 10000; \
+	# Colored contours should have many unique colors (not blank); \
+	for f in output/example/fortran/colored_contours/gaussian_default.png \
+	         output/example/fortran/colored_contours/saddle_plasma.png \
+	         output/example/fortran/colored_contours/ripple_inferno.png \
+	         output/example/fortran/colored_contours/ripple_coolwarm.png \
+	         output/example/fortran/colored_contours/ripple_jet.png; do \
+	  if [ -f "$${f}" ]; then \
+	    if command -v identify >/dev/null 2>&1; then c=$$(identify -format %k "$${f}" 2>/dev/null || echo 0); \
+	    elif command -v magick >/dev/null 2>&1; then c=$$(magick identify -format %k "$${f}" 2>/dev/null || echo 0); \
+	    else echo "Missing ImageMagick 'identify'" >&2; exit 2; fi; \
+	    echo "[colors] $$f => $$c"; [ "$${c}" -ge 16 ] || { echo "ERROR: $$f appears to have too few colors ($$c)" >&2; exit 1; }; \
+	  fi; \
+	done; \
 	# Symlog .txt should include scientific or power-of-ten notation lines; \
 	if grep -Eq "1\\.00E\+[0-9]{2}|10\^[0-9]+|1000|100\\.|10\\.0" output/example/fortran/scale_examples/symlog_scale.txt; then :; else echo "ERROR: symlog_scale.txt lacks expected tick formats" >&2; exit 1; fi; \
 	# Optional Ghostscript render sanity if available; \
