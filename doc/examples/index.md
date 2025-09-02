@@ -22,10 +22,10 @@ Using matplotlib-style format strings for quick plot styling.
 ## Advanced Features
 
 ### [Contour Demo](./contour_demo.html)
-Contour plots with customizable levels and colors.
+Line contour plots (level lines) and a mixed contour + line example.
 
 ### [Colored Contours](./colored_contours.html)
-Filled contour plots with colormaps.
+Filled (colored) contour plots with colormap comparisons.
 
 ### [Pcolormesh Demo](./pcolormesh_demo.html)
 Pseudocolor plots for 2D data visualization.
@@ -68,4 +68,4 @@ Creating animated plots and saving to video files.
 
 ---
 
-All examples are available in the [example/fortran/](https://github.com/krystophny/fortplotlib/tree/main/example/fortran) directory.
+All examples are available in the [example/fortran/](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran) directory.
