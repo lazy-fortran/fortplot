@@ -9,6 +9,7 @@ module fortplot_raster_axes
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, composite_bitmap_to_raster
+    use fortplot_scales, only: apply_scale_transform
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -17,6 +18,7 @@ module fortplot_raster_axes
     public :: compute_title_position
     public :: compute_non_overlapping_mask  ! Exposed for focused testing
     public :: compute_ylabel_x_pos, y_tick_label_right_edge_at_axis
+    public :: map_value_to_plot_x, map_value_to_plot_y
 
     ! Local spacing parameters for raster tick labels (pixels)
     ! X tick labels are positioned X_TICK_LABEL_PAD pixels below the tick end
@@ -30,6 +32,46 @@ module fortplot_raster_axes
     integer :: last_y_tick_max_width = 0
 
 contains
+
+    real(wp) function map_value_to_plot_x(value, data_min, data_max, plot_area, scale, symlog_threshold) result(px)
+        !! Map a data value to pixel X coordinate using axis scale
+        real(wp), intent(in) :: value, data_min, data_max
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp) :: v_t, min_t, max_t
+
+        min_t = apply_scale_transform(data_min, scale, symlog_threshold)
+        max_t = apply_scale_transform(data_max, scale, symlog_threshold)
+        v_t   = apply_scale_transform(value,    scale, symlog_threshold)
+
+        if (max_t > min_t) then
+            px = real(plot_area%left, wp) + (v_t - min_t) / (max_t - min_t) * real(plot_area%width, wp)
+        else
+            px = real(plot_area%left, wp) + 0.5_wp * real(plot_area%width, wp)
+        end if
+    end function map_value_to_plot_x
+
+    real(wp) function map_value_to_plot_y(value, data_min, data_max, plot_area, scale, symlog_threshold) result(py)
+        !! Map a data value to pixel Y coordinate using axis scale
+        !! Raster coordinates have Y increasing downward; account for that here.
+        real(wp), intent(in) :: value, data_min, data_max
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: scale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp) :: v_t, min_t, max_t
+
+        min_t = apply_scale_transform(data_min, scale, symlog_threshold)
+        max_t = apply_scale_transform(data_max, scale, symlog_threshold)
+        v_t   = apply_scale_transform(value,    scale, symlog_threshold)
+
+        if (max_t > min_t) then
+            py = real(plot_area%bottom + plot_area%height, wp) - &
+                 (v_t - min_t) / (max_t - min_t) * real(plot_area%height, wp)
+        else
+            py = real(plot_area%bottom, wp) + 0.5_wp * real(plot_area%height, wp)
+        end if
+    end function map_value_to_plot_y
 
     pure subroutine compute_non_overlapping_mask(centers, widths, min_gap, keep)
         !! Greedy selection to avoid horizontal label overlap
@@ -163,7 +205,7 @@ contains
 
             do i = 1, num_x_ticks
                 tick_x = x_tick_positions(i)
-                centers(i) = (tick_x - x_min) / (x_max - x_min) * real(plot_area%width, wp) + real(plot_area%left, wp)
+                centers(i) = map_value_to_plot_x(tick_x, x_min, x_max, plot_area, xscale, symlog_threshold)
                 tick_label = format_tick_label(tick_x, xscale)
                 call process_latex_in_text(trim(tick_label), processed_text, processed_len)
                 call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
@@ -232,8 +274,7 @@ contains
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
             px = plot_area%left
-            py = int(real(plot_area%bottom + plot_area%height, wp) - &
-                    (tick_y - y_min) / (y_max - y_min) * real(plot_area%height, wp))
+            py = int(map_value_to_plot_y(tick_y, y_min, y_max, plot_area, yscale, symlog_threshold))
             
             ! Draw tick mark
             dummy_pattern = 0.0_wp
