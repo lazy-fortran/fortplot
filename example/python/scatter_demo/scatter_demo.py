@@ -21,7 +21,7 @@ plt.ylabel('Y')
 plt.title('Basic Scatter Plot')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.savefig('output/example/python/scatter_demo/scatter_basic.png', dpi=100)
+plt.savefig('scatter_basic.png', dpi=100)
 plt.close()
 
 # Multiple scatter plots with different colors and sizes
@@ -48,7 +48,7 @@ plt.ylabel('Y')
 plt.title('Multiple Scatter Plots')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.savefig('output/example/python/scatter_demo/scatter_multi.png', dpi=100)
+plt.savefig('scatter_multi.png', dpi=100)
 plt.close()
 
 # Gaussian distribution scatter
@@ -68,7 +68,7 @@ plt.ylabel('Y')
 plt.title('Gaussian Distribution')
 plt.grid(True, alpha=0.3)
 plt.axis('equal')
-plt.savefig('output/example/python/scatter_demo/scatter_gaussian.png', dpi=100)
+plt.savefig('scatter_gaussian.png', dpi=100)
 plt.close()
 
 print("2D scatter plot demos complete!")

@@ -29,7 +29,7 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 ax.set_title('3D Scatter Plot')
 ax.legend()
-plt.savefig('output/example/python/scatter3d_demo/scatter3d_demo.png', dpi=100)
+plt.savefig('scatter3d_demo.png', dpi=100)
 plt.close()
 
 # Multiple scatter plots
@@ -50,7 +50,7 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 ax.set_title('Multiple 3D Scatter Plots')
 ax.legend()
-plt.savefig('output/example/python/scatter3d_demo/scatter3d_multi.png', dpi=100)
+plt.savefig('scatter3d_multi.png', dpi=100)
 plt.close()
 
 # Parametric curve with scatter points
@@ -76,7 +76,7 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 ax.set_title('Parametric Curve with Points')
 ax.legend()
-plt.savefig('output/example/python/scatter3d_demo/scatter3d_curve.png', dpi=100)
+plt.savefig('scatter3d_curve.png', dpi=100)
 plt.close()
 
 print("3D scatter plot demos complete!")
