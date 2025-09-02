@@ -34,14 +34,24 @@ jobs:
           compiler: gcc
           version: 13
           
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+          cache: 'pip'
+          cache-dependency-path: 'doc/requirements-doc.txt'
+
+      - name: Cache and install APT packages (ffmpeg)
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ffmpeg
+          version: 1.1
+
       - name: Install dependencies
         run: |
-          pip install ford
-          
-          # Install ffmpeg for animation generation
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          
+          # Python packages (cached via setup-python)
+          pip install -r doc/requirements-doc.txt
+
           # Install fpm (Fortran Package Manager) - same version as CI
           wget https://github.com/fortran-lang/fpm/releases/download/v0.12.0/fpm-0.12.0-linux-x86_64-gcc-12
           chmod +x fpm-0.12.0-linux-x86_64-gcc-12
