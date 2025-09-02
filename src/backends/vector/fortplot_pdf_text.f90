@@ -248,6 +248,8 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=256) :: text_cmd
+        character(len=:), allocatable :: escaped_text
+        integer :: escaped_len
         
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
@@ -261,10 +263,14 @@ contains
             this%fonts%get_helvetica_obj(), PDF_TITLE_SIZE
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
+        ! Prepare escaped text
+        allocate(character(len=len(text)*6) :: escaped_text)
+        call escape_pdf_string(text, escaped_text, escaped_len)
+
         ! Position and show text using absolute positioning
         write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        this%stream_data = this%stream_data // "(" // text // ") Tj" // new_line('a')
+        this%stream_data = this%stream_data // "(" // escaped_text(1:escaped_len) // ") Tj" // new_line('a')
         
         ! Reset text rendering mode
         this%stream_data = this%stream_data // "0 Tr" // new_line('a')
