@@ -202,10 +202,20 @@ class FortplotModule:
         """Save the current figure to a file."""
         self._send_command("SAVEFIG")
         self._send_command(filename)
-        
-        # Give the bridge process time to write the file
+        # Wait briefly for the bridge process to write the file.
+        # Streamplot and other heavy renders can take longer than a fixed 100 ms.
+        # Poll up to ~2s for the file to appear and be non-empty.
         import time
-        time.sleep(0.1)
+        from pathlib import Path
+        target = Path(filename)
+        deadline = time.time() + 2.0
+        # First, wait for the file to exist
+        while time.time() < deadline and not target.exists():
+            time.sleep(0.02)
+        # Then, wait for it to be non-empty (size > 0)
+        if target.exists():
+            while time.time() < deadline and target.stat().st_size == 0:
+                time.sleep(0.02)
     
     def show_figure(self, blocking=False):
         """Show the current figure with optional blocking."""
