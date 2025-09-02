@@ -409,7 +409,8 @@ contains
                 title_x = plot_area_left + plot_area_width * 0.5_wp - &
                          real(len_trim(title), wp) * 3.5_wp
                 title_y = plot_area_bottom + plot_area_height + 20.0_wp
-                call draw_pdf_text_bold(ctx, title_x, title_y, trim(title))
+                ! Use mixed-font text to support Unicode/Symbol in titles
+                call draw_mixed_font_text(ctx, title_x, title_y, trim(title))
             end if
         end if
 

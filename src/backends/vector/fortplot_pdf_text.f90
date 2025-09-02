@@ -5,6 +5,7 @@ module fortplot_pdf_text
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core, PDF_FONT_SIZE, PDF_LABEL_SIZE, &
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
+    use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     implicit none
     private
     
@@ -152,38 +153,65 @@ contains
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
         logical, intent(inout) :: in_symbol_font
-        integer :: i, codepoint
-        character(len=4) :: utf_char
+        integer :: i, codepoint, char_len
         character(len=8) :: symbol_char
         character(len=8) :: escaped_char
         integer :: esc_len
-        
-        do i = 1, len_trim(text)
-            ! Get Unicode codepoint for character
-            codepoint = iachar(text(i:i))
-            
-            ! Check if character needs Symbol font
-            call unicode_to_symbol_char(codepoint, symbol_char)
-            
-            if (len_trim(symbol_char) > 0) then
-                ! Switch to Symbol font if needed
-                if (.not. in_symbol_font) then
-                    call switch_to_symbol_font(this)
-                    in_symbol_font = .true.
+        logical :: is_valid
+
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+
+            if (char_len <= 1) then
+                ! ASCII fast-path
+                codepoint = ichar(text(i:i))
+                call unicode_to_symbol_char(codepoint, symbol_char)
+                if (len_trim(symbol_char) > 0) then
+                    if (.not. in_symbol_font) then
+                        call switch_to_symbol_font(this)
+                        in_symbol_font = .true.
+                    end if
+                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                else
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this)
+                        in_symbol_font = .false.
+                    end if
+                    escaped_char = ''
+                    esc_len = 0
+                    call escape_pdf_string(text(i:i), escaped_char, esc_len)
+                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
                 end if
-                ! Output symbol character
-                this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                i = i + 1
             else
-                ! Switch to Helvetica if needed
-                if (in_symbol_font) then
-                    call switch_to_helvetica_font(this)
-                    in_symbol_font = .false.
+                ! Multi-byte UTF-8: validate and decode
+                call check_utf8_sequence(text, i, is_valid, char_len)
+                if (is_valid .and. i + char_len - 1 <= len_trim(text)) then
+                    codepoint = utf8_to_codepoint(text, i)
+                else
+                    codepoint = 0
                 end if
-                ! Output regular character with PDF escaping for (, ), and \
-                escaped_char = ''
-                esc_len = 0
-                call escape_pdf_string(text(i:i), escaped_char, esc_len)
-                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+
+                call unicode_to_symbol_char(codepoint, symbol_char)
+                if (len_trim(symbol_char) > 0) then
+                    if (.not. in_symbol_font) then
+                        call switch_to_symbol_font(this)
+                        in_symbol_font = .true.
+                    end if
+                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
+                else
+                    ! Fallback: switch to Helvetica and emit '?'
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this)
+                        in_symbol_font = .false.
+                    end if
+                    escaped_char = ''
+                    esc_len = 0
+                    call escape_pdf_string('?', escaped_char, esc_len)
+                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+                end if
+                i = i + max(1, char_len)
             end if
         end do
     end subroutine process_text_segments
