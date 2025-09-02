@@ -182,6 +182,62 @@ test-docs: create_build_dirs
 test-functional: test validate-output test-docs
 	@echo "=== ALL FUNCTIONAL TESTS PASSED ==="
 
+# Strict artifact verification for rendering-related changes
+.PHONY: verify-artifacts
+verify-artifacts: create_build_dirs
+	@echo "Verifying example artifacts (PDF/PNG/txt) with strict checks..."
+	@set -e; \
+	# Run key examples
+	fpm run --example scale_examples >/dev/null; \
+	fpm run --example pcolormesh_demo >/dev/null; \
+	fpm run --example marker_demo >/dev/null; \
+	fpm run --example line_styles >/dev/null; \
+
+	# Helper: check PDF has no pdfimages syntax errors
+	check_pdf_ok() { \
+	  local pdf="$1"; \
+	  if ! command -v pdfimages >/dev/null 2>&1; then echo "Missing 'pdfimages' (poppler-utils)" >&2; exit 2; fi; \
+	  local out; out=$(pdfimages -list "$$pdf" 2>&1 || true); \
+	  echo "[pdfimages] $$pdf"; echo "$$out" | head -n 3; \
+	  echo "$$out" | grep -qi 'Syntax Error' && { echo "ERROR: PDF syntax errors in $$pdf" >&2; exit 1; }; \
+	}; \
+
+	# Helper: check pdftotext extracts expected substrings (basic sanity)
+	check_pdftotext_has() { \
+	  local pdf="$1"; shift; \
+	  if ! command -v pdftotext >/dev/null 2>&1; then echo "Missing 'pdftotext' (poppler-utils)" >&2; exit 2; fi; \
+	  local txt; txt=$(pdftotext "$$pdf" - 2>/dev/null || true); \
+	  for needle in "$$@"; do \
+	    echo "[pdftotext] asserting '$$needle' in $${pdf}"; \
+	    echo "$$txt" | grep -q "$$needle" || { echo "ERROR: Missing '$$needle' in $$pdf" >&2; exit 1; }; \
+	  done; \
+	}; \
+
+	# Helper: PNG minimal size sanity
+	check_png_size() { \
+	  local png="$1"; local min=$${2:-4000}; \
+	  sz=$(stat -c '%s' "$$png"); \
+	  echo "[png] $$png size=$$sz"; \
+	  [ "$$sz" -ge "$$min" ] || { echo "ERROR: $$png too small (size=$$sz)" >&2; exit 1; }; \
+	}; \
+
+	# Scale examples: unicode superscript 3 must appear; labels must exist
+	check_pdf_ok output/example/fortran/scale_examples/symlog_scale.pdf; \
+	check_pdftotext_has output/example/fortran/scale_examples/symlog_scale.pdf 'x³' 'Symlog' 'x'; \
+	# Pcolormesh PDFs must have no syntax errors
+	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf; \
+	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; \
+	# A couple PNG size checks as non-empty proxy
+	check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000; \
+	check_png_size output/example/fortran/line_styles/line_styles.png 10000; \
+	# Tick label corruption must not appear in symlog .txt
+	! grep -q '01000\+03' output/example/fortran/scale_examples/symlog_scale.txt || { echo 'ERROR: Corrupt symlog tick label in symlog_scale.txt' >&2; exit 1; }; \
+	# Optional Ghostscript render sanity if available
+	if command -v gs >/dev/null 2>&1; then \
+	  gs -o /dev/null -sDEVICE=nullpage output/example/fortran/scale_examples/symlog_scale.pdf >/dev/null || { echo 'ERROR: Ghostscript render failed for symlog_scale.pdf' >&2; exit 1; }; \
+	fi; \
+	echo "Artifact verification passed."
+
 # Create build directories for examples
 create_build_dirs:
 	@mkdir -p output/example/fortran/basic_plots

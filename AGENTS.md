@@ -28,9 +28,15 @@
 - Run subsets: `fpm test --target <name>`.
 - Env controls: `FORTPLOT_SUPPRESS_WARNINGS=1 make test` (quiet), `FORTPLOT_FORCE_WARNINGS=1 make test`.
 
+## Rendering Evidence & Gates
+- Required for any change affecting plots, ticks, labels, or backends.
+- Run: `make verify-artifacts` (runs key examples and strict PDF/PNG/text checks).
+- Evidence in PRs: include the exact commands run, artifact paths, and short excerpts from `pdftotext`/`.txt` (e.g., `x³ - 50x` visible; no malformed labels like `01000+03`).
+- Do not close rendering issues or merge PRs without passing `make verify-artifacts` and attaching evidence.
+
 ## Commit & Pull Request Guidelines
 - Commits: Conventional Commits style (`feat:`, `fix:`, `docs:`, `refactor:`, `cleanup:`). Example: `fix: resolve pcolormesh dimension validation (#600)`.
-- PRs: concise description, link issues, list user-facing changes, include before/after images for rendering changes, and note test targets run (e.g., `test-ci`).
+- PRs: concise description, link issues, list user-facing changes, include before/after images for rendering changes, and note test targets run (e.g., `test-ci`) plus `make verify-artifacts` output snippets.
 
 ## Security & Configuration Tips
 - Animations require `ffmpeg` (optional). Verify with `ffprobe` if needed.
