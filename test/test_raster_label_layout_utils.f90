@@ -53,9 +53,11 @@ contains
         y_tick_max_width = 40
 
         x_pos = compute_ylabel_x_pos(area, rotated_text_width, y_tick_max_width)
+        ! Expect the RIGHT edge of the rotated ylabel to align at the
+        ! computed clearance from the y-tick labels, hence subtract the
+        ! full rotated_text_width from the left edge calculation.
         expected = area%left - (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + &
-                y_tick_max_width + YLABEL_EXTRA_GAP) - &
-                rotated_text_width / 2
+                y_tick_max_width + YLABEL_EXTRA_GAP) - rotated_text_width
         if (x_pos /= expected) then
             print *, 'FAIL: ylabel x position mismatch:', x_pos, expected
             stop 1
