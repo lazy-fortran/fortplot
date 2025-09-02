@@ -47,24 +47,35 @@ else
     test_result "Documentation build directory" "FAIL" "build/doc not found - run 'make doc' first"
 fi
 
-# Test 2: Check if media staging directory exists under page/
+# Test 2: Check if media staging directories exist (both link roots)
 if [ -d "build/doc/page/media/examples" ]; then
-    test_result "Media staging directory" "PASS" "build/doc/page/media/examples exists"
+    test_result "Media staging directory (page)" "PASS" "build/doc/page/media/examples exists"
 else
-    test_result "Media staging directory" "CRITICAL" "build/doc/page/media/examples missing - media links will be broken"
+    test_result "Media staging directory (page)" "CRITICAL" "build/doc/page/media/examples missing - some links may break"
+fi
+if [ -d "build/doc/media/examples" ]; then
+    test_result "Media staging directory (root)" "PASS" "build/doc/media/examples exists"
+else
+    test_result "Media staging directory (root)" "CRITICAL" "build/doc/media/examples missing - some links may break"
 fi
 
 # Test 2b: Verify referenced PNGs exist at staged location
 missing_pngs=0
 # Extract markdown PNG links like ![...](../../media/examples/...png)
-refs=$(grep -rho -E "\(\.\.\/\.\.\/media\/examples\/[^)]+\.png\)" doc/examples 2>/dev/null | sort -u || true)
+refs=$(grep -rho -E "\((\.\.\/)?\.\.\/media\/examples\/[^)]+\.png\)" doc/examples 2>/dev/null | sort -u || true)
 for ref in $refs; do
     # Strip surrounding parentheses
     ref="${ref#(}"
     ref="${ref%)}"
     # Compute staged target path
-    path=${ref#../../}
-    target="build/doc/page/${path}"
+    if [[ "$ref" == ../../* ]]; then
+        base="build/doc"
+        path=${ref#../../}
+    else
+        base="build/doc/page"
+        path=${ref#../}
+    fi
+    target="$base/${path}"
     if [ ! -f "$target" ]; then
         test_result "PNG reference missing" "CRITICAL" "$target not found (referenced in docs)"
         missing_pngs=$((missing_pngs+1))
