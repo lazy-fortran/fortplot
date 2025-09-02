@@ -280,7 +280,7 @@ contains
         z_min = minval(plot_data%z_grid)
         z_max = maxval(plot_data%z_grid)
         
-        num_levels = 15  ! Increased from 7 for smoother contours
+        num_levels = 20  ! Increased to 20 for even smoother contours
         allocate(plot_data%contour_levels(num_levels))
         
         do i = 1, num_levels
