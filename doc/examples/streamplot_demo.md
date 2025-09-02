@@ -3,6 +3,8 @@ title: Streamplot Demo
 
 # Streamplot Demo
 
+Source: [example/fortran/streamplot_demo/streamplot_demo.f90](../../example/fortran/streamplot_demo/streamplot_demo.f90)
+
 This example shows vector field visualization using streamlines.
 
 ## Files
@@ -32,4 +34,4 @@ make example ARGS="streamplot_demo"
 
 ## Output Example
 
-![Streamplot Demo](../../media/examples/streamplot_demo/streamplot_demo.png)
+![Streamplot Demo](../../output/example/fortran/streamplot_demo/streamplot_demo.png)

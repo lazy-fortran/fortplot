@@ -3,6 +3,8 @@ title: Pcolormesh Demo
 
 # Pcolormesh Demo
 
+Source: [example/fortran/pcolormesh_demo/pcolormesh_demo.f90](../../example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
+
 This example demonstrates pseudocolor plots for efficient 2D data visualization.
 
 ## Files
@@ -44,7 +46,7 @@ make example ARGS="pcolormesh_demo"
 
 ### Basic Linear Gradient
 
-![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
+![pcolormesh_basic.png](../../output/example/fortran/pcolormesh_demo/pcolormesh_basic.png)
 
 ASCII output preview:
 ```
@@ -65,13 +67,13 @@ ASCII output preview:
 Y coordinate
 ```
 
-> **Full ASCII Output**: [Download pcolormesh_basic.txt](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download pcolormesh_basic.txt](../../output/example/fortran/pcolormesh_demo/pcolormesh_basic.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
+[Download PDF](../../output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf)
 
 ### Sinusoidal Pattern
 
-![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
+![pcolormesh_sinusoidal.png](../../output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.png)
 
 ASCII output preview:
 ```
@@ -92,13 +94,13 @@ ASCII output preview:
 Y coordinate
 ```
 
-> **Full ASCII Output**: [Download pcolormesh_sinusoidal.txt](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download pcolormesh_sinusoidal.txt](../../output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
+[Download PDF](../../output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
 
 ### Radial Pattern with Plasma Colormap
 
-![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
+![pcolormesh_plasma.png](../../output/example/fortran/pcolormesh_demo/pcolormesh_plasma.png)
 
 ASCII output preview:
 ```
@@ -119,6 +121,6 @@ ASCII output preview:
 Y coordinate
 ```
 
-> **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../output/example/fortran/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_plasma.pdf)
+[Download PDF](../../output/example/fortran/pcolormesh_demo/pcolormesh_plasma.pdf)

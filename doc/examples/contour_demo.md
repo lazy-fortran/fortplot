@@ -3,6 +3,8 @@ title: Contour Demo
 
 # Contour Demo
 
+Source: [example/fortran/contour_demo/contour_demo.f90](../../example/fortran/contour_demo/contour_demo.f90)
+
 This example demonstrates contour plotting capabilities, including basic contours, custom levels, and mixing contour plots with line plots.
 
 ## Files
@@ -28,7 +30,7 @@ make example ARGS="contour_demo"
 
 ### Contour Gaussian
 
-![contour_gaussian.png](../../media/examples/contour_demo/contour_gaussian.png)
+![contour_gaussian.png](../../output/example/fortran/contour_demo/contour_gaussian.png)
 
 ASCII output preview:
 ```
@@ -49,13 +51,13 @@ ASCII output preview:
 y
 ```
 
-> **Full ASCII Output**: [Download contour_gaussian.txt](../../media/examples/contour_demo/contour_gaussian.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download contour_gaussian.txt](../../output/example/fortran/contour_demo/contour_gaussian.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/contour_demo/contour_gaussian.pdf)
+[Download PDF](../../output/example/fortran/contour_demo/contour_gaussian.pdf)
 
 ### Mixed Plot
 
-![mixed_plot.png](../../media/examples/contour_demo/mixed_plot.png)
+![mixed_plot.png](../../output/example/fortran/contour_demo/mixed_plot.png)
 
 ASCII output preview:
 ```
@@ -76,7 +78,7 @@ ASCII output preview:
 y
 ```
 
-> **Full ASCII Output**: [Download mixed_plot.txt](../../media/examples/contour_demo/mixed_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download mixed_plot.txt](../../output/example/fortran/contour_demo/mixed_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/contour_demo/mixed_plot.pdf)
+[Download PDF](../../output/example/fortran/contour_demo/mixed_plot.pdf)
 

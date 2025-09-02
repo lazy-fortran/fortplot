@@ -3,6 +3,8 @@ title: Ascii Heatmap
 
 # ASCII Heatmap
 
+Source: [example/fortran/ascii_heatmap/ascii_heatmap.f90](../../example/fortran/ascii_heatmap/ascii_heatmap.f90)
+
 This example demonstrates terminal-based heatmap visualization using ASCII characters.
 
 ## Files

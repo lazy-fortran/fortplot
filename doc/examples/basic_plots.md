@@ -3,6 +3,8 @@ title: Basic Plots
 
 # Basic Plots
 
+Source: [example/fortran/basic_plots/basic_plots.f90](../../example/fortran/basic_plots/basic_plots.f90)
+
 This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API and the object-oriented interface.
 
 ## Files
@@ -29,7 +31,7 @@ make example ARGS="basic_plots"
 
 ### Simple Plot
 
-![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)
+![simple_plot.png](../../output/example/fortran/basic_plots/simple_plot.png)
 
 ASCII output preview:
 ```
@@ -50,13 +52,13 @@ ASCII output preview:
 sin(x)
 ```
 
-> **Full ASCII Output**: [Download simple_plot.txt](../../media/examples/basic_plots/simple_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download simple_plot.txt](../../output/example/fortran/basic_plots/simple_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)
+[Download PDF](../../output/example/fortran/basic_plots/simple_plot.pdf)
 
 ### Multi Line
 
-![multi_line.png](../../media/examples/basic_plots/multi_line.png)
+![multi_line.png](../../output/example/fortran/basic_plots/multi_line.png)
 
 ASCII output preview:
 ```
@@ -77,6 +79,6 @@ ASCII output preview:
 y
 ```
 
-> **Full ASCII Output**: [Download multi_line.txt](../../media/examples/basic_plots/multi_line.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download multi_line.txt](../../output/example/fortran/basic_plots/multi_line.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/basic_plots/multi_line.pdf)
+[Download PDF](../../output/example/fortran/basic_plots/multi_line.pdf)
