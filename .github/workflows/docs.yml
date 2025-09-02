@@ -41,11 +41,16 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'doc/requirements-doc.txt'
 
-      - name: Cache and install APT packages (ffmpeg + deps)
+      - name: Cache and install APT packages (ffmpeg)
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: ffmpeg libblas3
+          packages: ffmpeg
           version: 1.1
+
+      - name: Install BLAS runtime (libblas3)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libblas3
 
       - name: Install dependencies
         run: |
