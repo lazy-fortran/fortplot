@@ -138,6 +138,7 @@ contains
         
         ! Color properties
         self%plots(plot_idx)%use_color_levels = .true.
+        self%plots(plot_idx)%fill_contours = .true.
         
         if (present(colormap)) then
             self%plots(plot_idx)%colormap = colormap

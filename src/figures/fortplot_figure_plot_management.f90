@@ -216,6 +216,7 @@ contains
         end if
         
         plots(plot_count)%use_color_levels = .true.
+        plots(plot_count)%fill_contours = .true.
     end subroutine add_colored_contour_plot_data
     
     subroutine add_pcolormesh_plot_data(plots, plot_count, max_plots, &

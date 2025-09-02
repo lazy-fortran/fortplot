@@ -41,10 +41,9 @@ contains
         
         ! grid sizes available via plot_data if needed
         
-        ! If colored (filled) contours requested, render true filled regions
-        ! using polygon decomposition between contour levels. This approximates
-        ! triangles via quads to reuse the existing backend fill_quad interface.
-        if (plot_data%use_color_levels) then
+        ! If colored contours requested and fill enabled, render filled regions
+        ! using polygon decomposition between contour levels.
+        if (plot_data%use_color_levels .and. plot_data%fill_contours) then
             call render_filled_contour_regions(backend, plot_data, z_min, z_max)
         end if
 
@@ -151,11 +150,21 @@ contains
         real(wp), intent(in) :: level_min, level_max, z_min, z_max
         character(len=*), intent(in) :: cmap
         real(wp), intent(out) :: color(3)
-        real(wp) :: mid
+        real(wp) :: mid, t, tq, zq
+        integer, parameter :: NQ = 32  ! quantization steps to limit unique colors
         mid = 0.5_wp * (level_min + level_max)
         ! Clamp mid into global z-range for safe colormap lookup
         mid = max(z_min, min(z_max, mid))
-        call colormap_value_to_color(mid, z_min, z_max, cmap, color)
+        ! Quantize normalized value to reduce excessive unique colors
+        if (z_max > z_min) then
+            t = (mid - z_min) / (z_max - z_min)
+            tq = nint(t * real(NQ, wp)) / real(NQ, wp)
+            tq = max(0.0_wp, min(1.0_wp, tq))
+            zq = z_min + tq * (z_max - z_min)
+        else
+            zq = mid
+        end if
+        call colormap_value_to_color(zq, z_min, z_max, cmap, color)
     end subroutine compute_region_color
 
     subroutine fill_polygon_with_quads(backend, poly)

@@ -54,6 +54,7 @@ module fortplot_plot_data
         real(wp), allocatable :: contour_levels(:)
         ! Color contour properties
         logical :: use_color_levels = .false.
+        logical :: fill_contours = .false.
         character(len=20) :: colormap = 'crest'
         logical :: show_colorbar = .true.
         ! Pcolormesh data
