@@ -60,7 +60,8 @@ jobs:
           
           # Build and run special examples (including animation)
           chmod +x scripts/compile_special_examples.sh
-          ./scripts/compile_special_examples.sh || true
+          # Do not swallow failures here; if animation fails, we want CI to fail
+          ./scripts/compile_special_examples.sh
           
           # Copy generated outputs to media directory (preserving structure)
           for dir in output/example/fortran/*/; do
@@ -82,6 +83,21 @@ jobs:
           make doc
           
           # Documentation consolidated to example/fortran/*/README.md files
+
+      - name: Validate docs media (no silent failures)
+        run: |
+          set -euo pipefail
+          # Basic structure check
+          bash scripts/validate_github_pages_images.sh
+          # Animation must exist at page-relative media path used by FORD pages
+          test -f build/doc/page/media/examples/animation/animation.mp4 || {
+            echo "CRITICAL: animation.mp4 missing under build/doc/page/media/examples/animation/";
+            echo "Listing nearby files for debugging:";
+            find build/doc -maxdepth 4 -type f -name "animation.mp4" -printf "%p\n" || true;
+            echo "Listing output/example tree:";
+            find output/example/fortran -maxdepth 2 -type f -printf "%p\n" || true;
+            exit 1;
+          }
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
