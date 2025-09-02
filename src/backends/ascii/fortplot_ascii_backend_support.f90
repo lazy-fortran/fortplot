@@ -31,10 +31,8 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        ! Suppress unused parameter warnings
-        if (width < 0 .or. height < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference unused parameters without unreachable branches
+        associate(unused_w => width, unused_h => height); end associate
         
         ! ASCII backend doesn't provide PNG data
         allocate(png_data(0))
@@ -45,10 +43,8 @@ contains
         !! Prepare 3D data for ASCII backend (no-op - ASCII doesn't use 3D data)
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! Suppress unused parameter warnings
-        if (size(plots) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference unused parameters without unreachable branches
+        associate(unused_n => size(plots)); end associate
         
         ! ASCII backend doesn't need 3D data preparation - no-op
     end subroutine prepare_ascii_3d_data
@@ -57,10 +53,8 @@ contains
         !! Render Y-axis label for ASCII backend (no-op - handled elsewhere)
         character(len=*), intent(in) :: ylabel
         
-        ! Suppress unused parameter warnings
-        if (len_trim(ylabel) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference unused parameter without unreachable branch
+        associate(unused_l => len_trim(ylabel)); end associate
         
         ! ASCII backend handles Y-axis labels differently - no-op
     end subroutine render_ascii_ylabel
@@ -69,11 +63,9 @@ contains
         !! Render axes for ASCII context (stub implementation)
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
         
-        if (present(title_text) .and. present(xlabel_text) .and. present(ylabel_text)) then
-            if (len_trim(title_text) < 0 .or. len_trim(xlabel_text) < 0 .or. len_trim(ylabel_text) < 0) then
-                ! This condition is never true, but suppresses unused parameter warnings
-            end if
-        end if
+        if (present(title_text)) then; associate(unused_lt => len_trim(title_text)); end associate; end if
+        if (present(xlabel_text)) then; associate(unused_lx => len_trim(xlabel_text)); end associate; end if
+        if (present(ylabel_text)) then; associate(unused_ly => len_trim(ylabel_text)); end associate; end if
         
         ! ASCII axes are rendered as part of draw_axes_and_labels_backend
         ! This is a stub to satisfy the interface
