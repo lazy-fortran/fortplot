@@ -67,6 +67,8 @@ program fortplot_python_bridge
             call process_contour_command(.false.)
         case ('CONTOURF')
             call process_contour_command(.true.)
+        case ('STREAMPLOT')
+            call process_streamplot_command()
         case ('TITLE')
             call process_title_command()
         case ('XLABEL')
