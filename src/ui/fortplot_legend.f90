@@ -407,6 +407,10 @@ contains
         real(wp) :: y, dy
         integer :: num_lines, i
         
+        ! Ensure legend background is rendered with solid style and white fill
+        call backend%set_line_style('-')
+        call backend%color(1.0_wp, 1.0_wp, 1.0_wp)
+
         num_lines = 50  ! Number of horizontal lines to fill the box
         dy = abs(y1 - y2) / real(num_lines, wp)
         
@@ -425,6 +429,10 @@ contains
         if (backend%width > 80 .or. backend%height > 24) then
             call backend%set_line_width(0.5_wp)  ! Thin border for PNG/PDF
         end if
+        ! Border must be solid regardless of prior plot line style
+        call backend%set_line_style('-')
+        ! Ensure border color is black
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
         
         ! Draw rectangle border
         call backend%line(x1, y1, x2, y1)  ! Top
