@@ -115,9 +115,7 @@ contains
             call backend%color(fill_color(1), fill_color(2), fill_color(3))
 
             if (allocated(regions(i)%boundaries)) then
-                do j = 1, size(regions(i)%boundaries)
-                    call fill_polygon_with_quads(backend, regions(i)%boundaries(j))
-                end do
+                call fill_region_even_odd(backend, regions(i)%boundaries)
             end if
         end do
 
@@ -172,36 +170,135 @@ contains
         call colormap_value_to_color(zq, z_min, z_max, cmap, color)
     end subroutine compute_region_color
 
-    subroutine fill_polygon_with_quads(backend, poly)
-        !! Approximate polygon fill by triangle fan rendered as quads
+    subroutine fill_region_even_odd(backend, polys)
+        !! Fill a set of closed rings using even-odd rule via scanline slabs
         class(plot_context), intent(inout) :: backend
-        type(contour_polygon_t), intent(in) :: poly
+        type(contour_polygon_t), intent(in) :: polys(:)
+        real(wp), allocatable :: yvals(:), xs(:)
+        integer :: i, j, n, m, k, p
+        real(wp) :: y0, y1, ym
         real(wp) :: xq(4), yq(4)
-        integer :: n, k
-        logical :: closed
 
-        if (.not. allocated(poly%x) .or. .not. allocated(poly%y)) return
-        n = min(size(poly%x), size(poly%y))
-        if (n < 3) return
+        ! Collect unique Y coordinates from all rings
+        call collect_unique_y(polys, yvals)
+        m = size(yvals)
+        if (m < 2) return
 
-        ! If polygon is closed (last point repeats first), ignore final duplicate
-        closed = .false.
-        if (poly%is_closed) then
-            if (abs(poly%x(n) - poly%x(1)) < 1.0e-12_wp .and. &
-                abs(poly%y(n) - poly%y(1)) < 1.0e-12_wp) then
-                closed = .true.
-            end if
-        end if
+        do k = 1, m-1
+            y0 = yvals(k)
+            y1 = yvals(k+1)
+            if (y1 <= y0) cycle
+            ym = 0.5_wp*(y0 + y1)
 
-        if (closed) n = n - 1
+            ! Intersections with all ring edges at y = ym
+            call collect_x_intersections(polys, ym, xs)
+            n = size(xs)
+            if (n < 2) cycle
 
-        ! Triangle fan around first vertex -> draw as degenerate quads
-        do k = 2, n - 1
-            xq = [ poly%x(1), poly%x(k), poly%x(k+1), poly%x(k+1) ]
-            yq = [ poly%y(1), poly%y(k), poly%y(k+1), poly%y(k+1) ]
-            call backend%fill_quad(xq, yq)
+            ! Sort and fill between pairs (even-odd rule)
+            call sort_real(xs)
+            do p = 1, n-1, 2
+                if (p+1 > n) exit
+                xq = [ xs(p), xs(p+1), xs(p+1), xs(p) ]
+                yq = [ y0,    y0,     y1,     y1    ]
+                call backend%fill_quad(xq, yq)
+            end do
+            if (allocated(xs)) deallocate(xs)
         end do
-    end subroutine fill_polygon_with_quads
+
+        if (allocated(yvals)) deallocate(yvals)
+
+    contains
+
+        subroutine collect_unique_y(polys, yvals)
+            type(contour_polygon_t), intent(in) :: polys(:)
+            real(wp), allocatable, intent(out) :: yvals(:)
+            real(wp), allocatable :: tmp(:)
+            integer :: i, n, t, s
+            s = 0
+            allocate(tmp(0))
+            do i = 1, size(polys)
+                if (.not. allocated(polys(i)%y)) cycle
+                n = size(polys(i)%y)
+                if (n == 0) cycle
+                do t = 1, n
+                    call push_unique(tmp, polys(i)%y(t))
+                end do
+            end do
+            call sort_real(tmp)
+            call move_alloc(tmp, yvals)
+        end subroutine collect_unique_y
+
+        subroutine push_unique(arr, v)
+            real(wp), allocatable, intent(inout) :: arr(:)
+            real(wp), intent(in) :: v
+            real(wp), allocatable :: tmp(:)
+            integer :: n
+            n = size(arr)
+            if (n == 0) then
+                allocate(arr(1)); arr(1) = v; return
+            end if
+            if (any(abs(arr - v) <= 1.0e-12_wp)) return
+            allocate(tmp(n+1))
+            if (n > 0) tmp(1:n) = arr
+            tmp(n+1) = v
+            call move_alloc(tmp, arr)
+        end subroutine push_unique
+
+        subroutine collect_x_intersections(polys, ym, xs)
+            type(contour_polygon_t), intent(in) :: polys(:)
+            real(wp), intent(in) :: ym
+            real(wp), allocatable, intent(out) :: xs(:)
+            real(wp), allocatable :: tmp(:)
+            integer :: i, n, a, b
+            real(wp) :: x1, y1, x2, y2, t, xi
+            allocate(tmp(0))
+            do i = 1, size(polys)
+                if (.not. allocated(polys(i)%x) .or. .not. allocated(polys(i)%y)) cycle
+                n = min(size(polys(i)%x), size(polys(i)%y))
+                if (n < 2) cycle
+                do a = 1, n
+                    b = merge(1, a+1, a==n)
+                    x1 = polys(i)%x(a); y1 = polys(i)%y(a)
+                    x2 = polys(i)%x(b); y2 = polys(i)%y(b)
+                    if (abs(y2 - y1) <= 1.0e-12_wp) cycle  ! horizontal edge; skip
+                    ! Half-open interval: include lower end, exclude upper to avoid double count
+                    if ((y1 <= ym .and. ym < y2) .or. (y2 <= ym .and. ym < y1)) then
+                        t = (ym - y1) / (y2 - y1)
+                        xi = x1 + t * (x2 - x1)
+                        call push_x(tmp, xi)
+                    end if
+                end do
+            end do
+            call move_alloc(tmp, xs)
+        end subroutine collect_x_intersections
+
+        subroutine push_x(arr, v)
+            real(wp), allocatable, intent(inout) :: arr(:)
+            real(wp), intent(in) :: v
+            real(wp), allocatable :: tmp(:)
+            integer :: n
+            n = size(arr)
+            allocate(tmp(n+1))
+            if (n > 0) tmp(1:n) = arr
+            tmp(n+1) = v
+            call move_alloc(tmp, arr)
+        end subroutine push_x
+
+        subroutine sort_real(a)
+            real(wp), intent(inout) :: a(:)
+            integer :: i, j
+            real(wp) :: tmp
+            do i = 1, size(a)-1
+                do j = i+1, size(a)
+                    if (a(j) < a(i)) then
+                        tmp = a(i); a(i) = a(j); a(j) = tmp
+                    end if
+                end do
+            end do
+        end subroutine sort_real
+
+    end subroutine fill_region_even_odd
 
     subroutine render_default_contour_levels(backend, plot_data, z_min, z_max, &
                                            xscale, yscale, symlog_threshold, &
