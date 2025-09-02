@@ -41,7 +41,13 @@ contains
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)
         
-        ! Render contour levels
+        ! If colored (filled) contours requested, render a banded fill first
+        if (plot_data%use_color_levels) then
+            call render_filled_contour_cells(backend, plot_data, z_min, z_max, &
+                                            xscale, yscale, symlog_threshold)
+        end if
+
+        ! Render contour levels (lines)
         if (allocated(plot_data%contour_levels)) then
             nlev = size(plot_data%contour_levels)
             do i = 1, nlev
@@ -68,6 +74,49 @@ contains
         end if
         
     end subroutine render_contour_plot
+
+    subroutine render_filled_contour_cells(backend, plot_data, z_min, z_max, &
+                                           xscale, yscale, symlog_threshold)
+        !! Render cell-based filled contours as a robust fallback for contourf
+        !! Uses the average of cell corner values mapped through the colormap.
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        real(wp), intent(in) :: z_min, z_max
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+
+        integer :: nx, ny, i, j
+        real(wp) :: z_avg
+        real(wp), dimension(3) :: color
+        real(wp) :: x_quad(4), y_quad(4)
+
+        nx = size(plot_data%x_grid)
+        ny = size(plot_data%y_grid)
+
+        if (nx < 2 .or. ny < 2) return
+
+        do i = 1, nx - 1
+            do j = 1, ny - 1
+                ! Average the four corners to pick a representative band color
+                z_avg = 0.25_wp * ( plot_data%z_grid(i, j) &
+                                   + plot_data%z_grid(i+1, j) &
+                                   + plot_data%z_grid(i+1, j+1) &
+                                   + plot_data%z_grid(i, j+1) )
+
+                call colormap_value_to_color(z_avg, z_min, z_max, plot_data%colormap, color)
+                call backend%color(color(1), color(2), color(3))
+
+                ! Build quad in data space
+                x_quad = [ plot_data%x_grid(i),   plot_data%x_grid(i+1), &
+                           plot_data%x_grid(i+1), plot_data%x_grid(i)   ]
+                y_quad = [ plot_data%y_grid(j),   plot_data%y_grid(j),   &
+                           plot_data%y_grid(j+1), plot_data%y_grid(j+1) ]
+
+                ! Fill quad via backend
+                call backend%fill_quad(x_quad, y_quad)
+            end do
+        end do
+    end subroutine render_filled_contour_cells
 
     subroutine render_default_contour_levels(backend, plot_data, z_min, z_max, &
                                            xscale, yscale, symlog_threshold, &
