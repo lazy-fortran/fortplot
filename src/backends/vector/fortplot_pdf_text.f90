@@ -155,6 +155,8 @@ contains
         integer :: i, codepoint
         character(len=4) :: utf_char
         character(len=8) :: symbol_char
+        character(len=8) :: escaped_char
+        integer :: esc_len
         
         do i = 1, len_trim(text)
             ! Get Unicode codepoint for character
@@ -177,8 +179,11 @@ contains
                     call switch_to_helvetica_font(this)
                     in_symbol_font = .false.
                 end if
-                ! Output regular character
-                this%stream_data = this%stream_data // "(" // text(i:i) // ") Tj" // new_line('a')
+                ! Output regular character with PDF escaping for (, ), and \
+                escaped_char = ''
+                esc_len = 0
+                call escape_pdf_string(text(i:i), escaped_char, esc_len)
+                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             end if
         end do
     end subroutine process_text_segments
