@@ -47,23 +47,10 @@ make example ARGS="unicode_demo"
 ![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
 
 ASCII output preview:
+
 ```
-             Wave Functions: ψ(ω t) = A e^{-λ t} sin(ω t + φ)
-+--------------------------------------------------------------------------------+
-|1.0                                                                             |
-|     *                     -- α damped: sin                                    |
-|   *   *                   -- β damped: cos                                    |
-|0.5 *     *                -- γ oscillation                                   |
-|   *       *   ****                                                            |
-|0.0*--------*-------****---*----*--***-*-------*-*------***---*----------     |
-|             * *     *  *      *      *     * *         *   * *               |
-|-0.5           *       *                * *               *                    |
-|                                                                               |
-|-1.0+--------+----------+----------+----------+----------+--------+           |
-     0        2          4          6          8         10                    |
-+--------------------------------------------------------------------------------+
-                                  ωt (radians)
-Amplitude
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download unicode_demo.txt](../../media/examples/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)

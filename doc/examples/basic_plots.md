@@ -34,22 +34,10 @@ make example ARGS="basic_plots"
 ![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)
 
 ASCII output preview:
+
 ```
-                                Simple Sine Wave
-+--------------------------------------------------------------------------------+
-|1.0     *                                      *                               |
-|      *   *                                  *   *                             |
-|0.5  *     *                                *     *                            |
-|     *       *                            *       *                           |
-|0.0---------*----*----------------------------*----*-----------                |
-|             *  *                              *  *                            |
-|-0.5          **                                **                             |
-|                                                                               |
-|-1.0+--------+----------+----------+----------+----------+--------+           |
-      0        2          4          6          8         10                   |
-+--------------------------------------------------------------------------------+
-                                       x
-sin(x)
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download simple_plot.txt](../../media/examples/basic_plots/simple_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
@@ -61,22 +49,10 @@ sin(x)
 ![multi_line.png](../../media/examples/basic_plots/multi_line.png)
 
 ASCII output preview:
+
 ```
-                           Sine and Cosine Functions
-+--------------------------------------------------------------------------------+
-|1.0     *                                      *                - sin(x)       |
-|      *   *                                  *   *            - cos(x)         |
-|0.5  *     *    o                          *     *    o                        |
-|     *       *o   o                      *       *o   o                       |
-|0.0---------*----o---o----------------------------o----*-----------            |
-|             *  *     o                              o  *                      |
-|-0.5          **       o                              o  **                    |
-|                        o                            o                         |
-|-1.0+--------+----------o----------+----------+------o----+--------+           |
-      0        2          4          6          8         10                   |
-+--------------------------------------------------------------------------------+
-                                       x
-y
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download multi_line.txt](../../media/examples/basic_plots/multi_line.txt) | [ASCII Format Guide](../ascii_output_format.md)

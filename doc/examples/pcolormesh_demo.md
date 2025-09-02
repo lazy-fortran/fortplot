@@ -49,22 +49,10 @@ make example ARGS="pcolormesh_demo"
 ![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
 
 ASCII output preview:
+
 ```
-                       Basic Pcolormesh - Linear Gradient
-+--------------------------------------------------------------------------------+
-|1.20                                                                            |
-|        +               *              #              %               @         |
-|0.90    -               =              +              *               #         |
-|        .               :              -              =               +         |
-|0.60    .               .               :              -               =         |
-|        .               .               .              :               -         |
-|0.30    .               .               .              .               :         |
-|        .               .               .              .               .         |
-|0.00+--------+----------+----------+----------+----------+--------+            |
-     0.0     0.4        0.8        1.2        1.6        2.0                   |
-+--------------------------------------------------------------------------------+
-                                  X coordinate
-Y coordinate
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download pcolormesh_basic.txt](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt) | [ASCII Format Guide](../ascii_output_format.md)
@@ -76,22 +64,10 @@ Y coordinate
 ![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
 
 ASCII output preview:
+
 ```
-                        Pcolormesh - Sinusoidal Pattern
-+--------------------------------------------------------------------------------+
-|1.20    =       =       =      =       =       =       =      =                |
-|        +       +       +      +       +       +       +      +                |
-|0.90    *       *       *      *       *       *       *      *                |
-|        #       #       #      #       #       #       #      #                |
-|0.60    %       %       %      %       %       %       %      %                |
-|        @       @       @      @       @       @       @      @                |
-|0.30    .       .       .      .       .       .       .      .                |
-|        :       :       :      :       :       :       :      :                |
-|0.00+--------+----------+----------+----------+----------+--------+            |
-     0.0     0.4        0.8        1.2        1.6        2.0                   |
-+--------------------------------------------------------------------------------+
-                                  X coordinate
-Y coordinate
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download pcolormesh_sinusoidal.txt](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt) | [ASCII Format Guide](../ascii_output_format.md)
@@ -103,22 +79,10 @@ Y coordinate
 ![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
 
 ASCII output preview:
+
 ```
-                      Pcolormesh - Radial Pattern (Plasma)
-+--------------------------------------------------------------------------------+
-|1.20    = -     =     + =      = #     =     # =       =+     =                |
-|        + *     +     * +      + %     +     % +       +*     +                |
-|0.80    # @     #     @ #      # =     #     = #       #@     #                |
-|        % .     %     . %      % :     %     : %       %.     %                |
-|0.60    @ :     @     : @      @ .     @     . @       @:     @                |
-|        = -     =     - =      = +     =     + =       =-     =                |
-|0.30    : +     :     + :      : *     :     * :       :+     :                |
-|        . #     .     # .      . %     .     % .       .#     .                |
-|0.00+--------+----------+----------+----------+----------+--------+            |
-     0.0     0.4        0.8        1.2        1.6        2.0                   |
-+--------------------------------------------------------------------------------+
-                                  X coordinate
-Y coordinate
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
