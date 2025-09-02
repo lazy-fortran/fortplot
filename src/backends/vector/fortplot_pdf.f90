@@ -436,6 +436,7 @@ contains
         logical, intent(in) :: has_3d_plots
 
         character(len=256) :: title_str, xlabel_str, ylabel_str
+        associate(dzmin => z_min, dzmax => z_max, dh3d => has_3d_plots); end associate
 
         title_str = ""; xlabel_str = ""; ylabel_str = ""
         if (present(title))  title_str  = title
@@ -488,7 +489,8 @@ contains
         if (this%axes_rendered) return
 
         ! Ensure coordinate system is set
-        if (this%x_min == this%x_max .or. this%y_min == this%y_max) then
+        if (abs(this%x_max - this%x_min) <= epsilon(1.0_wp) .or. &
+            abs(this%y_max - this%y_min) <= epsilon(1.0_wp)) then
             ! No valid coordinate system - skip axes
             return
         end if

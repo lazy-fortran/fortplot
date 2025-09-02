@@ -18,12 +18,10 @@ module fortplot_line_rendering
     
 contains
     
-    subroutine render_line_plot(backend, plot_data, plot_idx, x_min_t, x_max_t, y_min_t, y_max_t, xscale, yscale, symlog_threshold)
+    subroutine render_line_plot(backend, plot_data, xscale, yscale, symlog_threshold)
         !! Render a line plot with proper scaling and clipping
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot_data
-        integer, intent(in) :: plot_idx
-        real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         

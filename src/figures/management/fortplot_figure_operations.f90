@@ -100,7 +100,7 @@ contains
     end subroutine figure_add_pcolormesh_operation
 
     subroutine figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
-                                          density, color, linewidth, rtol, atol, max_time)
+                                          density, color)
         !! Add streamline plot to figure using basic algorithm
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -108,11 +108,9 @@ contains
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: linewidth
-        real(wp), intent(in), optional :: rtol, atol, max_time
         
         call streamplot_figure(plots, state, plot_count, x, y, u, v, &
-                               density, color, linewidth, rtol, atol, max_time)
+                               density, color)
     end subroutine figure_streamplot_operation
 
     subroutine figure_hist_operation(plots, state, plot_count, data, bins, density, label, color)
@@ -148,8 +146,7 @@ contains
     end subroutine figure_boxplot_operation
 
     subroutine figure_scatter_operation(plots, plot_count, x, y, s, c, marker, &
-                                       markersize, color, colormap, alpha, &
-                                       edgecolor, facecolor, linewidth, vmin, vmax, &
+                                       markersize, color, colormap, vmin, vmax, &
                                        label, show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
@@ -157,14 +154,13 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
-        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
-        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+        real(wp), intent(in), optional :: markersize, vmin, vmax
+        real(wp), intent(in), optional :: color(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in) :: default_color(3)
         
         call add_scatter_plot(plots, plot_count, x, y, s, c, marker, markersize, &
-                             color, colormap, alpha, edgecolor, facecolor, &
-                             linewidth, vmin, vmax, label, show_colorbar, &
+                             color, colormap, vmin, vmax, label, show_colorbar, &
                              default_color)
     end subroutine figure_scatter_operation
 

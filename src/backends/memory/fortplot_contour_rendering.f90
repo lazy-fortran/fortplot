@@ -32,9 +32,14 @@ contains
         
         real(wp) :: z_min, z_max
         real(wp), dimension(3) :: level_color
-        integer :: i, j, nlev
+        integer :: i, nlev
         real(wp) :: level
         
+        ! Reference otherwise-unused viewport/margin parameters to keep interface stable
+        associate(dxmin=>x_min_t, dxmax=>x_max_t, dymin=>y_min_t, dymax=>y_max_t); end associate
+        associate(dxs=>len_trim(xscale), dys=>len_trim(yscale)); end associate
+        associate(dst=>symlog_threshold, dw=>width, dh=>height); end associate
+        associate(dml=>margin_left, dmr=>margin_right, dmb=>margin_bottom, dmt=>margin_top); end associate
         ! Get data ranges
         z_min = minval(plot_data%z_grid)
         z_max = maxval(plot_data%z_grid)
@@ -241,6 +246,7 @@ contains
         real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
         
         integer :: nx, ny, i, j
+        associate(dxmin=>x_min_t, dxmax=>x_max_t, dymin=>y_min_t, dymax=>y_max_t); end associate
         
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)

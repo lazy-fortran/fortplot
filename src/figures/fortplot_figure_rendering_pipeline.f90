@@ -394,9 +394,7 @@ contains
         do i = 1, plot_count
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
-                call render_line_plot(backend, plots(i), i, &
-                                    x_min_transformed, x_max_transformed, &
-                                    y_min_transformed, y_max_transformed, &
+                call render_line_plot(backend, plots(i), &
                                     xscale, yscale, symlog_threshold)
                 
                 if (allocated(plots(i)%marker)) then

@@ -38,6 +38,8 @@ contains
         character(len=*), intent(in), optional :: color_str
         character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markercolor(3)
+        real(wp) :: mc_dummy
+        if (present(markercolor)) mc_dummy = markercolor(1)
         
         call add_line_plot_data(self, x, y, label, linestyle, color_rgb, color_str, marker)
     end subroutine add_plot_impl

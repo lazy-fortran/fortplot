@@ -91,7 +91,7 @@ contains
         integer, parameter :: PNG_SIGNATURE_SIZE = 8
         character(len=1), dimension(PNG_SIGNATURE_SIZE) :: signature
         character(len=1), dimension(PNG_SIGNATURE_SIZE), parameter :: &
-            PNG_SIGNATURE = [achar(137), 'P', 'N', 'G', achar(13), achar(10), achar(26), achar(10)]
+            PNG_SIGNATURE = [char(137), 'P', 'N', 'G', char(13), char(10), char(26), char(10)]
         integer :: i, ios, file_unit
         
         open(newunit=file_unit, file=file_path, access='stream', form='unformatted', iostat=ios)
@@ -208,7 +208,7 @@ contains
         character(len=*), intent(in) :: current_file, baseline_file
         type(validation_result_t) :: validation
         
-        integer :: current_size, baseline_size, ios
+        integer :: current_size, baseline_size
         
         ! Check if baseline exists
         inquire(file=baseline_file, exist=validation%passed, size=baseline_size)

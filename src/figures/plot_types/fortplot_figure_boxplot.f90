@@ -96,6 +96,10 @@ contains
         
         ! Color would need conversion from string to RGB
         ! For now, use default color from plot_data_t initialization
+        if (present(color)) then
+            ! Reference optional color to keep interface stable without side effects
+            associate(unused_color_len => len_trim(color)); end associate
+        end if
     end subroutine add_boxplot
     
     subroutine update_boxplot_ranges(data, position, x_min, x_max, y_min, y_max, &

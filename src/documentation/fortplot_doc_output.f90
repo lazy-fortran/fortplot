@@ -21,8 +21,10 @@ contains
         
         character(len=FILENAME_MAX_LEN) :: media_files(10)
         integer :: n_media, j
+        ! Reference unused directory parameter to keep interface stable
+        associate(unused_dir_len => len_trim(example_dir)); end associate
         
-        call find_output_files(example_dir, example_name, media_files, n_media)
+        call find_output_files(example_name, media_files, n_media)
         
         do j = 1, n_media
             call write_media_output(unit_out, example_name, media_files(j))
@@ -30,8 +32,8 @@ contains
         end do
     end subroutine write_generated_outputs
     
-    subroutine find_output_files(example_dir, example_name, media_files, n_media)
-        character(len=*), intent(in) :: example_dir, example_name
+    subroutine find_output_files(example_name, media_files, n_media)
+        character(len=*), intent(in) :: example_name
         character(len=*), intent(out) :: media_files(:)
         integer, intent(out) :: n_media
         

@@ -68,6 +68,7 @@ contains
         real(wp) :: color_rgb(3)
         integer(1) :: r_byte, g_byte, b_byte
         integer :: offset
+        associate(dxming=>x_min_grid, dxmaxg=>x_max_grid, dyming=>y_min_grid, dymaxg=>y_max_grid); end associate
         
         ! Scanline rendering: iterate over all pixels in plot area
         do py = plot_area%bottom, plot_area%bottom + plot_area%height - 1
@@ -196,6 +197,7 @@ contains
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
         
+        associate(dlg=>legend%num_entries, dx=>legend_x, dy=>legend_y); end associate
         ! No-op: legend rendering handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
     end subroutine raster_render_legend_specialized
@@ -222,6 +224,7 @@ contains
         use fortplot_legend, only: legend_t
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: x, y
+        associate(dn=>legend%num_entries); end associate
         
         ! No-op: position calculation handled by fortplot_legend module
         ! This method exists only for polymorphic compatibility
@@ -256,6 +259,7 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
+        associate(dw=>width, dh=>height); end associate
         
         ! Raster context doesn't generate PNG data
         ! This should be overridden by PNG context
@@ -267,6 +271,7 @@ contains
         !! Prepare 3D data for PNG backend (no-op - PNG doesn't use 3D data)
         use fortplot_plot_data, only: plot_data_t
         type(plot_data_t), intent(in) :: plots(:)
+        associate(dn=>size(plots)); end associate
         
         ! PNG backend doesn't need 3D data preparation - no-op
     end subroutine raster_prepare_3d_data

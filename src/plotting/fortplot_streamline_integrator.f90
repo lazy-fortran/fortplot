@@ -74,10 +74,10 @@ contains
         logical, intent(out) :: success
         
         ! Local variables
-        real(wp) :: x, y, t, h, x_new, y_new, error_est
+        real(wp) :: x, y, t, h, error_est
         real(wp) :: k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y, k5x, k5y, k6x, k6y, k7x, k7y
         real(wp) :: x5, y5, x4, y4  ! 5th and 4th order solutions
-        real(wp) :: tolerance, h_new
+        real(wp) :: h_new
         integer :: step_count, array_size
         logical :: step_accepted
         

@@ -251,7 +251,7 @@ contains
             end if
             
             ! Adjust step size based on error (matplotlib lines 602-605)
-            if (error == 0.0_wp) then
+            if (abs(error) <= epsilon(1.0_wp)) then
                 ds = maxds
             else
                 ds = min(maxds, 0.85_wp * ds * sqrt(maxerror / error))
@@ -358,57 +358,6 @@ contains
         
     end subroutine interpolate_velocity_prescaled
 
-    subroutine interpolate_velocity(xg, yg, x, y, u, v, ug, vg)
-        !! Bilinear interpolation exactly like matplotlib's interpgrid function
-        real(wp), intent(in) :: xg, yg
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
-        real(wp), intent(out) :: ug, vg
-        
-        integer :: i, j, i_next, j_next
-        real(wp) :: xt, yt, a00_u, a01_u, a10_u, a11_u, a0_u, a1_u
-        real(wp) :: a00_v, a01_v, a10_v, a11_v, a0_v, a1_v
-        
-        ! Convert grid coordinates to integer indices (like matplotlib lines 646-656)
-        i = max(1, min(size(x)-1, int(xg) + 1))
-        j = max(1, min(size(y)-1, int(yg) + 1))
-        
-        ! Get next indices with bounds checking (matplotlib lines 648-656)
-        if (i == size(x)) then
-            i_next = i
-        else
-            i_next = i + 1
-        end if
-        
-        if (j == size(y)) then
-            j_next = j
-        else
-            j_next = j + 1
-        end if
-        
-        ! Interpolation weights (matplotlib lines 662-663)
-        xt = xg - real(i - 1, wp)
-        yt = yg - real(j - 1, wp)
-        
-        ! Bilinear interpolation exactly like matplotlib (lines 658-667)
-        ! u velocity
-        a00_u = u(i, j)
-        a01_u = u(i_next, j)
-        a10_u = u(i, j_next)
-        a11_u = u(i_next, j_next)
-        a0_u = a00_u * (1.0_wp - xt) + a01_u * xt
-        a1_u = a10_u * (1.0_wp - xt) + a11_u * xt
-        ug = a0_u * (1.0_wp - yt) + a1_u * yt
-        
-        ! v velocity  
-        a00_v = v(i, j)
-        a01_v = v(i_next, j)
-        a10_v = v(i, j_next)
-        a11_v = v(i_next, j_next)
-        a0_v = a00_v * (1.0_wp - xt) + a01_v * xt
-        a1_v = a10_v * (1.0_wp - xt) + a11_v * xt
-        vg = a0_v * (1.0_wp - yt) + a1_v * yt
-        
-    end subroutine interpolate_velocity
 
     subroutine start_trajectory_in_mask(dmap, mask, xg, yg, success)
         type(coordinate_mapper_t), intent(in) :: dmap  
@@ -437,15 +386,6 @@ contains
         mask%current_y = ym
     end subroutine reset_trajectory_start
 
-    subroutine update_trajectory_in_mask(dmap, mask, xg, yg)
-        type(coordinate_mapper_t), intent(in) :: dmap
-        type(stream_mask_t), intent(inout) :: mask
-        real(wp), intent(in) :: xg, yg
-        
-        integer :: xm, ym
-        call dmap%grid2mask(xg, yg, xm, ym)
-        call mask%update_trajectory(xm, ym)
-    end subroutine update_trajectory_in_mask
 
     logical function update_trajectory_in_mask_with_broken_streams(dmap, mask, xg, yg, broken_streamlines) result(success)
         !! Update trajectory in mask with broken_streamlines parameter exactly like matplotlib
@@ -468,32 +408,6 @@ contains
     end function update_trajectory_in_mask_with_broken_streams
 
 
-    subroutine calculate_trajectory_length(backward_x, backward_y, n_backward, forward_x, forward_y, n_forward, total_length)
-        !! Calculate total trajectory length in axes coordinates like matplotlib
-        real, intent(in) :: backward_x(:), backward_y(:), forward_x(:), forward_y(:)
-        integer, intent(in) :: n_backward, n_forward
-        real(wp), intent(out) :: total_length
-        
-        integer :: i
-        
-        total_length = 0.0_wp
-        
-        ! Add backward trajectory length
-        do i = 2, n_backward
-            total_length = total_length + sqrt((backward_x(i) - backward_x(i-1))**2 + &
-                                              (backward_y(i) - backward_y(i-1))**2)
-        end do
-        
-        ! Add forward trajectory length  
-        do i = 2, n_forward
-            total_length = total_length + sqrt((forward_x(i) - forward_x(i-1))**2 + &
-                                              (forward_y(i) - forward_y(i-1))**2)
-        end do
-        
-        ! Convert to axes coordinates (divide by grid size)
-        total_length = total_length / 20.0_wp  ! Grid is 20x20, so normalize
-        
-    end subroutine calculate_trajectory_length
 
     ! add_trajectory_to_figure removed to avoid circular dependency
 

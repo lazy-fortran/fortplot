@@ -71,6 +71,7 @@ contains
         !! SECURITY: File deletion disabled for security compliance
         character(len=*), intent(in) :: filename
         logical, intent(out) :: success
+        associate(dfn=>len_trim(filename)); end associate
         
         ! SECURITY: External file operations disabled to prevent vulnerabilities
         success = .false.
@@ -165,10 +166,8 @@ contains
         use, intrinsic :: iso_c_binding, only: c_null_char, c_char
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
-        character(len=512) :: parent_path, test_file
-        character(len=512) :: path_segments(100)
-        character(len=512) :: current_path
-        integer :: i, n_segments, last_sep, unit, iostat
+        character(len=512) :: parent_path
+        integer :: i, last_sep
         logical :: parent_exists, dir_exists
         
         success = .false.

@@ -62,14 +62,10 @@ contains
         real(wp), intent(in), optional :: font_size
         character(len=1024) :: text_cmd
         logical :: in_symbol_font
-        integer :: i, text_pos, segment_pos
-        character(len=512) :: current_segment
         real(wp) :: fs
         
         in_symbol_font = .false.
-        text_pos = 1
-        segment_pos = 0
-        current_segment = ""
+        ! Segment processing delegated to helpers
         
         ! Choose font size
         fs = PDF_LABEL_SIZE

@@ -182,6 +182,7 @@ contains
         ! Hash table for LZ77
         integer :: hash_table(0:HASH_SIZE-1)
         integer :: hash_chain(WINDOW_SIZE)
+        save :: hash_table, hash_chain
         
         ! Huffman tables (fixed Huffman for simplicity)
         integer :: literal_codes(0:285)

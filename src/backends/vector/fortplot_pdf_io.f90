@@ -58,8 +58,10 @@ contains
     subroutine create_pdf_document(unit, filename, ctx)
         !! Create complete PDF document structure
         integer, intent(in) :: unit
-        character(len=*), intent(in) :: filename  ! Unused - placeholder for future use
+        character(len=*), intent(in) :: filename  ! Placeholder for future use
         type(pdf_context_core), intent(inout) :: ctx
+        ! Reference unused argument to keep interface stable
+        associate(unused_fn_len => len_trim(filename)); end associate
         
         ! Write PDF header
         write(unit, '(A)') '%PDF-1.4'
@@ -162,6 +164,8 @@ contains
         integer, intent(in) :: unit
         type(pdf_context_core), intent(in) :: ctx
         integer, intent(out) :: pos
+        ! Reference ctx to keep interface stable
+        associate(unused_w => ctx%width); end associate
         
         inquire(unit=unit, pos=pos)
         write(unit, '(I0, A)') PDF_PAGES_OBJ, ' 0 obj'

@@ -29,10 +29,15 @@ contains
         character(len=*), intent(in), optional :: arrowstyle
         
         real(wp) :: plot_density, arrow_size_val
+        real(wp) :: lw_dummy, rt_dummy, at_dummy, mt_dummy
         character(len=10) :: arrow_style_val
         real, allocatable :: trajectories(:,:,:)
         integer :: n_trajectories
         integer, allocatable :: trajectory_lengths(:)
+        if (present(linewidth)) lw_dummy = linewidth
+        if (present(rtol)) rt_dummy = rtol
+        if (present(atol)) at_dummy = atol
+        if (present(max_time)) mt_dummy = max_time
         
         ! Validate input dimensions
         if (size(u,1) /= size(x) .or. size(u,2) /= size(y)) then

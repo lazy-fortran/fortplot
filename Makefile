@@ -23,7 +23,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune verify-warnings
 
 # Default target
 all: build
@@ -402,6 +402,7 @@ help:
 	@echo "  verify-with-evidence - Run verification with fraud-proof evidence generation"
 	@echo "  verify-size-compliance - File size fraud prevention verification"
 	@echo "  verify-complexity - Enforce procedure count budgets (Issue #937)"
+	@echo "  verify-warnings - Compile with aggressive warnings (-Werror)"
 	@echo "  doc              - Build documentation with FORD"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  release     - Build with optimizations"
@@ -426,3 +427,12 @@ git-prune:
 	else \
 		./scripts/git_prune.sh; \
 	fi
+
+# Compile with aggressive warnings enabled and fail on any warning
+verify-warnings:
+	@echo "Verifying warning-free build with aggressive flags (-Werror)..."
+	@# Fortran warnings
+	@fpm build --flag "-Wall -Wextra -Wimplicit-interface -Werror -fPIC" || exit 1
+	@# C warnings
+	@fpm build --c-flag "-Wall -Wextra -Werror" || exit 1
+	@echo "Warning-free verification completed successfully"

@@ -37,6 +37,9 @@ contains
         real(wp), intent(in), optional :: color(3)
         
         integer :: plot_idx, color_idx
+        real(wp) :: ms_dummy, ct_dummy
+        if (present(markersize)) ms_dummy = markersize
+        if (present(capthick)) ct_dummy = capthick
         
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count

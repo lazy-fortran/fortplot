@@ -220,19 +220,16 @@ contains
         call update_data_ranges_pcolormesh_figure(plots, state, state%plot_count)
     end subroutine core_add_pcolormesh
 
-    subroutine core_streamplot(plots, state, plot_count, x, y, u, v, density, color, &
-                               linewidth, rtol, atol, max_time)
+    subroutine core_streamplot(plots, state, plot_count, x, y, u, v, density, color)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
-        real(wp), intent(in), optional :: linewidth
-        real(wp), intent(in), optional :: rtol, atol, max_time
         
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
-                                         density, color, linewidth, rtol, atol, max_time)
+                                         density, color)
     end subroutine core_streamplot
 
     subroutine core_savefig(state, plots, plot_count, filename, blocking, &
@@ -457,8 +454,7 @@ module fortplot_figure_core_advanced
 contains
 
     subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, markersize, &
-                           color, colormap, alpha, edgecolor, facecolor, linewidth, &
-                           vmin, vmax, label, show_colorbar, default_color)
+                           color, colormap, vmin, vmax, label, show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
@@ -467,16 +463,15 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: s(:), c(:)
         character(len=*), intent(in), optional :: marker, colormap, label
-        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
-        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+        real(wp), intent(in), optional :: markersize, vmin, vmax
+        real(wp), intent(in), optional :: color(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in) :: default_color(3)
         
         ! Delegate to efficient scatter implementation
         call figure_scatter_operation(plots, state%plot_count, &
                                      x, y, s, c, marker, markersize, color, &
-                                     colormap, alpha, edgecolor, facecolor, &
-                                     linewidth, vmin, vmax, label, show_colorbar, &
+                                     colormap, vmin, vmax, label, show_colorbar, &
                                      default_color)
         
         ! Update figure state
@@ -558,4 +553,3 @@ contains
 
 end module fortplot_figure_core_utils
 ! ==== End: src/figures/core/fortplot_figure_core_utils.f90 ====
-

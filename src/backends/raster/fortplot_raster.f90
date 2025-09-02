@@ -163,6 +163,7 @@ contains
         !! Dummy save method - see issue #496 for implementation improvement roadmap
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        associate(dfl=>len_trim(filename)); end associate
         
         ! This is a dummy implementation - concrete backends like PNG will override this
         ! Implementation improvement needed - see issue #496
@@ -177,6 +178,7 @@ contains
         character(len=*), intent(in) :: style
         real(wp) :: px, py
         integer(1) :: r, g, b
+        associate(dsl=>len_trim(style)); end associate
 
         ! Transform coordinates to plot area
         px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
@@ -272,6 +274,7 @@ contains
         real(wp) :: x1, y1, x2, y2, x3, y3  ! Triangle vertices
         real(wp) :: magnitude
         integer(1) :: r, g, b
+        associate(dsl=>len_trim(style)); end associate
         
         ! Normalize direction vector
         magnitude = sqrt(dx*dx + dy*dy)
@@ -438,6 +441,8 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
+        ! Reference optional 3D parameters to keep interface stable
+        associate(dzmin=>z_min, dzmax=>z_max, dh3d=>has_3d_plots); end associate
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
         
@@ -474,6 +479,9 @@ contains
         !! Render axes for raster context - see issue #495 for implementation roadmap
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+        if (present(title_text)) then; associate(dt=>len_trim(title_text)); end associate; end if
+        if (present(xlabel_text)) then; associate(dx=>len_trim(xlabel_text)); end associate; end if
+        if (present(ylabel_text)) then; associate(dy=>len_trim(ylabel_text)); end associate; end if
         
         ! Raster axes are rendered as part of draw_axes_and_labels_backend
         ! Implementation needed - see issue #495
