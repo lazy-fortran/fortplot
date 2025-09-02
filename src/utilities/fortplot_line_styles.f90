@@ -114,13 +114,10 @@ contains
         
     end function should_draw_at_distance
 
-    subroutine advance_pattern_state(current_distance, segment_length, pattern, pattern_size, &
-                                   pattern_length, new_distance)
+    subroutine advance_pattern_state(current_distance, segment_length, pattern_length, new_distance)
         !! Advance pattern state for continuous rendering
         !! Following SRP - handles only state advancement
         real(wp), intent(in) :: current_distance, segment_length, pattern_length
-        real(wp), intent(in) :: pattern(20)
-        integer, intent(in) :: pattern_size
         real(wp), intent(out) :: new_distance
         
         new_distance = current_distance + segment_length

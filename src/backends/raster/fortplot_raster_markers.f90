@@ -164,7 +164,7 @@ contains
         
         real(wp) :: half_size, x1, y1, x2, y2
         real(wp) :: x_quad(4), y_quad(4)
-        integer :: xi, yi, x_min, x_max, y_min, y_max
+        integer :: x_min, x_max, y_min, y_max
         
         half_size = size * 0.5_wp
         x1 = cx - half_size

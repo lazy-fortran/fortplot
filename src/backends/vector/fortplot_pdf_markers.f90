@@ -54,6 +54,8 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b
         real(wp), intent(in) :: face_r, face_g, face_b
         
+        ! Reference face color components to keep interface stable
+        associate(df1=>face_r, df2=>face_g, df3=>face_b); end associate
         ! Set edge color for stroking
         call core_ctx%set_color(edge_r, edge_g, edge_b)
     end subroutine pdf_set_marker_colors
@@ -64,6 +66,8 @@ contains
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
         
+        ! Reference alpha components to keep interface stable; PDF ignores alpha
+        associate(da1=>edge_alpha, da2=>face_alpha); end associate
         ! PDF doesn't support alpha directly, just use the colors
         call pdf_set_marker_colors(core_ctx, edge_r, edge_g, edge_b, face_r, face_g, face_b)
     end subroutine pdf_set_marker_colors_with_alpha

@@ -33,6 +33,12 @@ contains
         real(wp), dimension(3) :: quad_color
         real(wp) :: c_value, vmin, vmax
         integer :: i, j, nx, ny
+        ! Reference otherwise-unused parameters to keep interface stable
+        associate(dummy_xmin => x_min_t, dummy_xmax => x_max_t, dummy_ymin => y_min_t, dummy_ymax => y_max_t); end associate
+        associate(dummy_xs => len_trim(xscale), dummy_ys => len_trim(yscale)); end associate
+        associate(dummy_slt => symlog_threshold); end associate
+        associate(dummy_w => width, dummy_h => height); end associate
+        associate(dummy_mr => margin_right); end associate
         
         ! Safety check: ensure pcolormesh data is properly initialized
         if (.not. allocated(plot_data%pcolormesh_data%c_values) .or. &

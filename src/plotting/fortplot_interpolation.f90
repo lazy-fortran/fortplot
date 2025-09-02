@@ -47,7 +47,7 @@ contains
         real(wp), intent(in) :: world_x, world_y
         integer, intent(out) :: i1, i2, j1, j2
         
-        integer :: i, j, nx, ny
+        integer :: nx, ny
         
         nx = size(x_grid)
         ny = size(y_grid)
