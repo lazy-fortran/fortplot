@@ -197,6 +197,8 @@ contains
     end subroutine test_file_path_validation
     
     subroutine test_numeric_parameters_validation()
+        use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, &
+                                             ieee_positive_inf, ieee_negative_inf
         type(parameter_validation_result_t) :: result
         real(wp) :: normal_values(5), extreme_values(3)
         real(wp) :: nan_value, pos_inf, neg_inf, large_finite
@@ -208,11 +210,10 @@ contains
         normal_values = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
         extreme_values = [1.0e-30_wp, 1.0_wp, 1.0e30_wp]
         
-        ! Create special values for NaN/infinity testing (runtime creation to avoid compile-time errors)
-        nan_value = 0.0_wp
-        nan_value = nan_value / 0.0_wp
-        pos_inf = 1.0e200_wp  ! Value above 1.0e100_wp threshold -> treated as infinity
-        neg_inf = -1.0e200_wp
+        ! Create special values for NaN/infinity using IEEE intrinsics for portability
+        nan_value = ieee_value(0.0_wp, ieee_quiet_nan)
+        pos_inf  = ieee_value(0.0_wp, ieee_positive_inf)
+        neg_inf  = ieee_value(0.0_wp, ieee_negative_inf)
         large_finite = 1.0e50_wp
         
         ! Initialize test arrays with special values
@@ -276,18 +277,20 @@ contains
     end subroutine test_numeric_parameters_validation
     
     subroutine test_nan_infinity_helper_functions()
+        use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, &
+                                             ieee_positive_inf, ieee_negative_inf
         real(wp) :: nan_value, pos_inf, neg_inf, normal_value, large_finite, zero_value
         logical :: result
         
         write(output_unit, '(A)') "Testing NaN/infinity helper functions directly (Issue #875)..."
         
-        ! Create test values (runtime creation to avoid compile-time errors)
+        ! Create test values using IEEE intrinsics for portability
         normal_value = 42.0_wp
         large_finite = 1.0e50_wp
         zero_value = 0.0_wp
-        nan_value = zero_value / zero_value
-        pos_inf = 1.0e200_wp  ! Value above 1.0e100_wp threshold -> treated as infinity
-        neg_inf = -1.0e200_wp
+        nan_value = ieee_value(0.0_wp, ieee_quiet_nan)
+        pos_inf  = ieee_value(0.0_wp, ieee_positive_inf)
+        neg_inf  = ieee_value(0.0_wp, ieee_negative_inf)
         
         ! Test is_nan_safe function
         result = is_nan_safe(nan_value)
@@ -324,17 +327,15 @@ contains
         result = is_finite_safe(neg_inf)
         call run_test("is_finite_safe rejects negative infinity", .not. result)
         
-        ! Test threshold boundary (1.0e100_wp threshold from implementation)
+        ! Finite magnitude checks (no artificial threshold in implementation)
         result = is_finite_safe(1.0e99_wp)
-        call run_test("is_finite_safe accepts value below threshold", result)
+        call run_test("is_finite_safe accepts large finite (1e99)", result)
         
-        ! Test actual threshold value (1.0e100_wp should be borderline)
         result = is_finite_safe(1.0e100_wp)
-        call run_test("is_finite_safe at exact threshold", .not. result)
+        call run_test("is_finite_safe accepts large finite (1e100)", result)
         
-        ! Test value clearly above threshold 
         result = is_finite_safe(1.0e200_wp)
-        call run_test("is_finite_safe rejects value above threshold", .not. result)
+        call run_test("is_finite_safe accepts large finite (1e200)", result)
         
         write(output_unit, '(A)') "  ✓ NaN/infinity helper function tests completed"
     end subroutine test_nan_infinity_helper_functions
