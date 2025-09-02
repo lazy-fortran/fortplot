@@ -54,4 +54,8 @@ make example ARGS="marker_demo"
 
 ![marker_colors.png](../../media/examples/marker_demo/marker_colors.png)
 
-[Download PDFs](../../media/examples/)
+Download PDFs:
+
+- [scatter_plot.pdf](../../media/examples/marker_demo/scatter_plot.pdf)
+- [all_marker_types.pdf](../../media/examples/marker_demo/all_marker_types.pdf)
+- [marker_colors.pdf](../../media/examples/marker_demo/marker_colors.pdf)
