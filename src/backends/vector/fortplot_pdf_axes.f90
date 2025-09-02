@@ -11,6 +11,8 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+    use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+        format_tick_value_consistent
     use fortplot_scales, only: apply_scale_transform
     implicit none
     private
@@ -138,6 +140,8 @@ contains
         integer :: nt, i, limit
         real(wp) :: min_t, max_t, tv_t, thr
         character(len=16) :: scale
+        integer :: decimals
+        real(wp) :: step
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -154,6 +158,18 @@ contains
         min_t = apply_scale_transform(data_min, scale, thr)
         max_t = apply_scale_transform(data_max, scale, thr)
 
+        ! Determine a suitable decimal precision for linear ticks
+        decimals = 0
+        if (trim(scale) == 'linear' .and. nt >= 2) then
+            step = abs(tvals(2) - tvals(1))
+            do i = 3, nt
+                if (abs(tvals(i) - tvals(i-1)) > 1.0e-12_wp) then
+                    step = min(step, abs(tvals(i) - tvals(i-1)))
+                end if
+            end do
+            decimals = determine_decimal_places_from_step(step)
+        end if
+
         limit = min(num_ticks, size(positions))
         do i = 1, limit
             if (i > nt) exit
@@ -163,7 +179,11 @@ contains
             else
                 positions(i) = plot_left + 0.5_wp * plot_width
             end if
-            labels(i) = adjustl(format_tick_label(tvals(i), scale))
+            if (trim(scale) == 'linear') then
+                labels(i) = adjustl(format_tick_value_consistent(tvals(i), decimals))
+            else
+                labels(i) = adjustl(format_tick_label(tvals(i), scale))
+            end if
         end do
         do i = nt + 1, limit
             labels(i) = ''
@@ -184,6 +204,8 @@ contains
         integer :: nt, i, limit
         real(wp) :: min_t, max_t, tv_t, thr
         character(len=16) :: scale
+        integer :: decimals
+        real(wp) :: step
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -200,6 +222,18 @@ contains
         min_t = apply_scale_transform(data_min, scale, thr)
         max_t = apply_scale_transform(data_max, scale, thr)
 
+        ! Determine a suitable decimal precision for linear ticks
+        decimals = 0
+        if (trim(scale) == 'linear' .and. nt >= 2) then
+            step = abs(tvals(2) - tvals(1))
+            do i = 3, nt
+                if (abs(tvals(i) - tvals(i-1)) > 1.0e-12_wp) then
+                    step = min(step, abs(tvals(i) - tvals(i-1)))
+                end if
+            end do
+            decimals = determine_decimal_places_from_step(step)
+        end if
+
         limit = min(num_ticks, size(positions))
         do i = 1, limit
             if (i > nt) exit
@@ -209,7 +243,11 @@ contains
             else
                 positions(i) = plot_bottom + 0.5_wp * plot_height
             end if
-            labels(i) = adjustl(format_tick_label(tvals(i), scale))
+            if (trim(scale) == 'linear') then
+                labels(i) = adjustl(format_tick_value_consistent(tvals(i), decimals))
+            else
+                labels(i) = adjustl(format_tick_label(tvals(i), scale))
+            end if
         end do
         do i = nt + 1, limit
             labels(i) = ''

@@ -14,6 +14,7 @@ module fortplot_tick_calculation
     private
     public :: calculate_tick_labels, calculate_nice_axis_limits
     public :: find_nice_tick_locations, determine_decimal_places_from_step
+    public :: format_tick_value_consistent
 
 contains
 
