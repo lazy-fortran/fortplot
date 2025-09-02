@@ -129,6 +129,8 @@ doc:
 	# Generate streamplot and pcolormesh demos so images are available in docs
 	$(MAKE) example ARGS="streamplot_demo" >/dev/null
 	$(MAKE) example ARGS="pcolormesh_demo" >/dev/null
+	# Generate animation demo so MP4 is available for docs (fixes #1085)
+	$(MAKE) example ARGS="save_animation_demo" >/dev/null
 	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to doc build directory AFTER running FORD
