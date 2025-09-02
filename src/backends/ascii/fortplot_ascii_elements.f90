@@ -10,7 +10,7 @@ module fortplot_ascii_elements
     use fortplot_legend, only: legend_t, render_ascii_legend
     use fortplot_legend, only: LEGEND_UPPER_LEFT, LEGEND_UPPER_RIGHT, LEGEND_LOWER_LEFT, LEGEND_LOWER_RIGHT
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-    use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
     use fortplot_plot_data, only: plot_data_t
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
@@ -343,13 +343,7 @@ contains
         ! Determine decimals for linear scale based on tick spacing
         decimals = 0
         if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
-            step = abs(x_tick_positions(2) - x_tick_positions(1))
-            do i = 3, num_x_ticks
-                if (abs(x_tick_positions(i) - x_tick_positions(i-1)) > 1.0e-12_wp) then
-                    step = min(step, abs(x_tick_positions(i) - x_tick_positions(i-1)))
-                end if
-            end do
-            decimals = determine_decimal_places_from_step(step)
+            decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
         end if
         do i = 1, num_x_ticks
             tick_x = x_tick_positions(i)
@@ -370,13 +364,7 @@ contains
         ! Determine decimals for linear scale based on tick spacing
         decimals = 0
         if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
-            step = abs(y_tick_positions(2) - y_tick_positions(1))
-            do i = 3, num_y_ticks
-                if (abs(y_tick_positions(i) - y_tick_positions(i-1)) > 1.0e-12_wp) then
-                    step = min(step, abs(y_tick_positions(i) - y_tick_positions(i-1)))
-                end if
-            end do
-            decimals = determine_decimal_places_from_step(step)
+            decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
         end if
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)

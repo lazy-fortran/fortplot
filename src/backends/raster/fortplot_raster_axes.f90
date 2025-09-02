@@ -170,7 +170,7 @@ contains
                                        x_min, x_max, y_min, y_max)
         !! Draw X-axis tick marks and labels
         use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-        use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+        use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
             format_tick_value_consistent
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -196,7 +196,6 @@ contains
         ! Use generous buffer to avoid rare truncation of escaped labels
         character(len=500), allocatable :: labels(:)
         integer :: decimals
-        real(wp) :: step
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
@@ -210,13 +209,7 @@ contains
             ! Determine decimals for linear scale based on tick spacing
             decimals = 0
             if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
-                step = abs(x_tick_positions(2) - x_tick_positions(1))
-                do i = 3, num_x_ticks
-                    if (abs(x_tick_positions(i) - x_tick_positions(i-1)) > 1.0e-12_wp) then
-                        step = min(step, abs(x_tick_positions(i) - x_tick_positions(i-1)))
-                    end if
-                end do
-                decimals = determine_decimal_places_from_step(step)
+                decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
             end if
 
             do i = 1, num_x_ticks
@@ -266,7 +259,7 @@ contains
                                        x_min, x_max, y_min, y_max)
         !! Draw Y-axis tick marks and labels
         use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-        use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+        use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
             format_tick_value_consistent
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -287,7 +280,6 @@ contains
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
         integer :: decimals
-        real(wp) :: step
         
         line_r = 0.0_wp; line_g = 0.0_wp; line_b = 0.0_wp  ! Black color
         text_r = 0; text_g = 0; text_b = 0
@@ -297,13 +289,7 @@ contains
         ! Determine decimals for linear scale based on tick spacing
         decimals = 0
         if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
-            step = abs(y_tick_positions(2) - y_tick_positions(1))
-            do i = 3, num_y_ticks
-                if (abs(y_tick_positions(i) - y_tick_positions(i-1)) > 1.0e-12_wp) then
-                    step = min(step, abs(y_tick_positions(i) - y_tick_positions(i-1)))
-                end if
-            end do
-            decimals = determine_decimal_places_from_step(step)
+            decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
         end if
         max_label_width = 0
         do i = 1, num_y_ticks

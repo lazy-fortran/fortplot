@@ -11,7 +11,7 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
-    use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+    use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
     use fortplot_scales, only: apply_scale_transform
     implicit none
@@ -141,7 +141,6 @@ contains
         real(wp) :: min_t, max_t, tv_t, thr
         character(len=16) :: scale
         integer :: decimals
-        real(wp) :: step
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -161,13 +160,7 @@ contains
         ! Determine a suitable decimal precision for linear ticks
         decimals = 0
         if (trim(scale) == 'linear' .and. nt >= 2) then
-            step = abs(tvals(2) - tvals(1))
-            do i = 3, nt
-                if (abs(tvals(i) - tvals(i-1)) > 1.0e-12_wp) then
-                    step = min(step, abs(tvals(i) - tvals(i-1)))
-                end if
-            end do
-            decimals = determine_decimal_places_from_step(step)
+            decimals = determine_decimals_from_ticks(tvals, nt)
         end if
 
         limit = min(num_ticks, size(positions))
@@ -205,7 +198,6 @@ contains
         real(wp) :: min_t, max_t, tv_t, thr
         character(len=16) :: scale
         integer :: decimals
-        real(wp) :: step
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -225,13 +217,7 @@ contains
         ! Determine a suitable decimal precision for linear ticks
         decimals = 0
         if (trim(scale) == 'linear' .and. nt >= 2) then
-            step = abs(tvals(2) - tvals(1))
-            do i = 3, nt
-                if (abs(tvals(i) - tvals(i-1)) > 1.0e-12_wp) then
-                    step = min(step, abs(tvals(i) - tvals(i-1)))
-                end if
-            end do
-            decimals = determine_decimal_places_from_step(step)
+            decimals = determine_decimals_from_ticks(tvals, nt)
         end if
 
         limit = min(num_ticks, size(positions))
