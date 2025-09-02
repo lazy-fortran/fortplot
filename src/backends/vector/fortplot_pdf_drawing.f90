@@ -210,10 +210,14 @@ contains
             call log_debug(trim(debug_msg))
         end if
         
-        ! Write validated color values
+        ! Write validated color values for strokes AND fills
+        ! Keep stroke and fill colors in sync to ensure filled shapes
+        ! (e.g., pcolormesh quads) render with the intended color.
         write(cmd, '(F0.3,1X,F0.3,1X,F0.3," RG")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
-    end subroutine pdf_write_color
+        write(cmd, '(F0.3,1X,F0.3,1X,F0.3," rg")') r_safe, g_safe, b_safe
+        call this%add_to_stream(trim(cmd))
+        end subroutine pdf_write_color
 
     subroutine pdf_write_line_width(this, width)
         !! Write PDF line width command with robust validation
