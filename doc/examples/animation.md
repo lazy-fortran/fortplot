@@ -10,7 +10,7 @@ This example demonstrates creating animated plots and saving to video files.
 ## Files
 
 - `save_animation_demo.f90` - Animation saving example
-- **[📹 Download animation.mp4](../../output/example/fortran/animation/animation.mp4)** - Example output video
+- **[📹 Download animation.mp4](../media/examples/animation/animation.mp4)** - Example output video
 
 ## Running
 

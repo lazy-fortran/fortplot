@@ -59,4 +59,4 @@ Format: `[color][marker][linestyle]`
 
 ## Output Example
 
-![Format String Demo](../../output/example/fortran/format_string_demo/format_string_demo.png)
+![Format String Demo](../../media/examples/format_string_demo/format_string_demo.png)

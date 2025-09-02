@@ -41,7 +41,7 @@ make example ARGS="colored_contours"
 
 ### 2D Gaussian with Default Colorblind-Safe Colormap
 
-![gaussian_default.png](../../output/example/fortran/colored_contours/gaussian_default.png)
+![gaussian_default.png](../../media/examples/colored_contours/gaussian_default.png)
 
 ASCII output preview:
 ```
@@ -92,13 +92,13 @@ y
 y
 ```
 
-> **Full ASCII Output**: [Download gaussian_default.txt](../../output/example/fortran/colored_contours/gaussian_default.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download gaussian_default.txt](../../media/examples/colored_contours/gaussian_default.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/colored_contours/gaussian_default.pdf)
+[Download PDF](../../media/examples/colored_contours/gaussian_default.pdf)
 
 ### Saddle Function with Plasma Colormap
 
-![saddle_plasma.png](../../output/example/fortran/colored_contours/saddle_plasma.png)
+![saddle_plasma.png](../../media/examples/colored_contours/saddle_plasma.png)
 
 ASCII output preview:
 ```
@@ -144,13 +144,13 @@ y
 +--------------------------------------------------------------------------------+
 ```
 
-> **Full ASCII Output**: [Download saddle_plasma.txt](../../output/example/fortran/colored_contours/saddle_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download saddle_plasma.txt](../../media/examples/colored_contours/saddle_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/colored_contours/saddle_plasma.pdf)
+[Download PDF](../../media/examples/colored_contours/saddle_plasma.pdf)
 
 ### Ripple Function with Jet Colormap
 
-![ripple_jet.png](../../output/example/fortran/colored_contours/ripple_jet.png)
+![ripple_jet.png](../../media/examples/colored_contours/ripple_jet.png)
 
 ASCII output preview:
 ```
@@ -196,13 +196,13 @@ y
 +--------------------------------------------------------------------------------+
 ```
 
-> **Full ASCII Output**: [Download ripple_jet.txt](../../output/example/fortran/colored_contours/ripple_jet.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download ripple_jet.txt](../../media/examples/colored_contours/ripple_jet.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/colored_contours/ripple_jet.pdf)
+[Download PDF](../../media/examples/colored_contours/ripple_jet.pdf)
 
 ### Ripple Function with Coolwarm Colormap
 
-![ripple_coolwarm.png](../../output/example/fortran/colored_contours/ripple_coolwarm.png)
+![ripple_coolwarm.png](../../media/examples/colored_contours/ripple_coolwarm.png)
 
 ASCII output preview:
 ```
@@ -248,13 +248,13 @@ y
 +--------------------------------------------------------------------------------+
 ```
 
-> **Full ASCII Output**: [Download ripple_coolwarm.txt](../../output/example/fortran/colored_contours/ripple_coolwarm.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download ripple_coolwarm.txt](../../media/examples/colored_contours/ripple_coolwarm.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/colored_contours/ripple_coolwarm.pdf)
+[Download PDF](../../media/examples/colored_contours/ripple_coolwarm.pdf)
 
 ### Ripple Function with Inferno Colormap
 
-![ripple_inferno.png](../../output/example/fortran/colored_contours/ripple_inferno.png)
+![ripple_inferno.png](../../media/examples/colored_contours/ripple_inferno.png)
 
 ASCII output preview:
 ```
@@ -300,7 +300,7 @@ y
 +--------------------------------------------------------------------------------+
 ```
 
-> **Full ASCII Output**: [Download ripple_inferno.txt](../../output/example/fortran/colored_contours/ripple_inferno.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download ripple_inferno.txt](../../media/examples/colored_contours/ripple_inferno.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/colored_contours/ripple_inferno.pdf)
+[Download PDF](../../media/examples/colored_contours/ripple_inferno.pdf)
 

@@ -30,7 +30,7 @@ make example ARGS="scale_examples"
 
 ### Log Scale
 
-![log_scale.png](../../output/example/fortran/scale_examples/log_scale.png)
+![log_scale.png](../../media/examples/scale_examples/log_scale.png)
 
 ASCII output preview:
 ```
@@ -51,13 +51,13 @@ Log Scale Example
 log(y)
 ```
 
-> **Full ASCII Output**: [Download log_scale.txt](../../output/example/fortran/scale_examples/log_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download log_scale.txt](../../media/examples/scale_examples/log_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/scale_examples/log_scale.pdf)
+[Download PDF](../../media/examples/scale_examples/log_scale.pdf)
 
 ### Symlog Scale
 
-![symlog_scale.png](../../output/example/fortran/scale_examples/symlog_scale.png)
+![symlog_scale.png](../../media/examples/scale_examples/symlog_scale.png)
 
 ASCII output preview:
 ```
@@ -81,7 +81,7 @@ Symlog Scale Example
 symlog(y)
 ```
 
-> **Full ASCII Output**: [Download symlog_scale.txt](../../output/example/fortran/scale_examples/symlog_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download symlog_scale.txt](../../media/examples/scale_examples/symlog_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/scale_examples/symlog_scale.pdf)
+[Download PDF](../../media/examples/scale_examples/symlog_scale.pdf)
 

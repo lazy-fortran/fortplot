@@ -36,7 +36,7 @@ make example ARGS="line_styles"
 
 ### Line Styles
 
-![line_styles.png](../../output/example/fortran/line_styles/line_styles.png)
+![line_styles.png](../../media/examples/line_styles/line_styles.png)
 
 ASCII output preview:
 ```
@@ -57,6 +57,6 @@ ASCII output preview:
 Line Styles
 ```
 
-> **Full ASCII Output**: [Download line_styles.txt](../../output/example/fortran/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../output/example/fortran/line_styles/line_styles.pdf)
+[Download PDF](../../media/examples/line_styles/line_styles.pdf)

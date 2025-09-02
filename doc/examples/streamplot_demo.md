@@ -34,4 +34,4 @@ make example ARGS="streamplot_demo"
 
 ## Output Example
 
-![Streamplot Demo](../../output/example/fortran/streamplot_demo/streamplot_demo.png)
+![Streamplot Demo](../../media/examples/streamplot_demo/streamplot_demo.png)
