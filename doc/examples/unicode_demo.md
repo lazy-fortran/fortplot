@@ -46,12 +46,7 @@ make example ARGS="unicode_demo"
 
 ![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download unicode_demo.txt](../../media/examples/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)
 

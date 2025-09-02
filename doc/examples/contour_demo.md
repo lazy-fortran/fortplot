@@ -32,12 +32,7 @@ make example ARGS="contour_demo"
 
 ![contour_gaussian.png](../../media/examples/contour_demo/contour_gaussian.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download contour_gaussian.txt](../../media/examples/contour_demo/contour_gaussian.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -47,14 +42,8 @@ See full ASCII output via the download link below.
 
 ![mixed_plot.png](../../media/examples/contour_demo/mixed_plot.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download mixed_plot.txt](../../media/examples/contour_demo/mixed_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/contour_demo/mixed_plot.pdf)
-

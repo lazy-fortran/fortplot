@@ -38,12 +38,7 @@ make example ARGS="line_styles"
 
 ![line_styles.png](../../media/examples/line_styles/line_styles.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
 

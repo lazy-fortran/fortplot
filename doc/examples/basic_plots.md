@@ -33,12 +33,7 @@ make example ARGS="basic_plots"
 
 ![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download simple_plot.txt](../../media/examples/basic_plots/simple_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -48,12 +43,7 @@ See full ASCII output via the download link below.
 
 ![multi_line.png](../../media/examples/basic_plots/multi_line.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download multi_line.txt](../../media/examples/basic_plots/multi_line.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
