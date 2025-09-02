@@ -237,6 +237,16 @@ verify-artifacts: create_build_dirs
 	# Pcolormesh PDFs must have no syntax errors; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; \
+	# Ensure pcolormesh PDFs use non-gray RGB fills (not grayscale); \
+	for pdf in output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf \
+	           output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; do \
+	  echo "[pdfcolor] checking non-gray fills in $$pdf"; \
+	  if awk '/^[0-9.]+ [0-9.]+ [0-9.]+ rg$$/ { if ($$1 != $$2 || $$2 != $$3) { found=1; exit } } END { exit (found?0:1) }' "$$pdf"; then \
+	    echo "[ok] $$pdf has non-gray RGB fill commands"; \
+	  else \
+	    echo "ERROR: $$pdf appears to use only grayscale fills (no non-gray 'rg')" >&2; exit 1; \
+	  fi; \
+	done; \
 	# A couple PNG size checks as non-empty proxy; \
 	check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000; \
 	check_png_size output/example/fortran/line_styles/line_styles.png 10000; \
