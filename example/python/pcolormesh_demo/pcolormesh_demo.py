@@ -20,13 +20,13 @@ def demo_basic_gradient():
     x = np.array([i * 0.4 for i in range(6)])
     y = np.array([i * 0.3 for i in range(5)])
     
-    # Create meshgrid for pcolormesh
-    X, Y = np.meshgrid(x, y, indexing='ij')
-    
     # Create test data - simple gradient
-    C = np.zeros((5, 4))  # Note: C dimensions are (len(y)-1, len(x)-1)
-    for i in range(4):
-        for j in range(5):
+    # For 1D x (len=nx) and y (len=ny), matplotlib expects C.shape == (ny-1, nx-1)
+    ny = len(y)
+    nx = len(x)
+    C = np.zeros((ny - 1, nx - 1))
+    for j in range(ny - 1):
+        for i in range(nx - 1):
             C[j, i] = i + j * 0.5
     
     plt.figure(figsize=(8, 6))
