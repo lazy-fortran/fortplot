@@ -155,6 +155,8 @@ contains
         integer :: i, codepoint
         character(len=4) :: utf_char
         character(len=8) :: symbol_char
+        character(len=8) :: escaped_char
+        integer :: esc_len
         
         do i = 1, len_trim(text)
             ! Get Unicode codepoint for character
@@ -177,8 +179,11 @@ contains
                     call switch_to_helvetica_font(this)
                     in_symbol_font = .false.
                 end if
-                ! Output regular character
-                this%stream_data = this%stream_data // "(" // text(i:i) // ") Tj" // new_line('a')
+                ! Output regular character with PDF escaping for (, ), and \
+                escaped_char = ''
+                esc_len = 0
+                call escape_pdf_string(text(i:i), escaped_char, esc_len)
+                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             end if
         end do
     end subroutine process_text_segments
@@ -243,6 +248,8 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=256) :: text_cmd
+        character(len=:), allocatable :: escaped_text
+        integer :: escaped_len
         
         ! Begin text object
         this%stream_data = this%stream_data // "BT" // new_line('a')
@@ -256,10 +263,14 @@ contains
             this%fonts%get_helvetica_obj(), PDF_TITLE_SIZE
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
         
+        ! Prepare escaped text
+        allocate(character(len=len(text)*6) :: escaped_text)
+        call escape_pdf_string(text, escaped_text, escaped_len)
+
         ! Position and show text using absolute positioning
         write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
         this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        this%stream_data = this%stream_data // "(" // text // ") Tj" // new_line('a')
+        this%stream_data = this%stream_data // "(" // escaped_text(1:escaped_len) // ") Tj" // new_line('a')
         
         ! Reset text rendering mode
         this%stream_data = this%stream_data // "0 Tr" // new_line('a')
