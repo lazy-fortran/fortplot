@@ -32,12 +32,7 @@ make example ARGS="scale_examples"
 
 ![log_scale.png](../../media/examples/scale_examples/log_scale.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download log_scale.txt](../../media/examples/scale_examples/log_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -47,14 +42,8 @@ See full ASCII output via the download link below.
 
 ![symlog_scale.png](../../media/examples/scale_examples/symlog_scale.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download symlog_scale.txt](../../media/examples/scale_examples/symlog_scale.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/scale_examples/symlog_scale.pdf)
-

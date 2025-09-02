@@ -43,12 +43,7 @@ make example ARGS="colored_contours"
 
 ![gaussian_default.png](../../media/examples/colored_contours/gaussian_default.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download gaussian_default.txt](../../media/examples/colored_contours/gaussian_default.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -58,12 +53,7 @@ See full ASCII output via the download link below.
 
 ![saddle_plasma.png](../../media/examples/colored_contours/saddle_plasma.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download saddle_plasma.txt](../../media/examples/colored_contours/saddle_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -73,12 +63,7 @@ See full ASCII output via the download link below.
 
 ![ripple_jet.png](../../media/examples/colored_contours/ripple_jet.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download ripple_jet.txt](../../media/examples/colored_contours/ripple_jet.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -88,12 +73,7 @@ See full ASCII output via the download link below.
 
 ![ripple_coolwarm.png](../../media/examples/colored_contours/ripple_coolwarm.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download ripple_coolwarm.txt](../../media/examples/colored_contours/ripple_coolwarm.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -103,14 +83,8 @@ See full ASCII output via the download link below.
 
 ![ripple_inferno.png](../../media/examples/colored_contours/ripple_inferno.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download ripple_inferno.txt](../../media/examples/colored_contours/ripple_inferno.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
 [Download PDF](../../media/examples/colored_contours/ripple_inferno.pdf)
-

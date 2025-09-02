@@ -48,12 +48,7 @@ make example ARGS="pcolormesh_demo"
 
 ![pcolormesh_basic.png](../../media/examples/pcolormesh_demo/pcolormesh_basic.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download pcolormesh_basic.txt](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -63,12 +58,7 @@ See full ASCII output via the download link below.
 
 ![pcolormesh_sinusoidal.png](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download pcolormesh_sinusoidal.txt](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
@@ -78,12 +68,7 @@ See full ASCII output via the download link below.
 
 ![pcolormesh_plasma.png](../../media/examples/pcolormesh_demo/pcolormesh_plasma.png)
 
-ASCII output preview:
-
-```
-[Preview truncated for readability]
-See full ASCII output via the download link below.
-```
+<!-- ASCII preview removed to keep pages concise; full ASCII linked below. -->
 
 > **Full ASCII Output**: [Download pcolormesh_plasma.txt](../../media/examples/pcolormesh_demo/pcolormesh_plasma.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
