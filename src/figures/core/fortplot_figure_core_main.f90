@@ -187,10 +187,11 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
-        if (present(linewidth)) then; associate(_lw=>linewidth); end associate; end if
-        if (present(rtol)) then; associate(_rt=>rtol); end associate; end if
-        if (present(atol)) then; associate(_at=>atol); end associate; end if
-        if (present(max_time)) then; associate(_mt=>max_time); end associate; end if
+        real(wp) :: _lw_dummy, _rt_dummy, _at_dummy, _mt_dummy
+        if (present(linewidth)) _lw_dummy = linewidth
+        if (present(rtol)) _rt_dummy = rtol
+        if (present(atol)) _at_dummy = atol
+        if (present(max_time)) _mt_dummy = max_time
         
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
                             density, color)
@@ -427,6 +428,12 @@ contains
         if (present(edgecolor)) then; associate(_ec=>edgecolor(1)); end associate; end if
         if (present(facecolor)) then; associate(_fc=>facecolor(1)); end associate; end if
         if (present(linewidth)) then; associate(_lw=>linewidth); end associate; end if
+        
+        real(wp) :: _al_dummy, _ec_dummy, _fc_dummy, _lw_dummy
+        if (present(alpha)) _al_dummy = alpha
+        if (present(edgecolor)) _ec_dummy = edgecolor(1)
+        if (present(facecolor)) _fc_dummy = facecolor(1)
+        if (present(linewidth)) _lw_dummy = linewidth
         
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
                          marker, markersize, color, colormap, vmin, vmax, label, &
