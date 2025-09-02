@@ -9,6 +9,8 @@ module fortplot_pdf_axes
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
+    use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+    use fortplot_scales, only: apply_scale_transform
     implicit none
     private
 
@@ -73,7 +75,8 @@ contains
     subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                  x_positions, y_positions, x_labels, y_labels, &
                                  num_x_ticks, num_y_ticks, xscale, yscale, &
-                                 plot_area_left, plot_area_bottom, plot_area_width, plot_area_height)
+                                 plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                                 symlog_threshold)
         !! Generate tick positions and labels for axes
         !! Refactored to be under 100 lines (QADS compliance)
         type(pdf_context_core), intent(in) :: ctx
@@ -83,6 +86,7 @@ contains
         integer, intent(out) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
+        real(wp), intent(in), optional :: symlog_threshold
 
         ! Calculate number of ticks and allocate arrays
         call initialize_tick_arrays(plot_area_width, plot_area_height, num_x_ticks, num_y_ticks, &
@@ -90,11 +94,11 @@ contains
 
         ! Generate X axis ticks
         call generate_x_axis_ticks(data_x_min, data_x_max, num_x_ticks, plot_area_left, &
-                                  plot_area_width, x_positions, x_labels, xscale)
+                                  plot_area_width, x_positions, x_labels, xscale, symlog_threshold)
 
         ! Generate Y axis ticks
         call generate_y_axis_ticks(data_y_min, data_y_max, num_y_ticks, plot_area_bottom, &
-                                  plot_area_height, y_positions, y_labels, yscale)
+                                  plot_area_height, y_positions, y_labels, yscale, symlog_threshold)
 
     end subroutine generate_tick_data
 
@@ -120,69 +124,95 @@ contains
     end subroutine initialize_tick_arrays
 
     subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, plot_width, &
-                                    positions, labels, scale_type)
+                                    positions, labels, scale_type, symlog_threshold)
         !! Generate X axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_left, plot_width
         integer, intent(in) :: num_ticks
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        real(wp), intent(in), optional :: symlog_threshold
 
-        real(wp) :: data_range, data_step, tick_value
-        integer :: i
-        real(wp), parameter :: EPSILON = 1.0e-10_wp
+        real(wp) :: tvals(MAX_TICKS)
+        integer :: nt, i, limit
+        real(wp) :: min_t, max_t, tv_t, thr
+        character(len=16) :: scale
 
-        data_range = data_max - data_min
+        scale = 'linear'
+        if (present(scale_type)) scale = scale_type
+        thr = 1.0_wp
+        if (present(symlog_threshold)) thr = symlog_threshold
 
-        ! Generate tick positions and labels
-        if (abs(data_range) < EPSILON) then
+        call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
+        if (nt <= 0) then
             call handle_zero_range_ticks(data_min, num_ticks, plot_left + plot_width * 0.5_wp, &
                                         positions, labels, scale_type)
-        else
-            data_step = data_range / real(num_ticks - 1, wp)
-            do i = 1, num_ticks
-                tick_value = data_min + real(i - 1, wp) * data_step
-
-                ! Convert to plot coordinates
-                positions(i) = plot_left + (tick_value - data_min) / data_range * plot_width
-
-                ! Generate label
-                call format_tick_label(tick_value, labels(i), scale_type)
-            end do
+            return
         end if
+
+        min_t = apply_scale_transform(data_min, scale, thr)
+        max_t = apply_scale_transform(data_max, scale, thr)
+
+        limit = min(num_ticks, size(positions))
+        do i = 1, limit
+            if (i > nt) exit
+            tv_t = apply_scale_transform(tvals(i), scale, thr)
+            if (max_t > min_t) then
+                positions(i) = plot_left + (tv_t - min_t) / (max_t - min_t) * plot_width
+            else
+                positions(i) = plot_left + 0.5_wp * plot_width
+            end if
+            labels(i) = adjustl(format_tick_label(tvals(i), scale))
+        end do
+        do i = nt + 1, limit
+            labels(i) = ''
+        end do
     end subroutine generate_x_axis_ticks
 
     subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, plot_height, &
-                                    positions, labels, scale_type)
+                                    positions, labels, scale_type, symlog_threshold)
         !! Generate Y axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_bottom, plot_height
         integer, intent(in) :: num_ticks
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        real(wp), intent(in), optional :: symlog_threshold
 
-        real(wp) :: data_range, data_step, tick_value
-        integer :: i
-        real(wp), parameter :: EPSILON = 1.0e-10_wp
+        real(wp) :: tvals(MAX_TICKS)
+        integer :: nt, i, limit
+        real(wp) :: min_t, max_t, tv_t, thr
+        character(len=16) :: scale
 
-        data_range = data_max - data_min
+        scale = 'linear'
+        if (present(scale_type)) scale = scale_type
+        thr = 1.0_wp
+        if (present(symlog_threshold)) thr = symlog_threshold
 
-        ! Generate tick positions and labels
-        if (abs(data_range) < EPSILON) then
+        call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
+        if (nt <= 0) then
             call handle_zero_range_ticks(data_min, num_ticks, plot_bottom + plot_height * 0.5_wp, &
                                         positions, labels, scale_type)
-        else
-            data_step = data_range / real(num_ticks - 1, wp)
-            do i = 1, num_ticks
-                tick_value = data_min + real(i - 1, wp) * data_step
-
-                ! Convert to plot coordinates
-                positions(i) = plot_bottom + (tick_value - data_min) / data_range * plot_height
-
-                ! Generate label
-                call format_tick_label(tick_value, labels(i), scale_type)
-            end do
+            return
         end if
+
+        min_t = apply_scale_transform(data_min, scale, thr)
+        max_t = apply_scale_transform(data_max, scale, thr)
+
+        limit = min(num_ticks, size(positions))
+        do i = 1, limit
+            if (i > nt) exit
+            tv_t = apply_scale_transform(tvals(i), scale, thr)
+            if (max_t > min_t) then
+                positions(i) = plot_bottom + (tv_t - min_t) / (max_t - min_t) * plot_height
+            else
+                positions(i) = plot_bottom + 0.5_wp * plot_height
+            end if
+            labels(i) = adjustl(format_tick_label(tvals(i), scale))
+        end do
+        do i = nt + 1, limit
+            labels(i) = ''
+        end do
     end subroutine generate_y_axis_ticks
 
     subroutine handle_zero_range_ticks(data_value, num_ticks, center_position, &
@@ -198,27 +228,13 @@ contains
 
         do i = 1, num_ticks
             positions(i) = center_position
-            call format_tick_label(data_value, labels(i), scale_type)
+            if (present(scale_type)) then
+                labels(i) = adjustl(format_tick_label(data_value, scale_type))
+            else
+                labels(i) = adjustl(format_tick_label(data_value, 'linear'))
+            end if
         end do
     end subroutine handle_zero_range_ticks
-
-    subroutine format_tick_label(tick_value, label, scale_type)
-        !! Format tick label based on scale type
-        real(wp), intent(in) :: tick_value
-        character(len=32), intent(out) :: label
-        character(len=*), intent(in), optional :: scale_type
-
-        if (present(scale_type)) then
-            if (scale_type == 'log') then
-                write(label, '(ES10.2)') 10.0_wp ** tick_value
-            else
-                write(label, '(F10.2)') tick_value
-            end if
-        else
-            write(label, '(F10.2)') tick_value
-        end if
-        label = adjustl(label)
-    end subroutine format_tick_label
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                        data_x_min, data_x_max, data_y_min, data_y_max, &
@@ -241,11 +257,12 @@ contains
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                    x_min_adj, x_max_adj, y_min_adj, y_max_adj, xscale, yscale)
 
-        ! Generate tick data
-        call generate_tick_data(ctx, x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
+        ! Generate tick data using original data bounds; apply transforms per scale
+        call generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                x_positions, y_positions, x_labels, y_labels, &
                                num_x_ticks, num_y_ticks, xscale, yscale, &
-                               plot_area_left, plot_area_bottom, plot_area_width, plot_area_height)
+                               plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                               symlog_threshold)
 
         ! Grid functionality removed - PDF plots now display without grid lines
 
@@ -290,7 +307,7 @@ contains
         !! Draw the plot frame using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height, canvas_height
-        character(len=256) :: frame_cmd
+        character(len=2048) :: frame_cmd
         real(wp) :: x1, y1
 
         ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
@@ -313,7 +330,7 @@ contains
         real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
 
         integer :: i
-        character(len=256) :: tick_cmd
+        character(len=2048) :: tick_cmd
         real(wp) :: tick_length, bottom_y
 
         ! Ensure tick marks are stroked in black regardless of prior drawing state
