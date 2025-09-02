@@ -234,9 +234,16 @@ contains
             real(wp), intent(in) :: v
             real(wp), allocatable :: tmp(:)
             integer :: n
+            
+            if (.not. allocated(arr)) then
+                allocate(arr(1)); arr(1) = v; return
+            end if
+            
             n = size(arr)
             if (n == 0) then
-                allocate(arr(1)); arr(1) = v; return
+                allocate(tmp(1)); tmp(1) = v
+                call move_alloc(tmp, arr)
+                return
             end if
             if (any(abs(arr - v) <= 1.0e-12_wp)) return
             allocate(tmp(n+1))
