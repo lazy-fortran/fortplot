@@ -187,11 +187,11 @@ contains
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
         real(wp), intent(in), optional :: rtol, atol, max_time
-        real(wp) :: _lw_dummy, _rt_dummy, _at_dummy, _mt_dummy
-        if (present(linewidth)) _lw_dummy = linewidth
-        if (present(rtol)) _rt_dummy = rtol
-        if (present(atol)) _at_dummy = atol
-        if (present(max_time)) _mt_dummy = max_time
+        real(wp) :: lw_dummy1, rt_dummy1, at_dummy1, mt_dummy1
+        if (present(linewidth)) lw_dummy1 = linewidth
+        if (present(rtol)) rt_dummy1 = rtol
+        if (present(atol)) at_dummy1 = atol
+        if (present(max_time)) mt_dummy1 = max_time
         
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
                             density, color)
@@ -424,16 +424,11 @@ contains
         ! Get default color from state
         default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
         
-        if (present(alpha)) then; associate(_al=>alpha); end associate; end if
-        if (present(edgecolor)) then; associate(_ec=>edgecolor(1)); end associate; end if
-        if (present(facecolor)) then; associate(_fc=>facecolor(1)); end associate; end if
-        if (present(linewidth)) then; associate(_lw=>linewidth); end associate; end if
-        
-        real(wp) :: _al_dummy, _ec_dummy, _fc_dummy, _lw_dummy
-        if (present(alpha)) _al_dummy = alpha
-        if (present(edgecolor)) _ec_dummy = edgecolor(1)
-        if (present(facecolor)) _fc_dummy = facecolor(1)
-        if (present(linewidth)) _lw_dummy = linewidth
+        real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
+        if (present(alpha)) al_dummy1 = alpha
+        if (present(edgecolor)) ec_dummy1 = edgecolor(1)
+        if (present(facecolor)) fc_dummy1 = facecolor(1)
+        if (present(linewidth)) lw_dummy2 = linewidth
         
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
                          marker, markersize, color, colormap, vmin, vmax, label, &
