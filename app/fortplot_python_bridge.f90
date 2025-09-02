@@ -61,6 +61,12 @@ program fortplot_python_bridge
             call process_scatter_command(x, y)
         case ('HISTOGRAM')
             call process_histogram_command(data)
+        case ('PCOLORMESH')
+            call process_pcolormesh_command()
+        case ('CONTOUR')
+            call process_contour_command(.false.)
+        case ('CONTOURF')
+            call process_contour_command(.true.)
         case ('TITLE')
             call process_title_command()
         case ('XLABEL')
@@ -77,6 +83,10 @@ program fortplot_python_bridge
             call process_xlim_command()
         case ('YLIM')
             call process_ylim_command()
+        case ('XSCALE')
+            call process_xscale_command()
+        case ('YSCALE')
+            call process_yscale_command()
         case ('QUIT', 'EXIT')
             exit
         case default
@@ -192,6 +202,111 @@ contains
             call hist(data_arr)
         end if
     end subroutine
+
+    subroutine process_pcolormesh_command()
+        !! Read pcolormesh inputs and call implementation
+        real(wp), allocatable :: x_local(:), y_local(:)
+        real(wp), allocatable :: c_local(:,:)
+        integer :: nx, ny, mx, my
+        integer :: i, j, ios
+
+        read(*, *, iostat=ios) nx, ny
+        if (ios /= 0) return
+        if (nx <= 1 .or. ny <= 1) return
+        if (nx > MAX_INPUT_ARRAY .or. ny > MAX_INPUT_ARRAY) then
+            call log_error('Invalid or excessive grid size for PCOLORMESH')
+            return
+        end if
+
+        allocate(x_local(nx), y_local(ny))
+        do i = 1, nx
+            read(*, *, iostat=ios) x_local(i)
+            if (ios /= 0) return
+        end do
+        do i = 1, ny
+            read(*, *, iostat=ios) y_local(i)
+            if (ios /= 0) return
+        end do
+
+        ! c has shape (ny-1, nx-1)
+        my = ny - 1
+        mx = nx - 1
+        allocate(c_local(my, mx))
+        do i = 1, my
+            do j = 1, mx
+                read(*, *, iostat=ios) c_local(i, j)
+                if (ios /= 0) return
+            end do
+        end do
+
+        call pcolormesh(x_local, y_local, c_local)
+
+        if (allocated(x_local)) deallocate(x_local)
+        if (allocated(y_local)) deallocate(y_local)
+        if (allocated(c_local)) deallocate(c_local)
+    end subroutine process_pcolormesh_command
+
+    subroutine process_contour_command(filled)
+        !! Read contour/contourf inputs and call implementation
+        logical, intent(in) :: filled
+        real(wp), allocatable :: x_local(:), y_local(:)
+        real(wp), allocatable :: z_local(:,:)
+        real(wp), allocatable :: levels(:)
+        integer :: nx, ny, i, j, ios, nlevels
+
+        read(*, *, iostat=ios) nx, ny
+        if (ios /= 0) return
+        if (nx <= 1 .or. ny <= 1) return
+        if (nx > MAX_INPUT_ARRAY .or. ny > MAX_INPUT_ARRAY) then
+            call log_error('Invalid or excessive grid size for CONTOUR')
+            return
+        end if
+
+        allocate(x_local(nx), y_local(ny))
+        do i = 1, nx
+            read(*, *, iostat=ios) x_local(i)
+            if (ios /= 0) return
+        end do
+        do i = 1, ny
+            read(*, *, iostat=ios) y_local(i)
+            if (ios /= 0) return
+        end do
+
+        allocate(z_local(ny, nx))
+        do i = 1, ny
+            do j = 1, nx
+                read(*, *, iostat=ios) z_local(i, j)
+                if (ios /= 0) return
+            end do
+        end do
+
+        ! Optional levels: next line is integer count; if <=0 or read fails, skip
+        nlevels = 0
+        read(*, *, iostat=ios) nlevels
+        if (ios == 0 .and. nlevels > 0 .and. nlevels <= MAX_INPUT_ARRAY) then
+            allocate(levels(nlevels))
+            do i = 1, nlevels
+                read(*, *, iostat=ios) levels(i)
+                if (ios /= 0) exit
+            end do
+            if (filled) then
+                call contour_filled(x_local, y_local, z_local, levels=levels)
+            else
+                call contour(x_local, y_local, z_local, levels=levels)
+            end if
+        else
+            if (filled) then
+                call contour_filled(x_local, y_local, z_local)
+            else
+                call contour(x_local, y_local, z_local)
+            end if
+        end if
+
+        if (allocated(x_local)) deallocate(x_local)
+        if (allocated(y_local)) deallocate(y_local)
+        if (allocated(z_local)) deallocate(z_local)
+        if (allocated(levels)) deallocate(levels)
+    end subroutine process_contour_command
     
     subroutine read_xy_data(x_arr, y_arr, n)
         real(wp), intent(out) :: x_arr(:), y_arr(:)
@@ -270,6 +385,84 @@ contains
         end if
         call ylim(ymin_val, ymax_val)
     end subroutine
+
+    subroutine process_streamplot_command()
+        !! Read streamplot inputs and call implementation
+        real(wp), allocatable :: x_local(:), y_local(:)
+        real(wp), allocatable :: u_local(:,:), v_local(:,:)
+        integer :: nx, ny, i, j, ios
+        real(wp) :: density
+
+        read(*, *, iostat=ios) nx, ny
+        if (ios /= 0) return
+        if (nx <= 0 .or. ny <= 0) return
+        if (nx > MAX_INPUT_ARRAY .or. ny > MAX_INPUT_ARRAY) then
+            call log_error('Invalid or excessive grid size for STREAMPLOT')
+            return
+        end if
+        allocate(x_local(nx), y_local(ny))
+        do i = 1, nx
+            read(*, *, iostat=ios) x_local(i)
+            if (ios /= 0) return
+        end do
+        do i = 1, ny
+            read(*, *, iostat=ios) y_local(i)
+            if (ios /= 0) return
+        end do
+
+        allocate(u_local(nx, ny), v_local(nx, ny))
+        do i = 1, nx
+            do j = 1, ny
+                read(*, *, iostat=ios) u_local(i, j)
+                if (ios /= 0) return
+            end do
+        end do
+        do i = 1, nx
+            do j = 1, ny
+                read(*, *, iostat=ios) v_local(i, j)
+                if (ios /= 0) return
+            end do
+        end do
+
+        density = 1.0_wp
+        read(*, *, iostat=ios) density
+        if (ios /= 0) density = 1.0_wp
+
+        call streamplot(x_local, y_local, u_local, v_local, density)
+
+        if (allocated(x_local)) deallocate(x_local)
+        if (allocated(y_local)) deallocate(y_local)
+        if (allocated(u_local)) deallocate(u_local)
+        if (allocated(v_local)) deallocate(v_local)
+    end subroutine process_streamplot_command
+
+    subroutine process_xscale_command()
+        character(len=MAX_STR_LEN) :: scale
+        real(wp) :: threshold
+        integer :: ios
+        threshold = 1.0_wp
+        if (.not. safe_read_line(MAX_STR_LEN, scale)) return
+        read(*, *, iostat=ios) threshold
+        if (ios /= 0) then
+            call set_xscale(trim(scale))
+        else
+            call set_xscale(trim(scale), threshold)
+        end if
+    end subroutine process_xscale_command
+
+    subroutine process_yscale_command()
+        character(len=MAX_STR_LEN) :: scale
+        real(wp) :: threshold
+        integer :: ios
+        threshold = 1.0_wp
+        if (.not. safe_read_line(MAX_STR_LEN, scale)) return
+        read(*, *, iostat=ios) threshold
+        if (ios /= 0) then
+            call set_yscale(trim(scale))
+        else
+            call set_yscale(trim(scale), threshold)
+        end if
+    end subroutine process_yscale_command
     
     logical function safe_read_line(max_len, out)
         !! Safely read a line from stdin, enforcing maximum length

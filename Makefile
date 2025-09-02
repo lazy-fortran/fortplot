@@ -74,6 +74,10 @@ test-ci:
 	@$(TIMEOUT_PREFIX) python3 scripts/test_python_bridge_security.py || exit 1
 	@# Basic non-interactive Python bridge functionality using example command file (fixes #919)
 	@chmod +x scripts/test_python_bridge_example.sh && $(TIMEOUT_PREFIX) ./scripts/test_python_bridge_example.sh || exit 1
+	@# Python bridge: pcolormesh via wrapper
+	@$(TIMEOUT_PREFIX) python3 scripts/test_python_pcolormesh_via_bridge.py || exit 1
+	@# Python bridge: log scale via wrapper
+	@$(TIMEOUT_PREFIX) python3 scripts/test_python_scales_via_bridge.py || exit 1
 	@# Regression for filled-quad edge coverage (prevents 1px cuts on borders)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_quad_fill_edges || exit 1
 	@# Guard against redundant pcolormesh tests (Issue #897)
