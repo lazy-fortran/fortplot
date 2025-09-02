@@ -27,9 +27,12 @@ contains
         
         ! Base pattern dimensions in abstract pattern units.
         ! Raster rendering scales these by its PATTERN_SCALE_FACTOR to pixels.
-        dash_len = 3.0_wp    ! 15 pixels when scaled - proper dash length
-        dot_len = 0.4_wp     ! 2 pixels when scaled - visible dot
-        gap_len = 1.0_wp     ! 5 pixels when scaled - clear separation
+        ! Define pattern lengths in abstract units that map 1:1 to pixels
+        ! (see PATTERN_SCALE_FACTOR in raster backend). Values chosen to
+        ! approximate Matplotlib defaults visually.
+        dash_len = 6.0_wp    ! ~6 px dash
+        dot_len  = 1.0_wp    ! ~1 px dot
+        gap_len  = 3.0_wp    ! ~3 px gap
         
         select case (trim(linestyle))
         case ('-', 'solid')

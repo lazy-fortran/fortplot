@@ -16,9 +16,7 @@ module fortplot_rendering
     public :: render_contour_plot
     public :: render_pcolormesh_plot
     public :: render_markers
-    public :: draw_line_with_style
     public :: render_solid_line
-    public :: render_patterned_line
     public :: transform_quad_to_screen
     public :: draw_filled_quad
     public :: draw_quad_edges

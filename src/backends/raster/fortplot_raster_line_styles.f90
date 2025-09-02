@@ -14,7 +14,9 @@ module fortplot_raster_line_styles
     ! Pattern scaling factor controls how many pattern units correspond
     ! to one pixel of geometric distance. Use a non-integer factor to
     ! avoid aliasing where fixed 2px segments never enter gap regions.
-    real(wp), parameter :: PATTERN_SCALE_FACTOR = 1.3_wp
+    ! Scale of pattern units to pixels. Using 1.0 aligns
+    ! pattern units with pixel distances for intuitive lengths
+    real(wp), parameter :: PATTERN_SCALE_FACTOR = 1.0_wp
 
 contains
 
