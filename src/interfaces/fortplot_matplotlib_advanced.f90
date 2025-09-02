@@ -335,6 +335,7 @@ contains
         real(8), intent(in), optional :: density, linewidth_scale, arrow_scale
         character(len=*), intent(in), optional :: colormap, label
         real(8) :: density_local
+        real(wp) :: line_color(3)
         real, allocatable :: trajectories(:,:,:)
         integer, allocatable :: traj_lengths(:)
         integer :: n_traj, i, j
@@ -353,6 +354,9 @@ contains
         end if
         density_local = 1.0d0
         if (present(density)) density_local = density
+        ! Use a single default color for all streamlines (matplotlib-style)
+        line_color = [0.0_wp, 0.447_wp, 0.698_wp]
+
         ! Generate trajectories using matplotlib-compatible algorithm
         call streamplot_matplotlib(x, y, u, v, density_local, trajectories, n_traj, traj_lengths)
 
@@ -364,9 +368,13 @@ contains
                 traj_x(j) = x(1) + real(trajectories(i, j, 1), wp) * (x(size(x)) - x(1)) / real(size(x) - 1, wp)
                 traj_y(j) = y(1) + real(trajectories(i, j, 2), wp) * (y(size(y)) - y(1)) / real(size(y) - 1, wp)
             end do
-            call fig%add_plot(traj_x, traj_y)
+            call fig%add_plot(traj_x, traj_y, color=line_color)
             deallocate(traj_x, traj_y)
         end do
+
+        ! Clean up allocated trajectory data
+        if (allocated(trajectories)) deallocate(trajectories)
+        if (allocated(traj_lengths)) deallocate(traj_lengths)
     end subroutine streamplot
 
     subroutine add_contour(x, y, z, levels, label)
