@@ -1,14 +1,14 @@
 #!/bin/bash
 
-# Validation script for GitHub Pages image paths - Issue #205
-# 
-# This script validates that documentation images are correctly staged
-# for GitHub Pages deployment with working relative path resolution
+# Validation script for GitHub Pages media paths - Issue #205
+#
+# This script validates that documentation media (images, pdf, mp4) are correctly
+# staged for GitHub Pages deployment with working relative path resolution
 
 set -e
 
 echo "============================================================"
-echo "VALIDATING GITHUB PAGES IMAGE PATHS - Issue #205"
+echo "VALIDATING GITHUB PAGES MEDIA PATHS - Issue #205"
 echo "============================================================"
 
 # Test results
@@ -47,11 +47,11 @@ else
     test_result "Documentation build directory" "FAIL" "build/doc not found - run 'make doc' first"
 fi
 
-# Test 2: Check if media staging directory exists
-if [ -d "build/doc/media/examples" ]; then
-    test_result "Media staging directory" "PASS" "build/doc/media/examples exists"
+# Test 2: Check if media staging directory exists under page/
+if [ -d "build/doc/page/media/examples" ]; then
+    test_result "Media staging directory" "PASS" "build/doc/page/media/examples exists"
 else
-    test_result "Media staging directory" "CRITICAL" "build/doc/media/examples missing - images will be broken"
+    test_result "Media staging directory" "CRITICAL" "build/doc/page/media/examples missing - media links will be broken"
 fi
 
 # Test 3: Check workflow and Makefile for proper media staging
@@ -62,7 +62,7 @@ if [ -f ".github/workflows/docs.yml" ]; then
     if echo "$context" | grep -B 5 "make doc" | grep -q "cp -r doc/media/examples"; then
         test_result "Workflow media staging" "PASS" "Media copied before 'make doc' - paths will work correctly"
     elif echo "$context" | grep -A 5 "make doc" | grep -q "cp -r doc/media/examples"; then
-        test_result "Workflow media staging" "CRITICAL" "Media copied after 'make doc' - will break image paths"
+        test_result "Workflow media staging" "CRITICAL" "Media copied after 'make doc' - may break media paths"
     else
         test_result "Workflow media staging" "PASS" "No media copy found near 'make doc'"
     fi
@@ -72,15 +72,15 @@ fi
 
 if [ -f "Makefile" ]; then
     doc_section=$(sed -n '/^doc:/,/^[a-zA-Z]/p' Makefile)
-    # Check if ford comes BEFORE any cp commands (which would be wrong)
+    # Check that Makefile copies to build/doc/page/media (which matches FORD page links)
     ford_line=$(echo "$doc_section" | grep -n "ford" | cut -d: -f1)
-    first_cp_line=$(echo "$doc_section" | grep -n "cp.*doc/media" | head -1 | cut -d: -f1)
+    first_cp_line=$(echo "$doc_section" | grep -n "cp.*build/doc/page/media" | head -1 | cut -d: -f1)
     
     if [ -n "$ford_line" ] && [ -n "$first_cp_line" ]; then
         if [ "$ford_line" -lt "$first_cp_line" ]; then
-            test_result "Makefile media staging" "PASS" "FORD runs first, then media copied - correct pattern"
+            test_result "Makefile media staging" "PASS" "FORD runs first, then media copied under page/media - correct pattern"
         else
-            test_result "Makefile media staging" "PASS" "Media copied before FORD - also works correctly"
+            test_result "Makefile media staging" "PASS" "Media copied before FORD (page/media) - also works correctly"
         fi
     elif [ -n "$ford_line" ]; then
         test_result "Makefile media staging" "PASS" "FORD found, no media copy needed"
@@ -103,11 +103,11 @@ echo "Critical issues: $CRITICAL_ISSUES"
 if [ $CRITICAL_ISSUES -gt 0 ]; then
     echo ""
     echo "❌ CRITICAL ISSUES FOUND"
-    echo "GitHub Pages documentation will have broken images!"
+    echo "GitHub Pages documentation will have broken media links!"
     echo ""
     echo "REQUIRED FIXES:"
-    echo "1. Ensure media files are copied to build/doc/media/examples/"
-    echo "2. Validate that HTML files reference images with correct paths"
+    echo "1. Ensure media files are copied to build/doc/page/media/examples/"
+    echo "2. Validate that HTML files reference media with correct paths"
     echo "3. Test relative path resolution works correctly"
     echo ""
     exit 1
