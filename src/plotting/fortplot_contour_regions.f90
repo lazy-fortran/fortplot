@@ -228,27 +228,143 @@ contains
     end subroutine handle_marching_squares_case
     
     subroutine finalize_boundaries(contour_x, contour_y, contour_count, boundaries)
-        !! Create boundary polygon from collected contour points
+        !! Create one or more boundary polygons by chaining contour segments
         real(wp), intent(in) :: contour_x(:), contour_y(:)
         integer, intent(in) :: contour_count
         type(contour_polygon_t), allocatable, intent(out) :: boundaries(:)
-        
-        if (contour_count > 0) then
-            allocate(boundaries(1))
-            allocate(boundaries(1)%x(contour_count + 1))
-            allocate(boundaries(1)%y(contour_count + 1))
-            
-            boundaries(1)%x(1:contour_count) = contour_x(1:contour_count)
-            boundaries(1)%y(1:contour_count) = contour_y(1:contour_count)
-            
-            ! Close the polygon
-            boundaries(1)%x(contour_count + 1) = boundaries(1)%x(1)
-            boundaries(1)%y(contour_count + 1) = boundaries(1)%y(1)
-            boundaries(1)%is_closed = .true.
-        else
-            ! No contour found - create empty boundary
+
+        integer :: nseg, k, i_poly, max_pts
+        real(wp), allocatable :: xs(:), ys(:)          ! segment endpoints flattened [x1,y1,x2,y2] per segment
+        logical, allocatable :: used(:)
+        real(wp), allocatable :: px(:), py(:)
+        integer :: npts, s
+        real(wp) :: sx, sy, cx, cy, nxp, nyp
+
+        ! Internal helpers are defined in the CONTAINS block below
+
+        ! No segments collected
+        if (contour_count < 2) then
+            allocate(boundaries(0))
+            return
+        end if
+
+        ! Interpret consecutive point pairs as independent segments
+        nseg = contour_count / 2
+        allocate(xs(2*nseg))
+        allocate(ys(2*nseg))
+        allocate(used(nseg))
+        used = .false.
+        do k = 1, nseg
+            xs(2*k-1) = contour_x(2*k-1)
+            ys(2*k-1) = contour_y(2*k-1)
+            xs(2*k  ) = contour_x(2*k  )
+            ys(2*k  ) = contour_y(2*k  )
+        end do
+
+        ! We do not know polygon count upfront
+        allocate(boundaries(0))
+        i_poly = 0
+        max_pts = contour_count + 1
+        allocate(px(max_pts))
+        allocate(py(max_pts))
+
+        do
+            ! Find next unused segment to start a chain
+            s = 0
+            do k = 1, nseg
+                if (.not. used(k)) then
+                    s = k
+                    exit
+                end if
+            end do
+            if (s == 0) exit  ! no more segments
+
+            ! Initialize chain with segment s
+            sx = xs(2*s-1); sy = ys(2*s-1)
+            cx = xs(2*s  ); cy = ys(2*s  )
+            used(s) = .true.
+            npts = 2
+            px(1) = sx; py(1) = sy
+            px(2) = cx; py(2) = cy
+
+            ! Greedily connect subsequent segments by matching endpoints
+            do
+                ! Closed loop formed?
+                if (points_close(cx, cy, sx, sy)) then
+                    npts = npts + 1
+                    px(npts) = sx
+                    py(npts) = sy
+                    exit
+                end if
+
+                ! Search for a segment connecting to current endpoint
+                s = 0
+                do k = 1, nseg
+                    if (used(k)) cycle
+                    if (points_close(xs(2*k-1), ys(2*k-1), cx, cy)) then
+                        nxp = xs(2*k  ); nyp = ys(2*k  )
+                        s = k
+                        exit
+                    else if (points_close(xs(2*k  ), ys(2*k  ), cx, cy)) then
+                        nxp = xs(2*k-1); nyp = ys(2*k-1)
+                        s = k
+                        exit
+                    end if
+                end do
+
+                if (s == 0) then
+                    ! Could not close chain; discard open polyline
+                    npts = 0
+                    exit
+                end if
+
+                ! Append next point and continue
+                used(s) = .true.
+                cx = nxp; cy = nyp
+                npts = npts + 1
+                if (npts > max_pts) exit
+                px(npts) = cx
+                py(npts) = cy
+            end do
+
+            ! If a closed polygon was formed with >= 4 points (including closure), store it
+            if (npts >= 4) then
+                call append_boundary(boundaries, px, py, npts)
+            end if
+        end do
+
+        if (.not. allocated(boundaries)) then
             allocate(boundaries(0))
         end if
+
+        contains
+
+        logical function points_close(ax, ay, bx, by)
+            real(wp), intent(in) :: ax, ay, bx, by
+            real(wp) :: dx, dy
+            dx = ax - bx
+            dy = ay - by
+            points_close = (abs(dx) <= EPSILON_GEOMETRY .and. abs(dy) <= EPSILON_GEOMETRY)
+        end function points_close
+
+        subroutine append_boundary(arr, vx, vy, n)
+            type(contour_polygon_t), allocatable, intent(inout) :: arr(:)
+            real(wp), intent(in) :: vx(:), vy(:)
+            integer, intent(in) :: n
+            type(contour_polygon_t), allocatable :: tmp(:)
+            integer :: oldn
+
+            oldn = size(arr)
+            allocate(tmp(oldn + 1))
+            if (oldn > 0) tmp(1:oldn) = arr
+            call move_alloc(tmp, arr)
+
+            allocate(arr(oldn + 1)%x(n))
+            allocate(arr(oldn + 1)%y(n))
+            arr(oldn + 1)%x(1:n) = vx(1:n)
+            arr(oldn + 1)%y(1:n) = vy(1:n)
+            arr(oldn + 1)%is_closed = .true.
+        end subroutine append_boundary
     end subroutine finalize_boundaries
     
     subroutine add_contour_segment(i, j, edge1, edge2, corner_values, level_min, level_max, &
