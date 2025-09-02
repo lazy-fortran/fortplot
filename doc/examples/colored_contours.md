@@ -5,7 +5,9 @@ title: Colored Contours
 
 Source: [example/fortran/colored_contours/colored_contours.f90](../../example/fortran/colored_contours/colored_contours.f90)
 
-This example shows filled contour plots with customizable colormaps for visualizing 2D scalar fields.
+This example shows filled (colored) contour plots with customizable colormaps for visualizing 2D scalar fields.
+
+Note: For line contours (contour level lines) and a mixed contour+line example, see: [Contour Demo](./contour_demo.html).
 
 ## Files
 

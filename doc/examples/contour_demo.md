@@ -5,7 +5,9 @@ title: Contour Demo
 
 Source: [example/fortran/contour_demo/contour_demo.f90](../../example/fortran/contour_demo/contour_demo.f90)
 
-This example demonstrates contour plotting capabilities, including basic contours, custom levels, and mixing contour plots with line plots.
+This example demonstrates line contour plotting (level lines) with custom levels and a mixed plot combining contours with a line overlay.
+
+Note: For filled/colored contours (continuous shaded regions) and colormap comparisons, see also: [Colored Contours](./colored_contours.html).
 
 ## Files
 
@@ -21,10 +23,9 @@ make example ARGS="contour_demo"
 
 ## Features Demonstrated
 
-- **Basic contours**: Automatic level selection
+- **Line contours**: Level lines with automatic or custom levels
 - **Custom levels**: User-defined contour levels
-- **Mixed plots**: Combining contours with line plots
-- **Label formatting**: Contour level labels
+- **Mixed plots**: Combine contours with a line profile overlay
 
 ## Output
 
