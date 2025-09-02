@@ -13,7 +13,6 @@ module fortplot_mesh_rendering
     
     private
     public :: render_pcolormesh_plot
-    public :: transform_quad_to_screen
     public :: draw_filled_quad
     public :: draw_quad_edges
     
@@ -30,7 +29,7 @@ contains
         integer, intent(in) :: width, height
         real(wp), intent(in) :: margin_right
         
-        real(wp) :: x_quad(4), y_quad(4), x_screen(4), y_screen(4)
+        real(wp) :: x_quad(4), y_quad(4)
         real(wp), dimension(3) :: quad_color
         real(wp) :: c_value, vmin, vmax
         integer :: i, j, nx, ny
@@ -78,10 +77,6 @@ contains
                          plot_data%pcolormesh_data%y_vertices(j+1, i+1), &
                          plot_data%pcolormesh_data%y_vertices(j+1, i)]
                 
-                ! Transform to screen coordinates
-                call transform_quad_to_screen(x_quad, y_quad, x_screen, y_screen, &
-                                            xscale, yscale, symlog_threshold)
-                
                 ! Get color for this quad
                 c_value = plot_data%pcolormesh_data%c_values(j, i)
                 call colormap_value_to_color(c_value, vmin, vmax, &
@@ -89,14 +84,14 @@ contains
                 
                 ! Draw filled quad
                 call backend%color(quad_color(1), quad_color(2), quad_color(3))
-                call draw_filled_quad(backend, x_screen, y_screen)
+                call draw_filled_quad(backend, x_quad, y_quad)
                 
                 ! Draw edges if requested
                 if (plot_data%pcolormesh_data%show_edges) then
                     call backend%color(plot_data%pcolormesh_data%edge_color(1), &
                                      plot_data%pcolormesh_data%edge_color(2), &
                                      plot_data%pcolormesh_data%edge_color(3))
-                    call draw_quad_edges(backend, x_screen, y_screen, &
+                    call draw_quad_edges(backend, x_quad, y_quad, &
                                        plot_data%pcolormesh_data%edge_width)
                 end if
             end do
@@ -105,20 +100,7 @@ contains
         ! Colorbar rendering handled elsewhere if needed
     end subroutine render_pcolormesh_plot
 
-    subroutine transform_quad_to_screen(x_quad, y_quad, x_screen, y_screen, &
-                                       xscale, yscale, symlog_threshold)
-        !! Transform quad coordinates to screen space
-        real(wp), intent(in) :: x_quad(4), y_quad(4)
-        real(wp), intent(out) :: x_screen(4), y_screen(4)
-        character(len=*), intent(in) :: xscale, yscale
-        real(wp), intent(in) :: symlog_threshold
-        integer :: i
-        
-        do i = 1, 4
-            x_screen(i) = apply_scale_transform(x_quad(i), xscale, symlog_threshold)
-            y_screen(i) = apply_scale_transform(y_quad(i), yscale, symlog_threshold)
-        end do
-    end subroutine transform_quad_to_screen
+    ! Note: Do not pre-transform quads here; backends apply coordinate transforms.
     
     subroutine draw_filled_quad(backend, x_screen, y_screen)
         !! Draw a filled quadrilateral
