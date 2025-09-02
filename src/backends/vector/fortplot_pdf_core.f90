@@ -89,9 +89,12 @@ contains
         safe_g = max(0.0_wp, min(1.0_wp, safe_g))
         safe_b = max(0.0_wp, min(1.0_wp, safe_b))
         
+        ! Set both stroking (RG) and non-stroking (rg) colors.
         write(color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " RG")') safe_r, safe_g, safe_b
         this%stream_data = this%stream_data // trim(adjustl(color_cmd)) // new_line('a')
-    end subroutine set_pdf_color
+        write(color_cmd, '(F0.3, 1X, F0.3, 1X, F0.3, " rg")') safe_r, safe_g, safe_b
+        this%stream_data = this%stream_data // trim(adjustl(color_cmd)) // new_line('a')
+        end subroutine set_pdf_color
 
     subroutine set_pdf_line_width(this, width)
         class(pdf_context_core), intent(inout) :: this
