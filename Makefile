@@ -133,21 +133,22 @@ doc:
 	$(MAKE) example ARGS="save_animation_demo" >/dev/null
 	# Run FORD to generate documentation structure
 	ford doc.md
-	# Copy example media files to doc build directory AFTER running FORD
-	mkdir -p build/doc/media/examples
+	# Copy example media files to the path that matches FORD page-relative links
+	# NOTE: Pages live under build/doc/page/, so media must be at build/doc/page/media/
+	mkdir -p build/doc/page/media/examples
 	# Copy from doc/media if it exists (GitHub Actions workflow populates this)
-	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/media/examples/ 2>/dev/null || true; fi
+	if [ -d doc/media/examples ]; then cp -r doc/media/examples/* build/doc/page/media/examples/ 2>/dev/null || true; fi
 	# Also copy directly from output directory if available (for local builds)
 	for dir in output/example/fortran/*/; do \
-        if [ -d "$$dir" ]; then \
-            example_name=$$(basename "$$dir"); \
-            mkdir -p "build/doc/media/examples/$$example_name"; \
-            cp "$$dir"*.png "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-            cp "$$dir"*.txt "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-            cp "$$dir"*.pdf "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-            cp "$$dir"*.mp4 "build/doc/media/examples/$$example_name/" 2>/dev/null || true; \
-        fi; \
-    done
+		if [ -d "$$dir" ]; then \
+			example_name=$$(basename "$$dir"); \
+			mkdir -p "build/doc/page/media/examples/$$example_name"; \
+			cp "$$dir"*.png "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.txt "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.pdf "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
+			cp "$$dir"*.mp4 "build/doc/page/media/examples/$$example_name/" 2>/dev/null || true; \
+		fi; \
+	done
 
 
 # Validate functional output generation
