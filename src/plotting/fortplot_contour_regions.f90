@@ -426,9 +426,9 @@ contains
                 py(npts) = cy
             end do
 
-            ! If a closed polygon was formed with >= 4 points (including closure), store it
+            ! If a closed polygon was formed with >= 4 points (including closure), normalize orientation and store it
             if (npts >= 4) then
-                call append_boundary(boundaries, px, py, npts)
+                call normalize_and_append(boundaries, px, py, npts)
             end if
         end do
 
@@ -446,12 +446,14 @@ contains
             points_close = (abs(dx) <= EPSILON_GEOMETRY .and. abs(dy) <= EPSILON_GEOMETRY)
         end function points_close
 
-        subroutine append_boundary(arr, vx, vy, n)
+        subroutine normalize_and_append(arr, vx, vy, n)
             type(contour_polygon_t), allocatable, intent(inout) :: arr(:)
             real(wp), intent(in) :: vx(:), vy(:)
             integer, intent(in) :: n
             type(contour_polygon_t), allocatable :: tmp(:)
             integer :: oldn
+            real(wp) :: area
+            integer :: i
 
             oldn = size(arr)
             allocate(tmp(oldn + 1))
@@ -460,10 +462,24 @@ contains
 
             allocate(arr(oldn + 1)%x(n))
             allocate(arr(oldn + 1)%y(n))
-            arr(oldn + 1)%x(1:n) = vx(1:n)
-            arr(oldn + 1)%y(1:n) = vy(1:n)
+            ! Compute signed area to enforce CCW ordering for consistency
+            area = 0.0_wp
+            do i = 1, n-1
+                area = area + (vx(i) * vy(i+1) - vx(i+1) * vy(i))
+            end do
+            area = area + (vx(n) * vy(1) - vx(1) * vy(n))
+            if (area < 0.0_wp) then
+                ! Reverse to ensure CCW
+                do i = 1, n
+                    arr(oldn + 1)%x(i) = vx(n - i + 1)
+                    arr(oldn + 1)%y(i) = vy(n - i + 1)
+                end do
+            else
+                arr(oldn + 1)%x(1:n) = vx(1:n)
+                arr(oldn + 1)%y(1:n) = vy(1:n)
+            end if
             arr(oldn + 1)%is_closed = .true.
-        end subroutine append_boundary
+        end subroutine normalize_and_append
     end subroutine finalize_boundaries
     
     subroutine add_contour_segment(i, j, edge1, edge2, corner_values, level_min, level_max, &
