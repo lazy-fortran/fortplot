@@ -68,4 +68,4 @@ Creating animated plots and saving to video files.
 
 ---
 
-All examples are available in the [example/fortran/](https://github.com/krystophny/fortplotlib/tree/main/example/fortran) directory.
+All examples are available in the [example/fortran/](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran) directory.
