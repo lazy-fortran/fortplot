@@ -7,7 +7,7 @@ program test_pdf_title_whitespace
     integer :: unit, ios
     integer(kind=8) :: fsize
     character, allocatable :: data(:)
-    logical :: has_space_tj
+    integer :: space_tj_count
 
     call figure()
     call title('HELLO WORLD TEST')
@@ -33,10 +33,10 @@ program test_pdf_title_whitespace
         stop 1
     end if
 
-    ! Ensure a space glyph is emitted as its own Tj segment: "( ) Tj"
-    has_space_tj = bytes_contains(data, fsize, '( ) Tj')
-    if (.not. has_space_tj) then
-        print *, 'FAIL: missing space Tj in PDF title rendering'
+    ! Ensure space glyphs are emitted as their own Tj segments: "( ) Tj"
+    space_tj_count = bytes_count(data, fsize, '( ) Tj')
+    if (space_tj_count < 2) then
+        print *, 'FAIL: expected at least 2 space Tj segments, found=', space_tj_count
         stop 1
     end if
 
@@ -60,5 +60,22 @@ contains
             end do
         end do
     end function bytes_contains
-end program test_pdf_title_whitespace
 
+    integer function bytes_count(arr, n, pat) result(cnt)
+        character(len=1), intent(in) :: arr(n)
+        integer(kind=8), intent(in) :: n
+        character(len=*), intent(in) :: pat
+        integer :: i, j, m
+        cnt = 0
+        m = len_trim(pat)
+        if (m <= 0) return
+        do i = 1, int(n) - m + 1
+            do j = 1, m
+                if (arr(i+j-1) /= pat(j:j)) exit
+                if (j == m) then
+                    cnt = cnt + 1
+                end if
+            end do
+        end do
+    end function bytes_count
+end program test_pdf_title_whitespace
