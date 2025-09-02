@@ -65,6 +65,10 @@ contains
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha
         
+        if (present(alpha)) then
+            real(wp) :: alpha_dummy
+            alpha_dummy = alpha
+        end if
         call add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
                                   colormap, vmin, vmax, show_colorbar, alpha)
     end subroutine add_scatter_3d_impl
