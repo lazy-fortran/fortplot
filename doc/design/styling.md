@@ -1,3 +1,6 @@
+title: Styling and Appearance Design
+---
+
 # Styling and Appearance Implementation Design
 
 ## Overview

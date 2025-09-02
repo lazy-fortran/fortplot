@@ -1,3 +1,6 @@
+title: CMake Example
+---
+
 cmake_example
 =============
 
@@ -13,4 +16,3 @@ Usage
 This example is intended for reference and smoke‑testing only. It is not part of
 the primary build. See `doc/user_compilation_guide.md` for user‑focused build
 instructions with fpm.
-

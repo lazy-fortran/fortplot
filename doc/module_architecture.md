@@ -1,3 +1,6 @@
+title: Module Architecture Guide
+---
+
 # Module Architecture Guide
 
 ## Overview

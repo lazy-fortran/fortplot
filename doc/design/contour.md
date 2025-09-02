@@ -1,3 +1,6 @@
+title: Contour Plots Design
+---
+
 # Contour Plots Implementation Design
 
 ## Overview

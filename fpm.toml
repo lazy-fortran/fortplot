@@ -30,7 +30,7 @@ summary = "Modern Fortran plotting library with multiple backends"
 src_dir = ["src", "example"]
 output_dir = "build/doc"
 page_dir = "doc"
-exclude = "fortplot_pdf_text.f90"
+exclude = "**/fortplot_pdf_text.f90"
 
 # Tests are auto-discovered from test/ directory
 

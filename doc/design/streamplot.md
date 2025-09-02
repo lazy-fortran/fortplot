@@ -1,3 +1,6 @@
+title: Streamplot Design
+---
+
 # Streamplot Implementation Design
 
 ## Overview
