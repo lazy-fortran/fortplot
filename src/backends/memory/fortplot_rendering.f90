@@ -2,7 +2,7 @@ module fortplot_rendering
     !! Figure rendering pipeline orchestrator module
     !! 
     !! This module orchestrates the rendering pipeline by delegating to
-    !! specialized rendering modules for different plot types.
+    !! specialized rendering modules for different plot types. (no pre-transform exports)
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_line_rendering
