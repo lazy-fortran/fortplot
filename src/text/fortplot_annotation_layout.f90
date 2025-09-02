@@ -33,11 +33,8 @@ contains
         real(wp), intent(in) :: text_width, text_height
         real(wp), intent(out) :: adjusted_x, adjusted_y
         
-        ! Note: text_height is reserved for future vertical alignment implementation
-        ! Suppress unused variable warning by referencing it
-        if (text_height < 0.0_wp) then
-            ! This condition is never true, but suppresses unused parameter warning
-        end if
+        ! Note: text_height reserved for future vertical alignment; reference to avoid warnings
+        associate(unused_th => text_height); end associate
         
         adjusted_x = annotation%x
         adjusted_y = annotation%y
