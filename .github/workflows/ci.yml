@@ -57,6 +57,19 @@ jobs:
           fi
         done
 
+    # Python setup for bridge tests (Ubuntu)
+    - name: Setup Python (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
+
+    - name: Install Python packages (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        python3 -m pip install --upgrade pip
+        python3 -m pip install numpy
+
     # ---------- Windows setup ----------
     - name: Configure git line endings (Windows)
       if: runner.os == 'Windows'
