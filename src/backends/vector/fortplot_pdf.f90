@@ -163,11 +163,20 @@ contains
         character(len=*), intent(in) :: filename
         logical :: file_success
 
-        call this%render_axes()
-        if (len_trim(this%core_ctx%stream_data) > 0) then
-            this%core_ctx%stream_data = trim(this%stream_writer%content_stream)//new_line('a')//trim(this%core_ctx%stream_data)
-        else
-            this%core_ctx%stream_data = this%stream_writer%content_stream
+        ! Do not re-render axes here. The main rendering pipeline has already
+        ! produced the complete `core_ctx%stream_data`, including axes, tick labels,
+        ! titles/axis labels, legend text, and annotations. Re-rendering would
+        ! clear or overwrite that state and can drop labels/legend.
+
+        ! Merge vector drawing stream (lines, markers, etc.) with the core text
+        ! stream. Keep existing `core_ctx%stream_data` intact to preserve labels
+        ! and legend text that were rendered earlier in the pipeline.
+        if (len_trim(this%stream_writer%content_stream) > 0) then
+            if (len_trim(this%core_ctx%stream_data) > 0) then
+                this%core_ctx%stream_data = trim(this%stream_writer%content_stream)//new_line('a')//trim(this%core_ctx%stream_data)
+            else
+                this%core_ctx%stream_data = this%stream_writer%content_stream
+            end if
         end if
         call write_pdf_file(this%core_ctx, filename, file_success)
         if (.not. file_success) return
