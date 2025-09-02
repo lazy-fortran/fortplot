@@ -60,7 +60,7 @@ For more examples and documentation, see the fortplot GitHub repository.
 
 # Import core and lightweight axes directly (no heavy deps)
 from fortplot.core import figure, plot, savefig, show
-from fortplot.axes import title, xlabel, ylabel, legend, xlim, ylim
+from fortplot.axes import title, xlabel, ylabel, legend, xlim, ylim, xscale, yscale
 
 # Lazily import advanced and data functions to avoid hard numpy dependency
 def contour(*args, **kwargs):
@@ -90,16 +90,7 @@ def histogram(*args, **kwargs):
 # Maintain backward compatibility by exposing all functions at package level
 __all__ = [
     'figure', 'plot', 'savefig', 'show',
-    'title', 'xlabel', 'ylabel', 'legend', 'xlim', 'ylim', 
+    'title', 'xlabel', 'ylabel', 'legend', 'xlim', 'ylim', 'xscale', 'yscale',
     'contour', 'contourf', 'streamplot', 'pcolormesh',
     'scatter', 'histogram'
 ]
-
-# Support for legacy scale functions (not yet implemented in wrapper)
-def xscale(scale):
-    """Set the x-axis scale (placeholder - not yet implemented)."""
-    print(f"Warning: xscale({scale}) not yet implemented")
-
-def yscale(scale):
-    """Set the y-axis scale (placeholder - not yet implemented)."""
-    print(f"Warning: yscale({scale}) not yet implemented")

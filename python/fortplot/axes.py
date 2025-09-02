@@ -97,7 +97,29 @@ def legend(**kwargs):
     # For now, use default legend formatting
     _fortplot.fortplot.legend()
 
-# Note: xscale and yscale not implemented in wrapper yet
+def xscale(scale, threshold=None):
+    """Set the x-axis scale.
+
+    Parameters
+    ----------
+    scale : str
+        One of 'linear', 'log', or 'symlog'.
+    threshold : float, optional
+        Symmetric log threshold (only used for 'symlog').
+    """
+    _fortplot.fortplot.set_xscale(scale, threshold)
+
+def yscale(scale, threshold=None):
+    """Set the y-axis scale.
+
+    Parameters
+    ----------
+    scale : str
+        One of 'linear', 'log', or 'symlog'.
+    threshold : float, optional
+        Symmetric log threshold (only used for 'symlog').
+    """
+    _fortplot.fortplot.set_yscale(scale, threshold)
 
 def xlim(xmin, xmax):
     """Set the x-axis limits."""

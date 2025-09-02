@@ -202,10 +202,20 @@ class FortplotModule:
         """Save the current figure to a file."""
         self._send_command("SAVEFIG")
         self._send_command(filename)
-        
-        # Give the bridge process time to write the file
+        # Wait briefly for the bridge process to write the file.
+        # Streamplot and other heavy renders can take longer than a fixed 100 ms.
+        # Poll up to ~2s for the file to appear and be non-empty.
         import time
-        time.sleep(0.1)
+        from pathlib import Path
+        target = Path(filename)
+        deadline = time.time() + 2.0
+        # First, wait for the file to exist
+        while time.time() < deadline and not target.exists():
+            time.sleep(0.02)
+        # Then, wait for it to be non-empty (size > 0)
+        if target.exists():
+            while time.time() < deadline and target.stat().st_size == 0:
+                time.sleep(0.02)
     
     def show_figure(self, blocking=False):
         """Show the current figure with optional blocking."""
@@ -240,28 +250,128 @@ class FortplotModule:
     
     # Placeholder functions for compatibility (not implemented in bridge yet)
     def contour(self, x, y, z, levels=None):
-        """Contour function (not yet implemented in bridge)."""
-        print("Warning: contour plots not yet implemented in bridge")
+        """Send contour command to bridge."""
+        x = _to_array(x)
+        y = _to_array(y)
+        z = _to_array(z)
+        if z.ndim != 2:
+            raise ValueError("z must be 2D array")
+        self._send_command("CONTOUR")
+        self._send_command(f"{len(x)} {len(y)}")
+        for val in x:
+            self._send_command(str(float(val)))
+        for val in y:
+            self._send_command(str(float(val)))
+        # z expected shape (len(y), len(x)) here
+        ny, nx = z.shape
+        for i in range(ny):
+            for j in range(nx):
+                self._send_command(str(float(z[i, j])))
+        if levels is not None:
+            levels_arr = _to_array(levels)
+            self._send_command(str(len(levels_arr)))
+            for lv in levels_arr:
+                self._send_command(str(float(lv)))
+        else:
+            self._send_command("0")
     
     def contour_filled(self, x, y, z, levels=None):
-        """Filled contour function (not yet implemented in bridge)."""
-        print("Warning: filled contour plots not yet implemented in bridge")
+        """Send filled contour command to bridge."""
+        x = _to_array(x)
+        y = _to_array(y)
+        z = _to_array(z)
+        if z.ndim != 2:
+            raise ValueError("z must be 2D array")
+        self._send_command("CONTOURF")
+        self._send_command(f"{len(x)} {len(y)}")
+        for val in x:
+            self._send_command(str(float(val)))
+        for val in y:
+            self._send_command(str(float(val)))
+        ny, nx = z.shape
+        for i in range(ny):
+            for j in range(nx):
+                self._send_command(str(float(z[i, j])))
+        if levels is not None:
+            levels_arr = _to_array(levels)
+            self._send_command(str(len(levels_arr)))
+            for lv in levels_arr:
+                self._send_command(str(float(lv)))
+        else:
+            self._send_command("0")
     
     def pcolormesh(self, x, y, c, cmap='viridis', vmin=None, vmax=None, edgecolors='none', linewidths=None):
-        """Pcolormesh function (not yet implemented in bridge)."""
-        print("Warning: pcolormesh plots not yet implemented in bridge")
+        """Send pcolormesh command to bridge (basic parameters only)."""
+        x = _to_array(x)
+        y = _to_array(y)
+        c = _to_array(c)
+        if c.ndim != 2:
+            raise ValueError("c must be 2D array")
+        # Expect edge coordinates: len(x)=nx, len(y)=ny, c shape (ny-1, nx-1)
+        self._send_command("PCOLORMESH")
+        self._send_command(f"{len(x)} {len(y)}")
+        for val in x:
+            self._send_command(str(float(val)))
+        for val in y:
+            self._send_command(str(float(val)))
+        my, mx = c.shape
+        for i in range(my):
+            for j in range(mx):
+                self._send_command(str(float(c[i, j])))
+        # Note: advanced styling args (cmap, vmin, vmax, edgecolors, linewidths)
+        # are not sent yet; defaults are used by Fortran side.
     
     def streamplot(self, x, y, u, v, density=1.0):
-        """Streamplot function (not yet implemented in bridge)."""
-        print("Warning: streamplot not yet implemented in bridge")
+        """Send streamplot command to bridge."""
+        x = _to_array(x)
+        y = _to_array(y)
+        u = _to_array(u)
+        v = _to_array(v)
+        if u.ndim != 2 or v.ndim != 2:
+            raise ValueError("u and v must be 2D arrays")
+        if u.shape != v.shape:
+            raise ValueError("u and v must have the same shape")
+        self._send_command("STREAMPLOT")
+        self._send_command(f"{len(x)} {len(y)}")
+        for val in x:
+            self._send_command(str(float(val)))
+        for val in y:
+            self._send_command(str(float(val)))
+        nx = len(x)
+        ny = len(y)
+        if u.shape != (nx, ny):
+            # Try (ny, nx) then
+            if u.shape == (ny, nx):
+                u = u.T
+                v = v.T
+            else:
+                raise ValueError("u,v shape must match (len(x), len(y)) or its transpose")
+        for i in range(nx):
+            for j in range(ny):
+                self._send_command(str(float(u[i, j])))
+        for i in range(nx):
+            for j in range(ny):
+                self._send_command(str(float(v[i, j])))
+        self._send_command(str(float(density)))
     
-    def set_xscale(self, scale):
-        """Set x-axis scale (not yet implemented in bridge)."""
-        print(f"Warning: set_xscale('{scale}') not yet implemented in bridge")
+    def set_xscale(self, scale, threshold=None):
+        """Set x-axis scale via bridge (supports 'linear','log','symlog')."""
+        self._send_command("XSCALE")
+        self._send_command(str(scale))
+        if threshold is not None:
+            self._send_command(str(float(threshold)))
+        else:
+            # Send a line to allow Fortran to attempt read and fail gracefully
+            self._send_command("")
     
-    def set_yscale(self, scale):
-        """Set y-axis scale (not yet implemented in bridge)."""
-        print(f"Warning: set_yscale('{scale}') not yet implemented in bridge")
+    def set_yscale(self, scale, threshold=None):
+        """Set y-axis scale via bridge (supports 'linear','log','symlog')."""
+        self._send_command("YSCALE")
+        self._send_command(str(scale))
+        if threshold is not None:
+            self._send_command(str(float(threshold)))
+        else:
+            self._send_command("")
 
 
 # Export the real fortplot module in the expected structure
