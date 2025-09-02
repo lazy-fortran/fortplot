@@ -4,6 +4,7 @@ program test_pcolormesh_comprehensive
     use fortplot_pcolormesh, only: pcolormesh_t, validate_pcolormesh_grid
     use fortplot_errors, only: fortplot_error_t, ERROR_DIMENSION_MISMATCH
     use fortplot
+    use fortplot_system_runtime, only: create_directory_runtime
     use iso_fortran_env, only: wp => real64, error_unit
     implicit none
     
@@ -21,9 +22,12 @@ program test_pcolormesh_comprehensive
     call test_dimension_validation()  
     call test_memory_safety()
     call test_boundary_conditions()
-    
+
     ! Normal operation tests (integration moved to dedicated test file)
     call test_minimal_valid_cases()
+
+    ! PDF rendering verification for non-stroking fill color
+    call test_pdf_fill_color_nonblack()
     
     print *, ""
     print *, "=== COMPREHENSIVE TEST SUMMARY ==="
@@ -416,5 +420,43 @@ contains
         call savefig("test/output/test_pcolormesh_validation_consolidated.png")
         print *, "  ✓ Dimension validation consolidated"
     end subroutine test_dimension_validation_consolidated
+
+    subroutine test_pdf_fill_color_nonblack()
+        !! Verify PDF pcolormesh emits non-stroking color (rg) that is non-black
+        character(len=*), parameter :: out_pdf = 'test/output/test_pcolormesh_colors.pdf'
+        real(wp) :: x(4), y(3), c(2,3)
+        logical :: ok, has_nonblack_fill
+        integer :: unit, ios
+        character(len=1024) :: line
+
+        call create_directory_runtime('test/output', ok)
+
+        x = [0.0_wp, 1.0_wp, 2.0_wp, 3.0_wp]
+        y = [0.0_wp, 0.5_wp, 1.0_wp]
+        c = reshape([0.1_wp, 0.4_wp, 0.6_wp, &
+                     0.2_wp, 0.8_wp, 0.9_wp], [2,3])
+
+        call figure()
+        call pcolormesh(x, y, c)
+        call title('PDF pcolormesh color test')
+        call savefig(out_pdf)
+
+        has_nonblack_fill = .false.
+        open(newunit=unit, file=out_pdf, status='old', action='read', iostat=ios)
+        if (ios == 0) then
+            do
+                read(unit, '(A)', iostat=ios) line
+                if (ios /= 0) exit
+                if (index(line, ' rg') > 0 .and. index(line, '0.000 0.000 0.000 rg') == 0) then
+                    has_nonblack_fill = .true.
+                    exit
+                end if
+            end do
+            close(unit)
+        end if
+
+        call run_test('PDF non-stroking color set', has_nonblack_fill, &
+            'PDF stream should contain non-black rg for fills')
+    end subroutine test_pdf_fill_color_nonblack
 
 end program test_pcolormesh_comprehensive
