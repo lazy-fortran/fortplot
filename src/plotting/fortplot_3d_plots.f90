@@ -47,6 +47,12 @@ contains
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
+        real(wp) :: z_dummy, ms_dummy, lw_dummy
+        character(len=1) :: m_dummy
+        if (present(markersize)) ms_dummy = markersize
+        if (present(linewidth)) lw_dummy = linewidth
+        if (present(marker)) m_dummy = marker(1:1)
+        if (size(z) > 0) z_dummy = z(1)
         
         ! Project 3D to 2D for basic plotting (z-axis ignored for now)
         call add_line_plot_data(self, x, y, label, linestyle)
