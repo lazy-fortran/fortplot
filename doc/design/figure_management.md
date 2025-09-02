@@ -1,3 +1,6 @@
+title: Figure Management Design
+---
+
 # Figure Management Implementation Design
 
 ## Overview

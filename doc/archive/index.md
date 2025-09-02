@@ -1,3 +1,6 @@
+title: Archive
+---
+
 archive
 =======
 
@@ -10,4 +13,3 @@ part of the core user guide, but may be useful for contributors:
 
 These pages are intentionally brief to ensure a clean FORD build without
 spurious missing‑page warnings.
-
