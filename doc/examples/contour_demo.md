@@ -33,22 +33,10 @@ make example ARGS="contour_demo"
 ![contour_gaussian.png](../../media/examples/contour_demo/contour_gaussian.png)
 
 ASCII output preview:
+
 ```
-                              2D Gaussian Function
-+--------------------------------------------------------------------------------+
-|2.0                              .  .  . .  .  .                                |
-|                           . ..    .  . .  .    .. .                           |
-|1.5                     ..  . ...  . .. .. .  ... .  ..                        |
-|                    .  .  ... ....... . . ....... ...  .  .                    |
-|1.0                .   ... .. .... .... .... .... .. ...   .                   |
-|                  .  .. .... ..... ##### ##### ..... ....  ..                  |
-|0.5              .   ... .... ##### ##### ##### ##### .... ...                 |
-|                .   . ... ### ##### @@@@@ @@@@@ ##### ### ... .                |
-|0.0+--------+----------+----------+----------+----------+--------+             |
-   -2.0    -1.0        0.0        1.0        2.0        3.0                    |
-+--------------------------------------------------------------------------------+
-                                       x
-y
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download contour_gaussian.txt](../../media/examples/contour_demo/contour_gaussian.txt) | [ASCII Format Guide](../ascii_output_format.md)
@@ -60,22 +48,10 @@ y
 ![mixed_plot.png](../../media/examples/contour_demo/mixed_plot.png)
 
 ASCII output preview:
+
 ```
-                           Mixed Plot: Contour + Line
-+--------------------------------------------------------------------------------+
-|1.0        .     .         ..     #*  * *  *#     ..         .     .           |
-|           .      .          *#*             *#*          .      .             |
-|0.5         .      .     #*#   . .         . .   #*#     .      .              |
-|   * *  * *  * *  * .                . .                . *  * * * *  * *  *   |
-|0.0 ..   ..   . .    . ..         .  .  . .  .  .         .. .    . .   ..  ..|
-|             ..      ..         .. .. ... .. ..         ..      ..             |
-|-0.5          .        .       .   ... ### ###   .       .        .            |
-|                               .   .  .###.  .   .                             |
-|-1.0+--------+----------+----------+----------+----------+--------+            |
-    -2.0    -1.0        0.0        1.0        2.0        3.0                   |
-+--------------------------------------------------------------------------------+
-                                       x
-y
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download mixed_plot.txt](../../media/examples/contour_demo/mixed_plot.txt) | [ASCII Format Guide](../ascii_output_format.md)

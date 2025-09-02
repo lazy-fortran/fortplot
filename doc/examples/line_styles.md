@@ -39,22 +39,10 @@ make example ARGS="line_styles"
 ![line_styles.png](../../media/examples/line_styles/line_styles.png)
 
 ASCII output preview:
+
 ```
-                         Complete Line Style Reference
-+--------------------------------------------------------------------------------+
-|3.0  ________________                              -- Solid (-)                  |
-|                                                                                |
-|2.0  ---- ---- ---- ---- ----                     -- Dashed (--)               |
-|                                                                                |
-|1.0  .... .... .... .... ....                     -- Dotted (:)               |
-|                                                                                |
-|0.0  _._ _._ _._ _._ _._ _._                        -- Dash-dot (-.)             |
-|                                                                                |
-|-1.0+--------+----------+----------+----------+----------+--------+            |
-     0        2          4          6          8         10                     |
-+--------------------------------------------------------------------------------+
-                                       x
-Line Styles
+[Preview truncated for readability]
+See full ASCII output via the download link below.
 ```
 
 > **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
