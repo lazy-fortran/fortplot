@@ -20,10 +20,20 @@ program test_axis_label_offsets_pdf
     logical :: found_xtick, dir_ok
 
     margins = plot_margins_t()
-    ! Use the PDF backend plot-area calculation to match PDF coordinates (Y=0 at bottom)
-    call calculate_pdf_plot_area(W, H, margins, plot_area)
+    ! Compute PDF canvas size in points (matplotlib semantics: 100 DPI, 1 in = 72 pt)
+    ! Match create_pdf_canvas rounding to integer points
+    block
+        real(wp) :: width_pts, height_pts
+        integer :: wpt_i, hpt_i
+        width_pts  = real(W,  wp) * 72.0_wp / 100.0_wp
+        height_pts = real(H,  wp) * 72.0_wp / 100.0_wp
+        wpt_i = max(1, nint(width_pts))
+        hpt_i = max(1, nint(height_pts))
+        ! Use the PDF backend plot-area calculation to match PDF coordinates (Y=0 at bottom)
+        call calculate_pdf_plot_area(wpt_i, hpt_i, margins, plot_area)
+    end block
 
-    ! Expected baseline for X tick labels: 15px below plot bottom in PDF coords
+    ! Expected baseline for X tick labels: 15 pt below plot bottom in PDF coords
     y_xtick_expect = real(plot_area%bottom, wp) - 15.0_wp
     write(y_xtick_expect_str, '(F0.3)') y_xtick_expect
 
