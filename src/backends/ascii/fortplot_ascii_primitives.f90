@@ -196,9 +196,7 @@ contains
         
         ! Note: Color values are passed but not used for storage here
         ! They should be stored by the calling routine if needed
-        if (current_r < 0.0_wp .or. current_g < 0.0_wp .or. current_b < 0.0_wp) then
-            ! This is just to suppress unused warnings
-        end if
+        associate(unused_sum => current_r + current_g + current_b); end associate
     end subroutine ascii_draw_text_primitive
 
 end module fortplot_ascii_primitives

@@ -379,10 +379,8 @@ contains
         integer, intent(in) :: width, height
         real(real64), intent(out) :: rgb_data(width, height, 3)
         
-        ! Suppress unused parameter warning
-        if (this%width < 0) then
-            ! This condition is never true, but suppresses unused parameter warning
-        end if
+        ! Reference otherwise-unused member without unreachable branch
+        associate(unused_w => this%width); end associate
         
         ! ASCII backend doesn't have RGB data for animation - fill with dummy data
         rgb_data = 0.0_real64  ! Black background
@@ -395,10 +393,8 @@ contains
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         
-        ! Suppress unused parameter warnings
-        if (this%width < 0 .or. width < 0 .or. height < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference otherwise-unused parameters without unreachable branches
+        associate(unused_w => this%width, unused_pw => width, unused_ph => height); end associate
         
         ! ASCII backend doesn't provide PNG data
         allocate(png_data(0))
@@ -411,10 +407,8 @@ contains
         class(ascii_context), intent(inout) :: this
         type(plot_data_t), intent(in) :: plots(:)
         
-        ! Suppress unused parameter warnings
-        if (this%width < 0 .or. size(plots) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference otherwise-unused parameters without unreachable branches
+        associate(unused_w => this%width, unused_n => size(plots)); end associate
         
         ! ASCII backend doesn't need 3D data preparation - no-op
     end subroutine ascii_prepare_3d_data
@@ -424,10 +418,8 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: ylabel
         
-        ! Suppress unused parameter warnings
-        if (this%width < 0 .or. len_trim(ylabel) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference otherwise-unused parameters without unreachable branches
+        associate(unused_w => this%width, unused_l => len_trim(ylabel)); end associate
         
         ! ASCII backend handles Y-axis labels differently - no-op
     end subroutine ascii_render_ylabel
@@ -483,15 +475,11 @@ contains
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
         
-        ! Suppress unused parameter warnings
-        if (this%width < 0) then
-            ! This condition is never true, but suppresses unused parameter warning
-        end if
-        if (present(title_text) .and. present(xlabel_text) .and. present(ylabel_text)) then
-            if (len_trim(title_text) < 0 .or. len_trim(xlabel_text) < 0 .or. len_trim(ylabel_text) < 0) then
-                ! This condition is never true, but suppresses unused parameter warnings
-            end if
-        end if
+        ! Reference otherwise-unused members/optionals without unreachable branches
+        associate(unused_w => this%width); end associate
+        if (present(title_text)) then; associate(unused_lt => len_trim(title_text)); end associate; end if
+        if (present(xlabel_text)) then; associate(unused_lx => len_trim(xlabel_text)); end associate; end if
+        if (present(ylabel_text)) then; associate(unused_ly => len_trim(ylabel_text)); end associate; end if
         
         ! ASCII axes are rendered as part of draw_axes_and_labels_backend
         ! This is a stub to satisfy the interface

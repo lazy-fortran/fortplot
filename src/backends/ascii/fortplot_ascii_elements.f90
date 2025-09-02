@@ -139,10 +139,8 @@ contains
         character(len=1) :: arrow_char
         real(wp) :: angle
         
-        ! Suppress unused parameter warnings
-        if (size < 0.0_wp .or. len_trim(style) < 0) then
-            ! This condition is never true, but suppresses unused parameter warnings
-        end if
+        ! Reference otherwise-unused parameters without unreachable branches
+        associate(unused_s => size, unused_ls => len_trim(style)); end associate
         
         ! Convert world coordinates to pixel coordinates
         px = int((x - x_min) / (x_max - x_min) * real(width, wp))
@@ -290,15 +288,10 @@ contains
         character(len=500) :: processed_title
         integer :: processed_len
         
-        ! Suppress unused parameter warnings
-        if (present(z_min) .and. present(z_max)) then
-            if (z_min < -huge(z_min) .or. z_max > huge(z_max)) then
-                ! This condition is never true, but suppresses unused parameter warnings
-            end if
-        end if
-        if (.not. has_3d_plots) then
-            ! Reference has_3d_plots to suppress warning
-        end if
+        ! Reference optional parameters without unreachable branches
+        if (present(z_min)) then; associate(unused_zmin => z_min); end associate; end if
+        if (present(z_max)) then; associate(unused_zmax => z_max); end associate; end if
+        associate(unused_h3d => has_3d_plots); end associate
         
         ! ASCII backend: explicitly set title and draw simple axes
         if (present(title)) then
