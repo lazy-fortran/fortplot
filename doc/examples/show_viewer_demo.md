@@ -3,6 +3,8 @@ title: Show Viewer Demo
 
 # Show Viewer Demo
 
+Source: [example/fortran/show_viewer_demo/show_viewer_demo.f90](../../example/fortran/show_viewer_demo/show_viewer_demo.f90)
+
 This example demonstrates using the built-in viewer for interactive display.
 
 ## Files

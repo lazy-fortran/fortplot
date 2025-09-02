@@ -3,6 +3,8 @@ title: Unicode Demo
 
 # Unicode Demo
 
+Source: [example/fortran/unicode_demo/unicode_demo.f90](../../example/fortran/unicode_demo/unicode_demo.f90)
+
 This example demonstrates mathematical symbols and Unicode support in plots.
 
 ## Files
@@ -42,7 +44,7 @@ make example ARGS="unicode_demo"
 
 ### Unicode Demo
 
-![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
+![unicode_demo.png](../../output/example/fortran/unicode_demo/unicode_demo.png)
 
 ASCII output preview:
 ```
@@ -64,12 +66,12 @@ ASCII output preview:
 Amplitude
 ```
 
-> **Full ASCII Output**: [Download unicode_demo.txt](../../media/examples/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download unicode_demo.txt](../../output/example/fortran/unicode_demo/unicode_demo.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/unicode_demo/unicode_demo.pdf)
+[Download PDF](../../output/example/fortran/unicode_demo/unicode_demo.pdf)
 
 ### Unicode Demo
-![Unicode Demo](../../media/examples/unicode_demo/unicode_demo.png)
+![Unicode Demo](../../output/example/fortran/unicode_demo/unicode_demo.png)
 
 ### Math Examples
-![Math Examples](../../media/examples/unicode_demo/math_examples.png)
+![Math Examples](../../output/example/fortran/unicode_demo/math_examples.png)

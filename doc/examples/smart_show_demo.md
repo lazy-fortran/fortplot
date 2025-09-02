@@ -3,6 +3,8 @@ title: Smart Show Demo
 
 # Smart Show Demo
 
+Source: [example/fortran/smart_show_demo/smart_show_demo.f90](../../example/fortran/smart_show_demo/smart_show_demo.f90)
+
 This example demonstrates intelligent display mode selection based on environment.
 
 ## Files

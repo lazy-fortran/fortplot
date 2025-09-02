@@ -3,6 +3,8 @@ title: Line Styles
 
 # Line Styles
 
+Source: [example/fortran/line_styles/line_styles.f90](../../example/fortran/line_styles/line_styles.f90)
+
 This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotted lines.
 
 ## Files
@@ -34,7 +36,7 @@ make example ARGS="line_styles"
 
 ### Line Styles
 
-![line_styles.png](../../media/examples/line_styles/line_styles.png)
+![line_styles.png](../../output/example/fortran/line_styles/line_styles.png)
 
 ASCII output preview:
 ```
@@ -55,6 +57,6 @@ ASCII output preview:
 Line Styles
 ```
 
-> **Full ASCII Output**: [Download line_styles.txt](../../media/examples/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
+> **Full ASCII Output**: [Download line_styles.txt](../../output/example/fortran/line_styles/line_styles.txt) | [ASCII Format Guide](../ascii_output_format.md)
 
-[Download PDF](../../media/examples/line_styles/line_styles.pdf)
+[Download PDF](../../output/example/fortran/line_styles/line_styles.pdf)

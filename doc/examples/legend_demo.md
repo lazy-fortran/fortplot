@@ -3,6 +3,8 @@ title: Legend Demo
 
 # Legend Demo
 
+Source: [example/fortran/legend_demo/legend_demo.f90](../../example/fortran/legend_demo/legend_demo.f90)
+
 This example demonstrates legend placement and customization options.
 
 ## Files
@@ -39,7 +41,7 @@ make example ARGS="legend_demo"
 ## Output
 
 ### Basic Legend
-![Basic Legend](../../media/examples/legend_demo/basic_legend.png)
+![Basic Legend](../../output/example/fortran/legend_demo/basic_legend.png)
 
 ### Multi-function Legend
-![Multi-function Legend](../../media/examples/legend_demo/multi_function_legend.png)
+![Multi-function Legend](../../output/example/fortran/legend_demo/multi_function_legend.png)
