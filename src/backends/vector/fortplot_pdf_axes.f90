@@ -402,10 +402,11 @@ contains
             end if
         end if
 
-        ! Draw Y-axis label (rotated on left) - end 98px left of plot
+        ! Draw Y-axis label (rotated on left) - closer to frame inside left margin
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
-                ylabel_x = plot_area_left - 98.0_wp
+                ! Place y-label 60px left of plot frame (was 98px; too far left)
+                ylabel_x = plot_area_left - 60.0_wp
                 ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
                           real(len_trim(ylabel), wp) * 3.0_wp
                 call draw_rotated_mixed_font_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
