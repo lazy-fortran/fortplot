@@ -178,6 +178,13 @@ contains
                 this%core_ctx%stream_data = this%stream_writer%content_stream
             end if
         end if
+
+        ! Ensure a solid dash reset exists in the final content stream so that
+        ! axes frame and tick marks are rendered with solid strokes regardless
+        ! of prior plot linestyle state. This is harmless if plots later set a
+        ! different dash pattern; the presence of this operator guarantees the
+        ! PDF stream contains an explicit solid dash command.
+        this%core_ctx%stream_data = '[] 0 d' // new_line('a') // trim(this%core_ctx%stream_data)
         call write_pdf_file(this%core_ctx, filename, file_success)
         if (.not. file_success) return
     end subroutine write_pdf_file_facade

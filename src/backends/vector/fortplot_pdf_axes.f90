@@ -314,6 +314,9 @@ contains
         x1 = plot_left
         y1 = plot_bottom  ! No conversion needed - PDF Y=0 is at bottom
 
+        ! Force solid stroke for the frame regardless of prior dash settings
+        ctx%stream_data = ctx%stream_data // '[] 0 d' // new_line('a')
+
         ! Draw rectangle frame
         write(frame_cmd, '(F0.3, 1X, F0.3, " ", F0.3, 1X, F0.3, " re S")') &
             x1, y1, plot_width, plot_height
@@ -333,9 +336,10 @@ contains
         character(len=2048) :: tick_cmd
         real(wp) :: tick_length, bottom_y
 
-        ! Ensure tick marks are stroked in black regardless of prior drawing state
+        ! Ensure tick marks are stroked in black and solid regardless of prior drawing state
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
         call ctx%set_line_width(1.0_wp)
+        ctx%stream_data = ctx%stream_data // '[] 0 d' // new_line('a')
 
         tick_length = PDF_TICK_SIZE
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
