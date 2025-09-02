@@ -56,18 +56,21 @@ fi
 
 # Test 2b: Verify referenced PNGs exist at staged location
 missing_pngs=0
-while IFS= read -r ref; do
-    # ref format: ../../media/examples/<example>/<file.png>
+# Extract markdown PNG links like ![...](../../media/examples/...png)
+refs=$(grep -rho -E "\(\.\.\/\.\.\/media\/examples\/[^)]+\.png\)" doc/examples 2>/dev/null | sort -u || true)
+for ref in $refs; do
+    # Strip surrounding parentheses
+    ref="${ref#(}"
+    ref="${ref%)}"
+    # Compute staged target path
     path=${ref#../../}
     target="build/doc/page/${path}"
     if [ ! -f "$target" ]; then
         test_result "PNG reference missing" "CRITICAL" "$target not found (referenced in docs)"
         missing_pngs=$((missing_pngs+1))
     fi
-done < <(grep -rho "\.\./\.\./media/examples/[^")']\+\.png" doc/examples 2>/dev/null | sort -u)
-if [ $missing_pngs -eq 0 ]; then
-    test_result "PNG references" "PASS" "All referenced PNGs are present"
-fi
+done
+[ $missing_pngs -eq 0 ] && test_result "PNG references" "PASS" "All referenced PNGs are present"
 
 # Test 3: Check workflow and Makefile for proper media staging
 if [ -f ".github/workflows/docs.yml" ]; then
