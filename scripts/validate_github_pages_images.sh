@@ -54,6 +54,21 @@ else
     test_result "Media staging directory" "CRITICAL" "build/doc/page/media/examples missing - media links will be broken"
 fi
 
+# Test 2b: Verify referenced PNGs exist at staged location
+missing_pngs=0
+while IFS= read -r ref; do
+    # ref format: ../../media/examples/<example>/<file.png>
+    path=${ref#../../}
+    target="build/doc/page/${path}"
+    if [ ! -f "$target" ]; then
+        test_result "PNG reference missing" "CRITICAL" "$target not found (referenced in docs)"
+        missing_pngs=$((missing_pngs+1))
+    fi
+done < <(grep -rho "\.\./\.\./media/examples/[^")']\+\.png" doc/examples 2>/dev/null | sort -u)
+if [ $missing_pngs -eq 0 ]; then
+    test_result "PNG references" "PASS" "All referenced PNGs are present"
+fi
+
 # Test 3: Check workflow and Makefile for proper media staging
 if [ -f ".github/workflows/docs.yml" ]; then
     # Get lines around 'make doc' and check if cp comes BEFORE (which is correct)
