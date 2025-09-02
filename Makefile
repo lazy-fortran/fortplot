@@ -1,4 +1,5 @@
 # Allow additional arguments to be passed
+SHELL := /bin/bash
 ARGS ?=
 # Enforce a hard timeout for all test invocations (accepts coreutils duration)
 # Can be overridden by environment: TEST_TIMEOUT=90s make test
