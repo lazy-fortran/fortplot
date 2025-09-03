@@ -97,6 +97,24 @@ jobs:
           # Run make doc (which runs FORD then copies media)
           make doc
           
+          # Verify all example pages were generated
+          echo "Checking generated example pages..."
+          expected_pages="animation annotation_demo ascii_heatmap basic_plots colored_contours contour_demo format_string_demo legend_box_demo legend_demo line_styles marker_demo pcolormesh_demo scale_examples show_viewer_demo smart_show_demo streamplot_demo unicode_demo"
+          missing_pages=""
+          for page in $expected_pages; do
+            if [ ! -f "build/doc/page/examples/${page}.html" ]; then
+              echo "WARNING: Missing example page: ${page}.html"
+              missing_pages="$missing_pages $page"
+            fi
+          done
+          if [ -n "$missing_pages" ]; then
+            echo "ERROR: Missing example pages:$missing_pages"
+            echo "Listing actually generated pages:"
+            ls -la build/doc/page/examples/*.html || echo "No HTML files found"
+            exit 1
+          fi
+          echo "All expected example pages generated successfully"
+          
           # Documentation consolidated to example/fortran/*/README.md files
 
       - name: Validate docs media (no silent failures)
