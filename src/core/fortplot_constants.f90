@@ -54,7 +54,10 @@ module fortplot_constants
     !! 
     !! Used by raster backend for xlabel positioning to ensure consistent
     !! spacing below tick labels while avoiding overlap.
-    integer, parameter, public :: XLABEL_VERTICAL_OFFSET = 30
+    !! 
+    !! Balanced to: ensure tick label clearance (35px min) 
+    !! while keeping text within canvas
+    integer, parameter, public :: XLABEL_VERTICAL_OFFSET = 35
 
     !! Y-axis label horizontal offset from left edge (pixels)
     !!
