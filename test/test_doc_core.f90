@@ -1,5 +1,5 @@
 program test_doc_core
-    use fortplot_doc_core, only: &
+    use fortplot_documentation, only: &
         title_case, get_output_title, build_python_path, &
         get_file_extension, replace_extension, build_fortran_url, PATH_MAX_LEN
     implicit none
