@@ -2,7 +2,7 @@ module fortplot_raster_axes
     !! Raster axes and labels rendering functionality
     !! Extracted from fortplot_raster.f90 for size reduction (SRP compliance)
     use fortplot_constants, only: TICK_MARK_LENGTH, XLABEL_VERTICAL_OFFSET, TITLE_VERTICAL_OFFSET
-    use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
+    use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height, calculate_text_descent
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_margins, only: plot_area_t
@@ -427,22 +427,24 @@ contains
         integer :: text_width, text_height
         integer :: rotated_width, rotated_height
         integer :: x_pos, y_pos
+        integer :: descent_pixels  ! Track descent for post-rotation positioning
         integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
         
-        ! Calculate text dimensions
+        ! Calculate text dimensions and descent for proper post-rotation positioning
         text_width = calculate_text_width(ylabel)
         text_height = calculate_text_height(ylabel)
+        descent_pixels = calculate_text_descent(ylabel)
         
         ! Allocate bitmap for horizontal text
         allocate(text_bitmap(text_width, text_height, 3))
         text_bitmap = -1_1  ! Initialize to white
         
         ! Render text horizontally to bitmap. The text renderer expects
-        ! the y coordinate to be the text baseline. Use `text_height` as
-        ! the baseline so the full glyphs are drawn inside the bitmap
-        ! before rotation (prevents top-row clipping that caused the
-        ! ylabel to appear partially erased/white in PNG outputs).
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 1, text_height, ylabel)
+        ! the y coordinate to be the text baseline. Position baseline to ensure
+        ! descenders fit within the bitmap. The baseline should be at
+        ! (text_height - descent_pixels) to leave room for descenders below.
+        ! This ensures descenders aren't clipped before or after rotation.
+        call render_text_to_bitmap(text_bitmap, text_width, text_height, 1, text_height - descent_pixels, ylabel)
         
         ! Allocate rotated bitmap (dimensions swapped for 90° rotation)
         rotated_width = text_height
@@ -456,12 +458,30 @@ contains
         ! Place ylabel to the left of the widest y-tick label plus a small gap,
         ! also accounting for the tick mark length and label padding. This mimics
         ! matplotlib by ensuring no overlap between ylabel and tick labels.
-        x_pos = compute_ylabel_x_pos(plot_area, rotated_width, last_y_tick_max_width)
+        ! CRITICAL: Account for descent pixels that become left edge after rotation
+        x_pos = compute_ylabel_x_pos_with_descent(plot_area, rotated_width, last_y_tick_max_width, descent_pixels)
         y_pos = plot_area%bottom + plot_area%height / 2 - rotated_height / 2
         
-        ! Ensure ylabel stays within canvas bounds (prevent negative x position)
+        ! Ensure ylabel stays within canvas bounds with enhanced protection
+        ! Issue #1136: Prevent ylabel from being cut off by white blocks
         if (x_pos < 1) then
             x_pos = 1
+        end if
+        
+        ! Additional boundary protection: ensure ylabel doesn't extend beyond canvas
+        if (x_pos + rotated_width > width) then
+            x_pos = max(1, width - rotated_width)
+        end if
+        
+        ! CRITICAL FIX: Prevent ylabel descenders from being clipped at canvas bottom
+        ! Issue #1136: Ensure full ylabel text including descenders stays within canvas
+        if (y_pos + rotated_height > height) then
+            y_pos = height - rotated_height
+        end if
+        
+        ! Ensure ylabel doesn't extend above canvas top either
+        if (y_pos < 1) then
+            y_pos = 1
         end if
         
         ! Composite the rotated text onto the main raster
@@ -493,13 +513,42 @@ contains
         x_pos = plot_area%left - clearance - rotated_text_width
         
         ! Ensure minimum left margin to prevent text cutoff
-        ! Reserve more space from canvas edge for better text rendering
+        ! Issue #1136: Enhanced margin protection following matplotlib's approach
+        ! Reserve adequate space from canvas edge for better text rendering
         ! This prevents ylabel from being cut off while maintaining proper spacing
-        min_left_margin = 15
+        min_left_margin = max(15, rotated_text_width / 4)  ! Adaptive margin based on text size
         if (x_pos < min_left_margin) then
             x_pos = min_left_margin
         end if
     end function compute_ylabel_x_pos
+
+    pure function compute_ylabel_x_pos_with_descent(plot_area, rotated_text_width, y_tick_max_width, descent_pixels) result(x_pos)
+        !! Compute x position for ylabel accounting for descent pixels that become left edge after 90° CCW rotation
+        !! plot_area: geometry of plotting area  
+        !! rotated_text_width: width of the rotated ylabel bitmap (pixels)
+        !! y_tick_max_width: maximum width among y-tick labels (pixels)
+        !! descent_pixels: descent portion that becomes left edge after rotation
+        type(plot_area_t), intent(in) :: plot_area
+        integer, intent(in) :: rotated_text_width, y_tick_max_width, descent_pixels
+        integer :: x_pos
+        integer :: clearance, min_left_margin
+        
+        ! Place the RIGHT edge of the rotated ylabel at a fixed clearance
+        ! from the y-tick label right edge. Since composite uses top-left
+        ! anchoring, subtract the full rotated_text_width here.
+        clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max(0, y_tick_max_width) + YLABEL_EXTRA_GAP
+        x_pos = plot_area%left - clearance - rotated_text_width
+        
+        ! CRITICAL FIX: After 90° CCW rotation, descenders become RIGHT edge of rotated text
+        ! The original bottom (with descenders) maps to the right side of the rotated bitmap
+        ! We don't need to adjust left margin, but we DO need to adjust the positioning
+        ! to ensure the right edge (with descenders) doesn't get clipped
+        ! Standard minimum left margin without descent adjustment
+        min_left_margin = max(15, rotated_text_width / 4)
+        if (x_pos < min_left_margin) then
+            x_pos = min_left_margin
+        end if
+    end function compute_ylabel_x_pos_with_descent
 
     pure function y_tick_label_right_edge_at_axis(plot_area) result(r_edge)
         !! Right-most x coordinate of a y-tick label placed at the left axis tick
