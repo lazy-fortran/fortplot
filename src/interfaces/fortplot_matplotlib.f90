@@ -11,6 +11,8 @@ module fortplot_matplotlib
         plot, scatter, errorbar, boxplot, &
         bar, barh, hist, histogram, &
         add_plot, add_errorbar, add_scatter, add_3d_plot, &
+        imshow, pie, polar, step, stem, &
+        fill, fill_between, twinx, twiny, &
         contour, contour_filled, pcolormesh, streamplot, &
         add_contour, add_contour_filled, add_pcolormesh, add_surface, &
         xlabel, ylabel, title, legend, grid, &
@@ -30,6 +32,8 @@ module fortplot_matplotlib
     public :: plot, scatter, errorbar, boxplot
     public :: bar, barh, hist, histogram
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
+    public :: imshow, pie, polar, step, stem
+    public :: fill, fill_between, twinx, twiny
     
     ! Contour and field functions
     public :: contour, contour_filled, pcolormesh, streamplot

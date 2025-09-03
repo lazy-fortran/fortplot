@@ -15,6 +15,11 @@ module fortplot_matplotlib_advanced
     use fortplot_errorbar_plots, only: errorbar_impl => errorbar
     use fortplot_3d_plots, only: add_3d_plot_impl => add_3d_plot
 
+    ! Import new plotting functions from separate module
+    use fortplot_matplotlib_plots_new, only: &
+        imshow, pie, polar, step, stem, &
+        fill, fill_between, twinx, twiny
+
     implicit none
     private
 
@@ -22,6 +27,8 @@ module fortplot_matplotlib_advanced
     public :: plot, scatter, errorbar, boxplot
     public :: bar, barh, hist, histogram
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
+    public :: imshow, pie, polar, step, stem
+    public :: fill, fill_between, twinx, twiny
 
     public :: contour, contour_filled, pcolormesh, streamplot
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
@@ -191,6 +198,7 @@ contains
         wx = real(x, wp); wy = real(y, wp)
         call add_scatter_2d(fig, wx, wy, label=label, marker=marker)
     end subroutine scatter
+
 
     subroutine add_scatter_2d_wrapper(x, y, s, c, label, marker, markersize, color, &
                            linewidths, edgecolors, alpha)
