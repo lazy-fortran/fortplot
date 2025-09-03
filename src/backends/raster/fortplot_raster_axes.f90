@@ -459,9 +459,15 @@ contains
         x_pos = compute_ylabel_x_pos(plot_area, rotated_width, last_y_tick_max_width)
         y_pos = plot_area%bottom + plot_area%height / 2 - rotated_height / 2
         
-        ! Ensure ylabel stays within canvas bounds (prevent negative x position)
+        ! Ensure ylabel stays within canvas bounds with enhanced protection
+        ! Issue #1136: Prevent ylabel from being cut off by white blocks
         if (x_pos < 1) then
             x_pos = 1
+        end if
+        
+        ! Additional boundary protection: ensure ylabel doesn't extend beyond canvas
+        if (x_pos + rotated_width > width) then
+            x_pos = max(1, width - rotated_width)
         end if
         
         ! Composite the rotated text onto the main raster
@@ -493,9 +499,10 @@ contains
         x_pos = plot_area%left - clearance - rotated_text_width
         
         ! Ensure minimum left margin to prevent text cutoff
-        ! Reserve more space from canvas edge for better text rendering
+        ! Issue #1136: Enhanced margin protection following matplotlib's approach
+        ! Reserve adequate space from canvas edge for better text rendering
         ! This prevents ylabel from being cut off while maintaining proper spacing
-        min_left_margin = 15
+        min_left_margin = max(15, rotated_text_width / 4)  ! Adaptive margin based on text size
         if (x_pos < min_left_margin) then
             x_pos = min_left_margin
         end if
