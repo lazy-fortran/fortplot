@@ -1,4 +1,3 @@
----
 title: Legend Demo
 ---
 
