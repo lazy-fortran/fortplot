@@ -146,18 +146,7 @@ doc:
 	$(MAKE) example ARGS="marker_demo" >/dev/null
 	# Generate animation demo so MP4 is available for docs (fixes #1085)
 	$(MAKE) example ARGS="save_animation_demo" >/dev/null
-	# Run FORD to generate documentation structure (with explicit configuration)
-	# First ensure all markdown files are readable
-	@echo "Verifying documentation source files..."
-	@find doc -name "*.md" -type f | wc -l | xargs -I {} echo "Found {} markdown files in doc/"
-	@echo "Debugging: Checking basic_plots.md content:"
-	@head -5 doc/examples/basic_plots.md || echo "Failed to read basic_plots.md"
-	@echo "Debugging: Checking animation.md content (working file):"
-	@head -5 doc/examples/animation.md || echo "Failed to read animation.md"
-	@echo "Debugging: File paths and types:"
-	@ls -la doc/examples/basic_plots.md doc/examples/animation.md || echo "Files not found"
-	@echo "Debugging: Looking for any basic_plots.md files in repo:"
-	@find . -name "basic_plots.md" -type f || echo "No basic_plots.md found"
+	# Run FORD to generate documentation structure
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
 	# Some pages link '../media/...' (relative to page/examples), others '../../media/...'
