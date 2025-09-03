@@ -1,5 +1,6 @@
 program test_readme_promises
     ! Test EVERY promise made in README.md
+    ! All outputs directed to test/output/ to maintain clean repository root
     use fortplot
     implicit none
     
@@ -19,14 +20,14 @@ program test_readme_promises
     call ylabel("y")
     call xlim(0.0_wp, 10.0_wp)
     call ylim(-1.0_wp, 1.0_wp)
-    call savefig("test_readme_basic.png")
+    call savefig("test/output/test_readme_basic.png")
     
     ! README Promise #2: 3D plotting should work
     print *, "Testing README 3D plotting promise..."
     call figure(figsize=[8.0_wp, 6.0_wp])
     call add_3d_plot(x(1:30), y(1:30), sin(x(1:30)*2), label="3D curve")
     call title("3D Line Plot")
-    call savefig("test_3d_plot.png")
+    call savefig("test/output/test_3d_plot.png")
     
     ! README Promise #3: Legend with multiple plots
     print *, "Testing README legend promise..."
@@ -35,7 +36,7 @@ program test_readme_promises
     call plot(x, cos(x), label="cos(x)", linestyle="r--")
     call plot(x, sin(2*x), label="sin(2x)", linestyle="g:")
     call legend()
-    call savefig("test_trig_functions.pdf")
+    call savefig("test/output/test_trig_functions.pdf")
     
     ! README Promise #4: Unicode and Greek letters
     print *, "Testing README Unicode/Greek letters promise..."
@@ -49,7 +50,7 @@ program test_readme_promises
     call plot(t, damped_sine, label="\alpha decay")
     call plot(t, damped_cosine, label="\beta oscillation")
     call legend()
-    call savefig("test_unicode_demo.png")
+    call savefig("test/output/test_unicode_demo.png")
     
     ! README Promise #5: Scientific errorbar plots
     print *, "Testing README scientific errorbar promise..."
@@ -62,7 +63,7 @@ program test_readme_promises
     call errorbar(x_sci, y_sci, yerr=yerr, marker='o', label='Experimental data')
     call plot(x_sci, y_theory, label='Theory', linestyle='-')
     call legend()
-    call savefig("test_scientific_plot.png")
+    call savefig("test/output/test_scientific_plot.png")
     
     print *, "All README promises tested successfully!"
     
