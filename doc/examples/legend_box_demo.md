@@ -3,7 +3,7 @@ title: Legend Box Demo
 
 # Legend Box Demo
 
-Source: [example/fortran/legend_demo/legend_demo.f90](../../example/fortran/legend_demo/legend_demo.f90)
+Source: [legend_demo.f90](../../sourcefile/legend_demo.f90.html)
 
 This demo showcases the legend box with different placements. Images are embedded below for quick viewing; PDFs are linked for high-quality output.
 

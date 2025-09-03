@@ -3,7 +3,7 @@ title: Pcolormesh Demo
 
 # Pcolormesh Demo
 
-Source: [example/fortran/pcolormesh_demo/pcolormesh_demo.f90](../../example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
+Source: [pcolormesh_demo.f90](../../sourcefile/pcolormesh_demo.f90.html)
 
 This example demonstrates pseudocolor plots for efficient 2D data visualization.
 

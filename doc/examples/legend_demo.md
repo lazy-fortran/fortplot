@@ -3,7 +3,7 @@ title: Legend Demo
 
 # Legend Demo
 
-Source: [example/fortran/legend_demo/legend_demo.f90](../../example/fortran/legend_demo/legend_demo.f90)
+Source: [legend_demo.f90](../../sourcefile/legend_demo.f90.html)
 
 This example demonstrates legend placement and customization options.
 
