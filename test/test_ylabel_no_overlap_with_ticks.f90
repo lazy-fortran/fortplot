@@ -36,8 +36,8 @@ program test_ylabel_no_overlap_with_ticks
     rotated_width = calculate_text_height(ylabel)
 
     ! Compute ylabel position using the helper
-    x_ylabel = compute_ylabel_x_pos(plot_area, rotated_width, max_tick_width)
-    right_edge_ticks = y_tick_label_right_edge_at_axis(plot_area)
+    right_edge_ticks = y_tick_label_right_edge_at_axis(plot_area, max_tick_width)
+    x_ylabel = compute_ylabel_x_pos(right_edge_ticks, rotated_width, plot_area)
 
     if (x_ylabel + rotated_width >= right_edge_ticks) then
         write(error_unit,*) 'ERROR: ylabel overlaps or touches y-tick labels area.'
