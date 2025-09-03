@@ -86,6 +86,8 @@ module fortplot
     use fortplot_matplotlib, only: plot, contour, contour_filled, pcolormesh, streamplot, &
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
+                                   imshow, pie, polar, step, stem, &
+                                   fill, fill_between, twinx, twiny, &
                                    xlabel, ylabel, title, legend, grid, &
                                    savefig, savefig_with_status, figure, subplot, subplots, subplots_grid, &
                                    add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar, &
@@ -117,6 +119,8 @@ module fortplot
     public :: plot, contour, contour_filled, pcolormesh, streamplot
     public :: hist, histogram, scatter, errorbar, boxplot
     public :: bar, barh
+    public :: imshow, pie, polar, step, stem
+    public :: fill, fill_between, twinx, twiny
     public :: text, annotate
     
     ! Figure management and configuration
