@@ -28,9 +28,9 @@ program test_stateful_api_fast
     call test_pcolormesh_api()
     call test_streamplot_api()
     
-    ! Skip 3D functions - bug in implementation (marker handling)
-    ! call test_3d_plot_api()
-    ! call test_surface_api()
+    ! Test 3D functions (marker parameter fixed)
+    call test_3d_plot_api()
+    call test_surface_api()
     
     ! Test annotation functions
     call test_text_api()

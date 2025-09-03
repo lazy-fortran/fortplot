@@ -19,17 +19,18 @@ module fortplot_3d_plots
 
 contains
 
-    subroutine add_3d_plot(self, x, y, z, label, linestyle, markersize, linewidth)
+    subroutine add_3d_plot(self, x, y, z, label, linestyle, marker, markersize, linewidth)
         !! Add 3D line plot to figure (projected to 2D)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: linestyle
+        character(len=*), intent(in), optional :: marker
         real(wp), intent(in), optional :: markersize
         real(wp), intent(in), optional :: linewidth
         
         call add_3d_line_plot_data(self, x, y, z, label, linestyle, &
-                                  marker='', markersize=markersize, linewidth=linewidth)
+                                  marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
     subroutine add_surface(self, x, y, z, label)
