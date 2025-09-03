@@ -63,76 +63,90 @@ contains
         real(wp), intent(in) :: data_width, data_height
         real(wp), intent(out) :: max_text_width, total_text_width
         type(legend_box_t), intent(inout) :: box
-        integer :: i, text_width_pixels, text_height_pixels, max_text_height_pixels
+        
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
+        integer :: max_text_height_pixels
         logical :: text_system_available
-        real(wp) :: entry_text_width, label_spacing, padding_x
-        character(len=:), allocatable :: trimmed_label
-        integer, parameter :: fudge_pixels = 2
-
+        
         ! Initialize text system for measurements
         text_system_available = init_text_system()
-
+        
         ! Calculate data-to-pixel conversion ratio
-        ! Matplotlib sizes legend in pixels, then converts to data coordinates
-        ! For a 640x480 figure, plot area is typically ~496x369 pixels
-        ! We need to convert pixel measurements to data coordinates
-        data_to_pixel_ratio_x = STANDARD_WIDTH_PIXELS / data_width  ! pixels per data unit
-        data_to_pixel_ratio_y = STANDARD_HEIGHT_PIXELS / data_height  ! pixels per data unit
-
+        data_to_pixel_ratio_x = STANDARD_WIDTH_PIXELS / data_width
+        data_to_pixel_ratio_y = STANDARD_HEIGHT_PIXELS / data_height
+        
+        ! Measure text dimensions
+        call measure_label_dimensions(labels, text_system_available, data_to_pixel_ratio_x, &
+                                     data_width, max_text_width, total_text_width, &
+                                     max_text_height_pixels)
+        
+        ! Calculate box dimensions based on measurements
+        call set_legend_box_dimensions(box, max_text_width, max_text_height_pixels, &
+                                      data_to_pixel_ratio_x, data_to_pixel_ratio_y, &
+                                      size(labels))
+    end subroutine calculate_optimal_legend_dimensions
+    
+    subroutine measure_label_dimensions(labels, text_system_available, data_to_pixel_ratio_x, &
+                                       data_width, max_text_width, total_text_width, &
+                                       max_text_height_pixels)
+        !! Measure text dimensions for all labels
+        character(len=*), intent(in) :: labels(:)
+        logical, intent(in) :: text_system_available
+        real(wp), intent(in) :: data_to_pixel_ratio_x, data_width
+        real(wp), intent(out) :: max_text_width, total_text_width
+        integer, intent(out) :: max_text_height_pixels
+        
+        integer :: i, text_width_pixels, text_height_pixels
+        real(wp) :: entry_text_width
+        character(len=:), allocatable :: trimmed_label
+        integer, parameter :: fudge_pixels = 2
+        
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
         max_text_height_pixels = 16  ! Default font height
-
+        
         do i = 1, size(labels)
             trimmed_label = trim(labels(i))
             if (text_system_available) then
-                ! Use actual text system measurements, add fudge factor for overhang
                 text_width_pixels = calculate_text_width(trimmed_label) + fudge_pixels
                 text_height_pixels = calculate_text_height(trimmed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
-                ! Fallback estimation if text system not available
                 entry_text_width = real(len_trim(trimmed_label), wp) * data_width * TEXT_WIDTH_RATIO
             end if
             total_text_width = total_text_width + entry_text_width
             max_text_width = max(max_text_width, entry_text_width)
         end do
-
-        ! Set legend box components based on actual measurements (matplotlib-style spacing)
-        ! Matplotlib uses borderpad as internal padding in font-size units
-        ! Default matplotlib borderpad is 0.4 fontsize units
-        ! For actual text height of 15 pixels, borderpad = 0.4 * 10 = 4 pixels
-        box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line 
+    end subroutine measure_label_dimensions
+    
+    subroutine set_legend_box_dimensions(box, max_text_width, max_text_height_pixels, &
+                                        data_to_pixel_ratio_x, data_to_pixel_ratio_y, num_labels)
+        !! Set legend box dimensions based on measurements
+        type(legend_box_t), intent(inout) :: box
+        real(wp), intent(in) :: max_text_width
+        integer, intent(in) :: max_text_height_pixels
+        real(wp), intent(in) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
+        integer, intent(in) :: num_labels
+        
+        real(wp) :: padding_x, label_spacing
+        
+        ! Set legend box components (matplotlib-style spacing)
+        box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line
         box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
-        
-        ! Calculate entry height from actual text measurements
-        ! Text height is typically 14-15 pixels for 10pt font
         box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
+        box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y  ! 0.5 * 10pt font = 5 pixels
+        box%padding = 4.0_wp / data_to_pixel_ratio_y  ! 0.4 * 10pt font = 4 pixels
         
-        ! Matplotlib uses labelspacing (default 0.5) as fraction of fontsize
-        ! But fontsize is 10pt, not text height! So 0.5 * 10 = 5 pixels
-        box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y
         label_spacing = box%entry_spacing
-        
-        ! Padding should use actual fontsize, not text height
-        ! borderpad = 0.4 * fontsize = 0.4 * 10 = 4 pixels
-        box%padding = 4.0_wp / data_to_pixel_ratio_y
+        padding_x = 4.0_wp / data_to_pixel_ratio_x
         
         ! Calculate total box dimensions
-        ! Width: padding + line + spacing + text + padding (horizontal uses x ratio)
-        padding_x = 4.0_wp / data_to_pixel_ratio_x
         box%width = 2.0_wp * padding_x + box%line_length + box%text_spacing + max_text_width
-        
-        ! Height: For 2 entries with 14px text height each:
-        ! height = 2*4 (padding) + 2*14 (text) + 1*5 (spacing) = 41 pixels
-        ! But matplotlib shows 46 pixels, so there's extra space
         box%height = 2.0_wp * box%padding + &
-                     real(size(labels), wp) * box%entry_height + &
-                     real(size(labels) - 1, wp) * label_spacing
-
-    end subroutine calculate_optimal_legend_dimensions
+                     real(num_labels, wp) * box%entry_height + &
+                     real(num_labels - 1, wp) * label_spacing
+    end subroutine set_legend_box_dimensions
     
     function get_actual_text_dimensions(label, data_to_pixel_x, data_to_pixel_y) result(dimensions)
         !! Get actual text dimensions using text system measurements  

@@ -139,51 +139,8 @@ contains
         character(len=*), intent(in), optional :: scale_type
         real(wp), intent(in), optional :: symlog_threshold
 
-        real(wp) :: tvals(MAX_TICKS)
-        integer :: nt, i, limit
-        real(wp) :: min_t, max_t, tv_t, thr
-        character(len=16) :: scale
-        integer :: decimals
-
-        scale = 'linear'
-        if (present(scale_type)) scale = scale_type
-        thr = 1.0_wp
-        if (present(symlog_threshold)) thr = symlog_threshold
-
-        call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
-        if (nt <= 0) then
-            call handle_zero_range_ticks(data_min, num_ticks, plot_left + plot_width * 0.5_wp, &
-                                        positions, labels, scale_type)
-            return
-        end if
-
-        min_t = apply_scale_transform(data_min, scale, thr)
-        max_t = apply_scale_transform(data_max, scale, thr)
-
-        ! Determine a suitable decimal precision for linear ticks
-        decimals = 0
-        if (trim(scale) == 'linear' .and. nt >= 2) then
-            decimals = determine_decimals_from_ticks(tvals, nt)
-        end if
-
-        limit = min(num_ticks, size(positions))
-        do i = 1, limit
-            if (i > nt) exit
-            tv_t = apply_scale_transform(tvals(i), scale, thr)
-            if (max_t > min_t) then
-                positions(i) = plot_left + (tv_t - min_t) / (max_t - min_t) * plot_width
-            else
-                positions(i) = plot_left + 0.5_wp * plot_width
-            end if
-            if (trim(scale) == 'linear') then
-                labels(i) = adjustl(format_tick_value_consistent(tvals(i), decimals))
-            else
-                labels(i) = adjustl(format_tick_label(tvals(i), scale))
-            end if
-        end do
-        do i = nt + 1, limit
-            labels(i) = ''
-        end do
+        call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_left, plot_width, &
+                                        positions, labels, scale_type, symlog_threshold, 'x')
     end subroutine generate_x_axis_ticks
 
     subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, plot_height, &
@@ -196,11 +153,25 @@ contains
         character(len=*), intent(in), optional :: scale_type
         real(wp), intent(in), optional :: symlog_threshold
 
+        call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_bottom, plot_height, &
+                                        positions, labels, scale_type, symlog_threshold, 'y')
+    end subroutine generate_y_axis_ticks
+
+    subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, plot_size, &
+                                          positions, labels, scale_type, symlog_threshold, axis)
+        !! Internal helper to generate axis tick positions and labels
+        real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
+        integer, intent(in) :: num_ticks
+        real(wp), intent(out) :: positions(:)
+        character(len=32), intent(out) :: labels(:)
+        character(len=*), intent(in), optional :: scale_type
+        real(wp), intent(in), optional :: symlog_threshold
+        character, intent(in) :: axis  ! 'x' or 'y'
+
         real(wp) :: tvals(MAX_TICKS)
-        integer :: nt, i, limit
-        real(wp) :: min_t, max_t, tv_t, thr
+        integer :: nt
         character(len=16) :: scale
-        integer :: decimals
+        real(wp) :: thr
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -209,15 +180,30 @@ contains
 
         call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
         if (nt <= 0) then
-            call handle_zero_range_ticks(data_min, num_ticks, plot_bottom + plot_height * 0.5_wp, &
+            call handle_zero_range_ticks(data_min, num_ticks, plot_start + plot_size * 0.5_wp, &
                                         positions, labels, scale_type)
             return
         end if
 
-        min_t = apply_scale_transform(data_min, scale, thr)
-        max_t = apply_scale_transform(data_max, scale, thr)
+        call fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, plot_size, &
+                                           num_ticks, positions, labels, scale, thr)
+    end subroutine generate_axis_ticks_internal
 
-        ! Determine a suitable decimal precision for linear ticks
+    subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, plot_size, &
+                                             num_ticks, positions, labels, scale, threshold)
+        !! Fill tick positions and labels arrays
+        real(wp), intent(in) :: tvals(:), data_min, data_max, plot_start, plot_size, threshold
+        integer, intent(in) :: nt, num_ticks
+        real(wp), intent(out) :: positions(:)
+        character(len=32), intent(out) :: labels(:)
+        character(len=*), intent(in) :: scale
+
+        real(wp) :: min_t, max_t, tv_t
+        integer :: i, limit, decimals
+
+        min_t = apply_scale_transform(data_min, scale, threshold)
+        max_t = apply_scale_transform(data_max, scale, threshold)
+
         decimals = 0
         if (trim(scale) == 'linear' .and. nt >= 2) then
             decimals = determine_decimals_from_ticks(tvals, nt)
@@ -226,11 +212,11 @@ contains
         limit = min(num_ticks, size(positions))
         do i = 1, limit
             if (i > nt) exit
-            tv_t = apply_scale_transform(tvals(i), scale, thr)
+            tv_t = apply_scale_transform(tvals(i), scale, threshold)
             if (max_t > min_t) then
-                positions(i) = plot_bottom + (tv_t - min_t) / (max_t - min_t) * plot_height
+                positions(i) = plot_start + (tv_t - min_t) / (max_t - min_t) * plot_size
             else
-                positions(i) = plot_bottom + 0.5_wp * plot_height
+                positions(i) = plot_start + 0.5_wp * plot_size
             end if
             if (trim(scale) == 'linear') then
                 labels(i) = adjustl(format_tick_value_consistent(tvals(i), decimals))
@@ -241,7 +227,7 @@ contains
         do i = nt + 1, limit
             labels(i) = ''
         end do
-    end subroutine generate_y_axis_ticks
+    end subroutine fill_tick_positions_and_labels
 
     subroutine handle_zero_range_ticks(data_value, num_ticks, center_position, &
                                       positions, labels, scale_type)
@@ -281,20 +267,59 @@ contains
         integer :: num_x_ticks, num_y_ticks
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
 
-        ! Setup data ranges
+        ! Setup data ranges and generate ticks
+        call prepare_axes_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                             x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
+                             x_positions, y_positions, x_labels, y_labels, &
+                             num_x_ticks, num_y_ticks, xscale, yscale, &
+                             plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                             symlog_threshold)
+
+        ! Draw axes elements
+        call draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
+                              num_x_ticks, num_y_ticks, title, xlabel, ylabel, &
+                              plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                              canvas_height)
+    end subroutine draw_pdf_axes_and_labels
+
+    subroutine prepare_axes_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
+                                x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
+                                x_positions, y_positions, x_labels, y_labels, &
+                                num_x_ticks, num_y_ticks, xscale, yscale, &
+                                plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                                symlog_threshold)
+        !! Prepare axes data ranges and generate tick positions
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
+        real(wp), intent(out) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
+        real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
+        character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
+        integer, intent(out) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: xscale, yscale
+        real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height
+        real(wp), intent(in), optional :: symlog_threshold
+
         call setup_axes_data_ranges(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                    x_min_adj, x_max_adj, y_min_adj, y_max_adj, xscale, yscale)
 
-        ! Generate tick data using original data bounds; apply transforms per scale
         call generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                x_positions, y_positions, x_labels, y_labels, &
                                num_x_ticks, num_y_ticks, xscale, yscale, &
                                plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
                                symlog_threshold)
+    end subroutine prepare_axes_data
 
-        ! Grid functionality removed - PDF plots now display without grid lines
-
-        ! Plot area parameters are now mandatory (non-optional)
+    subroutine draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
+                                 num_x_ticks, num_y_ticks, title, xlabel, ylabel, &
+                                 plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, &
+                                 canvas_height)
+        !! Draw axes frame, ticks, and labels
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_positions(:), y_positions(:)
+        character(len=32), intent(in) :: x_labels(:), y_labels(:)
+        integer, intent(in) :: num_x_ticks, num_y_ticks
+        character(len=*), intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, plot_area_height, canvas_height
 
         ! Ensure axes are drawn in black independent of prior plot color state
         call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -309,13 +334,12 @@ contains
         call draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, y_labels, &
                                            num_x_ticks, num_y_ticks, plot_area_left, plot_area_bottom, canvas_height)
 
-        ! Draw title and axis labels
         if (present(title) .or. present(xlabel) .or. present(ylabel)) then
             call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
                                       plot_area_left, plot_area_bottom, &
                                       plot_area_width, plot_area_height)
         end if
-    end subroutine draw_pdf_axes_and_labels
+    end subroutine draw_axes_elements
 
     subroutine draw_pdf_3d_axes_frame(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw 3D axes frame - see issue #494 for implementation roadmap
