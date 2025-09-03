@@ -22,6 +22,8 @@ module fortplot_matplotlib_advanced
     public :: plot, scatter, errorbar, boxplot
     public :: bar, barh, hist, histogram
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
+    public :: imshow, pie, polar, step, stem
+    public :: fill, fill_between, twinx, twiny
 
     public :: contour, contour_filled, pcolormesh, streamplot
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
@@ -191,6 +193,376 @@ contains
         wx = real(x, wp); wy = real(y, wp)
         call add_scatter_2d(fig, wx, wy, label=label, marker=marker)
     end subroutine scatter
+
+    subroutine imshow(z, cmap, alpha, vmin, vmax, origin, extent, interpolation, aspect)
+        !! Display image data as a 2D array (heat map visualization)
+        real(8), dimension(:,:), intent(in) :: z
+        character(len=*), intent(in), optional :: cmap
+        real(8), intent(in), optional :: alpha, vmin, vmax
+        character(len=*), intent(in), optional :: origin
+        real(8), dimension(4), intent(in), optional :: extent
+        character(len=*), intent(in), optional :: interpolation, aspect
+        real(8), allocatable :: x(:), y(:)
+        integer :: nx, ny, i
+        real(8) :: x0, x1, y0, y1
+        
+        call ensure_fig_init()
+        
+        nx = size(z, 2)
+        ny = size(z, 1)
+        
+        ! Set extent based on optional parameter or default to indices
+        if (present(extent)) then
+            x0 = extent(1); x1 = extent(2)
+            y0 = extent(3); y1 = extent(4)
+        else
+            x0 = 0.0d0; x1 = real(nx, 8)
+            y0 = 0.0d0; y1 = real(ny, 8)
+        end if
+        
+        ! Create coordinate arrays
+        allocate(x(nx+1), y(ny+1))
+        x = [(x0 + (x1-x0)*i/nx, i=0, nx)]
+        y = [(y0 + (y1-y0)*i/ny, i=0, ny)]
+        
+        ! Use pcolormesh as backend for imshow
+        call pcolormesh(x, y, z, colormap=cmap, vmin=vmin, vmax=vmax)
+        deallocate(x, y)
+    end subroutine imshow
+
+    subroutine pie(values, labels, colors, explode, autopct, startangle)
+        !! Create a pie chart
+        real(8), dimension(:), intent(in) :: values
+        character(len=*), dimension(:), intent(in), optional :: labels
+        real(8), dimension(:,:), intent(in), optional :: colors
+        real(8), dimension(:), intent(in), optional :: explode
+        character(len=*), intent(in), optional :: autopct
+        real(8), intent(in), optional :: startangle
+        integer :: n, i, j
+        real(8) :: total, angle_start, angle_span, angle
+        real(8) :: cx, cy, radius, explode_offset
+        real(8), allocatable :: angles(:), x_pts(:), y_pts(:)
+        integer :: n_segments
+        real(8), dimension(3) :: color_rgb
+        
+        call ensure_fig_init()
+        
+        n = size(values)
+        total = sum(values)
+        if (total <= 0.0d0) then
+            call log_error("pie: Total of values must be positive")
+            return
+        end if
+        
+        cx = 0.5d0; cy = 0.5d0; radius = 0.4d0
+        angle_start = 90.0d0  ! Start from top
+        if (present(startangle)) angle_start = startangle
+        
+        ! Convert to radians
+        angle_start = angle_start * 3.14159265358979d0 / 180.0d0
+        
+        ! Draw each pie wedge
+        do i = 1, n
+            angle_span = 2.0d0 * 3.14159265358979d0 * values(i) / total
+            
+            ! Handle explosion offset
+            explode_offset = 0.0d0
+            if (present(explode)) then
+                if (size(explode) >= i) explode_offset = explode(i) * radius * 0.1d0
+            end if
+            
+            ! Create wedge points
+            n_segments = max(20, int(angle_span * 180.0d0 / 3.14159265358979d0))
+            allocate(x_pts(n_segments+2), y_pts(n_segments+2))
+            
+            ! Center point (possibly offset)
+            x_pts(1) = cx + explode_offset * cos(angle_start + angle_span/2)
+            y_pts(1) = cy + explode_offset * sin(angle_start + angle_span/2)
+            
+            ! Arc points
+            allocate(angles(n_segments))
+            angles = [(angle_start + angle_span*j/(n_segments-1), j=0, n_segments-1)]
+            do j = 1, n_segments
+                x_pts(j+1) = x_pts(1) + radius * cos(angles(j))
+                y_pts(j+1) = y_pts(1) + radius * sin(angles(j))
+            end do
+            x_pts(n_segments+2) = x_pts(2)  ! Close the wedge
+            y_pts(n_segments+2) = y_pts(2)
+            
+            ! Set color
+            if (present(colors) .and. size(colors,1) >= i) then
+                color_rgb = colors(i,:)
+            else
+                ! Default color cycle
+                select case(mod(i-1, 10) + 1)
+                case(1); color_rgb = [0.12d0, 0.47d0, 0.71d0]
+                case(2); color_rgb = [1.00d0, 0.50d0, 0.05d0]
+                case(3); color_rgb = [0.17d0, 0.63d0, 0.17d0]
+                case(4); color_rgb = [0.84d0, 0.15d0, 0.16d0]
+                case(5); color_rgb = [0.58d0, 0.40d0, 0.74d0]
+                case(6); color_rgb = [0.55d0, 0.34d0, 0.29d0]
+                case(7); color_rgb = [0.89d0, 0.47d0, 0.76d0]
+                case(8); color_rgb = [0.50d0, 0.50d0, 0.50d0]
+                case(9); color_rgb = [0.74d0, 0.74d0, 0.13d0]
+                case default; color_rgb = [0.09d0, 0.75d0, 0.81d0]
+                end select
+            end if
+            
+            ! Plot the wedge as a filled polygon (using plot for now)
+            call fig%add_plot(x_pts, y_pts, color=color_rgb)
+            
+            angle_start = angle_start + angle_span
+            deallocate(x_pts, y_pts, angles)
+        end do
+        
+        ! Set equal aspect ratio for circle
+        call fig%set_xlim(-0.1d0, 1.1d0)
+        call fig%set_ylim(-0.1d0, 1.1d0)
+    end subroutine pie
+
+    subroutine polar(theta, r, fmt, label, linestyle, marker, color)
+        !! Create a polar plot
+        real(8), dimension(:), intent(in) :: theta, r
+        character(len=*), intent(in), optional :: fmt, label, linestyle, marker
+        real(8), dimension(3), intent(in), optional :: color
+        real(8), allocatable :: x(:), y(:)
+        integer :: n
+        
+        call ensure_fig_init()
+        
+        n = size(theta)
+        if (size(r) /= n) then
+            call log_error("polar: theta and r arrays must have same size")
+            return
+        end if
+        
+        ! Convert polar to Cartesian coordinates
+        allocate(x(n), y(n))
+        x = r * cos(theta)
+        y = r * sin(theta)
+        
+        ! Plot in Cartesian space
+        call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color)
+        
+        deallocate(x, y)
+    end subroutine polar
+
+    subroutine step(x, y, where, label, linestyle, color, linewidth)
+        !! Create a step plot
+        real(8), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: where, label, linestyle
+        real(8), dimension(3), intent(in), optional :: color
+        real(8), intent(in), optional :: linewidth
+        real(8), allocatable :: x_step(:), y_step(:)
+        character(len=10) :: where_loc
+        integer :: n, i, j
+        
+        call ensure_fig_init()
+        
+        n = size(x)
+        if (size(y) /= n) then
+            call log_error("step: x and y arrays must have same size")
+            return
+        end if
+        
+        where_loc = 'mid'
+        if (present(where)) where_loc = where
+        
+        ! Create stepped coordinates
+        allocate(x_step(2*n), y_step(2*n))
+        
+        select case(trim(where_loc))
+        case('pre')
+            do i = 1, n
+                j = 2*i - 1
+                if (i > 1) then
+                    x_step(j) = x(i)
+                    y_step(j) = y(i-1)
+                else
+                    x_step(j) = x(i)
+                    y_step(j) = y(i)
+                end if
+                x_step(j+1) = x(i)
+                y_step(j+1) = y(i)
+            end do
+        case('post')
+            do i = 1, n
+                j = 2*i - 1
+                x_step(j) = x(i)
+                y_step(j) = y(i)
+                if (i < n) then
+                    x_step(j+1) = x(i+1)
+                    y_step(j+1) = y(i)
+                else
+                    x_step(j+1) = x(i)
+                    y_step(j+1) = y(i)
+                end if
+            end do
+        case default  ! 'mid'
+            do i = 1, n
+                j = 2*i - 1
+                if (i > 1) then
+                    x_step(j) = (x(i-1) + x(i)) / 2.0d0
+                    y_step(j) = y(i-1)
+                else
+                    x_step(j) = x(i)
+                    y_step(j) = y(i)
+                end if
+                if (i < n) then
+                    x_step(j+1) = (x(i) + x(i+1)) / 2.0d0
+                    y_step(j+1) = y(i)
+                else
+                    x_step(j+1) = x(i)
+                    y_step(j+1) = y(i)
+                end if
+            end do
+        end select
+        
+        call fig%add_plot(x_step(1:2*n-1), y_step(1:2*n-1), label=label, &
+                         linestyle=linestyle, color=color)
+        
+        deallocate(x_step, y_step)
+    end subroutine step
+
+    subroutine stem(x, y, linefmt, markerfmt, basefmt, label, bottom)
+        !! Create a stem plot
+        real(8), dimension(:), intent(in) :: x, y
+        character(len=*), intent(in), optional :: linefmt, markerfmt, basefmt, label
+        real(8), intent(in), optional :: bottom
+        real(8) :: baseline
+        integer :: i, n
+        real(8), dimension(2) :: x_stem, y_stem
+        
+        call ensure_fig_init()
+        
+        n = size(x)
+        if (size(y) /= n) then
+            call log_error("stem: x and y arrays must have same size")
+            return
+        end if
+        
+        baseline = 0.0d0
+        if (present(bottom)) baseline = bottom
+        
+        ! Draw baseline
+        call fig%add_plot([minval(x), maxval(x)], [baseline, baseline], &
+                         linestyle='-', color=[0.0d0, 0.0d0, 0.0d0])
+        
+        ! Draw stems
+        do i = 1, n
+            x_stem = [x(i), x(i)]
+            y_stem = [baseline, y(i)]
+            call fig%add_plot(x_stem, y_stem, linestyle='-', &
+                            color=[0.0d0, 0.447d0, 0.698d0])
+        end do
+        
+        ! Draw markers at data points
+        call scatter(x, y, marker='o', color=[0.0d0, 0.447d0, 0.698d0], label=label)
+    end subroutine stem
+
+    subroutine fill(x, y, color, alpha, label)
+        !! Fill the area under a curve
+        real(8), dimension(:), intent(in) :: x, y
+        real(8), dimension(3), intent(in), optional :: color
+        real(8), intent(in), optional :: alpha
+        character(len=*), intent(in), optional :: label
+        real(8), allocatable :: x_fill(:), y_fill(:)
+        integer :: n
+        
+        call ensure_fig_init()
+        
+        n = size(x)
+        if (size(y) /= n) then
+            call log_error("fill: x and y arrays must have same size")
+            return
+        end if
+        
+        ! Create filled polygon by closing to baseline
+        allocate(x_fill(n+2), y_fill(n+2))
+        x_fill(1:n) = x
+        y_fill(1:n) = y
+        x_fill(n+1) = x(n)
+        y_fill(n+1) = 0.0d0
+        x_fill(n+2) = x(1)
+        y_fill(n+2) = 0.0d0
+        
+        ! Plot as a closed polygon
+        call fig%add_plot(x_fill, y_fill, color=color, label=label)
+        
+        deallocate(x_fill, y_fill)
+    end subroutine fill
+
+    subroutine fill_between(x, y1, y2, where, color, alpha, label, interpolate)
+        !! Fill the area between two curves
+        real(8), dimension(:), intent(in) :: x
+        real(8), dimension(:), intent(in), optional :: y1, y2
+        logical, dimension(:), intent(in), optional :: where
+        real(8), dimension(3), intent(in), optional :: color
+        real(8), intent(in), optional :: alpha
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: interpolate
+        real(8), allocatable :: y1_loc(:), y2_loc(:)
+        real(8), allocatable :: x_fill(:), y_fill(:)
+        integer :: n, i
+        
+        call ensure_fig_init()
+        
+        n = size(x)
+        
+        ! Set y1 and y2
+        allocate(y1_loc(n), y2_loc(n))
+        if (present(y1)) then
+            if (size(y1) /= n) then
+                call log_error("fill_between: y1 size must match x size")
+                return
+            end if
+            y1_loc = y1
+        else
+            y1_loc = 0.0d0
+        end if
+        
+        if (present(y2)) then
+            if (size(y2) /= n) then
+                call log_error("fill_between: y2 size must match x size")
+                return
+            end if
+            y2_loc = y2
+        else
+            y2_loc = 0.0d0
+        end if
+        
+        ! Create filled region
+        allocate(x_fill(2*n), y_fill(2*n))
+        do i = 1, n
+            x_fill(i) = x(i)
+            y_fill(i) = y1_loc(i)
+            x_fill(2*n+1-i) = x(i)
+            y_fill(2*n+1-i) = y2_loc(i)
+        end do
+        
+        ! Plot as a closed polygon
+        call fig%add_plot(x_fill, y_fill, color=color, label=label)
+        
+        deallocate(y1_loc, y2_loc, x_fill, y_fill)
+    end subroutine fill_between
+
+    subroutine twinx()
+        !! Create a twin x-axis sharing the same y-axis
+        call ensure_fig_init()
+        call log_warning("twinx: Dual axis plots not yet fully implemented")
+        ! Placeholder for future implementation
+        ! This would require significant changes to the figure architecture
+        ! to support multiple axis systems
+    end subroutine twinx
+
+    subroutine twiny()
+        !! Create a twin y-axis sharing the same x-axis
+        call ensure_fig_init()
+        call log_warning("twiny: Dual axis plots not yet fully implemented")
+        ! Placeholder for future implementation
+        ! This would require significant changes to the figure architecture
+        ! to support multiple axis systems
+    end subroutine twiny
 
     subroutine add_scatter_2d_wrapper(x, y, s, c, label, marker, markersize, color, &
                            linewidths, edgecolors, alpha)
