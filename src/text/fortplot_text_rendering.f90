@@ -9,7 +9,7 @@ module fortplot_text_rendering
     
     private
     public :: render_text_to_image, calculate_text_width, calculate_text_height
-    public :: render_rotated_text_to_image
+    public :: render_rotated_text_to_image, calculate_text_descent
     
     ! Constants for text rendering
     integer, parameter :: DEFAULT_FONT_SIZE = 16
@@ -88,6 +88,37 @@ contains
         if (height <= 0) height = DEFAULT_FONT_SIZE
         
     end function calculate_text_height
+
+    function calculate_text_descent(text) result(descent_pixels)
+        !! Calculate the descent (below baseline) portion of text in pixels
+        !! Returns positive pixels for the descent portion that extends below baseline
+        character(len=*), intent(in) :: text
+        integer :: descent_pixels
+        integer :: ascent, descent, line_gap
+        type(stb_fontinfo_t) :: font
+        real(wp) :: scale
+        
+        ! Suppress unused parameter warnings
+        associate(unused_text => text); end associate
+        
+        if (.not. is_font_initialized()) then
+            if (.not. init_text_system()) then
+                descent_pixels = 4  ! Fallback descent estimate
+                return
+            end if
+        end if
+        
+        font = get_global_font()
+        scale = get_font_scale()
+        
+        ! Get font metrics - descent is typically negative (below baseline)
+        call stb_get_font_vmetrics(font, ascent, descent, line_gap)
+        descent_pixels = int(abs(real(descent) * scale))
+        
+        ! Ensure minimum reasonable descent
+        if (descent_pixels <= 0) descent_pixels = 4
+        
+    end function calculate_text_descent
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
         !! Render text to image using STB TrueType with UTF-8 support
