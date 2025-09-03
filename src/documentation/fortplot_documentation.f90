@@ -57,6 +57,19 @@ module fortplot_documentation
     ! Private constants for processing
     character(len=*), parameter :: OUTPUT_BASE_DIR = 'output/example/fortran/'
 
+    ! Example data arrays
+    integer, parameter :: N_EXAMPLES = 17
+    character(len=32), parameter :: EXAMPLE_NAMES(N_EXAMPLES) = [ &
+        "basic_plots         ", "line_styles         ", &
+        "marker_demo         ", "format_string_demo  ", &
+        "contour_demo        ", "colored_contours    ", &
+        "pcolormesh_demo     ", "streamplot_demo     ", &
+        "ascii_heatmap       ", "scale_examples      ", &
+        "legend_demo         ", "legend_box_demo     ", &
+        "unicode_demo        ", "show_viewer_demo    ", &
+        "raster_backend_demo ", "pdf_backend_demo    ", &
+        "text_backend_demo   " ]
+
 contains
 
     ! ========================================
@@ -236,60 +249,29 @@ contains
 
     pure function get_example_count() result(count)
         integer :: count
-        ! Keep in sync with get_example_dir/name cases below
-        count = 17
+        count = N_EXAMPLES
     end function get_example_count
 
     pure subroutine get_example_dir(index, dir)
         integer, intent(in) :: index
         character(len=PATH_MAX_LEN), intent(out) :: dir
 
-        select case(index)
-        case(1); dir = "example/fortran/basic_plots"
-        case(2); dir = "example/fortran/line_styles"
-        case(3); dir = "example/fortran/marker_demo"
-        case(4); dir = "example/fortran/format_string_demo"
-        case(5); dir = "example/fortran/contour_demo"
-        case(6); dir = "example/fortran/colored_contours"
-        case(7); dir = "example/fortran/pcolormesh_demo"
-        case(8); dir = "example/fortran/streamplot_demo"
-        case(9); dir = "example/fortran/ascii_heatmap"
-        case(10); dir = "example/fortran/scale_examples"
-        case(11); dir = "example/fortran/legend_demo"
-        case(12); dir = "example/fortran/legend_box_demo"
-        case(13); dir = "example/fortran/unicode_demo"
-        case(14); dir = "example/fortran/show_viewer_demo"
-        case(15); dir = "example/fortran/raster_backend_demo"
-        case(16); dir = "example/fortran/pdf_backend_demo"
-        case(17); dir = "example/fortran/text_backend_demo"
-        case default; dir = ""
-        end select
+        if (index > 0 .and. index <= N_EXAMPLES) then
+            dir = "example/fortran/" // trim(EXAMPLE_NAMES(index))
+        else
+            dir = ""
+        end if
     end subroutine get_example_dir
 
     pure subroutine get_example_name(index, name)
         integer, intent(in) :: index
         character(len=PATH_MAX_LEN), intent(out) :: name
 
-        select case(index)
-        case(1); name = "basic_plots"
-        case(2); name = "line_styles"
-        case(3); name = "marker_demo"
-        case(4); name = "format_string_demo"
-        case(5); name = "contour_demo"
-        case(6); name = "colored_contours"
-        case(7); name = "pcolormesh_demo"
-        case(8); name = "streamplot_demo"
-        case(9); name = "ascii_heatmap"
-        case(10); name = "scale_examples"
-        case(11); name = "legend_demo"
-        case(12); name = "legend_box_demo"
-        case(13); name = "unicode_demo"
-        case(14); name = "show_viewer_demo"
-        case(15); name = "raster_backend_demo"
-        case(16); name = "pdf_backend_demo"
-        case(17); name = "text_backend_demo"
-        case default; name = ""
-        end select
+        if (index > 0 .and. index <= N_EXAMPLES) then
+            name = trim(EXAMPLE_NAMES(index))
+        else
+            name = ""
+        end if
     end subroutine get_example_name
 
     subroutine process_example(example_dir, example_name)
