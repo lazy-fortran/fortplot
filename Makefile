@@ -154,6 +154,10 @@ doc:
 	@head -5 doc/examples/basic_plots.md || echo "Failed to read basic_plots.md"
 	@echo "Debugging: Checking animation.md content (working file):"
 	@head -5 doc/examples/animation.md || echo "Failed to read animation.md"
+	@echo "Debugging: File paths and types:"
+	@ls -la doc/examples/basic_plots.md doc/examples/animation.md || echo "Files not found"
+	@echo "Debugging: Looking for any basic_plots.md files in repo:"
+	@find . -name "basic_plots.md" -type f || echo "No basic_plots.md found"
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
 	# Some pages link '../media/...' (relative to page/examples), others '../../media/...'
