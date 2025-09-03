@@ -6,6 +6,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_core, only: pdf_context_core, PDF_MARGIN, &
                                 PDF_TICK_SIZE, PDF_LABEL_SIZE, &
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
+    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text
@@ -446,12 +447,12 @@ contains
             end if
         end if
 
-        ! Draw X-axis label (centered at bottom) - 50px below plot bottom
+        ! Draw X-axis label (centered at bottom) - use consistent offset below plot bottom
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
                           real(len_trim(xlabel), wp) * 3.0_wp
-                xlabel_y = plot_area_bottom - 50.0_wp
+                xlabel_y = plot_area_bottom - real(XLABEL_VERTICAL_OFFSET, wp)
                 call render_mixed_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
         end if
