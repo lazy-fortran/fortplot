@@ -1,7 +1,7 @@
 program test_tick_label_overlap_guard_varied
     !! Additional guard test: varied spacing and widths
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_raster_axes, only: compute_non_overlapping_mask
+    use fortplot_raster_axes, only: compute_non_overlapping_mask => compute_non_overlapping_mask_simple
     implicit none
 
     real(wp), dimension(10) :: centers

@@ -2,9 +2,9 @@ program test_raster_label_layout_utils
     !! Focused tests for raster label layout helpers
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_margins, only: plot_area_t
-    use fortplot_raster_axes, only: compute_non_overlapping_mask, &
-                                    compute_ylabel_x_pos, &
-                                    y_tick_label_right_edge_at_axis
+    use fortplot_raster_axes, only: compute_non_overlapping_mask => compute_non_overlapping_mask_simple, &
+                                    compute_ylabel_x_pos => compute_ylabel_x_pos_old, &
+                                    y_tick_label_right_edge_at_axis => y_tick_label_right_edge_at_axis_old
     use fortplot_constants, only: TICK_MARK_LENGTH
 
     implicit none

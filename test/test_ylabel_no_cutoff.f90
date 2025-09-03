@@ -1,7 +1,7 @@
 program test_ylabel_no_cutoff
     !! Test that ylabel is not cut off at canvas edge with various configurations
     use fortplot
-    use fortplot_raster_axes, only: compute_ylabel_x_pos
+    use fortplot_raster_axes, only: compute_ylabel_x_pos_old
     use fortplot_layout, only: plot_area_t, plot_margins_t, calculate_plot_area
     implicit none
     
@@ -22,7 +22,7 @@ program test_ylabel_no_cutoff
     ylabel_width = 40
     ytick_max_width = 60
     
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     ! Verify ylabel doesn't go negative (would be cut off)
     if (x_pos < 1) then
@@ -42,7 +42,7 @@ program test_ylabel_no_cutoff
     canvas_height = 300
     call calculate_plot_area(canvas_width, canvas_height, margins, plot_area)
     
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos < 1) then
         print *, 'FAIL: Y-label cut off on small canvas (x_pos=', x_pos, ')'
@@ -55,7 +55,7 @@ program test_ylabel_no_cutoff
     call calculate_plot_area(canvas_width, canvas_height, margins, plot_area)
     ylabel_width = 80  ! Very long label
     
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos < 1) then
         print *, 'FAIL: Long y-label cut off (x_pos=', x_pos, ')'

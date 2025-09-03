@@ -2,7 +2,7 @@ program test_ylabel_comprehensive
     !! Comprehensive test for ylabel positioning fix (Issue #1136)
     !! Tests various configurations to ensure ylabel is not cut off
     use fortplot
-    use fortplot_raster_axes, only: compute_ylabel_x_pos
+    use fortplot_raster_axes, only: compute_ylabel_x_pos_old
     use fortplot_layout, only: plot_area_t, plot_margins_t, calculate_plot_area
     implicit none
     
@@ -24,7 +24,7 @@ program test_ylabel_comprehensive
     call calculate_plot_area(800, 600, margins, plot_area)
     ylabel_width = 20
     ytick_max_width = 30
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     ! With the increased gap, ylabel should have more space from tick labels
     if (x_pos > 0) then
         print *, '✓ Test 1 PASS: Y-label spacing increased as per fix'
@@ -38,7 +38,7 @@ program test_ylabel_comprehensive
     call calculate_plot_area(800, 600, margins, plot_area)
     ylabel_width = 30
     ytick_max_width = 40
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then  ! Minimum margin protection
         print *, '✓ Test 2 PASS: Standard ylabel position maintains minimum margin (x=', x_pos, ')'
@@ -51,7 +51,7 @@ program test_ylabel_comprehensive
     test_count = test_count + 1
     ylabel_width = 50
     ytick_max_width = 100  ! Very wide tick labels
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
         print *, '✓ Test 3 PASS: Wide tick labels - minimum margin enforced (x=', x_pos, ')'
@@ -65,7 +65,7 @@ program test_ylabel_comprehensive
     call calculate_plot_area(400, 300, margins, plot_area)
     ylabel_width = 40
     ytick_max_width = 60
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
         print *, '✓ Test 4 PASS: Small canvas maintains minimum margin (x=', x_pos, ')'
@@ -79,7 +79,7 @@ program test_ylabel_comprehensive
     call calculate_plot_area(800, 600, margins, plot_area)
     ylabel_width = 100  ! Extremely long ylabel
     ytick_max_width = 50
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
         print *, '✓ Test 5 PASS: Long ylabel protected by minimum margin (x=', x_pos, ')'
@@ -93,7 +93,7 @@ program test_ylabel_comprehensive
     call calculate_plot_area(800, 600, margins, plot_area)
     ylabel_width = 40
     ytick_max_width = 50
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     ! With margin protection, position should be at least 15
     test_passed = (x_pos >= 15)
@@ -108,7 +108,7 @@ program test_ylabel_comprehensive
     test_count = test_count + 1
     ylabel_width = 30
     ytick_max_width = 0  ! No tick labels
-    x_pos = compute_ylabel_x_pos(plot_area, ylabel_width, ytick_max_width)
+    x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos > 0) then
         print *, '✓ Test 7 PASS: Zero-width tick labels handled correctly (x=', x_pos, ')'

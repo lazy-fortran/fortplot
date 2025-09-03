@@ -1,7 +1,7 @@
 program test_raster_axes_overlap_mask
     !! Focused tests for compute_non_overlapping_mask in raster axes
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_raster_axes, only: compute_non_overlapping_mask
+    use fortplot_raster_axes, only: compute_non_overlapping_mask => compute_non_overlapping_mask_simple
     implicit none
 
     real(wp), allocatable :: centers(:)
