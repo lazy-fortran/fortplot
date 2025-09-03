@@ -45,8 +45,8 @@ contains
         integer :: rotated_text_width
         integer :: y_tick_max_width
         integer :: x_pos, expected
-        integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 16
-        integer, parameter :: YLABEL_EXTRA_GAP = 10
+        integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
+        integer, parameter :: YLABEL_EXTRA_GAP = 5
 
         area%left = 100; area%bottom = 50; area%width = 400; area%height = 300
         rotated_text_width = 20
@@ -67,7 +67,7 @@ contains
     subroutine test_y_tick_label_right_edge()
         type(plot_area_t) :: area
         integer :: r_edge, expected
-        integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 16
+        integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
 
         area%left = 100; area%bottom = 50; area%width = 400; area%height = 300
 
