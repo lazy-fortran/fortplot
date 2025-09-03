@@ -51,6 +51,12 @@ test: create_test_dirs
 	$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
 		&& echo "ALL TESTS PASSED (fpm test)"
 
+# Run fast test suite for development iteration (minimal I/O, no delays)
+test-fast: create_test_dirs
+	@echo "Running fast test suite for development iteration..."
+	@FORTPLOT_FAST_TESTS=1 fpm test $(FPM_FLAGS_TEST) --target test_suite_fast \
+		&& echo "FAST TESTS PASSED"
+
 # Run fast tests for CI (skip heavy I/O and MPEG tests)
 test-ci:
 	$(call _timeout_notice)
