@@ -47,7 +47,8 @@ contains
         integer :: y_tick_max_width
         integer :: x_pos, expected
         integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
-        integer, parameter :: YLABEL_EXTRA_GAP = 2
+        ! Updated to match the increased gap in fortplot_raster_axes
+        integer, parameter :: YLABEL_EXTRA_GAP = 8
 
         area%left = 100; area%bottom = 50; area%width = 400; area%height = 300
         rotated_text_width = 20
@@ -59,6 +60,8 @@ contains
         ! full rotated_text_width from the left edge calculation.
         expected = area%left - (TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + &
                 y_tick_max_width + YLABEL_EXTRA_GAP) - rotated_text_width
+        ! Account for minimum margin protection (15 pixels from edge)
+        if (expected < 15) expected = 15
         if (x_pos /= expected) then
             print *, 'FAIL: ylabel x position mismatch:', x_pos, expected
             stop 1
@@ -88,7 +91,8 @@ contains
         integer :: y_tick_max_width
         integer :: x_pos
         integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
-        integer, parameter :: YLABEL_EXTRA_GAP = 2
+        ! Updated to match the increased gap in fortplot_raster_axes
+        integer, parameter :: YLABEL_EXTRA_GAP = 8
 
         ! Create a scenario where ylabel would be positioned at negative x
         ! Small plot area on the left with very wide tick labels
