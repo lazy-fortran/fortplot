@@ -1,7 +1,6 @@
 program test_doc_processing_output
-    use fortplot_doc_processing, only: get_example_count, get_example_dir, get_example_name, process_example
-    use fortplot_doc_output,     only: write_generated_outputs
-    use fortplot_doc_core,       only: PATH_MAX_LEN
+    use fortplot_documentation, only: get_example_count, get_example_dir, get_example_name, process_example, &
+                                       write_generated_outputs, PATH_MAX_LEN
     use fortplot_system_runtime, only: create_directory_runtime
     implicit none
 
