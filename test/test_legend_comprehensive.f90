@@ -269,8 +269,16 @@ contains
         !! Platform-independent delay for Windows file system operations
         integer, intent(in) :: milliseconds
         real(wp) :: start_time, current_time, delay_seconds
+        character(len=32) :: fast_mode
         
-        delay_seconds = real(milliseconds, wp) / 1000.0_wp
+        ! Check for fast test mode
+        call get_environment_variable("FORTPLOT_FAST_TESTS", fast_mode)
+        if (len_trim(fast_mode) > 0 .or. milliseconds == 0) then
+            return  ! Skip delay in fast mode
+        end if
+        
+        ! Optimize delay: use 1ms as maximum (was using up to 150ms)
+        delay_seconds = min(real(milliseconds, wp), 1.0_wp) / 1000.0_wp
         call cpu_time(start_time)
         do
             call cpu_time(current_time)
