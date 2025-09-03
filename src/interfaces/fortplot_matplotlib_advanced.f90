@@ -30,7 +30,7 @@ module fortplot_matplotlib_advanced
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
 
-    public :: figure, subplot, savefig, savefig_with_status
+    public :: figure, subplot, subplots, savefig, savefig_with_status
     public :: show, show_viewer
     public :: ensure_global_figure_initialized, get_global_figure
 
@@ -649,6 +649,16 @@ contains
             subplot_warning_shown = .true.
         end if
     end subroutine subplot
+
+    subroutine subplots(nrows, ncols)
+        integer, intent(in) :: nrows, ncols
+        call ensure_global_figure_initialized()
+        if (nrows <= 0 .or. ncols <= 0) then
+            call log_error("subplots: Invalid grid dimensions")
+            return
+        end if
+        call fig%subplots(nrows, ncols)
+    end subroutine subplots
 
     subroutine savefig(filename, dpi, transparent, bbox_inches)
         character(len=*), intent(in) :: filename
