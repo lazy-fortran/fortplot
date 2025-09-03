@@ -122,6 +122,9 @@ contains
         
         if (present(marker)) then
             self%plots(plot_idx)%marker = marker
+        else
+            ! Default marker for scatter plots - ensures they are visible
+            self%plots(plot_idx)%marker = 'o'
         end if
         
         if (present(markersize)) then

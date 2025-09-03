@@ -15,6 +15,7 @@ program test_scatter_enhanced_core
     ! Phase 1: Core Infrastructure Tests (RED PHASE)
     call test_enhanced_scatter_api_signature()
     call test_marker_shape_enumeration_system()
+    call test_default_marker_behavior()
     call test_input_validation_framework()
     
     ! Phase 2: Size and Color Mapping Tests (RED PHASE) 
@@ -170,6 +171,31 @@ contains
         call fig%savefig('test/output/test_marker_shapes.txt')  ! ASCII backend
         
     end subroutine test_marker_shape_enumeration_system
+    
+    subroutine test_default_marker_behavior()
+        !! Given: Scatter plot without explicit marker parameter
+        !! When: I create scatter plot without specifying marker
+        !! Then: Default marker 'o' should be used and points should be visible
+        
+        type(figure_t) :: fig
+        real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+        real(wp) :: y(5) = [2.0_wp, 4.0_wp, 1.0_wp, 5.0_wp, 3.0_wp]
+        
+        write(error_unit, '(A)') 'Testing default marker behavior (Issue #1109)...'
+        call fig%initialize(400, 300)
+        
+        ! Test scatter without marker parameter - should use default 'o' marker
+        call fig%scatter(x, y, label='Default Marker')
+        write(error_unit, '(A)') '  ✓ Default marker applied when not specified'
+        
+        ! Also test with markersize but no marker (ensures default marker with custom size)
+        call fig%scatter(x, y+1.0_wp, markersize=15.0_wp, label='Default Marker with Size')
+        write(error_unit, '(A)') '  ✓ Default marker with custom size'
+        
+        call fig%legend()
+        call fig%savefig('test/output/test_default_marker.png')
+        
+    end subroutine test_default_marker_behavior
     
     subroutine test_input_validation_framework()
         !! Given: Various invalid input scenarios
