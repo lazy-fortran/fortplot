@@ -3,7 +3,7 @@ title: Scale Examples
 
 # Scale Examples
 
-Source: [example/fortran/scale_examples/scale_examples.f90](../../example/fortran/scale_examples/scale_examples.f90)
+Source: [scale_examples.f90](../../sourcefile/scale_examples.f90.html)
 
 This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog) scales.
 

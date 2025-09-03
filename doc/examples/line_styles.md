@@ -3,7 +3,7 @@ title: Line Styles
 
 # Line Styles
 
-Source: [example/fortran/line_styles/line_styles.f90](../../example/fortran/line_styles/line_styles.f90)
+Source: [line_styles.f90](../../sourcefile/line_styles.f90.html)
 
 This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotted lines.
 

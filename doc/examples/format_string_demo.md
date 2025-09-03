@@ -3,7 +3,7 @@ title: Format String Demo
 
 # Format String Demo
 
-Source: [example/fortran/format_string_demo/format_string_demo.f90](../../example/fortran/format_string_demo/format_string_demo.f90)
+Source: [format_string_demo.f90](../../sourcefile/format_string_demo.f90.html)
 
 This example demonstrates matplotlib-style format strings for quick and intuitive plot styling.
 

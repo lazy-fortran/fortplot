@@ -3,7 +3,7 @@ title: Animation
 
 # Animation
 
-Source: [example/fortran/animation/save_animation_demo.f90](../../example/fortran/animation/save_animation_demo.f90)
+Source: [save_animation_demo.f90](../../sourcefile/save_animation_demo.f90.html)
 
 This example demonstrates creating animated plots and saving to video files.
 
