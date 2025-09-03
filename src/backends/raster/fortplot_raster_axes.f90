@@ -24,8 +24,8 @@ module fortplot_raster_axes
     ! X tick labels are positioned X_TICK_LABEL_PAD pixels below the tick end
     ! Y tick labels are right-aligned with a gap of Y_TICK_LABEL_RIGHT_PAD from the tick end
     integer, parameter :: X_TICK_LABEL_PAD = 14
-    integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 16
-    integer, parameter :: YLABEL_EXTRA_GAP = 10
+    integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
+    integer, parameter :: YLABEL_EXTRA_GAP = 5
 
     ! Cache the maximum Y-tick label width measured during the last
     ! raster_draw_y_axis_ticks() call so ylabel placement can avoid overlap
