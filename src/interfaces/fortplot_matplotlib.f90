@@ -16,7 +16,7 @@ module fortplot_matplotlib
         xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata, &
-        figure, subplot, savefig, savefig_with_status, &
+        figure, subplot, subplots, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
     
     use fortplot_text_stub, only: &
@@ -42,7 +42,7 @@ module fortplot_matplotlib
     public :: text, annotate
     
     ! Figure management functions
-    public :: figure, subplot
+    public :: figure, subplot, subplots
     public :: savefig, savefig_with_status
     public :: show, show_viewer
     
