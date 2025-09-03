@@ -32,7 +32,8 @@ module fortplot_figure_operations
                                                     setup_coordinate_system, &
                                                     render_figure_background, &
                                                     render_figure_axes, &
-                                                    render_all_plots
+                                                    render_all_plots, &
+                                                    render_figure_axes_labels_only
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     implicit none
@@ -322,6 +323,12 @@ contains
                                  state%margin_left, state%margin_right, &
                                  state%margin_bottom, state%margin_top)
         end if
+        
+        ! Render axis labels AFTER plots (for raster backends only to prevent overlap)
+        call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
+                                           state%symlog_threshold, state%x_min, state%x_max, &
+                                           state%y_min, state%y_max, state%title, &
+                                           state%xlabel, state%ylabel)
         
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then

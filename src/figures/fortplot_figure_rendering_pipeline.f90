@@ -16,6 +16,7 @@ module fortplot_figure_rendering_pipeline
     private
     public :: calculate_figure_data_ranges, setup_coordinate_system
     public :: render_figure_background, render_figure_axes, render_all_plots
+    public :: render_figure_axes_labels_only
     
 contains
     
@@ -356,21 +357,55 @@ contains
     subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
                                  x_min, x_max, y_min, y_max, title, xlabel, ylabel)
         !! Render figure axes and labels
+        !! For raster backends, split rendering to prevent label overlap issues
+        use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
         
-        ! Draw axes using backend's polymorphic method
-        call backend%draw_axes_and_labels_backend(xscale, yscale, &
-                                                 symlog_threshold, &
-                                                 x_min, x_max, &
-                                                 y_min, y_max, &
-                                                 title, xlabel, ylabel, &
-                                                 z_min=0.0_wp, z_max=1.0_wp, &
-                                                 has_3d_plots=.false.)
+        ! Check if this is a raster backend and use split rendering if so
+        select type (backend)
+        class is (raster_context)
+            ! For raster backends, only draw axes lines and tick marks here
+            ! Labels will be drawn later after plots to prevent overlap
+            call backend%draw_axes_lines_and_ticks(xscale, yscale, &
+                                                  symlog_threshold, &
+                                                  x_min, x_max, &
+                                                  y_min, y_max)
+        class default
+            ! For non-raster backends, use standard rendering
+            call backend%draw_axes_and_labels_backend(xscale, yscale, &
+                                                     symlog_threshold, &
+                                                     x_min, x_max, &
+                                                     y_min, y_max, &
+                                                     title, xlabel, ylabel, &
+                                                     z_min=0.0_wp, z_max=1.0_wp, &
+                                                     has_3d_plots=.false.)
+        end select
     end subroutine render_figure_axes
+
+    subroutine render_figure_axes_labels_only(backend, xscale, yscale, symlog_threshold, &
+                                             x_min, x_max, y_min, y_max, title, xlabel, ylabel)
+        !! Render ONLY axis labels (for raster backends after plots are drawn)
+        use fortplot_raster, only: raster_context
+        class(plot_context), intent(inout) :: backend
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
+        
+        ! Only render labels for raster backends
+        select type (backend)
+        class is (raster_context)
+            call backend%draw_axis_labels_only(xscale, yscale, &
+                                              symlog_threshold, &
+                                              x_min, x_max, &
+                                              y_min, y_max, &
+                                              title, xlabel, ylabel)
+        end select
+    end subroutine render_figure_axes_labels_only
     
     subroutine render_all_plots(backend, plots, plot_count, &
                                x_min_transformed, x_max_transformed, &
