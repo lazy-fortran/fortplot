@@ -253,7 +253,7 @@ contains
         real(8), intent(in), optional :: linewidth, markersize
         call ensure_fig_init()
         call add_3d_plot_impl(fig, x, y, z, label=label, linestyle=linestyle, &
-                              markersize=markersize, linewidth=linewidth)
+                              marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
     ! ----- Contour/Field API ---------------------------------------------
