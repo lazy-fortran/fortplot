@@ -4,10 +4,8 @@ program test_suite_fast
     use fortplot
     implicit none
     
-    logical :: all_passed
     integer :: test_count, pass_count
     
-    all_passed = .true.
     test_count = 0
     pass_count = 0
     
@@ -19,40 +17,40 @@ program test_suite_fast
     test_count = test_count + 1
     call test_basic_plot()
     pass_count = pass_count + 1
-    print *, "✓ Test 1: Basic plot functionality"
+    print *, "[PASS] Test 1: Basic plot functionality"
     
     ! Test 2: Multiple data series (no file output)
     test_count = test_count + 1
     call test_multiple_series()
     pass_count = pass_count + 1
-    print *, "✓ Test 2: Multiple data series"
+    print *, "[PASS] Test 2: Multiple data series"
     
     ! Test 3: Plot customization (no file output)
     test_count = test_count + 1
     call test_plot_customization()
     pass_count = pass_count + 1
-    print *, "✓ Test 3: Plot customization"
+    print *, "[PASS] Test 3: Plot customization"
     
     ! Test 4: Edge cases (no file output)
     test_count = test_count + 1
     call test_edge_cases()
     pass_count = pass_count + 1
-    print *, "✓ Test 4: Edge cases"
+    print *, "[PASS] Test 4: Edge cases"
     
     ! Test 5: Legend functionality (minimal)
     test_count = test_count + 1
     call test_legend_basic()
     pass_count = pass_count + 1
-    print *, "✓ Test 5: Legend functionality"
+    print *, "[PASS] Test 5: Legend functionality"
     
     print *, ""
     print *, "=== Fast Test Suite Summary ==="
     print *, "Passed:", pass_count, "/", test_count
     
     if (pass_count == test_count) then
-        print *, "✓ ALL FAST TESTS PASSED"
+        print *, "[PASS] ALL FAST TESTS PASSED"
     else
-        print *, "✗ SOME TESTS FAILED"
+        print *, "[FAIL] SOME TESTS FAILED"
         stop 1
     end if
     
