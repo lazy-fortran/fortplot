@@ -17,7 +17,8 @@ module fortplot_raster
                                        draw_diamond_with_edge_face, draw_x_marker
     use fortplot_raster_line_styles, only: draw_styled_line, reset_pattern_distance, set_raster_line_style
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
-    use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel
+    use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel, &
+                                        raster_draw_axes_lines_and_ticks, raster_draw_axis_labels_only
     use fortplot_raster_rendering, only: raster_fill_heatmap, raster_fill_quad, fill_triangle, &
                                         raster_render_legend_specialized, raster_calculate_legend_dimensions, &
                                         raster_set_legend_border_width, raster_calculate_legend_position, &
@@ -29,6 +30,7 @@ module fortplot_raster
     public :: raster_image_t, create_raster_image, destroy_raster_image
     public :: raster_context, create_raster_canvas
     public :: raster_draw_axes_and_labels, raster_render_ylabel
+    public :: raster_draw_axes_lines_and_ticks, raster_draw_axis_labels_only
 
     integer, parameter :: DEFAULT_RASTER_LINE_WIDTH_SCALING = 10
 
@@ -63,6 +65,8 @@ module fortplot_raster
         procedure :: prepare_3d_data => raster_prepare_3d_data_context
         procedure :: render_ylabel => raster_render_ylabel_context
         procedure :: draw_axes_and_labels_backend => raster_draw_axes_and_labels_context
+        procedure :: draw_axes_lines_and_ticks => raster_draw_axes_lines_and_ticks_context
+        procedure :: draw_axis_labels_only => raster_draw_axis_labels_only_context
         procedure :: save_coordinates => raster_save_coordinates
         procedure :: set_coordinates => raster_set_coordinates
         procedure :: render_axes => raster_render_axes
@@ -486,5 +490,42 @@ contains
         ! Raster axes are rendered as part of draw_axes_and_labels_backend
         ! Implementation needed - see issue #495
     end subroutine raster_render_axes
+
+    subroutine raster_draw_axes_lines_and_ticks_context(this, xscale, yscale, symlog_threshold, &
+                                                       x_min, x_max, y_min, y_max)
+        !! Draw axes lines and tick marks WITHOUT labels (for proper drawing order)
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        
+        ! Set color to black for axes and ticks
+        call this%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Delegate to axes module
+        call raster_draw_axes_lines_and_ticks(this%raster, this%width, this%height, this%plot_area, &
+                                            xscale, yscale, symlog_threshold, &
+                                            x_min, x_max, y_min, y_max)
+    end subroutine raster_draw_axes_lines_and_ticks_context
+
+    subroutine raster_draw_axis_labels_only_context(this, xscale, yscale, symlog_threshold, &
+                                                   x_min, x_max, y_min, y_max, &
+                                                   title, xlabel, ylabel)
+        !! Draw ONLY axis labels and tick labels (for proper drawing order)
+        class(raster_context), intent(inout) :: this
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        
+        ! Set color to black for text
+        call this%color(0.0_wp, 0.0_wp, 0.0_wp)
+        
+        ! Delegate to axes module
+        call raster_draw_axis_labels_only(this%raster, this%width, this%height, this%plot_area, &
+                                        xscale, yscale, symlog_threshold, &
+                                        x_min, x_max, y_min, y_max, &
+                                        title, xlabel, ylabel)
+    end subroutine raster_draw_axis_labels_only_context
 
 end module fortplot_raster
