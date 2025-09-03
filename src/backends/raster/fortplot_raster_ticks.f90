@@ -246,10 +246,13 @@ contains
 
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
+            ! If height calculation fails, use a default
+            if (label_height <= 0) label_height = 12
 
             ! Right-align with a small gap from the tick end
             label_x = plot_area%left - Y_TICK_LABEL_RIGHT_PAD - label_width
-            label_y = tick_y - label_height / 2  ! Center vertically at tick
+            ! Center vertically at tick position - adjust for baseline
+            label_y = tick_y - label_height / 3  ! Adjust for text baseline
 
             call render_text_to_image(raster%image_data, width, height, &
                 label_x, label_y, trim(escaped_text), 0_1, 0_1, 0_1)

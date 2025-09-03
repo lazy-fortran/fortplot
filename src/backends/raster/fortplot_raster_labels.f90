@@ -21,7 +21,7 @@ module fortplot_raster_labels
     public :: y_tick_label_right_edge_at_axis
 
     ! Increased gap to better match matplotlib's labelpad (approx 6-8 pixels at 100dpi)
-    integer, parameter :: YLABEL_EXTRA_GAP = 10
+    integer, parameter :: YLABEL_EXTRA_GAP = 25
 
 contains
 
@@ -174,11 +174,11 @@ contains
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
         call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
 
-        title_width = calculate_text_width(trim(escaped_text))
-        ! If title width is 0, use approximate width based on character count
-        if (title_width <= 0) then
-            title_width = len_trim(escaped_text) * 8  ! Approximate 8 pixels per character
-        end if
+        ! Use character count for width approximation as it's more reliable
+        ! Average character width is about 10 pixels for 16pt font
+        title_width = len_trim(escaped_text) * 10
+        
+        ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
         title_py = real(max(5, plot_area%bottom - TITLE_VERTICAL_OFFSET), wp)
     end subroutine compute_title_position
