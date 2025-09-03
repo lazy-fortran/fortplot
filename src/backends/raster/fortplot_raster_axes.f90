@@ -25,7 +25,7 @@ module fortplot_raster_axes
     ! Y tick labels are right-aligned with a gap of Y_TICK_LABEL_RIGHT_PAD from the tick end
     integer, parameter :: X_TICK_LABEL_PAD = 14
     integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 8
-    integer, parameter :: YLABEL_EXTRA_GAP = 5
+    integer, parameter :: YLABEL_EXTRA_GAP = 2
 
     ! Cache the maximum Y-tick label width measured during the last
     ! raster_draw_y_axis_ticks() call so ylabel placement can avoid overlap
@@ -412,6 +412,11 @@ contains
         ! matplotlib by ensuring no overlap between ylabel and tick labels.
         x_pos = compute_ylabel_x_pos(plot_area, rotated_width, last_y_tick_max_width)
         y_pos = plot_area%bottom + plot_area%height / 2 - rotated_height / 2
+        
+        ! Ensure ylabel stays within canvas bounds (prevent negative x position)
+        if (x_pos < 1) then
+            x_pos = 1
+        end if
         
         ! Composite the rotated text onto the main raster
         call composite_bitmap_to_raster(raster%image_data, width, height, &
