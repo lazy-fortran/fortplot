@@ -18,7 +18,7 @@ program test_stateful_api_errors
     call test_single_point_data()
     
     ! Test invalid parameters
-    call test_invalid_colors()
+    call test_invalid_linestyle()
     call test_negative_sizes()
     call test_invalid_ranges()
     call test_invalid_markers()
@@ -31,6 +31,10 @@ program test_stateful_api_errors
     ! Test figure state errors
     call test_invalid_subplot()
     call test_savefig_errors()
+    
+    ! Additional coverage tests
+    call test_label_functions()
+    call test_actual_nan_values()
     
     ! Print summary
     write(*,'(A,I0,A,I0,A)') "Error handling tests: ", &
@@ -55,7 +59,7 @@ contains
         ! If we get here, it handled empty arrays
         write(*,'(A)') "PASS: Empty array handling"
         
-        deallocate(x, y)
+        ! Allocatable arrays auto-deallocate when out of scope
     end subroutine test_empty_arrays
     
     subroutine test_mismatched_arrays()
@@ -103,7 +107,7 @@ contains
         write(*,'(A)') "PASS: Single point data handling"
     end subroutine test_single_point_data
     
-    subroutine test_invalid_colors()
+    subroutine test_invalid_linestyle()
         real(wp) :: x(3), y(3)
         
         x = [1.0_wp, 2.0_wp, 3.0_wp]
@@ -111,7 +115,7 @@ contains
         
         total_tests = total_tests + 1
         
-        ! Test with various invalid linestyle specifications (plot doesn't have color)
+        ! Test with various invalid linestyle specifications
         call figure()
         
         ! Empty string linestyle
@@ -124,7 +128,7 @@ contains
         call plot(x, y, linestyle='verylonglinestyle')
         
         write(*,'(A)') "PASS: Invalid linestyle handling"
-    end subroutine test_invalid_colors
+    end subroutine test_invalid_linestyle
     
     subroutine test_negative_sizes()
         real(wp) :: x(3), y(3)
@@ -252,11 +256,13 @@ contains
     subroutine test_savefig_errors()
         real(wp) :: x(3), y(3)
         integer :: status
+        logical :: test_passed
         
         x = [1.0_wp, 2.0_wp, 3.0_wp]
         y = [1.0_wp, 2.0_wp, 3.0_wp]
         
         total_tests = total_tests + 1
+        test_passed = .true.
         
         call figure()
         call plot(x, y)
@@ -265,12 +271,14 @@ contains
         call savefig_with_status('', status)              ! Empty filename
         if (status == 0) then
             failed_tests = failed_tests + 1
+            test_passed = .false.
             write(*,'(A)') "FAIL: Empty filename should fail"
         end if
         
         call savefig_with_status('/invalid/path/file.png', status) ! Invalid path
         if (status == 0) then
             failed_tests = failed_tests + 1
+            test_passed = .false.
             write(*,'(A)') "FAIL: Invalid path should fail"
         end if
         
@@ -279,7 +287,56 @@ contains
         call savefig_with_status('test.txt', status)    ! Non-image format
         ! We'll just check it doesn't crash, regardless of status
         
-        write(*,'(A)') "PASS: Savefig error handling"
+        if (test_passed) then
+            write(*,'(A)') "PASS: Savefig error handling"
+        end if
     end subroutine test_savefig_errors
+    
+    subroutine test_label_functions()
+        ! Test various label functions with edge cases
+        total_tests = total_tests + 1
+        
+        call figure()
+        
+        ! Empty labels
+        call xlabel('')
+        call ylabel('')
+        call title('')
+        
+        ! Very long labels
+        call xlabel('This is a very long x-axis label that might cause issues with rendering or memory allocation')
+        call ylabel('This is a very long y-axis label that might cause issues with rendering or memory allocation')
+        call title('This is a very long title that might cause issues with rendering or memory allocation')
+        
+        ! Labels with special characters
+        call xlabel('Label with $math$ and & special chars')
+        call ylabel('Y-axis: μ±σ')
+        call title('Title with "quotes" and newline\nattempt')
+        
+        write(*,'(A)') "PASS: Label functions edge case handling"
+    end subroutine test_label_functions
+    
+    subroutine test_actual_nan_values()
+        use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan, &
+                                                 ieee_positive_inf, ieee_negative_inf
+        real(wp) :: x(4), y(4)
+        
+        ! Create actual NaN and Infinity values using IEEE intrinsics
+        x = [1.0_wp, 2.0_wp, ieee_value(1.0_wp, ieee_quiet_nan), 4.0_wp]
+        y = [1.0_wp, ieee_value(1.0_wp, ieee_quiet_nan), 3.0_wp, 4.0_wp]
+        
+        total_tests = total_tests + 1
+        
+        ! Should handle actual NaN values gracefully
+        call figure()
+        call plot(x, y)
+        
+        ! Test with infinity too
+        x(3) = ieee_value(1.0_wp, ieee_positive_inf)
+        y(2) = ieee_value(1.0_wp, ieee_negative_inf)
+        call plot(x, y)
+        
+        write(*,'(A)') "PASS: Actual NaN/Infinity value handling"
+    end subroutine test_actual_nan_values
     
 end program test_stateful_api_errors
