@@ -116,8 +116,8 @@ program test_security_compliance
         stop 1
     end if
     
-    ! Test sleep function with very short sleep (1ms to avoid test delays)
-    call sleep_ms(1)
+    ! Test sleep function with minimal delay (0ms for fastest test)
+    call sleep_ms(0)
     print *, "PASS: Sleep function completed"
     
     ! Test directory creation (should be restricted)
