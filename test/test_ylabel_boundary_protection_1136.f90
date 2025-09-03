@@ -42,7 +42,8 @@ program test_ylabel_boundary_protection_1136
     call plot(x(1:30), x(1:30)**2, 'b-')
     call title('Issue #1136 Critical Test - Long Y-label')
     call xlabel('X values')
-    call ylabel('EXTREMELY LONG Y-AXIS LABEL THAT MUST REMAIN COMPLETELY VISIBLE AND NOT BE CUT OFF BY WHITE BLOCKS OR CANVAS BOUNDARIES')
+    call ylabel('EXTREMELY LONG Y-AXIS LABEL THAT MUST REMAIN COMPLETELY ' // &
+                'VISIBLE AND NOT BE CUT OFF BY WHITE BLOCKS OR CANVAS BOUNDARIES')
     call savefig('test_ylabel_extreme_length_1136.png')
     print *, '  Generated: test_ylabel_extreme_length_1136.png'
     print *, '  REQUIREMENT: Entire ylabel must be visible, no cutoff'
