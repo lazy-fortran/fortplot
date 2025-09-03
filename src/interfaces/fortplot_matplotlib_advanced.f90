@@ -30,7 +30,7 @@ module fortplot_matplotlib_advanced
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
 
-    public :: figure, subplot, subplots, savefig, savefig_with_status
+    public :: figure, subplot, subplots, subplots_grid, savefig, savefig_with_status
     public :: show, show_viewer
     public :: ensure_global_figure_initialized, get_global_figure
 
@@ -659,6 +659,32 @@ contains
         end if
         call fig%subplots(nrows, ncols)
     end subroutine subplots
+    
+    function subplots_grid(nrows, ncols) result(axes)
+        !! Create subplot grid and return subplot indices for individual access
+        integer, intent(in) :: nrows, ncols
+        integer, allocatable :: axes(:,:)
+        integer :: i, j
+        
+        call ensure_global_figure_initialized()
+        if (nrows <= 0 .or. ncols <= 0) then
+            call log_error("subplots_grid: Invalid grid dimensions")
+            allocate(axes(0,0))
+            return
+        end if
+        
+        ! Create the subplot grid
+        call fig%subplots(nrows, ncols)
+        
+        ! Return an array of subplot indices
+        allocate(axes(nrows, ncols))
+        do i = 1, nrows
+            do j = 1, ncols
+                ! Convert row,col to linear index (1-based, row-major)
+                axes(i,j) = (i-1)*ncols + j
+            end do
+        end do
+    end function subplots_grid
 
     subroutine savefig(filename, dpi, transparent, bbox_inches)
         character(len=*), intent(in) :: filename

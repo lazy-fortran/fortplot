@@ -87,7 +87,7 @@ module fortplot
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
                                    xlabel, ylabel, title, legend, grid, &
-                                   savefig, savefig_with_status, figure, subplot, subplots, &
+                                   savefig, savefig_with_status, figure, subplot, subplots, subplots_grid, &
                                    add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar, &
                                    add_3d_plot, add_surface, add_scatter, &
                                    set_xscale, set_yscale, xlim, ylim, &
@@ -120,7 +120,7 @@ module fortplot
     public :: text, annotate
     
     ! Figure management and configuration
-    public :: figure, subplot, subplots
+    public :: figure, subplot, subplots, subplots_grid
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata
