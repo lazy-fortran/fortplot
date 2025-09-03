@@ -141,83 +141,77 @@ contains
         class(pdf_stream_writer), intent(inout) :: this
         real(wp), intent(in) :: r, g, b
         real(wp) :: r_safe, g_safe, b_safe
-        character(len=64) :: cmd
-        character(len=256) :: debug_msg
         logical :: r_corrected, g_corrected, b_corrected
         
-        r_corrected = .false.
-        g_corrected = .false.
-        b_corrected = .false.
-        
-        ! Validate and clamp R component
-        if (ieee_is_nan(r) .or. .not. ieee_is_finite(r)) then
-            r_safe = 0.0_wp  ! Default to black for invalid values
-            r_corrected = .true.
-            call log_debug("RGB correction: R=invalid -> 0.000")
-        else if (r < 0.0_wp .or. r > 1.0_wp) then
-            r_safe = max(0.0_wp, min(1.0_wp, r))  ! Clamp to [0, 1]
-            r_corrected = .true.
-            if (abs(r) > 999.0_wp) then
-                call log_debug("RGB correction: R=out-of-range (large) -> clamped")
-            else
-                write(debug_msg, '("RGB correction: R=", F0.3, " (out-of-range) -> ", F0.3)') r, r_safe
-                call log_debug(trim(debug_msg))
-            end if
-        else
-            r_safe = r
-        end if
-        
-        ! Validate and clamp G component
-        if (ieee_is_nan(g) .or. .not. ieee_is_finite(g)) then
-            g_safe = 0.0_wp  ! Default to black for invalid values
-            g_corrected = .true.
-            call log_debug("RGB correction: G=invalid -> 0.000")
-        else if (g < 0.0_wp .or. g > 1.0_wp) then
-            g_safe = max(0.0_wp, min(1.0_wp, g))  ! Clamp to [0, 1]
-            g_corrected = .true.
-            if (abs(g) > 999.0_wp) then
-                call log_debug("RGB correction: G=out-of-range (large) -> clamped")
-            else
-                write(debug_msg, '("RGB correction: G=", F0.3, " (out-of-range) -> ", F0.3)') g, g_safe
-                call log_debug(trim(debug_msg))
-            end if
-        else
-            g_safe = g
-        end if
-        
-        ! Validate and clamp B component
-        if (ieee_is_nan(b) .or. .not. ieee_is_finite(b)) then
-            b_safe = 0.0_wp  ! Default to black for invalid values
-            b_corrected = .true.
-            call log_debug("RGB correction: B=invalid -> 0.000")
-        else if (b < 0.0_wp .or. b > 1.0_wp) then
-            b_safe = max(0.0_wp, min(1.0_wp, b))  ! Clamp to [0, 1]
-            b_corrected = .true.
-            if (abs(b) > 999.0_wp) then
-                call log_debug("RGB correction: B=out-of-range (large) -> clamped")
-            else
-                write(debug_msg, '("RGB correction: B=", F0.3, " (out-of-range) -> ", F0.3)') b, b_safe
-                call log_debug(trim(debug_msg))
-            end if
-        else
-            b_safe = b
-        end if
+        ! Validate and clamp RGB components
+        call validate_color_component(r, r_safe, r_corrected, 'R')
+        call validate_color_component(g, g_safe, g_corrected, 'G')
+        call validate_color_component(b, b_safe, b_corrected, 'B')
         
         ! Log summary if any corrections were made
         if (r_corrected .or. g_corrected .or. b_corrected) then
-            write(debug_msg, '("Final RGB: (", F0.3, ", ", F0.3, ", ", F0.3, ")")') &
-                r_safe, g_safe, b_safe
-            call log_debug(trim(debug_msg))
+            call log_color_correction_summary(r_safe, g_safe, b_safe)
         end if
         
         ! Write validated color values for strokes AND fills
+        call write_pdf_color_commands(this, r_safe, g_safe, b_safe)
+    end subroutine pdf_write_color
+    
+    subroutine validate_color_component(value, safe_value, corrected, component_name)
+        !! Validate and clamp a single color component
+        real(wp), intent(in) :: value
+        real(wp), intent(out) :: safe_value
+        logical, intent(out) :: corrected
+        character, intent(in) :: component_name
+        
+        character(len=256) :: debug_msg
+        
+        corrected = .false.
+        
+        if (ieee_is_nan(value) .or. .not. ieee_is_finite(value)) then
+            safe_value = 0.0_wp  ! Default to black for invalid values
+            corrected = .true.
+            write(debug_msg, '("RGB correction: ", A, "=invalid -> 0.000")') component_name
+            call log_debug(trim(debug_msg))
+        else if (value < 0.0_wp .or. value > 1.0_wp) then
+            safe_value = max(0.0_wp, min(1.0_wp, value))  ! Clamp to [0, 1]
+            corrected = .true.
+            if (abs(value) > 999.0_wp) then
+                write(debug_msg, '("RGB correction: ", A, "=out-of-range (large) -> clamped")') component_name
+                call log_debug(trim(debug_msg))
+            else
+                write(debug_msg, '("RGB correction: ", A, "=", F0.3, " (out-of-range) -> ", F0.3)') &
+                    component_name, value, safe_value
+                call log_debug(trim(debug_msg))
+            end if
+        else
+            safe_value = value
+        end if
+    end subroutine validate_color_component
+    
+    subroutine log_color_correction_summary(r_safe, g_safe, b_safe)
+        !! Log final RGB values after correction
+        real(wp), intent(in) :: r_safe, g_safe, b_safe
+        character(len=256) :: debug_msg
+        
+        write(debug_msg, '("Final RGB: (", F0.3, ", ", F0.3, ", ", F0.3, ")")') &
+            r_safe, g_safe, b_safe
+        call log_debug(trim(debug_msg))
+    end subroutine log_color_correction_summary
+    
+    subroutine write_pdf_color_commands(this, r_safe, g_safe, b_safe)
+        !! Write PDF color commands for both stroke and fill
+        class(pdf_stream_writer), intent(inout) :: this
+        real(wp), intent(in) :: r_safe, g_safe, b_safe
+        character(len=64) :: cmd
+        
         ! Keep stroke and fill colors in sync to ensure filled shapes
         ! (e.g., pcolormesh quads) render with the intended color.
         write(cmd, '(F0.3,1X,F0.3,1X,F0.3," RG")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
         write(cmd, '(F0.3,1X,F0.3,1X,F0.3," rg")') r_safe, g_safe, b_safe
         call this%add_to_stream(trim(cmd))
-        end subroutine pdf_write_color
+    end subroutine write_pdf_color_commands
 
     subroutine pdf_write_line_width(this, width)
         !! Write PDF line width command with robust validation
