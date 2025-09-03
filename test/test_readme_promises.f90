@@ -4,6 +4,7 @@ program test_readme_promises
     implicit none
     
     real(wp), dimension(50) :: x, y, t, damped_sine, damped_cosine
+    real(wp), dimension(20) :: x_sci, y_sci, y_theory, yerr
     integer :: i
     
     ! README Promise #1: Basic stateful API should work
@@ -52,10 +53,9 @@ program test_readme_promises
     
     ! README Promise #5: Scientific errorbar plots
     print *, "Testing README scientific errorbar promise..."
-    real(wp), dimension(20) :: x_sci, y_sci, yerr, y_theory
     x_sci = [(real(i-1, wp) * 0.5_wp, i=1, 20)]
     y_sci = sin(x_sci) + 0.1_wp * ([(real(i, wp), i=1, 20)] - 10.0_wp) / 10.0_wp
-    yerr = 0.1_wp
+    yerr = 0.1_wp  ! All points have same error
     y_theory = sin(x_sci)
     
     call figure(figsize=[8.0_wp, 6.0_wp])
