@@ -4,7 +4,7 @@ program test_ylabel_boundary_protection_1136
     !! This test MUST pass to prove Issue #1136 is resolved
     
     use fortplot
-    use fortplot_raster_axes, only: compute_ylabel_x_pos
+    use fortplot_raster_axes, only: compute_ylabel_x_pos_old
     use fortplot_layout, only: plot_area_t, plot_margins_t, calculate_plot_area
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -78,7 +78,7 @@ program test_ylabel_boundary_protection_1136
     call calculate_plot_area(800, 600, margins, plot_area)
     
     ! Test with extremely long ylabel (120 pixels wide when rotated)
-    x_pos_long = compute_ylabel_x_pos(plot_area, 120, 50)  ! 120px ylabel, 50px tick labels
+    x_pos_long = compute_ylabel_x_pos_old(plot_area, 120, 50)  ! 120px ylabel, 50px tick labels
     if (x_pos_long >= 15 .and. x_pos_long + 120 <= 800) then
         print *, '  ✓ PASS: Long ylabel positioned correctly (x=', x_pos_long, ')'
         pass_count = pass_count + 1
@@ -89,7 +89,7 @@ program test_ylabel_boundary_protection_1136
     
     ! Test with extremely wide ylabel (200 pixels - should use adaptive margin)
     test_count = test_count + 1
-    x_pos_extreme = compute_ylabel_x_pos(plot_area, 200, 80)  ! 200px ylabel, 80px tick labels
+    x_pos_extreme = compute_ylabel_x_pos_old(plot_area, 200, 80)  ! 200px ylabel, 80px tick labels
     if (x_pos_extreme >= 50 .and. x_pos_extreme + 200 <= 800) then  ! Should use adaptive margin max(15, 200/4)=50
         print *, '  ✓ PASS: Extreme ylabel uses adaptive margin (x=', x_pos_extreme, ')'
         pass_count = pass_count + 1

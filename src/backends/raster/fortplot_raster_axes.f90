@@ -446,11 +446,22 @@ contains
     
     ! Old interface for backward compatibility
     integer function compute_ylabel_x_pos_old(plot_area, rotated_width, y_tick_max_width) result(x_pos)
+        use fortplot_constants, only: TICK_MARK_LENGTH
+        use fortplot_raster_ticks, only: Y_TICK_LABEL_RIGHT_PAD
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: rotated_width, y_tick_max_width
-        integer :: edge
-        edge = y_tick_label_right_edge_at_axis_impl(plot_area, y_tick_max_width)
-        x_pos = compute_ylabel_x_pos_impl(edge, rotated_width, plot_area)
+        integer :: clearance, min_left_margin
+        integer, parameter :: YLABEL_EXTRA_GAP = 8
+        
+        ! Original implementation logic for backward compatibility
+        clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max(0, y_tick_max_width) + YLABEL_EXTRA_GAP
+        x_pos = plot_area%left - clearance - rotated_width
+        
+        ! Ensure ylabel doesn't go off the left edge
+        min_left_margin = max(15, rotated_width / 4)
+        if (x_pos < min_left_margin) then
+            x_pos = min_left_margin
+        end if
     end function compute_ylabel_x_pos_old
 
     integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured) result(edge)

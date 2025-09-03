@@ -2,7 +2,7 @@
 program test_ylabel_positioning
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_layout,       only: plot_area_t
-    use fortplot_raster_axes,  only: compute_ylabel_x_pos, y_tick_label_right_edge_at_axis
+    use fortplot_raster_axes,  only: compute_ylabel_x_pos_old, y_tick_label_right_edge_at_axis_old
     implicit none
 
     type(plot_area_t) :: pa
@@ -20,12 +20,12 @@ program test_ylabel_positioning
     rw1 = 40
     rw2 = 80
 
-    x1 = compute_ylabel_x_pos(pa, rw1, ytick_w)
-    x2 = compute_ylabel_x_pos(pa, rw2, ytick_w)
+    x1 = compute_ylabel_x_pos_old(pa, rw1, ytick_w)
+    x2 = compute_ylabel_x_pos_old(pa, rw2, ytick_w)
 
     right1 = x1 + rw1
     right2 = x2 + rw2
-    r_edge_axis = y_tick_label_right_edge_at_axis(pa)
+    r_edge_axis = y_tick_label_right_edge_at_axis_old(pa)
 
     ok = .true.
 

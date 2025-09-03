@@ -1,7 +1,7 @@
 module fortplot_raster_labels
     !! Raster axis labels (title, xlabel, ylabel) rendering functionality
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TITLE_VERTICAL_OFFSET
+    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TITLE_VERTICAL_OFFSET, TICK_MARK_LENGTH
     use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, calculate_text_height, calculate_text_descent
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
@@ -119,8 +119,8 @@ contains
         integer, intent(in) :: max_width_measured
         
         ! Y-tick labels are right-aligned with gap Y_TICK_LABEL_RIGHT_PAD from axis
-        ! Their rightmost edge is at: axis_left - Y_TICK_LABEL_RIGHT_PAD
-        y_tick_label_right_edge_at_axis = plot_area%left - Y_TICK_LABEL_RIGHT_PAD
+        ! Their rightmost edge is at: axis_left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
+        y_tick_label_right_edge_at_axis = plot_area%left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
     end function y_tick_label_right_edge_at_axis
 
     integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area)
