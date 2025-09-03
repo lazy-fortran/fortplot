@@ -371,16 +371,19 @@ contains
                                  x_min, x_max, y_min, y_max, plot_width, plot_height)
         end do
         
-        ! Store xlabel and ylabel for rendering outside the plot frame
+        ! Store processed xlabel and ylabel for rendering outside the plot frame
+        ! Note: title has already been processed and stored at line 296-300
         if (present(xlabel)) then
             if (allocated(xlabel)) then
-                xlabel_text = xlabel
+                call process_latex_in_text(xlabel, processed_title, processed_len)
+                xlabel_text = processed_title(1:processed_len)
             end if
         end if
         
         if (present(ylabel)) then
             if (allocated(ylabel)) then
-                ylabel_text = ylabel
+                call process_latex_in_text(ylabel, processed_title, processed_len)
+                ylabel_text = processed_title(1:processed_len)
             end if
         end if
     end subroutine draw_ascii_axes_and_labels
