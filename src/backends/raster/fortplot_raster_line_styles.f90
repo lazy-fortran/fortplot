@@ -60,7 +60,8 @@ contains
         end if
         
         ! For patterned lines, break into small segments
-        segment_length = 2.0_wp  ! Draw in 2-pixel segments for good pattern resolution
+        ! Use 0.5 pixel segments for fine pattern resolution, especially for dotted lines
+        segment_length = 0.5_wp  ! Fine segments for accurate pattern rendering
         num_segments = max(1, int(line_length / segment_length))
         segment_length = line_length / real(num_segments, wp)  ! Adjust to exact segments
         
