@@ -150,6 +150,10 @@ doc:
 	# First ensure all markdown files are readable
 	@echo "Verifying documentation source files..."
 	@find doc -name "*.md" -type f | wc -l | xargs -I {} echo "Found {} markdown files in doc/"
+	@echo "Debugging: Checking basic_plots.md content:"
+	@head -5 doc/examples/basic_plots.md || echo "Failed to read basic_plots.md"
+	@echo "Debugging: Checking animation.md content (working file):"
+	@head -5 doc/examples/animation.md || echo "Failed to read animation.md"
 	ford doc.md
 	# Copy example media files to BOTH possible link roots used in pages
 	# Some pages link '../media/...' (relative to page/examples), others '../../media/...'
