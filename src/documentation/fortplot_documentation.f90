@@ -367,40 +367,32 @@ contains
         character(len=*), intent(in) :: dir_path
         character(len=*), intent(out) :: media_files(MAX_MEDIA_FILES)
         integer, intent(out) :: n_media
-        character(len=PATH_MAX_LEN) :: command, filename
-        character(len=:), allocatable :: ext
-        integer :: unit, ios
+        character(len=PATH_MAX_LEN) :: test_file
+        character(len=32) :: base_names(10), extensions(3)
+        integer :: i, j
+        logical :: exists
 
+        ! Common patterns for example outputs
+        base_names = ['simple_plot ', 'multi_line  ', 'scatter     ', &
+                      'histogram   ', 'contour     ', 'streamplot  ', &
+                      'heatmap     ', 'pcolormesh  ', 'legend      ', &
+                      'output      ']
+        extensions = ['.png', '.pdf', '.txt']
         n_media = 0
 
-        ! List all files in directory
-        write(command, '(A,A,A)') 'ls ', trim(dir_path), '/* 2>/dev/null'
-
-        ! Open pipe to read command output
-        open(newunit=unit, file='/tmp/fortplot_media_scan.tmp', status='replace')
-        call execute_command_line(trim(command) // ' > /tmp/fortplot_media_scan.tmp')
-        close(unit)
-
-        open(newunit=unit, file='/tmp/fortplot_media_scan.tmp', status='old', action='read')
-
-        do
-            read(unit, '(A)', iostat=ios) filename
-            if (ios /= 0) exit
-
-            ! Extract just the filename from full path
-            filename = filename(index(filename, '/', back=.true.)+1:)
-            
-            ! Check if media file
-            ext = get_file_extension(filename)
-            if (is_media_file(ext)) then
-                n_media = n_media + 1
-                if (n_media <= MAX_MEDIA_FILES) then
-                    media_files(n_media) = trim(filename)
+        ! Check for each combination of base name and extension
+        do i = 1, size(base_names)
+            do j = 1, size(extensions)
+                write(test_file, '(3A)') trim(dir_path), '/', &
+                                         trim(base_names(i)) // trim(extensions(j))
+                inquire(file=test_file, exist=exists)
+                if (exists .and. n_media < MAX_MEDIA_FILES) then
+                    n_media = n_media + 1
+                    ! Extract filename from full path
+                    media_files(n_media) = trim(base_names(i)) // trim(extensions(j))
                 end if
-            end if
+            end do
         end do
-
-        close(unit, status='delete')
     end subroutine scan_directory_for_media
 
     logical function is_media_file(extension)
