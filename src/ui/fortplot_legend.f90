@@ -318,9 +318,13 @@ contains
         ! Draw line if style permits (treat 'none'/'None' as no line)
         if (allocated(entry%linestyle)) then
             if (trim(entry%linestyle) /= 'None' .and. trim(entry%linestyle) /= 'none') then
+                ! Set the line style before drawing the line
+                call backend%set_line_style(entry%linestyle)
                 call backend%line(line_x1, line_center_y, line_x2, line_center_y)
             end if
         else
+            ! Default to solid line style if not specified
+            call backend%set_line_style('-')
             call backend%line(line_x1, line_center_y, line_x2, line_center_y)
         end if
     end subroutine render_legend_line
