@@ -15,7 +15,6 @@ module fortplot_pdf_markers
     public :: draw_pdf_marker_at_coords
     public :: pdf_set_marker_colors, pdf_set_marker_colors_with_alpha
     public :: draw_pdf_arrow_at_coords
-    public :: pdf_save_graphics_state, pdf_restore_graphics_state
     
 contains
 
@@ -82,17 +81,5 @@ contains
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
         call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, dx, dy, size, style)
     end subroutine draw_pdf_arrow_at_coords
-    
-    subroutine pdf_save_graphics_state(stream_writer)
-        type(pdf_stream_writer), intent(inout) :: stream_writer
-        
-        call stream_writer%save_state()
-    end subroutine pdf_save_graphics_state
-    
-    subroutine pdf_restore_graphics_state(stream_writer)
-        type(pdf_stream_writer), intent(inout) :: stream_writer
-        
-        call stream_writer%restore_state()
-    end subroutine pdf_restore_graphics_state
     
 end module fortplot_pdf_markers
