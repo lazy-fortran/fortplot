@@ -111,7 +111,7 @@ contains
             else
                 tick_x = plot_area%left
             end if
-            tick_top = plot_area%bottom + plot_area%height
+            tick_top = plot_area%bottom
             tick_bottom = min(height, tick_top + TICK_MARK_LENGTH)
             call draw_styled_line(raster%image_data, width, height, &
                 real(tick_x, wp), real(tick_top, wp), real(tick_x, wp), real(tick_bottom, wp), &
@@ -203,7 +203,7 @@ contains
             label_height = calculate_text_height(trim(escaped_text))
 
             label_x = tick_x - label_width / 2  ! Center horizontally at tick
-            label_y = plot_area%bottom + plot_area%height + X_TICK_LABEL_PAD
+            label_y = plot_area%bottom + X_TICK_LABEL_PAD
 
             call render_text_to_image(raster%image_data, width, height, &
                 label_x, label_y, trim(escaped_text), 0_1, 0_1, 0_1)
