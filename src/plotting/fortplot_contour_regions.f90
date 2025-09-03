@@ -270,42 +270,6 @@ contains
         end subroutine resolve_saddle_connection
 
     end subroutine extract_region_boundaries
-
-    subroutine process_marching_squares(x_grid, y_grid, z_grid, level_min, level_max, &
-                                       contour_x, contour_y, contour_count)
-        !! Process grid cells using marching squares algorithm
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
-        real(wp), intent(in) :: level_min, level_max
-        real(wp), intent(inout) :: contour_x(:), contour_y(:)
-        integer, intent(inout) :: contour_count
-        
-        integer :: nx, ny, i, j
-        integer :: grid_case
-        real(wp) :: corner_values(4)
-        
-        nx = size(x_grid)
-        ny = size(y_grid)
-        
-        ! Process each grid cell
-        ! Note: z_grid is indexed as (ny, nx) i.e., (y, x)
-        do j = 1, ny - 1
-            do i = 1, nx - 1
-                ! Get corner values for current cell (y-major indexing)
-                corner_values(1) = z_grid(j    , i    )  ! Bottom-left
-                corner_values(2) = z_grid(j    , i + 1)  ! Bottom-right
-                corner_values(3) = z_grid(j + 1, i + 1)  ! Top-right
-                corner_values(4) = z_grid(j + 1, i    )  ! Top-left
-                
-                ! Calculate marching squares case
-                grid_case = calculate_marching_squares_case(corner_values, level_min, level_max)
-                
-                ! Handle the marching squares case
-                call handle_marching_squares_case(grid_case, i, j, corner_values, &
-                                                 level_min, level_max, x_grid, y_grid, &
-                                                 contour_x, contour_y, contour_count)
-            end do
-        end do
-    end subroutine process_marching_squares
     
     function calculate_marching_squares_case(corner_values, level_min, level_max) result(grid_case)
         !! Calculate marching squares case from corner values
