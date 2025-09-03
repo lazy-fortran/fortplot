@@ -41,8 +41,6 @@ module fortplot_pdf
         procedure :: save => write_pdf_file_facade
         procedure :: set_line_width => set_pdf_line_width
         procedure :: set_line_style => set_pdf_line_style
-        procedure :: save_graphics_state => save_graphics_state_wrapper
-        procedure :: restore_graphics_state => restore_graphics_state_wrapper
         procedure :: draw_marker => draw_pdf_marker_wrapper
         procedure :: set_marker_colors => set_marker_colors_wrapper
         procedure :: set_marker_colors_with_alpha => set_marker_colors_with_alpha_wrapper
@@ -232,14 +230,6 @@ contains
         ctx%core_ctx = this%core_ctx
     end function make_coord_context
 
-    subroutine save_graphics_state_wrapper(this)
-        class(pdf_context), intent(inout) :: this
-        call pdf_save_graphics_state(this%stream_writer)
-    end subroutine save_graphics_state_wrapper
-    subroutine restore_graphics_state_wrapper(this)
-        class(pdf_context), intent(inout) :: this
-        call pdf_restore_graphics_state(this%stream_writer)
-    end subroutine restore_graphics_state_wrapper
     subroutine draw_pdf_marker_wrapper(this, x, y, style)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x, y
