@@ -585,14 +585,20 @@ contains
         fs = PDF_LABEL_SIZE
         if (present(font_size)) fs = font_size
         
-        ! Initialize position - directly render without BT/ET for inline use
+        ! Initialize position
         current_x = x
         baseline_y = y
         
-        ! Render each element inline (for use within existing text objects like legends)
+        ! Start text block for mathtext rendering
+        this%stream_data = this%stream_data // "BT" // new_line('a')
+        
+        ! Render each element 
         do i = 1, size(elements)
             call render_mathtext_element_pdf_inline(this, elements(i), current_x, baseline_y, fs)
         end do
+        
+        ! End text block
+        this%stream_data = this%stream_data // "ET" // new_line('a')
         
         deallocate(elements)
     end subroutine draw_pdf_mathtext
