@@ -610,7 +610,7 @@ contains
         
         ! Calculate font size and position for this element
         elem_font_size = base_font_size * element%font_size_ratio
-        elem_y = baseline_y - element%vertical_offset * base_font_size
+        elem_y = baseline_y + element%vertical_offset * base_font_size
         
         ! Set initial position
         current_x = x_pos
@@ -686,7 +686,7 @@ contains
         
         ! Calculate font size and position for this element
         elem_font_size = base_font_size * element%font_size_ratio
-        elem_y = baseline_y - element%vertical_offset * base_font_size
+        elem_y = baseline_y + element%vertical_offset * base_font_size
         
         ! Set font size for this element
         write(font_cmd, '("/F5 ", F0.1, " Tf")') elem_font_size
