@@ -115,10 +115,10 @@ contains
         
         passed = .false.
         if (size(elements) == 4) then
-            if (trim(elements(1)%text) == 'Hello ' .and. elements(1)%element_type == 0) then
-                if (trim(elements(2)%text) == 'x' .and. elements(2)%element_type == 0) then
-                    if (trim(elements(3)%text) == '2' .and. elements(3)%element_type == 1) then
-                        if (trim(elements(4)%text) == ' world' .and. elements(4)%element_type == 0) then
+            if (elements(1)%text == 'Hello ' .and. elements(1)%element_type == 0) then
+                if (elements(2)%text == 'x' .and. elements(2)%element_type == 0) then
+                    if (elements(3)%text == '2' .and. elements(3)%element_type == 1) then
+                        if (elements(4)%text == ' world' .and. elements(4)%element_type == 0) then
                             passed = .true.
                         end if
                     end if

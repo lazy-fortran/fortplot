@@ -33,7 +33,7 @@ contains
         character(len=*), intent(in) :: input_text
         type(mathtext_element_t), allocatable :: elements(:)
         
-        integer :: i, n, brace_count, start_pos
+        integer :: i, n, brace_count, current_len
         character(len=len(input_text)) :: current_text
         logical :: in_superscript, in_subscript, in_braces
         type(mathtext_element_t) :: temp_elements(len(input_text))
@@ -43,49 +43,79 @@ contains
         n = len_trim(input_text)
         i = 1
         current_text = ''
+        current_len = 0  ! Track actual length of current_text content
         in_superscript = .false.
         in_subscript = .false.
         in_braces = .false.
         brace_count = 0
-        start_pos = 1
         
         do while (i <= n)
             if (input_text(i:i) == '^') then
-                ! Store current text as normal element
-                if (len_trim(current_text) > 0) then
+                ! Split last character from current text if it exists
+                if (current_len > 1) then
+                    ! Store everything except the last character
                     element_count = element_count + 1
-                    call create_element(temp_elements(element_count), trim(current_text), &
+                    call create_element(temp_elements(element_count), &
+                                      current_text(1:current_len-1), &
                                       ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    current_text = ''
+                    ! Store the last character separately
+                    element_count = element_count + 1
+                    call create_element(temp_elements(element_count), &
+                                      current_text(current_len:current_len), &
+                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                else if (current_len == 1) then
+                    ! Just one character, store it
+                    element_count = element_count + 1
+                    call create_element(temp_elements(element_count), &
+                                      current_text(1:1), &
+                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
                 end if
+                current_text = ''
+                current_len = 0
                 
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUPERSCRIPT)
                 
             else if (input_text(i:i) == '_') then
-                ! Store current text as normal element
-                if (len_trim(current_text) > 0) then
+                ! Split last character from current text if it exists
+                if (current_len > 1) then
+                    ! Store everything except the last character
                     element_count = element_count + 1
-                    call create_element(temp_elements(element_count), trim(current_text), &
+                    call create_element(temp_elements(element_count), &
+                                      current_text(1:current_len-1), &
                                       ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    current_text = ''
+                    ! Store the last character separately
+                    element_count = element_count + 1
+                    call create_element(temp_elements(element_count), &
+                                      current_text(current_len:current_len), &
+                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                else if (current_len == 1) then
+                    ! Just one character, store it
+                    element_count = element_count + 1
+                    call create_element(temp_elements(element_count), &
+                                      current_text(1:1), &
+                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
                 end if
+                current_text = ''
+                current_len = 0
                 
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUBSCRIPT)
                 
             else
-                current_text = trim(current_text) // input_text(i:i)
+                current_len = current_len + 1
+                current_text(current_len:current_len) = input_text(i:i)
                 i = i + 1
             end if
         end do
         
-        ! Store any remaining text
-        if (len_trim(current_text) > 0) then
+        ! Store any remaining text (preserve spaces)
+        if (current_len > 0) then
             element_count = element_count + 1
-            call create_element(temp_elements(element_count), trim(current_text), &
+            call create_element(temp_elements(element_count), &
+                              current_text(1:current_len), &
                               ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
         end if
         
@@ -106,11 +136,12 @@ contains
         integer, intent(in) :: element_type
         
         character(len=n) :: script_text
-        integer :: i, brace_count
+        integer :: i, brace_count, script_len
         logical :: in_braces
         real(wp) :: font_size_ratio, vertical_offset
         
         script_text = ''
+        script_len = 0  ! Track actual length of script_text content
         i = start_i
         
         if (i > n) return
@@ -124,20 +155,24 @@ contains
             do while (i <= n .and. brace_count > 0)
                 if (input_text(i:i) == '{') then
                     brace_count = brace_count + 1
-                    script_text = trim(script_text) // input_text(i:i)
+                    script_len = script_len + 1
+                    script_text(script_len:script_len) = input_text(i:i)
                 else if (input_text(i:i) == '}') then
                     brace_count = brace_count - 1
                     if (brace_count > 0) then
-                        script_text = trim(script_text) // input_text(i:i)
+                        script_len = script_len + 1
+                        script_text(script_len:script_len) = input_text(i:i)
                     end if
                 else
-                    script_text = trim(script_text) // input_text(i:i)
+                    script_len = script_len + 1
+                    script_text(script_len:script_len) = input_text(i:i)
                 end if
                 i = i + 1
             end do
         else
             ! Single character script
-            script_text = input_text(i:i)
+            script_len = 1
+            script_text(1:1) = input_text(i:i)
             i = i + 1
         end if
         
@@ -152,9 +187,9 @@ contains
         end if
         
         ! Create element
-        if (len_trim(script_text) > 0) then
+        if (script_len > 0) then
             element_count = element_count + 1
-            call create_element(elements(element_count), trim(script_text), &
+            call create_element(elements(element_count), script_text(1:script_len), &
                               element_type, font_size_ratio, vertical_offset)
         end if
         
@@ -162,12 +197,13 @@ contains
     end subroutine parse_superscript_subscript
 
     subroutine create_element(element, text, element_type, font_size_ratio, vertical_offset)
-        !! Create a mathtext element
+        !! Create a mathtext element with proper string handling
         type(mathtext_element_t), intent(out) :: element
         character(len=*), intent(in) :: text
         integer, intent(in) :: element_type
         real(wp), intent(in) :: font_size_ratio, vertical_offset
         
+        ! Store text properly - preserve all spaces
         element%text = text
         element%element_type = element_type
         element%font_size_ratio = font_size_ratio
