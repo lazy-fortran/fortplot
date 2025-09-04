@@ -162,19 +162,23 @@ contains
         character(len=*), intent(in) :: label
         real(wp), intent(in) :: data_to_pixel_x, data_to_pixel_y
         real(wp) :: dimensions(2)  ! [width, height]
-        integer :: width_pixels, height_pixels
+        integer :: width_pixels, height_pixels, processed_len
         logical :: text_system_available
+        character(len=512) :: processed_label
         
         text_system_available = init_text_system()
         
+        ! Process LaTeX commands to get actual Unicode characters for width calculation
+        call process_latex_in_text(label, processed_label, processed_len)
+        
         if (text_system_available) then
-            width_pixels = calculate_text_width(label)
-            height_pixels = calculate_text_height(label)
+            width_pixels = calculate_text_width(processed_label(1:processed_len))
+            height_pixels = calculate_text_height(processed_label(1:processed_len))
             dimensions(1) = real(width_pixels, wp) / data_to_pixel_x
             dimensions(2) = real(height_pixels, wp) / data_to_pixel_y
         else
-            ! Fallback estimation
-            dimensions(1) = real(len_trim(label), wp) * 8.0_wp / data_to_pixel_x  ! 8 pixels per char
+            ! Fallback estimation using processed Unicode characters
+            dimensions(1) = real(processed_len, wp) * 8.0_wp / data_to_pixel_x  ! 8 pixels per char
             dimensions(2) = 16.0_wp / data_to_pixel_y  ! 16 pixels height
         end if
         
