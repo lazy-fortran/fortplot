@@ -514,17 +514,19 @@ contains
         character(len=512) :: processed
         integer :: plen
 
-        ! Check if text contains mathematical notation
-        if (index(text, '^') > 0 .or. index(text, '_') > 0) then
-            ! Use mathtext rendering for superscripts/subscripts
+        ! ALWAYS process LaTeX commands first to convert to Unicode
+        call process_latex_in_text(text, processed, plen)
+        
+        ! Now check if the processed text contains mathematical notation
+        if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then
+            ! Use mathtext rendering for superscripts/subscripts on the processed text
             if (present(font_size)) then
-                call draw_pdf_mathtext(ctx, x, y, text, font_size)
+                call draw_pdf_mathtext(ctx, x, y, processed(1:plen), font_size)
             else
-                call draw_pdf_mathtext(ctx, x, y, text)
+                call draw_pdf_mathtext(ctx, x, y, processed(1:plen))
             end if
         else
-            ! Process LaTeX and use regular mixed-font rendering
-            call process_latex_in_text(text, processed, plen)
+            ! Use regular mixed-font rendering for the processed text
             if (present(font_size)) then
                 call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
             else
