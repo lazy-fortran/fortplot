@@ -9,6 +9,7 @@ module fortplot_legend_layout
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
     use fortplot_constants, only: STANDARD_WIDTH_PIXELS, STANDARD_HEIGHT_PIXELS, TEXT_WIDTH_RATIO
+    use fortplot_latex_parser, only: process_latex_in_text
     implicit none
     
     private
@@ -98,7 +99,9 @@ contains
         
         integer :: i, text_width_pixels, text_height_pixels
         real(wp) :: entry_text_width
-        character(len=:), allocatable :: trimmed_label
+        character(len=:), allocatable :: trimmed_label, processed_label
+        character(len=512) :: temp_processed_label
+        integer :: processed_len
         integer, parameter :: fudge_pixels = 2
         
         max_text_width = 0.0_wp
@@ -107,13 +110,18 @@ contains
         
         do i = 1, size(labels)
             trimmed_label = trim(labels(i))
+            
+            ! Process LaTeX commands to get actual Unicode characters for width calculation
+            call process_latex_in_text(trimmed_label, temp_processed_label, processed_len)
+            processed_label = temp_processed_label(1:processed_len)
+            
             if (text_system_available) then
-                text_width_pixels = calculate_text_width(trimmed_label) + fudge_pixels
-                text_height_pixels = calculate_text_height(trimmed_label)
+                text_width_pixels = calculate_text_width(processed_label) + fudge_pixels
+                text_height_pixels = calculate_text_height(processed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
-                entry_text_width = real(len_trim(trimmed_label), wp) * data_width * TEXT_WIDTH_RATIO
+                entry_text_width = real(len_trim(processed_label), wp) * data_width * TEXT_WIDTH_RATIO
             end if
             total_text_width = total_text_width + entry_text_width
             max_text_width = max(max_text_width, entry_text_width)
