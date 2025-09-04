@@ -5,6 +5,8 @@ module fortplot_text_rendering
     use fortplot_logging, only: log_error
     use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
                                      is_font_initialized, get_font_scale_for_size
+    use fortplot_mathtext, only: parse_mathtext, render_mathtext_elements, &
+                                 calculate_mathtext_width, calculate_mathtext_height
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -27,14 +29,25 @@ module fortplot_text_rendering
     
 contains
 
+    function has_mathtext(text) result(is_mathtext)
+        !! Check if text contains mathematical notation (superscripts or subscripts)
+        character(len=*), intent(in) :: text
+        logical :: is_mathtext
+        
+        is_mathtext = (index(text, '^') > 0) .or. (index(text, '_') > 0)
+    end function has_mathtext
+
     function calculate_text_width(text) result(width)
         !! Calculate the pixel width of text using STB TrueType with UTF-8 support
+        !! Supports mathematical notation with superscripts and subscripts
+        use fortplot_mathtext, only: mathtext_element_t
         character(len=*), intent(in) :: text
         integer :: width
         integer :: i, char_code, advance_width, left_side_bearing
         integer :: char_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+        type(mathtext_element_t), allocatable :: elements(:)
         
         ! Initialize text system if not already done
         if (.not. is_font_initialized()) then
@@ -45,6 +58,14 @@ contains
             end if
         end if
         
+        ! Check if text contains mathematical notation
+        if (has_mathtext(text)) then
+            elements = parse_mathtext(text)
+            width = calculate_mathtext_width_internal(elements, real(DEFAULT_FONT_SIZE, wp))
+            return
+        end if
+        
+        ! Standard text rendering path
         font = get_global_font()
         scale = get_font_scale()
         
@@ -70,7 +91,9 @@ contains
     
     function calculate_text_width_with_size(text, pixel_height) result(width)
         !! Calculate text width using a specific font size
+        !! Supports mathematical notation with superscripts and subscripts
         use fortplot_text_fonts, only: get_font_scale_for_size
+        use fortplot_mathtext, only: mathtext_element_t
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: pixel_height
         integer :: width
@@ -78,6 +101,7 @@ contains
         integer :: char_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+        type(mathtext_element_t), allocatable :: elements(:)
         
         ! Initialize text system if not already done
         if (.not. is_font_initialized()) then
@@ -88,6 +112,14 @@ contains
             end if
         end if
         
+        ! Check if text contains mathematical notation
+        if (has_mathtext(text)) then
+            elements = parse_mathtext(text)
+            width = calculate_mathtext_width_internal(elements, pixel_height)
+            return
+        end if
+        
+        ! Standard text rendering path
         font = get_global_font()
         scale = get_font_scale_for_size(pixel_height)
         
@@ -111,14 +143,14 @@ contains
 
     function calculate_text_height(text) result(height)
         !! Calculate the pixel height of text using STB TrueType
+        !! Supports mathematical notation with superscripts and subscripts
+        use fortplot_mathtext, only: mathtext_element_t
         character(len=*), intent(in) :: text
         integer :: height
         integer :: ascent, descent, line_gap
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
-        
-        ! Suppress unused parameter warnings
-        associate(unused_text => text); end associate
+        type(mathtext_element_t), allocatable :: elements(:)
         
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -127,6 +159,14 @@ contains
             end if
         end if
         
+        ! Check if text contains mathematical notation
+        if (has_mathtext(text)) then
+            elements = parse_mathtext(text)
+            height = calculate_mathtext_height_internal(elements, real(DEFAULT_FONT_SIZE, wp))
+            return
+        end if
+        
+        ! Standard text rendering path
         font = get_global_font()
         scale = get_font_scale()
         
@@ -172,6 +212,8 @@ contains
 
     subroutine render_text_to_image(image_data, width, height, x, y, text, r, g, b)
         !! Render text to image using STB TrueType with UTF-8 support
+        !! Supports mathematical notation with superscripts and subscripts
+        use fortplot_mathtext, only: mathtext_element_t
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -183,6 +225,7 @@ contains
         integer :: char_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+        type(mathtext_element_t), allocatable :: elements(:)
         
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -191,6 +234,15 @@ contains
             end if
         end if
         
+        ! Check if text contains mathematical notation
+        if (has_mathtext(text)) then
+            elements = parse_mathtext(text)
+            call render_mathtext_elements_internal(image_data, width, height, x, y, &
+                                        elements, r, g, b, real(DEFAULT_FONT_SIZE, wp))
+            return
+        end if
+        
+        ! Standard text rendering path
         font = get_global_font()
         scale = get_font_scale()
         
@@ -227,7 +279,9 @@ contains
     
     subroutine render_text_with_size(image_data, width, height, x, y, text, r, g, b, pixel_height)
         !! Render text with specific font size
+        !! Supports mathematical notation with superscripts and subscripts
         use fortplot_text_fonts, only: get_font_scale_for_size
+        use fortplot_mathtext, only: mathtext_element_t
         integer(1), intent(inout) :: image_data(*)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
@@ -240,6 +294,7 @@ contains
         integer :: char_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+        type(mathtext_element_t), allocatable :: elements(:)
         
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -247,6 +302,15 @@ contains
             end if
         end if
         
+        ! Check if text contains mathematical notation
+        if (has_mathtext(text)) then
+            elements = parse_mathtext(text)
+            call render_mathtext_elements_internal(image_data, width, height, x, y, &
+                                        elements, r, g, b, pixel_height)
+            return
+        end if
+        
+        ! Standard text rendering path
         font = get_global_font()
         scale = get_font_scale_for_size(pixel_height)
         
@@ -422,5 +486,197 @@ contains
             pen_y = pen_y + int(real(advance_width) * scale * sin_a)
         end do
     end subroutine render_rotated_text_to_image
+
+    function calculate_mathtext_width_internal(elements, base_font_size) result(total_width)
+        !! Calculate total width of mathematical text elements
+        use fortplot_mathtext, only: mathtext_element_t
+        type(mathtext_element_t), intent(in) :: elements(:)
+        real(wp), intent(in) :: base_font_size
+        integer :: total_width
+        
+        integer :: i, element_width
+        real(wp) :: element_font_size
+        
+        total_width = 0
+        
+        do i = 1, size(elements)
+            element_font_size = base_font_size * elements(i)%font_size_ratio
+            element_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+            total_width = total_width + element_width
+        end do
+        
+    end function calculate_mathtext_width_internal
+
+    function calculate_text_width_with_size_internal(text, pixel_height) result(width)
+        !! Internal text width calculation to avoid circular dependencies
+        use fortplot_text_fonts, only: get_font_scale_for_size
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: pixel_height
+        integer :: width
+        integer :: i, char_code, advance_width, left_side_bearing
+        integer :: char_len
+        type(stb_fontinfo_t) :: font
+        real(wp) :: scale
+        
+        if (.not. is_font_initialized()) then
+            if (.not. init_text_system()) then
+                width = int(len_trim(text) * pixel_height * 0.6_wp)
+                return
+            end if
+        end if
+        
+        font = get_global_font()
+        scale = get_font_scale_for_size(pixel_height)
+        
+        width = 0
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
+            call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
+            width = width + int(real(advance_width) * scale)
+        end do
+        
+    end function calculate_text_width_with_size_internal
+
+    function calculate_mathtext_height_internal(elements, base_font_size) result(total_height)
+        !! Calculate total height of mathematical text elements
+        use fortplot_mathtext, only: mathtext_element_t
+        use fortplot_text_fonts, only: get_font_metrics
+        type(mathtext_element_t), intent(in) :: elements(:)
+        real(wp), intent(in) :: base_font_size
+        integer :: total_height
+        
+        integer :: i
+        real(wp) :: ascent, descent, line_gap, element_font_size
+        real(wp) :: max_above_baseline, max_below_baseline
+        logical :: success
+        
+        ! Get base font metrics
+        call get_font_metrics(ascent, descent, line_gap, success)
+        if (.not. success) then
+            total_height = int(base_font_size)
+            return
+        end if
+        
+        max_above_baseline = ascent * base_font_size / (ascent - descent)
+        max_below_baseline = abs(descent) * base_font_size / (ascent - descent)
+        
+        ! Check each element for maximum extents
+        do i = 1, size(elements)
+            element_font_size = base_font_size * elements(i)%font_size_ratio
+            
+            if (elements(i)%element_type == 1) then  ! ELEMENT_SUPERSCRIPT
+                max_above_baseline = max(max_above_baseline, &
+                    ascent * element_font_size / (ascent - descent) - elements(i)%vertical_offset * base_font_size)
+            else if (elements(i)%element_type == 2) then  ! ELEMENT_SUBSCRIPT
+                max_below_baseline = max(max_below_baseline, &
+                    abs(descent) * element_font_size / (ascent - descent) + elements(i)%vertical_offset * base_font_size)
+            end if
+        end do
+        
+        total_height = int(max_above_baseline + max_below_baseline)
+        
+    end function calculate_mathtext_height_internal
+
+    subroutine render_mathtext_elements_internal(image_data, width, height, x, y, elements, &
+                                       r, g, b, base_font_size)
+        !! Render mathematical text elements to image
+        use fortplot_mathtext, only: mathtext_element_t
+        use fortplot_text_fonts, only: get_font_metrics
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: width, height, x, y
+        type(mathtext_element_t), intent(in) :: elements(:)
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: base_font_size
+        
+        integer :: i, pen_x, pen_y
+        real(wp) :: element_font_size
+        real(wp) :: ascent, descent, line_gap
+        logical :: success
+        
+        pen_x = x
+        pen_y = y
+        
+        ! Get font metrics for baseline calculation
+        call get_font_metrics(ascent, descent, line_gap, success)
+        if (.not. success) return
+        
+        do i = 1, size(elements)
+            element_font_size = base_font_size * elements(i)%font_size_ratio
+            
+            ! Calculate vertical position based on element type and offset
+            pen_y = y + int(elements(i)%vertical_offset * base_font_size)
+            
+            ! Render the element using internal function
+            call render_text_with_size_internal(image_data, width, height, pen_x, pen_y, &
+                                     elements(i)%text, r, g, b, element_font_size)
+            
+            ! Advance horizontal position
+            pen_x = pen_x + calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+        end do
+        
+    end subroutine render_mathtext_elements_internal
+
+    subroutine render_text_with_size_internal(image_data, width, height, x, y, text, r, g, b, pixel_height)
+        !! Internal text rendering to avoid circular dependencies
+        use fortplot_text_fonts, only: get_font_scale_for_size
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: width, height, x, y
+        character(len=*), intent(in) :: text
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: pixel_height
+        integer :: pen_x, pen_y, i, char_code
+        integer :: advance_width, left_side_bearing
+        type(c_ptr) :: bitmap_ptr
+        integer :: bmp_width, bmp_height, xoff, yoff
+        integer :: char_len
+        type(stb_fontinfo_t) :: font
+        real(wp) :: scale
+        
+        if (.not. is_font_initialized()) then
+            if (.not. init_text_system()) then
+                return
+            end if
+        end if
+        
+        font = get_global_font()
+        scale = get_font_scale_for_size(pixel_height)
+        
+        pen_x = x
+        pen_y = y
+        
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
+            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
+                                                 bmp_width, bmp_height, xoff, yoff)
+            
+            if (c_associated(bitmap_ptr)) then
+                call render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
+                                    bmp_width, bmp_height, xoff, yoff, r, g, b)
+                call stb_free_bitmap(bitmap_ptr)
+            end if
+            
+            call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
+            pen_x = pen_x + int(real(advance_width) * scale)
+        end do
+        
+    end subroutine render_text_with_size_internal
 
 end module fortplot_text_rendering
