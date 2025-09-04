@@ -179,9 +179,9 @@ contains
         ! Set font size and vertical offset
         font_size_ratio = SHRINK_FACTOR
         if (element_type == ELEMENT_SUPERSCRIPT) then
-            vertical_offset = -SUPERSCRIPT_RAISE  ! Negative because we render from top
+            vertical_offset = SUPERSCRIPT_RAISE  ! Positive to move up in PDF coordinates
         else if (element_type == ELEMENT_SUBSCRIPT) then
-            vertical_offset = SUBSCRIPT_LOWER
+            vertical_offset = -SUBSCRIPT_LOWER  ! Negative to move down in PDF coordinates
         else
             vertical_offset = 0.0_wp
         end if
