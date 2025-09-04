@@ -20,8 +20,8 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
-    ! Increased gap to better match matplotlib's labelpad (approx 6-8 pixels at 100dpi)
-    integer, parameter :: YLABEL_EXTRA_GAP = 10
+    ! Increased gap to better match matplotlib's labelpad and avoid overlap
+    integer, parameter :: YLABEL_EXTRA_GAP = 35
 
 contains
 
@@ -129,9 +129,10 @@ contains
         integer, intent(in) :: rotated_width
         type(plot_area_t), intent(in) :: plot_area
         
-        ! The ylabel should be positioned to the left of the y-tick labels
+        ! The ylabel should be positioned to the left of the y-tick label edge
         ! with an additional gap for clarity
-        compute_ylabel_x_pos = y_tick_label_edge - last_y_tick_max_width - YLABEL_EXTRA_GAP - rotated_width
+        ! y_tick_label_edge already accounts for the tick label width
+        compute_ylabel_x_pos = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
         
         ! Ensure ylabel doesn't go off the left edge
         if (compute_ylabel_x_pos < 5) then
@@ -174,11 +175,15 @@ contains
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
         call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
 
+        ! Calculate actual text width for accurate centering
         title_width = calculate_text_width(trim(escaped_text))
-        ! If title width is 0, use approximate width based on character count
+        
+        ! Fallback to approximation if width calculation fails
         if (title_width <= 0) then
-            title_width = len_trim(escaped_text) * 8  ! Approximate 8 pixels per character
+            title_width = len_trim(escaped_text) * 10
         end if
+        
+        ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
         title_py = real(max(5, plot_area%bottom - TITLE_VERTICAL_OFFSET), wp)
     end subroutine compute_title_position
