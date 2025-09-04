@@ -98,17 +98,24 @@ contains
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(in) :: x, y, width, height
         
-        ! Simplified legend rendering with LaTeX and mathtext support
-        integer :: i, plen
+        ! Render legend with full text support (LaTeX and mathtext)
+        integer :: i
         real(wp) :: y_pos
-        character(len=512) :: processed
+        character(len=512) :: label_buffer
+        integer :: label_len
         associate(dummy_w => width, dummy_h => height); end associate
         
         y_pos = y
         do i = 1, size(entries)
-            ! Always use mathtext rendering for legend entries to handle mathematical notation
-            ! Skip LaTeX processing - let mathtext handle raw LaTeX commands and superscripts
-            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, trim(entries(i)%label))
+            ! Copy label to fixed-size buffer to ensure full text is passed
+            if (allocated(entries(i)%label)) then
+                label_len = len(entries(i)%label)
+                if (label_len > 0) then
+                    label_buffer = entries(i)%label
+                    ! Use mathtext rendering which handles both LaTeX and superscripts
+                    call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, label_buffer(1:label_len))
+                end if
+            end if
             
             y_pos = y_pos - 20.0_wp
         end do
