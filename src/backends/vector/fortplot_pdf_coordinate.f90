@@ -4,7 +4,8 @@ module fortplot_pdf_coordinate
     
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
-    use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, draw_pdf_mathtext
+    use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, &
+                                 draw_pdf_mathtext, draw_pdf_mathtext_mixed
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_pdf_drawing, only: draw_pdf_arrow, draw_pdf_circle_with_outline, &
                                    draw_pdf_square_with_outline, draw_pdf_diamond_with_outline, &
@@ -106,12 +107,13 @@ contains
         
         y_pos = y
         do i = 1, size(entries)
-            ! Process LaTeX commands first to convert to Unicode
+            ! Process LaTeX commands first to convert Greek letters to Unicode
             call process_latex_in_text(entries(i)%label, processed, plen)
             
-            ! Always use mathtext rendering for legend entries to handle any mathematical notation
-            ! This ensures superscripts, subscripts, and Unicode characters are rendered correctly
-            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, processed(1:plen))
+            ! For legend entries, we need special handling since they often contain both
+            ! Greek letters (converted to Unicode) and superscript notation (^{})
+            ! The mathtext parser needs to handle mixed content properly
+            call draw_pdf_mathtext_mixed(ctx%core_ctx, x, y_pos, processed(1:plen))
             
             y_pos = y_pos - 20.0_wp
         end do
