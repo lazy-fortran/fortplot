@@ -3,7 +3,7 @@ title: Colored Contours
 
 # Colored Contours
 
-Source: [colored_contours.f90](../../sourcefile/colored_contours.f90.html)
+Source: [colored_contours.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/colored_contours/colored_contours.f90)
 
 This example shows filled (colored) contour plots with customizable colormaps for visualizing 2D scalar fields.
 
