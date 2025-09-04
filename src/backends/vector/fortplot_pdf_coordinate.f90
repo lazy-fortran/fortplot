@@ -107,15 +107,9 @@ contains
         
         y_pos = y
         do i = 1, size(entries)
-            ! Copy label to fixed-size buffer to ensure full text is passed
-            if (allocated(entries(i)%label)) then
-                label_len = len(entries(i)%label)
-                if (label_len > 0) then
-                    label_buffer = entries(i)%label
-                    ! Use mathtext rendering which handles both LaTeX and superscripts
-                    call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, label_buffer(1:label_len))
-                end if
-            end if
+            ! Process LaTeX commands first, then use mathtext for superscripts/subscripts
+            call process_latex_in_text(trim(entries(i)%label), processed, plen)
+            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, processed(1:plen))
             
             y_pos = y_pos - 20.0_wp
         end do
