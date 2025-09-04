@@ -94,7 +94,7 @@ program unicode_demo
     
     ! Create a second figure showing common mathematical expressions
     call figure(figsize=[8.0_wp, 6.0_wp])
-    call title("Common Physics: E = mc², \Delta E = h\nu, F = q(E + v×B)")
+    call title("Common Physics: E = mc^2, \Delta E = h\nu, F = q(E + v \times B)")
     call xlabel("Parameter \xi")
     call ylabel("Observable \Theta")
     
@@ -105,8 +105,8 @@ program unicode_demo
         z(i) = x(i)**2 * exp(-x(i))                         ! Gamma-like
     end do
     
-    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi²/2\sigma²}/\sqrt{2\pi\sigma²}")
-    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi² e^{-\xi}")
+    call add_plot(x, y, label="Gaussian: \rho(\xi) = e^{-\xi^2/(2\sigma^2)}/\sqrt{2\pi\sigma^2}")
+    call add_plot(x, z, label="Modified \Gamma: f(\xi) = \xi^2 e^{-\xi}")
     call legend("upper right")
     
     ! Save mathematical examples figure
