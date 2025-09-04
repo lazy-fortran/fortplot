@@ -496,8 +496,8 @@ contains
                 ! Process LaTeX commands for accurate width calculation
                 call process_latex_in_text(trim(ylabel), processed_ylabel, processed_len)
                 
-                ! Place y-label 60px left of plot frame (was 98px; too far left)
-                ylabel_x = plot_area_left - 60.0_wp
+                ! Place y-label 45px left of plot frame (reduced from 60px)
+                ylabel_x = plot_area_left - 45.0_wp
                 ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
                           real(processed_len, wp) * 3.0_wp
                 call render_rotated_mixed_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
