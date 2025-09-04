@@ -7,6 +7,7 @@ module fortplot_pdf_text
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use fortplot_latex_parser, only: process_latex_in_text
     implicit none
     private
     
@@ -20,7 +21,6 @@ module fortplot_pdf_text
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
     public :: draw_pdf_mathtext
-    public :: draw_pdf_mathtext_mixed
     
     ! Removed unused Symbol font mapping constants to avoid duplication
 
@@ -551,6 +551,7 @@ contains
 
     subroutine draw_pdf_mathtext(this, x, y, text, font_size)
         !! Draw text with mathematical notation (superscripts/subscripts)
+        !! Also handles LaTeX commands like \alpha, \beta mixed with mathtext
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -558,11 +559,12 @@ contains
         
         type(mathtext_element_t), allocatable :: elements(:)
         real(wp) :: fs, current_x, baseline_y
-        integer :: i
+        integer :: i, processed_len
+        character(len=len(text)*2) :: preprocessed_text
         
         ! Check if text contains mathtext notation
         if (index(text, '^') == 0 .and. index(text, '_') == 0) then
-            ! No mathtext notation, use regular rendering
+            ! No mathtext notation, use regular rendering (which handles LaTeX)
             if (present(font_size)) then
                 call draw_mixed_font_text(this, x, y, text, font_size)
             else
@@ -571,8 +573,11 @@ contains
             return
         end if
         
-        ! Parse mathematical text
-        elements = parse_mathtext(text)
+        ! For mathtext with potential LaTeX commands, preprocess LaTeX first
+        call process_latex_in_text(text, preprocessed_text, processed_len)
+        
+        ! Parse mathematical text (now with LaTeX commands converted to Unicode)
+        elements = parse_mathtext(preprocessed_text(1:processed_len))
         
         ! Determine font size
         fs = PDF_LABEL_SIZE
@@ -668,65 +673,5 @@ contains
         
     end subroutine render_mathtext_element_pdf
 
-    subroutine draw_pdf_mathtext_mixed(this, x, y, text, font_size)
-        !! Draw text with mixed Unicode and mathtext notation
-        !! Handles text that has been partially processed by LaTeX parser
-        !! (Greek letters as Unicode) but still contains superscript/subscript notation
-        class(pdf_context_core), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        real(wp), intent(in), optional :: font_size
-        
-        integer :: i, start_pos, len_text
-        character(len=len(text)) :: segment
-        integer :: segment_len
-        logical :: has_math_notation
-        
-        len_text = len_trim(text)
-        if (len_text == 0) return
-        
-        ! Check if text contains mathematical notation after Unicode processing
-        has_math_notation = index(text, '^') > 0 .or. index(text, '_') > 0
-        
-        if (.not. has_math_notation) then
-            ! No mathtext notation, use regular mixed-font rendering
-            if (present(font_size)) then
-                call draw_mixed_font_text(this, x, y, text, font_size)
-            else
-                call draw_mixed_font_text(this, x, y, text)
-            end if
-            return
-        end if
-        
-        ! Handle mixed Unicode + mathtext by processing segments
-        ! Split on mathtext boundaries and handle each part appropriately
-        start_pos = 1
-        i = 1
-        
-        do while (i <= len_text)
-            if (text(i:i) == '^' .or. text(i:i) == '_') then
-                ! Found mathtext notation - render everything from start_pos as mathtext
-                segment = text(start_pos:len_text)
-                segment_len = len_text - start_pos + 1
-                
-                ! Use the original mathtext parser for the remaining text
-                if (present(font_size)) then
-                    call draw_pdf_mathtext(this, x, y, segment(1:segment_len), font_size)
-                else
-                    call draw_pdf_mathtext(this, x, y, segment(1:segment_len))
-                end if
-                return
-            end if
-            i = i + 1
-        end do
-        
-        ! No mathtext found after all, use regular rendering
-        if (present(font_size)) then
-            call draw_mixed_font_text(this, x, y, text, font_size)
-        else
-            call draw_mixed_font_text(this, x, y, text)
-        end if
-        
-    end subroutine draw_pdf_mathtext_mixed
 
 end module fortplot_pdf_text
