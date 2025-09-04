@@ -552,6 +552,7 @@ contains
     subroutine draw_pdf_mathtext(this, x, y, text, font_size)
         !! Draw text with mathematical notation (superscripts/subscripts)
         !! Also handles LaTeX commands like \alpha, \beta mixed with mathtext
+        !! Uses same logic as render_mixed_text: ALWAYS process LaTeX first
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -562,21 +563,22 @@ contains
         integer :: i, processed_len
         character(len=len(text)*2) :: preprocessed_text
         
-        ! Check if text contains mathtext notation
-        if (index(text, '^') == 0 .and. index(text, '_') == 0) then
-            ! No mathtext notation, use regular rendering (which handles LaTeX)
+        ! ALWAYS process LaTeX commands first (matches render_mixed_text logic)
+        call process_latex_in_text(text, preprocessed_text, processed_len)
+        
+        ! Then check if processed text contains mathtext notation
+        if (index(preprocessed_text(1:processed_len), '^') == 0 .and. &
+            index(preprocessed_text(1:processed_len), '_') == 0) then
+            ! No mathtext notation after LaTeX processing, use regular rendering
             if (present(font_size)) then
-                call draw_mixed_font_text(this, x, y, text, font_size)
+                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len), font_size)
             else
-                call draw_mixed_font_text(this, x, y, text)
+                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len))
             end if
             return
         end if
         
-        ! For mathtext with potential LaTeX commands, preprocess LaTeX first
-        call process_latex_in_text(text, preprocessed_text, processed_len)
-        
-        ! Parse mathematical text (now with LaTeX commands converted to Unicode)
+        ! Parse mathematical text (with LaTeX commands already converted to Unicode)
         elements = parse_mathtext(preprocessed_text(1:processed_len))
         
         ! Determine font size
