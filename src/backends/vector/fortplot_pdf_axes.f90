@@ -459,12 +459,17 @@ contains
         real(wp) :: title_x, title_y
         real(wp) :: xlabel_x, xlabel_y
         real(wp) :: ylabel_x, ylabel_y
+        character(len=512) :: processed_title, processed_xlabel, processed_ylabel
+        integer :: processed_len
 
         ! Draw title (centered at top)
         if (present(title)) then
             if (len_trim(title) > 0) then
+                ! Process LaTeX commands for accurate width calculation
+                call process_latex_in_text(trim(title), processed_title, processed_len)
+                
                 title_x = plot_area_left + plot_area_width * 0.5_wp - &
-                         real(len_trim(title), wp) * 3.5_wp
+                         real(processed_len, wp) * 3.5_wp
                 title_y = plot_area_bottom + plot_area_height + 20.0_wp
                 ! Process LaTeX commands to Unicode and render with mixed fonts
                 call render_mixed_text(ctx, title_x, title_y, trim(title), PDF_TITLE_SIZE)
@@ -474,8 +479,11 @@ contains
         ! Draw X-axis label (centered at bottom) - use consistent offset below plot bottom
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
+                ! Process LaTeX commands for accurate width calculation
+                call process_latex_in_text(trim(xlabel), processed_xlabel, processed_len)
+                
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
-                          real(len_trim(xlabel), wp) * 3.0_wp
+                          real(processed_len, wp) * 3.0_wp
                 xlabel_y = plot_area_bottom - real(XLABEL_VERTICAL_OFFSET, wp)
                 call render_mixed_text(ctx, xlabel_x, xlabel_y, trim(xlabel))
             end if
@@ -484,10 +492,13 @@ contains
         ! Draw Y-axis label (rotated on left) - closer to frame inside left margin
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
+                ! Process LaTeX commands for accurate width calculation
+                call process_latex_in_text(trim(ylabel), processed_ylabel, processed_len)
+                
                 ! Place y-label 60px left of plot frame (was 98px; too far left)
                 ylabel_x = plot_area_left - 60.0_wp
                 ylabel_y = plot_area_bottom + plot_area_height * 0.5_wp - &
-                          real(len_trim(ylabel), wp) * 3.0_wp
+                          real(processed_len, wp) * 3.0_wp
                 call render_rotated_mixed_text(ctx, ylabel_x, ylabel_y, trim(ylabel))
             end if
         end if
