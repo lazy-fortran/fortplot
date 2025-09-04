@@ -459,13 +459,13 @@ contains
         real(wp) :: title_x, title_y
         real(wp) :: xlabel_x, xlabel_y
         real(wp) :: ylabel_x, ylabel_y
+        character(len=512) :: processed_title, processed_xlabel, processed_ylabel
+        integer :: processed_len
 
         ! Draw title (centered at top)
         if (present(title)) then
             if (len_trim(title) > 0) then
                 ! Process LaTeX commands for accurate width calculation
-                character(len=512) :: processed_title
-                integer :: processed_len
                 call process_latex_in_text(trim(title), processed_title, processed_len)
                 
                 title_x = plot_area_left + plot_area_width * 0.5_wp - &
@@ -480,8 +480,6 @@ contains
         if (present(xlabel)) then
             if (len_trim(xlabel) > 0) then
                 ! Process LaTeX commands for accurate width calculation
-                character(len=512) :: processed_xlabel
-                integer :: processed_len
                 call process_latex_in_text(trim(xlabel), processed_xlabel, processed_len)
                 
                 xlabel_x = plot_area_left + plot_area_width * 0.5_wp - &
@@ -495,8 +493,6 @@ contains
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
                 ! Process LaTeX commands for accurate width calculation
-                character(len=512) :: processed_ylabel
-                integer :: processed_len
                 call process_latex_in_text(trim(ylabel), processed_ylabel, processed_len)
                 
                 ! Place y-label 60px left of plot frame (was 98px; too far left)
