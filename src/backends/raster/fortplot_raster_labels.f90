@@ -20,8 +20,8 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
-    ! Increased gap to better match matplotlib's labelpad and avoid overlap
-    integer, parameter :: YLABEL_EXTRA_GAP = 35
+    ! Gap to better match matplotlib's labelpad and avoid overlap
+    integer, parameter :: YLABEL_EXTRA_GAP = 30
 
 contains
 
@@ -149,15 +149,15 @@ contains
         character(len=500) :: processed_text, escaped_text
         integer :: processed_len
         integer :: title_px, title_py
-        real(wp) :: dummy_real
+        real(wp) :: title_px_real, title_py_real
 
         if (len_trim(title_text) == 0) return
 
         call compute_title_position(plot_area, title_text, processed_text, processed_len, &
-            escaped_text, dummy_real, dummy_real)
+            escaped_text, title_px_real, title_py_real)
 
-        title_px = int(dummy_real)
-        title_py = max(5, plot_area%bottom - TITLE_VERTICAL_OFFSET)
+        title_px = int(title_px_real)
+        title_py = int(title_py_real)
 
         call render_text_to_image(raster%image_data, width, height, title_px, title_py, &
             trim(escaped_text), 0_1, 0_1, 0_1)
@@ -175,12 +175,19 @@ contains
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
         call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
 
-        ! Calculate actual text width for accurate centering
+        ! Try to calculate actual text width for accurate centering
         title_width = calculate_text_width(trim(escaped_text))
         
-        ! Fallback to approximation if width calculation fails
-        if (title_width <= 0) then
-            title_width = len_trim(escaped_text) * 10
+        ! If width calculation fails or returns unrealistic value, use approximation
+        ! The calculate_text_width often returns 0 if STB font is not initialized properly
+        if (title_width <= 0 .or. title_width > len_trim(escaped_text) * 25) then
+            ! Use approximation based on character count
+            ! For 16pt font, average character width is:
+            ! - Capital letters: ~10-12 pixels  
+            ! - Lowercase letters: ~8-9 pixels
+            ! - Space: ~4 pixels
+            ! Use 9 pixels as average for mixed case text
+            title_width = len_trim(escaped_text) * 9
         end if
         
         ! Center the title properly over the plot area
