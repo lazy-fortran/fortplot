@@ -159,14 +159,12 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: pdf_x, pdf_y
-        character(len=500) :: processed_text
-        integer :: processed_len
 
-        call process_latex_in_text(text, processed_text, processed_len)
         ! Keep context in sync for text coordinate normalization as well
         call this%update_coord_context()
         call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
-        call draw_mixed_font_text(this%core_ctx, pdf_x, pdf_y, processed_text(1:processed_len))
+        ! Use the SAME function that renders titles correctly (handles LaTeX + mathtext)
+        call draw_pdf_mathtext(this%core_ctx, pdf_x, pdf_y, text)
     end subroutine draw_pdf_text_wrapper
 
     subroutine write_pdf_file_facade(this, filename)
