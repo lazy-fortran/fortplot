@@ -20,6 +20,7 @@ module fortplot_pdf_text
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
     public :: draw_pdf_mathtext
+    public :: draw_pdf_mathtext_mixed
     
     ! Removed unused Symbol font mapping constants to avoid duplication
 
@@ -666,5 +667,66 @@ contains
         x_pos = x_pos + char_width
         
     end subroutine render_mathtext_element_pdf
+
+    subroutine draw_pdf_mathtext_mixed(this, x, y, text, font_size)
+        !! Draw text with mixed Unicode and mathtext notation
+        !! Handles text that has been partially processed by LaTeX parser
+        !! (Greek letters as Unicode) but still contains superscript/subscript notation
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
+        
+        integer :: i, start_pos, len_text
+        character(len=len(text)) :: segment
+        integer :: segment_len
+        logical :: has_math_notation
+        
+        len_text = len_trim(text)
+        if (len_text == 0) return
+        
+        ! Check if text contains mathematical notation after Unicode processing
+        has_math_notation = index(text, '^') > 0 .or. index(text, '_') > 0
+        
+        if (.not. has_math_notation) then
+            ! No mathtext notation, use regular mixed-font rendering
+            if (present(font_size)) then
+                call draw_mixed_font_text(this, x, y, text, font_size)
+            else
+                call draw_mixed_font_text(this, x, y, text)
+            end if
+            return
+        end if
+        
+        ! Handle mixed Unicode + mathtext by processing segments
+        ! Split on mathtext boundaries and handle each part appropriately
+        start_pos = 1
+        i = 1
+        
+        do while (i <= len_text)
+            if (text(i:i) == '^' .or. text(i:i) == '_') then
+                ! Found mathtext notation - render everything from start_pos as mathtext
+                segment = text(start_pos:len_text)
+                segment_len = len_text - start_pos + 1
+                
+                ! Use the original mathtext parser for the remaining text
+                if (present(font_size)) then
+                    call draw_pdf_mathtext(this, x, y, segment(1:segment_len), font_size)
+                else
+                    call draw_pdf_mathtext(this, x, y, segment(1:segment_len))
+                end if
+                return
+            end if
+            i = i + 1
+        end do
+        
+        ! No mathtext found after all, use regular rendering
+        if (present(font_size)) then
+            call draw_mixed_font_text(this, x, y, text, font_size)
+        else
+            call draw_mixed_font_text(this, x, y, text)
+        end if
+        
+    end subroutine draw_pdf_mathtext_mixed
 
 end module fortplot_pdf_text
