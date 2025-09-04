@@ -5,6 +5,7 @@ module fortplot_latex_parser
     private
     public :: find_latex_command, extract_latex_command, find_all_latex_commands
     public :: is_valid_greek_command, latex_to_unicode, process_latex_in_text
+    public :: convert_unicode_to_latex
     
     ! Greek letter command mappings
     character(len=*), parameter :: LOWERCASE_GREEK(24) = [ &
@@ -272,5 +273,80 @@ contains
         
         result_len = pos - 1
     end subroutine process_latex_in_text
+    
+    subroutine convert_unicode_to_latex(input_text, result_text, result_len)
+        !! Convert Unicode Greek characters to LaTeX commands for unified processing
+        !! e.g., "α β γ" → "\alpha \beta \gamma"
+        use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: result_text
+        integer, intent(out) :: result_len
+        
+        integer :: i, n, char_len, codepoint, greek_idx
+        integer :: pos
+        logical :: found
+        
+        result_text = ''
+        pos = 1
+        n = len_trim(input_text)
+        i = 1
+        
+        do while (i <= n)
+            char_len = utf8_char_length(input_text(i:i))
+            if (char_len == 0) char_len = 1
+            
+            if (char_len > 1) then
+                ! Multi-byte UTF-8 character - check if Greek
+                codepoint = utf8_to_codepoint(input_text, i)
+                found = .false.
+                
+                ! Check lowercase Greek letters
+                do greek_idx = 1, 24
+                    if (codepoint == LOWERCASE_CODEPOINTS(greek_idx)) then
+                        result_text(pos:pos) = '\'
+                        pos = pos + 1
+                        result_text(pos:pos+len_trim(LOWERCASE_GREEK(greek_idx))-1) = &
+                            trim(LOWERCASE_GREEK(greek_idx))
+                        pos = pos + len_trim(LOWERCASE_GREEK(greek_idx))
+                        result_text(pos:pos) = ' '
+                        pos = pos + 1
+                        found = .true.
+                        exit
+                    end if
+                end do
+                
+                ! Check uppercase Greek letters if not found
+                if (.not. found) then
+                    do greek_idx = 1, 24
+                        if (codepoint == UPPERCASE_CODEPOINTS(greek_idx)) then
+                            result_text(pos:pos) = '\'
+                            pos = pos + 1
+                            result_text(pos:pos+len_trim(UPPERCASE_GREEK(greek_idx))-1) = &
+                                trim(UPPERCASE_GREEK(greek_idx))
+                            pos = pos + len_trim(UPPERCASE_GREEK(greek_idx))
+                            result_text(pos:pos) = ' '
+                            pos = pos + 1
+                            found = .true.
+                            exit
+                        end if
+                    end do
+                end if
+                
+                ! If not Greek, copy as is
+                if (.not. found) then
+                    result_text(pos:pos+char_len-1) = input_text(i:i+char_len-1)
+                    pos = pos + char_len
+                end if
+            else
+                ! Single-byte character, copy as is
+                result_text(pos:pos) = input_text(i:i)
+                pos = pos + 1
+            end if
+            
+            i = i + char_len
+        end do
+        
+        result_len = pos - 1
+    end subroutine convert_unicode_to_latex
 
 end module fortplot_latex_parser

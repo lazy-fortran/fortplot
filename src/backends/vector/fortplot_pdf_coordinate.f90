@@ -5,7 +5,7 @@ module fortplot_pdf_coordinate
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, draw_pdf_mathtext
-    use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_latex_parser, only: process_latex_in_text, convert_unicode_to_latex
     use fortplot_pdf_drawing, only: draw_pdf_arrow, draw_pdf_circle_with_outline, &
                                    draw_pdf_square_with_outline, draw_pdf_diamond_with_outline, &
                                    draw_pdf_x_marker
@@ -98,18 +98,22 @@ contains
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(in) :: x, y, width, height
         
-        ! Render legend with full text support (LaTeX and mathtext)
-        integer :: i
+        ! Unified legend rendering: Unicode → LaTeX → Unicode → mathtext
+        integer :: i, latex_len, unicode_len
         real(wp) :: y_pos
-        character(len=512) :: label_buffer
-        integer :: label_len
+        character(len=512) :: latex_converted, unicode_processed
         associate(dummy_w => width, dummy_h => height); end associate
         
         y_pos = y
         do i = 1, size(entries)
-            ! Process LaTeX commands first, then use mathtext for superscripts/subscripts
-            call process_latex_in_text(trim(entries(i)%label), processed, plen)
-            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, processed(1:plen))
+            ! Step 1: Convert Unicode characters to LaTeX commands (α → \alpha)
+            call convert_unicode_to_latex(trim(entries(i)%label), latex_converted, latex_len)
+            
+            ! Step 2: Process LaTeX commands to Unicode (\alpha → α)  
+            call process_latex_in_text(latex_converted(1:latex_len), unicode_processed, unicode_len)
+            
+            ! Step 3: Use mathtext for superscripts/subscripts
+            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, unicode_processed(1:unicode_len))
             
             y_pos = y_pos - 20.0_wp
         end do
