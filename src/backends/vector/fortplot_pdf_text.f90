@@ -252,6 +252,31 @@ contains
         this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
     end subroutine switch_to_helvetica_font
 
+    subroutine render_mixed_font_at_position(this, x, y, text, font_size)
+        !! Render text with mixed fonts at specific position and size
+        !! Handles Unicode/Greek characters consistently
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        character(len=1024) :: text_cmd
+        logical :: in_symbol_font
+        
+        in_symbol_font = .false.
+        
+        ! Set default font (Helvetica) at specified size
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), font_size
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+
+        ! Set absolute position
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Process text character by character with Unicode handling
+        call process_text_segments(this, text, in_symbol_font, font_size)
+    end subroutine render_mixed_font_at_position
+
     subroutine draw_pdf_text_direct(this, x, y, text)
         !! Draw text directly without escaping
         class(pdf_context_core), intent(inout) :: this
@@ -578,34 +603,23 @@ contains
         real(wp), intent(in) :: baseline_y, base_font_size
         
         real(wp) :: elem_font_size, elem_y
-        character(len=1024) :: text_cmd
-        character(len=:), allocatable :: escaped_text
-        integer :: escaped_len
-        real(wp) :: char_width
+        real(wp) :: char_width, current_x
         
         ! Calculate font size and position for this element
         elem_font_size = base_font_size * element%font_size_ratio
         elem_y = baseline_y - element%vertical_offset * base_font_size
         
-        ! Set font for this element
-        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            this%fonts%get_helvetica_obj(), elem_font_size
-        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        ! Set initial position
+        current_x = x_pos
         
-        ! Set text position matrix
-        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x_pos, elem_y
-        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        
-        ! Escape and render the text
-        allocate(character(len=len(element%text)*6) :: escaped_text)
-        call escape_pdf_string(element%text, escaped_text, escaped_len)
-        this%stream_data = this%stream_data // "(" // escaped_text(1:escaped_len) // ") Tj" // new_line('a')
+        ! Process the text with proper Unicode handling
+        call render_mixed_font_at_position(this, current_x, elem_y, &
+                                          element%text, elem_font_size)
         
         ! Advance x position (approximate character width)
         char_width = elem_font_size * 0.5_wp * real(len_trim(element%text), wp)
         x_pos = x_pos + char_width
         
-        deallocate(escaped_text)
     end subroutine render_mathtext_element_pdf
 
 end module fortplot_pdf_text
