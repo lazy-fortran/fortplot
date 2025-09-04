@@ -3,7 +3,7 @@ title: Basic Plots
 
 # Basic Plots
 
-Source: [basic_plots.f90](../../example/fortran/basic_plots/basic_plots.f90)
+Source: [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
 
 This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API and the object-oriented interface.
 

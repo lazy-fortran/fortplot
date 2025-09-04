@@ -3,7 +3,7 @@ title: Contour Demo
 
 # Contour Demo
 
-Source: [contour_demo.f90](../../sourcefile/contour_demo.f90.html)
+Source: [contour_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/contour_demo/contour_demo.f90)
 
 This example demonstrates line contour plotting (level lines) with custom levels and a mixed plot combining contours with a line overlay.
 

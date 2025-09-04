@@ -3,7 +3,7 @@ title: Animation
 
 # Animation
 
-Source: [save_animation_demo.f90](../../sourcefile/save_animation_demo.f90.html)
+Source: [save_animation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/animation/save_animation_demo.f90)
 
 This example demonstrates creating animated plots and saving to video files.
 

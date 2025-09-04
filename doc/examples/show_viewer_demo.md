@@ -3,7 +3,7 @@ title: Show Viewer Demo
 
 # Show Viewer Demo
 
-Source: [show_viewer_demo.f90](../../sourcefile/show_viewer_demo.f90.html)
+Source: [show_viewer_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/show_viewer_demo/show_viewer_demo.f90)
 
 This example demonstrates using the built-in viewer for interactive display.
 

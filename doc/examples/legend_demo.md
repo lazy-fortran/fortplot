@@ -3,7 +3,7 @@ title: Legend Demo
 
 # Legend Demo
 
-Source: [legend_demo.f90](../../sourcefile/legend_demo.f90.html)
+Source: [legend_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/legend_demo/legend_demo.f90)
 
 This example demonstrates legend placement and customization options.
 

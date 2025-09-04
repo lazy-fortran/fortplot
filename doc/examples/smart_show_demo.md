@@ -3,7 +3,7 @@ title: Smart Show Demo
 
 # Smart Show Demo
 
-Source: [smart_show_demo.f90](../../sourcefile/smart_show_demo.f90.html)
+Source: [smart_show_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/smart_show_demo/smart_show_demo.f90)
 
 This example demonstrates intelligent display mode selection based on environment.
 

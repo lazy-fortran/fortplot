@@ -3,7 +3,7 @@ title: Marker Demo
 
 # Marker Demo
 
-Source: [marker_demo.f90](../../sourcefile/marker_demo.f90.html)
+Source: [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
 
 This example showcases various marker types and scatter plot capabilities in fortplotlib.
 
