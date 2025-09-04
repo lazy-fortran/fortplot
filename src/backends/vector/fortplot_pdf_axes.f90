@@ -545,6 +545,8 @@ contains
         real(wp) :: min_spacing
         integer :: i
         real(wp) :: label_x, label_y
+        character(len=512) :: processed_label
+        integer :: processed_len
         associate(dch=>canvas_height); end associate
 
         min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
@@ -555,7 +557,9 @@ contains
 
             ! Only draw if sufficient spacing from last label
             if (abs(label_y - last_y_drawn) >= min_spacing) then
-                label_x = plot_left - real(len_trim(y_labels(i)), wp) * 5.0_wp
+                ! Process LaTeX commands for accurate width calculation
+                call process_latex_in_text(trim(y_labels(i)), processed_label, processed_len)
+                label_x = plot_left - real(processed_len, wp) * 5.0_wp
                 call draw_pdf_text(ctx, label_x, label_y, trim(y_labels(i)))
                 last_y_drawn = label_y
             end if

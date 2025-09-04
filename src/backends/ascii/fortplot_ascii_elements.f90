@@ -13,6 +13,7 @@ module fortplot_ascii_elements
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
     use fortplot_plot_data, only: plot_data_t
+    use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_ascii_utils, only: get_char_density, ASCII_CHARS
     use, intrinsic :: iso_fortran_env, only: wp => real64, real64
     implicit none
@@ -197,11 +198,15 @@ contains
         integer, intent(in) :: width
         real(wp), intent(out) :: legend_width, legend_height
         integer :: i
+        character(len=512) :: processed_label
+        integer :: processed_len
         
         ! Calculate actual legend width based on longest entry
         legend_width = 15.0_wp  ! Default minimum width
         do i = 1, legend%num_entries
-            legend_width = max(legend_width, real(len_trim(legend%entries(i)%label) + 5, wp))  ! +5 for "-- " prefix and margin
+            ! Process LaTeX commands for accurate width calculation
+            call process_latex_in_text(legend%entries(i)%label, processed_label, processed_len)
+            legend_width = max(legend_width, real(processed_len + 5, wp))  ! +5 for "-- " prefix and margin
         end do
         
         ! For ASCII backend, limit legend width to prevent overflow  
