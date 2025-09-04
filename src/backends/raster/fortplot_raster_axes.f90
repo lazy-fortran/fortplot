@@ -451,7 +451,7 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: rotated_width, y_tick_max_width
         integer :: clearance, min_left_margin
-        integer, parameter :: YLABEL_EXTRA_GAP = 25
+        integer, parameter :: YLABEL_EXTRA_GAP = 35
         
         ! Original implementation logic for backward compatibility
         clearance = TICK_MARK_LENGTH + Y_TICK_LABEL_RIGHT_PAD + max(0, y_tick_max_width) + YLABEL_EXTRA_GAP

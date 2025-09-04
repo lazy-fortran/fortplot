@@ -48,7 +48,7 @@ contains
         integer :: x_pos, expected
         integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 10
         ! Updated to match the increased gap in fortplot_raster_axes
-        integer, parameter :: YLABEL_EXTRA_GAP = 25
+        integer, parameter :: YLABEL_EXTRA_GAP = 35
 
         area%left = 100; area%bottom = 50; area%width = 400; area%height = 300
         rotated_text_width = 20
@@ -92,7 +92,7 @@ contains
         integer :: x_pos
         integer, parameter :: Y_TICK_LABEL_RIGHT_PAD = 10
         ! Updated to match the increased gap in fortplot_raster_axes
-        integer, parameter :: YLABEL_EXTRA_GAP = 25
+        integer, parameter :: YLABEL_EXTRA_GAP = 35
 
         ! Create a scenario where ylabel would be positioned at negative x
         ! Small plot area on the left with very wide tick labels

@@ -251,8 +251,8 @@ contains
 
             ! Right-align with a small gap from the tick end
             label_x = plot_area%left - Y_TICK_LABEL_RIGHT_PAD - label_width
-            ! Center vertically at tick position - adjust for baseline
-            label_y = tick_y - label_height / 3  ! Adjust for text baseline
+            ! Center vertically at tick position - move DOWN for better alignment
+            label_y = tick_y + label_height / 4  ! Move down from tick for better visual alignment
 
             call render_text_to_image(raster%image_data, width, height, &
                 label_x, label_y, trim(escaped_text), 0_1, 0_1, 0_1)
