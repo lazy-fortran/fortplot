@@ -8,7 +8,7 @@ module fortplot_text_fonts
     private
     public :: init_text_system, cleanup_text_system, get_font_metrics
     public :: get_font_ascent_ratio, find_font_by_name, find_any_available_font
-    public :: get_global_font, get_font_scale, is_font_initialized
+    public :: get_global_font, get_font_scale, is_font_initialized, get_font_scale_for_size
     
     ! Module state - shared with text rendering
     type(stb_fontinfo_t) :: global_font
@@ -296,6 +296,19 @@ contains
         real(wp) :: scale
         scale = font_scale
     end function get_font_scale
+    
+    function get_font_scale_for_size(pixel_height) result(scale)
+        !! Get font scale for a specific pixel height
+        real(wp), intent(in) :: pixel_height
+        real(wp) :: scale
+        
+        if (font_initialized) then
+            scale = stb_scale_for_pixel_height(global_font, pixel_height)
+        else
+            ! Fallback: assume the default scale and adjust proportionally
+            scale = font_scale * (pixel_height / 16.0_wp)
+        end if
+    end function get_font_scale_for_size
 
     function is_font_initialized() result(initialized)
         logical :: initialized
