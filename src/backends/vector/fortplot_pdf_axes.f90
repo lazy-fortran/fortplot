@@ -10,7 +10,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                draw_pdf_mathtext
+                                draw_pdf_mathtext, draw_pdf_text_unified
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -506,32 +506,17 @@ contains
     end subroutine draw_pdf_title_and_labels
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
-        !! Helper: process LaTeX and render mixed-font text (with mathtext support)
+        !! Helper: just calls the unified text renderer
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in), optional :: font_size
-        character(len=512) :: processed
-        integer :: plen
 
-        ! ALWAYS process LaTeX commands first to convert to Unicode
-        call process_latex_in_text(text, processed, plen)
-        
-        ! Now check if the processed text contains mathematical notation
-        if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then
-            ! Use mathtext rendering for superscripts/subscripts on the processed text
-            if (present(font_size)) then
-                call draw_pdf_mathtext(ctx, x, y, processed(1:plen), font_size)
-            else
-                call draw_pdf_mathtext(ctx, x, y, processed(1:plen))
-            end if
+        ! Use the unified text rendering function
+        if (present(font_size)) then
+            call draw_pdf_text_unified(ctx, x, y, text, font_size)
         else
-            ! Use regular mixed-font rendering for the processed text
-            if (present(font_size)) then
-                call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
-            else
-                call draw_mixed_font_text(ctx, x, y, processed(1:plen))
-            end if
+            call draw_pdf_text_unified(ctx, x, y, text)
         end if
     end subroutine render_mixed_text
 

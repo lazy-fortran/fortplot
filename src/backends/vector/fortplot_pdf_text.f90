@@ -21,6 +21,7 @@ module fortplot_pdf_text
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
     public :: draw_pdf_mathtext
+    public :: draw_pdf_text_unified
     
     ! Removed unused Symbol font mapping constants to avoid duplication
 
@@ -551,8 +552,7 @@ contains
 
     subroutine draw_pdf_mathtext(this, x, y, text, font_size)
         !! Draw text with mathematical notation (superscripts/subscripts)
-        !! Also handles LaTeX commands like \alpha, \beta mixed with mathtext
-        !! Uses same logic as render_mixed_text: ALWAYS process LaTeX first
+        !! This is for mathtext ONLY - LaTeX must be processed before calling
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -560,26 +560,11 @@ contains
         
         type(mathtext_element_t), allocatable :: elements(:)
         real(wp) :: fs, current_x, baseline_y
-        integer :: i, processed_len, text_len
-        character(len=1024) :: preprocessed_text  ! Fixed size buffer for safety
+        integer :: i
         
-        ! ALWAYS process LaTeX commands first (matches render_mixed_text logic)
-        call process_latex_in_text(text, preprocessed_text, processed_len)
-        
-        ! Then check if processed text contains mathtext notation
-        if (index(preprocessed_text(1:processed_len), '^') == 0 .and. &
-            index(preprocessed_text(1:processed_len), '_') == 0) then
-            ! No mathtext notation after LaTeX processing, use regular rendering
-            if (present(font_size)) then
-                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len), font_size)
-            else
-                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len))
-            end if
-            return
-        end if
-        
-        ! Parse mathematical text (with LaTeX commands already converted to Unicode)
-        elements = parse_mathtext(preprocessed_text(1:processed_len))
+        ! Parse the mathematical text 
+        ! Assumes LaTeX has already been converted to Unicode by caller
+        elements = parse_mathtext(text)
         
         ! Determine font size
         fs = PDF_LABEL_SIZE
@@ -732,5 +717,38 @@ contains
         x_pos = x_pos + char_width
     end subroutine render_mathtext_element_pdf_inline
 
+
+    subroutine draw_pdf_text_unified(this, x, y, text, font_size)
+        !! Unified text rendering: handles LaTeX, Unicode, and mathtext
+        !! This is the ONLY function that should be called for text rendering
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
+        
+        character(len=1024) :: processed_text
+        integer :: processed_len
+        
+        ! Step 1: Process LaTeX commands to Unicode
+        call process_latex_in_text(text, processed_text, processed_len)
+        
+        ! Step 2: Check if we have mathtext notation
+        if (index(processed_text(1:processed_len), '^') > 0 .or. &
+            index(processed_text(1:processed_len), '_') > 0) then
+            ! Has superscripts/subscripts - use mathtext rendering
+            if (present(font_size)) then
+                call draw_pdf_mathtext(this, x, y, processed_text(1:processed_len), font_size)
+            else
+                call draw_pdf_mathtext(this, x, y, processed_text(1:processed_len))
+            end if
+        else
+            ! No mathtext - use regular mixed-font rendering
+            if (present(font_size)) then
+                call draw_mixed_font_text(this, x, y, processed_text(1:processed_len), font_size)
+            else
+                call draw_mixed_font_text(this, x, y, processed_text(1:processed_len))
+            end if
+        end if
+    end subroutine draw_pdf_text_unified
 
 end module fortplot_pdf_text

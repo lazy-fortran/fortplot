@@ -4,7 +4,8 @@ module fortplot_pdf_coordinate
     
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
-    use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, draw_pdf_mathtext
+    use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, &
+                                  draw_pdf_mathtext, draw_pdf_text_unified
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_pdf_drawing, only: draw_pdf_arrow, draw_pdf_circle_with_outline, &
                                    draw_pdf_square_with_outline, draw_pdf_diamond_with_outline, &
@@ -112,8 +113,8 @@ contains
                 label_len = len(entries(i)%label)
                 if (label_len > 0) then
                     label_buffer = entries(i)%label
-                    ! Use mathtext rendering which handles both LaTeX and superscripts
-                    call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, label_buffer(1:label_len))
+                    ! Use unified text rendering for proper LaTeX and mathtext support
+                    call draw_pdf_text_unified(ctx%core_ctx, x, y_pos, label_buffer(1:label_len))
                 end if
             end if
             
