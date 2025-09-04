@@ -109,14 +109,10 @@ contains
             ! Process LaTeX commands first to convert to Unicode
             call process_latex_in_text(entries(i)%label, processed, plen)
             
-            ! Check if processed text contains mathematical notation
-            if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then
-                ! Use mathtext rendering for superscripts/subscripts
-                call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, processed(1:plen))
-            else
-                ! Use regular mixed-font rendering
-                call draw_mixed_font_text(ctx%core_ctx, x, y_pos, processed(1:plen))
-            end if
+            ! Always use mathtext rendering for legend entries to handle any mathematical notation
+            ! This ensures superscripts, subscripts, and Unicode characters are rendered correctly
+            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, processed(1:plen))
+            
             y_pos = y_pos - 20.0_wp
         end do
     end subroutine pdf_render_legend_specialized
@@ -198,7 +194,7 @@ contains
         
         real(wp) :: x, y
         
-        x = real(ctx%plot_area%left - 40, wp)
+        x = real(ctx%plot_area%left - 30, wp)  ! Reduced spacing from 40 to 30
         y = real(ctx%plot_area%bottom + ctx%plot_area%height / 2, wp)
         
         call draw_rotated_mixed_font_text(ctx%core_ctx, x, y, ylabel)
