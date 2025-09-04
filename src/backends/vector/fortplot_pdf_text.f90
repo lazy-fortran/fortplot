@@ -604,6 +604,7 @@ contains
         
         real(wp) :: elem_font_size, elem_y
         real(wp) :: char_width, current_x
+        integer :: i, codepoint, char_len
         
         ! Calculate font size and position for this element
         elem_font_size = base_font_size * element%font_size_ratio
@@ -616,8 +617,52 @@ contains
         call render_mixed_font_at_position(this, current_x, elem_y, &
                                           element%text, elem_font_size)
         
-        ! Advance x position (approximate character width)
-        char_width = elem_font_size * 0.5_wp * real(len_trim(element%text), wp)
+        ! Calculate proper width based on character types
+        ! Use better width estimates for common characters
+        char_width = 0.0_wp
+        i = 1
+        do while (i <= len_trim(element%text))
+            ! Get character length first
+            char_len = utf8_char_length(element%text(i:i))
+            if (char_len == 0) then
+                ! Invalid UTF-8, treat as single byte
+                codepoint = iachar(element%text(i:i))
+                char_len = 1
+            else
+                ! Get the codepoint at position i
+                codepoint = utf8_to_codepoint(element%text, i)
+            end if
+            
+            ! Width estimation based on character type
+            if (codepoint >= 48 .and. codepoint <= 57) then
+                ! Digits (0-9)
+                char_width = char_width + elem_font_size * 0.55_wp
+            else if (codepoint >= 65 .and. codepoint <= 90) then
+                ! Uppercase letters
+                char_width = char_width + elem_font_size * 0.65_wp
+            else if (codepoint >= 97 .and. codepoint <= 122) then
+                ! Lowercase letters
+                char_width = char_width + elem_font_size * 0.5_wp
+            else if (codepoint == 32) then
+                ! Space
+                char_width = char_width + elem_font_size * 0.3_wp
+            else if (codepoint >= 178 .and. codepoint <= 179) then
+                ! Superscript 2 and 3
+                char_width = char_width + elem_font_size * 0.4_wp
+            else if (codepoint == 185) then
+                ! Superscript 1
+                char_width = char_width + elem_font_size * 0.3_wp
+            else if (codepoint >= 8304 .and. codepoint <= 8313) then
+                ! Unicode superscript digits
+                char_width = char_width + elem_font_size * 0.4_wp
+            else
+                ! Default for other characters
+                char_width = char_width + elem_font_size * 0.5_wp
+            end if
+            
+            i = i + char_len
+        end do
+        
         x_pos = x_pos + char_width
         
     end subroutine render_mathtext_element_pdf
