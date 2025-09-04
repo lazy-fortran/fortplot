@@ -142,6 +142,12 @@ contains
                 return
             end if
         end do
+        
+        ! Check mathematical symbols
+        if (trim(command_name) == "times") then
+            is_valid_greek_command = .true.
+            return
+        end if
     end function is_valid_greek_command
     
     logical function is_alpha(ch)
@@ -183,6 +189,14 @@ contains
                 return
             end if
         end do
+        
+        ! Check mathematical symbols
+        if (trim(latex_command) == "times") then
+            codepoint = 215  ! U+00D7 MULTIPLICATION SIGN ×
+            call codepoint_to_utf8(codepoint, unicode_char)
+            success = .true.
+            return
+        end if
     end subroutine latex_to_unicode
     
     subroutine codepoint_to_utf8(codepoint, utf8_char)
