@@ -398,20 +398,11 @@ contains
         ! Map selected Latin-1 Supplement superscripts commonly used in labels
         if (.not. found) then
             select case(codepoint)
-            case(179)  ! U+00B3 SUPERSCRIPT THREE
-                escape_seq = "\263"  ! octal for 0xB3 in WinAnsi
-                found = .true.
-            case(178)  ! U+00B2 SUPERSCRIPT TWO
-                escape_seq = "\262"
-                found = .true.
-            case(185)  ! U+00B9 SUPERSCRIPT ONE
-                escape_seq = "\271"
-                found = .true.
             case(215)  ! U+00D7 MULTIPLICATION SIGN (×)
-                escape_seq = "\327"  ! octal for 0xD7 in WinAnsi
+                escape_seq = char(215)
                 found = .true.
             case(177)  ! U+00B1 PLUS-MINUS SIGN (±)
-                escape_seq = "\261"  ! octal for 0xB1 in WinAnsi
+                escape_seq = char(177)
                 found = .true.
             case default
                 found = .false.
@@ -724,6 +715,60 @@ contains
     end subroutine render_mathtext_element_pdf_inline
 
 
+    subroutine convert_unicode_superscripts_to_mathtext(text, text_len)
+        !! Convert Unicode superscripts (²³¹) to mathtext notation (^2 ^3 ^1)
+        character(len=*), intent(inout) :: text
+        integer, intent(inout) :: text_len
+        
+        character(len=1024) :: temp_text
+        integer :: i, j, codepoint, char_len
+        
+        temp_text = ''
+        j = 0
+        i = 1
+        
+        do while (i <= text_len)
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) char_len = 1
+            
+            if (char_len > 1) then
+                ! Multi-byte UTF-8, check if it's a superscript
+                codepoint = utf8_to_codepoint(text, i)
+                
+                select case(codepoint)
+                case(178)  ! ² -> ^2
+                    j = j + 1
+                    temp_text(j:j) = '^'
+                    j = j + 1
+                    temp_text(j:j) = '2'
+                case(179)  ! ³ -> ^3
+                    j = j + 1
+                    temp_text(j:j) = '^'
+                    j = j + 1
+                    temp_text(j:j) = '3'
+                case(185)  ! ¹ -> ^1
+                    j = j + 1
+                    temp_text(j:j) = '^'
+                    j = j + 1
+                    temp_text(j:j) = '1'
+                case default
+                    ! Copy the original UTF-8 bytes
+                    temp_text(j+1:j+char_len) = text(i:i+char_len-1)
+                    j = j + char_len
+                end select
+            else
+                ! Single byte, copy as-is
+                j = j + 1
+                temp_text(j:j) = text(i:i)
+            end if
+            
+            i = i + char_len
+        end do
+        
+        text(1:j) = temp_text(1:j)
+        text_len = j
+    end subroutine convert_unicode_superscripts_to_mathtext
+    
     subroutine draw_pdf_text_unified(this, x, y, text, font_size)
         !! Unified text rendering: handles LaTeX, Unicode, and mathtext
         !! This is the ONLY function that should be called for text rendering
@@ -738,7 +783,10 @@ contains
         ! Step 1: Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
         
-        ! Step 2: Check if we have mathtext notation
+        ! Step 2: Convert Unicode superscripts to mathtext notation
+        call convert_unicode_superscripts_to_mathtext(processed_text, processed_len)
+        
+        ! Step 3: Check if we have mathtext notation (including converted Unicode)
         if (index(processed_text(1:processed_len), '^') > 0 .or. &
             index(processed_text(1:processed_len), '_') > 0) then
             ! Has superscripts/subscripts - use mathtext rendering
