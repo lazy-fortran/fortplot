@@ -399,13 +399,19 @@ contains
         if (.not. found) then
             select case(codepoint)
             case(179)  ! U+00B3 SUPERSCRIPT THREE
-                escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
+                escape_seq = "\263"  ! octal for 0xB3 in WinAnsi
                 found = .true.
             case(178)  ! U+00B2 SUPERSCRIPT TWO
-                escape_seq = "\\262"
+                escape_seq = "\262"
                 found = .true.
             case(185)  ! U+00B9 SUPERSCRIPT ONE
-                escape_seq = "\\271"
+                escape_seq = "\271"
+                found = .true.
+            case(215)  ! U+00D7 MULTIPLICATION SIGN (×)
+                escape_seq = "\327"  ! octal for 0xD7 in WinAnsi
+                found = .true.
+            case(177)  ! U+00B1 PLUS-MINUS SIGN (±)
+                escape_seq = "\261"  ! octal for 0xB1 in WinAnsi
                 found = .true.
             case default
                 found = .false.
