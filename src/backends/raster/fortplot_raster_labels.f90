@@ -21,7 +21,7 @@ module fortplot_raster_labels
     public :: y_tick_label_right_edge_at_axis
 
     ! Gap to better match matplotlib's labelpad and avoid overlap
-    integer, parameter :: YLABEL_EXTRA_GAP = 30
+    integer, parameter :: YLABEL_EXTRA_GAP = 25
 
 contains
 
