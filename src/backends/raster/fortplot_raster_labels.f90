@@ -49,7 +49,8 @@ contains
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
-            label_y = min(height - label_height - 5, plot_area%bottom + plot_area%height + XLABEL_VERTICAL_OFFSET)
+            ! Move xlabel 5 pixels down (increase Y in PNG coordinates)
+            label_y = min(height - label_height - 5, plot_area%bottom + plot_area%height + XLABEL_VERTICAL_OFFSET + 5)
             call render_text_to_image(raster%image_data, width, height, label_x, label_y, &
                 trim(escaped_text), 0_1, 0_1, 0_1)
         end if
