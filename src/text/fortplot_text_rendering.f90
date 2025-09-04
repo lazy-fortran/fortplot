@@ -3,16 +3,25 @@ module fortplot_text_rendering
     use fortplot_stb_truetype
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_logging, only: log_error
-    use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, is_font_initialized
+    use fortplot_text_fonts, only: init_text_system, get_global_font, get_font_scale, &
+                                     is_font_initialized, get_font_scale_for_size
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
     public :: render_text_to_image, calculate_text_width, calculate_text_height
     public :: render_rotated_text_to_image, calculate_text_descent
+    public :: calculate_text_width_with_size, render_text_with_size
+    public :: TITLE_FONT_SIZE, LABEL_FONT_SIZE, TICK_FONT_SIZE
     
     ! Constants for text rendering
-    integer, parameter :: DEFAULT_FONT_SIZE = 16
+    ! Font sizes in pixels (matching matplotlib at 96 DPI)
+    ! Matplotlib uses: title=12pt, labels=10pt, ticks=10pt
+    ! At 96 DPI: 1pt = 1.333 pixels
+    integer, parameter :: DEFAULT_FONT_SIZE = 16  ! ~12pt at 96 DPI
+    integer, parameter :: TITLE_FONT_SIZE = 20     ! ~15pt at 96 DPI (larger than matplotlib's 12pt)
+    integer, parameter :: LABEL_FONT_SIZE = 16     ! ~12pt at 96 DPI  
+    integer, parameter :: TICK_FONT_SIZE = 13      ! ~10pt at 96 DPI
     real(wp), parameter :: PI = 3.14159265359_wp
     
     
@@ -58,6 +67,47 @@ contains
         end do
         
     end function calculate_text_width
+    
+    function calculate_text_width_with_size(text, pixel_height) result(width)
+        !! Calculate text width using a specific font size
+        use fortplot_text_fonts, only: get_font_scale_for_size
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: pixel_height
+        integer :: width
+        integer :: i, char_code, advance_width, left_side_bearing
+        integer :: char_len
+        type(stb_fontinfo_t) :: font
+        real(wp) :: scale
+        
+        ! Initialize text system if not already done
+        if (.not. is_font_initialized()) then
+            if (.not. init_text_system()) then
+                ! Fallback estimate for the given size
+                width = int(len_trim(text) * pixel_height * 0.6_wp)
+                return
+            end if
+        end if
+        
+        font = get_global_font()
+        scale = get_font_scale_for_size(pixel_height)
+        
+        width = 0
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
+            call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
+            width = width + int(real(advance_width) * scale)
+        end do
+        
+    end function calculate_text_width_with_size
 
     function calculate_text_height(text) result(height)
         !! Calculate the pixel height of text using STB TrueType
@@ -174,6 +224,60 @@ contains
             pen_x = pen_x + int(real(advance_width) * scale)
         end do
     end subroutine render_text_to_image
+    
+    subroutine render_text_with_size(image_data, width, height, x, y, text, r, g, b, pixel_height)
+        !! Render text with specific font size
+        use fortplot_text_fonts, only: get_font_scale_for_size
+        integer(1), intent(inout) :: image_data(*)
+        integer, intent(in) :: width, height, x, y
+        character(len=*), intent(in) :: text
+        integer(1), intent(in) :: r, g, b
+        real(wp), intent(in) :: pixel_height
+        integer :: pen_x, pen_y, i, char_code
+        integer :: advance_width, left_side_bearing
+        type(c_ptr) :: bitmap_ptr
+        integer :: bmp_width, bmp_height, xoff, yoff
+        integer :: char_len
+        type(stb_fontinfo_t) :: font
+        real(wp) :: scale
+        
+        if (.not. is_font_initialized()) then
+            if (.not. init_text_system()) then
+                return
+            end if
+        end if
+        
+        font = get_global_font()
+        scale = get_font_scale_for_size(pixel_height)
+        
+        pen_x = x
+        pen_y = y
+        
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            if (char_len == 0) then
+                char_code = iachar(text(i:i))
+                i = i + 1
+            else
+                char_code = utf8_to_codepoint(text, i)
+                i = i + char_len
+            end if
+            
+            bitmap_ptr = stb_get_codepoint_bitmap(font, scale, scale, char_code, &
+                                                 bmp_width, bmp_height, xoff, yoff)
+            
+            if (c_associated(bitmap_ptr)) then
+                call render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
+                                    bmp_width, bmp_height, xoff, yoff, r, g, b)
+                call stb_free_bitmap(bitmap_ptr)
+            end if
+            
+            call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
+            pen_x = pen_x + int(real(advance_width) * scale)
+        end do
+        
+    end subroutine render_text_with_size
 
     subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
                                bmp_width, bmp_height, xoff, yoff, r, g, b)
