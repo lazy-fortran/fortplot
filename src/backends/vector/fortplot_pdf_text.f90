@@ -6,6 +6,7 @@ module fortplot_pdf_text
     use fortplot_pdf_core, only: pdf_context_core, PDF_FONT_SIZE, PDF_LABEL_SIZE, &
                                 PDF_TICK_LABEL_SIZE, PDF_TITLE_SIZE
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
+    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
     implicit none
     private
     
@@ -18,6 +19,7 @@ module fortplot_pdf_text
     public :: escape_pdf_string
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
+    public :: draw_pdf_mathtext
     
     ! Removed unused Symbol font mapping constants to avoid duplication
 
@@ -520,5 +522,90 @@ contains
             found = .false.
         end select
     end subroutine lookup_uppercase_greek
+
+    subroutine draw_pdf_mathtext(this, x, y, text, font_size)
+        !! Draw text with mathematical notation (superscripts/subscripts)
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in), optional :: font_size
+        
+        type(mathtext_element_t), allocatable :: elements(:)
+        real(wp) :: fs, current_x, baseline_y
+        integer :: i
+        
+        ! Check if text contains mathtext notation
+        if (index(text, '^') == 0 .and. index(text, '_') == 0) then
+            ! No mathtext notation, use regular rendering
+            if (present(font_size)) then
+                call draw_mixed_font_text(this, x, y, text, font_size)
+            else
+                call draw_mixed_font_text(this, x, y, text)
+            end if
+            return
+        end if
+        
+        ! Parse mathematical text
+        elements = parse_mathtext(text)
+        
+        ! Determine font size
+        fs = PDF_LABEL_SIZE
+        if (present(font_size)) fs = font_size
+        
+        ! Begin text object
+        this%stream_data = this%stream_data // "BT" // new_line('a')
+        
+        ! Initialize position
+        current_x = x
+        baseline_y = y
+        
+        ! Render each element
+        do i = 1, size(elements)
+            call render_mathtext_element_pdf(this, elements(i), current_x, baseline_y, fs)
+        end do
+        
+        ! End text object
+        this%stream_data = this%stream_data // "ET" // new_line('a')
+        
+        deallocate(elements)
+    end subroutine draw_pdf_mathtext
+    
+    subroutine render_mathtext_element_pdf(this, element, x_pos, baseline_y, base_font_size)
+        !! Render a single mathematical text element in PDF
+        class(pdf_context_core), intent(inout) :: this
+        type(mathtext_element_t), intent(in) :: element
+        real(wp), intent(inout) :: x_pos
+        real(wp), intent(in) :: baseline_y, base_font_size
+        
+        real(wp) :: elem_font_size, elem_y
+        character(len=1024) :: text_cmd
+        character(len=:), allocatable :: escaped_text
+        integer :: escaped_len
+        real(wp) :: char_width
+        
+        ! Calculate font size and position for this element
+        elem_font_size = base_font_size * element%font_size_ratio
+        elem_y = baseline_y - element%vertical_offset * base_font_size
+        
+        ! Set font for this element
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), elem_font_size
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Set text position matrix
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x_pos, elem_y
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Escape and render the text
+        allocate(character(len=len(element%text)*6) :: escaped_text)
+        call escape_pdf_string(element%text, escaped_text, escaped_len)
+        this%stream_data = this%stream_data // "(" // escaped_text(1:escaped_len) // ") Tj" // new_line('a')
+        
+        ! Advance x position (approximate character width)
+        char_width = elem_font_size * 0.5_wp * real(len_trim(element%text), wp)
+        x_pos = x_pos + char_width
+        
+        deallocate(escaped_text)
+    end subroutine render_mathtext_element_pdf
 
 end module fortplot_pdf_text

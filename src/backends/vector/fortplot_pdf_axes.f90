@@ -9,7 +9,8 @@ module fortplot_pdf_axes
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
-                                draw_mixed_font_text, draw_rotated_mixed_font_text
+                                draw_mixed_font_text, draw_rotated_mixed_font_text, &
+                                draw_pdf_mathtext
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -505,7 +506,7 @@ contains
     end subroutine draw_pdf_title_and_labels
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
-        !! Helper: process LaTeX and render mixed-font text
+        !! Helper: process LaTeX and render mixed-font text (with mathtext support)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -513,11 +514,22 @@ contains
         character(len=512) :: processed
         integer :: plen
 
-        call process_latex_in_text(text, processed, plen)
-        if (present(font_size)) then
-            call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
+        ! Check if text contains mathematical notation
+        if (index(text, '^') > 0 .or. index(text, '_') > 0) then
+            ! Use mathtext rendering for superscripts/subscripts
+            if (present(font_size)) then
+                call draw_pdf_mathtext(ctx, x, y, text, font_size)
+            else
+                call draw_pdf_mathtext(ctx, x, y, text)
+            end if
         else
-            call draw_mixed_font_text(ctx, x, y, processed(1:plen))
+            ! Process LaTeX and use regular mixed-font rendering
+            call process_latex_in_text(text, processed, plen)
+            if (present(font_size)) then
+                call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
+            else
+                call draw_mixed_font_text(ctx, x, y, processed(1:plen))
+            end if
         end if
     end subroutine render_mixed_text
 
