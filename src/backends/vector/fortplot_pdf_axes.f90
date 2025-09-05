@@ -506,19 +506,16 @@ contains
     end subroutine draw_pdf_title_and_labels
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
-        !! Helper: unified text rendering (Unicode → LaTeX → Unicode → mathtext)
+        !! Helper: process LaTeX and render mixed-font text (with mathtext support)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in), optional :: font_size
-        character(len=512) :: latex_converted, processed
-        integer :: latex_len, plen
+        character(len=512) :: processed
+        integer :: plen
 
-        ! Step 1: Convert Unicode characters to LaTeX commands (α → \alpha)
-        call convert_unicode_to_latex(text, latex_converted, latex_len)
-        
-        ! Step 2: Process LaTeX commands to Unicode (\alpha → α)
-        call process_latex_in_text(latex_converted(1:latex_len), processed, plen)
+        ! ALWAYS process LaTeX commands first to convert to Unicode
+        call process_latex_in_text(text, processed, plen)
         
         ! Now check if the processed text contains mathematical notation
         if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then

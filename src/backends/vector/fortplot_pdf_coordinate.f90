@@ -98,22 +98,24 @@ contains
         type(legend_entry_t), dimension(:), intent(in) :: entries
         real(wp), intent(in) :: x, y, width, height
         
-        ! Unified legend rendering: Unicode → LaTeX → Unicode → mathtext
-        integer :: i, latex_len, unicode_len
+        ! Render legend with full text support (LaTeX and mathtext)
+        integer :: i
         real(wp) :: y_pos
-        character(len=512) :: latex_converted, unicode_processed
+        character(len=512) :: label_buffer
+        integer :: label_len
         associate(dummy_w => width, dummy_h => height); end associate
         
         y_pos = y
         do i = 1, size(entries)
-            ! Step 1: Convert Unicode characters to LaTeX commands (α → \alpha)
-            call convert_unicode_to_latex(trim(entries(i)%label), latex_converted, latex_len)
-            
-            ! Step 2: Process LaTeX commands to Unicode (\alpha → α)  
-            call process_latex_in_text(latex_converted(1:latex_len), unicode_processed, unicode_len)
-            
-            ! Step 3: Use mathtext for superscripts/subscripts
-            call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, unicode_processed(1:unicode_len))
+            ! Copy label to fixed-size buffer to ensure full text is passed
+            if (allocated(entries(i)%label)) then
+                label_len = len(entries(i)%label)
+                if (label_len > 0) then
+                    label_buffer = entries(i)%label
+                    ! Use mathtext rendering which handles both LaTeX and superscripts
+                    call draw_pdf_mathtext(ctx%core_ctx, x, y_pos, label_buffer(1:label_len))
+                end if
+            end if
             
             y_pos = y_pos - 20.0_wp
         end do
