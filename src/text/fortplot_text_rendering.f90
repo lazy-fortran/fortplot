@@ -490,7 +490,7 @@ contains
         end do
     end subroutine render_rotated_text_to_image
 
-    function calculate_mathtext_width_internal(elements, base_font_size) result(total_width)
+    recursive function calculate_mathtext_width_internal(elements, base_font_size) result(total_width)
         !! Calculate total width of mathematical text elements
         use fortplot_mathtext, only: mathtext_element_t
         type(mathtext_element_t), intent(in) :: elements(:)
@@ -505,8 +505,13 @@ contains
         do i = 1, size(elements)
             element_font_size = base_font_size * elements(i)%font_size_ratio
             if (elements(i)%element_type == 3) then
-                ! ELEMENT_SQRT: include symbol width
-                element_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+                ! ELEMENT_SQRT: include symbol width and handle nested mathtext
+                if (has_mathtext(elements(i)%text)) then
+                    ! Calculate width of nested mathtext in the radicand
+                    element_width = calculate_mathtext_width_internal(parse_mathtext(elements(i)%text), element_font_size)
+                else
+                    element_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+                end if
                 total_width = total_width + int(0.6_wp * element_font_size) + element_width
             else
                 element_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
@@ -620,7 +625,7 @@ contains
 
     end function calculate_mathtext_height_internal
 
-    subroutine render_mathtext_elements_internal(image_data, width, height, x, y, elements, &
+    recursive subroutine render_mathtext_elements_internal(image_data, width, height, x, y, elements, &
                                        r, g, b, base_font_size)
         !! Render mathematical text elements to image
         use fortplot_mathtext, only: mathtext_element_t
@@ -648,7 +653,15 @@ contains
             element_font_size = base_font_size * elements(i)%font_size_ratio
 
             if (elements(i)%element_type == 3) then
-                rad_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+                ! Reset baseline for sqrt element
+                pen_y = y - int(elements(i)%vertical_offset * base_font_size)
+                
+                ! Calculate radicand width, handling nested mathtext
+                if (has_mathtext(elements(i)%text)) then
+                    rad_width = calculate_mathtext_width_internal(parse_mathtext(elements(i)%text), element_font_size)
+                else
+                    rad_width = calculate_text_width_with_size_internal(elements(i)%text, element_font_size)
+                end if
                 rad_height = calculate_text_height_with_size_internal(element_font_size)
                 sym_w = int(0.6_wp * element_font_size)
                 top_y = pen_y - rad_height
@@ -658,8 +671,17 @@ contains
                     real(pen_x + sym_w, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
                 call draw_line_distance_aa(image_data, width, height, real(pen_x + sym_w, wp), real(top_y, wp), &
                     real(pen_x + sym_w + rad_width, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
-                call render_text_with_size_internal(image_data, width, height, pen_x + sym_w, pen_y, &
-                    elements(i)%text, r, g, b, element_font_size)
+                ! Check if radicand contains nested mathtext and render accordingly
+                if (has_mathtext(elements(i)%text)) then
+                    ! Parse and render nested mathtext in the radicand
+                    call render_mathtext_elements_internal(image_data, width, height, &
+                        pen_x + sym_w, pen_y, parse_mathtext(elements(i)%text), &
+                        r, g, b, element_font_size)
+                else
+                    ! Simple text in the radicand
+                    call render_text_with_size_internal(image_data, width, height, pen_x + sym_w, pen_y, &
+                        elements(i)%text, r, g, b, element_font_size)
+                end if
                 pen_x = pen_x + sym_w + rad_width
             else
                 ! Calculate vertical position based on element type and offset
