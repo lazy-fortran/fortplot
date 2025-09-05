@@ -38,6 +38,7 @@ contains
         logical :: in_superscript, in_subscript, in_braces
         type(mathtext_element_t) :: temp_elements(len(input_text))
         integer :: element_count
+        integer :: start_idx, byte
         
         element_count = 0
         n = len_trim(input_text)
@@ -52,58 +53,58 @@ contains
         do while (i <= n)
             if (input_text(i:i) == '^') then
                 ! Split last character from current text if it exists
-                if (current_len > 1) then
-                    ! Store everything except the last character
+                if (current_len > 0) then
+                    start_idx = current_len
+                    do while (start_idx > 1)
+                        byte = ichar(current_text(start_idx:start_idx))
+                        if (iand(byte, 192) /= 128) exit
+                        start_idx = start_idx - 1
+                    end do
+                    if (start_idx > 1) then
+                        element_count = element_count + 1
+                        call create_element(temp_elements(element_count), &
+                                          current_text(1:start_idx-1), &
+                                          ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                    end if
                     element_count = element_count + 1
                     call create_element(temp_elements(element_count), &
-                                      current_text(1:current_len-1), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    ! Store the last character separately
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(current_len:current_len), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                else if (current_len == 1) then
-                    ! Just one character, store it
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(1:1), &
+                                      current_text(start_idx:current_len), &
                                       ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
                 end if
                 current_text = ''
                 current_len = 0
-                
+
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUPERSCRIPT)
-                
+
             else if (input_text(i:i) == '_') then
                 ! Split last character from current text if it exists
-                if (current_len > 1) then
-                    ! Store everything except the last character
+                if (current_len > 0) then
+                    start_idx = current_len
+                    do while (start_idx > 1)
+                        byte = ichar(current_text(start_idx:start_idx))
+                        if (iand(byte, 192) /= 128) exit
+                        start_idx = start_idx - 1
+                    end do
+                    if (start_idx > 1) then
+                        element_count = element_count + 1
+                        call create_element(temp_elements(element_count), &
+                                          current_text(1:start_idx-1), &
+                                          ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                    end if
                     element_count = element_count + 1
                     call create_element(temp_elements(element_count), &
-                                      current_text(1:current_len-1), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                    ! Store the last character separately
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(current_len:current_len), &
-                                      ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
-                else if (current_len == 1) then
-                    ! Just one character, store it
-                    element_count = element_count + 1
-                    call create_element(temp_elements(element_count), &
-                                      current_text(1:1), &
+                                      current_text(start_idx:current_len), &
                                       ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
                 end if
                 current_text = ''
                 current_len = 0
-                
+
                 i = i + 1
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUBSCRIPT)
-                
+
             else
                 current_len = current_len + 1
                 current_text(current_len:current_len) = input_text(i:i)
