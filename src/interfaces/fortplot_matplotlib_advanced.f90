@@ -760,7 +760,7 @@ contains
         character(len=512) :: temp_file
         logical :: is_blocking, success
         integer :: status
-        real :: start_time, current_time
+        real :: start_time, current_time, random_val
         logical, save :: no_gui_warning_shown = .false.
         is_blocking = .false.
         if (present(blocking)) is_blocking = blocking
@@ -772,11 +772,11 @@ contains
             call fig%savefig("show_output.png")
             return
         end if
-        call get_environment_variable("TMPDIR", temp_file, status=status)
+        call random_number(random_val)
         call get_environment_variable("TMPDIR", temp_file, status=status)
         if (status /= 0) temp_file = "/tmp"
         write(temp_file, '(A,A,I0,A)') trim(temp_file), "/fortplot_", &
-                                       int(rand(0)*1000000), ".png"
+                                       int(random_val*1000000), ".png"
         call fig%savefig_with_status(trim(temp_file), status)
         if (status /= 0) then
             call log_error("Failed to save figure for viewing")
