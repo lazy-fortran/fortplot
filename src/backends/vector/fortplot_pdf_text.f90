@@ -207,12 +207,9 @@ contains
 
         call unicode_codepoint_to_pdf_escape(codepoint, escape_seq)
         if (len_trim(escape_seq) > 0) then
-            ! Ensure Helvetica font is active and emit character directly with proper escaping
+            ! Ensure Helvetica font is active and emit octal escape directly
             call switch_to_helvetica_font(this, font_size)
-            escaped_char = ''
-            esc_len = 0
-            call escape_pdf_string(escape_seq, escaped_char, esc_len)
-            this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
+            this%stream_data = this%stream_data // "(" // trim(escape_seq) // ") Tj" // new_line('a')
         else
             ! Fallback: switch to Helvetica and emit '?'
             call switch_to_helvetica_font(this, font_size)
@@ -401,19 +398,13 @@ contains
         if (.not. found) then
             select case(codepoint)
             case(179)  ! U+00B3 SUPERSCRIPT THREE
-                escape_seq = achar(179)  ! WinAnsi encoding for superscript 3
+                escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
                 found = .true.
             case(178)  ! U+00B2 SUPERSCRIPT TWO
-                escape_seq = achar(178)  ! WinAnsi encoding for superscript 2
+                escape_seq = "\\262"
                 found = .true.
             case(185)  ! U+00B9 SUPERSCRIPT ONE
-                escape_seq = achar(185)  ! WinAnsi encoding for superscript 1
-                found = .true.
-            case(215)  ! U+00D7 MULTIPLICATION SIGN ×
-                escape_seq = achar(215)  ! WinAnsi encoding for multiply symbol ×
-                found = .true.
-            case(177)  ! U+00B1 PLUS-MINUS SIGN ±
-                escape_seq = achar(177)  ! WinAnsi encoding for ± symbol
+                escape_seq = "\\271"
                 found = .true.
             case default
                 found = .false.
@@ -727,7 +718,13 @@ contains
                 this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             else
                 ! UTF-8 character - handle specially
-                call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
+                ! Ensure we don't exceed string bounds
+                if (i + char_len - 1 <= len(element%text)) then
+                    call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
+                else
+                    ! Fallback: just use what's left
+                    call escape_pdf_string(element%text(i:len(element%text)), escaped_char, esc_len)
+                end if
                 this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             end if
             
