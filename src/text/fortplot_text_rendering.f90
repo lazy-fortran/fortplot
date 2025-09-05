@@ -665,12 +665,18 @@ contains
                 rad_height = calculate_text_height_with_size_internal(element_font_size)
                 sym_w = int(0.6_wp * element_font_size)
                 top_y = pen_y - rad_height
-                call draw_line_distance_aa(image_data, width, height, real(pen_x, wp), real(pen_y, wp), &
-                    real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
-                call draw_line_distance_aa(image_data, width, height, real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), &
-                    real(pen_x + sym_w, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
-                call draw_line_distance_aa(image_data, width, height, real(pen_x + sym_w, wp), real(top_y, wp), &
-                    real(pen_x + sym_w + rad_width, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
+                call draw_line_distance_aa(image_data, width, height, &
+                    real(pen_x, wp), real(pen_y, wp), &
+                    real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), &
+                    real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
+                call draw_line_distance_aa(image_data, width, height, &
+                    real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), &
+                    real(pen_x + sym_w, wp), real(top_y, wp), &
+                    real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
+                call draw_line_distance_aa(image_data, width, height, &
+                    real(pen_x + sym_w, wp), real(top_y, wp), &
+                    real(pen_x + sym_w + rad_width, wp), real(top_y, wp), &
+                    real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.1_wp)
                 ! Check if radicand contains nested mathtext and render accordingly
                 if (has_mathtext(elements(i)%text)) then
                     ! Parse and render nested mathtext in the radicand
