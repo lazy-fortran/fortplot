@@ -120,11 +120,8 @@ contains
                 text_height_pixels = calculate_text_height(processed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
-                ! Add extra width for complex mathematical expressions that may render wider than calculated
-                ! entry_text_width = entry_text_width * 1.0_wp  ! No extra width multiplier
             else
                 entry_text_width = real(len_trim(processed_label), wp) * data_width * TEXT_WIDTH_RATIO
-                ! entry_text_width = entry_text_width * 1.0_wp  ! No extra width multiplier
             end if
             total_text_width = total_text_width + entry_text_width
             max_text_width = max(max_text_width, entry_text_width)

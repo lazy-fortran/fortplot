@@ -718,13 +718,7 @@ contains
                 this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             else
                 ! UTF-8 character - handle specially
-                ! Ensure we don't exceed string bounds
-                if (i + char_len - 1 <= len(element%text)) then
-                    call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
-                else
-                    ! Fallback: just use what's left
-                    call escape_pdf_string(element%text(i:len(element%text)), escaped_char, esc_len)
-                end if
+                call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
                 this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             end if
             
