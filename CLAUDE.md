@@ -34,6 +34,13 @@ The following custom implementations are **DELIBERATE DESIGN CHOICES**, not temp
 
 ### DEPENDENCY POLICY ENFORCEMENT
 
+#### **CRITICAL BUILD SYSTEM FILES - NEVER REMOVE**
+- **CMakeLists.txt**: MANDATORY for downstream CMake integration - NEVER DELETE
+  - Provides alternative build system for users who prefer CMake over FPM
+  - Essential for projects that integrate FortPlot via CMake FetchContent
+  - File is set to read-only (chmod 444) to prevent accidental deletion
+  - Both CMake and FPM build systems must be maintained in parallel
+
 #### **FORBIDDEN**: Issues Requesting External Library Adoption
 - **NO libpng replacement requests**: Custom PNG implementation is intentional
 - **NO zlib replacement requests**: Custom zlib implementation is intentional
