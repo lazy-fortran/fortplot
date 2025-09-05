@@ -3,8 +3,18 @@ set -euo pipefail
 
 # Check for forbidden artifacts in repository root (Issue #990)
 # Allowed locations: build/, doc/, output/, example/, test/, .git/
+# Also verify required files exist (CMakeLists.txt for downstream CMake integration)
 
 shopt -s nullglob
+
+# Check for REQUIRED CMakeLists.txt - MANDATORY for downstream CMake integration
+if [[ ! -f "./CMakeLists.txt" ]]; then
+  echo "ERROR: CMakeLists.txt is MISSING from repository root!"
+  echo "This file is MANDATORY for downstream CMake integration (FetchContent, etc.)"
+  echo "Both CMake and FPM build systems must be maintained in parallel."
+  echo "Please restore CMakeLists.txt immediately."
+  exit 1
+fi
 
 violations=()
 
@@ -12,6 +22,10 @@ while IFS= read -r -d '' file; do
   # Skip allowed paths
   case "$file" in
     ./build/*|./doc/*|./output/*|./example/*|./test/*|./.git/*)
+      continue
+      ;;
+    ./CMakeLists.txt)
+      # CMakeLists.txt is explicitly allowed and required
       continue
       ;;
   esac
@@ -35,3 +49,4 @@ if (( ${#violations[@]} > 0 )); then
 fi
 
 echo "Root artifact hygiene check passed."
+echo "CMakeLists.txt present for downstream CMake integration ✓"
