@@ -4,42 +4,43 @@ module fortplot_mathtext
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     implicit none
-    
+
     private
     public :: mathtext_element_t, parse_mathtext, render_mathtext_elements
     public :: calculate_mathtext_width, calculate_mathtext_height
-    
+
     ! Mathematical text element types
     integer, parameter :: ELEMENT_NORMAL = 0
     integer, parameter :: ELEMENT_SUPERSCRIPT = 1
     integer, parameter :: ELEMENT_SUBSCRIPT = 2
-    
+    integer, parameter :: ELEMENT_SQRT = 3
+
     ! Font scaling factors (matching matplotlib's approach)
     real(wp), parameter :: SHRINK_FACTOR = 0.7_wp  ! Super/subscript size ratio
     real(wp), parameter :: SUPERSCRIPT_RAISE = 0.6_wp  ! Fraction of font height to raise
     real(wp), parameter :: SUBSCRIPT_LOWER = 0.2_wp   ! Fraction of font height to lower
-    
+
     type :: mathtext_element_t
         character(len=:), allocatable :: text
         integer :: element_type = ELEMENT_NORMAL
         real(wp) :: font_size_ratio = 1.0_wp
         real(wp) :: vertical_offset = 0.0_wp  ! In pixels, positive = up
     end type mathtext_element_t
-    
+
 contains
 
     function parse_mathtext(input_text) result(elements)
         !! Parse mathematical text into renderable elements
         character(len=*), intent(in) :: input_text
         type(mathtext_element_t), allocatable :: elements(:)
-        
+
         integer :: i, n, brace_count, current_len
         character(len=len(input_text)) :: current_text
         logical :: in_superscript, in_subscript, in_braces
         type(mathtext_element_t) :: temp_elements(len(input_text))
         integer :: element_count
         integer :: start_idx, byte
-        
+
         element_count = 0
         n = len_trim(input_text)
         i = 1
@@ -49,7 +50,7 @@ contains
         in_subscript = .false.
         in_braces = .false.
         brace_count = 0
-        
+
         do while (i <= n)
             if (input_text(i:i) == '^') then
                 ! Split last character from current text if it exists
@@ -105,13 +106,36 @@ contains
                 call parse_superscript_subscript(input_text, i, n, temp_elements, &
                                                element_count, ELEMENT_SUBSCRIPT)
 
+            else if (input_text(i:i) == '\') then
+                if (i+4 <= n) then
+                    if (input_text(i+1:min(i+4,n)) == 'sqrt') then
+                        if (current_len > 0) then
+                            element_count = element_count + 1
+                            call create_element(temp_elements(element_count), &
+                                              current_text(1:current_len), &
+                                              ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                        end if
+                        current_text = ''
+                        current_len = 0
+                        i = i + 5
+                        call parse_sqrt_content(input_text, i, n, temp_elements, element_count)
+                    else
+                        current_len = current_len + 1
+                        current_text(current_len:current_len) = input_text(i:i)
+                        i = i + 1
+                    end if
+                else
+                    current_len = current_len + 1
+                    current_text(current_len:current_len) = input_text(i:i)
+                    i = i + 1
+                end if
             else
                 current_len = current_len + 1
                 current_text(current_len:current_len) = input_text(i:i)
                 i = i + 1
             end if
         end do
-        
+
         ! Store any remaining text (preserve spaces)
         if (current_len > 0) then
             element_count = element_count + 1
@@ -119,15 +143,15 @@ contains
                               current_text(1:current_len), &
                               ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
         end if
-        
+
         ! Allocate and copy final elements
         allocate(elements(element_count))
         elements(1:element_count) = temp_elements(1:element_count)
-        
+
     end function parse_mathtext
 
     subroutine parse_superscript_subscript(input_text, start_i, n, elements, &
-                                          element_count, element_type)
+                                           element_count, element_type)
         !! Parse superscript or subscript content
         character(len=*), intent(in) :: input_text
         integer, intent(inout) :: start_i
@@ -135,24 +159,24 @@ contains
         type(mathtext_element_t), intent(inout) :: elements(:)
         integer, intent(inout) :: element_count
         integer, intent(in) :: element_type
-        
+
         character(len=n) :: script_text
         integer :: i, brace_count, script_len
         logical :: in_braces
         real(wp) :: font_size_ratio, vertical_offset
-        
+
         script_text = ''
         script_len = 0  ! Track actual length of script_text content
         i = start_i
-        
+
         if (i > n) return
-        
+
         ! Check if we have braces for multi-character script
         if (input_text(i:i) == '{') then
             in_braces = .true.
             brace_count = 1
             i = i + 1  ! Skip opening brace
-            
+
             do while (i <= n .and. brace_count > 0)
                 if (input_text(i:i) == '{') then
                     brace_count = brace_count + 1
@@ -176,7 +200,7 @@ contains
             script_text(1:1) = input_text(i:i)
             i = i + 1
         end if
-        
+
         ! Set font size and vertical offset
         font_size_ratio = SHRINK_FACTOR
         if (element_type == ELEMENT_SUPERSCRIPT) then
@@ -186,16 +210,68 @@ contains
         else
             vertical_offset = 0.0_wp
         end if
-        
+
         ! Create element
         if (script_len > 0) then
             element_count = element_count + 1
             call create_element(elements(element_count), script_text(1:script_len), &
                               element_type, font_size_ratio, vertical_offset)
         end if
-        
+
         start_i = i
     end subroutine parse_superscript_subscript
+
+    subroutine parse_sqrt_content(input_text, start_i, n, elements, element_count)
+        !! Parse square root content
+        character(len=*), intent(in) :: input_text
+        integer, intent(inout) :: start_i
+        integer, intent(in) :: n
+        type(mathtext_element_t), intent(inout) :: elements(:)
+        integer, intent(inout) :: element_count
+
+        character(len=n) :: rad_text
+        integer :: i, brace_count, rad_len
+
+        rad_text = ''
+        rad_len = 0
+        i = start_i
+
+        if (i > n) return
+
+        if (input_text(i:i) == '{') then
+            brace_count = 1
+            i = i + 1
+            do while (i <= n .and. brace_count > 0)
+                if (input_text(i:i) == '{') then
+                    brace_count = brace_count + 1
+                    rad_len = rad_len + 1
+                    rad_text(rad_len:rad_len) = input_text(i:i)
+                else if (input_text(i:i) == '}') then
+                    brace_count = brace_count - 1
+                    if (brace_count > 0) then
+                        rad_len = rad_len + 1
+                        rad_text(rad_len:rad_len) = input_text(i:i)
+                    end if
+                else
+                    rad_len = rad_len + 1
+                    rad_text(rad_len:rad_len) = input_text(i:i)
+                end if
+                i = i + 1
+            end do
+        else
+            rad_len = 1
+            rad_text(1:1) = input_text(i:i)
+            i = i + 1
+        end if
+
+        if (rad_len > 0) then
+            element_count = element_count + 1
+            call create_element(elements(element_count), rad_text(1:rad_len), &
+                              ELEMENT_SQRT, 1.0_wp, 0.0_wp)
+        end if
+
+        start_i = i
+    end subroutine parse_sqrt_content
 
     subroutine create_element(element, text, element_type, font_size_ratio, vertical_offset)
         !! Create a mathtext element with proper string handling
@@ -203,7 +279,7 @@ contains
         character(len=*), intent(in) :: text
         integer, intent(in) :: element_type
         real(wp), intent(in) :: font_size_ratio, vertical_offset
-        
+
         ! Store text properly - preserve all spaces
         element%text = text
         element%element_type = element_type
@@ -217,15 +293,15 @@ contains
         type(mathtext_element_t), intent(in) :: elements(:)
         real(wp), intent(in) :: base_font_size
         integer :: total_width
-        
+
         ! This is a placeholder - actual implementation is in text_rendering module
         ! to avoid circular dependencies
         total_width = 0
-        
+
         ! Suppress unused parameter warnings
         associate(unused_elements => elements, unused_size => base_font_size)
         end associate
-        
+
     end function calculate_mathtext_width
 
     function calculate_mathtext_height(elements, base_font_size) result(total_height)
@@ -234,15 +310,15 @@ contains
         type(mathtext_element_t), intent(in) :: elements(:)
         real(wp), intent(in) :: base_font_size
         integer :: total_height
-        
+
         ! This is a placeholder - actual implementation is in text_rendering module
         ! to avoid circular dependencies
         total_height = int(base_font_size)
-        
+
         ! Suppress unused parameter warnings
         associate(unused_elements => elements, unused_size => base_font_size)
         end associate
-        
+
     end function calculate_mathtext_height
 
     subroutine render_mathtext_elements(image_data, width, height, x, y, elements, &
@@ -254,10 +330,10 @@ contains
         type(mathtext_element_t), intent(in) :: elements(:)
         integer(1), intent(in) :: r, g, b
         real(wp), intent(in) :: base_font_size
-        
+
         ! This is a placeholder - actual implementation is in text_rendering module
         ! to avoid circular dependencies
-        
+
         ! Suppress unused parameter warnings - avoid referencing assumed-size arrays
         if (.false.) then
             image_data(1) = image_data(1)  ! Reference array without bounds
@@ -268,7 +344,7 @@ contains
                      unused_r => r, unused_g => g, unused_b => b, unused_size => base_font_size)
             end associate
         end if
-        
+
     end subroutine render_mathtext_elements
 
 end module fortplot_mathtext

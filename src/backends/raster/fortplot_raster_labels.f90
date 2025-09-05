@@ -100,7 +100,7 @@ contains
         allocate(rotated_bitmap(rotated_width, rotated_height, 3))
         call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, text_width, text_height)
 
-        ! Compute the rightmost edge of y-tick labels 
+        ! Compute the rightmost edge of y-tick labels
         y_tick_label_edge = y_tick_label_right_edge_at_axis(plot_area, last_y_tick_max_width)
 
         ! Compute ylabel position with dynamic gap
@@ -120,7 +120,7 @@ contains
         !! Compute the rightmost edge of y-tick labels relative to the y-axis
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: max_width_measured
-        
+
         ! Y-tick labels are right-aligned with gap Y_TICK_LABEL_RIGHT_PAD from axis
         ! Their rightmost edge is at: axis_left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
         y_tick_label_right_edge_at_axis = plot_area%left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
@@ -131,12 +131,12 @@ contains
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
         type(plot_area_t), intent(in) :: plot_area
-        
+
         ! The ylabel should be positioned to the left of the y-tick label edge
         ! with an additional gap for clarity
         ! y_tick_label_edge already accounts for the tick label width
         compute_ylabel_x_pos = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
-        
+
         ! Ensure ylabel doesn't go off the left edge
         if (compute_ylabel_x_pos < 5) then
             compute_ylabel_x_pos = 5
@@ -181,14 +181,7 @@ contains
 
         ! Calculate text width using the larger title font size
         title_width = calculate_text_width_with_size(trim(escaped_text), real(TITLE_FONT_SIZE, wp))
-        
-        ! If width calculation fails or returns unrealistic value, use approximation
-        if (title_width <= 0 .or. title_width > len_trim(escaped_text) * 30) then
-            ! Use approximation based on character count for title font size
-            ! For 20pt font (~15pt), average character width is larger
-            title_width = len_trim(escaped_text) * 12  ! Larger chars for title font
-        end if
-        
+
         ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
         title_py = real(max(5, plot_area%bottom - TITLE_VERTICAL_OFFSET), wp)
