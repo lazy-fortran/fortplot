@@ -560,7 +560,7 @@ contains
         
         type(mathtext_element_t), allocatable :: elements(:)
         real(wp) :: fs, current_x, baseline_y
-        integer :: i, processed_len, text_len
+        integer :: i, processed_len
         character(len=1024) :: preprocessed_text  ! Fixed size buffer for safety
         
         ! ALWAYS process LaTeX commands first (matches render_mixed_text logic)
@@ -592,9 +592,9 @@ contains
         ! Start text block for mathtext rendering
         this%stream_data = this%stream_data // "BT" // new_line('a')
         
-        ! Render each element 
+        ! Render each element
         do i = 1, size(elements)
-            call render_mathtext_element_pdf_inline(this, elements(i), current_x, baseline_y, fs)
+            call render_mathtext_element_pdf(this, elements(i), current_x, baseline_y, fs)
         end do
         
         ! End text block
@@ -675,65 +675,5 @@ contains
         
     end subroutine render_mathtext_element_pdf
     
-    subroutine render_mathtext_element_pdf_inline(this, element, x_pos, baseline_y, base_font_size)
-        !! Render a single mathematical text element inline (without BT/ET)
-        class(pdf_context_core), intent(inout) :: this
-        type(mathtext_element_t), intent(in) :: element
-        real(wp), intent(inout) :: x_pos
-        real(wp), intent(in) :: baseline_y, base_font_size
-        
-        real(wp) :: elem_font_size, elem_y
-        real(wp) :: char_width
-        integer :: i, char_len
-        character(len=256) :: pos_cmd
-        character(len=64) :: font_cmd
-        character(len=8) :: escaped_char
-        integer :: esc_len
-        
-        ! Calculate font size and position for this element
-        elem_font_size = base_font_size * element%font_size_ratio
-        elem_y = baseline_y + element%vertical_offset * base_font_size
-        
-        ! Set font size for this element
-        write(font_cmd, '("/F5 ", F0.1, " Tf")') elem_font_size
-        this%stream_data = this%stream_data // trim(adjustl(font_cmd)) // new_line('a')
-        
-        ! Set text position
-        write(pos_cmd, '("1 0 0 1 ", F0.3, " ", F0.3, " Tm")') x_pos, elem_y
-        this%stream_data = this%stream_data // trim(adjustl(pos_cmd)) // new_line('a')
-        
-        ! Render text character by character
-        i = 1
-        do while (i <= len_trim(element%text))
-            escaped_char = ''
-            esc_len = 0
-            
-            ! Check for special characters and escape them
-            char_len = utf8_char_length(element%text(i:i))
-            if (char_len <= 0) char_len = 1
-            if (i + char_len - 1 > len_trim(element%text)) then
-                char_len = len_trim(element%text) - i + 1
-            end if
-
-            ! Simple escape - just output the character
-            if (char_len == 1) then
-                call escape_pdf_string(element%text(i:i), escaped_char, esc_len)
-                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
-            else
-                ! UTF-8 character - handle specially
-                call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
-                this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
-            end if
-
-            ! Move to next character
-            i = i + char_len
-        end do
-        
-        ! Update x position for next element
-        ! Estimate width based on font size and character count
-        char_width = elem_font_size * 0.6_wp * real(len_trim(element%text), wp)
-        x_pos = x_pos + char_width
-    end subroutine render_mathtext_element_pdf_inline
-
 
 end module fortplot_pdf_text
