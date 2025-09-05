@@ -17,7 +17,43 @@ module fortplot_png
         procedure :: get_png_data_backend => png_get_png_data
     end type png_context
 
+    ! C interface for rename function
+    interface
+        function c_rename(oldname, newname) bind(C, name="rename") result(status)
+            import :: c_char, c_int
+            character(kind=c_char), dimension(*), intent(in) :: oldname
+            character(kind=c_char), dimension(*), intent(in) :: newname
+            integer(c_int) :: status
+        end function c_rename
+    end interface
+
 contains
+
+    subroutine rename(oldname, newname)
+        character(len=*), intent(in) :: oldname
+        character(len=*), intent(in) :: newname
+        character(kind=c_char), dimension(:), allocatable :: c_oldname, c_newname
+        integer :: i, status
+        
+        ! Convert Fortran strings to C strings (null-terminated)
+        allocate(c_oldname(len_trim(oldname) + 1))
+        allocate(c_newname(len_trim(newname) + 1))
+        
+        do i = 1, len_trim(oldname)
+            c_oldname(i) = oldname(i:i)
+        end do
+        c_oldname(len_trim(oldname) + 1) = c_null_char
+        
+        do i = 1, len_trim(newname)
+            c_newname(i) = newname(i:i)
+        end do
+        c_newname(len_trim(newname) + 1) = c_null_char
+        
+        status = c_rename(c_oldname, c_newname)
+        
+        deallocate(c_oldname)
+        deallocate(c_newname)
+    end subroutine rename
 
     function create_png_canvas(width, height) result(ctx)
         integer, intent(in) :: width, height
