@@ -11,7 +11,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                 draw_pdf_mathtext
-    use fortplot_latex_parser, only: process_latex_in_text, convert_unicode_to_latex
+    use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
