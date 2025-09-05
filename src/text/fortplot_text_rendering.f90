@@ -613,7 +613,8 @@ contains
             element_font_size = base_font_size * elements(i)%font_size_ratio
             
             ! Calculate vertical position based on element type and offset
-            pen_y = y + int(elements(i)%vertical_offset * base_font_size)
+            ! PNG uses inverted Y axis (y=0 at top), so negate vertical offset
+            pen_y = y - int(elements(i)%vertical_offset * base_font_size)
             
             ! Render the element using internal function
             call render_text_with_size_internal(image_data, width, height, pen_x, pen_y, &
