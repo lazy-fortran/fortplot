@@ -107,17 +107,23 @@ contains
                                                element_count, ELEMENT_SUBSCRIPT)
 
             else if (input_text(i:i) == '\') then
-                if (i+4 <= n .and. input_text(i+1:i+4) == 'sqrt') then
-                    if (current_len > 0) then
-                        element_count = element_count + 1
-                        call create_element(temp_elements(element_count), &
-                                          current_text(1:current_len), &
-                                          ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                if (i+4 <= n) then
+                    if (input_text(i+1:min(i+4,n)) == 'sqrt') then
+                        if (current_len > 0) then
+                            element_count = element_count + 1
+                            call create_element(temp_elements(element_count), &
+                                              current_text(1:current_len), &
+                                              ELEMENT_NORMAL, 1.0_wp, 0.0_wp)
+                        end if
+                        current_text = ''
+                        current_len = 0
+                        i = i + 5
+                        call parse_sqrt_content(input_text, i, n, temp_elements, element_count)
+                    else
+                        current_len = current_len + 1
+                        current_text(current_len:current_len) = input_text(i:i)
+                        i = i + 1
                     end if
-                    current_text = ''
-                    current_len = 0
-                    i = i + 5
-                    call parse_sqrt_content(input_text, i, n, temp_elements, element_count)
                 else
                     current_len = current_len + 1
                     current_text(current_len:current_len) = input_text(i:i)

@@ -217,7 +217,7 @@ contains
         !! Render text to image using STB TrueType with UTF-8 support
         !! Supports mathematical notation with superscripts and subscripts
         use fortplot_mathtext, only: mathtext_element_t
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
@@ -285,7 +285,7 @@ contains
         !! Supports mathematical notation with superscripts and subscripts
         use fortplot_text_fonts, only: get_font_scale_for_size
         use fortplot_mathtext, only: mathtext_element_t
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
@@ -349,7 +349,7 @@ contains
     subroutine render_stb_glyph(image_data, width, height, pen_x, pen_y, bitmap_ptr, &
                                bmp_width, bmp_height, xoff, yoff, r, g, b)
         !! Render STB TrueType glyph bitmap to image
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, pen_x, pen_y
         type(c_ptr), intent(in) :: bitmap_ptr
         integer, intent(in) :: bmp_width, bmp_height, xoff, yoff
@@ -405,7 +405,7 @@ contains
     end subroutine render_stb_glyph
 
     subroutine render_simple_placeholder(image_data, width, height, x, y, r, g, b)
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         integer(1), intent(in) :: r, g, b
         integer :: pixel_idx, img_x, img_y, max_idx
@@ -428,7 +428,7 @@ contains
 
     subroutine render_rotated_text_to_image(image_data, width, height, x, y, text, r, g, b, angle)
         !! Render rotated text to PNG image using STB TrueType with UTF-8 support
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
@@ -625,7 +625,7 @@ contains
         !! Render mathematical text elements to image
         use fortplot_mathtext, only: mathtext_element_t
         use fortplot_text_fonts, only: get_font_metrics
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         type(mathtext_element_t), intent(in) :: elements(:)
         integer(1), intent(in) :: r, g, b
@@ -653,11 +653,11 @@ contains
                 sym_w = int(0.6_wp * element_font_size)
                 top_y = pen_y - rad_height
                 call draw_line_distance_aa(image_data, width, height, real(pen_x, wp), real(pen_y, wp), &
-                    real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), r, g, b, 1.0_wp)
+                    real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.25_wp)
                 call draw_line_distance_aa(image_data, width, height, real(pen_x + sym_w/2, wp), real(pen_y + sym_w/2, wp), &
-                    real(pen_x + sym_w, wp), real(top_y, wp), r, g, b, 1.0_wp)
+                    real(pen_x + sym_w, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.25_wp)
                 call draw_line_distance_aa(image_data, width, height, real(pen_x + sym_w, wp), real(top_y, wp), &
-                    real(pen_x + sym_w + rad_width, wp), real(top_y, wp), r, g, b, 1.0_wp)
+                    real(pen_x + sym_w + rad_width, wp), real(top_y, wp), real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, 0.25_wp)
                 call render_text_with_size_internal(image_data, width, height, pen_x + sym_w, pen_y, &
                     elements(i)%text, r, g, b, element_font_size)
                 pen_x = pen_x + sym_w + rad_width
@@ -680,7 +680,7 @@ contains
     subroutine render_text_with_size_internal(image_data, width, height, x, y, text, r, g, b, pixel_height)
         !! Internal text rendering to avoid circular dependencies
         use fortplot_text_fonts, only: get_font_scale_for_size
-        integer(1), intent(inout) :: image_data(*)
+        integer(1), intent(inout) :: image_data(:)
         integer, intent(in) :: width, height, x, y
         character(len=*), intent(in) :: text
         integer(1), intent(in) :: r, g, b
