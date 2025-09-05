@@ -710,8 +710,11 @@ contains
             
             ! Check for special characters and escape them
             char_len = utf8_char_length(element%text(i:i))
-            if (char_len == 0) char_len = 1
-            
+            if (char_len <= 0) char_len = 1
+            if (i + char_len - 1 > len_trim(element%text)) then
+                char_len = len_trim(element%text) - i + 1
+            end if
+
             ! Simple escape - just output the character
             if (char_len == 1) then
                 call escape_pdf_string(element%text(i:i), escaped_char, esc_len)
@@ -721,7 +724,7 @@ contains
                 call escape_pdf_string(element%text(i:i+char_len-1), escaped_char, esc_len)
                 this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
             end if
-            
+
             ! Move to next character
             i = i + char_len
         end do
