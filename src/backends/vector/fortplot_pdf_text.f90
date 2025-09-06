@@ -402,7 +402,7 @@ contains
         ! Handle special mathematical symbols
         select case(codepoint)
         case(215)  ! × (multiplication/cross product)
-            escape_seq = "\327"  ! Octal for 0xD7 in WinAnsi encoding
+            escape_seq = "x"  ! Use simple x for now
             found = .true.
         end select
 
@@ -690,12 +690,9 @@ contains
                 ! Check for Unicode superscripts and convert to mathtext
                 select case(codepoint)
                 case(178, 179, 185)  ! ², ³, ¹
-                    ! Convert to ^{digit} with braces around just the digit
-                    ! This ensures only the digit is superscripted
+                    ! Simple conversion without braces
                     j = j + 1
                     if (j <= len(output)) output(j:j) = '^'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '{'
                     
                     ! Add the digit
                     select case(codepoint)
@@ -709,9 +706,6 @@ contains
                         j = j + 1
                         if (j <= len(output)) output(j:j) = '1'
                     end select
-                    
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '}'
                     
                 case default
                     ! Copy the multi-byte character as-is
