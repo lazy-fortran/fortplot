@@ -384,7 +384,7 @@ contains
             ! Note: labels not used in ASCII path, but must be declared due to Fortran scoping
         else
             ! Standard backends with margin support
-            allocate(character(len=20) :: labels(legend%num_entries))
+            allocate(character(len=50) :: labels(legend%num_entries))
             do i = 1, legend%num_entries
                 labels(i) = legend%entries(i)%label
             end do
