@@ -398,6 +398,13 @@ contains
         ! Don't handle superscript Unicode characters specially
         ! Let them pass through so mathtext can render them properly
         ! This ensures consistent superscript rendering for all digits
+        
+        ! Handle special mathematical symbols
+        select case(codepoint)
+        case(215)  ! × (multiplication/cross product)
+            escape_seq = "\327"  ! Octal for 0xD7 in WinAnsi encoding
+            found = .true.
+        end select
 
         ! Try lowercase Greek
         if (.not. found) then
@@ -683,10 +690,12 @@ contains
                 ! Check for Unicode superscripts and convert to mathtext
                 select case(codepoint)
                 case(178, 179, 185)  ! ², ³, ¹
-                    ! Simple conversion: just replace with ^2, ^3, ^1
-                    ! Don't try to group bases - let the user write it correctly
+                    ! Convert to ^{digit} with braces around just the digit
+                    ! This ensures only the digit is superscripted
                     j = j + 1
                     if (j <= len(output)) output(j:j) = '^'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '{'
                     
                     ! Add the digit
                     select case(codepoint)
@@ -701,20 +710,8 @@ contains
                         if (j <= len(output)) output(j:j) = '1'
                     end select
                     
-                case(215)  ! × (multiplication/cross product)
-                    ! Convert to \times for LaTeX processing
                     j = j + 1
-                    if (j <= len(output)) output(j:j) = '\'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = 't'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = 'i'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = 'm'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = 'e'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = 's'
+                    if (j <= len(output)) output(j:j) = '}'
                     
                 case default
                     ! Copy the multi-byte character as-is
