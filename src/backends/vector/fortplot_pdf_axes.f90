@@ -10,7 +10,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                draw_pdf_mathtext, convert_unicode_superscripts_to_mathtext
+                                draw_pdf_mathtext
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -508,18 +508,16 @@ contains
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
         !! Helper: process LaTeX and render mixed-font text (with mathtext support)
+        !! Uses same logic as PNG: process LaTeX ONLY, no Unicode conversion
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in), optional :: font_size
-        character(len=512) :: processed, converted
-        integer :: plen, clen
+        character(len=512) :: processed
+        integer :: plen
 
-        ! First convert Unicode superscripts to mathtext notation
-        call convert_unicode_superscripts_to_mathtext(text, converted, clen)
-        
-        ! Then process LaTeX commands to convert to Unicode
-        call process_latex_in_text(converted(1:clen), processed, plen)
+        ! Process LaTeX commands ONLY (same as PNG does)
+        call process_latex_in_text(text, processed, plen)
         
         ! Now check if the processed text contains mathematical notation
         if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then
@@ -541,17 +539,15 @@ contains
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
         !! Helper: process LaTeX and render rotated mixed-font ylabel
+        !! Uses same logic as PNG: process LaTeX ONLY, no Unicode conversion
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=512) :: processed, converted
-        integer :: plen, clen
+        character(len=512) :: processed
+        integer :: plen
 
-        ! First convert Unicode superscripts to mathtext notation
-        call convert_unicode_superscripts_to_mathtext(text, converted, clen)
-        
-        ! Then process LaTeX commands
-        call process_latex_in_text(converted(1:clen), processed, plen)
+        ! Process LaTeX commands ONLY (same as PNG does)
+        call process_latex_in_text(text, processed, plen)
         call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
     end subroutine render_rotated_mixed_text
 
