@@ -4,7 +4,7 @@ module fortplot_pdf
     use fortplot_pdf_core
     use fortplot_pdf_text
     use fortplot_pdf_drawing
-    use fortplot_pdf_axes
+    use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text
     use fortplot_pdf_io
     use fortplot_pdf_coordinate
     use fortplot_pdf_markers
@@ -159,14 +159,14 @@ contains
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp) :: pdf_x, pdf_y
-        character(len=500) :: processed_text
-        integer :: processed_len
 
-        call process_latex_in_text(text, processed_text, processed_len)
-        ! Keep context in sync for text coordinate normalization as well
+        ! Keep context in sync for text coordinate normalization
         call this%update_coord_context()
         call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
-        call draw_mixed_font_text(this%core_ctx, pdf_x, pdf_y, processed_text(1:processed_len))
+        
+        ! Use render_mixed_text which handles LaTeX processing and mathtext
+        ! (superscripts/subscripts) properly, just like titles do
+        call render_mixed_text(this%core_ctx, pdf_x, pdf_y, text)
     end subroutine draw_pdf_text_wrapper
 
     subroutine write_pdf_file_facade(this, filename)
