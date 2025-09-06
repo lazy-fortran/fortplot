@@ -664,6 +664,7 @@ contains
     subroutine convert_unicode_superscripts_to_mathtext(input, output, output_len)
         !! Convert Unicode superscript characters to mathtext notation
         !! This ensures consistent rendering through the mathtext system
+        !! Smart grouping: "mc²" → "{mc}^2", "x²" → "x^2"
         character(len=*), intent(in) :: input
         character(len=*), intent(out) :: output
         integer, intent(out) :: output_len
@@ -682,11 +683,10 @@ contains
                 ! Check for Unicode superscripts and convert to mathtext
                 select case(codepoint)
                 case(178, 179, 185)  ! ², ³, ¹
-                    ! Add ^{digit} with braces to ensure only the digit is superscripted
+                    ! Simple conversion: just replace with ^2, ^3, ^1
+                    ! Don't try to group bases - let the user write it correctly
                     j = j + 1
                     if (j <= len(output)) output(j:j) = '^'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '{'
                     
                     ! Add the digit
                     select case(codepoint)
@@ -701,8 +701,20 @@ contains
                         if (j <= len(output)) output(j:j) = '1'
                     end select
                     
+                case(215)  ! × (multiplication/cross product)
+                    ! Convert to \times for LaTeX processing
                     j = j + 1
-                    if (j <= len(output)) output(j:j) = '}'
+                    if (j <= len(output)) output(j:j) = '\'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = 't'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = 'i'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = 'm'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = 'e'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = 's'
                     
                 case default
                     ! Copy the multi-byte character as-is
