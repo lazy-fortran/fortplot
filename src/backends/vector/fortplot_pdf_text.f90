@@ -681,21 +681,29 @@ contains
                 
                 ! Check for Unicode superscripts and convert to mathtext
                 select case(codepoint)
-                case(178)  ! ² -> ^2
+                case(178, 179, 185)  ! ², ³, ¹
+                    ! Add ^{digit} with braces to ensure only the digit is superscripted
                     j = j + 1
                     if (j <= len(output)) output(j:j) = '^'
                     j = j + 1
-                    if (j <= len(output)) output(j:j) = '2'
-                case(179)  ! ³ -> ^3
+                    if (j <= len(output)) output(j:j) = '{'
+                    
+                    ! Add the digit
+                    select case(codepoint)
+                    case(178)  ! ²
+                        j = j + 1
+                        if (j <= len(output)) output(j:j) = '2'
+                    case(179)  ! ³
+                        j = j + 1
+                        if (j <= len(output)) output(j:j) = '3'
+                    case(185)  ! ¹
+                        j = j + 1
+                        if (j <= len(output)) output(j:j) = '1'
+                    end select
+                    
                     j = j + 1
-                    if (j <= len(output)) output(j:j) = '^'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '3'
-                case(185)  ! ¹ -> ^1
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '^'
-                    j = j + 1
-                    if (j <= len(output)) output(j:j) = '1'
+                    if (j <= len(output)) output(j:j) = '}'
+                    
                 case default
                     ! Copy the multi-byte character as-is
                     if (j + char_len <= len(output)) then
