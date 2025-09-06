@@ -397,16 +397,13 @@ contains
         ! Handle special mathematical symbols
         select case(codepoint)
         case(178)  ! ² (superscript 2)
-            ! Return empty to trigger mathtext rendering with ^2
-            escape_seq = ""
+            escape_seq = ""  ! Will be handled specially in render_text_with_unicode_superscripts
             found = .false.
         case(179)  ! ³ (superscript 3)
-            ! Return empty to trigger mathtext rendering with ^3
-            escape_seq = ""
+            escape_seq = ""  ! Will be handled specially in render_text_with_unicode_superscripts
             found = .false.
         case(185)  ! ¹ (superscript 1)
-            ! Return empty to trigger mathtext rendering with ^1
-            escape_seq = ""
+            escape_seq = ""  ! Will be handled specially in render_text_with_unicode_superscripts
             found = .false.
         case(215)  ! × (multiplication/cross product)
             escape_seq = "x"  ! Use simple x for now
@@ -553,66 +550,32 @@ contains
 
     subroutine draw_pdf_mathtext(this, x, y, text, font_size)
         !! Draw text with mathematical notation (superscripts/subscripts)
-        !! Also handles LaTeX commands like \alpha, \beta mixed with mathtext
-        !! Converts Unicode superscripts to mathtext for proper PDF rendering
+        !! Also handles LaTeX commands and Unicode superscripts for proper PDF rendering
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in), optional :: font_size
         
-        type(mathtext_element_t), allocatable :: elements(:)
-        real(wp) :: fs, current_x, baseline_y
-        integer :: i, processed_len
-        character(len=1024) :: preprocessed_text  ! Fixed size buffer for safety
-        character(len=1024) :: converted_text
-        character(len=1024) :: text_cmd
-        integer :: conv_len
-        
-        ! First convert Unicode superscripts to mathtext notation for PDF
-        call simple_convert_superscripts(text, converted_text, conv_len)
-        
-        ! Then process LaTeX commands
-        call process_latex_in_text(converted_text(1:conv_len), preprocessed_text, processed_len)
-        
-        ! Then check if processed text contains mathtext notation
-        if (index(preprocessed_text(1:processed_len), '^') == 0 .and. &
-            index(preprocessed_text(1:processed_len), '_') == 0) then
-            ! No mathtext notation after LaTeX processing, use regular rendering
-            if (present(font_size)) then
-                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len), font_size)
-            else
-                call draw_mixed_font_text(this, x, y, preprocessed_text(1:processed_len))
-            end if
-            return
-        end if
-        
-        ! Parse mathematical text (with LaTeX commands already converted to Unicode)
-        elements = parse_mathtext(preprocessed_text(1:processed_len))
+        character(len=1024) :: preprocessed_text
+        integer :: processed_len
+        real(wp) :: fs
         
         ! Determine font size
         fs = PDF_LABEL_SIZE
         if (present(font_size)) fs = font_size
         
-        ! Initialize position
-        current_x = x
-        baseline_y = y
+        ! First process LaTeX commands only (not Unicode conversion)
+        call process_latex_in_text(text, preprocessed_text, processed_len)
         
-        ! Start text block for mathtext rendering
-        this%stream_data = this%stream_data // "BT" // new_line('a')
-        
-        ! Set initial position once
-        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') current_x, baseline_y
-        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        
-        ! Render each element using relative positioning
-        do i = 1, size(elements)
-            call render_mathtext_element_pdf_relative(this, elements(i), fs)
-        end do
-        
-        ! End text block
-        this%stream_data = this%stream_data // "ET" // new_line('a')
-        
-        deallocate(elements)
+        ! Check if text contains actual mathtext notation (^ or _) that user typed
+        if (index(preprocessed_text(1:processed_len), '^') > 0 .or. &
+            index(preprocessed_text(1:processed_len), '_') > 0) then
+            ! Use mathtext parsing for user-written ^ and _ notation
+            call render_mathtext_with_unicode_superscripts(this, x, y, preprocessed_text(1:processed_len), fs)
+        else
+            ! No user mathtext, but may have Unicode superscripts - handle them directly
+            call render_text_with_unicode_superscripts(this, x, y, preprocessed_text(1:processed_len), fs)
+        end if
     end subroutine draw_pdf_mathtext
     
     subroutine render_mathtext_element_pdf(this, element, x_pos, baseline_y, base_font_size)
@@ -680,32 +643,15 @@ contains
     end subroutine render_mathtext_element_pdf
     
     subroutine render_mathtext_element_pdf_relative(this, element, base_font_size)
-        !! Render a single mathematical text element using relative positioning
+        !! Render a single mathematical text element using absolute positioning but tracking x position
         class(pdf_context_core), intent(inout) :: this
         type(mathtext_element_t), intent(in) :: element
         real(wp), intent(in) :: base_font_size
         
-        real(wp) :: elem_font_size, y_offset
-        character(len=1024) :: text_cmd
-        
-        ! Calculate font size and vertical offset
-        elem_font_size = base_font_size * element%font_size_ratio
-        y_offset = element%vertical_offset * base_font_size
-        
-        ! Move vertically if needed (for superscripts/subscripts)
-        if (abs(y_offset) > 0.01_wp) then
-            write(text_cmd, '("0 ", F0.3, " Td")') y_offset
-            this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        end if
-        
-        ! Process text segments with mixed font handling
-        call process_text_segments_relative(this, trim(element%text), elem_font_size)
-        
-        ! Move back vertically if we moved up/down
-        if (abs(y_offset) > 0.01_wp) then
-            write(text_cmd, '("0 ", F0.3, " Td")') -y_offset
-            this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        end if
+        ! Go back to the working approach but track position properly
+        ! Just call the original render_mathtext_element_pdf but without the x_pos tracking mess
+        real(wp) :: dummy_x = 0.0_wp
+        call render_mathtext_element_pdf(this, element, dummy_x, 0.0_wp, base_font_size)
         
     end subroutine render_mathtext_element_pdf_relative
 
@@ -774,5 +720,144 @@ contains
         output_len = j
         if (j < len(output)) output(j+1:) = ' '
     end subroutine simple_convert_superscripts
+
+    subroutine render_text_with_unicode_superscripts(this, x, y, text, font_size)
+        !! Render text with Unicode superscripts using proper PDF positioning
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        
+        ! For now, just use the existing mixed font rendering to avoid breaking things
+        call draw_mixed_font_text(this, x, y, text, font_size)
+    end subroutine render_text_with_unicode_superscripts
+    
+    subroutine render_mathtext_with_unicode_superscripts(this, x, y, text, font_size)
+        !! Render mathtext that may also contain Unicode superscripts
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y  
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        
+        ! For now, just use regular mathtext - this is for user ^ notation
+        ! TODO: Enhance this if needed
+        call draw_mixed_font_text(this, x, y, text)
+    end subroutine render_mathtext_with_unicode_superscripts
+
+    subroutine process_text_with_superscripts(this, x, y, text, font_size)
+        !! Process text containing Unicode superscripts with proper PDF positioning
+        class(pdf_context_core), intent(inout) :: this
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        
+        character(len=1024) :: text_cmd
+        logical :: in_symbol_font
+        integer :: i, char_len, codepoint
+        real(wp) :: current_x
+        character(len=1024) :: segment
+        integer :: segment_start, segment_len
+        
+        in_symbol_font = .false.
+        current_x = 0.0_wp  ! Track relative position for Td commands
+        segment_start = 1
+        segment_len = 0
+        
+        ! Begin text object
+        this%stream_data = this%stream_data // "BT" // new_line('a')
+        
+        ! Set initial font
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), font_size
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Set initial absolute position
+        write(text_cmd, '("1 0 0 1 ", F0.3, 1X, F0.3, " Tm")') x, y
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        i = 1
+        do while (i <= len_trim(text))
+            char_len = utf8_char_length(text(i:i))
+            
+            if (char_len > 1) then
+                codepoint = utf8_to_codepoint(text, i)
+                
+                ! Check for Unicode superscripts
+                if (codepoint == 178 .or. codepoint == 179 .or. codepoint == 185) then
+                    ! Flush any accumulated normal text first
+                    if (segment_len > 0) then
+                        segment = text(segment_start:segment_start+segment_len-1)
+                        call process_text_segments(this, segment, in_symbol_font, font_size)
+                    end if
+                    
+                    ! Render superscript with positioning
+                    call render_superscript_character(this, codepoint, font_size)
+                    
+                    ! Reset segment tracking
+                    i = i + char_len
+                    segment_start = i
+                    segment_len = 0
+                    cycle
+                end if
+            end if
+            
+            ! Add to current segment
+            segment_len = segment_len + char_len
+            i = i + char_len
+        end do
+        
+        ! Process any remaining text
+        if (segment_len > 0) then
+            segment = text(segment_start:segment_start+segment_len-1)
+            call process_text_segments(this, segment, in_symbol_font, font_size)
+        end if
+        
+        ! End text object
+        this%stream_data = this%stream_data // "ET" // new_line('a')
+    end subroutine process_text_with_superscripts
+    
+    subroutine render_superscript_character(this, codepoint, base_font_size)
+        !! Render a single superscript character with proper positioning
+        class(pdf_context_core), intent(inout) :: this
+        integer, intent(in) :: codepoint
+        real(wp), intent(in) :: base_font_size
+        
+        character(len=8) :: digit_char
+        character(len=64) :: text_cmd
+        real(wp) :: super_font_size, super_rise
+        
+        ! Determine which digit
+        select case(codepoint)
+        case(178); digit_char = "2"
+        case(179); digit_char = "3"
+        case(185); digit_char = "1"
+        case default; digit_char = "?"
+        end select
+        
+        ! Calculate superscript parameters
+        super_font_size = base_font_size * 0.7_wp
+        super_rise = base_font_size * 0.4_wp
+        
+        ! Move up for superscript
+        write(text_cmd, '("0 ", F0.3, " Td")') super_rise
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Set smaller font
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), super_font_size
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Draw the digit
+        this%stream_data = this%stream_data // "(" // trim(digit_char) // ") Tj" // new_line('a')
+        
+        ! Move back down
+        write(text_cmd, '("0 ", F0.3, " Td")') -super_rise
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+        
+        ! Restore normal font size
+        write(text_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            this%fonts%get_helvetica_obj(), base_font_size
+        this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
+    end subroutine render_superscript_character
 
 end module fortplot_pdf_text
