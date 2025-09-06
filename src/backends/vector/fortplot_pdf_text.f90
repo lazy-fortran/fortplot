@@ -21,6 +21,7 @@ module fortplot_pdf_text
     public :: unicode_to_symbol_char
     public :: unicode_codepoint_to_pdf_escape
     public :: draw_pdf_mathtext
+    public :: convert_unicode_superscripts_to_mathtext
     
     ! Removed unused Symbol font mapping constants to avoid duplication
 
@@ -397,22 +398,6 @@ contains
         ! Don't handle superscript Unicode characters specially
         ! Let them pass through so mathtext can render them properly
         ! This ensures consistent superscript rendering for all digits
-        if (.not. found) then
-            select case(codepoint)
-            ! Commented out to ensure consistent mathtext rendering
-            ! case(179)  ! U+00B3 SUPERSCRIPT THREE
-            !     escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
-            !     found = .true.
-            ! case(178)  ! U+00B2 SUPERSCRIPT TWO
-            !     escape_seq = "\\262"
-            !     found = .true.
-            ! case(185)  ! U+00B9 SUPERSCRIPT ONE
-            !     escape_seq = "\\271"
-            !     found = .true.
-            case default
-                found = .false.
-            end select
-        end if
 
         ! Try lowercase Greek
         if (.not. found) then
@@ -563,11 +548,15 @@ contains
         
         type(mathtext_element_t), allocatable :: elements(:)
         real(wp) :: fs, current_x, baseline_y
-        integer :: i, processed_len
+        integer :: i, processed_len, converted_len
         character(len=1024) :: preprocessed_text  ! Fixed size buffer for safety
+        character(len=1024) :: converted_text
+        
+        ! First convert Unicode superscripts to mathtext notation
+        call convert_unicode_superscripts_to_mathtext(text, converted_text, converted_len)
         
         ! ALWAYS process LaTeX commands first (matches render_mixed_text logic)
-        call process_latex_in_text(text, preprocessed_text, processed_len)
+        call process_latex_in_text(converted_text(1:converted_len), preprocessed_text, processed_len)
         
         ! Then check if processed text contains mathtext notation
         if (index(preprocessed_text(1:processed_len), '^') == 0 .and. &
@@ -657,8 +646,6 @@ contains
             else if (codepoint == 32) then
                 ! Space
                 char_width = char_width + elem_font_size * 0.3_wp
-            ! Removed special handling for superscript Unicode characters (178, 179, 185)
-            ! These should be handled by mathtext rendering instead
             else if (codepoint >= 8304 .and. codepoint <= 8313) then
                 ! Unicode superscript digits
                 char_width = char_width + elem_font_size * 0.4_wp
@@ -674,5 +661,59 @@ contains
         
     end subroutine render_mathtext_element_pdf
     
+    subroutine convert_unicode_superscripts_to_mathtext(input, output, output_len)
+        !! Convert Unicode superscript characters to mathtext notation
+        !! This ensures consistent rendering through the mathtext system
+        character(len=*), intent(in) :: input
+        character(len=*), intent(out) :: output
+        integer, intent(out) :: output_len
+        
+        integer :: i, j, codepoint, char_len
+        
+        j = 0
+        i = 1
+        do while (i <= len_trim(input))
+            char_len = utf8_char_length(input(i:i))
+            
+            if (char_len > 1) then
+                ! Multi-byte UTF-8 character
+                codepoint = utf8_to_codepoint(input, i)
+                
+                ! Check for Unicode superscripts and convert to mathtext
+                select case(codepoint)
+                case(178)  ! ² -> ^2
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '^'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '2'
+                case(179)  ! ³ -> ^3
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '^'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '3'
+                case(185)  ! ¹ -> ^1
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '^'
+                    j = j + 1
+                    if (j <= len(output)) output(j:j) = '1'
+                case default
+                    ! Copy the multi-byte character as-is
+                    if (j + char_len <= len(output)) then
+                        output(j+1:j+char_len) = input(i:i+char_len-1)
+                        j = j + char_len
+                    end if
+                end select
+                i = i + char_len
+            else
+                ! Single-byte character, copy as-is
+                j = j + 1
+                if (j <= len(output)) output(j:j) = input(i:i)
+                i = i + 1
+            end if
+        end do
+        
+        output_len = j
+        if (j < len(output)) output(j+1:) = ' '
+    end subroutine convert_unicode_superscripts_to_mathtext
 
 end module fortplot_pdf_text

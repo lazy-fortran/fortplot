@@ -244,6 +244,7 @@ verify-artifacts: create_build_dirs
 	check_pdf_ok output/example/fortran/scale_examples/symlog_scale.pdf; \
 	if pdftotext output/example/fortran/scale_examples/symlog_scale.pdf - | grep -q "x³"; then echo "[ok] symlog ylabel shows superscript three (unicode)"; \
 	elif pdftotext output/example/fortran/scale_examples/symlog_scale.pdf - | grep -F -q "x\\263"; then echo "[ok] symlog ylabel shows superscript three (WinAnsi)"; \
+	elif pdftotext output/example/fortran/scale_examples/symlog_scale.pdf - | grep -q "x\^3"; then echo "[ok] symlog ylabel shows superscript three (mathtext)"; \
 	else echo "ERROR: symlog ylabel missing superscript 3" >&2; exit 1; fi; \
 	check_pdftotext_has output/example/fortran/scale_examples/symlog_scale.pdf "Symlog" "x"; \
 	# Pcolormesh PDFs must have no syntax errors; \
