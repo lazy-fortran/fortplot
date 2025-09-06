@@ -394,18 +394,21 @@ contains
         escape_seq = ""
         found = .false.
         
-        ! Map selected Latin-1 Supplement superscripts commonly used in labels
+        ! Don't handle superscript Unicode characters specially
+        ! Let them pass through so mathtext can render them properly
+        ! This ensures consistent superscript rendering for all digits
         if (.not. found) then
             select case(codepoint)
-            case(179)  ! U+00B3 SUPERSCRIPT THREE
-                escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
-                found = .true.
-            case(178)  ! U+00B2 SUPERSCRIPT TWO
-                escape_seq = "\\262"
-                found = .true.
-            case(185)  ! U+00B9 SUPERSCRIPT ONE
-                escape_seq = "\\271"
-                found = .true.
+            ! Commented out to ensure consistent mathtext rendering
+            ! case(179)  ! U+00B3 SUPERSCRIPT THREE
+            !     escape_seq = "\\263"  ! octal for 0xB3 in WinAnsi
+            !     found = .true.
+            ! case(178)  ! U+00B2 SUPERSCRIPT TWO
+            !     escape_seq = "\\262"
+            !     found = .true.
+            ! case(185)  ! U+00B9 SUPERSCRIPT ONE
+            !     escape_seq = "\\271"
+            !     found = .true.
             case default
                 found = .false.
             end select
@@ -654,12 +657,8 @@ contains
             else if (codepoint == 32) then
                 ! Space
                 char_width = char_width + elem_font_size * 0.3_wp
-            else if (codepoint >= 178 .and. codepoint <= 179) then
-                ! Superscript 2 and 3
-                char_width = char_width + elem_font_size * 0.4_wp
-            else if (codepoint == 185) then
-                ! Superscript 1
-                char_width = char_width + elem_font_size * 0.3_wp
+            ! Removed special handling for superscript Unicode characters (178, 179, 185)
+            ! These should be handled by mathtext rendering instead
             else if (codepoint >= 8304 .and. codepoint <= 8313) then
                 ! Unicode superscript digits
                 char_width = char_width + elem_font_size * 0.4_wp
