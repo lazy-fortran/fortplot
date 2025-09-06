@@ -111,16 +111,18 @@ contains
         do i = 1, size(labels)
             trimmed_label = trim(labels(i))
             
+            ! Process LaTeX to Unicode first for accurate width calculation
+            call process_latex_in_text(trimmed_label, temp_processed_label, processed_len)
+            processed_label = temp_processed_label(1:processed_len)
+            
             if (text_system_available) then
-                ! Pass original text directly - calculate_text_width handles mathtext internally
-                text_width_pixels = calculate_text_width(trimmed_label) + fudge_pixels
-                text_height_pixels = calculate_text_height(trimmed_label)
+                ! Calculate width of the processed text (after LaTeX conversion)
+                text_width_pixels = calculate_text_width(processed_label) + fudge_pixels
+                text_height_pixels = calculate_text_height(processed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
                 entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
             else
-                ! For fallback, process LaTeX to get accurate character count
-                call process_latex_in_text(trimmed_label, temp_processed_label, processed_len)
-                processed_label = temp_processed_label(1:processed_len)
+                ! For fallback, use processed text length
                 entry_text_width = real(len_trim(processed_label), wp) * data_width * TEXT_WIDTH_RATIO
             end if
             total_text_width = total_text_width + entry_text_width
