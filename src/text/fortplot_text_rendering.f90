@@ -653,8 +653,9 @@ contains
             element_font_size = base_font_size * elements(i)%font_size_ratio
 
             if (elements(i)%element_type == 3) then
-                ! Reset baseline for sqrt element
-                pen_y = y - int(elements(i)%vertical_offset * base_font_size)
+                ! Reset baseline for sqrt element to original y position
+                ! This ensures sqrt aligns properly after superscripts/subscripts
+                pen_y = y
                 
                 ! Calculate radicand width, handling nested mathtext
                 if (has_mathtext(elements(i)%text)) then

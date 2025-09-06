@@ -28,6 +28,7 @@ module fortplot_pdf_axes
     public :: draw_pdf_title_and_labels
     public :: setup_axes_data_ranges
     public :: generate_tick_data
+    public :: render_mixed_text
 
 contains
 
