@@ -710,89 +710,15 @@ contains
     end subroutine render_mathtext_element_pdf_relative
 
     subroutine process_text_segments_relative(this, text, font_size)
-        !! Process text segments for mixed font rendering with relative positioning
+        !! Process text segments using multi-character rendering with proper font handling
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: font_size
-        integer :: i, codepoint, char_len
-        character(len=8) :: symbol_char
-        character(len=8) :: escaped_char
-        integer :: esc_len
-        logical :: is_valid
+        
+        ! Just use the existing process_text_segments logic but without absolute positioning
         logical :: in_symbol_font
-        real(wp) :: char_width
-        character(len=1024) :: text_cmd
-
         in_symbol_font = .false.
-        i = 1
-        do while (i <= len_trim(text))
-            char_len = utf8_char_length(text(i:i))
-            char_width = 0.0_wp
-
-            if (char_len <= 1) then
-                ! ASCII fast-path
-                codepoint = ichar(text(i:i))
-                call unicode_to_symbol_char(codepoint, symbol_char)
-                if (len_trim(symbol_char) > 0) then
-                    if (.not. in_symbol_font) then
-                        call switch_to_symbol_font(this, font_size)
-                        in_symbol_font = .true.
-                    end if
-                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
-                else
-                    if (in_symbol_font) then
-                        call switch_to_helvetica_font(this, font_size)
-                        in_symbol_font = .false.
-                    end if
-                    escaped_char = ''
-                    esc_len = 0
-                    call escape_pdf_string(text(i:i), escaped_char, esc_len)
-                    this%stream_data = this%stream_data // "(" // escaped_char(1:esc_len) // ") Tj" // new_line('a')
-                end if
-                
-                ! Width estimation
-                if (codepoint >= 48 .and. codepoint <= 57) then ! Digits
-                    char_width = font_size * 0.55_wp
-                else if (codepoint >= 65 .and. codepoint <= 90) then ! Uppercase
-                    char_width = font_size * 0.65_wp
-                else if (codepoint >= 97 .and. codepoint <= 122) then ! Lowercase
-                    char_width = font_size * 0.5_wp
-                else if (codepoint == 32) then ! Space
-                    char_width = font_size * 0.3_wp
-                else
-                    char_width = font_size * 0.5_wp
-                end if
-                i = i + 1
-            else
-                ! Multi-byte UTF-8: validate and decode
-                call check_utf8_sequence(text, i, is_valid, char_len)
-                if (is_valid .and. i + char_len - 1 <= len_trim(text)) then
-                    codepoint = utf8_to_codepoint(text, i)
-                else
-                    codepoint = 0
-                end if
-
-                call unicode_to_symbol_char(codepoint, symbol_char)
-                if (len_trim(symbol_char) > 0) then
-                    if (.not. in_symbol_font) then
-                        call switch_to_symbol_font(this, font_size)
-                        in_symbol_font = .true.
-                    end if
-                    this%stream_data = this%stream_data // "(" // trim(symbol_char) // ") Tj" // new_line('a')
-                else
-                    ! Try mapping to a PDF-encodable escape in Helvetica (WinAnsi)
-                    call emit_pdf_escape_or_fallback(this, codepoint, font_size)
-                end if
-
-                ! Width estimation (simplified for now)
-                char_width = font_size * 0.5_wp
-                i = i + max(1, char_len)
-            end if
-
-            ! Move horizontally to next position
-            write(text_cmd, '(F0.3, " 0 Td")') char_width
-            this%stream_data = this%stream_data // trim(adjustl(text_cmd)) // new_line('a')
-        end do
+        call process_text_segments(this, text, in_symbol_font, font_size)
     end subroutine process_text_segments_relative
 
     subroutine simple_convert_superscripts(input, output, output_len)
