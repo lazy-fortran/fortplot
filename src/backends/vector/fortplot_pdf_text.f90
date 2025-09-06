@@ -677,7 +677,6 @@ contains
         integer, intent(out) :: output_len
         
         integer :: i, j, codepoint, char_len
-        integer :: base_start
         
         j = 0
         i = 1
@@ -691,29 +690,8 @@ contains
                 ! Check for Unicode superscripts and convert to mathtext
                 select case(codepoint)
                 case(178, 179, 185)  ! ², ³, ¹
-                    ! Look back to see if we need to group preceding characters
-                    ! Find start of alphanumeric sequence
-                    base_start = j
-                    do while (base_start > 1 .and. is_alnum(output(base_start:base_start)))
-                        base_start = base_start - 1
-                    end do
-                    if (base_start > 0 .and. .not. is_alnum(output(base_start:base_start))) then
-                        base_start = base_start + 1
-                    end if
-                    if (base_start == 0) base_start = 1
-                    
-                    ! If we have multiple characters before the superscript, add braces
-                    if (j > base_start .and. j - base_start > 0) then
-                        ! Insert opening brace
-                        call shift_right(output, base_start, j)
-                        output(base_start:base_start) = '{'
-                        j = j + 1
-                        ! Add closing brace
-                        j = j + 1
-                        output(j:j) = '}'
-                    end if
-                    
-                    ! Add superscript
+                    ! Simply convert to ^2, ^3, ^1 without any grouping
+                    ! The mathtext parser will naturally take the last character as the base
                     j = j + 1
                     if (j <= len(output)) output(j:j) = '^'
                     
@@ -748,32 +726,6 @@ contains
         
         output_len = j
         if (j < len(output)) output(j+1:) = ' '
-        
-    contains
-        
-        function is_alnum(ch) result(is_alphanumeric)
-            character, intent(in) :: ch
-            logical :: is_alphanumeric
-            integer :: ascii_val
-            
-            ascii_val = iachar(ch)
-            is_alphanumeric = (ascii_val >= iachar('0') .and. ascii_val <= iachar('9')) .or. &
-                             (ascii_val >= iachar('A') .and. ascii_val <= iachar('Z')) .or. &
-                             (ascii_val >= iachar('a') .and. ascii_val <= iachar('z'))
-        end function is_alnum
-        
-        subroutine shift_right(str, from_pos, to_pos)
-            character(len=*), intent(inout) :: str
-            integer, intent(in) :: from_pos, to_pos
-            integer :: k
-            
-            ! Shift characters right by one position
-            do k = to_pos, from_pos, -1
-                if (k + 1 <= len(str)) then
-                    str(k+1:k+1) = str(k:k)
-                end if
-            end do
-        end subroutine shift_right
         
     end subroutine convert_unicode_superscripts_to_mathtext
 
