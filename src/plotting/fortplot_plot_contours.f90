@@ -224,34 +224,7 @@ contains
             self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         end if
 
-        ! Symmetric normalization for diverging colormaps
-        ! If data spans zero and a diverging map is used, expand vmin/vmax
-        ! to be symmetric around 0 unless the user explicitly provided limits.
-        block
-            use fortplot_color_definitions, only: to_lowercase
-            character(len=:), allocatable :: cmap
-            real(wp) :: vmin_auto, vmax_auto, vmax_abs
-            logical :: user_set_limits
-
-            cmap = trim(self%plots(plot_idx)%pcolormesh_data%colormap_name)
-            call to_lowercase(cmap)
-            vmin_auto = self%plots(plot_idx)%pcolormesh_data%vmin
-            vmax_auto = self%plots(plot_idx)%pcolormesh_data%vmax
-            user_set_limits = present(vmin) .or. present(vmax)
-
-            if (.not. user_set_limits) then
-                if (vmin_auto < 0.0_wp .and. vmax_auto > 0.0_wp) then
-                    select case (cmap)
-                    case ('coolwarm')  ! known diverging
-                        vmax_abs = max(abs(vmin_auto), abs(vmax_auto))
-                        self%plots(plot_idx)%pcolormesh_data%vmin = -vmax_abs
-                        self%plots(plot_idx)%pcolormesh_data%vmax =  vmax_abs
-                    case default
-                        ! sequential maps keep data-driven min/max
-                    end select
-                end if
-            end if
-        end block
+        ! Match matplotlib: do not force symmetric normalization; use full data min/max unless user overrides.
         
         if (present(edgecolors)) then
             ! Handle edge colors - if 'none', disable edges
