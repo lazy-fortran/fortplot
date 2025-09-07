@@ -86,8 +86,12 @@ contains
         real(wp) :: c_value, vmin, vmax
         integer :: i, j
         
-        vmin = plot_data%pcolormesh_data%vmin
-        vmax = plot_data%pcolormesh_data%vmax
+        ! Robust normalization: span actual data range (matplotlib behavior)
+        vmin = minval(plot_data%pcolormesh_data%c_values)
+        vmax = maxval(plot_data%pcolormesh_data%c_values)
+        if (vmax <= vmin) then
+            vmax = vmin + 1.0_wp
+        end if
         
         ! Render each quad
         do i = 1, nx

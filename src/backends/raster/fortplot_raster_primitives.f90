@@ -255,8 +255,9 @@ contains
         integer :: num_intersect, i, j, x_start, x_end, x, idx
         real(wp) :: y_real
         
-        y_min = max(1, int(minval(y_quad)))
-        y_max = min(img_h, int(maxval(y_quad)) + 1)
+        ! Use rounding to avoid systematic underfill at cell boundaries
+        y_min = max(1, nint(minval(y_quad)))
+        y_max = min(img_h, nint(maxval(y_quad)) + 1)
         
         ! Process each scanline from top to bottom
         do y = y_min, y_max
@@ -296,8 +297,8 @@ contains
                 
                 ! Fill horizontal spans between intersection pairs
                 do i = 1, num_intersect - 1, 2
-                    x_start = max(1, int(x_intersect(i)))
-                    x_end = min(img_w, int(x_intersect(i + 1)))
+                    x_start = max(1, nint(x_intersect(i)))
+                    x_end = min(img_w, nint(x_intersect(i + 1)))
                     
                     ! Draw pixels in current span (no antialiasing for filled shapes)
                     do x = x_start, x_end

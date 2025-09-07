@@ -156,22 +156,25 @@ contains
             return
         end if
         
-        ! Scale t to [0, n_points-1]
+        ! Scale t to [0, n_points-1] and interpolate between adjacent control points
         t_scaled = t * real(n_points - 1, wp)
-        i = int(t_scaled) + 1
-        
-        if (i >= n_points) then
+
+        ! If exactly at the end, return last point
+        if (t_scaled >= real(n_points - 1, wp)) then
             color = [r_points(n_points), g_points(n_points), b_points(n_points)]
-        else if (i <= 1) then
-            color = [r_points(1), g_points(1), b_points(1)]
-        else
-            dt = t_scaled - real(i - 1, wp)
-            weight = dt
-            
-            color(1) = r_points(i) * (1.0_wp - weight) + r_points(i + 1) * weight
-            color(2) = g_points(i) * (1.0_wp - weight) + g_points(i + 1) * weight
-            color(3) = b_points(i) * (1.0_wp - weight) + b_points(i + 1) * weight
+            return
         end if
+
+        ! Interpolate between points i and i+1
+        i = int(t_scaled) + 1
+        if (i < 1) i = 1
+        if (i > n_points - 1) i = n_points - 1
+        dt = t_scaled - real(i - 1, wp)
+        weight = dt
+
+        color(1) = r_points(i) * (1.0_wp - weight) + r_points(i + 1) * weight
+        color(2) = g_points(i) * (1.0_wp - weight) + g_points(i + 1) * weight
+        color(3) = b_points(i) * (1.0_wp - weight) + b_points(i + 1) * weight
     end subroutine interpolate_colormap
 
     function validate_colormap_name(colormap) result(is_valid)

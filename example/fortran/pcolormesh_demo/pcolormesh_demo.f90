@@ -32,7 +32,7 @@ contains
         ! Create test data - smooth gradient across high-res grid
         do i = 1, 50
             do j = 1, 50
-                c(i, j) = real(i, wp) / 50.0_wp + real(j, wp) / 50.0_wp * 0.5_wp
+                c(j, i) = real(i, wp) / 50.0_wp + real(j, wp) / 50.0_wp * 0.5_wp
             end do
         end do
         
@@ -73,7 +73,7 @@ contains
             do j = 1, 50
                 xi = (x(i) + x(i+1)) * 0.5_wp  ! Center of cell
                 yj = (y(j) + y(j+1)) * 0.5_wp  ! Center of cell
-                c(i, j) = sin(2.0_wp * pi * xi) * cos(3.0_wp * pi * yj)
+                c(j, i) = sin(2.0_wp * pi * xi) * cos(3.0_wp * pi * yj)
             end do
         end do
         
@@ -114,7 +114,7 @@ contains
                 xi = (x(i) + x(i+1)) * 0.5_wp  ! Center of cell
                 yj = (y(j) + y(j+1)) * 0.5_wp  ! Center of cell
                 r = sqrt((xi - 0.75_wp)**2 + (yj - 0.625_wp)**2)
-                c(i, j) = exp(-r)
+                c(j, i) = exp(-r)
             end do
         end do
         
