@@ -4,6 +4,7 @@ module fortplot_pdf
     use fortplot_pdf_core
     use fortplot_pdf_text
     use fortplot_pdf_drawing
+    use fortplot_zlib_core, only: zlib_compress
     use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text
     use fortplot_pdf_io
     use fortplot_pdf_coordinate
@@ -329,30 +330,70 @@ contains
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         real(wp), intent(in) :: z_min, z_max
 
-        integer :: i, j, nx, ny
-        real(wp) :: x_quad(4), y_quad(4)
+        integer :: i, j, nx, ny, W, H
         real(wp) :: value
         real(wp), dimension(3) :: color
+        integer :: idx
+        integer :: out_len
+        integer, allocatable :: rgb_u8(:)
+        character(len=:), allocatable :: img_data
+        real(wp) :: pdf_x0, pdf_y0, pdf_x1, pdf_y1, width_pt, height_pt
+        character(len=256) :: cmd
 
         call this%update_coord_context()
 
         nx = size(x_grid)
         ny = size(y_grid)
 
-        ! Expect z_grid(ny, nx): align with raster backend and plotting API
+        ! Expect z_grid(ny, nx)
         if (size(z_grid, 1) /= ny .or. size(z_grid, 2) /= nx) return
 
-        do i = 1, nx - 1
-            do j = 1, ny - 1
+        W = nx - 1; H = ny - 1
+        if (W <= 0 .or. H <= 0) return
+
+        allocate(rgb_u8(W*H*3))
+        idx = 1
+        do j = 1, H
+            do i = 1, W
                 value = z_grid(j, i)
-                ! Map data value to RGB using a default colormap to match raster behavior
                 call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
-                call this%stream_writer%write_color(color(1), color(2), color(3))
-                x_quad = [x_grid(i), x_grid(i+1), x_grid(i+1), x_grid(i)]
-                y_quad = [y_grid(j), y_grid(j), y_grid(j+1), y_grid(j+1)]
-                call this%fill_quad(x_quad, y_quad)
+                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(1))) * 255.0_wp); idx = idx + 1
+                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(2))) * 255.0_wp); idx = idx + 1
+                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(3))) * 255.0_wp); idx = idx + 1
             end do
         end do
+
+        block
+            use, intrinsic :: iso_fortran_env, only: int8
+            integer(int8), allocatable :: in_bytes(:), out_bytes(:)
+            integer :: k, n
+            n = size(rgb_u8)
+            allocate(in_bytes(n))
+            do k = 1, n
+                in_bytes(k) = int(iand(rgb_u8(k),255))
+            end do
+            out_bytes = zlib_compress(in_bytes, n, out_len)
+            img_data = repeat(' ', out_len)
+            do k = 1, out_len
+                img_data(k:k) = achar(iand(int(out_bytes(k), kind=4), 255))
+            end do
+        end block
+
+        call normalize_to_pdf_coords(this%coord_ctx, x_grid(1), y_grid(1), pdf_x0, pdf_y0)
+        call normalize_to_pdf_coords(this%coord_ctx, x_grid(nx), y_grid(ny), pdf_x1, pdf_y1)
+        width_pt  = pdf_x1 - pdf_x0
+        height_pt = pdf_y1 - pdf_y0
+
+        call this%stream_writer%add_to_stream('q')
+        write(cmd,'(F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,A)') &
+            width_pt, 0.0_wp, 0.0_wp, -height_pt, pdf_x0, pdf_y0+height_pt, ' cm'
+        call this%stream_writer%add_to_stream(trim(cmd))
+
+        write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode ID'
+        call this%stream_writer%add_to_stream(trim(cmd))
+        call this%stream_writer%add_to_stream(img_data)
+        call this%stream_writer%add_to_stream('EI')
+        call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
     subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)
         class(pdf_context), intent(inout) :: this
