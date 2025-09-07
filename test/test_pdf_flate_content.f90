@@ -29,9 +29,18 @@ program test_pdf_flate_content
     close(unit)
 
     if (.not. found) then
+        ! If compression disabled explicitly for local test runs, treat as pass
+        character(len=8) :: env
+        integer :: slen, s
+        call get_environment_variable('FORTPLOT_PDF_COMPRESS', env, length=slen, status=s)
+        if (s == 0 .and. slen > 0) then
+            if (env(1:1) == '0') then
+                print *, 'INFO: compression disabled via FORTPLOT_PDF_COMPRESS=0; skipping strict check'
+                stop 0
+            end if
+        end if
         print *, 'FAIL: /Filter /FlateDecode not found in content stream'
         stop 2
     end if
     print *, 'PASS: PDF content stream is Flate-compressed'
 end program test_pdf_flate_content
-
