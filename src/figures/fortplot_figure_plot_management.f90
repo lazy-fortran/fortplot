@@ -248,17 +248,21 @@ contains
             ! Initialization now handles both Fortran-style and C-style dimension conventions
             ! No error messages for valid dimension patterns that can be processed correctly
         end block
+
+        ! Keep the user's requested colormap or the backend default; do not auto-switch.
         
         if (present(vmin)) then
             plots(plot_count)%pcolormesh_data%vmin = vmin
             plots(plot_count)%pcolormesh_data%vmin_set = .true.
         end if
-        
+
         if (present(vmax)) then
             plots(plot_count)%pcolormesh_data%vmax = vmax
             plots(plot_count)%pcolormesh_data%vmax_set = .true.
         end if
-        
+
+        ! Do not apply any implicit symmetric normalization. Match matplotlib: use full data range.
+
         if (present(edgecolors)) then
             plots(plot_count)%pcolormesh_data%show_edges = .true.
             plots(plot_count)%pcolormesh_data%edge_color = edgecolors

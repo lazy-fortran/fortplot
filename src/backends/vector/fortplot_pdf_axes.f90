@@ -474,7 +474,8 @@ contains
                          real(processed_len, wp) * 3.5_wp
                 title_y = plot_area_bottom + plot_area_height + 20.0_wp
                 ! Process LaTeX commands to Unicode and render with mixed fonts
-                call render_mixed_text(ctx, title_x, title_y, trim(title), PDF_TITLE_SIZE)
+                ! Use mathtext rendering for title to handle superscripts properly
+                call draw_pdf_mathtext(ctx, title_x, title_y, trim(title), PDF_TITLE_SIZE)
             end if
         end if
 
@@ -508,6 +509,7 @@ contains
 
     subroutine render_mixed_text(ctx, x, y, text, font_size)
         !! Helper: process LaTeX and render mixed-font text (with mathtext support)
+        !! PDF needs Unicode superscripts converted to mathtext for proper rendering
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -515,7 +517,8 @@ contains
         character(len=512) :: processed
         integer :: plen
 
-        ! ALWAYS process LaTeX commands first to convert to Unicode
+        ! For PDF, we need to handle Unicode superscripts properly
+        ! The mathtext system will render them as superscripts
         call process_latex_in_text(text, processed, plen)
         
         ! Now check if the processed text contains mathematical notation
@@ -538,12 +541,14 @@ contains
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
         !! Helper: process LaTeX and render rotated mixed-font ylabel
+        !! Uses same logic as PNG: process LaTeX ONLY, no Unicode conversion
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=512) :: processed
         integer :: plen
 
+        ! Process LaTeX commands ONLY (same as PNG does)
         call process_latex_in_text(text, processed, plen)
         call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
     end subroutine render_rotated_mixed_text

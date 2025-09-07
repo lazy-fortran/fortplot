@@ -223,6 +223,8 @@ contains
             self%plots(plot_idx)%pcolormesh_data%vmax = maxval(c)
             self%plots(plot_idx)%pcolormesh_data%vmax_set = .true.
         end if
+
+        ! Match matplotlib: do not force symmetric normalization; use full data min/max unless user overrides.
         
         if (present(edgecolors)) then
             ! Handle edge colors - if 'none', disable edges
