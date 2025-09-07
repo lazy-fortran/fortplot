@@ -7,6 +7,8 @@ program test_pdf_flate_content
     integer :: unit, ios
     character(len=8192) :: buf
     logical :: found
+    character(len=8) :: env
+    integer :: slen, s
 
     call figure()
     call plot([0.0_wp,1.0_wp],[0.0_wp,1.0_wp])
@@ -30,8 +32,6 @@ program test_pdf_flate_content
 
     if (.not. found) then
         ! If compression disabled explicitly for local test runs, treat as pass
-        character(len=8) :: env
-        integer :: slen, s
         call get_environment_variable('FORTPLOT_PDF_COMPRESS', env, length=slen, status=s)
         if (s == 0 .and. slen > 0) then
             if (env(1:1) == '0') then
