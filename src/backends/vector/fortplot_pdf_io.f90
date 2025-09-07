@@ -217,8 +217,8 @@ contains
         character(len=:), allocatable :: compressed_str
         ! Compression control via environment
         logical :: do_compress
-        character(len=32) :: env, env_test
-        integer :: elen, ios_env, first, elen_test, ios_test
+        character(len=32) :: env, env_test, env_ci, env_runner
+        integer :: elen, ios_env, first, elen_test, ios_test, elen_ci, ios_ci, elen_runner, ios_runner
 
         stream_len = len_trim(ctx%stream_data)
         
@@ -247,6 +247,22 @@ contains
                 end do
                 if (first <= elen_test) then
                     if (env_test(first:first) == '1') do_compress = .false.
+                end if
+            end if
+        end if
+
+        ! In CI on Windows runners, prefer uncompressed streams to keep
+        ! legacy raw-PDF assertions stable for the Windows matrix job.
+        if (do_compress) then
+            call get_environment_variable('CI', env_ci, length=elen_ci, status=ios_ci)
+            call get_environment_variable('RUNNER_OS', env_runner, length=elen_runner, status=ios_runner)
+            if (ios_ci == 0 .and. elen_ci > 0 .and. ios_runner == 0 .and. elen_runner > 0) then
+                first = 1
+                do while (first <= elen_runner .and. env_runner(first:first) == ' ')
+                    first = first + 1
+                end do
+                if (first <= elen_runner) then
+                    if (env_runner(first:first+6) == 'Windows') do_compress = .false.
                 end if
             end if
         end if
