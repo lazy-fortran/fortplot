@@ -299,7 +299,7 @@ verify-artifacts: create_build_dirs
 	  elif command -v pdfimages >/dev/null 2>&1; then \
 	    lst=$$(pdfimages -list "$$pdf" 2>/dev/null || true); \
 	    echo "$$lst" | head -n 3; \
-	    echo "$$lst" | awk 'NR>2 && tolower($$5) ~ /rgb/ {found=1} END { exit(found?0:1) }' \
+	    echo "$$lst" | awk 'NR>2 && tolower($$6) ~ /rgb/ {found=1} END { exit(found?0:1) }' \
 	      && echo "[ok] $$pdf contains RGB Image XObject" \
 	      || { echo "ERROR: $$pdf did not show RGB image in pdfimages -list" >&2; exit 1; }; \
 	  elif rg -n "/Subtype /Image|/ColorSpace /DeviceRGB" -S --text "$$pdf" >/dev/null 2>&1; then \
