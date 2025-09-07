@@ -72,6 +72,9 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@# Regression test: colormap interpolation must not be flat near min (fixes pcolormesh negative cut)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_colormap_interpolation_regression || exit 1
+
 	@# Regression guard for Issue #985 (PDF coordinate mapping)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
