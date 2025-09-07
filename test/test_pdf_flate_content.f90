@@ -9,6 +9,8 @@ program test_pdf_flate_content
     logical :: found
     character(len=8) :: env
     integer :: slen, s
+    character(len=16) :: runner
+    integer :: rlen, rs
 
     call figure()
     call plot([0.0_wp,1.0_wp],[0.0_wp,1.0_wp])
@@ -36,6 +38,14 @@ program test_pdf_flate_content
         if (s == 0 .and. slen > 0) then
             if (env(1:1) == '0') then
                 print *, 'INFO: compression disabled via FORTPLOT_PDF_COMPRESS=0; skipping strict check'
+                stop 0
+            end if
+        end if
+        ! In CI on Windows, PDF writer disables compression to keep raw-PDF tests stable.
+        call get_environment_variable('RUNNER_OS', runner, length=rlen, status=rs)
+        if (rs == 0 .and. rlen >= 7) then
+            if (runner(1:7) == 'Windows') then
+                print *, 'INFO: Windows runner uses uncompressed streams; skipping strict Flate check'
                 stop 0
             end if
         end if
