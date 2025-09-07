@@ -288,6 +288,7 @@ contains
         real(wp) :: px(4), py(4)
         character(len=512) :: cmd
         integer :: i
+        real(wp) :: minx, maxx, miny, maxy, eps
 
         call this%update_coord_context()
 
@@ -296,17 +297,31 @@ contains
             call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), px(i), py(i))
         end do
 
-        ! Draw filled quadrilateral using explicit operators to avoid parser ambiguity
-        write(cmd, '(F0.3,1X,F0.3)') px(1), py(1)
-        call this%stream_writer%add_to_stream(trim(cmd)//' m')
-        write(cmd, '(F0.3,1X,F0.3)') px(2), py(2)
-        call this%stream_writer%add_to_stream(trim(cmd)//' l')
-        write(cmd, '(F0.3,1X,F0.3)') px(3), py(3)
-        call this%stream_writer%add_to_stream(trim(cmd)//' l')
-        write(cmd, '(F0.3,1X,F0.3)') px(4), py(4)
-        call this%stream_writer%add_to_stream(trim(cmd)//' l')
-        call this%stream_writer%add_to_stream('h')
-        call this%stream_writer%add_to_stream('f')
+        ! Slightly expand axis-aligned quads to overlap neighbors and avoid hairline seams
+        minx = min(min(px(1),px(2)), min(px(3),px(4)))
+        maxx = max(max(px(1),px(2)), max(px(3),px(4)))
+        miny = min(min(py(1),py(2)), min(py(3),py(4)))
+        maxy = max(max(py(1),py(2)), max(py(3),py(4)))
+        eps = 0.05_wp  ! expand by small amount in PDF points
+
+        ! If the quad is axis-aligned (common for pcolormesh), use expanded bbox
+        if ( (abs(py(1)-py(2)) < 1.0e-6_wp .and. abs(px(2)-px(3)) < 1.0e-6_wp .and. &
+              abs(py(3)-py(4)) < 1.0e-6_wp .and. abs(px(4)-px(1)) < 1.0e-6_wp) ) then
+            write(cmd, '(F0.3,1X,F0.3)') minx-eps, miny-eps; call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write(cmd, '(F0.3,1X,F0.3)') maxx+eps, miny-eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write(cmd, '(F0.3,1X,F0.3)') maxx+eps, maxy+eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write(cmd, '(F0.3,1X,F0.3)') minx-eps, maxy+eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            call this%stream_writer%add_to_stream('h')
+            call this%stream_writer%add_to_stream('f')
+        else
+            ! Fallback: draw original quad
+            write(cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write(cmd, '(F0.3,1X,F0.3)') px(2), py(2); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write(cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write(cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            call this%stream_writer%add_to_stream('h')
+            call this%stream_writer%add_to_stream('f')
+        end if
     end subroutine fill_quad_wrapper
 
     subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max)
