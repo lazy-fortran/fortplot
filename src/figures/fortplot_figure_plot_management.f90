@@ -248,17 +248,53 @@ contains
             ! Initialization now handles both Fortran-style and C-style dimension conventions
             ! No error messages for valid dimension patterns that can be processed correctly
         end block
+
+        ! If user did not pass a colormap and the data spans zero, default to a diverging map.
+        ! This ensures negative and positive regions are visually distinct by default.
+        if (.not. present(colormap)) then
+            if (plots(plot_count)%pcolormesh_data%vmin < 0.0_wp .and. &
+                plots(plot_count)%pcolormesh_data%vmax > 0.0_wp) then
+                plots(plot_count)%pcolormesh_data%colormap_name = 'coolwarm'
+            end if
+        end if
         
         if (present(vmin)) then
             plots(plot_count)%pcolormesh_data%vmin = vmin
             plots(plot_count)%pcolormesh_data%vmin_set = .true.
         end if
-        
+
         if (present(vmax)) then
             plots(plot_count)%pcolormesh_data%vmax = vmax
             plots(plot_count)%pcolormesh_data%vmax_set = .true.
         end if
-        
+
+        ! Apply symmetric normalization for diverging colormaps when data spans zero
+        ! Only if the user did not explicitly provide vmin/vmax.
+        block
+            use fortplot_string_utils, only: to_lowercase
+            character(len=:), allocatable :: cmap_lower
+            logical :: user_set_limits
+            real(wp) :: vmin_auto, vmax_auto, vmax_abs
+
+            user_set_limits = present(vmin) .or. present(vmax)
+            if (.not. user_set_limits) then
+                ! Get current auto limits computed during initialization
+                vmin_auto = plots(plot_count)%pcolormesh_data%vmin
+                vmax_auto = plots(plot_count)%pcolormesh_data%vmax
+                if (vmin_auto < 0.0_wp .and. vmax_auto > 0.0_wp) then
+                    cmap_lower = to_lowercase(trim(plots(plot_count)%pcolormesh_data%colormap_name))
+                    select case (cmap_lower)
+                    case ('coolwarm')
+                        vmax_abs = max(abs(vmin_auto), abs(vmax_auto))
+                        plots(plot_count)%pcolormesh_data%vmin = -vmax_abs
+                        plots(plot_count)%pcolormesh_data%vmax =  vmax_abs
+                    case default
+                        ! Sequential maps: keep data-driven min/max
+                    end select
+                end if
+            end if
+        end block
+
         if (present(edgecolors)) then
             plots(plot_count)%pcolormesh_data%show_edges = .true.
             plots(plot_count)%pcolormesh_data%edge_color = edgecolors
