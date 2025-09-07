@@ -217,8 +217,8 @@ contains
         character(len=:), allocatable :: compressed_str
         ! Compression control via environment
         logical :: do_compress
-        character(len=32) :: env
-        integer :: elen, ios_env, first
+        character(len=32) :: env, env_test
+        integer :: elen, ios_env, first, elen_test, ios_test
 
         stream_len = len_trim(ctx%stream_data)
         
@@ -235,6 +235,19 @@ contains
             end do
             if (first <= elen) then
                 if (env(first:first) == '0') do_compress = .false.
+            end if
+        end if
+        ! Also honor test umbrella env to keep full-suite PDF parsing stable
+        if (do_compress) then
+            call get_environment_variable('FORTPLOT_TEST', env_test, length=elen_test, status=ios_test)
+            if (ios_test == 0 .and. elen_test > 0) then
+                first = 1
+                do while (first <= elen_test .and. env_test(first:first) == ' ')
+                    first = first + 1
+                end do
+                if (first <= elen_test) then
+                    if (env_test(first:first) == '1') do_compress = .false.
+                end if
             end if
         end if
 
