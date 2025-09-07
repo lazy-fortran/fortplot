@@ -288,11 +288,12 @@ verify-artifacts: create_build_dirs
 	# Pcolormesh PDFs must have no syntax errors; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; \
-	# Ensure pcolormesh PDFs use non-gray RGB fills (not grayscale); \
+	# Ensure pcolormesh PDFs use non-gray RGB fills (not grayscale). Streams may be Flate-compressed; \
+	# use a tiny Python helper script to scan and, if needed, decompress content streams. \
 	for pdf in output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf \
 	           output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; do \
 	  echo "[pdfcolor] checking non-gray fills in $$pdf"; \
-	  if awk '/^[0-9.]+ [0-9.]+ [0-9.]+ rg$$/ { if ($$1 != $$2 || $$2 != $$3) { found=1; exit } } END { exit (found?0:1) }' "$$pdf"; then \
+	  if python3 scripts/pdf_scan_rg.py "$$pdf"; then \
 	    echo "[ok] $$pdf has non-gray RGB fill commands"; \
 	  else \
 	    echo "ERROR: $$pdf appears to use only grayscale fills (no non-gray 'rg')" >&2; exit 1; \
