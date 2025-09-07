@@ -24,6 +24,7 @@ module fortplot_pdf_io
     integer, parameter :: PDF_HELVETICA_OBJ = 5
     integer, parameter :: PDF_SYMBOL_OBJ = 6
     integer, parameter :: PDF_CONTENT_OBJ = 7
+    integer, parameter :: PDF_IMAGE_OBJ   = 8
 
 contains
 
@@ -82,7 +83,7 @@ contains
         integer :: xref_pos
         
         ! Allocate position tracking array
-        allocate(positions(7))
+        allocate(positions(8))
         positions = 0
         
         ! Write all objects and track positions
@@ -111,6 +112,10 @@ contains
         call write_helvetica_font_object(unit, positions(PDF_HELVETICA_OBJ))
         call write_symbol_font_object(unit, positions(PDF_SYMBOL_OBJ))
         
+        ! Write image XObject if present
+        if (ctx%has_image) then
+            call write_image_object(unit, ctx, positions(PDF_IMAGE_OBJ))
+        end if
         ! Write content stream object
         call write_content_object(unit, ctx, positions(PDF_CONTENT_OBJ))
     end subroutine write_all_objects
@@ -197,11 +202,43 @@ contains
         write(unit, '(A, I0, A, I0, A)') '    /F', PDF_HELVETICA_OBJ, ' ', PDF_HELVETICA_OBJ, ' 0 R'
         write(unit, '(A, I0, A, I0, A)') '    /F', PDF_SYMBOL_OBJ, ' ', PDF_SYMBOL_OBJ, ' 0 R'
         write(unit, '(A)') '  >>'
+        if (ctx%has_image) then
+            write(unit, '(A)') '  /XObject <<'
+            write(unit, '(A, I0, A)') '    /Im1 ', PDF_IMAGE_OBJ, ' 0 R'
+            write(unit, '(A)') '  >>'
+        end if
         write(unit, '(A)') '>>'
         write(unit, '(A, I0, A)') '/Contents ', PDF_CONTENT_OBJ, ' 0 R'
         write(unit, '(A)') '>>'
         write(unit, '(A)') 'endobj'
     end subroutine write_page_object
+
+    subroutine write_image_object(unit, ctx, pos)
+        integer, intent(in) :: unit
+        type(pdf_context_core), intent(in) :: ctx
+        integer, intent(out) :: pos
+        integer :: n
+        
+        inquire(unit=unit, pos=pos)
+        write(unit, '(I0, A)') PDF_IMAGE_OBJ, ' 0 obj'
+        write(unit, '(A)') '<<'
+        write(unit, '(A)') '/Type /XObject'
+        write(unit, '(A)') '/Subtype /Image'
+        write(unit, '(A, I0)') '/Width ', ctx%image_width
+        write(unit, '(A, I0)') '/Height ', ctx%image_height
+        write(unit, '(A)') '/ColorSpace /DeviceRGB'
+        write(unit, '(A)') '/BitsPerComponent 8'
+        write(unit, '(A)') '/Interpolate false'
+        n = len(ctx%image_data)
+        write(unit, '(A, I0)') '/Length ', n
+        write(unit, '(A)') '/Filter /FlateDecode'
+        write(unit, '(A)') '>>'
+        write(unit, '(A)') 'stream'
+        call write_binary_to_unit(unit, ctx%image_data, n)
+        write(unit, '(A)') ''
+        write(unit, '(A)') 'endstream'
+        write(unit, '(A)') 'endobj'
+    end subroutine write_image_object
 
     subroutine write_content_object(unit, ctx, pos)
         !! Write PDF content stream object

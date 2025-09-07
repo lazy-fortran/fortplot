@@ -338,7 +338,9 @@ contains
         integer, allocatable :: rgb_u8(:)
         character(len=:), allocatable :: img_data
         real(wp) :: pdf_x0, pdf_y0, pdf_x1, pdf_y1, width_pt, height_pt
+        real(wp) :: px_w, px_h, bleed_x, bleed_y
         character(len=256) :: cmd
+        real(wp) :: v1, v2, v3
 
         call this%update_coord_context()
 
@@ -351,17 +353,39 @@ contains
         W = nx - 1; H = ny - 1
         if (W <= 0 .or. H <= 0) return
 
-        allocate(rgb_u8(W*H*3))
-        idx = 1
-        do j = 1, H
-            do i = 1, W
-                value = z_grid(j, i)
-                call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
-                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(1))) * 255.0_wp); idx = idx + 1
-                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(2))) * 255.0_wp); idx = idx + 1
-                rgb_u8(idx)   = nint(max(0.0_wp, min(1.0_wp, color(3))) * 255.0_wp); idx = idx + 1
+        ! Build RGB image with 1-pixel replicated border padding to avoid
+        ! sampling outside the image at arbitrary zoom levels.
+        block
+            integer :: WP, HP
+            integer, allocatable :: img(:,:,:)
+            integer :: ii, jj, src_i, src_j
+            WP = W + 2; HP = H + 2
+            allocate(img(3, WP, HP))
+            do jj = 1, HP
+                do ii = 1, WP
+                    src_i = max(1, min(W, ii-1))
+                    src_j = max(1, min(H, jj-1))
+                    value = z_grid(src_j, src_i)
+                    call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
+                    v1 = max(0.0d0, min(1.0d0, color(1)))
+                    v2 = max(0.0d0, min(1.0d0, color(2)))
+                    v3 = max(0.0d0, min(1.0d0, color(3)))
+                    img(1, ii, jj) = int(nint(v1 * 255.0d0), kind=4)
+                    img(2, ii, jj) = int(nint(v2 * 255.0d0), kind=4)
+                    img(3, ii, jj) = int(nint(v3 * 255.0d0), kind=4)
+                end do
             end do
-        end do
+            allocate(rgb_u8(WP*HP*3))
+            idx = 1
+            do j = 1, HP
+                do i = 1, WP
+                    rgb_u8(idx) = img(1, i, j); idx = idx + 1
+                    rgb_u8(idx) = img(2, i, j); idx = idx + 1
+                    rgb_u8(idx) = img(3, i, j); idx = idx + 1
+                end do
+            end do
+            W = WP; H = HP
+        end block
 
         block
             use, intrinsic :: iso_fortran_env, only: int8
@@ -379,20 +403,33 @@ contains
             end do
         end block
 
-        call normalize_to_pdf_coords(this%coord_ctx, x_grid(1), y_grid(1), pdf_x0, pdf_y0)
-        call normalize_to_pdf_coords(this%coord_ctx, x_grid(nx), y_grid(ny), pdf_x1, pdf_y1)
-        width_pt  = pdf_x1 - pdf_x0
-        height_pt = pdf_y1 - pdf_y0
+        ! Align placement to the exact PDF plot area (consistent with PNG backend)
+        pdf_x0   = real(this%coord_ctx%plot_area%left,   wp)
+        pdf_y0   = real(this%coord_ctx%plot_area%bottom, wp)
+        width_pt = real(this%coord_ctx%plot_area%width,  wp)
+        height_pt= real(this%coord_ctx%plot_area%height, wp)
+
+        ! Compute a half-pixel bleed in user-space and clip to the exact plot area
+        px_w = width_pt / real(W, wp)
+        px_h = height_pt / real(H, wp)
+        bleed_x = 0.5_wp * px_w
+        bleed_y = 0.5_wp * px_h
 
         call this%stream_writer%add_to_stream('q')
-        write(cmd,'(F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,A)') &
-            width_pt, 0.0_wp, 0.0_wp, -height_pt, pdf_x0, pdf_y0+height_pt, ' cm'
+        ! Clip to the exact target rectangle to keep padded borders inside
+        write(cmd,'(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') pdf_x0, pdf_y0, width_pt, height_pt, ' re W n'
         call this%stream_writer%add_to_stream(trim(cmd))
-
-        write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode ID'
+        ! Compute pixel scale and place padded image so that the extra 1px ring
+        ! lies just outside the clip region
+        px_w = width_pt / real(W-2, wp)
+        px_h = height_pt / real(H-2, wp)
+        write(cmd,'(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
+            px_w*real(W,wp), 0.0_wp, 0.0_wp, -(px_h*real(H,wp)), &
+            pdf_x0 - px_w, (pdf_y0 + height_pt) + px_h, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
-        call this%stream_writer%add_to_stream(img_data)
-        call this%stream_writer%add_to_stream('EI')
+        ! Place image XObject instead of inline image
+        call this%core_ctx%set_image(W, H, img_data)
+        call this%stream_writer%add_to_stream('/Im1 Do')
         call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
     subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)

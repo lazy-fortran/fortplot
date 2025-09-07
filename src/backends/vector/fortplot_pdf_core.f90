@@ -37,9 +37,15 @@ module fortplot_pdf_core
         real(wp) :: height
         real(wp) :: current_line_width = 1.0_wp
         type(pdf_font_t) :: fonts
+        ! Optional single image XObject support
+        logical :: has_image = .false.
+        integer :: image_width = 0
+        integer :: image_height = 0
+        character(len=:), allocatable :: image_data
     contains
         procedure :: set_color => set_pdf_color
         procedure :: set_line_width => set_pdf_line_width
+        procedure :: set_image => set_pdf_image
     end type pdf_context_core
 
 contains
@@ -113,6 +119,16 @@ contains
         ! Restore graphics state
         ctx%stream_data = ctx%stream_data // "Q" // new_line('a')
     end subroutine finalize_pdf_stream
+
+    subroutine set_pdf_image(this, width_px, height_px, data)
+        class(pdf_context_core), intent(inout) :: this
+        integer, intent(in) :: width_px, height_px
+        character(len=*), intent(in) :: data
+        this%has_image = .true.
+        this%image_width = width_px
+        this%image_height = height_px
+        this%image_data = data
+    end subroutine set_pdf_image
 
     integer function get_helvetica_obj(this) result(obj)
         class(pdf_font_t), intent(in) :: this
