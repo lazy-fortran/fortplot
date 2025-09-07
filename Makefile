@@ -48,7 +48,7 @@ debug:
 test: create_test_dirs
 	$(call _timeout_notice)
 	@echo "Running tests$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
-	$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
+	FORTPLOT_TEST=1 FORTPLOT_PDF_COMPRESS=0 $(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
 		&& echo "ALL TESTS PASSED (fpm test)"
 
 # Run fast test suite for development iteration (minimal I/O, no delays)
@@ -72,6 +72,10 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
+	@# Regression: colormap interpolation must not be flat near min (pcolormesh negative mapping)
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_colormap_interpolation_regression || exit 1
+	@# PDF content streams should be Flate-compressed
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_flate_content || exit 1
 	@# Regression guard for Issue #985 (PDF coordinate mapping)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_pdf_coordinate_mapping_985 || exit 1
 	@# Regression guard for Issue #995 (PDF axes stroke color should be black)
@@ -284,11 +288,12 @@ verify-artifacts: create_build_dirs
 	# Pcolormesh PDFs must have no syntax errors; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; \
-	# Ensure pcolormesh PDFs use non-gray RGB fills (not grayscale); \
+	# Ensure pcolormesh PDFs use non-gray RGB fills (not grayscale). Streams may be Flate-compressed; \
+	# use a tiny Python helper script to scan and, if needed, decompress content streams. \
 	for pdf in output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf \
 	           output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; do \
 	  echo "[pdfcolor] checking non-gray fills in $$pdf"; \
-	  if awk '/^[0-9.]+ [0-9.]+ [0-9.]+ rg$$/ { if ($$1 != $$2 || $$2 != $$3) { found=1; exit } } END { exit (found?0:1) }' "$$pdf"; then \
+	  if python3 scripts/pdf_scan_rg.py "$$pdf"; then \
 	    echo "[ok] $$pdf has non-gray RGB fill commands"; \
 	  else \
 	    echo "ERROR: $$pdf appears to use only grayscale fills (no non-gray 'rg')" >&2; exit 1; \
