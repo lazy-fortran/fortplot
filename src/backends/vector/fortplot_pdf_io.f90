@@ -14,6 +14,7 @@ module fortplot_pdf_io
     public :: write_pdf_file
     public :: create_pdf_document
     public :: write_string_to_unit
+    public :: write_binary_to_unit
     
     ! PDF structure constants
     integer, parameter :: PDF_VERSION_OBJ = 1
@@ -243,7 +244,7 @@ contains
         
         ! Write the actual (possibly compressed) stream data
         if (stream_len > 0) then
-            call write_string_to_unit(unit, compressed_str)
+            call write_binary_to_unit(unit, compressed_str, len(compressed_str))
         else
             call write_string_to_unit(unit, ctx%stream_data)
         end if
@@ -302,5 +303,21 @@ contains
             end if
         end do
     end subroutine write_string_to_unit
+
+    subroutine write_binary_to_unit(unit, str, nbytes)
+        !! Write binary string to unit using exact length (no trimming)
+        integer, intent(in) :: unit
+        character(len=*), intent(in) :: str
+        integer, intent(in) :: nbytes
+        integer :: i, chunk_size, last
+        chunk_size = 1000
+        if (nbytes <= 0) return
+        i = 1
+        do while (i <= nbytes)
+            last = min(nbytes, i + chunk_size - 1)
+            write(unit, '(A)', advance='no') str(i:last)
+            i = last + 1
+        end do
+    end subroutine write_binary_to_unit
 
 end module fortplot_pdf_io
