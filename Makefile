@@ -225,7 +225,7 @@ verify-artifacts: create_build_dirs
 	\
 	# Helper: check PDF has no pdfimages syntax errors; \
 	check_pdf_ok() { \
-	  local pdf="$$1"; \
+	  pdf="$$1"; \
 	  if ! command -v pdfimages >/dev/null 2>&1; then echo "Missing pdfimages (poppler-utils)" >&2; exit 2; fi; \
 	  local out; out=$$(pdfimages -list "$$pdf" 2>&1 || true); \
 	  echo "[pdfimages] $$pdf"; echo "$$out" | head -n 3; \
@@ -234,7 +234,7 @@ verify-artifacts: create_build_dirs
 	\
 	# Helper: check pdftotext extracts expected substrings (basic sanity); \
 	check_pdftotext_has() { \
-	  local pdf="$$1"; shift; \
+	  pdf="$$1"; shift; \
 	  if ! command -v pdftotext >/dev/null 2>&1; then echo "Missing pdftotext (poppler-utils)" >&2; exit 2; fi; \
 	  local txt; txt=$$(pdftotext "$$pdf" - 2>/dev/null || true); \
 	  for needle in "$$@"; do \
@@ -292,7 +292,7 @@ verify-artifacts: create_build_dirs
 	#  - Vector fills with non-gray 'rg'
 	#  - Image XObject (rgb) placed with Do. Accept either; prefer color check via pdfimages. \
 	check_pcolormesh_pdf_color() { \
-	  local pdf="$$1"; \
+	  pdf="$$1"; \
 	  # Path 1: vector streams with 'rg' (robust to Flate via helper)
 	  if python3 scripts/pdf_scan_rg.py "$$pdf" >/dev/null 2>&1; then \
 	    echo "[ok] $$pdf has non-gray 'rg' (vector)"; return 0; \
@@ -301,7 +301,8 @@ verify-artifacts: create_build_dirs
 	  if command -v pdfimages >/dev/null 2>&1; then \
 	    local lst; lst=$$(pdfimages -list "$$pdf" 2>/dev/null || true); \
 	    echo "$$lst" | head -n 3; \
-	    if echo "$$lst" | awk 'NR>2 && tolower($$5) ~ /rgb/ {exit 0} END {exit 1}'; then \
+	    echo "$$lst" | awk 'NR>2 && tolower($$5) ~ /rgb/ {found=1} END { exit(found?0:1) }' \
+      && { echo "[ok] $$pdf contains RGB Image XObject"; return 0; }; \
 	      echo "[ok] $$pdf contains RGB Image XObject"; return 0; \
 	    fi; \
 	  fi; \
