@@ -231,7 +231,7 @@ contains
         pad_y = 4
         entry_gap = 5
 
-        legend_width = real(2*padding_x + line_len + text_gap + max_label_w, wp)
+        legend_width = real(2*padding_x + line_len + text_gap + max_label_w + 1, wp)  ! +1px AA/border safety
         legend_height = real(2*pad_y + legend%num_entries*label_h + max(legend%num_entries-1,0)*entry_gap, wp)
     end subroutine raster_calculate_legend_dimensions
 

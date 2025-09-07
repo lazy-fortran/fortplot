@@ -222,8 +222,8 @@ contains
         type(plot_area_t) :: plot_area
         integer :: px_w, px_h
         
-        ! Extract labels for box calculation
-        allocate(character(len=50) :: labels(legend%num_entries))
+        ! Extract labels for box calculation (no truncation). Allocate to max length.
+        allocate(character(len=256) :: labels(legend%num_entries))
         do i = 1, legend%num_entries
             labels(i) = legend%entries(i)%label
         end do
@@ -305,7 +305,7 @@ contains
         real(wp), intent(out) :: line_x1, line_x2, line_y, text_x, text_y
         
         ! Calculate line position
-        line_x1 = legend_x + box%padding
+        line_x1 = legend_x + box%padding_x
         line_x2 = line_x1 + box%line_length
         line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
                  real(entry_idx-1, wp) * (box%entry_height + box%entry_spacing)
@@ -397,7 +397,7 @@ contains
             ! Note: labels not used in ASCII path, but must be declared due to Fortran scoping
         else
             ! Standard backends with margin support
-            allocate(character(len=50) :: labels(legend%num_entries))
+            allocate(character(len=256) :: labels(legend%num_entries))
             do i = 1, legend%num_entries
                 labels(i) = legend%entries(i)%label
             end do

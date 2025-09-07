@@ -20,7 +20,8 @@ module fortplot_legend_layout
         !! Single Responsibility: Legend box dimensions and position
         real(wp) :: x, y              ! Top-left corner position
         real(wp) :: width, height     ! Box dimensions  
-        real(wp) :: padding           ! Internal padding
+        real(wp) :: padding           ! Vertical padding (Y)
+        real(wp) :: padding_x         ! Horizontal padding (X)
         real(wp) :: entry_height      ! Height of each legend entry (text height)
         real(wp) :: entry_spacing     ! Vertical spacing between entries
         real(wp) :: line_length       ! Length of legend line samples
@@ -116,7 +117,7 @@ contains
         character(len=:), allocatable :: trimmed_label, processed_label
         character(len=512) :: temp_processed_label
         integer :: processed_len
-        integer, parameter :: fudge_pixels = 2
+        integer, parameter :: fudge_pixels = 0
         
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
@@ -154,19 +155,24 @@ contains
         integer, intent(in) :: num_labels
         
         real(wp) :: padding_x, label_spacing
+        real(wp) :: aa_safety_x
         
         ! Set legend box components (matplotlib-style spacing)
         box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line
         box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
         box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
         box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y  ! 0.5 * 10pt font = 5 pixels
-        box%padding = 4.0_wp / data_to_pixel_ratio_y  ! 0.4 * 10pt font = 4 pixels
+        box%padding = 4.0_wp / data_to_pixel_ratio_y       ! Vertical padding
         
         label_spacing = box%entry_spacing
         padding_x = 4.0_wp / data_to_pixel_ratio_x
+        box%padding_x = padding_x
+        ! Rendering safety: AA of slanted sqrt tick and 0.5px border can
+        ! place coverage up to ~1px near right edge. Reserve 1px in data units.
+        aa_safety_x = 1.0_wp / data_to_pixel_ratio_x
         
         ! Calculate total box dimensions
-        box%width = 2.0_wp * padding_x + box%line_length + box%text_spacing + max_text_width
+        box%width = 2.0_wp * box%padding_x + box%line_length + box%text_spacing + max_text_width + aa_safety_x
         box%height = 2.0_wp * box%padding + &
                      real(num_labels, wp) * box%entry_height + &
                      real(num_labels - 1, wp) * label_spacing
