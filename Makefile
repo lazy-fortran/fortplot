@@ -288,36 +288,27 @@ verify-artifacts: create_build_dirs
 	# Pcolormesh PDFs must have no syntax errors; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf; \
 	check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; \
-	# Ensure pcolormesh PDFs are color and not grayscale. Two valid encodings:
+		# Ensure pcolormesh PDFs are color and not grayscale. Two valid encodings: 
 	#  - Vector fills with non-gray 'rg'
 	#  - Image XObject (rgb) placed with Do. Accept either; prefer color check via pdfimages. \
-	check_pcolormesh_pdf_color() { \
-	  pdf="$$1"; \
-	  # Path 1: vector streams with 'rg' (robust to Flate via helper)
-	  if python3 scripts/pdf_scan_rg.py "$$pdf" >/dev/null 2>&1; then \
-	    echo "[ok] $$pdf has non-gray 'rg' (vector)"; return 0; \
-	  fi; \
-	  # Path 2: Image XObject; verify at least one RGB image present
-	  if command -v pdfimages >/dev/null 2>&1; then \
-	    local lst; lst=$$(pdfimages -list "$$pdf" 2>/dev/null || true); \
-	    echo "$$lst" | head -n 3; \
-	    echo "$$lst" | awk 'NR>2 && tolower($$5) ~ /rgb/ {found=1} END { exit(found?0:1) }' \
-      && { echo "[ok] $$pdf contains RGB Image XObject"; return 0; }; \
-	      echo "[ok] $$pdf contains RGB Image XObject"; return 0; \
-	    fi; \
-	  fi; \
-	  # Fallback: textual grep for '/Subtype /Image' and '/ColorSpace /DeviceRGB'
-	  if rg -n "/Subtype /Image|/ColorSpace /DeviceRGB" -S --text "$$pdf" >/dev/null 2>&1; then \
-	    echo "[ok] $$pdf declares Image XObject with DeviceRGB"; return 0; \
-	  fi; \
-	  echo "ERROR: $$pdf did not show vector 'rg' nor RGB Image XObject" >&2; return 1; \
-	}; \
 	for pdf in output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf \
 	           output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf; do \
 	  echo "[pdfcolor] checking pcolormesh color encoding in $$pdf"; \
-	  check_pcolormesh_pdf_color "$$pdf" || exit 1; \
+	  if python3 scripts/pdf_scan_rg.py "$$pdf" >/dev/null 2>&1; then \
+	    echo "[ok] $$pdf has non-gray 'rg' (vector)"; \
+	  elif command -v pdfimages >/dev/null 2>&1; then \
+	    lst=$$(pdfimages -list "$$pdf" 2>/dev/null || true); \
+	    echo "$$lst" | head -n 3; \
+	    echo "$$lst" | awk 'NR>2 && tolower($$5) ~ /rgb/ {found=1} END { exit(found?0:1) }' \
+	      && echo "[ok] $$pdf contains RGB Image XObject" \
+	      || { echo "ERROR: $$pdf did not show RGB image in pdfimages -list" >&2; exit 1; }; \
+	  elif rg -n "/Subtype /Image|/ColorSpace /DeviceRGB" -S --text "$$pdf" >/dev/null 2>&1; then \
+	    echo "[ok] $$pdf declares Image XObject with DeviceRGB"; \
+	  else \
+	    echo "ERROR: $$pdf did not show vector 'rg' nor RGB Image XObject" >&2; exit 1; \
+	  fi; \
 	done; \
-	# A couple PNG size checks as non-empty proxy; \
+# A couple PNG size checks as non-empty proxy; \
 	check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000; \
 	check_png_size output/example/fortran/line_styles/line_styles.png 10000; \
 	# Negative-coordinate pcolormesh: ensure non-trivial image and negative ticks present in PDF text; \
