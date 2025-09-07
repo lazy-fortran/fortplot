@@ -338,6 +338,7 @@ contains
         integer, allocatable :: rgb_u8(:)
         character(len=:), allocatable :: img_data
         real(wp) :: pdf_x0, pdf_y0, pdf_x1, pdf_y1, width_pt, height_pt
+        real(wp) :: px_w, px_h, bleed_x, bleed_y
         character(len=256) :: cmd
 
         call this%update_coord_context()
@@ -384,9 +385,20 @@ contains
         width_pt  = pdf_x1 - pdf_x0
         height_pt = pdf_y1 - pdf_y0
 
+        ! Compute a half-pixel bleed in user-space and clip to the exact plot area
+        px_w = width_pt / real(W, wp)
+        px_h = height_pt / real(H, wp)
+        bleed_x = 0.5_wp * px_w
+        bleed_y = 0.5_wp * px_h
+
         call this%stream_writer%add_to_stream('q')
+        ! Clip to the exact target rectangle to keep bleed inside
+        write(cmd,'(F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,A)') pdf_x0, pdf_y0, width_pt, height_pt, ' re W n'
+        call this%stream_writer%add_to_stream(trim(cmd))
+        ! Expand the placement matrix slightly to cover potential antialias seams
         write(cmd,'(F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,F0.6,1X,A)') &
-            width_pt, 0.0_wp, 0.0_wp, -height_pt, pdf_x0, pdf_y0+height_pt, ' cm'
+            width_pt + 2.0_wp*bleed_x, 0.0_wp, 0.0_wp, -(height_pt + 2.0_wp*bleed_y), &
+            pdf_x0 - bleed_x, (pdf_y0 + height_pt) + bleed_y, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
 
         write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode /I false ID'
