@@ -389,7 +389,7 @@ contains
             width_pt, 0.0_wp, 0.0_wp, -height_pt, pdf_x0, pdf_y0+height_pt, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
 
-        write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode ID'
+        write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode /I false ID'
         call this%stream_writer%add_to_stream(trim(cmd))
         call this%stream_writer%add_to_stream(img_data)
         call this%stream_writer%add_to_stream('EI')
