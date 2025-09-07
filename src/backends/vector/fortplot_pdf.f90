@@ -400,11 +400,9 @@ contains
             width_pt + 2.0_wp*bleed_x, 0.0_wp, 0.0_wp, -(height_pt + 2.0_wp*bleed_y), &
             pdf_x0 - bleed_x, (pdf_y0 + height_pt) + bleed_y, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
-
-        write(cmd,'(A,I0,A,I0,A)') 'BI /W ', W, ' /H ', H, ' /CS /RGB /BPC 8 /F /FlateDecode /I false ID'
-        call this%stream_writer%add_to_stream(trim(cmd))
-        call this%stream_writer%add_to_stream(img_data)
-        call this%stream_writer%add_to_stream('EI')
+        ! Place image XObject instead of inline image
+        call this%core_ctx%set_image(W, H, img_data)
+        call this%stream_writer%add_to_stream('/Im1 Do')
         call this%stream_writer%add_to_stream('Q')
     end subroutine fill_heatmap_wrapper
     subroutine render_legend_specialized_wrapper(this, entries, x, y, width, height)
