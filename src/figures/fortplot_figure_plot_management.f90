@@ -268,17 +268,20 @@ contains
             plots(plot_count)%pcolormesh_data%vmax_set = .true.
         end if
 
-        ! Apply symmetric normalization for diverging colormaps when data spans zero
-        ! Only if the user did not explicitly provide vmin/vmax.
+        ! Optional symmetric normalization: disabled by default.
+        ! Enable by setting env FORTPLOT_PCOLORMESH_SYMMETRIC=true.
         block
-            use fortplot_string_utils, only: to_lowercase
+            use fortplot_string_utils, only: to_lowercase, parse_boolean_env
             character(len=:), allocatable :: cmap_lower
             logical :: user_set_limits
             real(wp) :: vmin_auto, vmax_auto, vmax_abs
+            character(len=32) :: env_val
+            logical :: want_symmetric
 
             user_set_limits = present(vmin) .or. present(vmax)
-            if (.not. user_set_limits) then
-                ! Get current auto limits computed during initialization
+            call get_environment_variable('FORTPLOT_PCOLORMESH_SYMMETRIC', env_val)
+            want_symmetric = parse_boolean_env(env_val)
+            if (.not. user_set_limits .and. want_symmetric) then
                 vmin_auto = plots(plot_count)%pcolormesh_data%vmin
                 vmax_auto = plots(plot_count)%pcolormesh_data%vmax
                 if (vmin_auto < 0.0_wp .and. vmax_auto > 0.0_wp) then
