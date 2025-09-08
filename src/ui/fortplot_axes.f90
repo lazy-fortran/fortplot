@@ -155,7 +155,8 @@ contains
         
         if (abs_value < 1.0e-10_wp) then
             label = '0'
-        else if (trim(scale_type) == 'log' .and. is_power_of_ten(value)) then
+        else if ((trim(scale_type) == 'log' .or. trim(scale_type) == 'symlog') .and. is_power_of_ten(value)) then
+            ! Unify log and symlog formatting: show powers of ten with superscript
             label = format_power_of_ten(value)
         else if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < SCIENTIFIC_THRESHOLD_LOW) then
             ! Use scientific notation for very large or very small values
@@ -312,10 +313,11 @@ contains
         character(len=20) :: formatted
         integer :: exponent
         exponent = nint(log10(abs(value)))
+        ! Use mathtext-friendly braces so multi-digit exponents render correctly
         if (value < 0.0_wp) then
-            write(formatted, '(A, I0)') '-10^', exponent
+            write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
         else
-            write(formatted, '(A, I0)') '10^', exponent
+            write(formatted, '(A, I0, A)') '10^{', exponent, '}'
         end if
     end function format_power_of_ten
     

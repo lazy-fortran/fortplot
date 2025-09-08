@@ -122,7 +122,7 @@ contains
                     ! Use decimal format for common negative powers
                     write(formatted, '(F0.0)') value
                 else
-                    write(formatted, '(A, I0)') '-10^', exponent
+                    write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
                 end if
             else if (exponent == 0) then
                 formatted = '1'
@@ -139,7 +139,7 @@ contains
             else if (exponent == -3) then
                 formatted = '0.001'
             else
-                write(formatted, '(A, I0)') '10^', exponent
+                write(formatted, '(A, I0, A)') '10^{', exponent, '}'
             end if
         else
             ! For non-powers of 10, use regular formatting
