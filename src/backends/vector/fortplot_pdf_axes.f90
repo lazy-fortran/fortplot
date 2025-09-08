@@ -10,7 +10,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_drawing, only: pdf_stream_writer
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
-                                draw_pdf_mathtext
+                                draw_pdf_mathtext, estimate_pdf_text_width
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -431,7 +431,7 @@ contains
 
         integer :: i
         real(wp) :: label_x, label_y, bottom_y
-        real(wp), parameter :: TICK_CHAR_W = 6.0_wp   ! Approximate glyph width at PDF_TICK_LABEL_SIZE
+        real(wp), parameter :: TICK_CHAR_W = 6.0_wp   ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp   ! Distance below plot for X tick labels
         real(wp), parameter :: Y_TICK_GAP = 19.0_wp   ! Distance left of plot edge to end of Y tick labels
 
@@ -440,9 +440,10 @@ contains
 
         ! Draw X-axis labels (center-aligned under each tick)
         do i = 1, num_x
-            label_x = x_positions(i) - 0.5_wp * TICK_CHAR_W * real(len_trim(x_labels(i)), wp)
+            ! Estimate label width in points for proper centering (handles mathtext)
+            label_x = x_positions(i) - 0.5_wp * estimate_pdf_text_width(trim(x_labels(i)), PDF_TICK_LABEL_SIZE)
             label_y = bottom_y - X_TICK_GAP
-            call draw_pdf_text(ctx, label_x, label_y, trim(x_labels(i)))
+            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)))
         end do
 
         ! Draw Y-axis labels with overlap detection (right-aligned to end at plot_left - Y_TICK_GAP)
@@ -567,6 +568,7 @@ contains
         real(wp) :: label_x, label_y
         character(len=512) :: processed_label
         integer :: processed_len
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = 19.0_wp
         associate(dch=>canvas_height); end associate
 
         min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
@@ -577,10 +579,9 @@ contains
 
             ! Only draw if sufficient spacing from last label
             if (abs(label_y - last_y_drawn) >= min_spacing) then
-                ! Process LaTeX commands for accurate width calculation
-                call process_latex_in_text(trim(y_labels(i)), processed_label, processed_len)
-                label_x = plot_left - real(processed_len, wp) * 5.0_wp
-                call draw_pdf_text(ctx, label_x, label_y, trim(y_labels(i)))
+                ! Estimate label width for right-alignment next to the frame
+                label_x = plot_left - Y_TICK_GAP_LOCAL - estimate_pdf_text_width(trim(y_labels(i)), PDF_TICK_LABEL_SIZE)
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
                 last_y_drawn = label_y
             end if
         end do

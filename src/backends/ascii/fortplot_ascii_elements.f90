@@ -291,6 +291,10 @@ contains
         character(len=1) :: line_char
         character(len=500) :: processed_title
         integer :: processed_len
+        ! For y-axis ASCII label de-duplication by row
+        integer :: row
+        integer, allocatable :: row_best_len(:)
+        character(len=64), allocatable :: row_best_label(:)
         
         ! Reference optional parameters without unreachable branches
         if (present(z_min)) then; associate(unused_zmin => z_min); end associate; end if
@@ -357,12 +361,19 @@ contains
         end do
         
         ! Y-axis ticks (drawn as characters along left axis)
+        ! Avoid overlapping multiple labels on the same ASCII row by keeping only the longest label per row.
+
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
-        ! Determine decimals for linear scale based on tick spacing
         decimals = 0
         if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
             decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
         end if
+
+        allocate(row_best_len(plot_height))
+        allocate(row_best_label(plot_height))
+        row_best_len = 0
+        row_best_label = ''
+
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
             if (trim(yscale) == 'linear') then
@@ -370,10 +381,24 @@ contains
             else
                 tick_label = format_tick_label(tick_y, yscale)
             end if
-            call add_text_element(text_elements, num_text_elements, &
-                                 x_min - 0.1_wp * (x_max - x_min), tick_y, trim(tick_label), &
-                                 current_r, current_g, current_b, &
-                                 x_min, x_max, y_min, y_max, plot_width, plot_height)
+            ! Project tick_y to canvas row (same mapping as add_text_element)
+            row = nint((y_max - tick_y) / (y_max - y_min) * real(plot_height, wp))
+            row = max(1, min(row, plot_height))
+            if (len_trim(tick_label) > row_best_len(row)) then
+                row_best_len(row) = len_trim(tick_label)
+                row_best_label(row) = adjustl(tick_label)
+            end if
+        end do
+
+        ! Emit at most one y-label per row at the left edge (screen coordinates)
+        do row = 1, plot_height
+            ! Skip bottom row which is used for X tick labels to avoid overlap
+            if (row_best_len(row) > 0 .and. row < plot_height) then
+                call add_text_element(text_elements, num_text_elements, &
+                                     2.0_wp, real(row, wp), trim(row_best_label(row)), &
+                                     current_r, current_g, current_b, &
+                                     x_min, x_max, y_min, y_max, plot_width, plot_height)
+            end if
         end do
         
         ! Store processed xlabel and ylabel for rendering outside the plot frame
@@ -454,6 +479,8 @@ contains
         
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
+        ! Simplify mathtext braces for ASCII readability: 10^{3} -> 10^3
+        call simplify_mathtext_for_ascii(processed_text(1:processed_len), processed_text, processed_len)
         
         ! Store text element for later rendering
         if (num_text_elements < size(text_elements)) then
@@ -491,5 +518,48 @@ contains
             text_elements(num_text_elements)%color_b = current_b
         end if
     end subroutine add_text_element
+
+    subroutine simplify_mathtext_for_ascii(input, output, out_len)
+        !! Convert simple mathtext like 10^{3} to 10^3 for ASCII output
+        character(len=*), intent(in) :: input
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: out_len
+        integer :: i, j, n
+        character(len=len(output)) :: tmp
+        logical :: in_braces
+        
+        n = len_trim(input)
+        i = 1
+        j = 0
+        in_braces = .false.
+        tmp = ''
+        do while (i <= n)
+            if (input(i:i) == '^' .or. input(i:i) == '_') then
+                if (i < n .and. input(i+1:i+1) == '{') then
+                    j = j + 1; tmp(j:j) = input(i:i)
+                    i = i + 2  ! skip ^ and opening {
+                    do while (i <= n .and. input(i:i) /= '}')
+                        j = j + 1
+                        tmp(j:j) = input(i:i)
+                        i = i + 1
+                    end do
+                    if (i <= n .and. input(i:i) == '}') then
+                        i = i + 1  ! skip closing }
+                    end if
+                else
+                    j = j + 1
+                    tmp(j:j) = input(i:i)
+                    i = i + 1
+                end if
+            else
+                j = j + 1
+                tmp(j:j) = input(i:i)
+                i = i + 1
+            end if
+        end do
+        output = tmp
+        out_len = j
+        if (j < len(output)) output(j+1:) = ' '
+    end subroutine simplify_mathtext_for_ascii
 
 end module fortplot_ascii_elements
