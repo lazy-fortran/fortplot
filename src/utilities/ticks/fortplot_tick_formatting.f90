@@ -13,6 +13,7 @@ module fortplot_tick_formatting
     
     private
     public :: format_tick_value, format_tick_value_smart, format_log_tick_value
+    public :: format_power_of_ten_label
     public :: remove_trailing_zeros, ensure_leading_zero
 
 contains
@@ -150,6 +151,25 @@ contains
             end if
         end if
     end function format_log_tick_value
+
+    function format_power_of_ten_label(value) result(formatted)
+        !! Build a mathtext-friendly power-of-ten label: 10^{n} or -10^{n}
+        real(wp), intent(in) :: value
+        character(len=20) :: formatted
+        integer :: exponent
+
+        if (abs(value) < 1.0e-10_wp) then
+            formatted = '0'
+            return
+        end if
+
+        exponent = nint(log10(abs(value)))
+        if (value < 0.0_wp) then
+            write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
+        else
+            write(formatted, '(A, I0, A)') '10^{', exponent, '}'
+        end if
+    end function format_power_of_ten_label
 
     subroutine remove_trailing_zeros(str)
         !! Remove trailing zeros from decimal representation
