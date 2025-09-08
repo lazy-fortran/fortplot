@@ -9,6 +9,7 @@ module fortplot_axes
     use fortplot_context
     use fortplot_scales
     use fortplot_constants, only: SCIENTIFIC_THRESHOLD_HIGH
+    use fortplot_tick_formatting, only: format_power_of_ten_label
     implicit none
     
     private
@@ -157,7 +158,7 @@ contains
             label = '0'
         else if ((trim(scale_type) == 'log' .or. trim(scale_type) == 'symlog') .and. is_power_of_ten(value)) then
             ! Unify log and symlog formatting: show powers of ten with superscript
-            label = format_power_of_ten(value)
+            label = format_power_of_ten_label(value)
         else if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < SCIENTIFIC_THRESHOLD_LOW) then
             ! Use scientific notation for very large or very small values
             write(label, '(ES10.2)') value
@@ -308,18 +309,7 @@ contains
         is_power = abs(log_val - nint(log_val)) < 1.0e-10_wp
     end function is_power_of_ten
     
-    function format_power_of_ten(value) result(formatted)
-        real(wp), intent(in) :: value
-        character(len=20) :: formatted
-        integer :: exponent
-        exponent = nint(log10(abs(value)))
-        ! Use mathtext-friendly braces so multi-digit exponents render correctly
-        if (value < 0.0_wp) then
-            write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
-        else
-            write(formatted, '(A, I0, A)') '10^{', exponent, '}'
-        end if
-    end function format_power_of_ten
+    ! format_power_of_ten moved to fortplot_tick_formatting to reduce duplication
     
 
 end module fortplot_axes

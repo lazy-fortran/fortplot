@@ -291,6 +291,10 @@ contains
         character(len=1) :: line_char
         character(len=500) :: processed_title
         integer :: processed_len
+        ! For y-axis ASCII label de-duplication by row
+        integer :: row
+        integer, allocatable :: row_best_len(:)
+        character(len=64), allocatable :: row_best_label(:)
         
         ! Reference optional parameters without unreachable branches
         if (present(z_min)) then; associate(unused_zmin => z_min); end associate; end if
@@ -357,12 +361,19 @@ contains
         end do
         
         ! Y-axis ticks (drawn as characters along left axis)
+        ! Avoid overlapping multiple labels on the same ASCII row by keeping only the longest label per row.
+
         call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
-        ! Determine decimals for linear scale based on tick spacing
         decimals = 0
         if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
             decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
         end if
+
+        allocate(row_best_len(plot_height))
+        allocate(row_best_label(plot_height))
+        row_best_len = 0
+        row_best_label = ''
+
         do i = 1, num_y_ticks
             tick_y = y_tick_positions(i)
             if (trim(yscale) == 'linear') then
@@ -370,10 +381,23 @@ contains
             else
                 tick_label = format_tick_label(tick_y, yscale)
             end if
-            call add_text_element(text_elements, num_text_elements, &
-                                 x_min - 0.1_wp * (x_max - x_min), tick_y, trim(tick_label), &
-                                 current_r, current_g, current_b, &
-                                 x_min, x_max, y_min, y_max, plot_width, plot_height)
+            ! Project tick_y to canvas row (same mapping as add_text_element)
+            row = nint((y_max - tick_y) / (y_max - y_min) * real(plot_height, wp))
+            row = max(1, min(row, plot_height))
+            if (len_trim(tick_label) > row_best_len(row)) then
+                row_best_len(row) = len_trim(tick_label)
+                row_best_label(row) = adjustl(tick_label)
+            end if
+        end do
+
+        ! Emit at most one y-label per row at the left edge (screen coordinates)
+        do row = 1, plot_height
+            if (row_best_len(row) > 0) then
+                call add_text_element(text_elements, num_text_elements, &
+                                     1.0_wp, real(row, wp), trim(row_best_label(row)), &
+                                     current_r, current_g, current_b, &
+                                     x_min, x_max, y_min, y_max, plot_width, plot_height)
+            end if
         end do
         
         ! Store processed xlabel and ylabel for rendering outside the plot frame
