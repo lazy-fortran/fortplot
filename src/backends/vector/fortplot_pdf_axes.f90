@@ -442,7 +442,7 @@ contains
         do i = 1, num_x
             label_x = x_positions(i) - 0.5_wp * TICK_CHAR_W * real(len_trim(x_labels(i)), wp)
             label_y = bottom_y - X_TICK_GAP
-            call draw_pdf_text(ctx, label_x, label_y, trim(x_labels(i)))
+            call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)))
         end do
 
         ! Draw Y-axis labels with overlap detection (right-aligned to end at plot_left - Y_TICK_GAP)
@@ -580,7 +580,7 @@ contains
                 ! Process LaTeX commands for accurate width calculation
                 call process_latex_in_text(trim(y_labels(i)), processed_label, processed_len)
                 label_x = plot_left - real(processed_len, wp) * 5.0_wp
-                call draw_pdf_text(ctx, label_x, label_y, trim(y_labels(i)))
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
                 last_y_drawn = label_y
             end if
         end do

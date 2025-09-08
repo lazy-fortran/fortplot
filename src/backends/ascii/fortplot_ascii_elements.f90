@@ -392,9 +392,10 @@ contains
 
         ! Emit at most one y-label per row at the left edge (screen coordinates)
         do row = 1, plot_height
-            if (row_best_len(row) > 0) then
+            ! Skip bottom row which is used for X tick labels to avoid overlap
+            if (row_best_len(row) > 0 .and. row < plot_height) then
                 call add_text_element(text_elements, num_text_elements, &
-                                     1.0_wp, real(row, wp), trim(row_best_label(row)), &
+                                     2.0_wp, real(row, wp), trim(row_best_label(row)), &
                                      current_r, current_g, current_b, &
                                      x_min, x_max, y_min, y_max, plot_width, plot_height)
             end if
