@@ -13,6 +13,7 @@ module fortplot_tick_formatting
     
     private
     public :: format_tick_value, format_tick_value_smart, format_log_tick_value
+    public :: format_power_of_ten_label
     public :: remove_trailing_zeros, ensure_leading_zero
 
 contains
@@ -122,7 +123,7 @@ contains
                     ! Use decimal format for common negative powers
                     write(formatted, '(F0.0)') value
                 else
-                    write(formatted, '(A, I0)') '-10^', exponent
+                    write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
                 end if
             else if (exponent == 0) then
                 formatted = '1'
@@ -139,7 +140,7 @@ contains
             else if (exponent == -3) then
                 formatted = '0.001'
             else
-                write(formatted, '(A, I0)') '10^', exponent
+                write(formatted, '(A, I0, A)') '10^{', exponent, '}'
             end if
         else
             ! For non-powers of 10, use regular formatting
@@ -150,6 +151,58 @@ contains
             end if
         end if
     end function format_log_tick_value
+
+    function format_power_of_ten_label(value) result(formatted)
+        !! Build a mathtext-friendly power-of-ten label: 10^{n} or -10^{n}
+        real(wp), intent(in) :: value
+        character(len=20) :: formatted
+        integer :: exponent
+
+        if (abs(value) < 1.0e-10_wp) then
+            formatted = '0'
+            return
+        end if
+
+        exponent = nint(log10(abs(value)))
+
+        ! Friendly formatting for common exponents to match matplotlib
+        if (exponent == 0) then
+            if (value < 0.0_wp) then
+                formatted = '-1'
+            else
+                formatted = '1'
+            end if
+            return
+        else if (value > 0.0_wp) then
+            select case (exponent)
+            case (1)
+                formatted = '10'
+                return
+            case (2)
+                formatted = '100'
+                return
+            case (3)
+                formatted = '1000'
+                return
+            case (-1)
+                formatted = '0.1'
+                return
+            case (-2)
+                formatted = '0.01'
+                return
+            case (-3)
+                formatted = '0.001'
+                return
+            end select
+        end if
+
+        ! General case uses mathtext superscript
+        if (value < 0.0_wp) then
+            write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
+        else
+            write(formatted, '(A, I0, A)') '10^{', exponent, '}'
+        end if
+    end function format_power_of_ten_label
 
     subroutine remove_trailing_zeros(str)
         !! Remove trailing zeros from decimal representation
