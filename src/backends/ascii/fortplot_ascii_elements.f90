@@ -479,6 +479,8 @@ contains
         
         ! Process LaTeX commands to Unicode
         call process_latex_in_text(text, processed_text, processed_len)
+        ! Simplify mathtext braces for ASCII readability: 10^{3} -> 10^3
+        call simplify_mathtext_for_ascii(processed_text(1:processed_len), processed_text, processed_len)
         
         ! Store text element for later rendering
         if (num_text_elements < size(text_elements)) then
@@ -516,5 +518,48 @@ contains
             text_elements(num_text_elements)%color_b = current_b
         end if
     end subroutine add_text_element
+
+    subroutine simplify_mathtext_for_ascii(input, output, out_len)
+        !! Convert simple mathtext like 10^{3} to 10^3 for ASCII output
+        character(len=*), intent(in) :: input
+        character(len=*), intent(inout) :: output
+        integer, intent(inout) :: out_len
+        integer :: i, j, n
+        character(len=len(output)) :: tmp
+        logical :: in_braces
+        
+        n = len_trim(input)
+        i = 1
+        j = 0
+        in_braces = .false.
+        tmp = ''
+        do while (i <= n)
+            if (input(i:i) == '^' .or. input(i:i) == '_') then
+                if (i < n .and. input(i+1:i+1) == '{') then
+                    j = j + 1; tmp(j:j) = input(i:i)
+                    i = i + 2  ! skip ^ and opening {
+                    do while (i <= n .and. input(i:i) /= '}')
+                        j = j + 1
+                        tmp(j:j) = input(i:i)
+                        i = i + 1
+                    end do
+                    if (i <= n .and. input(i:i) == '}') then
+                        i = i + 1  ! skip closing }
+                    end if
+                else
+                    j = j + 1
+                    tmp(j:j) = input(i:i)
+                    i = i + 1
+                end if
+            else
+                j = j + 1
+                tmp(j:j) = input(i:i)
+                i = i + 1
+            end if
+        end do
+        output = tmp
+        out_len = j
+        if (j < len(output)) output(j+1:) = ' '
+    end subroutine simplify_mathtext_for_ascii
 
 end module fortplot_ascii_elements

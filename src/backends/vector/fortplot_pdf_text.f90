@@ -733,15 +733,25 @@ contains
     end subroutine render_text_with_unicode_superscripts
     
     subroutine render_mathtext_with_unicode_superscripts(this, x, y, text, font_size)
-        !! Render mathtext that may also contain Unicode superscripts
+        !! Render mathtext (^, _) by parsing into elements and positioning superscripts/subscripts
         class(pdf_context_core), intent(inout) :: this
-        real(wp), intent(in) :: x, y  
+        real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: font_size
         
-        ! For now, just use regular mathtext - this is for user ^ notation
-        ! TODO: Enhance this if needed
-        call draw_mixed_font_text(this, x, y, text)
+        type(mathtext_element_t), allocatable :: elements(:)
+        real(wp) :: x_pos
+        integer :: i
+        
+        elements = parse_mathtext(text)
+        ! Begin text object for grouped mathtext rendering
+        this%stream_data = this%stream_data // "BT" // new_line('a')
+        x_pos = x
+        do i = 1, size(elements)
+            call render_mathtext_element_pdf(this, elements(i), x_pos, y, font_size)
+        end do
+        ! End text object
+        this%stream_data = this%stream_data // "ET" // new_line('a')
     end subroutine render_mathtext_with_unicode_superscripts
 
     subroutine process_text_with_superscripts(this, x, y, text, font_size)
