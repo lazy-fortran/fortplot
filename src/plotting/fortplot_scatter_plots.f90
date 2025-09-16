@@ -7,6 +7,7 @@ module fortplot_scatter_plots
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: PLOT_TYPE_SCATTER
+    use fortplot_figure_plot_management, only: next_plot_color
 
     implicit none
 
@@ -81,7 +82,9 @@ contains
         
         integer :: plot_idx
         real(wp) :: alpha_dummy2
-        
+        real(wp) :: default_color(3)
+
+        default_color = next_plot_color(self%state)
         if (present(alpha)) alpha_dummy2 = alpha
         self%state%plot_count = self%state%plot_count + 1
         self%plot_count = self%state%plot_count
@@ -97,7 +100,7 @@ contains
         end if
         
         self%plots(plot_idx)%plot_type = PLOT_TYPE_SCATTER
-        
+
         allocate(self%plots(plot_idx)%x(size(x)))
         allocate(self%plots(plot_idx)%y(size(y)))
         
@@ -119,17 +122,18 @@ contains
             self%plots(plot_idx)%scatter_colors = c
         end if
         
+        self%plots(plot_idx)%color = default_color
         if (present(color)) then
             self%plots(plot_idx)%color = color
         end if
-        
+
         if (present(marker)) then
             self%plots(plot_idx)%marker = marker
         else
             ! Default marker for scatter plots - ensures they are visible
             self%plots(plot_idx)%marker = 'o'
         end if
-        
+
         if (present(markersize)) then
             self%plots(plot_idx)%scatter_size_default = markersize
         end if
@@ -150,13 +154,17 @@ contains
         
         if (present(show_colorbar)) then
             self%plots(plot_idx)%scatter_colorbar = show_colorbar
+        else if (present(c)) then
+            self%plots(plot_idx)%scatter_colorbar = .true.
         end if
-        
+
         ! Note: alpha not directly supported in plot_data_t structure
-        
+
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if
+
+        self%plots(plot_idx)%linestyle = 'none'
 
         self%state%rendered = .false.
     end subroutine add_scatter_plot_data

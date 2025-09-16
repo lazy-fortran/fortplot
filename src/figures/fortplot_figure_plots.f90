@@ -37,7 +37,7 @@ contains
         if (present(color)) then
             plot_color = color
         else
-            plot_color = state%colors(:, mod(state%plot_count, 6) + 1)
+            plot_color = next_plot_color(state)
         end if
         
         ! Parse linestyle to extract marker and actual linestyle
