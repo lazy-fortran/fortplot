@@ -203,14 +203,36 @@ contains
     end subroutine raster_render_legend_specialized
 
     subroutine raster_calculate_legend_dimensions(legend, legend_width, legend_height)
-        !! Calculate standard legend dimensions for PNG
+        !! Calculate legend dimensions for PNG using real text metrics (pixels)
         use fortplot_legend, only: legend_t
+        use fortplot_text, only: calculate_text_width, calculate_text_height
         type(legend_t), intent(in) :: legend
         real(wp), intent(out) :: legend_width, legend_height
-        
-        ! Use standard dimension calculation for PNG backend
-        legend_width = 80.0_wp   ! Standard legend width
-        legend_height = real(legend%num_entries * 20 + 10, wp)  ! 20 pixels per entry + margins
+
+        integer :: i, max_label_w, label_h, padding_x, line_len, text_gap, pad_y, entry_gap
+
+        if (legend%num_entries <= 0) then
+            legend_width = 0.0_wp
+            legend_height = 0.0_wp
+            return
+        end if
+
+        max_label_w = 0
+        label_h = 0
+        do i = 1, legend%num_entries
+            max_label_w = max(max_label_w, calculate_text_width(legend%entries(i)%label))
+            label_h = max(label_h, calculate_text_height(legend%entries(i)%label))
+        end do
+
+        ! Match layout spacing used in legend layout (in pixels here)
+        line_len = 20
+        text_gap = 6
+        padding_x = 4
+        pad_y = 4
+        entry_gap = 5
+
+        legend_width = real(2*padding_x + line_len + text_gap + max_label_w + 1, wp)  ! +1px AA/border safety
+        legend_height = real(2*pad_y + legend%num_entries*label_h + max(legend%num_entries-1,0)*entry_gap, wp)
     end subroutine raster_calculate_legend_dimensions
 
     subroutine raster_set_legend_border_width()
