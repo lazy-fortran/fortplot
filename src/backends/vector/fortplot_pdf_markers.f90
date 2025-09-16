@@ -38,7 +38,7 @@ contains
             call draw_pdf_circle_with_outline(stream_writer, pdf_x, pdf_y, size)
         case('s', 'square')
             call draw_pdf_square_with_outline(stream_writer, pdf_x, pdf_y, size)
-        case('d', 'diamond')
+        case('D', 'd', 'diamond')
             call draw_pdf_diamond_with_outline(stream_writer, pdf_x, pdf_y, size)
         case('x', 'cross')
             call draw_pdf_x_marker(stream_writer, pdf_x, pdf_y, size)
