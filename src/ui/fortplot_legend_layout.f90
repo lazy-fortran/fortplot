@@ -20,7 +20,8 @@ module fortplot_legend_layout
         !! Single Responsibility: Legend box dimensions and position
         real(wp) :: x, y              ! Top-left corner position
         real(wp) :: width, height     ! Box dimensions  
-        real(wp) :: padding           ! Internal padding
+        real(wp) :: padding           ! Vertical padding (Y)
+        real(wp) :: padding_x         ! Horizontal padding (X)
         real(wp) :: entry_height      ! Height of each legend entry (text height)
         real(wp) :: entry_spacing     ! Vertical spacing between entries
         real(wp) :: line_length       ! Length of legend line samples
@@ -29,14 +30,17 @@ module fortplot_legend_layout
     
 contains
 
-    function calculate_legend_box(labels, data_width, data_height, num_entries, position) result(box)
+    function calculate_legend_box(labels, data_width, data_height, num_entries, position, &
+                                  pixel_plot_width, pixel_plot_height) result(box)
         !! Calculate optimal legend box dimensions and position
         !! DRY: Centralized legend box calculation logic
         character(len=*), intent(in) :: labels(:)
         real(wp), intent(in) :: data_width, data_height
         integer, intent(in) :: num_entries, position
+        integer, intent(in), optional :: pixel_plot_width, pixel_plot_height
         type(legend_box_t) :: box
         real(wp) :: max_text_width, total_text_width, margins(2)
+        integer :: px_w, px_h
         
         if (num_entries == 0) then
             box%width = 0.0_wp
@@ -44,9 +48,18 @@ contains
             return
         end if
         
-        ! Calculate optimal dimensions based on content
+        ! Resolve pixel plot area dimensions if provided (prefer exact values)
+        if (present(pixel_plot_width) .and. present(pixel_plot_height)) then
+            px_w = max(1, pixel_plot_width)
+            px_h = max(1, pixel_plot_height)
+        else
+            px_w = int(STANDARD_WIDTH_PIXELS)
+            px_h = int(STANDARD_HEIGHT_PIXELS)
+        end if
+
+        ! Calculate optimal dimensions based on content with real pixel scale
         call calculate_optimal_legend_dimensions(labels, data_width, data_height, &
-                                                max_text_width, total_text_width, box)
+                                                max_text_width, total_text_width, box, px_w, px_h)
         
         ! Get appropriate margins for this backend
         margins = get_legend_margins(data_width, data_height)
@@ -57,13 +70,15 @@ contains
     end function calculate_legend_box
     
     subroutine calculate_optimal_legend_dimensions(labels, data_width, data_height, &
-                                                  max_text_width, total_text_width, box)
+                                                  max_text_width, total_text_width, box, &
+                                                  pixel_plot_width, pixel_plot_height)
         !! Calculate optimal legend dimensions using actual text system measurements
         !! KISS: Based on measured text content, not estimates
         character(len=*), intent(in) :: labels(:)
         real(wp), intent(in) :: data_width, data_height
         real(wp), intent(out) :: max_text_width, total_text_width
         type(legend_box_t), intent(inout) :: box
+        integer, intent(in) :: pixel_plot_width, pixel_plot_height
         
         real(wp) :: data_to_pixel_ratio_x, data_to_pixel_ratio_y
         integer :: max_text_height_pixels
@@ -72,9 +87,9 @@ contains
         ! Initialize text system for measurements
         text_system_available = init_text_system()
         
-        ! Calculate data-to-pixel conversion ratio
-        data_to_pixel_ratio_x = STANDARD_WIDTH_PIXELS / data_width
-        data_to_pixel_ratio_y = STANDARD_HEIGHT_PIXELS / data_height
+        ! Calculate data-to-pixel conversion ratio using actual plot-area pixels when available
+        data_to_pixel_ratio_x = real(pixel_plot_width, wp) / data_width
+        data_to_pixel_ratio_y = real(pixel_plot_height, wp) / data_height
         
         ! Measure text dimensions
         call measure_label_dimensions(labels, text_system_available, data_to_pixel_ratio_x, &
@@ -102,7 +117,7 @@ contains
         character(len=:), allocatable :: trimmed_label, processed_label
         character(len=512) :: temp_processed_label
         integer :: processed_len
-        integer, parameter :: fudge_pixels = 2
+        integer, parameter :: fudge_pixels = 0
         
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
@@ -140,19 +155,24 @@ contains
         integer, intent(in) :: num_labels
         
         real(wp) :: padding_x, label_spacing
+        real(wp) :: aa_safety_x
         
         ! Set legend box components (matplotlib-style spacing)
         box%line_length = 20.0_wp / data_to_pixel_ratio_x  ! 20 pixels for legend line
         box%text_spacing = 6.0_wp / data_to_pixel_ratio_x  ! 6 pixels between line and text
         box%entry_height = real(max_text_height_pixels, wp) / data_to_pixel_ratio_y
         box%entry_spacing = 5.0_wp / data_to_pixel_ratio_y  ! 0.5 * 10pt font = 5 pixels
-        box%padding = 4.0_wp / data_to_pixel_ratio_y  ! 0.4 * 10pt font = 4 pixels
+        box%padding = 4.0_wp / data_to_pixel_ratio_y       ! Vertical padding
         
         label_spacing = box%entry_spacing
         padding_x = 4.0_wp / data_to_pixel_ratio_x
+        box%padding_x = padding_x
+        ! Rendering safety: AA of slanted sqrt tick and 0.5px border can
+        ! place coverage up to ~1px near right edge. Reserve 1px in data units.
+        aa_safety_x = 1.0_wp / data_to_pixel_ratio_x
         
         ! Calculate total box dimensions
-        box%width = 2.0_wp * padding_x + box%line_length + box%text_spacing + max_text_width
+        box%width = 2.0_wp * box%padding_x + box%line_length + box%text_spacing + max_text_width + aa_safety_x
         box%height = 2.0_wp * box%padding + &
                      real(num_labels, wp) * box%entry_height + &
                      real(num_labels - 1, wp) * label_spacing

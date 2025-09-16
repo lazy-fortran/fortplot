@@ -210,16 +210,20 @@ contains
     subroutine initialize_legend_rendering(legend, backend, box, labels, data_width, data_height)
         !! Initialize legend rendering components
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
+        use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         type(legend_box_t), intent(out) :: box
         character(len=:), allocatable, intent(out) :: labels(:)
         real(wp), intent(out) :: data_width, data_height
-        
+
         integer :: i
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
+        integer :: px_w, px_h
         
-        ! Extract labels for box calculation
-        allocate(character(len=50) :: labels(legend%num_entries))
+        ! Extract labels for box calculation (no truncation). Allocate to max length.
+        allocate(character(len=256) :: labels(legend%num_entries))
         do i = 1, legend%num_entries
             labels(i) = legend%entries(i)%label
         end do
@@ -227,10 +231,15 @@ contains
         ! Calculate data coordinate dimensions
         data_width = backend%x_max - backend%x_min
         data_height = backend%y_max - backend%y_min
-        
-        ! Use shared layout calculation for improved sizing
+
+        ! Determine actual plot-area pixel dimensions to get exact text/data scaling
+        call calculate_plot_area(backend%width, backend%height, margins, plot_area)
+        px_w = max(1, plot_area%width)
+        px_h = max(1, plot_area%height)
+
+        ! Use shared layout calculation with real pixel scale for precise sizing
         box = calculate_legend_box(labels, data_width, data_height, &
-                                  legend%num_entries, legend%position)
+                                  legend%num_entries, legend%position, px_w, px_h)
     end subroutine initialize_legend_rendering
     
     subroutine draw_legend_frame(backend, legend_x, legend_y, box)
@@ -296,7 +305,7 @@ contains
         real(wp), intent(out) :: line_x1, line_x2, line_y, text_x, text_y
         
         ! Calculate line position
-        line_x1 = legend_x + box%padding
+        line_x1 = legend_x + box%padding_x
         line_x2 = line_x1 + box%line_length
         line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
                  real(entry_idx-1, wp) * (box%entry_height + box%entry_spacing)
@@ -362,6 +371,7 @@ contains
         !! Calculate legend position based on backend and position setting
         !! Interface Segregation: Only depends on backend dimensions
         use fortplot_legend_layout, only: legend_box_t, calculate_legend_box
+        use fortplot_layout, only: plot_margins_t, plot_area_t, calculate_plot_area
         type(legend_t), intent(in) :: legend
         class(plot_context), intent(in) :: backend
         real(wp), intent(out) :: x, y
@@ -369,6 +379,9 @@ contains
         type(legend_box_t) :: box
         character(len=:), allocatable :: labels(:)
         integer :: i
+        type(plot_margins_t) :: margins
+        type(plot_area_t) :: plot_area
+        integer :: px_w, px_h
         
         ! Get data coordinate ranges
         data_width = backend%x_max - backend%x_min
@@ -384,14 +397,18 @@ contains
             ! Note: labels not used in ASCII path, but must be declared due to Fortran scoping
         else
             ! Standard backends with margin support
-            allocate(character(len=50) :: labels(legend%num_entries))
+            allocate(character(len=256) :: labels(legend%num_entries))
             do i = 1, legend%num_entries
                 labels(i) = legend%entries(i)%label
             end do
             
             ! Pass data coordinate dimensions, not pixel dimensions
+            call calculate_plot_area(backend%width, backend%height, margins, plot_area)
+            px_w = max(1, plot_area%width)
+            px_h = max(1, plot_area%height)
+
             box = calculate_legend_box(labels, data_width, data_height, &
-                                     legend%num_entries, legend%position)
+                                     legend%num_entries, legend%position, px_w, px_h)
             
             ! Box positions are already in data coordinates relative to origin
             ! Need to add the backend's minimum values to get absolute positions

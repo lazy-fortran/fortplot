@@ -51,6 +51,8 @@ contains
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
+        integer :: ix0, iy0, ix1, iy1
+        integer :: pen_px, rightmost
 
         ! Initialize text system if not already done
         if (.not. is_font_initialized()) then
@@ -73,6 +75,8 @@ contains
         scale = get_font_scale()
 
         width = 0
+        rightmost = 0
+        pen_px = 0
         i = 1
         do while (i <= len_trim(text))
             char_len = utf8_char_length(text(i:i))
@@ -85,11 +89,13 @@ contains
                 i = i + char_len
             end if
 
+            ! Use glyph bounding box to capture overhang beyond advance width
+            call stb_get_codepoint_bitmap_box(font, char_code, scale, scale, ix0, iy0, ix1, iy1)
+            rightmost = max(rightmost, pen_px + ix1)
             call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
-            ! Scale to pixel coordinates
-            width = width + int(real(advance_width) * scale)
+            pen_px = pen_px + int(real(advance_width) * scale)
         end do
-
+        width = max(pen_px, rightmost)
     end function calculate_text_width
 
     function calculate_text_width_with_size(text, pixel_height) result(width)
@@ -105,6 +111,8 @@ contains
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
+        integer :: ix0, iy0, ix1, iy1
+        integer :: pen_px, rightmost
 
         ! Initialize text system if not already done
         if (.not. is_font_initialized()) then
@@ -127,6 +135,8 @@ contains
         scale = get_font_scale_for_size(pixel_height)
 
         width = 0
+        rightmost = 0
+        pen_px = 0
         i = 1
         do while (i <= len_trim(text))
             char_len = utf8_char_length(text(i:i))
@@ -138,10 +148,12 @@ contains
                 i = i + char_len
             end if
 
+            call stb_get_codepoint_bitmap_box(font, char_code, scale, scale, ix0, iy0, ix1, iy1)
+            rightmost = max(rightmost, pen_px + ix1)
             call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
-            width = width + int(real(advance_width) * scale)
+            pen_px = pen_px + int(real(advance_width) * scale)
         end do
-
+        width = max(pen_px, rightmost)
     end function calculate_text_width_with_size
 
     function calculate_text_height(text) result(height)
@@ -531,6 +543,8 @@ contains
         integer :: char_len
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
+        integer :: ix0, iy0, ix1, iy1
+        integer :: pen_px, rightmost
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -543,6 +557,8 @@ contains
         scale = get_font_scale_for_size(pixel_height)
 
         width = 0
+        rightmost = 0
+        pen_px = 0
         i = 1
         do while (i <= len_trim(text))
             char_len = utf8_char_length(text(i:i))
@@ -554,10 +570,12 @@ contains
                 i = i + char_len
             end if
 
+            call stb_get_codepoint_bitmap_box(font, char_code, scale, scale, ix0, iy0, ix1, iy1)
+            rightmost = max(rightmost, pen_px + ix1)
             call stb_get_codepoint_hmetrics(font, char_code, advance_width, left_side_bearing)
-            width = width + int(real(advance_width) * scale)
+            pen_px = pen_px + int(real(advance_width) * scale)
         end do
-
+        width = max(pen_px, rightmost)
     end function calculate_text_width_with_size_internal
 
     function calculate_text_height_with_size_internal(pixel_height) result(height)
