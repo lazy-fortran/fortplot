@@ -35,6 +35,7 @@ module fortplot_figure_core
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                     PLOT_TYPE_SCATTER
     use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, figure_backend_associated, figure_backend_line
     implicit none
@@ -422,8 +423,8 @@ contains
         real(wp) :: default_color(3)
         real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
         
-        ! Get default color from state
-        default_color = self%state%colors(:, mod(self%state%plot_count, 6) + 1)
+        ! Get default color from state using shared cycling logic
+        default_color = next_plot_color(self%state)
         if (present(alpha)) al_dummy1 = alpha
         if (present(edgecolor)) ec_dummy1 = edgecolor(1)
         if (present(facecolor)) fc_dummy1 = facecolor(1)

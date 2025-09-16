@@ -6,6 +6,7 @@ module fortplot_figure_plot_management
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
     use fortplot_errors, only: fortplot_error_t
@@ -15,6 +16,7 @@ module fortplot_figure_plot_management
     public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
     public :: add_pcolormesh_plot_data, generate_default_contour_levels
     public :: setup_figure_legend, update_plot_ydata, validate_plot_data
+    public :: next_plot_color
     
 contains
 
@@ -70,6 +72,20 @@ contains
             end if
         end if
     end subroutine validate_plot_data
+
+    pure function next_plot_color(state) result(color)
+        !! Determine the next color from the figure palette using plot count
+        type(figure_state_t), intent(in) :: state
+        real(wp) :: color(3)
+        integer :: palette_size
+
+        palette_size = size(state%colors, 2)
+        if (palette_size <= 0) then
+            color = [0.0_wp, 0.0_wp, 0.0_wp]
+        else
+            color = state%colors(:, mod(state%plot_count, palette_size) + 1)
+        end if
+    end function next_plot_color
     
     subroutine add_line_plot_data(plots, plot_count, max_plots, &
                                  x, y, label, linestyle, color, marker)
