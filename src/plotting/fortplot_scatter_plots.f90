@@ -83,13 +83,16 @@ contains
         real(wp) :: alpha_dummy2
         
         if (present(alpha)) alpha_dummy2 = alpha
-        self%plot_count = self%plot_count + 1
+        self%state%plot_count = self%state%plot_count + 1
+        self%plot_count = self%state%plot_count
         plot_idx = self%plot_count
         
         ! Ensure plots array is allocated
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
         else if (plot_idx > size(self%plots)) then
+            self%state%plot_count = self%state%plot_count - 1
+            self%plot_count = self%state%plot_count
             return
         end if
         
@@ -154,6 +157,8 @@ contains
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if
+
+        self%state%rendered = .false.
     end subroutine add_scatter_plot_data
 
 end module fortplot_scatter_plots
