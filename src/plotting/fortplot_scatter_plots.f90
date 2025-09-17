@@ -6,7 +6,7 @@ module fortplot_scatter_plots
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use fortplot_plot_data, only: PLOT_TYPE_SCATTER
+    use fortplot_figure_core_advanced, only: core_scatter
     use fortplot_figure_plot_management, only: next_plot_color
 
     implicit none
@@ -50,8 +50,8 @@ contains
                                   show_colorbar=show_colorbar, alpha=alpha)
     end subroutine add_scatter_2d_impl
 
-    subroutine add_scatter_3d_impl(self, x, y, z, s, c, label, marker, markersize, color, &
-                                   colormap, vmin, vmax, show_colorbar, alpha)
+    subroutine add_scatter_3d_impl(self, x, y, z, s, c, label, marker, markersize, &
+                                   color, colormap, vmin, vmax, show_colorbar, alpha)
         !! Add 3D scatter plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:)
@@ -67,104 +67,44 @@ contains
         real(wp), intent(in), optional :: alpha
         real(wp) :: alpha_dummy1
         if (present(alpha)) alpha_dummy1 = alpha
-        call add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
-                                  colormap, vmin, vmax, show_colorbar, alpha)
+        call add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, &
+                                   color, colormap, vmin, vmax, show_colorbar, alpha)
     end subroutine add_scatter_3d_impl
 
-    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, color, &
-                                    colormap, vmin, vmax, show_colorbar, alpha)
+    subroutine add_scatter_plot_data(self, x, y, z, s, c, label, marker, markersize, &
+                                    color, colormap, vmin, vmax, show_colorbar, alpha)
         !! Add scatter plot data with optional properties
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: z(:), s(:), c(:), markersize, color(3), vmin, vmax, alpha
+        real(wp), intent(in), optional :: z(:), s(:), c(:), markersize
+        real(wp), intent(in), optional :: color(3), vmin, vmax, alpha
         character(len=*), intent(in), optional :: label, marker, colormap
         logical, intent(in), optional :: show_colorbar
         
-        integer :: plot_idx
-        real(wp) :: alpha_dummy2
         real(wp) :: default_color(3)
 
-        default_color = next_plot_color(self%state)
-        if (present(alpha)) alpha_dummy2 = alpha
-        self%state%plot_count = self%state%plot_count + 1
-        self%plot_count = self%state%plot_count
-        plot_idx = self%plot_count
-        
-        ! Ensure plots array is allocated
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
-        else if (plot_idx > size(self%plots)) then
-            self%state%plot_count = self%state%plot_count - 1
-            self%plot_count = self%state%plot_count
-            return
         end if
-        
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_SCATTER
 
-        allocate(self%plots(plot_idx)%x(size(x)))
-        allocate(self%plots(plot_idx)%y(size(y)))
-        
-        self%plots(plot_idx)%x = x
-        self%plots(plot_idx)%y = y
-        
+        self%state%plot_count = self%plot_count
+        default_color = next_plot_color(self%state)
+
+        call core_scatter(self%plots, self%state, self%plot_count, x, y, s=s, c=c, &
+                          marker=marker, markersize=markersize, color=color, &
+                          colormap=colormap, vmin=vmin, vmax=vmax, label=label, &
+                          show_colorbar=show_colorbar, default_color=default_color)
+
         if (present(z)) then
-            allocate(self%plots(plot_idx)%z(size(z)))
-            self%plots(plot_idx)%z = z
-        end if
-        
-        if (present(s)) then
-            allocate(self%plots(plot_idx)%scatter_sizes(size(s)))
-            self%plots(plot_idx)%scatter_sizes = s
-        end if
-        
-        if (present(c)) then
-            allocate(self%plots(plot_idx)%scatter_colors(size(c)))
-            self%plots(plot_idx)%scatter_colors = c
-        end if
-        
-        self%plots(plot_idx)%color = default_color
-        if (present(color)) then
-            self%plots(plot_idx)%color = color
+            if (.not. allocated(self%plots(self%plot_count)%z)) then
+                allocate(self%plots(self%plot_count)%z(size(z)))
+            end if
+            self%plots(self%plot_count)%z = z
         end if
 
-        if (present(marker)) then
-            self%plots(plot_idx)%marker = marker
-        else
-            ! Default marker for scatter plots - ensures they are visible
-            self%plots(plot_idx)%marker = 'o'
+        if (present(alpha)) then
+            ! Alpha is retained for API parity; implementation pending
         end if
-
-        if (present(markersize)) then
-            self%plots(plot_idx)%scatter_size_default = markersize
-        end if
-        
-        if (present(colormap)) then
-            self%plots(plot_idx)%scatter_colormap = colormap
-        end if
-        
-        if (present(vmin)) then
-            self%plots(plot_idx)%scatter_vmin = vmin
-            self%plots(plot_idx)%scatter_vrange_set = .true.
-        end if
-        
-        if (present(vmax)) then
-            self%plots(plot_idx)%scatter_vmax = vmax
-            self%plots(plot_idx)%scatter_vrange_set = .true.
-        end if
-        
-        if (present(show_colorbar)) then
-            self%plots(plot_idx)%scatter_colorbar = show_colorbar
-        else if (present(c)) then
-            self%plots(plot_idx)%scatter_colorbar = .true.
-        end if
-
-        ! Note: alpha not directly supported in plot_data_t structure
-
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
-        end if
-
-        self%plots(plot_idx)%linestyle = 'none'
 
         self%state%rendered = .false.
     end subroutine add_scatter_plot_data
