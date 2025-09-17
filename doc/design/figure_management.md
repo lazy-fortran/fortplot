@@ -7,6 +7,16 @@ title: Figure Management Design
 
 This document describes the matplotlib-compatible figure management system in fortplot, covering figure creation, sizing, layout management, and state handling. The implementation follows matplotlib's Figure class architecture and pyplot interface patterns to ensure familiar behavior and API compatibility.
 
+### API Naming Alignment (2025-09)
+
+The object-oriented `figure_t` API now mirrors the long-standing naming scheme
+used by `pyplot-fortran`. Newer helpers such as image, pie, polar, step, stem,
+and fill operations are exposed as `add_*` procedures on `figure_t`, while the
+stateful facade continues to provide matplotlib-style names like `imshow` and
+`fill_between`. Update any OO call sites to use `add_imshow`, `add_pie`,
+`add_polar`, `add_step`, `add_stem`, `add_fill`, and `add_fill_between` to stay
+source-compatible with both projects.
+
 ## Problem Statement
 
 The current figure management implementation has several limitations:

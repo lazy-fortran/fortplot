@@ -25,9 +25,9 @@ contains
         real(wp), intent(in), optional :: extent(4)
 
         call ensure_fig_init()
-        call fig%imshow(z, cmap=cmap, alpha=alpha, vmin=vmin, vmax=vmax, &
-                        origin=origin, extent=extent, interpolation=interpolation, &
-                        aspect=aspect)
+        call fig%add_imshow(z, cmap=cmap, alpha=alpha, vmin=vmin, vmax=vmax, &
+                            origin=origin, extent=extent, interpolation=interpolation, &
+                            aspect=aspect)
     end subroutine imshow
 
     subroutine pie(values, labels, colors, explode, autopct, startangle)
@@ -40,8 +40,8 @@ contains
         real(wp), intent(in), optional :: startangle
 
         call ensure_fig_init()
-        call fig%pie(values, labels=labels, colors=colors, explode=explode, &
-                     autopct=autopct, startangle=startangle)
+        call fig%add_pie(values, labels=labels, colors=colors, explode=explode, &
+                         autopct=autopct, startangle=startangle)
     end subroutine pie
 
     subroutine polar(theta, r, fmt, label, linestyle, marker, color)
@@ -51,8 +51,8 @@ contains
         character(len=*), intent(in), optional :: linestyle, marker, color
 
         call ensure_fig_init()
-        call fig%polar(theta, r, fmt=fmt, label=label, linestyle=linestyle, &
-                       marker=marker, color=color)
+        call fig%add_polar(theta, r, fmt=fmt, label=label, linestyle=linestyle, &
+                           marker=marker, color=color)
     end subroutine polar
 
     subroutine step(x, y, where, label, linestyle, color, linewidth)
@@ -63,8 +63,8 @@ contains
         real(wp), intent(in), optional :: linewidth
 
         call ensure_fig_init()
-        call fig%step(x, y, where=where, label=label, linestyle=linestyle, &
-                      color=color, linewidth=linewidth)
+        call fig%add_step(x, y, where=where, label=label, linestyle=linestyle, &
+                          color=color, linewidth=linewidth)
     end subroutine step
 
     subroutine stem(x, y, linefmt, markerfmt, basefmt, label, bottom)
@@ -75,8 +75,8 @@ contains
         real(wp), intent(in), optional :: bottom
 
         call ensure_fig_init()
-        call fig%stem(x, y, linefmt=linefmt, markerfmt=markerfmt, &
-                      basefmt=basefmt, label=label, bottom=bottom)
+        call fig%add_stem(x, y, linefmt=linefmt, markerfmt=markerfmt, &
+                          basefmt=basefmt, label=label, bottom=bottom)
     end subroutine stem
 
     subroutine fill(x, y, color, alpha, label)
@@ -87,7 +87,7 @@ contains
         character(len=*), intent(in), optional :: label
 
         call ensure_fig_init()
-        call fig%fill(x, y, color=color, alpha=alpha, label=label)
+        call fig%add_fill(x, y, color=color, alpha=alpha, label=label)
     end subroutine fill
 
     subroutine fill_between(x, y1, y2, where, color, alpha, label, interpolate)
@@ -101,8 +101,8 @@ contains
         logical, intent(in), optional :: interpolate
 
         call ensure_fig_init()
-        call fig%fill_between(x, y1=y1, y2=y2, where=where, color=color, &
-                              alpha=alpha, label=label, interpolate=interpolate)
+        call fig%add_fill_between(x, y1=y1, y2=y2, where=where, color=color, &
+                                  alpha=alpha, label=label, interpolate=interpolate)
     end subroutine fill_between
 
     subroutine twinx()
