@@ -21,6 +21,7 @@ make example ARGS="example_name"
 - [marker_demo](./marker_demo/) - Marker types and scatter plots
 - [format_string_demo](./format_string_demo/) - Matplotlib-style format strings
 - [scatter_demo](./scatter_demo/) - Enhanced scatter plots with color mapping
+- [fill_between_demo](./fill_between_demo/) - Stateful and OO area fills
 
 ### Statistical and Categorical
 - [errorbar_demo](./errorbar_demo/) - Error bars for scientific data

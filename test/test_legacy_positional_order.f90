@@ -57,25 +57,27 @@ contains
         x = [(real(i, wp), i = 1, size(x))]
         y = sin(x)
 
-        call fig%add_fill(x, y, 'legacy-fill')
+        call fig%add_fill(x, y)
         call fetch_plots(fig, plots, n)
-        call assert_any_label(plots, n, 'legacy-fill')
+        call assert_no_labels(plots, n)
     end subroutine test_fill
 
     subroutine test_fill_between()
         type(figure_t) :: fig
         type(plot_data_t), pointer :: plots(:)
         real(wp) :: x(6), y1(6), y2(6)
+        logical :: mask(6)
         integer :: n, i
 
         call fig%initialize()
         x = [(real(i, wp), i = 1, size(x))]
         y1 = sin(x)
         y2 = y1 * 0.5_wp
+        mask = .true.
 
-        call fig%add_fill_between(x, y1, y2, 'legacy-fill-between')
+        call fig%add_fill_between(x, y1, y2, mask)
         call fetch_plots(fig, plots, n)
-        call assert_any_label(plots, n, 'legacy-fill-between')
+        call assert_no_labels(plots, n)
     end subroutine test_fill_between
 
     subroutine test_polar()
@@ -166,5 +168,19 @@ contains
         end do
         error stop 'assert_any_label: expected label not found'
     end subroutine assert_any_label
+
+    subroutine assert_no_labels(plots, count)
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: count
+        integer :: i
+
+        do i = 1, count
+            if (allocated(plots(i)%label)) then
+                if (len_trim(plots(i)%label) /= 0) then
+                    error stop 'assert_no_labels: unexpected label assigned'
+                end if
+            end if
+        end do
+    end subroutine assert_no_labels
 
 end program test_legacy_positional_order
