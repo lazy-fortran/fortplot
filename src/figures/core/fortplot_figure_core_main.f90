@@ -445,11 +445,12 @@ contains
                          show_colorbar, default_color)
     end subroutine scatter
 
-    subroutine add_imshow(self, z, cmap, alpha, vmin, vmax, origin, extent, &
-                          interpolation, aspect)
+    subroutine add_imshow(self, z, xlim, ylim, cmap, alpha, vmin, vmax, origin, &
+                          extent, interpolation, aspect)
         !! Display 2D array as an image using the pcolormesh backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: z(:,:)
+        real(wp), intent(in), optional :: xlim(2), ylim(2)
         character(len=*), intent(in), optional :: cmap, origin, interpolation, aspect
         real(wp), intent(in), optional :: alpha, vmin, vmax
         real(wp), intent(in), optional :: extent(4)
@@ -475,6 +476,18 @@ contains
             end if
             x0 = extent(1); x1 = extent(2)
             y0 = extent(3); y1 = extent(4)
+            if (present(xlim) .or. present(ylim)) then
+                call log_warning('imshow: ignoring xlim/ylim because extent is set')
+            end if
+        else
+            if (present(xlim)) then
+                x0 = xlim(1)
+                x1 = xlim(2)
+            end if
+            if (present(ylim)) then
+                y0 = ylim(1)
+                y1 = ylim(2)
+            end if
         end if
 
         allocate(x_edges(nx+1), y_edges(ny+1))
@@ -532,11 +545,11 @@ contains
         deallocate(x_edges, y_edges)
     end subroutine add_imshow
 
-    subroutine add_polar(self, theta, r, fmt, label, linestyle, marker, color)
+    subroutine add_polar(self, theta, r, label, fmt, linestyle, marker, color)
         !! Plot data provided in polar coordinates by converting to Cartesian
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: theta(:), r(:)
-        character(len=*), intent(in), optional :: fmt, label
+        character(len=*), intent(in), optional :: label, fmt
         character(len=*), intent(in), optional :: linestyle, marker, color
 
         integer :: n, i
@@ -568,11 +581,11 @@ contains
         deallocate(x, y)
     end subroutine add_polar
 
-    subroutine add_step(self, x, y, where, label, linestyle, color, linewidth)
+    subroutine add_step(self, x, y, label, where, linestyle, color, linewidth)
         !! Create a stepped line plot using repeated x positions
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: where, label, linestyle, color
+        character(len=*), intent(in), optional :: label, where, linestyle, color
         real(wp), intent(in), optional :: linewidth
 
         integer :: n, i, n_points
@@ -650,11 +663,11 @@ contains
         deallocate(x_step, y_step)
     end subroutine add_step
 
-    subroutine add_stem(self, x, y, linefmt, markerfmt, basefmt, label, bottom)
+    subroutine add_stem(self, x, y, label, linefmt, markerfmt, basefmt, bottom)
         !! Draw vertical stems from a baseline to each data point
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: linefmt, markerfmt, basefmt, label
+        character(len=*), intent(in), optional :: label, linefmt, markerfmt, basefmt
         real(wp), intent(in), optional :: bottom
 
         integer :: n, i
@@ -705,13 +718,13 @@ contains
         call self%add_plot(x(1:n), y(1:n))
     end subroutine add_stem
 
-    subroutine add_fill(self, x, y, color, alpha, label)
+    subroutine add_fill(self, x, y, label, color, alpha)
         !! Fill area between curve and baseline using fill_between helper
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
-        character(len=*), intent(in), optional :: label
 
         if (present(color)) then
             call log_warning('fill: color strings not yet supported; using default')
@@ -723,16 +736,16 @@ contains
         call self%add_fill_between(x, y1=y, label=label)
     end subroutine add_fill
 
-    subroutine add_fill_between(self, x, y1, y2, where, color, alpha, label, &
+    subroutine add_fill_between(self, x, y1, y2, label, color, alpha, where, &
                                 interpolate)
         !! Fill area between two curves by constructing a closed polygon
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
-        logical, intent(in), optional :: where(:)
+        character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
-        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: where(:)
         logical, intent(in), optional :: interpolate
 
         integer :: n, i
@@ -806,15 +819,15 @@ contains
         call log_warning('twiny: dual axis plots not yet implemented')
     end subroutine twiny
 
-    subroutine add_pie(self, values, labels, colors, explode, autopct, startangle)
+    subroutine add_pie(self, values, labels, autopct, startangle, colors, explode)
         !! Draw a simple pie chart using line segments for wedges
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
-        character(len=*), intent(in), optional :: colors(:)
-        real(wp), intent(in), optional :: explode(:)
         character(len=*), intent(in), optional :: autopct
         real(wp), intent(in), optional :: startangle
+        character(len=*), intent(in), optional :: colors(:)
+        real(wp), intent(in), optional :: explode(:)
 
         integer :: n, i, seg_count, j
         real(wp) :: total, angle_start, angle_span, radius
