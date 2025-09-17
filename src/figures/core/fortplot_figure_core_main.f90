@@ -783,16 +783,12 @@ contains
             y2_vals = 0.0_wp
         end if
 
-        if (present(color)) then
-            call log_warning('fill_between: color strings not supported; using default')
-        end if
-        if (present(alpha)) then
-            call log_warning('fill_between: transparency not implemented for backend')
-        end if
-        if (present(interpolate)) then
-            call log_warning('fill_between: interpolate option ignored')
-        end if
-
+        if (present(color)) call log_warning(&
+            'fill_between: color strings not supported; using default')
+        if (present(alpha)) call log_warning(&
+            'fill_between: transparency not implemented for backend')
+        if (present(interpolate)) call log_warning(&
+            'fill_between: interpolate option ignored')
         allocate(mask(n))
         if (present(where)) then
             if (size(where) /= n) then
@@ -810,34 +806,20 @@ contains
             deallocate(y1_vals, y2_vals, mask)
             return
         end if
-
-        label_used = .false.
-        skipped_segment = .false.
-        seg_start = 0
-
+        label_used = .false.; skipped_segment = .false.; seg_start = 0
         do i = 1, n
             if (mask(i)) then
                 if (seg_start == 0) seg_start = i
-            else
-                if (seg_start /= 0) then
-                    call render_segment(seg_start, i - 1)
-                    seg_start = 0
-                end if
+            else if (seg_start /= 0) then
+                call render_segment(seg_start, i - 1)
+                seg_start = 0
             end if
         end do
-
-        if (seg_start /= 0) then
-            call render_segment(seg_start, n)
-        end if
-
-        if (skipped_segment) then
-            call log_warning('fill_between: skipping mask spans <2 points')
-        end if
-
-        if (present(label) .and. .not. label_used) then
-            call log_warning('fill_between: mask selection prevented label application')
-        end if
-
+        if (seg_start /= 0) call render_segment(seg_start, n)
+        if (skipped_segment) call log_warning(&
+            'fill_between: skipping mask spans <2 points')
+        if (present(label) .and. .not. label_used) call log_warning(&
+            'fill_between: mask selection prevented label application')
         deallocate(y1_vals, y2_vals, mask)
 
     contains
