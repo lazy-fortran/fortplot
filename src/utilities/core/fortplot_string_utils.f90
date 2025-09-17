@@ -28,11 +28,12 @@ contains
         val = .false.
         if (len_trim(env_value) == 0) return
         lower = to_lowercase(trim(env_value))
-        if (lower == '1' .or. lower == 'true' .or. lower == 'yes' .or. lower == 'on') then
+        select case (lower)
+        case ('1', 'true', 'yes', 'on', 't', 'y')
             val = .true.
-        else if (lower == '0' .or. lower == 'false' .or. lower == 'no' .or. lower == 'off') then
+        case ('0', 'false', 'no', 'off', 'f', 'n')
             val = .false.
-        end if
+        end select
     end function parse_boolean_env
 
 end module fortplot_string_utils
