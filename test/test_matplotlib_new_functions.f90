@@ -7,6 +7,7 @@ program test_matplotlib_new_functions
     real(real64), allocatable :: x(:), y(:), z(:,:)
     real(real64), allocatable :: theta(:), r(:)
     real(real64), allocatable :: values(:)
+    logical, allocatable :: mask(:)
     integer :: i, j
     
     print *, "Testing new matplotlib-compatible functions..."
@@ -97,6 +98,19 @@ program test_matplotlib_new_functions
     call ylabel("y")
     call savefig("test_fill_between.png")
     print *, "✓ fill_between() function works"
+
+    allocate(mask(size(x)))
+    mask = .false.
+    mask(10:30) = .true.
+
+    call figure()
+    call plot(x, y)
+    call fill_between(x, y1=y, y2=y*0.2_real64, where=mask)
+    call title("fill_between() mask test - Partial area fill")
+    call savefig("test_fill_between_masked.png")
+    print *, "✓ fill_between() accepts where masks"
+
+    deallocate(mask)
     
     ! Test twinx and twiny (will show warnings as not fully implemented)
     call figure()
