@@ -107,6 +107,21 @@ make test ARGS="--target test_contour_filled_backend_rendering"  # Was >3min, no
 
 See [Windows CI Performance Guide](windows_ci_performance.md) for detailed optimization documentation.
 
+## OO/Stateful Compatibility Checks
+
+Run these guards after introducing or modifying plotting helpers so that OO and
+stateful APIs stay aligned with `pyplot-fortran` positional expectations.
+
+```bash
+make test ARGS="--target test_pyplot_legacy_order"
+make test ARGS="--target test_legacy_positional_order"
+```
+
+**Passing criteria**
+- Legacy positional calls compile without keyword reordering.
+- Global pyplot façade and `figure_t` helpers report matching plot counts.
+
+
 ## General Testing
 
 ### All Tests
