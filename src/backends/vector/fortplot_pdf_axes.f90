@@ -135,7 +135,7 @@ contains
                                     positions, labels, scale_type, symlog_threshold)
         !! Generate X axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_left, plot_width
-        integer, intent(in) :: num_ticks
+        integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
@@ -149,7 +149,7 @@ contains
                                     positions, labels, scale_type, symlog_threshold)
         !! Generate Y axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_bottom, plot_height
-        integer, intent(in) :: num_ticks
+        integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
@@ -163,7 +163,7 @@ contains
                                           positions, labels, scale_type, symlog_threshold, axis)
         !! Internal helper to generate axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
-        integer, intent(in) :: num_ticks
+        integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
         character(len=32), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
@@ -174,6 +174,7 @@ contains
         integer :: nt
         character(len=16) :: scale
         real(wp) :: thr
+        integer :: used_ticks
 
         scale = 'linear'
         if (present(scale_type)) scale = scale_type
@@ -182,13 +183,25 @@ contains
 
         call compute_scale_ticks(scale, data_min, data_max, thr, tvals, nt)
         if (nt <= 0) then
+            num_ticks = min(num_ticks, size(positions))
+            if (num_ticks <= 0) then
+                num_ticks = 0
+                return
+            end if
             call handle_zero_range_ticks(data_min, num_ticks, plot_start + plot_size * 0.5_wp, &
-                                        positions, labels, scale_type)
+                                        positions, labels, scale)
+            return
+        end if
+
+        used_ticks = min(nt, min(num_ticks, size(positions)))
+        if (used_ticks <= 0) then
+            num_ticks = 0
             return
         end if
 
         call fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, plot_size, &
-                                           num_ticks, positions, labels, scale, thr)
+                                           used_ticks, positions, labels, scale, thr)
+        num_ticks = used_ticks
     end subroutine generate_axis_ticks_internal
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, plot_size, &
