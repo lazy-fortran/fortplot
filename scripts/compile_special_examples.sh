@@ -56,6 +56,17 @@ for example_file in $(find example/fortran -name "*.f90" -type f -exec grep -l "
         output_dir="output/example/fortran/$parent_name"
     fi
     
+    # FPM already builds the library with the correct compiler flags. When this
+    # demo is compiled manually with gfortran 13 it hits a segmentation fault in
+    # figure initialization (see docs workflow run 17807213940). Run it via fpm
+    # instead so GitHub Pages generation succeeds while the assets are still produced.
+    if [ "$example_name" = "fill_between_demo" ]; then
+        echo "Running $example_name via fpm (workaround for GCC 13 segfault)"
+        mkdir -p "$output_dir"
+        fpm run --example "$example_name"
+        continue
+    fi
+
     # Compile and run
     compile_and_run_example "$example_file" "$example_name" "$output_dir"
 done
