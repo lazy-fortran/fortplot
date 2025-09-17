@@ -54,6 +54,7 @@ Complete working examples with source code and generated plots.
 ### Development
 - [Testing Guide](testing_guide.md) - Testing procedures and warning control
 - [Module Architecture](module_architecture.md) - Code organization and refactoring
+- [OO vs Stateful Compatibility](oo_stateful_compatibility.md) - Migration and argument parity
 - [Security](security.md) - Security features and compliance
 
 ### Platform-Specific
