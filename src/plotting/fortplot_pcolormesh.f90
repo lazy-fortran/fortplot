@@ -15,6 +15,7 @@ module fortplot_pcolormesh
     
     private
     public :: pcolormesh_t, validate_pcolormesh_grid, create_regular_mesh_grid
+    public :: coordinates_from_centers
     
     type :: pcolormesh_t
         !! Pcolormesh data container
@@ -74,13 +75,13 @@ contains
         integer :: i, j
         integer :: data_ny, data_nx
         logical :: needs_transpose
-        
+
         ! Enhanced dimension validation for pcolormesh
         ! Handle both Fortran-style and C-style dimension conventions gracefully
         ! Store original data dimensions for proper transposition
         data_ny = size(c_data, 1)
         data_nx = size(c_data, 2)
-        
+
         ! Check if coordinate arrays match Fortran-style interpretation: c(ny, nx)
         if (size(x_coords) == data_nx + 1 .and. size(y_coords) == data_ny + 1) then
             ! Fortran-style convention: c(ny, nx) with x(nx+1), y(ny+1)
@@ -113,7 +114,7 @@ contains
         allocate(self%x_vertices(self%ny+1, self%nx+1))
         allocate(self%y_vertices(self%ny+1, self%nx+1))
         allocate(self%c_values(self%ny, self%nx))
-        
+
         ! Create 2D meshgrid from 1D arrays
         do i = 1, self%ny + 1
             do j = 1, self%nx + 1
@@ -320,6 +321,33 @@ contains
         end if
     end subroutine validate_pcolormesh_grid
     
+    subroutine coordinates_from_centers(center_coords, edge_coords)
+        !! Infer vertex edges from center coordinates for uniform grids
+        real(wp), intent(in) :: center_coords(:)
+        real(wp), intent(out) :: edge_coords(:)
+        integer :: n, i
+        real(wp) :: left_span, right_span
+
+        n = size(center_coords)
+        if (size(edge_coords) /= n + 1) return
+
+        if (n <= 1) then
+            ! Single cell fallback: assume unit width around the center
+            edge_coords(1) = center_coords(1) - 0.5_wp
+            edge_coords(2) = center_coords(1) + 0.5_wp
+            return
+        end if
+
+        left_span = center_coords(2) - center_coords(1)
+        right_span = center_coords(n) - center_coords(n-1)
+
+        edge_coords(1) = center_coords(1) - 0.5_wp * left_span
+        do i = 1, n - 1
+            edge_coords(i + 1) = 0.5_wp * (center_coords(i) + center_coords(i + 1))
+        end do
+        edge_coords(n + 1) = center_coords(n) + 0.5_wp * right_span
+    end subroutine coordinates_from_centers
+
     subroutine create_regular_mesh_grid(x_1d, y_1d, x_2d, y_2d)
         !! Create 2D meshgrid from 1D coordinate arrays
         !! Used internally for regular grid setup

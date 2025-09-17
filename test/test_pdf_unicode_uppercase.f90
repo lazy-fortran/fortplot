@@ -1,12 +1,12 @@
 program test_pdf_unicode_uppercase
     !! Verify PDF renders uppercase Greek letters (e.g., \Psi) via Symbol font
     use fortplot
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'test/output/test_pdf_unicode_uppercase.pdf'
-    integer :: unit, ios
-    integer(kind=8) :: fsize
-    character, allocatable :: data(:)
+    character(len=:), allocatable :: stream_text
+    integer :: status
     logical :: has_symbol_font, has_upper_psi, has_upper_theta, has_upper_omega
 
     call figure()
@@ -16,29 +16,16 @@ program test_pdf_unicode_uppercase
     call plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp])
     call savefig(out_pdf)
 
-    open(newunit=unit, file=out_pdf, access='stream', form='unformatted', status='old', iostat=ios)
-    if (ios /= 0) then
-        print *, 'FAIL: cannot open ', trim(out_pdf)
-        stop 1
-    end if
-    inquire(unit=unit, size=fsize)
-    if (fsize <= 0) then
-        print *, 'FAIL: zero-size PDF'
-        close(unit)
-        stop 1
-    end if
-    allocate(character(len=1) :: data(fsize))
-    read(unit, iostat=ios) data
-    close(unit)
-    if (ios /= 0) then
-        print *, 'FAIL: cannot read PDF data'
+    call extract_pdf_stream_text(out_pdf, stream_text, status)
+    if (status /= 0) then
+        print *, 'FAIL: unable to read PDF stream text'
         stop 1
     end if
 
-    has_symbol_font  = bytes_contains(data, fsize, '/F6')
-    has_upper_psi    = bytes_contains(data, fsize, '\131')
-    has_upper_theta  = bytes_contains(data, fsize, '\121')
-    has_upper_omega  = bytes_contains(data, fsize, '\127')
+    has_symbol_font  = index(stream_text, '/F6') > 0
+    has_upper_psi    = index(stream_text, '\131') > 0
+    has_upper_theta  = index(stream_text, '\121') > 0
+    has_upper_omega  = index(stream_text, '\127') > 0
     if (.not. has_symbol_font) then
         print *, 'FAIL: missing Symbol font switch (/F6)'
         stop 1
@@ -58,23 +45,4 @@ program test_pdf_unicode_uppercase
 
     print *, 'PASS: PDF uppercase Greek (Psi/Theta/Omega) mapped via Symbol'
 
-contains
-    logical function bytes_contains(arr, n, pat) result(found)
-        character(len=1), intent(in) :: arr(n)
-        integer(kind=8), intent(in) :: n
-        character(len=*), intent(in) :: pat
-        integer :: i, j, m
-        found = .false.
-        m = len_trim(pat)
-        if (m <= 0) return
-        do i = 1, int(n) - m + 1
-            do j = 1, m
-                if (arr(i+j-1) /= pat(j:j)) exit
-                if (j == m) then
-                    found = .true.
-                    return
-                end if
-            end do
-        end do
-    end function bytes_contains
 end program test_pdf_unicode_uppercase

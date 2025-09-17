@@ -10,6 +10,7 @@ module fortplot_figure_plot_management
     use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
     use fortplot_errors, only: fortplot_error_t
+    use fortplot_pcolormesh, only: coordinates_from_centers
     implicit none
     
     private
@@ -260,9 +261,31 @@ contains
         ! Initialize pcolormesh data using proper method with error handling
         block
             type(fortplot_error_t) :: init_error
-            call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap, init_error)
-            ! Initialization now handles both Fortran-style and C-style dimension conventions
-            ! No error messages for valid dimension patterns that can be processed correctly
+            integer :: data_nx, data_ny
+            real(wp), allocatable :: x_edges(:), y_edges(:)
+
+            data_ny = size(c, 1)
+            data_nx = size(c, 2)
+
+            if (size(x) == data_nx .and. size(y) == data_ny) then
+                allocate(x_edges(data_nx + 1))
+                allocate(y_edges(data_ny + 1))
+                call coordinates_from_centers(x, x_edges)
+                call coordinates_from_centers(y, y_edges)
+                call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x_edges, y_edges, c, colormap, init_error)
+                deallocate(x_edges)
+                deallocate(y_edges)
+            elseif (size(x) == data_ny .and. size(y) == data_nx) then
+                allocate(x_edges(data_ny + 1))
+                allocate(y_edges(data_nx + 1))
+                call coordinates_from_centers(x, x_edges)
+                call coordinates_from_centers(y, y_edges)
+                call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x_edges, y_edges, c, colormap, init_error)
+                deallocate(x_edges)
+                deallocate(y_edges)
+            else
+                call plots(plot_count)%pcolormesh_data%initialize_regular_grid(x, y, c, colormap, init_error)
+            end if
         end block
 
         ! Keep the user's requested colormap or the backend default; do not auto-switch.
