@@ -34,7 +34,7 @@ module fortplot_figure_core
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
-                                    PLOT_TYPE_SCATTER
+                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
@@ -44,7 +44,7 @@ module fortplot_figure_core
     private
     public :: figure_t, plot_data_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
 
     !! CORE TYPE DEFINITION
     type :: figure_t
@@ -746,11 +746,12 @@ contains
         real(wp), intent(in), optional :: alpha
         logical, intent(in), optional :: interpolate
 
-        integer :: n, i
-        integer :: seg_start
-        real(wp), allocatable :: y1_vals(:), y2_vals(:)
-        logical, allocatable :: mask(:)
-        logical :: skipped_segment
+        integer :: n
+        real(wp), allocatable :: upper_vals(:), lower_vals(:)
+        logical, allocatable :: mask_vals(:)
+        logical :: has_mask, has_color, has_alpha
+        character(len=:), allocatable :: color_value
+        real(wp) :: alpha_value
 
         n = size(x)
         if (n < 2) then
@@ -758,93 +759,89 @@ contains
             return
         end if
 
-        allocate(y1_vals(n), y2_vals(n))
+        allocate(upper_vals(n), lower_vals(n))
         if (present(y1)) then
             if (size(y1) /= n) then
                 call log_error('fill_between: y1 size mismatch')
-                deallocate(y1_vals, y2_vals)
+                deallocate(upper_vals, lower_vals)
                 return
             end if
-            y1_vals = y1
+            upper_vals = y1
         else
-            y1_vals = 0.0_wp
+            upper_vals = 0.0_wp
         end if
 
         if (present(y2)) then
             if (size(y2) /= n) then
                 call log_error('fill_between: y2 size mismatch')
-                deallocate(y1_vals, y2_vals)
+                deallocate(upper_vals, lower_vals)
                 return
             end if
-            y2_vals = y2
+            lower_vals = y2
         else
-            y2_vals = 0.0_wp
+            lower_vals = 0.0_wp
         end if
 
-        if (present(color)) call log_warning(&
-            'fill_between: color strings not supported; using default')
-        if (present(alpha)) call log_warning(&
-            'fill_between: transparency not implemented for backend')
-        if (present(interpolate)) call log_warning(&
-            'fill_between: interpolate option ignored')
-        allocate(mask(n))
+        has_mask = .false.
         if (present(where)) then
             if (size(where) /= n) then
                 call log_error('fill_between: where mask size mismatch')
-                deallocate(y1_vals, y2_vals, mask)
+                deallocate(upper_vals, lower_vals)
                 return
             end if
-            mask = where
-        else
-            mask = .true.
-        end if
-
-        if (.not. any(mask)) then
-            call log_warning('fill_between: mask excludes all data points')
-            deallocate(y1_vals, y2_vals, mask)
-            return
-        end if
-        skipped_segment = .false.; seg_start = 0
-        do i = 1, n
-            if (mask(i)) then
-                if (seg_start == 0) seg_start = i
-            else if (seg_start /= 0) then
-                call render_segment(seg_start, i - 1)
-                seg_start = 0
-            end if
-        end do
-        if (seg_start /= 0) call render_segment(seg_start, n)
-        if (skipped_segment) call log_warning(&
-            'fill_between: skipping mask spans <2 points')
-        deallocate(y1_vals, y2_vals, mask)
-
-    contains
-
-        subroutine render_segment(first_idx, last_idx)
-            integer, intent(in) :: first_idx, last_idx
-            integer :: count, j
-            real(wp), allocatable :: x_poly(:), y_poly(:)
-
-            count = last_idx - first_idx + 1
-            if (count < 2) then
-                skipped_segment = .true.
+            allocate(mask_vals(n))
+            mask_vals = where
+            if (.not. any(mask_vals)) then
+                call log_warning('fill_between: mask excludes all data points')
+                deallocate(upper_vals, lower_vals, mask_vals)
                 return
             end if
+            has_mask = .true.
+        end if
 
-            allocate(x_poly(2 * count), y_poly(2 * count))
-            x_poly(1:count) = x(first_idx:last_idx)
-            y_poly(1:count) = y1_vals(first_idx:last_idx)
+        if (present(interpolate)) call log_warning(&
+            'fill_between: interpolate option ignored')
 
-            do j = 1, count
-                x_poly(count + j) = x(last_idx - j + 1)
-                y_poly(count + j) = y2_vals(last_idx - j + 1)
-            end do
+        has_color = present(color)
+        if (has_color) color_value = color
+        has_alpha = present(alpha)
+        if (has_alpha) alpha_value = alpha
 
-            call self%add_plot(x_poly, y_poly)
+        select case (merge(1, 0, has_mask) + merge(2, 0, has_color) + merge(4, 0, has_alpha))
+        case (0)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       plot_count=self%plot_count)
+        case (1)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       mask=mask_vals, plot_count=self%plot_count)
+        case (2)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       color_string=color_value, plot_count=self%plot_count)
+        case (3)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       mask=mask_vals, color_string=color_value, &
+                                       plot_count=self%plot_count)
+        case (4)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       alpha=alpha_value, plot_count=self%plot_count)
+        case (5)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       mask=mask_vals, alpha=alpha_value, &
+                                       plot_count=self%plot_count)
+        case (6)
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       color_string=color_value, alpha=alpha_value, &
+                                       plot_count=self%plot_count)
+        case default
+            call core_add_fill_between(self%plots, self%state, x, upper_vals, lower_vals, &
+                                       mask=mask_vals, color_string=color_value, &
+                                       alpha=alpha_value, plot_count=self%plot_count)
+        end select
 
-            deallocate(x_poly, y_poly)
-        end subroutine render_segment
+        self%plot_count = self%state%plot_count
 
+        if (has_mask) deallocate(mask_vals)
+        deallocate(upper_vals, lower_vals)
     end subroutine add_fill_between
 
     subroutine twinx(self)

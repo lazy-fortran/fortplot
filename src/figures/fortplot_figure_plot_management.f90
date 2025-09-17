@@ -5,7 +5,8 @@ module fortplot_figure_plot_management
     !! Extracted from fortplot_figure_core to improve modularity
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
@@ -15,7 +16,8 @@ module fortplot_figure_plot_management
     
     private
     public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
-    public :: add_pcolormesh_plot_data, generate_default_contour_levels
+    public :: add_pcolormesh_plot_data, add_fill_between_plot_data
+    public :: generate_default_contour_levels
     public :: setup_figure_legend, update_plot_ydata, validate_plot_data
     public :: next_plot_color
     
@@ -136,7 +138,111 @@ contains
             end if
         end if
     end subroutine add_line_plot_data
-    
+
+    subroutine add_fill_between_plot_data(plots, plot_count, max_plots, x, upper, lower, mask, &
+                                          color, alpha)
+        !! Store a fill_between polygon for rendering
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: upper(:)
+        real(wp), intent(in) :: lower(:)
+        logical, intent(in), optional :: mask(:)
+        real(wp), intent(in) :: color(3)
+        real(wp), intent(in), optional :: alpha
+
+        integer :: n
+        logical :: has_mask
+
+        if (plot_count >= max_plots) then
+            call log_warning('fill_between: maximum number of plots reached')
+            return
+        end if
+
+        n = size(x)
+        if (n < 2) then
+            call log_warning('fill_between: at least two points required for area fill')
+            return
+        end if
+
+        if (size(upper) /= n .or. size(lower) /= n) then
+            call log_warning('fill_between: array size mismatch')
+            return
+        end if
+
+        if (present(mask)) then
+            if (size(mask) /= n) then
+                call log_warning('fill_between: mask size mismatch; ignoring fill segment')
+                return
+            end if
+            if (.not. any(mask)) then
+                call log_warning('fill_between: mask excludes all points')
+                return
+            end if
+            has_mask = .true.
+        else
+            has_mask = .false.
+        end if
+
+        plot_count = plot_count + 1
+        call reset_plot_storage(plots(plot_count))
+
+        plots(plot_count)%plot_type = PLOT_TYPE_FILL
+        plots(plot_count)%color = color
+        if (present(alpha)) then
+            plots(plot_count)%fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+        else
+            plots(plot_count)%fill_alpha = 1.0_wp
+        end if
+
+        call assign_vector(plots(plot_count)%fill_between_data%x, x)
+        call assign_vector(plots(plot_count)%fill_between_data%upper, upper)
+        call assign_vector(plots(plot_count)%fill_between_data%lower, lower)
+
+        plots(plot_count)%fill_between_data%has_mask = has_mask
+        if (has_mask) then
+            call assign_logical_vector(plots(plot_count)%fill_between_data%mask, mask)
+        else
+            if (allocated(plots(plot_count)%fill_between_data%mask)) then
+                deallocate(plots(plot_count)%fill_between_data%mask)
+            end if
+        end if
+    end subroutine add_fill_between_plot_data
+
+    subroutine assign_vector(target, source)
+        real(wp), allocatable, intent(inout) :: target(:)
+        real(wp), intent(in) :: source(:)
+        real(wp), allocatable :: tmp(:)
+
+        if (allocated(target)) deallocate(target)
+        allocate(tmp(size(source)))
+        tmp = source
+        call move_alloc(tmp, target)
+    end subroutine assign_vector
+
+    subroutine assign_logical_vector(target, source)
+        logical, allocatable, intent(inout) :: target(:)
+        logical, intent(in) :: source(:)
+        logical, allocatable :: tmp(:)
+
+        if (allocated(target)) deallocate(target)
+        allocate(tmp(size(source)))
+        tmp = source
+        call move_alloc(tmp, target)
+    end subroutine assign_logical_vector
+
+    subroutine reset_plot_storage(plot)
+        type(plot_data_t), intent(inout) :: plot
+
+        if (allocated(plot%fill_between_data%x)) deallocate(plot%fill_between_data%x)
+        if (allocated(plot%fill_between_data%upper)) deallocate(plot%fill_between_data%upper)
+        if (allocated(plot%fill_between_data%lower)) deallocate(plot%fill_between_data%lower)
+        if (allocated(plot%fill_between_data%mask)) deallocate(plot%fill_between_data%mask)
+        plot%fill_between_data%has_mask = .false.
+        plot%fill_alpha = 1.0_wp
+    end subroutine reset_plot_storage
+
     subroutine add_contour_plot_data(plots, plot_count, max_plots, colors, &
                                     x_grid, y_grid, z_grid, levels, label)
         !! Add contour plot data to internal storage

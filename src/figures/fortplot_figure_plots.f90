@@ -13,11 +13,13 @@ module fortplot_figure_plots
     use fortplot_figure_plot_management
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_format_parser, only: parse_format_string
+    use fortplot_colors, only: parse_color
+    use fortplot_logging, only: log_warning
     implicit none
 
     private
     public :: figure_add_plot, figure_add_contour, figure_add_contour_filled
-    public :: figure_add_pcolormesh
+    public :: figure_add_pcolormesh, figure_add_fill_between
 
 contains
 
@@ -101,5 +103,36 @@ contains
         call add_pcolormesh_plot_data(plots, state%plot_count, state%max_plots, &
                                      x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
     end subroutine figure_add_pcolormesh
+
+    subroutine figure_add_fill_between(plots, state, x, upper, lower, mask, color_string, alpha)
+        !! Add an area fill between two curves
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: upper(:)
+        real(wp), intent(in) :: lower(:)
+        logical, intent(in), optional :: mask(:)
+        character(len=*), intent(in), optional :: color_string
+        real(wp), intent(in), optional :: alpha
+
+        real(wp) :: fill_color(3)
+        logical :: success
+        real(wp) :: fill_alpha
+
+        fill_color = next_plot_color(state)
+        if (present(color_string)) then
+            call parse_color(color_string, fill_color, success)
+            if (.not. success) then
+                call log_warning('fill_between: unsupported color string; using default palette color')
+                fill_color = next_plot_color(state)
+            end if
+        end if
+
+        fill_alpha = 1.0_wp
+        if (present(alpha)) fill_alpha = max(0.0_wp, min(1.0_wp, alpha))
+
+        call add_fill_between_plot_data(plots, state%plot_count, state%max_plots, x, upper, lower, &
+                                        mask, fill_color, fill_alpha)
+    end subroutine figure_add_fill_between
 
 end module fortplot_figure_plots
