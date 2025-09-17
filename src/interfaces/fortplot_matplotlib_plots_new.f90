@@ -79,30 +79,28 @@ contains
                           basefmt=basefmt, bottom=bottom)
     end subroutine stem
 
-    subroutine fill(x, y, color, alpha, label)
+    subroutine fill(x, y, color, alpha)
         !! Fill the area under a curve
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
-        character(len=*), intent(in), optional :: label
 
         call ensure_fig_init()
-        call fig%add_fill(x, y, label=label, color=color, alpha=alpha)
+        call fig%add_fill(x, y, color=color, alpha=alpha)
     end subroutine fill
 
-    subroutine fill_between(x, y1, y2, where, color, alpha, label, interpolate)
+    subroutine fill_between(x, y1, y2, where, color, alpha, interpolate)
         !! Fill the area between two curves
         real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
         logical, intent(in), optional :: where(:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
-        character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: interpolate
 
         call ensure_fig_init()
-        call fig%add_fill_between(x, y1=y1, y2=y2, label=label, color=color, &
-                                  alpha=alpha, where=where, interpolate=interpolate)
+        call fig%add_fill_between(x, y1=y1, y2=y2, color=color, alpha=alpha, &
+                                  where=where, interpolate=interpolate)
     end subroutine fill_between
 
     subroutine twinx()

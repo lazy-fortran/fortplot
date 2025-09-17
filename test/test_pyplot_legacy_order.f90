@@ -59,8 +59,8 @@ contains
             y(i) = 0.1_wp * real(i * i, wp)
         end do
 
-        call fill(x, y, 'orange', 0.4_wp, 'legacy-fill')
-        call assert_label_anywhere(fig, 'legacy-fill')
+        call fill(x, y, 'orange', 0.4_wp)
+        call assert_no_labels(fig)
     end subroutine test_fill
 
     subroutine test_fill_between()
@@ -77,8 +77,8 @@ contains
         end do
         mask = .true.
 
-        call fill_between(x, y1, y2, mask, 'green', 0.3_wp, 'legacy-band', .false.)
-        call assert_label_anywhere(fig, 'legacy-band')
+        call fill_between(x, y1, y2, mask, 'green', 0.3_wp, .false.)
+        call assert_no_labels(fig)
     end subroutine test_fill_between
 
     subroutine test_polar()
@@ -163,6 +163,30 @@ contains
 
         error stop 'assert_label_anywhere: expected label not found'
     end subroutine assert_label_anywhere
+
+    subroutine assert_no_labels(fig)
+        class(figure_t), pointer, intent(in) :: fig
+        type(plot_data_t), pointer :: plots(:)
+        integer :: count, i
+
+        count = fig%get_plot_count()
+        if (count <= 0) then
+            error stop 'assert_no_labels: expected plots to exist'
+        end if
+
+        plots => fig%get_plots()
+        if (.not. associated(plots)) then
+            error stop 'assert_no_labels: plots pointer not associated'
+        end if
+
+        do i = 1, count
+            if (allocated(plots(i)%label)) then
+                if (len_trim(plots(i)%label) /= 0) then
+                    error stop 'assert_no_labels: unexpected label discovered'
+                end if
+            end if
+        end do
+    end subroutine assert_no_labels
 
     subroutine assert_plot_count(fig, min_expected)
         class(figure_t), pointer, intent(in) :: fig

@@ -54,10 +54,14 @@ Examples of valid positional calls that must continue compiling:
 ```fortran
 call step(x, y, 'pre', 'sample', '--', 'blue', 2.0_wp)
 call stem(x, y, 'r-', 'ro', 'g-', 'baseline', 0.0_wp)
-call fill_between(x, y1, y2, mask, 'orange', 0.4_wp, 'band', .false.)
+call fill_between(x, y1, y2, mask, 'orange', 0.4_wp, .false.)
 call imshow(z, 'viridis', 0.5_wp, 0.0_wp, 1.0_wp, 'lower', extent, &
             'nearest', 'equal')
 ```
+
+`fill` and `fill_between` intentionally omit label keywords because shaded
+regions currently reuse the surrounding line styling. Attach legend entries to
+line plots instead of fills when highlighting areas.
 
 ## Contributor Checklist
 

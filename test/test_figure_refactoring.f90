@@ -23,7 +23,7 @@ program test_figure_refactoring
     print *, "✓ Line plot"
     
     ! Test histogram 
-    call fig%hist(data, bins=5, label='Test Histogram')
+    call fig%add_hist(data, bins=5, label='Test Histogram')
     print *, "✓ Histogram"
     
     ! Test grid
