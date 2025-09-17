@@ -134,7 +134,8 @@ contains
         real(wp), intent(in), optional :: color(3)
 
         call ensure_fig_init()
-        call fig%hist(data, bins=bins, density=density, label=label, color=color)
+        call fig%add_hist(data, bins=bins, density=density, label=label, &
+                          color=color)
     end subroutine hist
 
     subroutine histogram(data, bins, density, label, color)

@@ -95,7 +95,8 @@ module fortplot_figure_core
         procedure :: clear
         procedure :: clear_streamlines
         procedure :: grid
-        procedure :: hist
+        procedure :: add_hist
+        procedure :: hist => add_hist
         procedure :: boxplot
         procedure :: scatter
         procedure :: add_imshow
@@ -253,7 +254,7 @@ contains
         call core_grid(self%state, enabled, which, axis, alpha, linestyle)
     end subroutine grid
 
-    subroutine hist(self, data, bins, density, label, color)
+    subroutine add_hist(self, data, bins, density, label, color)
         !! Create a histogram plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: data(:)
@@ -261,9 +262,9 @@ contains
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
+
         call core_hist(self%plots, self%state, self%plot_count, data, bins, density, label, color)
-    end subroutine hist
+    end subroutine add_hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, &
                        horizontal, color)
@@ -718,11 +719,10 @@ contains
         call self%add_plot(x(1:n), y(1:n))
     end subroutine add_stem
 
-    subroutine add_fill(self, x, y, label, color, alpha)
+    subroutine add_fill(self, x, y, color, alpha)
         !! Fill area between curve and baseline using fill_between helper
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
-        character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
 
@@ -733,26 +733,24 @@ contains
             call log_warning('fill: transparency not implemented for current backend')
         end if
 
-        call self%add_fill_between(x, y1=y, label=label)
+        call self%add_fill_between(x, y1=y)
     end subroutine add_fill
 
-    subroutine add_fill_between(self, x, y1, y2, label, color, alpha, where, &
-                                interpolate)
+    subroutine add_fill_between(self, x, y1, y2, where, color, alpha, interpolate)
         !! Fill area between two curves, honouring optional masks
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
-        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: where(:)
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
-        logical, intent(in), optional :: where(:)
         logical, intent(in), optional :: interpolate
 
         integer :: n, i
         integer :: seg_start
         real(wp), allocatable :: y1_vals(:), y2_vals(:)
         logical, allocatable :: mask(:)
-        logical :: label_used, skipped_segment
+        logical :: skipped_segment
 
         n = size(x)
         if (n < 2) then
@@ -806,7 +804,7 @@ contains
             deallocate(y1_vals, y2_vals, mask)
             return
         end if
-        label_used = .false.; skipped_segment = .false.; seg_start = 0
+        skipped_segment = .false.; seg_start = 0
         do i = 1, n
             if (mask(i)) then
                 if (seg_start == 0) seg_start = i
@@ -818,8 +816,6 @@ contains
         if (seg_start /= 0) call render_segment(seg_start, n)
         if (skipped_segment) call log_warning(&
             'fill_between: skipping mask spans <2 points')
-        if (present(label) .and. .not. label_used) call log_warning(&
-            'fill_between: mask selection prevented label application')
         deallocate(y1_vals, y2_vals, mask)
 
     contains
@@ -844,12 +840,7 @@ contains
                 y_poly(count + j) = y2_vals(last_idx - j + 1)
             end do
 
-            if (present(label) .and. .not. label_used) then
-                call self%add_plot(x_poly, y_poly, label=label)
-                label_used = .true.
-            else
-                call self%add_plot(x_poly, y_poly)
-            end if
+            call self%add_plot(x_poly, y_poly)
 
             deallocate(x_poly, y_poly)
         end subroutine render_segment

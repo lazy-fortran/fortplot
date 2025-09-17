@@ -77,7 +77,7 @@ contains
         end do
         
         ! Add histogram with default 10 bins
-        call fig%hist(data)
+        call fig%add_hist(data)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Histogram plot count")
         
         call end_test()
@@ -98,7 +98,7 @@ contains
         end do
         
         ! Add histogram with 5 bins
-        call fig%hist(data, bins=5)
+        call fig%add_hist(data, bins=5)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Custom bins histogram count")
         
         call end_test()
@@ -119,7 +119,7 @@ contains
         end do
         
         ! Add histogram with density normalization
-        call fig%hist(data, density=.true.)
+        call fig%add_hist(data, density=.true.)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Density histogram count")
         
         call end_test()
@@ -134,7 +134,7 @@ contains
         call fig%initialize(640, 480)
         
         ! Add histogram with empty data - should handle gracefully
-        call fig%hist(data)
+        call fig%add_hist(data)
         call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Empty data histogram count")
         
         call end_test()
@@ -162,7 +162,7 @@ contains
         call fig%initialize(640, 480)
         
         ! This should not crash with segmentation fault
-        call fig%hist(data, bins=0)
+        call fig%add_hist(data, bins=0)
         
         ! Verify no plot was added
         call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Zero bins adds no plots")
@@ -181,7 +181,7 @@ contains
         call fig%initialize(640, 480)
         
         ! This should not crash with segmentation fault
-        call fig%hist(data, bins=-5)
+        call fig%add_hist(data, bins=-5)
         
         ! Verify no plot was added
         call assert_equal(real(fig%plot_count, wp), 0.0_wp, "Negative bins adds no plots")
@@ -200,7 +200,7 @@ contains
         call fig%initialize(640, 480)
         
         ! This should work normally
-        call fig%hist(data, bins=1)
+        call fig%add_hist(data, bins=1)
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Valid minimal histogram")
         
         call end_test()
@@ -228,7 +228,7 @@ contains
         data = 5.0_wp
         
         call fig%initialize(600, 400)
-        call fig%hist(data, bins=10)
+        call fig%add_hist(data, bins=10)
         
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Identical values histogram")
         call end_test()
@@ -249,7 +249,7 @@ contains
         end do
         
         call fig%initialize(600, 400)
-        call fig%hist(data, bins=50)
+        call fig%add_hist(data, bins=50)
         
         call assert_equal(real(fig%plot_count, wp), 1.0_wp, "Large dataset histogram")
         
@@ -292,7 +292,7 @@ contains
         
         call cpu_time(start_time)
         call fig%initialize(600, 400)  ! Smaller for speed
-        call fig%hist(large_data, bins=50)
+        call fig%add_hist(large_data, bins=50)
         call fig%set_title('Large Dataset (10K points)')
         
         filename = 'test/output/histogram_large.png'
@@ -325,14 +325,14 @@ contains
         
         ! Test with many bins
         call fig%initialize(600, 400)
-        call fig%hist(data, bins=100)  ! Reduced from 500 for speed
+        call fig%add_hist(data, bins=100)  ! Reduced from 500 for speed
         call fig%set_title('Many Bins Test')
         filename = 'test/output/histogram_many_bins.png'
         call fig%savefig(filename)
         
         ! Test with minimal bins
         call fig%initialize(600, 400)
-        call fig%hist(data, bins=1)
+        call fig%add_hist(data, bins=1)
         call fig%set_title('Single Bin Test')
         filename = 'test/output/histogram_one_bin.png'
         call fig%savefig(filename)
@@ -342,7 +342,7 @@ contains
         data(501:1000) = 1.0e6_wp
         
         call fig%initialize(600, 400)
-        call fig%hist(data, bins=20)
+        call fig%add_hist(data, bins=20)
         call fig%set_title('Wide Range Data')
         filename = 'test/output/histogram_wide_range.png'
         call fig%savefig(filename)
@@ -367,7 +367,7 @@ contains
             data = real([(j, j=1,size)], wp) * 0.001_wp
             
             call fig%initialize(400, 300)  ! Smaller for speed
-            call fig%hist(data, bins=20)
+            call fig%add_hist(data, bins=20)
             call fig%set_title('Memory Test')
             
             filename = 'test/output/histogram_memory.png'
@@ -381,8 +381,8 @@ contains
         data = real([(i, i=1,2000)], wp) * 0.01_wp
         
         call fig%initialize(600, 400)
-        call fig%hist(data(1:1000), bins=30, label='First Half')
-        call fig%hist(data(1000:2000), bins=30, label='Second Half')
+        call fig%add_hist(data(1:1000), bins=30, label='First Half')
+        call fig%add_hist(data(1000:2000), bins=30, label='Second Half')
         call fig%legend()
         call fig%set_title('Overlapping Histograms')
         filename = 'test/output/histogram_overlapping.png'
