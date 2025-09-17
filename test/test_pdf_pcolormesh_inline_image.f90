@@ -1,85 +1,43 @@
 program test_pdf_pcolormesh_inline_image
     !! Verify that pcolormesh PDF contains an inline image (BI ... ID ... EI)
-    !! Robust to Flate-compressed content streams: if the stream is compressed,
-    !! the literal BI/ID/EI tokens are not visible in the PDF text. In that case
-    !! accept the presence of '/Filter /FlateDecode' as sufficient evidence.
+    !! Robust to Flate-compressed content streams by inflating the PDF stream
+    !! text before searching for inline image markers.
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
+
     character(len=*), parameter :: fn = 'test/output/test_pdf_inline_image.pdf'
-    character(len=16) :: runner
-    integer :: rlen, rs
-    integer :: unit, ios
-    integer(kind=8) :: fsize
-    character, allocatable :: data(:)
-    logical :: has_bi, has_id, has_ei, has_filter
+    character(len=:), allocatable :: stream_text
+    integer :: status
+    logical :: has_bi, has_id, has_ei
+    logical :: has_inline_tokens, has_xobject
 
     call figure()
-    call pcolormesh([0.0_wp,0.5_wp,1.0_wp],[0.0_wp,0.5_wp,1.0_wp], reshape([0.1_wp,0.2_wp,0.3_wp, &
-                   0.4_wp,0.5_wp,0.6_wp, 0.7_wp,0.8_wp,0.9_wp],[3,3]))
+    call pcolormesh([0.0_wp, 0.5_wp, 1.0_wp], &
+        [0.0_wp, 0.5_wp, 1.0_wp], &
+        reshape([0.1_wp, 0.2_wp, 0.3_wp, 0.4_wp, 0.5_wp, 0.6_wp, 0.7_wp, 0.8_wp, &
+                 0.9_wp], [3, 3]))
     call savefig(fn)
 
-    open(newunit=unit, file=fn, access='stream', form='unformatted', status='old', iostat=ios)
-    if (ios /= 0) then
-        print *, 'FAIL: cannot open ', trim(fn)
-        stop 1
-    end if
-    inquire(unit=unit, size=fsize)
-    if (fsize <= 0) then
-        print *, 'FAIL: zero-size PDF'
-        close(unit)
-        stop 1
-    end if
-    allocate(character(len=1) :: data(fsize))
-    read(unit, iostat=ios) data
-    close(unit)
-    if (ios /= 0) then
-        print *, 'FAIL: cannot read PDF data'
+    call extract_pdf_stream_text(fn, stream_text, status)
+    if (status /= 0) then
+        print *, 'FAIL: unable to read PDF stream for inline image detection'
         stop 1
     end if
 
-    has_bi = bytes_contains(data, fsize, ' BI ') .or. bytes_contains(data, fsize, 'BI /W')
-    has_id = bytes_contains(data, fsize, ' ID')   .or. bytes_contains(data, fsize, ' ID ')
-    has_ei = bytes_contains(data, fsize, 'EI')
-    has_filter = bytes_contains(data, fsize, '/Filter /FlateDecode')
+    has_bi = index(stream_text, ' BI ') > 0 .or. index(stream_text, 'BI /W') > 0
+    has_id = index(stream_text, ' ID') > 0
+    has_ei = index(stream_text, 'EI') > 0
+    has_inline_tokens = has_bi .and. has_id .and. has_ei
 
-    if (.not. (has_bi .and. has_id .and. has_ei)) then
-        if (has_filter) then
-            print *, 'INFO: content stream compressed; inline image tokens not readable'
-            stop 0
-        else
-            ! On Windows CI runners, PDF writer settings and CRLF can obscure tokens;
-            ! accept pass to avoid platform-specific parsing brittleness.
-            call get_environment_variable('RUNNER_OS', runner, length=rlen, status=rs)
-            if (rs == 0 .and. rlen >= 7) then
-                if (runner(1:7) == 'Windows') then
-                    print *, 'INFO: Windows runner - skipping strict inline image token check'
-                    stop 0
-                end if
-            end if
-            print *, 'FAIL: inline image markers not found (BI/ID/EI)'
-            stop 2
-        end if
+    has_xobject = index(stream_text, '/Im') > 0 .and. index(stream_text, ' Do') > 0
+
+    if (.not. (has_inline_tokens .or. has_xobject)) then
+        print *, 'FAIL: PDF stream missing inline image (BI/ID/EI) or XObject ' // &
+            'invocation'
+        stop 2
     end if
-    print *, 'PASS: inline image present in pcolormesh PDF'
 
-contains
-    logical function bytes_contains(arr, n, pat) result(found)
-        character(len=1), intent(in) :: arr(n)
-        integer(kind=8), intent(in) :: n
-        character(len=*), intent(in) :: pat
-        integer :: i, j, m
-        found = .false.
-        m = len_trim(pat)
-        if (m <= 0) return
-        do i = 1, int(n) - m + 1
-            do j = 1, m
-                if (arr(i+j-1) /= pat(j:j)) exit
-                if (j == m) then
-                    found = .true.
-                    return
-                end if
-            end do
-        end do
-    end function bytes_contains
+    print *, 'PASS: pcolormesh PDF contains image data'
 end program test_pdf_pcolormesh_inline_image

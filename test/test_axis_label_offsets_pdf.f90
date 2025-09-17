@@ -4,6 +4,7 @@ program test_axis_label_offsets_pdf
     use fortplot_margins, only: plot_margins_t, plot_area_t
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_system_runtime, only: create_directory_runtime
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     type(pdf_context) :: ctx
@@ -12,9 +13,8 @@ program test_axis_label_offsets_pdf
     type(plot_area_t) :: plot_area
     character(len=:), allocatable :: path
     character(len=:), allocatable :: xl, yl
-    integer :: unit, ios
-    character(len=65536) :: buf
-    integer :: read_len
+    character(len=:), allocatable :: stream_text
+    integer :: status
     character(len=32) :: y_xtick_expect_str
     real(wp) :: y_xtick_expect
     logical :: found_xtick, dir_ok
@@ -53,24 +53,14 @@ program test_axis_label_offsets_pdf
     path = 'test/output/axis_label_offsets.pdf'
     call ctx%save(path)
 
-    open(newunit=unit, file=path, status='old', action='read', iostat=ios)
-    if (ios /= 0) then
-        print *, 'FAIL: could not open ', trim(path)
+    call extract_pdf_stream_text(path, stream_text, status)
+    if (status /= 0) then
+        print *, 'FAIL: could not read PDF stream '
         stop 1
     end if
 
-    buf = ''
-    read_len = 0
-    do
-        read(unit, '(A)', iostat=ios) buf(read_len+1:)
-        if (ios /= 0) exit
-        read_len = len_trim(buf)
-        if (read_len > len(buf) - 256) exit
-    end do
-    close(unit)
-
     ! Verify X tick labels baseline Y position exists in PDF stream
-    found_xtick = index(buf, ' '//trim(y_xtick_expect_str)//' Tm') > 0
+    found_xtick = index(stream_text, ' '//trim(y_xtick_expect_str)//' Tm') > 0
     if (.not. found_xtick) then
         print *, 'FAIL: X tick label baseline not found (expected ', trim(y_xtick_expect_str), ')'
         stop 2

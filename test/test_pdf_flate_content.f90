@@ -7,8 +7,6 @@ program test_pdf_flate_content
     integer :: unit, ios
     character(len=8192) :: buf
     logical :: found
-    character(len=8) :: env
-    integer :: slen, s
     character(len=16) :: runner
     integer :: rlen, rs
 
@@ -33,15 +31,7 @@ program test_pdf_flate_content
     close(unit)
 
     if (.not. found) then
-        ! If compression disabled explicitly for local test runs, treat as pass
-        call get_environment_variable('FORTPLOT_PDF_COMPRESS', env, length=slen, status=s)
-        if (s == 0 .and. slen > 0) then
-            if (env(1:1) == '0') then
-                print *, 'INFO: compression disabled via FORTPLOT_PDF_COMPRESS=0; skipping strict check'
-                stop 0
-            end if
-        end if
-        ! In CI on Windows, PDF writer disables compression to keep raw-PDF tests stable.
+        ! In CI on Windows, PDF writer historically disabled compression; allow skip there.
         call get_environment_variable('RUNNER_OS', runner, length=rlen, status=rs)
         if (rs == 0 .and. rlen >= 7) then
             if (runner(1:7) == 'Windows') then

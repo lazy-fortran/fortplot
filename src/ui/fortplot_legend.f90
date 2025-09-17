@@ -275,44 +275,53 @@ contains
         real(wp), intent(in) :: legend_x, legend_y
         type(legend_box_t), intent(in) :: box
         
-        real(wp) :: ascent_ratio, line_x1, line_x2, line_y, text_x, text_y, line_center_y
+        real(wp) :: ascent_ratio, line_x1, line_x2, line_center_y, text_x, text_baseline
         integer :: i
-        
+
         ! Get font ascent ratio for proper text centering
         ascent_ratio = get_font_ascent_ratio()
-        
+
         do i = 1, legend%num_entries
             ! Calculate positions for this entry
             call calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, i, &
-                                         line_x1, line_x2, line_y, text_x, text_y)
-            
-            line_center_y = line_y
-            
+                                         line_x1, line_x2, line_center_y, text_x, &
+                                         text_baseline)
+
             ! Render entry components
-            call render_legend_line(legend%entries(i), backend, line_x1, line_x2, line_center_y)
-            call render_legend_marker(legend%entries(i), backend, line_x1, line_x2, line_center_y)
-            call render_legend_text(legend%entries(i), backend, text_x, text_y)
+            call render_legend_line(legend%entries(i), backend, line_x1, line_x2, &
+                                    line_center_y)
+            call render_legend_marker(legend%entries(i), backend, line_x1, line_x2, &
+                                      line_center_y)
+            call render_legend_text(legend%entries(i), backend, text_x, text_baseline)
         end do
     end subroutine render_legend_entries
-    
+
     subroutine calculate_entry_positions(legend_x, legend_y, box, ascent_ratio, entry_idx, &
-                                        line_x1, line_x2, line_y, text_x, text_y)
+                                         line_x1, line_x2, line_center_y, text_x, &
+                                         text_baseline)
         !! Calculate positions for legend entry components
         use fortplot_legend_layout, only: legend_box_t
         real(wp), intent(in) :: legend_x, legend_y, ascent_ratio
         type(legend_box_t), intent(in) :: box
         integer, intent(in) :: entry_idx
-        real(wp), intent(out) :: line_x1, line_x2, line_y, text_x, text_y
-        
+        real(wp), intent(out) :: line_x1, line_x2, line_center_y, text_x, text_baseline
+        real(wp) :: entry_stride, entry_top_y, entry_baseline, entry_offset
+
         ! Calculate line position
         line_x1 = legend_x + box%padding_x
         line_x2 = line_x1 + box%line_length
-        line_y = legend_y - box%padding - ascent_ratio * box%entry_height - &
-                 real(entry_idx-1, wp) * (box%entry_height + box%entry_spacing)
-        
-        ! Text positioning
+
+        entry_stride = box%entry_height + box%entry_spacing
+        entry_top_y = legend_y - box%padding - real(entry_idx - 1, wp) * entry_stride
+
+        entry_baseline = entry_top_y - ascent_ratio * box%entry_height
+        entry_offset = (ascent_ratio - 0.5_wp) * box%entry_height
+
+        line_center_y = entry_baseline + entry_offset
+
+        ! Text positioning (baseline coordinates)
         text_x = line_x2 + box%text_spacing
-        text_y = line_y + (1.0_wp - ascent_ratio) * box%entry_height * 0.3_wp
+        text_baseline = entry_baseline
     end subroutine calculate_entry_positions
     
     subroutine render_legend_line(entry, backend, line_x1, line_x2, line_center_y)

@@ -48,7 +48,7 @@ debug:
 test: create_test_dirs
 	$(call _timeout_notice)
 	@echo "Running tests$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
-	FORTPLOT_TEST=1 FORTPLOT_PDF_COMPRESS=0 $(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
+	$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) $(ARGS) \
 		&& echo "ALL TESTS PASSED (fpm test)"
 
 # Run fast test suite for development iteration (minimal I/O, no delays)

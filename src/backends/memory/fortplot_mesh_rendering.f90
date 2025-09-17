@@ -78,9 +78,7 @@ contains
         ! Safety check: ensure pcolormesh data is properly initialized
         if (.not. allocated(plot_data%pcolormesh_data%c_values) .or. &
             .not. allocated(plot_data%pcolormesh_data%x_vertices) .or. &
-            .not. allocated(plot_data%pcolormesh_data%y_vertices)) then
-            return
-        end if
+            .not. allocated(plot_data%pcolormesh_data%y_vertices)) return
         
         nx = size(plot_data%pcolormesh_data%c_values, 2)
         ny = size(plot_data%pcolormesh_data%c_values, 1)
@@ -92,9 +90,7 @@ contains
         if (size(plot_data%pcolormesh_data%x_vertices, 1) /= ny + 1 .or. &
             size(plot_data%pcolormesh_data%x_vertices, 2) /= nx + 1 .or. &
             size(plot_data%pcolormesh_data%y_vertices, 1) /= ny + 1 .or. &
-            size(plot_data%pcolormesh_data%y_vertices, 2) /= nx + 1) then
-            return
-        end if
+            size(plot_data%pcolormesh_data%y_vertices, 2) /= nx + 1) return
         
         valid = .true.
     end function validate_mesh_data

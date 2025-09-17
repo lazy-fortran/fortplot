@@ -1,7 +1,9 @@
 program test_legend_comprehensive
     !! Comprehensive test for legend functionality  
     use fortplot
-    use fortplot_validation, only: validation_result_t, validate_file_exists, validate_file_size
+    use fortplot_validation, only: validation_result_t, validate_file_exists, &
+        validate_file_size
+    use test_pdf_utils, only: extract_pdf_stream_text
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
@@ -40,6 +42,10 @@ contains
         real(wp), dimension(20) :: x, y1, y2
         integer :: i
         type(validation_result_t) :: val
+        character(len=:), allocatable :: stream_text
+        character(len=:), allocatable :: plain_text
+        integer :: status_stream
+        logical :: has_cos, has_half_sin
         
         print *, ""
         print *, "Test 1: Basic legend with two lines"
@@ -101,8 +107,10 @@ contains
         print *, "-------------------------------------"
         
         positions = ["upper right", "upper left ", "lower right", "lower left "]
-        filenames = ["test/output/test_legend_pos_ur.png", "test/output/test_legend_pos_ul.png", &
-                     "test/output/test_legend_pos_lr.png", "test/output/test_legend_pos_ll.png"]
+        filenames = ["test/output/test_legend_pos_ur.png", &
+                     "test/output/test_legend_pos_ul.png", &
+                     "test/output/test_legend_pos_lr.png", &
+                     "test/output/test_legend_pos_ll.png"]
         
         x = [(real(i, wp), i=1, 10)]
         y = sin(x)
@@ -117,7 +125,8 @@ contains
             
             val = validate_file_exists(trim(filenames(i)))
             if (val%passed) then
-                print '(A,A,A)', "  ✓ Legend position '", trim(positions(i)), "' created"
+                print '(A,A,A)', "  ✓ Legend position '", trim(positions(i)), &
+                    "' created"
             else
                 print '(A,A,A)', "  ✗ Failed position '", trim(positions(i)), "'"
                 failures = failures + 1
@@ -155,7 +164,8 @@ contains
         val = validate_file_exists('test/output/test_legend_markers.png')
         if (val%passed) then
             print *, "  ✓ Legend with markers created"
-            val = validate_file_size('test/output/test_legend_markers.png', min_size=5000)
+            val = validate_file_size('test/output/test_legend_markers.png', &
+                min_size=5000)
             if (val%passed) then
                 print *, "  ✓ Marker legend has sufficient content"
             else
@@ -174,7 +184,11 @@ contains
         real(wp), dimension(15) :: x, y1, y2
         integer :: i
         type(validation_result_t) :: val
-        
+        character(len=:), allocatable :: stream_text
+        character(len=:), allocatable :: plain_text
+        integer :: status_stream
+        logical :: has_cos, has_half_sin
+
         print *, ""
         print *, "Test 4: PDF legend rendering"
         print *, "-------------------------------------"
@@ -196,11 +210,24 @@ contains
         val = validate_file_exists('test/output/test_legend.pdf')
         if (val%passed) then
             print *, "  ✓ PDF with legend created"
-            val = validate_file_size('test/output/test_legend.pdf', min_size=3000)
-            if (val%passed) then
-                print *, "  ✓ PDF has legend content"
+
+            call extract_pdf_stream_text('test/output/test_legend.pdf', stream_text, &
+                status_stream)
+            if (status_stream /= 0) then
+                print *, "  ✗ Unable to read PDF legend stream"
+                failures = failures + 1
+                return
+            end if
+
+            call pdf_stream_to_plain(stream_text, plain_text)
+
+            has_cos = index(plain_text, 'cos(x)') > 0
+            has_half_sin = index(plain_text, '0.5*sin(x)') > 0
+
+            if (has_cos .and. has_half_sin) then
+                print *, "  ✓ PDF legend entries present in stream"
             else
-                print *, "  ✗ PDF file too small - legend may be missing"
+                print *, "  ✗ Legend labels not found in PDF stream"
                 failures = failures + 1
             end if
         else
@@ -241,7 +268,8 @@ contains
             
             ! Check if legend text appears in file
             found_legend = .false.
-            open(newunit=unit, file='test/output/test_legend.txt', status='old', action='read')
+            open(newunit=unit, file='test/output/test_legend.txt', status='old', &
+                action='read')
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
@@ -285,9 +313,68 @@ contains
             if (current_time - start_time >= delay_seconds) exit
         end do
     end subroutine windows_safe_delay
+
+    subroutine pdf_stream_to_plain(stream_text, plain_text)
+        !! Collapse PDF "(text) Tj" sequences into plain text for assertions
+        character(len=*), intent(in) :: stream_text
+        character(len=:), allocatable, intent(out) :: plain_text
+        character(len=:), allocatable :: buffer
+        integer :: n, i, j, out_len
+        integer :: k
+
+        n = len_trim(stream_text)
+        if (n <= 0) then
+            allocate(character(len=0) :: plain_text)
+            return
+        end if
+
+        allocate(character(len=n) :: buffer)
+        out_len = 0
+        i = 1
+        do while (i <= n)
+            if (stream_text(i:i) == '(') then
+                j = i + 1
+                do while (j <= n)
+                    if (stream_text(j:j) == ')' .and. &
+                        (j == i + 1 .or. stream_text(j-1:j-1) /= '\')) exit
+                    j = j + 1
+                end do
+                if (j <= n) then
+                    if (j + 3 <= n .and. stream_text(j+1:j+3) == ' Tj') then
+                        k = i + 1
+                        do while (k <= j - 1)
+                            if (stream_text(k:k) == '\') then
+                                if (k + 1 <= j - 1) then
+                                    out_len = out_len + 1
+                                    buffer(out_len:out_len) = stream_text(k+1:k+1)
+                                    k = k + 2
+                                else
+                                    exit
+                                end if
+                            else
+                                out_len = out_len + 1
+                                buffer(out_len:out_len) = stream_text(k:k)
+                                k = k + 1
+                            end if
+                        end do
+                        i = j + 3
+                    end if
+                end if
+            end if
+            i = i + 1
+        end do
+
+        if (out_len <= 0) then
+            allocate(character(len=0) :: plain_text)
+        else
+            allocate(character(len=out_len) :: plain_text)
+            plain_text = buffer(1:out_len)
+        end if
+    end subroutine pdf_stream_to_plain
     
     subroutine test_empty_label_handling(failures)
-        !! Test empty legend labels (Issue #328) - consolidated from test_legend_empty_label_fix.f90
+        !! Test empty legend labels (Issue #328) - consolidated
+        !! from test_legend_empty_label_fix.f90
         integer, intent(inout) :: failures
         real(wp), dimension(10) :: x, y1, y2, y3
         integer :: i
@@ -317,7 +404,8 @@ contains
     end subroutine test_empty_label_handling
     
     subroutine test_legend_optimizations(failures)
-        !! Test optimized legend operations - consolidated from test_legend_optimized.f90
+        !! Test optimized legend operations - consolidated
+        !! from test_legend_optimized.f90
         integer, intent(inout) :: failures
         real(wp), dimension(5) :: x, y
         integer :: i
@@ -335,7 +423,8 @@ contains
         call legend()
         call savefig("test/output/test_legend_optimization_consolidated.png")
         
-        val = validate_file_exists('test/output/test_legend_optimization_consolidated.png')
+        val = validate_file_exists( &
+            'test/output/test_legend_optimization_consolidated.png')
         if (val%passed) then
             print *, "  ✓ Legend optimization verified"
         else

@@ -2,6 +2,7 @@ program test_pdf_line_style_patterns
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pdf, only: pdf_context, create_pdf_canvas
     use fortplot_system_runtime, only: create_directory_runtime
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     type(pdf_context) :: ctx
@@ -47,34 +48,22 @@ contains
         character(len=*), intent(in) :: filename
         character(len=*), intent(in) :: expected
         character(len=*), intent(in) :: description
-        integer :: unit, ios
-        character(len=65536) :: buf
-        integer :: read_len
-        logical :: found
+        character(len=:), allocatable :: stream_text
+        integer :: status
 
-        open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
-        if (ios /= 0) then
-            write(*,'(A)') 'FAIL: could not open '//trim(filename)
+        call extract_pdf_stream_text(filename, stream_text, status)
+        if (status /= 0) then
+            write(*,'(A)') 'FAIL: could not read '//trim(filename)//' stream'
             error stop 1
         end if
-        buf = ''
-        read_len = 0
-        do
-            read(unit, '(A)', iostat=ios) buf(read_len+1:)
-            if (ios /= 0) exit
-            read_len = len_trim(buf)
-            if (read_len > len(buf) - 256) exit
-        end do
-        close(unit)
 
-        found = index(buf, expected) > 0
-        if (.not. found) then
+        if (index(stream_text, expected) == 0) then
             write(*,'(A)') 'FAIL: expected token not found: '//trim(expected)
             write(*,'(A)') trim(description)
             error stop 2
         end if
+
         write(*,'(A)') 'PASS: '//trim(description)
     end subroutine assert_pdf_contains
 
 end program test_pdf_line_style_patterns
-
