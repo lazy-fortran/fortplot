@@ -29,6 +29,7 @@ module fortplot_figure_core
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_annotations, only: text_annotation_t
+    use fortplot_logging, only: log_error, log_warning
     ! Import refactored modules
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
@@ -97,6 +98,15 @@ module fortplot_figure_core
         procedure :: hist
         procedure :: boxplot
         procedure :: scatter
+        procedure :: imshow
+        procedure :: pie
+        procedure :: polar
+        procedure :: step
+        procedure :: stem
+        procedure :: fill
+        procedure :: fill_between
+        procedure :: twinx
+        procedure :: twiny
         ! Subplot methods
         procedure :: subplots
         procedure :: subplot_plot
@@ -434,6 +444,442 @@ contains
                          marker, markersize, color, colormap, vmin, vmax, label, &
                          show_colorbar, default_color)
     end subroutine scatter
+
+    subroutine imshow(self, z, cmap, alpha, vmin, vmax, origin, extent, &
+                      interpolation, aspect)
+        !! Display 2D array as an image using the pcolormesh backend
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: z(:,:)
+        character(len=*), intent(in), optional :: cmap, origin, interpolation, aspect
+        real(wp), intent(in), optional :: alpha, vmin, vmax
+        real(wp), intent(in), optional :: extent(4)
+
+        integer :: nx, ny, i
+        real(wp) :: x0, x1, y0, y1, tmp_edge
+        real(wp), allocatable :: x_edges(:), y_edges(:), z_flip(:,:)
+        character(len=8) :: origin_mode
+
+        nx = size(z, 2)
+        ny = size(z, 1)
+        if (nx == 0 .or. ny == 0) then
+            call log_error("imshow: input array must be non-empty")
+            return
+        end if
+
+        x0 = 0.0_wp; x1 = real(nx, wp)
+        y0 = 0.0_wp; y1 = real(ny, wp)
+        if (present(extent)) then
+            if (size(extent) /= 4) then
+                call log_error("imshow: extent must contain exactly 4 values")
+                return
+            end if
+            x0 = extent(1); x1 = extent(2)
+            y0 = extent(3); y1 = extent(4)
+        end if
+
+        allocate(x_edges(nx+1), y_edges(ny+1))
+        do i = 1, nx + 1
+            x_edges(i) = x0 + (x1 - x0) * real(i - 1, wp) / real(nx, wp)
+        end do
+        do i = 1, ny + 1
+            y_edges(i) = y0 + (y1 - y0) * real(i - 1, wp) / real(ny, wp)
+        end do
+
+        origin_mode = 'lower'
+        if (present(origin)) then
+            select case (trim(origin))
+            case ('upper', 'Upper', 'UPPER')
+                origin_mode = 'upper'
+            case ('lower', 'Lower', 'LOWER')
+                origin_mode = 'lower'
+            case default
+                call log_warning('imshow: unsupported origin "' // trim(origin) // &
+                                 '"; using "lower"')
+            end select
+        end if
+
+        if (origin_mode == 'upper') then
+            do i = 1, ny/2
+                tmp_edge = y_edges(i)
+                y_edges(i) = y_edges(ny - i + 2)
+                y_edges(ny - i + 2) = tmp_edge
+            end do
+            allocate(z_flip(ny, nx))
+            do i = 1, ny
+                z_flip(i, :) = z(ny - i + 1, :)
+            end do
+        end if
+
+        if (present(alpha)) then
+            call log_warning('imshow: alpha not yet supported')
+        end if
+        if (present(interpolation)) then
+            call log_warning('imshow: interpolation ignored by current backend')
+        end if
+        if (present(aspect)) then
+            call log_warning('imshow: aspect not configurable on current backend')
+        end if
+
+        if (origin_mode == 'upper') then
+            call self%add_pcolormesh(x_edges, y_edges, z_flip, colormap=cmap, &
+                                     vmin=vmin, vmax=vmax)
+            deallocate(z_flip)
+        else
+            call self%add_pcolormesh(x_edges, y_edges, z, colormap=cmap, &
+                                     vmin=vmin, vmax=vmax)
+        end if
+
+        deallocate(x_edges, y_edges)
+    end subroutine imshow
+
+    subroutine polar(self, theta, r, fmt, label, linestyle, marker, color)
+        !! Plot data provided in polar coordinates by converting to Cartesian
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: theta(:), r(:)
+        character(len=*), intent(in), optional :: fmt, label
+        character(len=*), intent(in), optional :: linestyle, marker, color
+
+        integer :: n, i
+        real(wp), allocatable :: x(:), y(:)
+
+        n = min(size(theta), size(r))
+        if (n == 0) then
+            call log_error('polar: theta and r must contain values')
+            return
+        end if
+
+        allocate(x(n), y(n))
+        do i = 1, n
+            x(i) = r(i) * cos(theta(i))
+            y(i) = r(i) * sin(theta(i))
+        end do
+
+        if (present(fmt)) then
+            call log_warning('polar: fmt ignored; use linestyle/marker arguments')
+        end if
+        if (present(marker)) then
+            call log_warning('polar: marker styling not yet supported')
+        end if
+        if (present(color)) then
+            call log_warning('polar: color strings not mapped to RGB yet')
+        end if
+
+        call self%add_plot(x, y, label=label, linestyle=linestyle)
+        deallocate(x, y)
+    end subroutine polar
+
+    subroutine step(self, x, y, where, label, linestyle, color, linewidth)
+        !! Create a stepped line plot using repeated x positions
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: where, label, linestyle, color
+        real(wp), intent(in), optional :: linewidth
+
+        integer :: n, i, n_points
+        character(len=8) :: step_type
+        real(wp), allocatable :: x_step(:), y_step(:)
+
+        n = min(size(x), size(y))
+        if (n < 2) then
+            call log_error('step: need at least two samples')
+            return
+        end if
+
+        step_type = 'pre'
+        if (present(where)) then
+            select case (trim(where))
+            case ('post', 'Post', 'POST')
+                step_type = 'post'
+            case ('mid', 'Mid', 'MID')
+                step_type = 'mid'
+            case ('pre', 'Pre', 'PRE')
+                step_type = 'pre'
+            case default
+                call log_warning('step: unsupported where value; using "pre"')
+            end select
+        end if
+
+        select case (step_type)
+        case ('pre', 'PRE')
+            n_points = 2 * n - 1
+            allocate(x_step(n_points), y_step(n_points))
+            do i = 1, n - 1
+                x_step(2 * i - 1) = x(i)
+                y_step(2 * i - 1) = y(i)
+                x_step(2 * i) = x(i + 1)
+                y_step(2 * i) = y(i)
+            end do
+            x_step(n_points) = x(n)
+            y_step(n_points) = y(n)
+
+        case ('post', 'POST')
+            n_points = 2 * n - 1
+            allocate(x_step(n_points), y_step(n_points))
+            x_step(1) = x(1)
+            y_step(1) = y(1)
+            do i = 2, n
+                x_step(2 * i - 2) = x(i)
+                y_step(2 * i - 2) = y(i - 1)
+                x_step(2 * i - 1) = x(i)
+                y_step(2 * i - 1) = y(i)
+            end do
+
+        case ('mid', 'MID')
+            n_points = 2 * n
+            allocate(x_step(n_points), y_step(n_points))
+            do i = 1, n - 1
+                x_step(2 * i - 1) = x(i)
+                y_step(2 * i - 1) = y(i)
+                x_step(2 * i) = 0.5_wp * (x(i) + x(i + 1))
+                y_step(2 * i) = y(i)
+            end do
+            x_step(n_points - 1) = x(n)
+            y_step(n_points - 1) = y(n - 1)
+            x_step(n_points) = x(n)
+            y_step(n_points) = y(n)
+        end select
+
+        if (present(color)) then
+            call log_warning('step: color strings not yet mapped to RGB values')
+        end if
+        if (present(linewidth)) then
+            call log_warning('step: linewidth not configurable in current backend')
+        end if
+
+        call self%add_plot(x_step, y_step, label=label, linestyle=linestyle)
+        deallocate(x_step, y_step)
+    end subroutine step
+
+    subroutine stem(self, x, y, linefmt, markerfmt, basefmt, label, bottom)
+        !! Draw vertical stems from a baseline to each data point
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: linefmt, markerfmt, basefmt, label
+        real(wp), intent(in), optional :: bottom
+
+        integer :: n, i
+        real(wp) :: baseline, xmin, xmax
+        real(wp), allocatable :: xs(:), ys(:)
+        logical :: label_used
+
+        n = min(size(x), size(y))
+        if (n == 0) then
+            call log_error('stem: x and y must contain values')
+            return
+        end if
+
+        baseline = 0.0_wp
+        if (present(bottom)) baseline = bottom
+
+        xmin = minval(x(1:n))
+        xmax = maxval(x(1:n))
+        allocate(xs(2), ys(2))
+        label_used = .false.
+
+        if (present(linefmt)) then
+            call log_warning('stem: linefmt ignored; use subplot styling instead')
+        end if
+        if (present(markerfmt)) then
+            call log_warning('stem: markerfmt ignored by current backend')
+        end if
+        if (present(basefmt)) then
+            call log_warning('stem: basefmt ignored by current backend')
+        end if
+
+        do i = 1, n
+            xs(1) = x(i); xs(2) = x(i)
+            ys(1) = baseline; ys(2) = y(i)
+            if (present(label) .and. .not. label_used) then
+                call self%add_plot(xs, ys, label=label)
+                label_used = .true.
+            else
+                call self%add_plot(xs, ys)
+            end if
+        end do
+
+        xs(1) = xmin; xs(2) = xmax
+        ys(1) = baseline; ys(2) = baseline
+        call self%add_plot(xs, ys)
+        deallocate(xs, ys)
+
+        call self%add_plot(x(1:n), y(1:n))
+    end subroutine stem
+
+    subroutine fill(self, x, y, color, alpha, label)
+        !! Fill area between curve and baseline using fill_between helper
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: alpha
+        character(len=*), intent(in), optional :: label
+
+        if (present(color)) then
+            call log_warning('fill: color strings not yet supported; using default')
+        end if
+        if (present(alpha)) then
+            call log_warning('fill: transparency not implemented for current backend')
+        end if
+
+        call self%fill_between(x, y1=y, label=label)
+    end subroutine fill
+
+    subroutine fill_between(self, x, y1, y2, where, color, alpha, label, interpolate)
+        !! Fill area between two curves by constructing a closed polygon
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in), optional :: y1(:), y2(:)
+        logical, intent(in), optional :: where(:)
+        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: alpha
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: interpolate
+
+        integer :: n, i
+        real(wp), allocatable :: y1_vals(:), y2_vals(:)
+        real(wp), allocatable :: x_poly(:), y_poly(:)
+
+        n = size(x)
+        if (n < 2) then
+            call log_error('fill_between: need at least two points to form area')
+            return
+        end if
+
+        allocate(y1_vals(n), y2_vals(n))
+        if (present(y1)) then
+            if (size(y1) /= n) then
+                call log_error('fill_between: y1 size mismatch')
+                deallocate(y1_vals, y2_vals)
+                return
+            end if
+            y1_vals = y1
+        else
+            y1_vals = 0.0_wp
+        end if
+
+        if (present(y2)) then
+            if (size(y2) /= n) then
+                call log_error('fill_between: y2 size mismatch')
+                deallocate(y1_vals, y2_vals)
+                return
+            end if
+            y2_vals = y2
+        else
+            y2_vals = 0.0_wp
+        end if
+
+        if (present(where)) then
+            call log_warning('fill_between: logical mask not yet supported; filling all data')
+        end if
+        if (present(color)) then
+            call log_warning('fill_between: color strings not supported; using default')
+        end if
+        if (present(alpha)) then
+            call log_warning('fill_between: transparency not implemented for backend')
+        end if
+        if (present(interpolate)) then
+            call log_warning('fill_between: interpolate option ignored')
+        end if
+
+        allocate(x_poly(2 * n), y_poly(2 * n))
+        x_poly(1:n) = x
+        y_poly(1:n) = y1_vals
+        do i = 1, n
+            x_poly(n + i) = x(n - i + 1)
+            y_poly(n + i) = y2_vals(n - i + 1)
+        end do
+
+        call self%add_plot(x_poly, y_poly, label=label)
+
+        deallocate(y1_vals, y2_vals, x_poly, y_poly)
+    end subroutine fill_between
+
+    subroutine twinx(self)
+        !! Placeholder for twin x-axis support (not yet implemented)
+        class(figure_t), intent(inout) :: self
+        call log_warning('twinx: dual axis plots not yet implemented')
+    end subroutine twinx
+
+    subroutine twiny(self)
+        !! Placeholder for twin y-axis support (not yet implemented)
+        class(figure_t), intent(inout) :: self
+        call log_warning('twiny: dual axis plots not yet implemented')
+    end subroutine twiny
+
+    subroutine pie(self, values, labels, colors, explode, autopct, startangle)
+        !! Draw a simple pie chart using line segments for wedges
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: values(:)
+        character(len=*), intent(in), optional :: labels(:)
+        character(len=*), intent(in), optional :: colors(:)
+        real(wp), intent(in), optional :: explode(:)
+        character(len=*), intent(in), optional :: autopct
+        real(wp), intent(in), optional :: startangle
+
+        integer :: n, i, seg_count, j
+        real(wp) :: total, angle_start, angle_span, radius
+        real(wp) :: offset, cx, cy, base_angle
+        real(wp), allocatable :: x_pts(:), y_pts(:)
+        real(wp), parameter :: PI = acos(-1.0_wp)
+
+        n = size(values)
+        if (n == 0) then
+            call log_error('pie: values array must contain data')
+            return
+        end if
+
+        total = sum(values)
+        if (total <= 0.0_wp) then
+            call log_error('pie: sum of values must be positive')
+            return
+        end if
+
+        angle_start = 90.0_wp
+        if (present(startangle)) angle_start = startangle
+        angle_start = angle_start * PI / 180.0_wp
+
+        radius = 1.0_wp
+        cx = 0.0_wp
+        cy = 0.0_wp
+
+        if (present(colors)) then
+            call log_warning('pie: custom colors not yet supported; using defaults')
+        end if
+        if (present(autopct)) then
+            call log_warning('pie: autopct formatting is not implemented')
+        end if
+
+        do i = 1, n
+            angle_span = 2.0_wp * PI * values(i) / total
+            seg_count = max(12, int(abs(angle_span) * 180.0_wp / PI) + 1)
+            allocate(x_pts(seg_count + 2), y_pts(seg_count + 2))
+
+            offset = 0.0_wp
+            if (present(explode)) then
+                if (i <= size(explode)) offset = explode(i)
+            end if
+            offset = offset * radius * 0.1_wp
+
+            base_angle = angle_start + 0.5_wp * angle_span
+            x_pts(1) = cx + offset * cos(base_angle)
+            y_pts(1) = cy + offset * sin(base_angle)
+
+            do j = 1, seg_count + 1
+                x_pts(j + 1) = x_pts(1) + radius * cos(angle_start + &
+                                 angle_span * real(j - 1, wp) / real(seg_count, wp))
+                y_pts(j + 1) = y_pts(1) + radius * sin(angle_start + &
+                                 angle_span * real(j - 1, wp) / real(seg_count, wp))
+            end do
+
+            if (present(labels) .and. i <= size(labels)) then
+                call self%add_plot(x_pts, y_pts, label=labels(i))
+            else
+                call self%add_plot(x_pts, y_pts)
+            end if
+
+            deallocate(x_pts, y_pts)
+            angle_start = angle_start + angle_span
+        end do
+    end subroutine pie
 
     !! SUBPLOT OPERATIONS - Delegated to management module
     
