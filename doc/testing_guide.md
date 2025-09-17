@@ -135,6 +135,14 @@ make test ARGS="--target test_unicode_detection"
 make test ARGS="--target test_warning_suppression_control"
 ```
 
+### Marker Rendering Regression Guard
+```bash
+make test ARGS="--target test_marker_example_guard"
+```
+Run this guard to validate marker rendering artifacts across PNG/PDF/ASCII
+outputs. It is the canonical CI regression check for marker output and
+supersedes the retired `test_markers_rendering` smoke test.
+
 ### Test Requirements
 - Modern Fortran compiler (gfortran-11+)
 - Optional: FFmpeg for MPEG validation tests
