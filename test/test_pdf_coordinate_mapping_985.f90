@@ -5,6 +5,7 @@ program test_pdf_coordinate_mapping_985
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot
     use fortplot_errors, only: SUCCESS
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=:), allocatable :: pdf_path
@@ -27,36 +28,31 @@ program test_pdf_coordinate_mapping_985
 
     ok = verify_pdf_coordinates_within_frame(trim(pdf_path))
     if (.not. ok) then
-        print *, 'XFAIL: PDF line path exceeds frame bounds (Issue #985 regression - known issue)'
-        ! This is a known regression - marking as expected failure for now
-        ! stop 1  ! Disabled to allow test suite to continue
-    else
-        print *, 'UNEXPECTED PASS: Issue #985 appears to be fixed!'
+        print *, 'FAIL: PDF line path exceeds frame bounds (Issue #985 regression)'
+        stop 1
     end if
 
-    print *, 'PASS: PDF coordinate mapping aligns with frame (fix #985)'
+    print *, 'PASS: PDF coordinate mapping aligns with frame (Issue #985)'
 contains
 
     logical function verify_pdf_coordinates_within_frame(path) result(within)
         character(len=*), intent(in) :: path
-        character(len=:), allocatable :: content, stream
+        character(len=:), allocatable :: stream
         real(wp) :: frame_left, frame_bottom, frame_w, frame_h
         real(wp) :: min_x, max_x, val1, val2
-        integer :: start, nl
+        integer :: start, nl, status
         character(len=:), allocatable :: line
 
         within = .false.
-        content = read_file_as_text(trim(path))
-        if (len_trim(content) == 0) return
-        
-        if (.not. extract_stream(content, stream)) return
 
-        ! Parse frame line: "<left> <bottom> <width> <height> re S"
+        call extract_pdf_stream_text(trim(path), stream, status)
+        if (status /= 0) return
+        if (len(stream) == 0) return
+
         if (.not. parse_frame(stream, frame_left, frame_bottom, frame_w, frame_h)) return
 
-        ! Iterate through stream lines; collect x from 'm' and 'l' commands
-        min_x = 1.0e99_wp
-        max_x = -1.0e99_wp
+        min_x = huge(1.0_wp)
+        max_x = -huge(1.0_wp)
         start = 1
         do
             nl = index(stream(start:), new_line('a'))
@@ -78,42 +74,36 @@ contains
             if (start > len(stream)) exit
         end do
 
-        if (min_x > 9.9e98_wp .or. max_x < -9.9e98_wp) return
+        if (min_x >= huge(1.0_wp) .or. max_x <= -huge(1.0_wp)) return
 
-        ! Allow tiny epsilon
         within = (min_x >= frame_left - 1.0e-3_wp) .and. &
                  (max_x <= (frame_left + frame_w) + 1.0e-3_wp)
     end function verify_pdf_coordinates_within_frame
 
-    logical function extract_stream(content, stream) result(ok)
-        character(len=*), intent(in) :: content
-        character(len=:), allocatable, intent(out) :: stream
-        integer :: pos_s, pos_e
-        ok = .false.
-        pos_s = index(content, 'stream')
-        pos_e = index(content, 'endstream')
-        if (pos_s == 0 .or. pos_e == 0 .or. pos_e <= pos_s) return
-        stream = content(pos_s+len('stream'):pos_e-1)
-        ok = .true.
-    end function extract_stream
-
     logical function parse_frame(stream, left, bottom, width, height) result(ok)
         character(len=*), intent(in) :: stream
         real(wp), intent(out) :: left, bottom, width, height
-        integer :: p, q
+        integer :: p, q, start
         character(len=:), allocatable :: line
+
         ok = .false.
-        left = 0.0_wp; bottom = 0.0_wp; width = 0.0_wp; height = 0.0_wp
-        
+        left = 0.0_wp
+        bottom = 0.0_wp
+        width = 0.0_wp
+        height = 0.0_wp
+
         p = index(stream, ' re S')
         if (p == 0) return
-        ! Extract the line up to ' re S'
-        q = p
-        do while (q > 1 .and. stream(q:q) /= new_line('a'))
+
+        q = p - 1
+        do while (q >= 1 .and. stream(q:q) /= new_line('a'))
             q = q - 1
         end do
-        if (q < 1) q = 1
-        line = adjustl(stream(q:p-1))
+        start = max(1, q + 1)
+        line = adjustl(stream(start:p-1))
+        line = line(1:len_trim(line))
+        if (len_trim(line) == 0) return
+
         ok = parse_four_reals(line, left, bottom, width, height)
     end function parse_frame
 
@@ -121,11 +111,18 @@ contains
         character(len=*), intent(in) :: line
         integer :: L
         character(len=1) :: c
+
         yes = .false.
         L = len_trim(line)
-        if (L < 3) return
+        if (L < 2) return
         c = line(L:L)
-        yes = (c == 'm' .or. c == 'l')
+
+        select case (c)
+        case ('m')
+            yes = (line(L-1:L-1) == ' ')
+        case ('l')
+            yes = (line(L-1:L-1) == ' ')
+        end select
     end function is_path_line
 
     logical function parse_first_two_reals(line, a, b) result(ok)
@@ -190,42 +187,5 @@ contains
             end select
         end do
     end subroutine split_tokens
-
-    function read_file_as_text(path) result(text)
-        character(len=*), intent(in) :: path
-        character(len=:), allocatable :: text
-        integer :: unit, sz, ios
-        integer :: i
-        integer(1), allocatable :: bytes(:)
-        
-        inquire(file=path, size=sz)
-        if (sz <= 0) then
-            text = ""; return
-        end if
-        allocate(bytes(sz))
-        open(newunit=unit, file=path, access='stream', form='unformatted', status='old', action='read', iostat=ios)
-        if (ios /= 0) then
-            text = ""; return
-        end if
-        read(unit) bytes
-        close(unit)
-        allocate(character(len=sz) :: text)
-        do i = 1, sz
-            call byte_to_char(bytes(i), text(i:i))
-        end do
-    end function read_file_as_text
-
-    subroutine byte_to_char(b, ch)
-        integer(1), intent(in) :: b
-        character(len=1), intent(out) :: ch
-        integer :: v
-        v = transfer(b, v)
-        if (v < 0) v = v + 256
-        if (v < 0 .or. v > 255) then
-            ch = ' '
-        else
-            ch = achar(v)
-        end if
-    end subroutine byte_to_char
 
 end program test_pdf_coordinate_mapping_985
