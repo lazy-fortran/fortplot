@@ -139,7 +139,8 @@ module fortplot_figure_core_operations
 
     private
     public :: core_initialize, core_add_plot, core_add_contour, core_add_contour_filled
-    public :: core_add_pcolormesh, core_streamplot, core_savefig, core_savefig_with_status
+    public :: core_add_pcolormesh, core_add_fill_between
+    public :: core_streamplot, core_savefig, core_savefig_with_status
     public :: core_show
 
 contains
@@ -219,6 +220,23 @@ contains
         plot_count = state%plot_count
         call update_data_ranges_pcolormesh_figure(plots, state, state%plot_count)
     end subroutine core_add_pcolormesh
+
+    subroutine core_add_fill_between(plots, state, x, upper, lower, mask, color_string, alpha, &
+                                     plot_count)
+        type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: upper(:)
+        real(wp), intent(in) :: lower(:)
+        logical, intent(in), optional :: mask(:)
+        character(len=*), intent(in), optional :: color_string
+        real(wp), intent(in), optional :: alpha
+        integer, intent(inout) :: plot_count
+
+        call figure_add_fill_between_operation(plots, state, x, upper, lower, mask, color_string, alpha)
+        plot_count = state%plot_count
+        call update_data_ranges_figure(plots, state, state%plot_count)
+    end subroutine core_add_fill_between
 
     subroutine core_streamplot(plots, state, plot_count, x, y, u, v, density, color)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)

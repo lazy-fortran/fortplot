@@ -7,9 +7,11 @@ module fortplot_figure_rendering_pipeline
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER
+    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
-                                 render_pcolormesh_plot, render_markers
+                                 render_pcolormesh_plot, render_fill_between_plot, &
+                                 render_markers
     use fortplot_legend, only: legend_t
     implicit none
     
@@ -60,6 +62,10 @@ contains
                 ! Scatter uses same x/y range computation as line plots
                 call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
                                              x_min_data, x_max_data, y_min_data, y_max_data)
+
+            case (PLOT_TYPE_FILL)
+                call process_fill_between_ranges(plots(i), first_plot, has_valid_data, &
+                                                x_min_data, x_max_data, y_min_data, y_max_data)
 
             case (PLOT_TYPE_CONTOUR)
                 call process_contour_plot_ranges(plots(i), first_plot, has_valid_data, &
@@ -144,7 +150,50 @@ contains
             end if
         end if
     end subroutine process_line_plot_ranges
-    
+
+    subroutine process_fill_between_ranges(plot, first_plot, has_valid_data, &
+                                           x_min_data, x_max_data, y_min_data, y_max_data)
+        !! Process fill_between data to calculate ranges
+        type(plot_data_t), intent(in) :: plot
+        logical, intent(inout) :: first_plot, has_valid_data
+        real(wp), intent(inout) :: x_min_data, x_max_data, y_min_data, y_max_data
+
+        integer :: n, idx
+        real(wp) :: x_val, y_top, y_bottom
+        logical :: considered
+
+        if (.not. allocated(plot%fill_between_data%x)) return
+        n = size(plot%fill_between_data%x)
+        if (n == 0) return
+
+        considered = .false.
+        do idx = 1, n
+            if (plot%fill_between_data%has_mask) then
+                if (.not. plot%fill_between_data%mask(idx)) cycle
+            end if
+
+            x_val = plot%fill_between_data%x(idx)
+            y_top = plot%fill_between_data%upper(idx)
+            y_bottom = plot%fill_between_data%lower(idx)
+
+            if (first_plot .and. .not. considered) then
+                x_min_data = x_val
+                x_max_data = x_val
+                y_min_data = min(y_top, y_bottom)
+                y_max_data = max(y_top, y_bottom)
+                first_plot = .false.
+            else
+                x_min_data = min(x_min_data, x_val)
+                x_max_data = max(x_max_data, x_val)
+                y_min_data = min(y_min_data, min(y_top, y_bottom))
+                y_max_data = max(y_max_data, max(y_top, y_bottom))
+            end if
+            considered = .true.
+        end do
+
+        if (considered) has_valid_data = .true.
+    end subroutine process_fill_between_ranges
+
     subroutine process_contour_plot_ranges(plot, first_plot, has_valid_data, &
                                           x_min_data, x_max_data, y_min_data, y_max_data)
         !! Process contour plot data to calculate ranges
@@ -463,7 +512,10 @@ contains
                                           y_min_transformed, y_max_transformed, &
                                           xscale, yscale, symlog_threshold, &
                                           width, height, margin_right)
-                                          
+
+            case (PLOT_TYPE_FILL)
+                call render_fill_between_plot(backend, plots(i), xscale, yscale, symlog_threshold)
+
             end select
         end do
     end subroutine render_all_plots

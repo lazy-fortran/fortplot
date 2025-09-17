@@ -15,6 +15,7 @@ module fortplot_rendering
     public :: render_line_plot
     public :: render_contour_plot
     public :: render_pcolormesh_plot
+    public :: render_fill_between_plot
     public :: render_markers
     public :: render_solid_line
     public :: draw_filled_quad

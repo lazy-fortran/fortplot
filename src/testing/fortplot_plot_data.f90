@@ -14,8 +14,8 @@ module fortplot_plot_data
     private
     public :: plot_data_t, arrow_data_t, subplot_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, PLOT_TYPE_BOXPLOT, &
-              PLOT_TYPE_SCATTER
+              PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
     public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
@@ -27,6 +27,7 @@ module fortplot_plot_data
     integer, parameter :: PLOT_TYPE_HISTOGRAM = 6
     integer, parameter :: PLOT_TYPE_BOXPLOT = 7
     integer, parameter :: PLOT_TYPE_SCATTER = 8
+    integer, parameter :: PLOT_TYPE_FILL = 9
 
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
@@ -42,6 +43,15 @@ module fortplot_plot_data
         real(wp) :: size = 1.0_wp       ! Arrow size scaling factor
         character(len=10) :: style = '->' ! Arrow style (matplotlib compatible)
     end type arrow_data_t
+
+    type :: fill_between_data_t
+        !! Storage for fill_between polygon samples
+        real(wp), allocatable :: x(:)
+        real(wp), allocatable :: upper(:)
+        real(wp), allocatable :: lower(:)
+        logical, allocatable :: mask(:)
+        logical :: has_mask = .false.
+    end type fill_between_data_t
 
     type :: plot_data_t
         !! Data container for individual plots
@@ -98,6 +108,9 @@ module fortplot_plot_data
         character(len=:), allocatable :: label
         character(len=:), allocatable :: linestyle
         character(len=:), allocatable :: marker
+        ! Filled polygon data (fill_between)
+        type(fill_between_data_t) :: fill_between_data
+        real(wp) :: fill_alpha = 1.0_wp
     contains
         procedure :: is_3d
     end type plot_data_t
