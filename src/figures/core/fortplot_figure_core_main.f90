@@ -738,7 +738,7 @@ contains
 
     subroutine add_fill_between(self, x, y1, y2, label, color, alpha, where, &
                                 interpolate)
-        !! Fill area between two curves by constructing a closed polygon
+        !! Fill area between two curves, honouring optional masks
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:)
         real(wp), intent(in), optional :: y1(:), y2(:)
@@ -749,8 +749,10 @@ contains
         logical, intent(in), optional :: interpolate
 
         integer :: n, i
+        integer :: seg_start
         real(wp), allocatable :: y1_vals(:), y2_vals(:)
-        real(wp), allocatable :: x_poly(:), y_poly(:)
+        logical, allocatable :: mask(:)
+        logical :: label_used, skipped_segment
 
         n = size(x)
         if (n < 2) then
@@ -781,30 +783,77 @@ contains
             y2_vals = 0.0_wp
         end if
 
+        if (present(color)) call log_warning(&
+            'fill_between: color strings not supported; using default')
+        if (present(alpha)) call log_warning(&
+            'fill_between: transparency not implemented for backend')
+        if (present(interpolate)) call log_warning(&
+            'fill_between: interpolate option ignored')
+        allocate(mask(n))
         if (present(where)) then
-            call log_warning('fill_between: logical mask not yet supported; filling all data')
-        end if
-        if (present(color)) then
-            call log_warning('fill_between: color strings not supported; using default')
-        end if
-        if (present(alpha)) then
-            call log_warning('fill_between: transparency not implemented for backend')
-        end if
-        if (present(interpolate)) then
-            call log_warning('fill_between: interpolate option ignored')
+            if (size(where) /= n) then
+                call log_error('fill_between: where mask size mismatch')
+                deallocate(y1_vals, y2_vals, mask)
+                return
+            end if
+            mask = where
+        else
+            mask = .true.
         end if
 
-        allocate(x_poly(2 * n), y_poly(2 * n))
-        x_poly(1:n) = x
-        y_poly(1:n) = y1_vals
+        if (.not. any(mask)) then
+            call log_warning('fill_between: mask excludes all data points')
+            deallocate(y1_vals, y2_vals, mask)
+            return
+        end if
+        label_used = .false.; skipped_segment = .false.; seg_start = 0
         do i = 1, n
-            x_poly(n + i) = x(n - i + 1)
-            y_poly(n + i) = y2_vals(n - i + 1)
+            if (mask(i)) then
+                if (seg_start == 0) seg_start = i
+            else if (seg_start /= 0) then
+                call render_segment(seg_start, i - 1)
+                seg_start = 0
+            end if
         end do
+        if (seg_start /= 0) call render_segment(seg_start, n)
+        if (skipped_segment) call log_warning(&
+            'fill_between: skipping mask spans <2 points')
+        if (present(label) .and. .not. label_used) call log_warning(&
+            'fill_between: mask selection prevented label application')
+        deallocate(y1_vals, y2_vals, mask)
 
-        call self%add_plot(x_poly, y_poly, label=label)
+    contains
 
-        deallocate(y1_vals, y2_vals, x_poly, y_poly)
+        subroutine render_segment(first_idx, last_idx)
+            integer, intent(in) :: first_idx, last_idx
+            integer :: count, j
+            real(wp), allocatable :: x_poly(:), y_poly(:)
+
+            count = last_idx - first_idx + 1
+            if (count < 2) then
+                skipped_segment = .true.
+                return
+            end if
+
+            allocate(x_poly(2 * count), y_poly(2 * count))
+            x_poly(1:count) = x(first_idx:last_idx)
+            y_poly(1:count) = y1_vals(first_idx:last_idx)
+
+            do j = 1, count
+                x_poly(count + j) = x(last_idx - j + 1)
+                y_poly(count + j) = y2_vals(last_idx - j + 1)
+            end do
+
+            if (present(label) .and. .not. label_used) then
+                call self%add_plot(x_poly, y_poly, label=label)
+                label_used = .true.
+            else
+                call self%add_plot(x_poly, y_poly)
+            end if
+
+            deallocate(x_poly, y_poly)
+        end subroutine render_segment
+
     end subroutine add_fill_between
 
     subroutine twinx(self)

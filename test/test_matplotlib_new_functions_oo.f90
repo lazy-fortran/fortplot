@@ -8,6 +8,7 @@ program test_matplotlib_new_functions_oo
     real(real64), allocatable :: x(:), y(:), z(:,:)
     real(real64), allocatable :: theta(:), r(:)
     real(real64), allocatable :: values(:)
+    logical, allocatable :: mask(:)
     integer :: i, j
 
     print *, 'Testing OO matplotlib-compatible functions...'
@@ -73,6 +74,17 @@ program test_matplotlib_new_functions_oo
     call fig%set_title('OO add_fill_between() test - Area between curves')
     call fig%savefig('test_fill_between_oo.png')
     call fig%clear()
+
+    allocate(mask(size(x)))
+    mask = .false.
+    mask(10:30) = .true.
+
+    call fig%add_fill_between(x, y1=y, y2=y * 0.2_real64, where=mask)
+    call fig%set_title('OO add_fill_between() mask test')
+    call fig%savefig('test_fill_between_masked_oo.png')
+    call fig%clear()
+
+    deallocate(mask)
 
     call fig%add_step(x, y)
     call fig%twinx()
