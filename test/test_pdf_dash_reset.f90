@@ -2,13 +2,13 @@ program test_pdf_dash_reset
     !! Verify that PDF axes frame/ticks use solid dash pattern regardless of prior plot styles
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure, plot, legend, savefig, title
+    use test_pdf_utils, only: extract_pdf_stream_text
     implicit none
 
     character(len=*), parameter :: out_pdf = 'build/test/output/pdf_dash_reset.pdf'
-    integer :: unit, ios
+    character(len=:), allocatable :: stream_text
+    integer :: status
     logical :: exists
-    character(len=:), allocatable :: content
-    integer :: sz
 
     call title('Dash Reset Test')
     call plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp], label='line', linestyle='--')
@@ -22,24 +22,13 @@ program test_pdf_dash_reset
         stop 1
     end if
 
-    open(newunit=unit, file=out_pdf, access='stream', form='unformatted', status='old', iostat=ios)
-    if (ios /= 0) then
-        print *, 'FAIL: cannot open ', trim(out_pdf)
+    call extract_pdf_stream_text(out_pdf, stream_text, status)
+    if (status /= 0) then
+        print *, 'FAIL: unable to read PDF stream'
         stop 1
     end if
 
-    inquire(unit=unit, size=sz)
-    if (sz <= 0) then
-        print *, 'FAIL: zero-size PDF'
-        close(unit)
-        stop 1
-    end if
-
-    allocate(character(len=sz) :: content)
-    read(unit) content
-    close(unit)
-
-    if (index(content, '[] 0 d') == 0) then
+    if (index(stream_text, '[] 0 d') == 0) then
         print *, 'FAIL: PDF stream missing solid dash reset ([] 0 d)'
         stop 1
     end if
