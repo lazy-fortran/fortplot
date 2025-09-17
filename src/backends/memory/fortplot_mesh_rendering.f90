@@ -14,6 +14,7 @@ module fortplot_mesh_rendering
     
     private
     public :: render_pcolormesh_plot
+    public :: render_fill_between_plot
     public :: draw_filled_quad
     public :: draw_quad_edges
     
@@ -66,7 +67,49 @@ contains
 
         ! Render the mesh (default path)
         call render_mesh_quads(backend, plot_data, nx, ny)
-    end subroutine render_pcolormesh_plot
+end subroutine render_pcolormesh_plot
+
+    subroutine render_fill_between_plot(backend, plot_data, xscale, yscale, symlog_threshold)
+        !! Render fill_between polygons as trapezoids
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot_data
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+
+        integer :: n, i
+        real(wp) :: quad_x(4), quad_y(4)
+
+        if (.not. allocated(plot_data%fill_between_data%x)) return
+        n = size(plot_data%fill_between_data%x)
+        if (n < 2) return
+
+        call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+
+        do i = 1, n - 1
+            if (plot_data%fill_between_data%has_mask) then
+                if (.not. (plot_data%fill_between_data%mask(i) .and. &
+                           plot_data%fill_between_data%mask(i + 1))) cycle
+            end if
+
+            quad_x(1) = apply_scale_transform(plot_data%fill_between_data%x(i), &
+                                              xscale, symlog_threshold)
+            quad_x(2) = apply_scale_transform(plot_data%fill_between_data%x(i + 1), &
+                                              xscale, symlog_threshold)
+            quad_x(3) = quad_x(2)
+            quad_x(4) = quad_x(1)
+
+            quad_y(1) = apply_scale_transform(plot_data%fill_between_data%upper(i), &
+                                              yscale, symlog_threshold)
+            quad_y(2) = apply_scale_transform(plot_data%fill_between_data%upper(i + 1), &
+                                              yscale, symlog_threshold)
+            quad_y(3) = apply_scale_transform(plot_data%fill_between_data%lower(i + 1), &
+                                              yscale, symlog_threshold)
+            quad_y(4) = apply_scale_transform(plot_data%fill_between_data%lower(i), &
+                                              yscale, symlog_threshold)
+
+            call backend%fill_quad(quad_x, quad_y)
+        end do
+    end subroutine render_fill_between_plot
     
     logical function validate_mesh_data(plot_data, nx, ny) result(valid)
         !! Validate pcolormesh data arrays
