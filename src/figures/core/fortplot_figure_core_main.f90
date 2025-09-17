@@ -98,13 +98,13 @@ module fortplot_figure_core
         procedure :: hist
         procedure :: boxplot
         procedure :: scatter
-        procedure :: imshow
-        procedure :: pie
-        procedure :: polar
-        procedure :: step
-        procedure :: stem
-        procedure :: fill
-        procedure :: fill_between
+        procedure :: add_imshow
+        procedure :: add_pie
+        procedure :: add_polar
+        procedure :: add_step
+        procedure :: add_stem
+        procedure :: add_fill
+        procedure :: add_fill_between
         procedure :: twinx
         procedure :: twiny
         ! Subplot methods
@@ -445,8 +445,8 @@ contains
                          show_colorbar, default_color)
     end subroutine scatter
 
-    subroutine imshow(self, z, cmap, alpha, vmin, vmax, origin, extent, &
-                      interpolation, aspect)
+    subroutine add_imshow(self, z, cmap, alpha, vmin, vmax, origin, extent, &
+                          interpolation, aspect)
         !! Display 2D array as an image using the pcolormesh backend
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: z(:,:)
@@ -530,9 +530,9 @@ contains
         end if
 
         deallocate(x_edges, y_edges)
-    end subroutine imshow
+    end subroutine add_imshow
 
-    subroutine polar(self, theta, r, fmt, label, linestyle, marker, color)
+    subroutine add_polar(self, theta, r, fmt, label, linestyle, marker, color)
         !! Plot data provided in polar coordinates by converting to Cartesian
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: theta(:), r(:)
@@ -566,9 +566,9 @@ contains
 
         call self%add_plot(x, y, label=label, linestyle=linestyle)
         deallocate(x, y)
-    end subroutine polar
+    end subroutine add_polar
 
-    subroutine step(self, x, y, where, label, linestyle, color, linewidth)
+    subroutine add_step(self, x, y, where, label, linestyle, color, linewidth)
         !! Create a stepped line plot using repeated x positions
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -648,9 +648,9 @@ contains
 
         call self%add_plot(x_step, y_step, label=label, linestyle=linestyle)
         deallocate(x_step, y_step)
-    end subroutine step
+    end subroutine add_step
 
-    subroutine stem(self, x, y, linefmt, markerfmt, basefmt, label, bottom)
+    subroutine add_stem(self, x, y, linefmt, markerfmt, basefmt, label, bottom)
         !! Draw vertical stems from a baseline to each data point
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -703,9 +703,9 @@ contains
         deallocate(xs, ys)
 
         call self%add_plot(x(1:n), y(1:n))
-    end subroutine stem
+    end subroutine add_stem
 
-    subroutine fill(self, x, y, color, alpha, label)
+    subroutine add_fill(self, x, y, color, alpha, label)
         !! Fill area between curve and baseline using fill_between helper
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
@@ -720,10 +720,11 @@ contains
             call log_warning('fill: transparency not implemented for current backend')
         end if
 
-        call self%fill_between(x, y1=y, label=label)
-    end subroutine fill
+        call self%add_fill_between(x, y1=y, label=label)
+    end subroutine add_fill
 
-    subroutine fill_between(self, x, y1, y2, where, color, alpha, label, interpolate)
+    subroutine add_fill_between(self, x, y1, y2, where, color, alpha, label, &
+                                interpolate)
         !! Fill area between two curves by constructing a closed polygon
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:)
@@ -791,7 +792,7 @@ contains
         call self%add_plot(x_poly, y_poly, label=label)
 
         deallocate(y1_vals, y2_vals, x_poly, y_poly)
-    end subroutine fill_between
+    end subroutine add_fill_between
 
     subroutine twinx(self)
         !! Placeholder for twin x-axis support (not yet implemented)
@@ -805,7 +806,7 @@ contains
         call log_warning('twiny: dual axis plots not yet implemented')
     end subroutine twiny
 
-    subroutine pie(self, values, labels, colors, explode, autopct, startangle)
+    subroutine add_pie(self, values, labels, colors, explode, autopct, startangle)
         !! Draw a simple pie chart using line segments for wedges
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: values(:)
@@ -879,7 +880,7 @@ contains
             deallocate(x_pts, y_pts)
             angle_start = angle_start + angle_span
         end do
-    end subroutine pie
+    end subroutine add_pie
 
     !! SUBPLOT OPERATIONS - Delegated to management module
     

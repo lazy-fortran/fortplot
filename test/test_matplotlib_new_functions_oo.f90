@@ -21,15 +21,15 @@ program test_matplotlib_new_functions_oo
                       cos(real(j, real64) / 5.0_real64)
         end do
     end do
-    call fig%imshow(z)
-    call fig%set_title('OO imshow() test - 2D heatmap')
+    call fig%add_imshow(z)
+    call fig%set_title('OO add_imshow() test - 2D heatmap')
     call fig%savefig('test_imshow_oo.png')
     call fig%clear()
 
     allocate(values(5))
     values = [30.0_real64, 25.0_real64, 20.0_real64, 15.0_real64, 10.0_real64]
-    call fig%pie(values)
-    call fig%set_title('OO pie() test - Pie chart')
+    call fig%add_pie(values)
+    call fig%set_title('OO add_pie() test - Pie chart')
     call fig%savefig('test_pie_oo.png')
     call fig%clear()
 
@@ -38,8 +38,8 @@ program test_matplotlib_new_functions_oo
         theta(i) = 2.0_real64 * 3.14159_real64 * real(i - 1, real64) / 99.0_real64
         r(i) = 1.0_real64 + 0.5_real64 * sin(5.0_real64 * theta(i))
     end do
-    call fig%polar(theta, r)
-    call fig%set_title('OO polar() test - Polar plot')
+    call fig%add_polar(theta, r)
+    call fig%set_title('OO add_polar() test - Polar plot')
     call fig%savefig('test_polar_oo.png')
     call fig%clear()
 
@@ -48,18 +48,18 @@ program test_matplotlib_new_functions_oo
         x(i) = real(i, real64)
         y(i) = sin(real(i, real64) / 3.0_real64)
     end do
-    call fig%step(x, y)
-    call fig%set_title('OO step() test - Step plot')
+    call fig%add_step(x, y)
+    call fig%set_title('OO add_step() test - Step plot')
     call fig%savefig('test_step_oo.png')
     call fig%clear()
 
-    call fig%stem(x, y)
-    call fig%set_title('OO stem() test - Stem plot')
+    call fig%add_stem(x, y)
+    call fig%set_title('OO add_stem() test - Stem plot')
     call fig%savefig('test_stem_oo.png')
     call fig%clear()
 
-    call fig%fill(x, y)
-    call fig%set_title('OO fill() test - Area under curve')
+    call fig%add_fill(x, y)
+    call fig%set_title('OO add_fill() test - Area under curve')
     call fig%savefig('test_fill_oo.png')
     call fig%clear()
 
@@ -69,12 +69,12 @@ program test_matplotlib_new_functions_oo
         x(i) = real(i - 25, real64) / 5.0_real64
         y(i) = x(i)**2
     end do
-    call fig%fill_between(x, y1=y, y2=y * 0.5_real64)
-    call fig%set_title('OO fill_between() test - Area between curves')
+    call fig%add_fill_between(x, y1=y, y2=y * 0.5_real64)
+    call fig%set_title('OO add_fill_between() test - Area between curves')
     call fig%savefig('test_fill_between_oo.png')
     call fig%clear()
 
-    call fig%step(x, y)
+    call fig%add_step(x, y)
     call fig%twinx()
     call fig%twiny()
     call fig%set_title('OO twin axis placeholder test')
