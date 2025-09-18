@@ -2,12 +2,16 @@ program test_pdf_mathtext
     !! Test mathematical text rendering in PDF backend
     use fortplot
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
-    
+
     real(wp) :: x(100), y1(100), y2(100), y3(100)
+    character(len=:), allocatable :: output_dir
     integer :: i
-    
-    print *, "Testing PDF mathematical text rendering with superscripts and subscripts..."
+
+    call ensure_test_output_dir('pdf_mathtext', output_dir)
+
+    print *, 'Testing PDF math text rendering with superscripts and subscripts'
     
     ! Generate test data
     do i = 1, 100
@@ -23,8 +27,8 @@ program test_pdf_mathtext
     call xlabel('x')
     call ylabel('y = x^2')
     call title('Quadratic Function: y = x^2')
-    call savefig('test_pdf_mathtext_superscript.pdf')
-    print *, "Created test_pdf_mathtext_superscript.pdf"
+    call savefig(trim(output_dir)//'test_pdf_mathtext_superscript.pdf')
+    print *, "Created ", trim(output_dir)//'test_pdf_mathtext_superscript.pdf'
     
     ! Test 2: Subscripts in labels
     call figure()
@@ -32,8 +36,8 @@ program test_pdf_mathtext
     call xlabel('x_i')
     call ylabel('y_i')
     call title('Exponential Decay: A_0 e^{-t/\tau}')
-    call savefig('test_pdf_mathtext_subscript.pdf')
-    print *, "Created test_pdf_mathtext_subscript.pdf"
+    call savefig(trim(output_dir)//'test_pdf_mathtext_subscript.pdf')
+    print *, "Created ", trim(output_dir)//'test_pdf_mathtext_subscript.pdf'
     
     ! Test 3: Combined superscripts and subscripts
     call figure()
@@ -44,8 +48,8 @@ program test_pdf_mathtext
     call ylabel('Amplitude A_n^2 (m^2)')
     call title('Mixed Math: E = mc^2, \chi^2_{\nu}, R_{ij}^{kl}')
     call legend()
-    call savefig('test_pdf_mathtext_combined.pdf')
-    print *, "Created test_pdf_mathtext_combined.pdf"
+    call savefig(trim(output_dir)//'test_pdf_mathtext_combined.pdf')
+    print *, "Created ", trim(output_dir)//'test_pdf_mathtext_combined.pdf'
     
     ! Test 4: Complex mathematical expressions
     call figure()
@@ -53,8 +57,8 @@ program test_pdf_mathtext
     call xlabel('Temperature T_c (K)')
     call ylabel('Pressure P_{atm} (bar)')
     call title('Phase Transition: T_c^{critical} = 647.096 K for H_2O')
-    call savefig('test_pdf_mathtext_complex.pdf')
-    print *, "Created test_pdf_mathtext_complex.pdf"
+    call savefig(trim(output_dir)//'test_pdf_mathtext_complex.pdf')
+    print *, "Created ", trim(output_dir)//'test_pdf_mathtext_complex.pdf'
     
     print *, "SUCCESS: PDF mathematical text rendering tests completed"
     

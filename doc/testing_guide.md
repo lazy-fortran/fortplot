@@ -3,6 +3,13 @@ title: Testing Guide
 
 # Testing Guide
 
+## Test Artifacts
+
+All automated tests persist their generated plots under `test/output/<suite>/`.
+If images, PDFs, or text dumps appear in the repository root, remove them and
+rerun the tests so the artifacts land in their dedicated subdirectories. The
+`make clean` target also prunes stray files outside `test/output/`.
+
 ## MPEG Validation Testing
 
 ### Running MPEG Tests
@@ -75,7 +82,8 @@ make test
 - `FORTPLOT_SUPPRESS_WARNINGS`: `1`, `true`, `yes`, `on` (case-insensitive)
 - `FORTPLOT_FORCE_WARNINGS`: `1`, `true`, `yes`, `on` (case-insensitive)
 
-**CI Auto-Detection**: Warnings automatically suppressed in CI environments (GitHub Actions, Jenkins, Travis CI, CircleCI).
+**CI Auto-Detection**: Warnings are automatically suppressed on common CI
+platforms (GitHub Actions, Jenkins, Travis CI, CircleCI).
 
 ## Windows CI Performance Testing
 
@@ -105,7 +113,8 @@ make test ARGS="--target test_histogram_consolidated"       # Was >1.5min, now <
 make test ARGS="--target test_contour_filled_backend_rendering"  # Was >3min, now <30sec
 ```
 
-See [Windows CI Performance Guide](windows_ci_performance.md) for detailed optimization documentation.
+See [Windows CI Performance Guide](windows_ci_performance.md) for full
+optimization details.
 
 ## OO/Stateful Compatibility Checks
 
