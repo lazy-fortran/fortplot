@@ -2,14 +2,18 @@ program test_matplotlib_new_functions
     !! Test the new matplotlib-compatible functions
     use fortplot
     use iso_fortran_env, only: real64
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
-    
+
     real(real64), allocatable :: x(:), y(:), z(:,:)
     real(real64), allocatable :: theta(:), r(:)
     real(real64), allocatable :: values(:)
     logical, allocatable :: mask(:)
+    character(len=:), allocatable :: output_dir
     integer :: i, j
-    
+
+    call ensure_test_output_dir('matplotlib_new_functions', output_dir)
+
     print *, "Testing new matplotlib-compatible functions..."
     
     ! Test imshow
@@ -23,7 +27,7 @@ program test_matplotlib_new_functions
     call figure()
     call imshow(z)
     call title("imshow() test - 2D heatmap")
-    call savefig("test_imshow.png")
+    call savefig(trim(output_dir)//'test_imshow.png')
     print *, "✓ imshow() function works"
     
     ! Test pie chart
@@ -33,7 +37,7 @@ program test_matplotlib_new_functions
     call figure()
     call pie(values)
     call title("pie() test - Pie chart")
-    call savefig("test_pie.png")
+    call savefig(trim(output_dir)//'test_pie.png')
     print *, "✓ pie() function works"
     
     ! Test polar plot
@@ -46,7 +50,7 @@ program test_matplotlib_new_functions
     call figure()
     call polar(theta, r)
     call title("polar() test - Polar plot")
-    call savefig("test_polar.png")
+    call savefig(trim(output_dir)//'test_polar.png')
     print *, "✓ polar() function works"
     
     ! Test step plot
@@ -61,7 +65,7 @@ program test_matplotlib_new_functions
     call title("step() test - Step plot")
     call xlabel("x")
     call ylabel("y")
-    call savefig("test_step.png")
+    call savefig(trim(output_dir)//'test_step.png')
     print *, "✓ step() function works"
     
     ! Test stem plot
@@ -70,7 +74,7 @@ program test_matplotlib_new_functions
     call title("stem() test - Stem plot")
     call xlabel("x")
     call ylabel("y")
-    call savefig("test_stem.png")
+    call savefig(trim(output_dir)//'test_stem.png')
     print *, "✓ stem() function works"
     
     ! Test fill
@@ -80,7 +84,7 @@ program test_matplotlib_new_functions
     call title("fill() test - Area under curve")
     call xlabel("x")
     call ylabel("y")
-    call savefig("test_fill.png")
+    call savefig(trim(output_dir)//'test_fill.png')
     print *, "✓ fill() function works"
     
     ! Test fill_between
@@ -96,7 +100,7 @@ program test_matplotlib_new_functions
     call title("fill_between() test - Area between curves")
     call xlabel("x")
     call ylabel("y")
-    call savefig("test_fill_between.png")
+    call savefig(trim(output_dir)//'test_fill_between.png')
     print *, "✓ fill_between() function works"
 
     allocate(mask(size(x)))
@@ -107,7 +111,7 @@ program test_matplotlib_new_functions
     call plot(x, y)
     call fill_between(x, y1=y, y2=y*0.2_real64, where=mask)
     call title("fill_between() mask test - Partial area fill")
-    call savefig("test_fill_between_masked.png")
+    call savefig(trim(output_dir)//'test_fill_between_masked.png')
     print *, "✓ fill_between() accepts where masks"
 
     deallocate(mask)
@@ -118,12 +122,12 @@ program test_matplotlib_new_functions
     call twinx()
     call twiny()
     call title("twinx/twiny test - Dual axes (placeholders)")
-    call savefig("test_twin_axes.png")
+    call savefig(trim(output_dir)//'test_twin_axes.png')
     print *, "✓ twinx() and twiny() functions accessible (placeholders)"
     
     print *, ""
     print *, "All new matplotlib-compatible functions are accessible!"
-    print *, "Test images saved to test_*.png files"
+    print *, "Test images saved under ", trim(output_dir)
     
     deallocate(x, y, z, theta, r, values)
     
