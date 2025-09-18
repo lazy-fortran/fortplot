@@ -85,6 +85,8 @@ program fortplot_python_bridge
             call process_xlim_command()
         case ('YLIM')
             call process_ylim_command()
+        case ('GRID')
+            call process_grid_command()
         case ('XSCALE')
             call process_xscale_command()
         case ('YSCALE')
@@ -363,7 +365,59 @@ contains
         read(*, *, iostat=ios) blocking_flag
         call show(blocking=blocking_flag)
     end subroutine
-    
+
+    subroutine process_grid_command()
+        character(len=MAX_STR_LEN) :: enabled_line
+        character(len=MAX_STR_LEN) :: which_line
+        character(len=MAX_STR_LEN) :: axis_line
+        character(len=MAX_STR_LEN) :: alpha_line
+        character(len=MAX_STR_LEN) :: linestyle_line
+        character(len=MAX_STR_LEN) :: normalized
+        logical :: enabled_flag
+        logical :: has_enabled
+        real(wp) :: alpha_val
+        integer :: ios
+
+        if (.not. safe_read_line(MAX_STR_LEN, enabled_line)) enabled_line = ''
+        if (.not. safe_read_line(MAX_STR_LEN, which_line)) which_line = ''
+        if (.not. safe_read_line(MAX_STR_LEN, axis_line)) axis_line = ''
+        if (.not. safe_read_line(MAX_STR_LEN, alpha_line)) alpha_line = ''
+        if (.not. safe_read_line(MAX_STR_LEN, linestyle_line)) linestyle_line = ''
+
+        has_enabled = len_trim(enabled_line) > 0
+        if (has_enabled) then
+            enabled_flag = .true.
+            read(enabled_line, *, iostat=ios) enabled_flag
+            if (ios /= 0) then
+                normalized = uppercase_string(adjustl(trim(enabled_line)))
+                select case (trim(normalized))
+                case ('TRUE', 'T', 'YES', 'Y', 'ON', '1')
+                    enabled_flag = .true.
+                case ('FALSE', 'F', 'NO', 'N', 'OFF', '0')
+                    enabled_flag = .false.
+                end select
+            end if
+            call grid(enabled=enabled_flag)
+        end if
+
+        if (len_trim(which_line) > 0) then
+            call grid(which=trim(which_line))
+        end if
+
+        if (len_trim(axis_line) > 0) then
+            call grid(axis=trim(axis_line))
+        end if
+
+        if (len_trim(alpha_line) > 0) then
+            read(alpha_line, *, iostat=ios) alpha_val
+            if (ios == 0) call grid(alpha=alpha_val)
+        end if
+
+        if (len_trim(linestyle_line) > 0) then
+            call grid(linestyle=trim(linestyle_line))
+        end if
+    end subroutine process_grid_command
+
     subroutine process_xlim_command()
         real(wp) :: xmin_val, xmax_val
         integer :: ios
@@ -483,5 +537,20 @@ contains
         out = buf(1:min(len(out), len_trim(buf)))
         safe_read_line = .true.
     end function safe_read_line
-    
+
+    pure function uppercase_string(input) result(output)
+        character(len=*), intent(in) :: input
+        character(len=len(input)) :: output
+        integer :: i, code
+
+        do i = 1, len(input)
+            code = iachar(input(i:i))
+            if (code >= iachar('a') .and. code <= iachar('z')) then
+                output(i:i) = achar(code - 32)
+            else
+                output(i:i) = input(i:i)
+            end if
+        end do
+    end function uppercase_string
+
 end program fortplot_python_bridge

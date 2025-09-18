@@ -8,6 +8,7 @@ Scatter plots and histograms for the fortplot Python interface.
 from fortplot.core import _ensure_array  # reuse helper to avoid hard numpy dep
 import fortplot.fortplot_wrapper as _fortplot
 
+
 def scatter(
     x,
     y,
@@ -24,6 +25,8 @@ def scatter(
     vmin=None,
     vmax=None,
     show_colorbar=None,
+    *,
+    data=None,
 ):
     """Create a scatter plot.
     
@@ -71,6 +74,12 @@ def scatter(
     >>> fortplot.scatter(x, y, label='random points')
     >>> fortplot.legend()
     """
+    if data is not None:
+        if isinstance(x, str) and x in data:
+            x = data[x]
+        if isinstance(y, str) and y in data:
+            y = data[y]
+
     x = _ensure_array(x)
     y = _ensure_array(y)
     # Forward to the Fortran bridge. The current bridge supports label;
@@ -78,7 +87,8 @@ def scatter(
     # compatibility but may be ignored by the backend until fully mapped.
     _fortplot.fortplot.scatter(x, y, label)
 
-def histogram(data, bins=None, density=False, label=""):
+
+def histogram(data, bins=None, density=False, label="", **kwargs):
     """Create a histogram.
     
     Parameters
@@ -105,5 +115,16 @@ def histogram(data, bins=None, density=False, label=""):
     >>> fortplot.histogram(data, label='normal distribution')
     >>> fortplot.legend()
     """
-    data = _ensure_array(data)
-    _fortplot.fortplot.histogram(data, label)
+    mapping = kwargs.get("data")
+    dataset = data
+    if isinstance(mapping, dict) and isinstance(data, str) and data in mapping:
+        dataset = mapping[data]
+
+    dataset = _ensure_array(dataset)
+    _fortplot.fortplot.histogram(dataset, label)
+
+
+def hist(*args, **kwargs):
+    if not args:
+        raise TypeError("hist() missing required dataset")
+    return histogram(args[0], **kwargs)
