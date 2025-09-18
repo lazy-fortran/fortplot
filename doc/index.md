@@ -25,29 +25,38 @@ Complete working examples with source code and generated plots.
 - [Animations](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/animation) - Animated plots with FFmpeg
 - [Unicode Support](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/unicode_demo) - Greek letters and LaTeX math
 
-**All Examples:**
-- [Animation](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/animation) - Creating MP4 animations
-- [Annotations](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/annotation_demo) - Text and arrow annotations
-- [ASCII Heatmaps](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/ascii_heatmap) - Terminal visualization
-- [Basic Plots](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/basic_plots) - Fundamental plotting
-- [Boxplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/boxplot_demo) - Box and whisker plots
-- [Colored Contours](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/colored_contours) - Filled contour plots
-- [Contour Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/contour_demo) - Contour line plots
-- [Disconnected Lines](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/disconnected_lines) - Multi-segment plots
-- [Errorbar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/errorbar_demo) - Error bars and uncertainty
-- [Format Strings](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/format_string_demo) - Matplotlib-style strings
-- [Grid Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/grid_demo) - Grid line control
-- [Legend Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/legend_demo) - Legend positioning
-- [Line Styles](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/line_styles) - Line and marker styles
-- [Marker Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/marker_demo) - Scatter plot markers
-- [Pcolormesh](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pcolormesh_demo) - 2D color mesh plots
-- [Scale Examples](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scale_examples) - Log and symlog scales
-- [Scatter Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scatter_demo) - Scatter plot basics
-- [Show Viewer](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/show_viewer_demo) - Interactive display
-- [Smart Show](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/smart_show_demo) - Intelligent display
-- [Streamplot](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/streamplot_demo) - Vector field visualization
-- [Subplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/subplot_demo) - Multiple plot grids
-- [Unicode Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/unicode_demo) - Mathematical symbols
+**All Examples (auto-generated):**
+<!-- AUTO_EXAMPLES_START -->
+
+- [3D Plotting](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/3d_plotting) - Documentation pending; browse the source tree.
+- [Animation](./examples/animation.html) - This example demonstrates creating animated plots and saving to video files.
+- [Annotation Demo](./examples/annotation_demo.html) - See documentation page for details.
+- [Ascii Heatmap](./examples/ascii_heatmap.html) - This example demonstrates terminal-based heatmap visualization using ASCII characters.
+- [Basic Plots](./examples/basic_plots.html) - This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API...
+- [Boxplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/boxplot_demo) - Documentation pending; browse the source tree.
+- [Colored Contours](./examples/colored_contours.html) - This example shows filled (colored) contour plots with customizable colormaps for visualizing 2D scalar fields.
+- [Contour Demo](./examples/contour_demo.html) - This example demonstrates line contour plotting (level lines) with custom levels and a mixed plot combining contours...
+- [Contour Filled Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/contour_filled_demo) - Documentation pending; browse the source tree.
+- [Disconnected Lines](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/disconnected_lines) - Documentation pending; browse the source tree.
+- [Errorbar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/errorbar_demo) - Documentation pending; browse the source tree.
+- [Fill Between Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/fill_between_demo) - Documentation pending; browse the source tree.
+- [Format String Demo](./examples/format_string_demo.html) - This example demonstrates matplotlib-style format strings for quick and intuitive plot styling.
+- [Grid Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/grid_demo) - Documentation pending; browse the source tree.
+- [Legend Demo](./examples/legend_demo.html) - This example demonstrates legend placement and customization options.
+- [Line Styles](./examples/line_styles.html) - This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of...
+- [Marker Demo](./examples/marker_demo.html) - This example showcases various marker types and scatter plot capabilities in fortplotlib.
+- [Mathtext Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/mathtext_demo) - Documentation pending; browse the source tree.
+- [Pcolormesh Demo](./examples/pcolormesh_demo.html) - This example demonstrates pseudocolor plots for efficient 2D data visualization.
+- [Pcolormesh Negative](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pcolormesh_negative) - Documentation pending; browse the source tree.
+- [Scale Examples](./examples/scale_examples.html) - This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog)...
+- [Scatter Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scatter_demo) - Documentation pending; browse the source tree.
+- [Show Viewer Demo](./examples/show_viewer_demo.html) - This example demonstrates using the built-in viewer for interactive display.
+- [Smart Show Demo](./examples/smart_show_demo.html) - This example demonstrates intelligent display mode selection based on environment.
+- [Streamplot Demo](./examples/streamplot_demo.html) - This example shows vector field visualization using streamlines.
+- [Subplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/subplot_demo) - Documentation pending; browse the source tree.
+- [Unicode Demo](./examples/unicode_demo.html) - This example demonstrates mathematical symbols and Unicode support in plots.
+
+<!-- AUTO_EXAMPLES_END -->
 
 ## Technical Guides
 
@@ -65,7 +74,7 @@ Complete working examples with source code and generated plots.
 
 ### Plot Types
 - [Surface Plot Guide](surface_plot_guide.md) - 3D surface plotting
-- [Scatter Plot Guide](scatter_plot_guide.md) - Basic scatter plots  
+- [Scatter Plot Guide](scatter_plot_guide.md) - Basic scatter plots
 - [Scatter Tutorial](scatter_tutorial.md) - Interactive scatter tutorial
 - [Scatter Advanced](scatter_advanced.md) - Advanced scatter features
 - [MPEG Validation](mpeg_validation.md) - Animation format validation
@@ -88,7 +97,7 @@ Line plots, scatter, contours, surfaces, and animations.
 
 - [Axes Layout](design/axes_layout.md) - Coordinate systems and transformations
 - [Basic Plots](design/basic_plots.md) - Line plot implementation
-- [Backends](design/backends.md) - Output format architecture  
+- [Backends](design/backends.md) - Output format architecture
 - [Contour](design/contour.md) - Contour plot algorithms
 - [Figure Management](design/figure_management.md) - Figure and subplot system
 - [Streamplot](design/streamplot.md) - Vector field visualization
