@@ -9,13 +9,21 @@ and pcolormesh for the fortplot Python interface.
 import numpy as np
 import fortplot.fortplot_wrapper as _fortplot
 
+
 def _ensure_array(obj):
     """Convert input to numpy array if not already an array (DRY helper)."""
     if not isinstance(obj, np.ndarray):
         return np.array(obj)
     return obj
 
-def contour(X, Y, Z, levels=None):
+
+def _resolve_from_data(arg, data):
+    if data is not None and isinstance(arg, str) and arg in data:
+        return data[arg]
+    return arg
+
+
+def contour(X, Y, Z, levels=None, *, data=None, **kwargs):
     """Draw contour lines.
 
     Parameters
@@ -27,9 +35,9 @@ def contour(X, Y, Z, levels=None):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    X = _ensure_array(X)
-    Y = _ensure_array(Y)
-    Z = _ensure_array(Z)
+    X = _ensure_array(_resolve_from_data(X, data))
+    Y = _ensure_array(_resolve_from_data(Y, data))
+    Z = _ensure_array(_resolve_from_data(Z, data))
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -50,7 +58,8 @@ def contour(X, Y, Z, levels=None):
         levels = _ensure_array(levels)
         _fortplot.fortplot.contour(x, y, z, levels)
 
-def contourf(X, Y, Z, levels=None, **kwargs):
+
+def contourf(X, Y, Z, levels=None, *, data=None, **kwargs):
     """Draw filled contours.
 
     Parameters
@@ -62,9 +71,9 @@ def contourf(X, Y, Z, levels=None, **kwargs):
     levels : array-like, optional
         Determines the number and positions of the contour lines.
     """
-    X = _ensure_array(X)
-    Y = _ensure_array(Y)
-    Z = _ensure_array(Z)
+    X = _ensure_array(_resolve_from_data(X, data))
+    Y = _ensure_array(_resolve_from_data(Y, data))
+    Z = _ensure_array(_resolve_from_data(Z, data))
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -85,7 +94,8 @@ def contourf(X, Y, Z, levels=None, **kwargs):
         levels = _ensure_array(levels)
         _fortplot.fortplot.contour_filled(x, y, z, levels)
 
-def streamplot(X, Y, U, V, density=1.0, **kwargs):
+
+def streamplot(X, Y, U, V, density=1.0, *, data=None, **kwargs):
     """Draw streamlines of a vector flow.
 
     Parameters
@@ -98,10 +108,10 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
     density : float, optional
         Controls the closeness of streamlines. Default is 1.
     """
-    X = _ensure_array(X)
-    Y = _ensure_array(Y)
-    U = _ensure_array(U)
-    V = _ensure_array(V)
+    X = _ensure_array(_resolve_from_data(X, data))
+    Y = _ensure_array(_resolve_from_data(Y, data))
+    U = _ensure_array(_resolve_from_data(U, data))
+    V = _ensure_array(_resolve_from_data(V, data))
 
     # Extract 1D coordinate arrays from 2D meshgrid (if needed)
     if X.ndim == 2:
@@ -119,7 +129,9 @@ def streamplot(X, Y, U, V, density=1.0, **kwargs):
 
     _fortplot.fortplot.streamplot(x, y, u, v, density)
 
-def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', linewidths=None, **kwargs):
+
+def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None,
+               edgecolors='none', linewidths=None, *, data=None, **kwargs):
     """Create a pseudocolor plot with a non-regular rectangular grid.
     
     Parameters
@@ -160,9 +172,9 @@ def pcolormesh(X, Y, C, cmap=None, vmin=None, vmax=None, edgecolors='none', line
     
     >>> pcolormesh(x, y, C, cmap='plasma', vmin=0.2, vmax=0.8)
     """
-    X = _ensure_array(X)
-    Y = _ensure_array(Y)
-    C = _ensure_array(C)
+    X = _ensure_array(_resolve_from_data(X, data))
+    Y = _ensure_array(_resolve_from_data(Y, data))
+    C = _ensure_array(_resolve_from_data(C, data))
     
     # Handle 1D coordinate arrays (regular grid case)
     if X.ndim == 1 and Y.ndim == 1:
