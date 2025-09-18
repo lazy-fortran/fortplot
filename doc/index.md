@@ -8,9 +8,9 @@ resources, then dive into focused guides as needed.
 
 ## Quick Links
 
-- [Quick Start](https://github.com/lazy-fortran/fortplot#usage) – install and
+- [Quick Start](https://github.com/lazy-fortran/fortplot#usage) - install and
   produce your first plot in minutes
-- [Setup Matrix](https://github.com/lazy-fortran/fortplot#setup) – fpm, CMake,
+- [Setup Matrix](https://github.com/lazy-fortran/fortplot#setup) - fpm, CMake,
   and Python packaging instructions
 
 ## Examples Gallery
@@ -60,21 +60,21 @@ and links directly to the source code.
 
 ## User Guides
 
-- [Scatter Plot Guide](scatter_plot_guide.md) – sizes, colours, and styling in a
+- [Scatter Plot Guide](scatter_plot_guide.md) - sizes, colours, and styling in a
   single reference
-- [Surface Plot Guide](surface_plot_guide.md) – 3D surfaces and shading
-- [Testing Guide](testing_guide.md) – local and CI workflows
-- [Unicode Support](unicode_support.md) – math text and symbol rendering
-- [Warning System](warning_system.md) – suppressing or surfacing diagnostics
+- [Surface Plot Guide](surface_plot_guide.md) - 3D surfaces and shading
+- [Testing Guide](testing_guide.md) - local and CI workflows
+- [Unicode Support](unicode_support.md) - math text and symbol rendering
+- [Warning System](warning_system.md) - suppressing or surfacing diagnostics
 
 ## Platform Notes
 
-- [Windows FFmpeg Setup](windows_ffmpeg_setup.md) – enable animation exports on
+- [Windows FFmpeg Setup](windows_ffmpeg_setup.md) - enable animation exports on
   Windows runners
-- [Windows CI Performance](windows_ci_performance.md) – keep pipelines under
+- [Windows CI Performance](windows_ci_performance.md) - keep pipelines under
   target durations
-- [Security](security.md) – hardening measures for sandboxed environments
-- [User Compilation Guide](user_compilation_guide.md) – integrate fortplot into
+- [Security](security.md) - hardening measures for sandboxed environments
+- [User Compilation Guide](user_compilation_guide.md) - integrate fortplot into
   downstream projects
 
 ## Architecture & Design

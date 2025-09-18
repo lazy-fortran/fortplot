@@ -52,11 +52,11 @@ end program quick_start_scatter_oo
 
 | Parameter | Purpose | Typical Range |
 |-----------|---------|---------------|
-| `s`       | Marker size (area) | `10.0_wp` – `200.0_wp` |
-| `c`       | Color values        | Normalise to 0–1 for gradients |
+| `s`       | Marker size (area) | `10.0_wp` - `200.0_wp` |
+| `c`       | Color values        | Normalise to 0-1 for gradients |
 | `marker`  | Shape               | `'circle'`, `'triangle'`, `'square'`, `'star'`, ... |
-| `alpha`   | Transparency        | `0.6_wp` – `1.0_wp` |
-| `edgecolor` / `facecolor` | Per-point styling | RGB triplets `0.0_wp` – `1.0_wp` |
+| `alpha`   | Transparency        | `0.6_wp` - `1.0_wp` |
+| `edgecolor` / `facecolor` | Per-point styling | RGB triplets `0.0_wp` - `1.0_wp` |
 
 Combine multiple channels to carry more information without overwhelming the
 plot. Always normalise or scale the underlying data so that size and colour
@@ -91,7 +91,7 @@ program bubble_and_colour
                      marker='circle', alpha=0.75_wp, &
                      label='Cities (size=area, colour=GDP)')
     call fig%set_title('Multi-dimensional City Analysis')
-    call fig%set_xlabel('Average Temperature (°C)')
+    call fig%set_xlabel('Average Temperature (deg C)')
     call fig%set_ylabel('Population (millions)')
     call fig%legend()
     call fig%savefig('scatter_multichannel.png')
