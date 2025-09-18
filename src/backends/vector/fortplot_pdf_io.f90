@@ -301,6 +301,7 @@ contains
         write(unit, '(A)') '/Type /Font'
         write(unit, '(A)') '/Subtype /Type1'
         write(unit, '(A)') '/BaseFont /Helvetica'
+        write(unit, '(A)') '/Encoding /WinAnsiEncoding'
         write(unit, '(A)') '>>'
         write(unit, '(A)') 'endobj'
     end subroutine write_helvetica_font_object
