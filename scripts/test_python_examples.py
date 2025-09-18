@@ -21,9 +21,17 @@ def find_examples(root: Path) -> list[Path]:
     return scripts
 
 
-def run_example(script: Path) -> None:
+def run_example(script: Path, python_root: Path) -> None:
     env = os.environ.copy()
     env.setdefault("FORTPLOT_SUPPRESS_WARNINGS", "1")
+    python_path = str(python_root)
+    if python_path not in sys.path:
+        sys.path.insert(0, python_path)
+    existing = env.get("PYTHONPATH")
+    if existing:
+        env["PYTHONPATH"] = f"{python_path}{os.pathsep}{existing}"
+    else:
+        env["PYTHONPATH"] = python_path
     subprocess.run([
         sys.executable,
         str(script.name),
@@ -33,13 +41,14 @@ def run_example(script: Path) -> None:
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     examples_root = repo_root / "example" / "python"
+    python_root = repo_root / "python"
     scripts = find_examples(examples_root)
     if not scripts:
         print("[WARN] No fortplot Python examples discovered", file=sys.stderr)
         return
     for script in scripts:
         print(f"[INFO] Running fortplot example: {script.relative_to(repo_root)}")
-        run_example(script)
+        run_example(script, python_root)
 
 
 if __name__ == "__main__":
