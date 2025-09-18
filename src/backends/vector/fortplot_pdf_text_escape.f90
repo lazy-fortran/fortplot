@@ -65,17 +65,32 @@ contains
         found = .false.
 
         select case(codepoint)
+        case(176)
+            escape_seq = '\\260'
+            found = .true.
+        case(177)
+            escape_seq = '\\261'
+            found = .true.
         case(178)
-            escape_seq = ''
-            found = .false.
+            escape_seq = '\\262'
+            found = .true.
         case(179)
-            escape_seq = ''
-            found = .false.
+            escape_seq = '\\263'
+            found = .true.
+        case(181)
+            escape_seq = '\\265'
+            found = .true.
+        case(183)
+            escape_seq = '\\267'
+            found = .true.
         case(185)
-            escape_seq = ''
-            found = .false.
+            escape_seq = '\\271'
+            found = .true.
         case(215)
-            escape_seq = 'x'
+            escape_seq = '\\327'
+            found = .true.
+        case(247)
+            escape_seq = '\\367'
             found = .true.
         end select
 
