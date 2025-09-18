@@ -60,7 +60,17 @@ For more examples and documentation, see the fortplot GitHub repository.
 
 # Import core and lightweight axes directly (no heavy deps)
 from fortplot.core import figure, plot, savefig, show
-from fortplot.axes import title, xlabel, ylabel, legend, xlim, ylim, xscale, yscale
+from fortplot.axes import (
+    grid,
+    legend,
+    title,
+    xlabel,
+    xlim,
+    xscale,
+    ylabel,
+    ylim,
+    yscale,
+)
 
 # Lazily import advanced and data functions to avoid hard numpy dependency
 def contour(*args, **kwargs):
@@ -87,10 +97,16 @@ def histogram(*args, **kwargs):
     from fortplot.data import histogram as _histogram
     return _histogram(*args, **kwargs)
 
+
+def hist(*args, **kwargs):
+    from fortplot.data import hist as _hist
+    return _hist(*args, **kwargs)
+
 # Maintain backward compatibility by exposing all functions at package level
 __all__ = [
     'figure', 'plot', 'savefig', 'show',
-    'title', 'xlabel', 'ylabel', 'legend', 'xlim', 'ylim', 'xscale', 'yscale',
+    'title', 'xlabel', 'ylabel', 'legend', 'grid', 'xlim', 'ylim', 'xscale',
+    'yscale',
     'contour', 'contourf', 'streamplot', 'pcolormesh',
-    'scatter', 'histogram'
+    'scatter', 'histogram', 'hist'
 ]

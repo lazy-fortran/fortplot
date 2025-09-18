@@ -29,6 +29,12 @@ def _to_array(seq):
         except Exception:
             return [seq]
 
+
+def _bool_to_flag(value):
+    if value is None:
+        return ""
+    return "T" if bool(value) else "F"
+
 class FortplotModule:
     """Real fortplot module that interfaces with Fortran bridge program."""
     
@@ -197,7 +203,16 @@ class FortplotModule:
     def legend(self):
         """Add a legend to the plot."""
         self._send_command("LEGEND")
-    
+
+    def grid(self, enabled=None, which=None, axis=None, alpha=None, linestyle=None):
+        """Configure grid settings."""
+        self._send_command("GRID")
+        self._send_command(_bool_to_flag(enabled))
+        self._send_command("" if which is None else str(which))
+        self._send_command("" if axis is None else str(axis))
+        self._send_command("" if alpha is None else str(float(alpha)))
+        self._send_command("" if linestyle is None else str(linestyle))
+
     def savefig(self, filename):
         """Save the current figure to a file."""
         self._send_command("SAVEFIG")
