@@ -122,6 +122,7 @@ for pdf in \
   output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf
   do
   echo "[pdfcolor] checking pcolormesh color encoding in $pdf"
+  missing_msg="ERROR: $pdf did not show vector 'rg' nor RGB Image XObject"
   if python3 scripts/pdf_scan_rg.py "$pdf" >/dev/null 2>&1; then
     echo "[ok] $pdf has non-gray 'rg' (vector)"
   elif command -v pdfimages >/dev/null 2>&1; then
@@ -133,10 +134,15 @@ for pdf in \
         echo "ERROR: $pdf did not show RGB image in pdfimages -list" >&2
         exit 1
       }
-  elif rg -n "/Subtype /Image|/ColorSpace /DeviceRGB" -S --text "$pdf" >/dev/null 2>&1; then
-    echo "[ok] $pdf declares Image XObject with DeviceRGB"
+  elif command -v rg >/dev/null 2>&1; then
+    if rg -n "/Subtype /Image|/ColorSpace /DeviceRGB" -S --text "$pdf" >/dev/null 2>&1; then
+      echo "[ok] $pdf declares Image XObject with DeviceRGB"
+    else
+      echo "$missing_msg" >&2
+      exit 1
+    fi
   else
-    echo "ERROR: $pdf did not show vector 'rg' nor RGB Image XObject" >&2
+    echo "$missing_msg" >&2
     exit 1
   fi
 done
