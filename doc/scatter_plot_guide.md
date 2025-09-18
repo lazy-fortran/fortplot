@@ -1,115 +1,146 @@
-title: Enhanced Scatter Plot Guide
+title: Scatter Plot Guide
 ---
 
-# Enhanced Scatter Plot Guide
+# Scatter Plot Guide
 
-Fortplot's enhanced scatter plots provide size and color mapping for multi-dimensional data visualization.
+Fortplot provides a single scatter API that scales from quick exploratory
+visualisation to publication graphics. This guide consolidates the former
+"tutorial" and "advanced" notes into one workflow-oriented reference.
 
-## Quick Examples
+## 1. Quick Start
 
-### Basic Scatter
-```fortran
-use fortplot
-real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
-real(wp) :: y(5) = [2.0_wp, 4.0_wp, 1.0_wp, 5.0_wp, 3.0_wp]
-
-type(figure_t) :: fig
-call fig%initialize()
-call fig%add_scatter_2d(x, y, label='Data Points')
-call fig%savefig('scatter.png')
-```
-
-### Bubble Chart - Size Mapping
-```fortran
-real(wp) :: sizes(5) = [10.0_wp, 50.0_wp, 100.0_wp, 25.0_wp, 75.0_wp]
-
-call fig%add_scatter_2d(x, y, s=sizes, label='Bubble Chart')
-call fig%savefig('bubble.pdf')
-```
-
-### Color-Mapped with Colorbar
-```fortran
-real(wp) :: colors(5) = [0.1_wp, 0.3_wp, 0.7_wp, 0.9_wp, 0.5_wp]
-
-call fig%add_scatter_2d(x, y, c=colors, colormap='viridis', &
-                       show_colorbar=.true., label='Color Mapped')
-call fig%savefig('color_scatter.png')
-```
-
-## API Reference
-
-### scatter() Method
-
-#### Stateful API
-```fortran
-call scatter(x, y [, optional parameters])
-```
-
-#### Object-Oriented API
-```fortran
-call fig%scatter(x, y [, optional parameters])
-```
-
-### Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `x, y` | `real(wp)(:)` | Position coordinates (required) |
-| `s` | `real(wp)(:)` | Marker sizes (optional) |
-| `c` | `real(wp)(:)` | Color values (optional) |
-| `colormap` | `character(*)` | Color mapping: 'viridis', 'plasma', 'coolwarm' |
-| `show_colorbar` | `logical` | Display colorbar for color mapping |
-| `vmin, vmax` | `real(wp)` | Color scale range (auto if not specified) |
-| `label` | `character(*)` | Legend label |
-
-### Supported Colormaps
-
-| Colormap | Best For |
-|----------|----------|
-| `'viridis'` | Scientific data (default) |
-| `'plasma'` | High contrast visualization |
-| `'coolwarm'` | Temperature, correlation data |
-
-## Scientific Example
+Create your first scatter plot with either API. Both produce identical output.
 
 ```fortran
-program scientific_scatter
+program quick_start_scatter
     use fortplot
     implicit none
-    
-    integer, parameter :: n = 50
-    real(wp) :: temp(n), pressure(n), humidity(n), wind(n)
-    type(figure_t) :: fig
-    integer :: i
-    
-    ! Generate weather data
-    do i = 1, n
-        temp(i) = 273.0_wp + 30.0_wp * real(i-1, wp) / real(n-1, wp)
-        pressure(i) = 101325.0_wp * (1.0_wp + 0.1_wp * sin(real(i, wp) * 0.1_wp))
-        humidity(i) = 0.5_wp + 0.3_wp * cos(real(i, wp) * 0.2_wp)
-        wind(i) = 5.0_wp + 10.0_wp * abs(sin(real(i, wp) * 0.15_wp))
-    end do
-    
-    call fig%initialize(800, 600)
-    call fig%add_scatter_2d(temp, pressure, s=wind*3, c=humidity, &
-                           colormap='coolwarm', show_colorbar=.true.)
-    call fig%set_xlabel('Temperature (K)')
-    call fig%set_ylabel('Pressure (Pa)')
-    call fig%savefig('weather.png')
-end program
+
+    real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+    real(wp) :: y(5) = [2.0_wp, 4.0_wp, 1.0_wp, 5.0_wp, 3.0_wp]
+
+    call figure()
+    call scatter(x, y, label='Data Points')
+    call title('Sample Scatter Plot')
+    call xlabel('X values')
+    call ylabel('Y values')
+    call legend()
+    call savefig('scatter_basic.png')
+end program quick_start_scatter
 ```
 
-## Performance Notes
+```fortran
+program quick_start_scatter_oo
+    use fortplot
+    implicit none
 
-- Automatically filters NaN and infinite values
-- Optimized for 10,000+ points with efficient rendering
-- Size values clamped to 1-200 pixels for optimal display
+    real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
+    real(wp) :: y(5) = [2.0_wp, 4.0_wp, 1.0_wp, 5.0_wp, 3.0_wp]
+    type(figure_t) :: fig
 
+    call fig%initialize(800, 600)
+    call fig%scatter(x, y, label='Data Points')
+    call fig%set_title('Sample Scatter Plot')
+    call fig%set_xlabel('X values')
+    call fig%set_ylabel('Y values')
+    call fig%legend()
+    call fig%savefig('scatter_basic_oo.png')
+end program quick_start_scatter_oo
+```
 
-## Error Handling
+## 2. Visual Channels at a Glance
 
-Automatic validation and filtering:
-- Array size consistency checking
-- NaN/infinite value removal
-- Size values clamped to valid ranges
+| Parameter | Purpose | Typical Range |
+|-----------|---------|---------------|
+| `s`       | Marker size (area) | `10.0_wp` - `200.0_wp` |
+| `c`       | Color values        | Normalise to 0-1 for gradients |
+| `marker`  | Shape               | `'circle'`, `'triangle'`, `'square'`, `'star'`, ... |
+| `alpha`   | Transparency        | `0.6_wp` - `1.0_wp` |
+| `edgecolor` / `facecolor` | Per-point styling | RGB triplets `0.0_wp` - `1.0_wp` |
 
+Combine multiple channels to carry more information without overwhelming the
+plot. Always normalise or scale the underlying data so that size and colour
+remain legible.
+
+## 3. Bubble and Colour Mapped Plots
+
+```fortran
+program bubble_and_colour
+    use fortplot
+    implicit none
+
+    real(wp) :: temperature(8) = [15.2_wp, 22.1_wp, 8.3_wp, 28.7_wp, &
+                                   18.9_wp, 12.4_wp, 31.2_wp, 5.8_wp]
+    real(wp) :: population(8) = [2.1_wp, 5.3_wp, 1.2_wp, 8.7_wp, &
+                                  3.4_wp, 1.8_wp, 6.2_wp, 0.9_wp]
+    real(wp) :: city_area(8) = [100.0_wp, 300.0_wp, 50.0_wp, 500.0_wp, &
+                                 200.0_wp, 80.0_wp, 400.0_wp, 30.0_wp]
+    real(wp) :: gdp_pc(8) = [45000.0_wp, 55000.0_wp, 38000.0_wp, 62000.0_wp, &
+                              48000.0_wp, 41000.0_wp, 58000.0_wp, 35000.0_wp]
+
+    type(figure_t) :: fig
+    real(wp) :: sizes(8), colours(8)
+
+    sizes = 0.15_wp * city_area + 12.0_wp        ! keep markers readable
+    colours = (gdp_pc - minval(gdp_pc)) / max( &
+        (maxval(gdp_pc) - minval(gdp_pc)), 1.0_wp)
+
+    call fig%initialize(900, 600)
+    call fig%scatter(temperature, population, s=sizes, c=colours, &
+                     colormap='plasma', show_colorbar=.true., &
+                     marker='circle', alpha=0.75_wp, &
+                     label='Cities (size=area, colour=GDP)')
+    call fig%set_title('Multi-dimensional City Analysis')
+    call fig%set_xlabel('Average Temperature (deg C)')
+    call fig%set_ylabel('Population (millions)')
+    call fig%legend()
+    call fig%savefig('scatter_multichannel.png')
+end program bubble_and_colour
+```
+
+**Tips**
+- Clip very small or very large `s` values to maintain visual balance.
+- Pair `alpha` with dense datasets to avoid saturated blobs.
+- Use `show_colorbar=.true.` whenever colour encodes quantitative data.
+
+## 4. Styling Building Blocks
+
+| Goal | Snippet |
+|------|---------|
+| Categorical markers | `call scatter(x, y, marker='triangle')` |
+| Transparent fill with outline | `alpha=0.6_wp`, `edgecolor=[0.0_wp, 0.0_wp, 0.0_wp]` |
+| Highlight subset | Call `scatter` twice; first for context, second for highlight |
+| Viewer friendly export | `call savefig('plot.pdf', dpi=200)` |
+| Terminal preview | `call savefig_ascii('plot.txt')` |
+
+For point-by-point styling pass arrays to `marker`, `facecolor` or `edgecolor`.
+Refer to the API signature in `src/figures/scatter_figure.f90` for the complete
+set of optional arguments.
+
+## 5. Performance and Validation
+
+- Inputs are validated for consistent dimensions, finite values, and sensible
+  marker sizes. The library removes invalid points automatically.
+- Rendering remains interactive up to ~10,000 points. For larger datasets
+  thin the input or fall back to rasterised exports.
+- When working with the stateful API call `figure()` once and reuse the context
+  to avoid repeated setup cost.
+
+## 6. Troubleshooting Checklist
+
+| Symptom | Resolution |
+|---------|------------|
+| Plot is empty | Ensure `x` and `y` arrays contain non-zero size; warnings mention zeros. |
+| Missing colourbar | Set `show_colorbar=.true.` when `c=` is provided. |
+| Markers look uniform | Normalise `s`/`c` inputs and avoid extreme ranges. |
+| Legends duplicate entries | Supply `label` only on the series you want listed. |
+| File too large | Save to PDF for vector output or lower `dpi` for PNG. |
+
+## 7. Further Reading
+
+- [Surface Plot Guide](surface_plot_guide.md) for 3D datasets
+- [Unicode Support](unicode_support.md) when labelling with symbols
+- [Warning System](warning_system.md) for environment-level overrides
+
+This single guide replaces the scattered tutorial and advanced notes, providing
+an opinionated path for scatter plots from basics to production-ready figures.
