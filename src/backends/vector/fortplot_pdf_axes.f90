@@ -446,8 +446,6 @@ contains
         real(wp) :: label_x, label_y, bottom_y
         real(wp), parameter :: TICK_CHAR_W = 6.0_wp   ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp   ! Distance below plot for X tick labels
-        real(wp), parameter :: Y_TICK_GAP = 19.0_wp   ! Distance left of plot edge to end of Y tick labels
-
         associate(dch=>canvas_height); end associate
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
 
@@ -459,9 +457,9 @@ contains
             call render_mixed_text(ctx, label_x, label_y, trim(x_labels(i)))
         end do
 
-        ! Draw Y-axis labels with overlap detection (right-aligned to end at plot_left - Y_TICK_GAP)
+        ! Draw Y-axis labels with overlap detection (right-aligned relative to axis)
         call draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, &
-                                                     plot_left - Y_TICK_GAP, 0.0_wp)
+                                                     plot_left, 0.0_wp)
     end subroutine draw_pdf_tick_labels_with_area
 
     subroutine draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
