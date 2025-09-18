@@ -42,6 +42,8 @@ contains
                 backend_type = 'pdf'
             case ('txt')
                 backend_type = 'ascii'
+            case ('dat')
+                backend_type = 'ascii'
             case default
                 backend_type = 'png'  ! Default fallback
             end select
