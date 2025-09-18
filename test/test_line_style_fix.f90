@@ -2,11 +2,15 @@ program test_line_style_fix
     !! Test that line style patterns are properly rendered in PNG backend
     !! Fixes issue #1159 where PNG line styles were garbled
     use fortplot
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
-    
+
     real(wp), dimension(20) :: x, y
+    character(len=:), allocatable :: output_dir
     integer :: i
-    
+
+    call ensure_test_output_dir('line_style_fix', output_dir)
+
     print *, "Testing fix for issue #1159: PNG line styles garbled"
     
     ! Create shorter lines to better test pattern continuity
@@ -34,10 +38,10 @@ program test_line_style_fix
     call title('Issue #1159 Fix: PNG Line Styles')
     call legend()
     
-    call savefig('test_issue_1159_fix.png')
-    call savefig('test_issue_1159_fix.pdf')
-    
-    print *, "Test complete. Generated test_issue_1159_fix.png and .pdf"
+    call savefig(trim(output_dir)//'test_issue_1159_fix.png')
+    call savefig(trim(output_dir)//'test_issue_1159_fix.pdf')
+
+    print *, "Test complete. Generated artifacts under ", trim(output_dir)
     print *, "Patterns should now be regular and match between PNG and PDF"
     
 end program test_line_style_fix

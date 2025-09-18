@@ -1,11 +1,15 @@
 program test_line_style_patterns
     !! Test line style patterns match between PDF and PNG
     use fortplot
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
-    
+
     real(wp), dimension(100) :: x, y
+    character(len=:), allocatable :: output_dir
     integer :: i
-    
+
+    call ensure_test_output_dir('line_style_patterns', output_dir)
+
     print *, "Testing line style pattern consistency..."
     
     ! Generate horizontal lines for easy pattern comparison
@@ -37,10 +41,10 @@ program test_line_style_patterns
     call grid(.true.)
     
     ! Save both formats
-    call savefig('test_line_patterns.png')
-    call savefig('test_line_patterns.pdf')
-    
-    print *, "Test outputs saved: test_line_patterns.png and test_line_patterns.pdf"
+    call savefig(trim(output_dir)//'test_line_patterns.png')
+    call savefig(trim(output_dir)//'test_line_patterns.pdf')
+
+    print *, "Test outputs saved under ", trim(output_dir)
     print *, "Visual check: patterns should be consistent between PNG and PDF"
     
 end program test_line_style_patterns

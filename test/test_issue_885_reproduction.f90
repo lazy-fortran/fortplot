@@ -1,15 +1,20 @@
 program test_issue_885_reproduction
-    !! Reproduction test for Issue #885: Confusing error messages in working functionality
-    !! Tests the exact scenario described in the issue to verify problematic behavior
-    
+    !! Reproduction test for Issue #885: confusing messages during valid runs
+    !! Exercises the scenario from the original report to verify behaviour
+
     use fortplot
     use iso_fortran_env, only: wp => real64
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
-    
+
     integer, parameter :: nx = 5, ny = 4
     real(wp) :: x(nx+1), y(ny+1), z(nx, ny)
     integer :: i, j
     logical :: file_exists
+    character(len=:), allocatable :: output_dir, output_file
+
+    call ensure_test_output_dir('issue_885_reproduction', output_dir)
+    output_file = trim(output_dir)//'test_issue_885_reproduction.png'
     
     print *, "=== REPRODUCING ISSUE #885: CONFUSING ERROR MESSAGES ==="
     print *, "Testing exact scenario from issue description"
@@ -34,7 +39,8 @@ program test_issue_885_reproduction
     print *, "Data setup:"
     print *, "  x dimensions: ", size(x), " (expected: ", nx+1, ")"
     print *, "  y dimensions: ", size(y), " (expected: ", ny+1, ")"
-    print *, "  z dimensions: ", size(z,1), "x", size(z,2), " (nx=", nx, ", ny=", ny, ")"
+    print *, "  z dimensions: ", size(z,1), " x ", size(z,2)
+    print *, "    (nx=", nx, ", ny=", ny, ")"
     print *, ""
     
     print *, "Calling pcolormesh() - watch for error messages:"
@@ -45,13 +51,13 @@ program test_issue_885_reproduction
     ! This should work without error messages, but currently shows confusing warnings
     call figure()
     call pcolormesh(x, y, z)
-    call savefig('test_issue_885_reproduction.png')
+    call savefig(output_file)
     
     print *, ""
     print *, "=== RESULT VERIFICATION ==="
     
     ! Verify the file was actually created (proving functionality works)
-    inquire(file='test_issue_885_reproduction.png', exist=file_exists)
+    inquire(file=output_file, exist=file_exists)
     
     if (file_exists) then
         print *, "✓ SUCCESS: PNG file created successfully (26KB expected)"
