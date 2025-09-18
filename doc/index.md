@@ -32,10 +32,10 @@ Complete working examples with source code and generated plots.
 - [Animation](./examples/animation.html) - This example demonstrates creating animated plots and saving to video files.
 - [Annotation Demo](./examples/annotation_demo.html) - See documentation page for details.
 - [Ascii Heatmap](./examples/ascii_heatmap.html) - This example demonstrates terminal-based heatmap visualization using ASCII characters.
-- [Basic Plots](./examples/basic_plots.html) - This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API a...
+- [Basic Plots](./examples/basic_plots.html) - This example demonstrates the fundamental plotting capabilities of fortplotlib using both the simple functional API...
 - [Boxplot Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/boxplot_demo) - Documentation pending; browse the source tree.
 - [Colored Contours](./examples/colored_contours.html) - This example shows filled (colored) contour plots with customizable colormaps for visualizing 2D scalar fields.
-- [Contour Demo](./examples/contour_demo.html) - This example demonstrates line contour plotting (level lines) with custom levels and a mixed plot combining contours ...
+- [Contour Demo](./examples/contour_demo.html) - This example demonstrates line contour plotting (level lines) with custom levels and a mixed plot combining contours...
 - [Contour Filled Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/contour_filled_demo) - Documentation pending; browse the source tree.
 - [Disconnected Lines](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/disconnected_lines) - Documentation pending; browse the source tree.
 - [Errorbar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/errorbar_demo) - Documentation pending; browse the source tree.
@@ -43,12 +43,12 @@ Complete working examples with source code and generated plots.
 - [Format String Demo](./examples/format_string_demo.html) - This example demonstrates matplotlib-style format strings for quick and intuitive plot styling.
 - [Grid Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/grid_demo) - Documentation pending; browse the source tree.
 - [Legend Demo](./examples/legend_demo.html) - This example demonstrates legend placement and customization options.
-- [Line Styles](./examples/line_styles.html) - This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of plotte...
+- [Line Styles](./examples/line_styles.html) - This example demonstrates all available line styles in fortplotlib, showing how to customize the appearance of...
 - [Marker Demo](./examples/marker_demo.html) - This example showcases various marker types and scatter plot capabilities in fortplotlib.
 - [Mathtext Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/mathtext_demo) - Documentation pending; browse the source tree.
 - [Pcolormesh Demo](./examples/pcolormesh_demo.html) - This example demonstrates pseudocolor plots for efficient 2D data visualization.
 - [Pcolormesh Negative](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pcolormesh_negative) - Documentation pending; browse the source tree.
-- [Scale Examples](./examples/scale_examples.html) - This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog) sca...
+- [Scale Examples](./examples/scale_examples.html) - This example demonstrates different axis scaling options including logarithmic and symmetric logarithmic (symlog)...
 - [Scatter Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/scatter_demo) - Documentation pending; browse the source tree.
 - [Show Viewer Demo](./examples/show_viewer_demo.html) - This example demonstrates using the built-in viewer for interactive display.
 - [Smart Show Demo](./examples/smart_show_demo.html) - This example demonstrates intelligent display mode selection based on environment.

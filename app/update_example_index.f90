@@ -33,7 +33,7 @@ contains
 
     function collect_entries() result(result_entries)
         type(example_entry_t), allocatable :: result_entries(:)
-        character(len=128), allocatable :: names(:)
+        character(len=:), allocatable :: names(:)
         integer :: i
 
         call list_examples(names)
@@ -49,7 +49,7 @@ contains
     end function collect_entries
 
     subroutine list_examples(names)
-        character(len=128), allocatable, intent(out) :: names(:)
+        character(len=:), allocatable, intent(out) :: names(:)
 
         call run_command('mkdir -p ' // temp_dir, 'create temp directory')
         call run_command( &
@@ -167,32 +167,38 @@ contains
 
     subroutine read_string_list(path, values)
         character(len=*), intent(in) :: path
-        character(len=128), allocatable, intent(out) :: values(:)
-        character(len=256) :: buffer
-        integer :: unit, ios, count, idx
+        character(len=:), allocatable, intent(out) :: values(:)
+        character(len=512) :: buffer
+        character(len=:), allocatable :: trimmed
+        integer :: unit, ios, count, idx, max_len
 
         call open_file(path, unit)
         count = 0
+        max_len = 0
         do
             read(unit, '(A)', iostat=ios) buffer
             if (ios /= 0) exit
-            if (len_trim(buffer) == 0) cycle
+            trimmed = trim(buffer)
+            if (len_trim(trimmed) == 0) cycle
             count = count + 1
+            max_len = max(max_len, len_trim(trimmed))
         end do
         rewind(unit)
         if (count == 0) then
-            allocate(values(0))
+            allocate(character(len=1) :: values(0))
             close(unit)
             return
         end if
-        allocate(values(count))
+        if (max_len <= 0) max_len = 1
+        allocate(character(len=max_len) :: values(count))
         idx = 0
         do
             read(unit, '(A)', iostat=ios) buffer
             if (ios /= 0) exit
-            if (len_trim(buffer) == 0) cycle
+            trimmed = trim(buffer)
+            if (len_trim(trimmed) == 0) cycle
             idx = idx + 1
-            values(idx) = trim(buffer)
+            values(idx) = trimmed
         end do
         close(unit)
     end subroutine read_string_list
@@ -260,6 +266,7 @@ contains
         character(len=*), intent(in) :: path
         character(len=:), allocatable :: description
         character(len=512) :: line
+        character(len=:), allocatable :: normalized
         integer :: unit, ios
 
         description = ''
@@ -269,14 +276,19 @@ contains
         do
             read(unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
-            if (len_trim(line) == 0) cycle
-            if (starts_with(line, 'title:')) cycle
-            if (starts_with(line, '---')) cycle
-            if (line(1:1) == '#') cycle
-            if (starts_with(adjustl(line), 'Source:')) cycle
-            if (starts_with(adjustl(line), 'Output ')) cycle
-            if (starts_with(adjustl(line), 'Output:')) cycle
-            description = trim(line)
+            normalized = trim(adjustl(line))
+            if (len_trim(normalized) == 0) cycle
+            if (starts_with(normalized, 'title:')) cycle
+            if (starts_with(normalized, '---')) cycle
+            if (normalized(1:1) == '#') cycle
+            if (starts_with(normalized, 'Source:')) cycle
+            if (starts_with(normalized, 'Output ')) cycle
+            if (starts_with(normalized, 'Output:')) cycle
+            if (starts_with(normalized, '```')) cycle
+            if (len(normalized) >= 2) then
+                if (normalized(1:2) == '![') cycle
+            end if
+            description = normalized
             exit
         end do
         close(unit)
@@ -287,17 +299,34 @@ contains
         integer, intent(in) :: max_len
         character(len=256) :: out
         character(len=:), allocatable :: trimmed
-        integer :: eff
+        integer :: eff, target, last_space, idx, i, effective_max
 
         out = ''
         trimmed = trim(text)
         eff = len_trim(trimmed)
         if (eff == 0) return
-        if (eff <= max_len) then
+        effective_max = min(max_len, len(out))
+        if (effective_max <= 0) return
+        if (eff <= effective_max) then
             out(1:eff) = trimmed(1:eff)
         else
-            out(1:max_len-3) = trimmed(1:max_len-3)
-            out(max_len-2:max_len) = '...'
+            if (effective_max <= 3) then
+                out(1:effective_max) = trimmed(1:effective_max)
+                return
+            end if
+            target = effective_max - 3
+            last_space = 0
+            do i = 1, min(target, eff)
+                if (trimmed(i:i) == ' ') last_space = i
+            end do
+            if (last_space > 1) then
+                idx = last_space - 1
+            else
+                idx = target
+            end if
+            if (idx <= 0) idx = target
+            out(1:idx) = trimmed(1:idx)
+            out(idx+1:idx+3) = '...'
         end if
     end function truncate_desc
 
