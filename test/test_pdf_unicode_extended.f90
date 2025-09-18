@@ -22,12 +22,12 @@ program test_pdf_unicode_extended
         stop 1
     end if
 
-    has_superscript_two   = index(stream_text, '\\262') > 0
-    has_superscript_three = index(stream_text, '\\263') > 0
-    has_superscript_one   = index(stream_text, '\\271') > 0
-    has_multiply_sign     = index(stream_text, '\\327') > 0
-    has_middle_dot        = index(stream_text, '\\267') > 0
-    has_degree            = index(stream_text, '\\260') > 0
+    has_superscript_two   = index(stream_text, achar(92)//'262') > 0
+    has_superscript_three = index(stream_text, achar(92)//'263') > 0
+    has_superscript_one   = index(stream_text, achar(92)//'271') > 0
+    has_multiply_sign     = index(stream_text, achar(92)//'327') > 0
+    has_middle_dot        = index(stream_text, achar(92)//'267') > 0
+    has_degree            = index(stream_text, achar(92)//'260') > 0
 
     if (.not. has_superscript_two) then
         print *, 'FAIL: missing PDF escape for superscript two (\\262)'
