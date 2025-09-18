@@ -9,6 +9,7 @@ module fortplot_legend_layout
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_text, only: calculate_text_width, calculate_text_height, init_text_system
     use fortplot_constants, only: STANDARD_WIDTH_PIXELS, STANDARD_HEIGHT_PIXELS, TEXT_WIDTH_RATIO
+    use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
     use fortplot_latex_parser, only: process_latex_in_text
     implicit none
     
@@ -112,12 +113,15 @@ contains
         real(wp), intent(out) :: max_text_width, total_text_width
         integer, intent(out) :: max_text_height_pixels
         
-        integer :: i, text_width_pixels, text_height_pixels
-        real(wp) :: entry_text_width
+        integer :: i, text_height_pixels
+        real(wp) :: entry_text_width, text_width_pixels
         character(len=:), allocatable :: trimmed_label, processed_label
         character(len=512) :: temp_processed_label
         integer :: processed_len
-        integer, parameter :: fudge_pixels = 0
+        real(wp), parameter :: FUDGE_PIXELS = 0.0_wp
+        ! Convert PDF measurements (points) to the 100 DPI pixel scale used by layout math
+        real(wp), parameter :: POINTS_TO_PIXELS = 100.0_wp / 72.0_wp
+        real(wp) :: pdf_width_points, pdf_width_pixels, entry_pdf_width
         
         max_text_width = 0.0_wp
         total_text_width = 0.0_wp
@@ -132,14 +136,18 @@ contains
             
             if (text_system_available) then
                 ! Calculate width of the processed text (after LaTeX conversion)
-                text_width_pixels = calculate_text_width(processed_label) + fudge_pixels
+                text_width_pixels = real(calculate_text_width(processed_label), wp) + FUDGE_PIXELS
                 text_height_pixels = calculate_text_height(processed_label)
                 max_text_height_pixels = max(max_text_height_pixels, text_height_pixels)
-                entry_text_width = real(text_width_pixels, wp) / data_to_pixel_ratio_x
+                entry_text_width = text_width_pixels / data_to_pixel_ratio_x
             else
                 ! For fallback, use processed text length
                 entry_text_width = real(len_trim(processed_label), wp) * data_width * TEXT_WIDTH_RATIO
             end if
+            pdf_width_points = estimate_pdf_text_width(processed_label)
+            pdf_width_pixels = pdf_width_points * POINTS_TO_PIXELS
+            entry_pdf_width = pdf_width_pixels / data_to_pixel_ratio_x
+            entry_text_width = max(entry_text_width, entry_pdf_width)
             total_text_width = total_text_width + entry_text_width
             max_text_width = max(max_text_width, entry_text_width)
         end do
