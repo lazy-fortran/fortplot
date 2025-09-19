@@ -146,6 +146,13 @@ contains
             print *, 'FAIL: missing positive symlog threshold tick'
             stop 1
         end if
+
+        do i = 2, num_ticks
+            if (ticks(i) < ticks(i-1) - 1.0e-9_wp) then
+                print *, 'FAIL: symlog ticks must be sorted ascending; violation at index', i
+                stop 1
+            end if
+        end do
     end subroutine test_should_include_symlog_threshold_ticks
 
     subroutine test_should_maintain_coordinate_bounds()

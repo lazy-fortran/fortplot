@@ -21,7 +21,7 @@ module fortplot_documentation
     public :: build_readme_path, build_output_path, build_fortran_url
     public :: build_python_path, build_local_fortran_path
     public :: title_case, get_output_title
-    public :: get_fortran_filename
+    public :: get_fortran_filename, get_example_run_target
 
     ! =====================
     ! Public processing interface
@@ -257,11 +257,23 @@ contains
         ! Special cases for examples with different filenames
         select case(trim(example_name))
         case('animation')
-            filename = 'animation_example.f90'
+            filename = 'save_animation_demo.f90'
         case default
             filename = trim(example_name) // '.f90'
         end select
     end subroutine get_fortran_filename
+
+    pure subroutine get_example_run_target(example_name, run_target)
+        character(len=*), intent(in) :: example_name
+        character(len=PATH_MAX_LEN), intent(out) :: run_target
+
+        select case(trim(example_name))
+        case('animation')
+            run_target = 'save_animation_demo'
+        case default
+            run_target = trim(example_name)
+        end select
+    end subroutine get_example_run_target
 
     ! ========================================
     ! Processing Section (from doc_processing)
@@ -447,6 +459,7 @@ contains
         character(len=*), intent(in) :: example_dir, example_name
         character(len=PATH_MAX_LEN) :: readme_file, output_file
         character(len=PATH_MAX_LEN) :: fortran_file, fortran_url
+        character(len=PATH_MAX_LEN) :: run_target
         character(len=PATH_MAX_LEN) :: output_dir
         character(len=LINE_MAX_LEN) :: line
         character(len=LINE_MAX_LEN) :: summary_lines(200)
@@ -464,6 +477,7 @@ contains
 
         call get_fortran_filename(example_name, fortran_file)
         call build_fortran_url(example_name, fortran_url)
+        call get_example_run_target(example_name, run_target)
 
         inquire(file=readme_file, exist=readme_exists)
         if (readme_exists) then
@@ -489,7 +503,7 @@ contains
         call write_example_header(unit_out, example_name, fortran_file, fortran_url)
         call write_summary_section(unit_out, summary_lines, summary_count)
         call write_files_section(unit_out, example_name, fortran_file, n_media)
-        call write_running_section(unit_out, example_name)
+        call write_running_section(unit_out, trim(run_target))
         call write_output_section(unit_out, example_name, media_files, n_media)
 
         close(unit_out)
@@ -600,14 +614,14 @@ contains
         write(unit_out, '(A)') ''
     end subroutine write_files_section
 
-    subroutine write_running_section(unit_out, example_name)
+    subroutine write_running_section(unit_out, run_target)
         integer, intent(in) :: unit_out
-        character(len=*), intent(in) :: example_name
+        character(len=*), intent(in) :: run_target
 
         write(unit_out, '(A)') '## Running'
         write(unit_out, '(A)') ''
         write(unit_out, '(A)') '```bash'
-        write(unit_out, '(A,A,A)') 'make example ARGS="', trim(example_name), '"'
+        write(unit_out, '(A,A,A)') 'make example ARGS="', trim(run_target), '"'
         write(unit_out, '(A)') '```'
         write(unit_out, '(A)') ''
     end subroutine write_running_section

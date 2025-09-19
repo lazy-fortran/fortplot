@@ -126,18 +126,22 @@ contains
         
         ! Add negative log region ticks
         if (data_min < -threshold) then
-            call add_negative_symlog_ticks(data_min, -threshold, tick_positions, num_ticks)
+            call add_negative_symlog_ticks(data_min, min(-threshold, data_max), tick_positions, num_ticks)
         end if
-        
+
         ! Add linear region ticks (only for the region within threshold bounds)
         if (max(data_min, -threshold) <= min(data_max, threshold)) then
             call add_linear_symlog_ticks(max(data_min, -threshold), min(data_max, threshold), &
                                        tick_positions, num_ticks)
         end if
-        
+
         ! Add positive log region ticks
         if (data_max > threshold) then
-            call add_positive_symlog_ticks(threshold, data_max, tick_positions, num_ticks)
+            call add_positive_symlog_ticks(max(threshold, data_min), data_max, tick_positions, num_ticks)
+        end if
+
+        if (num_ticks > 1) then
+            call sort_tick_positions(tick_positions, num_ticks)
         end if
     end subroutine compute_symlog_ticks
 
@@ -307,7 +311,28 @@ contains
             end if
         end do
     end subroutine add_positive_symlog_ticks
-    
+
+    subroutine sort_tick_positions(values, count)
+        real(wp), intent(inout) :: values(MAX_TICKS)
+        integer, intent(in) :: count
+        integer :: i, j
+        real(wp) :: key
+
+        if (count <= 1) return
+
+        do i = 2, count
+            key = values(i)
+            j = i - 1
+            do
+                if (j < 1) exit
+                if (values(j) <= key) exit
+                values(j + 1) = values(j)
+                j = j - 1
+            end do
+            values(j + 1) = key
+        end do
+    end subroutine sort_tick_positions
+
     function is_power_of_ten(value) result(is_power)
         real(wp), intent(in) :: value
         logical :: is_power
