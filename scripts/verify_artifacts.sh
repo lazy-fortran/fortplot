@@ -17,6 +17,7 @@ fpm run --example test_pdf_scale_regression >/dev/null
 fpm run --example subplots_grid_demo >/dev/null
 fpm run --example unicode_demo >/dev/null
 fpm run --example show_viewer_demo >/dev/null || true
+fpm run --example grid_demo >/dev/null
 
 check_pdf_ok() {
   local pdf=$1
@@ -169,6 +170,22 @@ for pdf in \
     exit 1
   fi
 done
+
+# Grid demo: ensure outputs exist and ASCII export shows grid structure
+if [[ -f output/example/fortran/grid_demo/grid_demo.png ]]; then
+  check_png_size output/example/fortran/grid_demo/grid_demo.png 4000
+fi
+if [[ -f output/example/fortran/grid_demo/grid_demo.pdf ]]; then
+  check_pdf_ok output/example/fortran/grid_demo/grid_demo.pdf
+  check_pdftotext_has output/example/fortran/grid_demo/grid_demo.pdf "Basic Plot - Grid Demo"
+fi
+if [[ -f output/example/fortran/grid_demo/grid_demo.txt ]]; then
+  # Heuristic: ASCII grid should contain repeated separators and vertical bars
+  if ! grep -Eq "#:#:#:#|\|\s+\|" output/example/fortran/grid_demo/grid_demo.txt; then
+    echo "ERROR: grid_demo.txt does not appear to contain grid lines" >&2
+    exit 1
+  fi
+fi
 
 # A couple PNG size checks as non-empty proxy
 check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000
