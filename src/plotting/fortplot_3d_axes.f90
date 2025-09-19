@@ -217,12 +217,21 @@ contains
         real(wp), intent(in) :: corners_2d(2,8)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        real(wp) :: tick_length, x_pos, y_pos, dx, dy
+        real(wp) :: x_pos, y_pos
         character(len=32) :: label
         integer :: i, n_ticks
         real(wp) :: value, step
+        real(wp) :: x_range, y_range
+        real(wp) :: tick_len_y, tick_len_x
+        real(wp) :: pad_x, pad_y
         
-        tick_length = 4.0_wp  ! Tick length in pixels
+        ! Use fractions of the current data ranges for tick lengths and padding
+        x_range = max(1.0e-12_wp, x_max - x_min)
+        y_range = max(1.0e-12_wp, y_max - y_min)
+        tick_len_y = 0.02_wp * y_range   ! vertical tick length (in data units)
+        tick_len_x = 0.02_wp * x_range   ! horizontal tick length (in data units)
+        pad_x = 0.02_wp * x_range        ! horizontal text padding (data units)
+        pad_y = 0.02_wp * y_range        ! vertical text padding (data units)
         n_ticks = 5  ! Number of ticks per axis
         
         ! X-axis ticks and labels (edge from corner 1 to corner 2)
@@ -233,12 +242,12 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing down
-            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_length)
+            ! Draw tick mark pointing down (in data units)
+            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_len_y)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - 10.0_wp, y_pos + tick_length + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using standard tick formatter
+            label = format_tick_label(value, 'linear')
+            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos + tick_len_y + pad_y, trim(adjustl(label)))
         end do
         
         ! Y-axis ticks and labels (edge from corner 1 to corner 4)
@@ -248,12 +257,12 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,4) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,4) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing left
-            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            ! Draw tick mark pointing left (in data units)
+            call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using standard tick formatter
+            label = format_tick_label(value, 'linear')
+            call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
         
         ! Z-axis ticks and labels (edge from corner 1 to corner 5)
@@ -263,12 +272,12 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,5) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,5) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing left
-            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            ! Draw tick mark pointing left (in data units)
+            call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using standard tick formatter
+            label = format_tick_label(value, 'linear')
+            call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
     end subroutine draw_3d_axis_ticks_and_labels
     
