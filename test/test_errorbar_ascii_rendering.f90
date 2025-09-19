@@ -20,7 +20,8 @@ program test_errorbar_ascii_rendering
 
     ! Look for marker character 'o' which indicates points were rendered
     found_marker = .false.
-    open(newunit=unit, file='test/output/test_errorbar_ascii.txt', status='old', action='read', iostat=ios)
+    open(newunit=unit, file='test/output/test_errorbar_ascii.txt', &
+         status='old', action='read', iostat=ios)
     if (ios /= 0) then
         print *, 'FAIL: cannot open ASCII output for reading'
         stop 1
@@ -44,4 +45,3 @@ program test_errorbar_ascii_rendering
     end if
 
 end program test_errorbar_ascii_rendering
-

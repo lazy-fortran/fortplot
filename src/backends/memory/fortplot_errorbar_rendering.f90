@@ -70,8 +70,10 @@ contains
                 y_high_t = apply_scale_transform(y_high, yscale, symlog_threshold)
                 call backend%line(x_scaled, y_low_t, x_scaled, y_high_t)
                 if (cap_half > 0.0_wp) then
-                    call backend%line(x_scaled - cap_half, y_low_t,  x_scaled + cap_half, y_low_t)
-                    call backend%line(x_scaled - cap_half, y_high_t, x_scaled + cap_half, y_high_t)
+                    call backend%line(x_scaled - cap_half, y_low_t,  &
+                                       x_scaled + cap_half, y_low_t)
+                    call backend%line(x_scaled - cap_half, y_high_t, &
+                                       x_scaled + cap_half, y_high_t)
                 end if
             end if
 
@@ -93,12 +95,13 @@ contains
                 x_high_t = apply_scale_transform(x_high, xscale, symlog_threshold)
                 call backend%line(x_low_t, y_scaled, x_high_t, y_scaled)
                 if (cap_half > 0.0_wp) then
-                    call backend%line(x_low_t,  y_scaled - cap_half, x_low_t,  y_scaled + cap_half)
-                    call backend%line(x_high_t, y_scaled - cap_half, x_high_t, y_scaled + cap_half)
+                    call backend%line(x_low_t,  y_scaled - cap_half, &
+                                       x_low_t,  y_scaled + cap_half)
+                    call backend%line(x_high_t, y_scaled - cap_half, &
+                                       x_high_t, y_scaled + cap_half)
                 end if
             end if
         end do
     end subroutine render_errorbar_plot
 
 end module fortplot_errorbar_rendering
-
