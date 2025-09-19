@@ -22,6 +22,7 @@ module fortplot_figure_accessors
     public :: set_backend_color
     public :: is_backend_associated
     public :: draw_backend_line
+    public :: draw_backend_arrow
     
 contains
     
@@ -151,5 +152,16 @@ contains
             call state%backend%line(x1, y1, x2, y2)
         end if
     end subroutine draw_backend_line
+    
+    subroutine draw_backend_arrow(state, x, y, dx, dy, size, style)
+        !! Draw arrow using backend
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        
+        if (allocated(state%backend)) then
+            call state%backend%draw_arrow(x, y, dx, dy, size, style)
+        end if
+    end subroutine draw_backend_arrow
     
 end module fortplot_figure_accessors

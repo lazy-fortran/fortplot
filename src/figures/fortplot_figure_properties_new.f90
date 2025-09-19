@@ -21,14 +21,15 @@ module fortplot_figure_properties_new
                                              get_figure_plot_count_compat, get_figure_x_min_compat, &
                                              get_figure_x_max_compat, get_figure_y_min_compat, &
                                              get_figure_y_max_compat, backend_line_compat, &
-                                             backend_associated_compat, backend_color_compat
+                                             backend_associated_compat, backend_color_compat, &
+                                             backend_arrow_compat
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
     implicit none
 
     private
     public :: figure_get_width, figure_get_height, figure_get_rendered, figure_set_rendered
     public :: figure_get_plot_count, figure_get_plots, figure_backend_color, figure_backend_associated
-    public :: figure_backend_line, figure_get_x_min, figure_get_x_max, figure_get_y_min, figure_get_y_max
+    public :: figure_backend_line, figure_backend_arrow, figure_get_x_min, figure_get_x_max, figure_get_y_min, figure_get_y_max
     public :: figure_update_data_ranges_pcolormesh, figure_update_data_ranges_boxplot, figure_update_data_ranges
 
 contains
@@ -95,6 +96,14 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
         call backend_line_compat(state, x1, y1, x2, y2)
     end subroutine figure_backend_line
+    
+    subroutine figure_backend_arrow(state, x, y, dx, dy, size, style)
+        !! Draw arrow using backend property
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        call backend_arrow_compat(state, x, y, dx, dy, size, style)
+    end subroutine figure_backend_arrow
     
     function figure_get_x_min(state) result(x_min)
         !! Get x minimum property
