@@ -115,6 +115,26 @@ else
 fi
 check_pdftotext_has output/example/fortran/scale_examples/symlog_scale.pdf "Symlog" "x"
 
+# Assert that digits in tick/labels like "10" are emitted as a single Tj token
+# to avoid odd inter-digit spacing (regression for #1301).
+if command -v python3 >/dev/null 2>&1; then
+  if python3 scripts/pdf_expect_token.py output/example/fortran/scale_examples/symlog_scale.pdf "(10) Tj"; then
+    echo "[ok] content stream groups '10' as a single Tj"
+  else
+    echo "ERROR: Expected '(10) Tj' not found in symlog_scale.pdf content stream" >&2
+    exit 1
+  fi
+  # And conversely, ensure we do not emit adjacent digit-by-digit Tj for 1 and 0
+  if python3 scripts/pdf_expect_token.py output/example/fortran/scale_examples/symlog_scale.pdf "\(1\)\s*Tj\s*\(0\)\s*Tj" --regex; then
+    echo "ERROR: Found digit-by-digit '(1) Tj (0) Tj' sequence; expected grouping" >&2
+    exit 1
+  else
+    echo "[ok] no digit-by-digit Tj sequence for '1' and '0'"
+  fi
+else
+  echo "WARN: python3 not available; skipping '(10) Tj' grouping check"
+fi
+
 # Pcolormesh PDFs must have no syntax errors
 check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_basic.pdf
 check_pdf_ok output/example/fortran/pcolormesh_demo/pcolormesh_sinusoidal.pdf
