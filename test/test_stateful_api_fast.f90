@@ -109,20 +109,40 @@ contains
     end subroutine test_scatter_api
     
     subroutine test_errorbar_api()
+        use fortplot_plot_data, only: PLOT_TYPE_ERRORBAR
         real(8) :: x(5), y(5), yerr(5)
+        type(figure_t), pointer :: fig
+        integer :: plot_idx
         
         x = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0]
         y = [2.0d0, 4.0d0, 3.0d0, 5.0d0, 1.0d0]
         yerr = [0.1d0, 0.2d0, 0.15d0, 0.25d0, 0.1d0]
         
         call errorbar(x, y, yerr=yerr)
-        call check_result("errorbar with yerr", .true.)
-        
+        fig => get_global_figure()
+        plot_idx = fig%plot_count
+        call check_result("errorbar with yerr -> plot type", &
+                          fig%plots(plot_idx)%plot_type == PLOT_TYPE_ERRORBAR)
+        call check_result("errorbar with yerr -> has_yerr", &
+                          fig%plots(plot_idx)%has_yerr)
+
         call errorbar(x, y, xerr=yerr)
-        call check_result("errorbar with xerr", .true.)
-        
+        fig => get_global_figure()
+        plot_idx = fig%plot_count
+        call check_result("errorbar with xerr -> plot type", &
+                          fig%plots(plot_idx)%plot_type == PLOT_TYPE_ERRORBAR)
+        call check_result("errorbar with xerr -> has_xerr", &
+                          fig%plots(plot_idx)%has_xerr)
+
         call errorbar(x, y, xerr=yerr, yerr=yerr)
-        call check_result("errorbar with both", .true.)
+        fig => get_global_figure()
+        plot_idx = fig%plot_count
+        call check_result("errorbar with both -> plot type", &
+                          fig%plots(plot_idx)%plot_type == PLOT_TYPE_ERRORBAR)
+        call check_result("errorbar with both -> has_xerr", &
+                          fig%plots(plot_idx)%has_xerr)
+        call check_result("errorbar with both -> has_yerr", &
+                          fig%plots(plot_idx)%has_yerr)
     end subroutine test_errorbar_api
     
     subroutine test_boxplot_api()
