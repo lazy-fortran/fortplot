@@ -12,7 +12,7 @@ module fortplot_3d_axes
     public :: create_3d_axis_corners, project_3d_corners_to_2d
     public :: create_3d_axis_lines, project_3d_axis_lines
     public :: create_3d_tick_positions
-    public :: draw_3d_axes_to_raster, transform_corners_to_data
+    public :: draw_3d_axes, transform_corners_to_data
     
 contains
 
@@ -127,9 +127,9 @@ contains
         end do
     end subroutine create_3d_tick_positions
 
-    subroutine draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame to raster backend - matplotlib style
-        use fortplot_context, only: plot_context
+    subroutine draw_3d_axes(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame using the generic plotting context
+        !! The backend maps data -> device coordinates via ctx methods
         use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
@@ -149,7 +149,7 @@ contains
         ! Project to 2D (still in data space)
         call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
         
-        ! Map projected coordinates into current data ranges; backend maps data->screen
+        ! Map projected coordinates into current data ranges; backend maps data->device
         call transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
         
         ! Draw axes matplotlib/MATLAB style - forming a corner shape
@@ -179,7 +179,7 @@ contains
         
         ! Draw ticks and labels on the three axes
         call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
-    end subroutine draw_3d_axes_to_raster
+    end subroutine draw_3d_axes
 
     subroutine transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
         !! Transform projected corners from projection space to current data ranges
@@ -272,14 +272,13 @@ contains
     end subroutine draw_3d_axis_ticks_and_labels
     
     subroutine render_text_to_ctx(ctx, x, y, text)
-        !! Helper to render text to context (placeholder)
+        !! Helper to render text using the active backend context
         use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        
-        ! This is a placeholder - actual implementation would depend on backend
-        ! For now, we'll skip text rendering in 3D axes
+
+        call ctx%text(x, y, text)
     end subroutine render_text_to_ctx
 
 end module fortplot_3d_axes

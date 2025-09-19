@@ -461,7 +461,8 @@ contains
     end subroutine render_figure_background
     
     subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
-                                 x_min, x_max, y_min, y_max, title, xlabel, ylabel)
+                                 x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
+                                 plots, plot_count)
         !! Render figure axes and labels
         !! For raster backends, split rendering to prevent label overlap issues
         use fortplot_raster, only: raster_context
@@ -470,15 +471,31 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical :: has_3d
+        real(wp) :: zmin, zmax
+
+        call detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
         ! Check if this is a raster backend and use split rendering if so
         select type (backend)
         class is (raster_context)
-            ! For raster backends, only draw axes lines and tick marks here
-            ! Labels will be drawn later after plots to prevent overlap
-            call backend%draw_axes_lines_and_ticks(xscale, yscale, &
-                                                  symlog_threshold, &
-                                                  x_min, x_max, &
-                                                  y_min, y_max)
+            if (has_3d) then
+                ! For 3D, delegate full axes (3D frame + labels) to backend
+                call backend%draw_axes_and_labels_backend(xscale, yscale, &
+                                                         symlog_threshold, &
+                                                         x_min, x_max, &
+                                                         y_min, y_max, &
+                                                         title, xlabel, ylabel, &
+                                                         z_min=zmin, z_max=zmax, has_3d_plots=.true.)
+            else
+                ! For raster backends, only draw axes lines and tick marks here
+                ! Labels will be drawn later after plots to prevent overlap
+                call backend%draw_axes_lines_and_ticks(xscale, yscale, &
+                                                      symlog_threshold, &
+                                                      x_min, x_max, &
+                                                      y_min, y_max)
+            end if
         class default
             ! For non-raster backends, use standard rendering
             call backend%draw_axes_and_labels_backend(xscale, yscale, &
@@ -486,13 +503,14 @@ contains
                                                      x_min, x_max, &
                                                      y_min, y_max, &
                                                      title, xlabel, ylabel, &
-                                                     z_min=0.0_wp, z_max=1.0_wp, &
-                                                     has_3d_plots=.false.)
+                                                     z_min=zmin, z_max=zmax, &
+                                                     has_3d_plots=has_3d)
         end select
     end subroutine render_figure_axes
 
     subroutine render_figure_axes_labels_only(backend, xscale, yscale, symlog_threshold, &
-                                             x_min, x_max, y_min, y_max, title, xlabel, ylabel)
+                                             x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
+                                             plots, plot_count)
         !! Render ONLY axis labels (for raster backends after plots are drawn)
         use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
@@ -500,17 +518,68 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical :: has_3d
+        real(wp) :: zmin_dummy, zmax_dummy
+        call detect_3d_extent(plots, plot_count, has_3d, zmin_dummy, zmax_dummy)
         
         ! Only render labels for raster backends
         select type (backend)
         class is (raster_context)
-            call backend%draw_axis_labels_only(xscale, yscale, &
-                                              symlog_threshold, &
-                                              x_min, x_max, &
-                                              y_min, y_max, &
-                                              title, xlabel, ylabel)
+            if (.not. has_3d) then
+                call backend%draw_axis_labels_only(xscale, yscale, &
+                                                  symlog_threshold, &
+                                                  x_min, x_max, &
+                                                  y_min, y_max, &
+                                                  title, xlabel, ylabel)
+            end if
         end select
     end subroutine render_figure_axes_labels_only
+
+    subroutine detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
+        !! Detect if any plot is 3D and compute z-range
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        logical, intent(out) :: has_3d
+        real(wp), intent(out) :: zmin, zmax
+        integer :: i
+        logical :: first
+
+        has_3d = .false.
+        first = .true.
+        zmin = 0.0_wp
+        zmax = 1.0_wp
+        do i = 1, plot_count
+            if (plots(i)%is_3d()) then
+                has_3d = .true.
+                if (allocated(plots(i)%z)) then
+                    if (size(plots(i)%z) > 0) then
+                        if (first) then
+                            zmin = minval(plots(i)%z)
+                            zmax = maxval(plots(i)%z)
+                            first = .false.
+                        else
+                            zmin = min(zmin, minval(plots(i)%z))
+                            zmax = max(zmax, maxval(plots(i)%z))
+                        end if
+                    end if
+                end if
+                if (allocated(plots(i)%z_grid)) then
+                    if (size(plots(i)%z_grid) > 0) then
+                        if (first) then
+                            zmin = minval(plots(i)%z_grid)
+                            zmax = maxval(plots(i)%z_grid)
+                            first = .false.
+                        else
+                            zmin = min(zmin, minval(plots(i)%z_grid))
+                            zmax = max(zmax, maxval(plots(i)%z_grid))
+                        end if
+                    end if
+                end if
+            end if
+        end do
+    end subroutine detect_3d_extent
     
     subroutine render_all_plots(backend, plots, plot_count, &
                                x_min_transformed, x_max_transformed, &

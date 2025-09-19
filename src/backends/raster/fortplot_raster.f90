@@ -449,7 +449,7 @@ contains
                                                    title, xlabel, ylabel, &
                                                    z_min, z_max, has_3d_plots)
         !! Draw axes and labels - delegate to specialized axes module
-        use fortplot_3d_axes, only: draw_3d_axes_to_raster
+        use fortplot_3d_axes, only: draw_3d_axes
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -463,9 +463,16 @@ contains
 
         if (has_3d_plots) then
             ! Draw simplified 3D axes frame using current data ranges
-            call draw_3d_axes_to_raster(this, x_min, x_max, y_min, y_max, &
-                                        merge(z_min, 0.0_wp, present(z_min)), &
-                                        merge(z_max, 1.0_wp, present(z_max)))
+            call draw_3d_axes(this, x_min, x_max, y_min, y_max, &
+                              merge(z_min, 0.0_wp, present(z_min)), &
+                              merge(z_max, 1.0_wp, present(z_max)))
+            ! Draw title/xlabel/ylabel using existing raster helpers for labels only
+            if (present(title) .or. present(xlabel) .or. present(ylabel)) then
+                call raster_draw_axis_labels_only(this%raster, this%width, this%height, this%plot_area, &
+                                                 xscale, yscale, symlog_threshold, &
+                                                 x_min, x_max, y_min, y_max, &
+                                                 title, xlabel, ylabel)
+            end if
         else
             ! Delegate to standard 2D axes module
             call raster_draw_axes_and_labels(this%raster, this%width, this%height, this%plot_area, &
