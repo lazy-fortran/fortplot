@@ -165,43 +165,13 @@ contains
 
         exponent = nint(log10(abs(value)))
 
-        ! Friendly formatting for common exponents to match matplotlib
-        if (exponent == 0) then
-            if (value < 0.0_wp) then
-                formatted = '-1'
-            else
-                formatted = '1'
-            end if
-            return
-        else if (value > 0.0_wp) then
-            select case (exponent)
-            case (1)
-                formatted = '10'
-                return
-            case (2)
-                formatted = '100'
-                return
-            case (3)
-                formatted = '1000'
-                return
-            case (-1)
-                formatted = '0.1'
-                return
-            case (-2)
-                formatted = '0.01'
-                return
-            case (-3)
-                formatted = '0.001'
-                return
-            end select
-        end if
-
-        ! General case uses mathtext superscript
+        ! Always emit mathtext-style powers of ten to mirror matplotlib output
         if (value < 0.0_wp) then
             write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
         else
             write(formatted, '(A, I0, A)') '10^{', exponent, '}'
         end if
+        formatted = adjustl(formatted)
     end function format_power_of_ten_label
 
     subroutine remove_trailing_zeros(str)

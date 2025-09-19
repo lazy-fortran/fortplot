@@ -145,6 +145,8 @@ run-release:
 doc:
 	@echo "Updating documentation index from example directories..."
 	@fpm run --target update_example_index >/dev/null
+	@echo "Regenerating example documentation pages..."
+	@fpm run --example generate_example_docs >/dev/null
 	# Ensure critical example media exist for docs (fixes #858, #1032)
 	# Generate streamplot and pcolormesh demos so images are available in docs
 	$(MAKE) example ARGS="streamplot_demo" >/dev/null
