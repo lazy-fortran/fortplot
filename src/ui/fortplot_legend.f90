@@ -96,11 +96,10 @@ contains
     subroutine legend_clear(this)
         !! Clear all legend entries
         class(legend_t), intent(inout) :: this
+        type(legend_entry_t), allocatable :: empty(:)
         
-        if (allocated(this%entries)) then
-            deallocate(this%entries)
-        end if
-        allocate(this%entries(0))
+        allocate(empty(0))
+        call move_alloc(empty, this%entries)
         this%num_entries = 0
     end subroutine legend_clear
     
@@ -153,8 +152,13 @@ contains
         real(wp), intent(in) :: legend_x, legend_y
         integer :: i
         real(wp) :: text_x, text_y
-        character(len=20) :: legend_line
-        
+
+        ! Optional header for better readability in ASCII output
+        text_x = legend_x
+        text_y = max(1.0_wp, min(legend_y - 1.0_wp, real(28, wp)))
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        call backend%text(text_x, text_y, 'ASCII Legend')
+
         do i = 1, legend%num_entries
             ! For ASCII, arrange entries vertically going downward
             text_x = legend_x
@@ -173,12 +177,12 @@ contains
                 trim(legend%entries(i)%marker) /= '' .and. &
                 trim(legend%entries(i)%marker) /= 'None') then
                 ! Show marker character
-                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // " " // trim(legend%entries(i)%label)
+                call backend%text(text_x, text_y, &
+                    get_ascii_marker_char(legend%entries(i)%marker) // ' ' // trim(legend%entries(i)%label))
             else
                 ! Show line symbol for line-only plots
-                legend_line = "-- " // trim(legend%entries(i)%label)
+                call backend%text(text_x, text_y, '-- ' // trim(legend%entries(i)%label))
             end if
-            call backend%text(text_x, text_y, legend_line)
         end do
     end subroutine render_ascii_legend
     
