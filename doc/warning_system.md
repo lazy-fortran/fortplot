@@ -42,8 +42,8 @@ The system automatically detects CI environments and suppresses warnings:
 
 ## Priority Order
 
-1. **Manual Suppression**: `FORTPLOT_SUPPRESS_WARNINGS` takes highest priority
-2. **Force Override**: `FORTPLOT_FORCE_WARNINGS` overrides CI auto-detection
+1. **Force Override**: `FORTPLOT_FORCE_WARNINGS` takes highest priority and forces warnings ON
+2. **Manual Suppression**: `FORTPLOT_SUPPRESS_WARNINGS` suppresses warnings when set
 3. **CI Auto-Detection**: Automatic suppression in detected CI environments
 4. **Default**: Warnings visible in development environments
 
@@ -147,6 +147,25 @@ FORTPLOT_SUPPRESS_WARNINGS=1 make test 2>&1 | grep WARNING
 1. Check force override: `echo $FORTPLOT_FORCE_WARNINGS`
 2. Verify CI detection: May be auto-suppressing
 3. Set explicit control: `export FORTPLOT_SUPPRESS_WARNINGS=0`
+
+## Querying And Restoring Log Level
+
+When temporarily increasing verbosity (for example during debugging), capture the
+current level with `get_log_level()` and restore it afterwards to avoid leaking
+state into other tests or applications:
+
+```fortran
+use fortplot, only: set_log_level, get_log_level, &
+                    LOG_LEVEL_DEBUG
+
+integer :: prev
+prev = get_log_level()
+call set_log_level(LOG_LEVEL_DEBUG)
+
+! ... perform debug operations ...
+
+call set_log_level(prev)
+```
 
 ### Performance Impact
 The warning suppression system has minimal performance impact:
