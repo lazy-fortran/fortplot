@@ -5,6 +5,9 @@ module fortplot_3d_axes
     !! tick positions and projecting them to 2D coordinates
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_axes, only: format_tick_label
+    use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+        format_tick_value_consistent
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     implicit none
     
@@ -12,7 +15,7 @@ module fortplot_3d_axes
     public :: create_3d_axis_corners, project_3d_corners_to_2d
     public :: create_3d_axis_lines, project_3d_axis_lines
     public :: create_3d_tick_positions
-    public :: draw_3d_axes_to_raster, transform_corners_to_screen
+    public :: draw_3d_axes, transform_corners_to_data
     
 contains
 
@@ -127,9 +130,9 @@ contains
         end do
     end subroutine create_3d_tick_positions
 
-    subroutine draw_3d_axes_to_raster(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Draw 3D axes frame to raster backend - matplotlib style
-        use fortplot_context, only: plot_context
+    subroutine draw_3d_axes(ctx, x_min, x_max, y_min, y_max, z_min, z_max)
+        !! Draw 3D axes frame using the generic plotting context
+        !! The backend maps data -> device coordinates via ctx methods
         use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
@@ -149,11 +152,8 @@ contains
         ! Project to 2D (still in data space)
         call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
         
-        ! Now we need to transform from projected data space to screen space
-        ! This should use the same transformation as regular plot data
-        ! Transform each corner from data to screen coordinates
-        call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
-                                       z_min, z_max)
+        ! Map projected coordinates into current data ranges; backend maps data->device
+        call transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
         
         ! Draw axes matplotlib/MATLAB style - forming a corner shape
         ! Not all axes meet at the same point for proper 3D visualization
@@ -182,63 +182,34 @@ contains
         
         ! Draw ticks and labels on the three axes
         call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
-    end subroutine draw_3d_axes_to_raster
+    end subroutine draw_3d_axes
 
-    subroutine transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Transform projected corners from data space to screen space
-        use fortplot_context, only: plot_context
+    subroutine transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
+        !! Transform projected corners from projection space to current data ranges
         real(wp), intent(inout) :: corners_2d(:,:)
-        class(plot_context), intent(in) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
         real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: x_range, y_range
-        real(wp) :: x_scale, y_scale
-        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
-        real(wp) :: plot_width, plot_height
+        real(wp) :: x_range_proj, y_range_proj
+        real(wp) :: x_range_data, y_range_data
         integer :: i
         
-        ! Get matplotlib-style margins (these should match what's used for regular plots)
-        margin_left = 80.0_wp
-        margin_right = 40.0_wp  
-        margin_bottom = 60.0_wp
-        margin_top = 60.0_wp
-        
-        ! Calculate plot area dimensions
-        plot_width = real(ctx%width, wp) - margin_left - margin_right
-        plot_height = real(ctx%height, wp) - margin_bottom - margin_top
-        
-        ! Find bounds of projected data
         proj_x_min = minval(corners_2d(1,:))
         proj_x_max = maxval(corners_2d(1,:))
         proj_y_min = minval(corners_2d(2,:))
         proj_y_max = maxval(corners_2d(2,:))
         
-        ! Calculate scaling factors with padding
-        x_range = proj_x_max - proj_x_min
-        y_range = proj_y_max - proj_y_min
+        x_range_proj = max(1.0e-12_wp, proj_x_max - proj_x_min)
+        y_range_proj = max(1.0e-12_wp, proj_y_max - proj_y_min)
         
-        if (x_range > 0.0_wp) then
-            x_scale = plot_width * 0.8_wp / x_range
-        else
-            x_scale = 1.0_wp
-        end if
+        x_range_data = max(1.0e-12_wp, x_max - x_min)
+        y_range_data = max(1.0e-12_wp, y_max - y_min)
         
-        if (y_range > 0.0_wp) then
-            y_scale = plot_height * 0.8_wp / y_range
-        else  
-            y_scale = 1.0_wp
-        end if
-        
-        ! Transform each corner to screen coordinates - center in plot area
         do i = 1, size(corners_2d, 2)
-            ! X: map to screen centered in plot area
-            corners_2d(1,i) = margin_left + plot_width * 0.5_wp + (corners_2d(1,i) - (proj_x_min + proj_x_max) * 0.5_wp) * x_scale
-            
-            ! Y: map to screen centered in plot area (flip Y axis)
-            corners_2d(2,i) = margin_top + plot_height * 0.5_wp - (corners_2d(2,i) - (proj_y_min + proj_y_max) * 0.5_wp) * y_scale
+            corners_2d(1,i) = x_min + (corners_2d(1,i) - proj_x_min) / x_range_proj * x_range_data
+            corners_2d(2,i) = y_min + (corners_2d(2,i) - proj_y_min) / y_range_proj * y_range_data
         end do
-    end subroutine transform_corners_to_screen
+    end subroutine transform_corners_to_data
     
     subroutine draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw tick marks and labels on the visible 3D axes
@@ -248,13 +219,31 @@ contains
         real(wp), intent(in) :: corners_2d(2,8)
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
-        real(wp) :: tick_length, x_pos, y_pos, dx, dy
+        real(wp) :: x_pos, y_pos
         character(len=32) :: label
         integer :: i, n_ticks
         real(wp) :: value, step
+        real(wp) :: x_range, y_range
+        real(wp) :: tick_len_y, tick_len_x
+        real(wp) :: pad_x, pad_y
+        integer :: decimals_x, decimals_y, decimals_z
         
-        tick_length = 4.0_wp  ! Tick length in pixels
+        ! Use fractions of the current data ranges for tick lengths and padding
+        x_range = max(1.0e-12_wp, x_max - x_min)
+        y_range = max(1.0e-12_wp, y_max - y_min)
+        tick_len_y = 0.02_wp * y_range   ! vertical tick length (in data units)
+        tick_len_x = 0.02_wp * x_range   ! horizontal tick length (in data units)
+        pad_x = 0.02_wp * x_range        ! horizontal text padding (data units)
+        pad_y = 0.02_wp * y_range        ! vertical text padding (data units)
         n_ticks = 5  ! Number of ticks per axis
+
+        ! Determine consistent decimal places for each axis based on step size
+        step = (x_max - x_min) / real(n_ticks - 1, wp)
+        decimals_x = determine_decimal_places_from_step(step)
+        step = (y_max - y_min) / real(n_ticks - 1, wp)
+        decimals_y = determine_decimal_places_from_step(step)
+        step = (z_max - z_min) / real(n_ticks - 1, wp)
+        decimals_z = determine_decimal_places_from_step(step)
         
         ! X-axis ticks and labels (edge from corner 1 to corner 2)
         step = (x_max - x_min) / real(n_ticks - 1, wp)
@@ -264,12 +253,12 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing down
-            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_length)
+            ! Draw tick mark pointing down (in data units)
+            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_len_y)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - 10.0_wp, y_pos + tick_length + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_x)
+            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos + tick_len_y + pad_y, trim(adjustl(label)))
         end do
         
         ! Y-axis ticks and labels (edge from corner 1 to corner 4)
@@ -279,12 +268,12 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,4) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,4) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing left
-            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            ! Draw tick mark pointing left (in data units)
+            call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_y)
+            call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
         
         ! Z-axis ticks and labels (edge from corner 1 to corner 5)
@@ -294,24 +283,23 @@ contains
             x_pos = corners_2d(1,1) + (corners_2d(1,5) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,5) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             
-            ! Draw tick mark pointing left
-            call ctx%line(x_pos, y_pos, x_pos - tick_length, y_pos)
+            ! Draw tick mark pointing left (in data units)
+            call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label
-            write(label, '(F6.1)') value
-            call render_text_to_ctx(ctx, x_pos - tick_length - 30.0_wp, y_pos + 5.0_wp, trim(adjustl(label)))
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_z)
+            call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
     end subroutine draw_3d_axis_ticks_and_labels
     
     subroutine render_text_to_ctx(ctx, x, y, text)
-        !! Helper to render text to context (placeholder)
+        !! Helper to render text using the active backend context
         use fortplot_context, only: plot_context
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        
-        ! This is a placeholder - actual implementation would depend on backend
-        ! For now, we'll skip text rendering in 3D axes
+
+        call ctx%text(x, y, text)
     end subroutine render_text_to_ctx
 
 end module fortplot_3d_axes
