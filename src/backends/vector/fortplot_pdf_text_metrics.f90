@@ -1,8 +1,8 @@
 module fortplot_pdf_text_metrics
     !! PDF text measurement helpers
 
-    use iso_fortran_env, only: wp => real64
-    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, ELEMENT_SQRT
     use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_pdf_core, only: PDF_LABEL_SIZE
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
@@ -101,7 +101,7 @@ contains
         elem_font_size = base_font_size * element%font_size_ratio
 
         ! Include radical head width for sqrt elements, then measure radicand recursively
-        if (element%element_type == 3) then
+        if (element%element_type == ELEMENT_SQRT) then
             w = w + 0.6_wp * elem_font_size
             w = w + estimate_mathtext_width(element%text, elem_font_size)
             return

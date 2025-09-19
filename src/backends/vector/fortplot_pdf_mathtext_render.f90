@@ -1,8 +1,8 @@
 module fortplot_pdf_mathtext_render
     !! PDF mathtext rendering utilities
 
-    use iso_fortran_env, only: wp => real64
-    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext, ELEMENT_SQRT
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_pdf_core, only: pdf_context_core, PDF_LABEL_SIZE
     use fortplot_pdf_text_render, only: draw_mixed_font_text
@@ -57,7 +57,7 @@ contains
         elem_y = baseline_y + element%vertical_offset * base_font_size
 
         ! Handle square root specially by drawing the radical (check mark + overbar)
-        if (element%element_type == 3) then
+        if (element%element_type == ELEMENT_SQRT) then
             ! Width of radical symbol and radicand
             sym_w = 0.6_wp * elem_font_size
             rad_width = estimate_pdf_text_width(element%text, elem_font_size)
@@ -129,15 +129,6 @@ contains
         x_pos = x_pos + char_width
     end subroutine render_mathtext_element_pdf
 
-    subroutine render_text_with_unicode_superscripts(this, x, y, text, font_size)
-        class(pdf_context_core), intent(inout) :: this
-        real(wp), intent(in) :: x, y
-        character(len=*), intent(in) :: text
-        real(wp), intent(in) :: font_size
-
-        call draw_mixed_font_text(this, x, y, text, font_size)
-    end subroutine render_text_with_unicode_superscripts
-
     subroutine render_mathtext_with_unicode_superscripts(this, x, y, text, font_size)
         class(pdf_context_core), intent(inout) :: this
         real(wp), intent(in) :: x, y
@@ -158,7 +149,6 @@ contains
     end subroutine render_mathtext_with_unicode_superscripts
 
     pure function to_move_cmd(x, y) result(cmd)
-        use iso_fortran_env, only: wp => real64
         real(wp), intent(in) :: x, y
         character(len=64) :: cmd
         write(cmd, '(F0.3,1X,F0.3,1X,A)') x, y, 'm'
@@ -166,7 +156,6 @@ contains
     end function to_move_cmd
 
     pure function to_line_cmd(x, y) result(cmd)
-        use iso_fortran_env, only: wp => real64
         real(wp), intent(in) :: x, y
         character(len=64) :: cmd
         write(cmd, '(F0.3,1X,F0.3,1X,A)') x, y, 'l'
