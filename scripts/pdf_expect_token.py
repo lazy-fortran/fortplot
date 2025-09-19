@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 Search PDF content streams (handles Flate-compressed streams) for a given
 substring or regular expression. Returns 0 if pattern is found, 1 otherwise.
 
@@ -93,4 +93,3 @@ def main(argv):
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
-
