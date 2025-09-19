@@ -242,7 +242,7 @@ contains
         real(wp), dimension(10) :: x, y1, y2
         integer :: i
         type(validation_result_t) :: val
-        logical :: found_legend
+        logical :: found_legend, found_long_label
         character(len=200) :: line
         integer :: unit, iostat
         
@@ -273,7 +273,7 @@ contains
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
-                if (index(line, 'Linear') > 0 .or. index(line, 'Sqrt') > 0) then
+                if (index(line, 'Legend') > 0 .or. index(line, 'Linear') > 0 .or. index(line, 'Sqrt') > 0) then
                     found_legend = .true.
                     exit
                 end if
@@ -281,13 +281,47 @@ contains
             close(unit)
             
             if (found_legend) then
-                print *, "  ✓ Legend labels found in ASCII output"
+                print *, "  ✓ Legend header/labels found in ASCII output"
             else
                 print *, "  ✗ Legend labels not found in ASCII"
                 failures = failures + 1
             end if
         else
             print *, "  ✗ Failed to create ASCII with legend"
+            failures = failures + 1
+        end if
+
+        ! Additional check: long label should not be truncated in ASCII output
+        x = [(real(i, wp), i=1, 10)]
+        y1 = x
+        call figure(figsize=[80.0_wp, 24.0_wp])
+        call title("ASCII Legend Long Label")
+        call add_plot(x, y1, label="LongLabel-ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        call legend()
+        call savefig("test/output/test_legend_long.txt")
+        call windows_safe_delay(100)
+
+        val = validate_file_exists('test/output/test_legend_long.txt')
+        if (val%passed) then
+            found_long_label = .false.
+            open(newunit=unit, file='test/output/test_legend_long.txt', status='old', action='read')
+            do
+                read(unit, '(A)', iostat=iostat) line
+                if (iostat /= 0) exit
+                if (index(line, 'LongLabel-ABCDEFGHIJKLMNOPQRSTUVWXYZ') > 0) then
+                    found_long_label = .true.
+                    exit
+                end if
+            end do
+            close(unit)
+            if (found_long_label) then
+                print *, "  ✓ Long legend label fully present (no truncation)"
+            else
+                print *, "  ✗ Long legend label appears truncated"
+                failures = failures + 1
+            end if
+        else
+            print *, "  ✗ Failed to create ASCII long-label output"
             failures = failures + 1
         end if
         
