@@ -81,15 +81,15 @@ contains
     end subroutine render_contour_plot
 
     subroutine render_filled_contour_regions(backend, plot_data, z_min, z_max)
-        !! Render filled contour regions using cell-by-cell filling
+        !! Render filled contour regions using polygon fill (even-odd rule)
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot_data
         real(wp), intent(in) :: z_min, z_max
 
+        type(contour_region_t), allocatable :: regions(:)
         real(wp), allocatable :: levels(:)
-        real(wp), dimension(3) :: fill_color
-        integer :: i, j, k, nx, ny
-        real(wp) :: cell_value, x_quad(4), y_quad(4)
+        real(wp) :: color(3)
+        integer :: r
 
         ! Determine contour levels: use provided, else default 3 evenly spaced
         if (allocated(plot_data%contour_levels) .and. size(plot_data%contour_levels) > 0) then
@@ -101,32 +101,19 @@ contains
                        z_min + 0.5_wp * (z_max - z_min), &
                        z_min + 0.8_wp * (z_max - z_min) ]
         end if
-
         call sort_levels_inplace(levels)
-        
-        nx = size(plot_data%x_grid)
-        ny = size(plot_data%y_grid)
 
-        ! Fill each grid cell based on its value relative to contour levels
-        do j = 1, ny - 1
-            do i = 1, nx - 1
-                ! Get the average value of the cell (center value)
-                cell_value = 0.25_wp * (plot_data%z_grid(j, i) + plot_data%z_grid(j, i+1) + &
-                                        plot_data%z_grid(j+1, i) + plot_data%z_grid(j+1, i+1))
-                
-                ! Determine which contour band this cell belongs to
-                call get_level_color(cell_value, levels, z_min, z_max, plot_data%colormap, fill_color)
-                
-                ! Set color and fill the cell
-                call backend%color(fill_color(1), fill_color(2), fill_color(3))
-                
-                x_quad = [plot_data%x_grid(i), plot_data%x_grid(i+1), &
-                         plot_data%x_grid(i+1), plot_data%x_grid(i)]
-                y_quad = [plot_data%y_grid(j), plot_data%y_grid(j), &
-                         plot_data%y_grid(j+1), plot_data%y_grid(j+1)]
-                         
-                call backend%fill_quad(x_quad, y_quad)
-            end do
+        ! Extract polygonal regions between levels
+        regions = extract_contour_regions(plot_data%x_grid, plot_data%y_grid, plot_data%z_grid, levels)
+
+        ! Fill each region using even-odd rule, colored by its band
+        do r = 1, size(regions)
+            call compute_region_color(regions(r)%level_min, regions(r)%level_max, &
+                                      z_min, z_max, plot_data%colormap, color)
+            call backend%color(color(1), color(2), color(3))
+            if (allocated(regions(r)%boundaries)) then
+                call fill_region_even_odd(backend, regions(r)%boundaries)
+            end if
         end do
 
         if (allocated(levels)) deallocate(levels)
