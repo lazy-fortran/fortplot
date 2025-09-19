@@ -22,26 +22,27 @@ contains
         real(wp), dimension(5) :: y = [2.0_wp, 4.0_wp, 6.0_wp, 8.0_wp, 10.0_wp]
         real(wp), dimension(5) :: z = [0.5_wp, 1.0_wp, 1.5_wp, 2.0_wp, 2.5_wp]
         
-        ! Act - Store 3D data
         plot_data%plot_type = PLOT_TYPE_LINE
         plot_data%x = x
         plot_data%y = y
-        ! Note: This test verifies current 2D plot_data_t structure
-        ! 3D support (z field) is not yet implemented - this is expected behavior
-        plot_data%label = "2D test data (3D support pending)"
-        
-        ! Test current implementation: verify x and y data are stored correctly
-        if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
-            error stop "plot_data_t should support x and y coordinate allocation"
+        plot_data%z = z
+        plot_data%label = "3D test data"
+
+        if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y) .or. &
+            .not. allocated(plot_data%z)) then
+            error stop "plot_data_t should allocate x, y, and z for 3D data"
         end if
-        
-        if (size(plot_data%x) /= 5 .or. size(plot_data%y) /= 5) then
-            error stop "x or y array size mismatch"
+
+        if (size(plot_data%x) /= 5 .or. size(plot_data%y) /= 5 .or. &
+            size(plot_data%z) /= 5) then
+            error stop "Coordinate array size mismatch"
         end if
-        
-        ! Current working assertions with platform-safe tolerance
+
         if (abs(plot_data%x(3) - 3.0_wp) > get_windows_safe_tolerance(1e-10_wp)) then
             error stop "x coordinate value mismatch"
+        end if
+        if (abs(plot_data%z(2) - 1.0_wp) > get_windows_safe_tolerance(1e-10_wp)) then
+            error stop "z coordinate value mismatch"
         end if
         
     end subroutine test_3d_line_plot_storage
@@ -58,9 +59,11 @@ contains
         plot_data%y = y
         ! Don't allocate z for 2D plots
         
-        ! Test current 2D-only implementation: z field not yet supported
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
             error stop "2D plots should have x and y allocated"
+        end if
+        if (allocated(plot_data%z)) then
+            error stop "Z array should remain unallocated for 2D data"
         end if
         
     end subroutine test_2d_plot_no_z_allocation
@@ -70,14 +73,17 @@ contains
         !! Enable when plot_data_t has z field and is_3d() method
         type(plot_data_t) :: plot_data
         
-        ! Test current 2D plot implementation
-        allocate(plot_data%x(3), plot_data%y(3))
-        
-        ! Verify basic allocation works (3D detection not yet implemented)
-        if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) then
-            error stop "plot_data_t should support basic x and y allocation"
+        allocate(plot_data%x(3), plot_data%y(3), plot_data%z(3))
+
+        if (.not. plot_data%is_3d()) then
+            error stop "plot_data_t should report 3D when z is allocated"
         end if
-        
+
+        deallocate(plot_data%z)
+        if (plot_data%is_3d()) then
+            error stop "plot_data_t should report 2D after z deallocation"
+        end if
+
     end subroutine test_3d_plot_type_detection
 
 end program test_3d_plot_data_storage
