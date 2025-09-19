@@ -71,7 +71,7 @@ contains
                                 margin_bottom, margin_top, xscale, yscale, &
                                 symlog_threshold, x_min, x_max, y_min, y_max, &
                                 x_min_transformed, x_max_transformed, &
-                                y_min_transformed, y_max_transformed)
+                                y_min_transformed, y_max_transformed, grid_linestyle)
         !! Render grid lines on the figure
         class(plot_context), intent(inout) :: backend
         logical, intent(in) :: grid_enabled
@@ -85,17 +85,32 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
+        character(len=*), intent(in) :: grid_linestyle
         
         real(wp) :: major_ticks(50)
         real(wp) :: tick_val, x1, y1, x2, y2, alpha_val
         integer :: i, num_ticks
         real(wp) :: grid_color(3)
+        character(len=:), allocatable :: style
+        real(wp) :: xmin_t, xmax_t, ymin_t, ymax_t
         
         if (.not. grid_enabled) return
         
         ! Set grid color (gray) and alpha (alpha currently backend-specific; kept for API parity)
         grid_color = [0.7_wp, 0.7_wp, 0.7_wp]
-        alpha_val = grid_alpha
+        alpha_val = max(0.0_wp, min(1.0_wp, grid_alpha))
+
+        ! Normalize transformed bounds to ensure proper ordering
+        xmin_t = min(x_min_transformed, x_max_transformed)
+        xmax_t = max(x_min_transformed, x_max_transformed)
+        ymin_t = min(y_min_transformed, y_max_transformed)
+        ymax_t = max(y_min_transformed, y_max_transformed)
+
+        ! Apply grid styling once
+        style = trim(grid_linestyle)
+        if (len_trim(style) == 0) style = '-'
+        call backend%color(grid_color(1), grid_color(2), grid_color(3))
+        call backend%set_line_style(style)
 
         ! Draw X-axis grid lines (vertical lines)
         if (grid_axis == 'x' .or. grid_axis == 'b') then
@@ -113,12 +128,11 @@ contains
                         
                         ! In backend data coordinates, a vertical grid line is x = tick_val
                         x1 = tick_val
-                        y1 = y_min_transformed
+                        y1 = ymin_t
                         x2 = tick_val
-                        y2 = y_max_transformed
+                        y2 = ymax_t
 
                         ! Draw grid line in backend coordinate space
-                        call backend%color(grid_color(1), grid_color(2), grid_color(3))
                         call backend%line(x1, y1, x2, y2)
                     end if
                 end do
@@ -140,19 +154,21 @@ contains
                         tick_val = apply_scale_transform(tick_val, yscale, symlog_threshold)
 
                         ! In backend data coordinates, a horizontal grid line is y = tick_val
-                        x1 = x_min_transformed
+                        x1 = xmin_t
                         y1 = tick_val
-                        x2 = x_max_transformed
+                        x2 = xmax_t
                         y2 = tick_val
 
                         ! Draw grid line in backend coordinate space
-                        call backend%color(grid_color(1), grid_color(2), grid_color(3))
                         call backend%line(x1, y1, x2, y2)
                     end if
                 end do
             end if
         end if
         
+        ! Restore default solid line style to avoid leaking style changes
+        call backend%set_line_style('-')
+
     end subroutine render_grid_lines
 
 end module fortplot_figure_grid
