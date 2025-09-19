@@ -177,12 +177,12 @@ contains
                 trim(legend%entries(i)%marker) /= '' .and. &
                 trim(legend%entries(i)%marker) /= 'None') then
                 ! Show marker character
-                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // " " // trim(legend%entries(i)%label)
+                call backend%text(text_x, text_y, &
+                    get_ascii_marker_char(legend%entries(i)%marker) // ' ' // trim(legend%entries(i)%label))
             else
                 ! Show line symbol for line-only plots
-                legend_line = "-- " // trim(legend%entries(i)%label)
+                call backend%text(text_x, text_y, '-- ' // trim(legend%entries(i)%label))
             end if
-            call backend%text(text_x, text_y, legend_line)
         end do
     end subroutine render_ascii_legend
     
