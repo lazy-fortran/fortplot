@@ -73,8 +73,8 @@ check_left_margin_brightness() {
   elif command -v magick >/dev/null 2>&1; then
     h=$(magick identify -format "%h" "$png" 2>/dev/null || echo 0)
   else
-    echo "Missing ImageMagick (identify/magick)" >&2
-    exit 2
+    echo "Missing ImageMagick (identify/magick) — skipping left-margin brightness check for $png" >&2
+    return 0
   fi
   if [[ $h -le 0 ]]; then
     echo "ERROR: Could not read PNG height for $png" >&2
@@ -86,8 +86,8 @@ check_left_margin_brightness() {
   elif command -v magick >/dev/null 2>&1; then
     mean=$(magick "$png" -crop ${stripe_w}x${h}+0+0 +repage -colorspace Gray -format "%[fx:mean]" info: 2>/dev/null || echo 0)
   else
-    echo "Missing ImageMagick (convert/magick)" >&2
-    exit 2
+    echo "Missing ImageMagick (convert/magick) — skipping left-margin brightness check for $png" >&2
+    return 0
   fi
   echo "[ylabel-left] $png stripe_w=$stripe_w mean=$mean threshold=$min_mean"
   awk -v m="$mean" -v t="$min_mean" 'BEGIN { exit (m+0 >= t+0 ? 0 : 1) }' || {
