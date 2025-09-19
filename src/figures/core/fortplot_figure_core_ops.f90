@@ -251,7 +251,7 @@ contains
     end subroutine core_streamplot
 
     subroutine core_savefig(state, plots, plot_count, filename, blocking, &
-                            annotations, annotation_count)
+                            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -259,18 +259,15 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
-        
-        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
-        if (.not. state%rendered) then
-            call figure_render(state, plots, plot_count, annotations, annotation_count)
-        end if
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         call figure_savefig(state, plots, plot_count, filename, blocking, &
-                            annotations, annotation_count)
+                            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
     end subroutine core_savefig
     
     subroutine core_savefig_with_status(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count)
+                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -279,30 +276,26 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
-        
-        ! Render with annotations before saving (Issue #844: ASCII annotation functionality)
-        if (.not. state%rendered) then
-            call figure_render(state, plots, plot_count, annotations, annotation_count)
-        end if
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         call figure_savefig_with_status(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count)
+                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
     end subroutine core_savefig_with_status
 
-    subroutine core_show(state, plots, plot_count, blocking, annotations, annotation_count)
+    subroutine core_show(state, plots, plot_count, blocking, annotations, annotation_count, &
+                         subplots_array, subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
-        ! Render with annotations before showing (Issue #844: ASCII annotation functionality)
-        if (.not. state%rendered) then
-            call figure_render(state, plots, plot_count, annotations, annotation_count)
-        end if
-        
-        call figure_show(state, plots, plot_count, blocking, annotations, annotation_count)
+        call figure_show(state, plots, plot_count, blocking, annotations, annotation_count, &
+                         subplots_array, subplot_rows, subplot_cols)
     end subroutine core_show
 
 end module fortplot_figure_core_operations

@@ -115,7 +115,8 @@ contains
         ylabel_target = ''
     end subroutine figure_destroy
 
-    subroutine figure_savefig(state, plots, plot_count, filename, blocking, annotations, annotation_count)
+    subroutine figure_savefig(state, plots, plot_count, filename, blocking, annotations, annotation_count, &
+                              subplots_array, subplot_rows, subplot_cols)
         !! Save figure to file (backward compatibility version)
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
@@ -125,12 +126,15 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
-        call savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count)
+        call savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count, &
+                            subplots_array, subplot_rows, subplot_cols)
     end subroutine figure_savefig
     
     subroutine figure_savefig_with_status(state, plots, plot_count, filename, status, blocking, &
-                                          annotations, annotation_count)
+                                          annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
         !! Save figure to file with error status reporting
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
@@ -141,13 +145,16 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         call savefig_with_status_figure(state, plots, plot_count, &
                                        filename, status, blocking, &
-                                       annotations, annotation_count)
+                                       annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
     end subroutine figure_savefig_with_status
 
-    subroutine figure_show(state, plots, plot_count, blocking, annotations, annotation_count)
+    subroutine figure_show(state, plots, plot_count, blocking, annotations, annotation_count, &
+                           subplots_array, subplot_rows, subplot_cols)
         !! Display the figure
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
@@ -156,8 +163,11 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
-        call show_figure(state, plots, plot_count, blocking, annotations, annotation_count)
+        call show_figure(state, plots, plot_count, blocking, annotations, annotation_count, &
+                         subplots_array, subplot_rows, subplot_cols)
     end subroutine figure_show
 
     subroutine figure_clear(state, streamlines, subplots_array, &

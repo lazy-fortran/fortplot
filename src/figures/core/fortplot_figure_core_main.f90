@@ -219,7 +219,8 @@ contains
         logical, intent(in), optional :: blocking
         
         call core_savefig(self%state, self%plots, self%plot_count, filename, blocking, &
-                         self%annotations, self%annotation_count)
+                         self%annotations, self%annotation_count, &
+                         self%subplots_array, self%subplot_rows, self%subplot_cols)
     end subroutine savefig
     
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -231,7 +232,8 @@ contains
         
         call core_savefig_with_status(self%state, self%plots, self%plot_count, &
                                      filename, status, blocking, &
-                                     self%annotations, self%annotation_count)
+                                     self%annotations, self%annotation_count, &
+                                     self%subplots_array, self%subplot_rows, self%subplot_cols)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -240,7 +242,8 @@ contains
         logical, intent(in), optional :: blocking
         
         call core_show(self%state, self%plots, self%plot_count, blocking, &
-                      self%annotations, self%annotation_count)
+                      self%annotations, self%annotation_count, &
+                      self%subplots_array, self%subplot_rows, self%subplot_cols)
     end subroutine show
 
     !! CONFIGURATION METHODS - Delegated to core config module
