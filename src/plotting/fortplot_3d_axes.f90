@@ -6,6 +6,8 @@ module fortplot_3d_axes
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_axes, only: format_tick_label
+    use fortplot_tick_calculation, only: determine_decimal_places_from_step, &
+        format_tick_value_consistent
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     implicit none
     
@@ -224,6 +226,7 @@ contains
         real(wp) :: x_range, y_range
         real(wp) :: tick_len_y, tick_len_x
         real(wp) :: pad_x, pad_y
+        integer :: decimals_x, decimals_y, decimals_z
         
         ! Use fractions of the current data ranges for tick lengths and padding
         x_range = max(1.0e-12_wp, x_max - x_min)
@@ -233,6 +236,14 @@ contains
         pad_x = 0.02_wp * x_range        ! horizontal text padding (data units)
         pad_y = 0.02_wp * y_range        ! vertical text padding (data units)
         n_ticks = 5  ! Number of ticks per axis
+
+        ! Determine consistent decimal places for each axis based on step size
+        step = (x_max - x_min) / real(n_ticks - 1, wp)
+        decimals_x = determine_decimal_places_from_step(step)
+        step = (y_max - y_min) / real(n_ticks - 1, wp)
+        decimals_y = determine_decimal_places_from_step(step)
+        step = (z_max - z_min) / real(n_ticks - 1, wp)
+        decimals_z = determine_decimal_places_from_step(step)
         
         ! X-axis ticks and labels (edge from corner 1 to corner 2)
         step = (x_max - x_min) / real(n_ticks - 1, wp)
@@ -245,8 +256,8 @@ contains
             ! Draw tick mark pointing down (in data units)
             call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_len_y)
             
-            ! Draw label using standard tick formatter
-            label = format_tick_label(value, 'linear')
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_x)
             call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos + tick_len_y + pad_y, trim(adjustl(label)))
         end do
         
@@ -260,8 +271,8 @@ contains
             ! Draw tick mark pointing left (in data units)
             call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label using standard tick formatter
-            label = format_tick_label(value, 'linear')
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_y)
             call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
         
@@ -275,8 +286,8 @@ contains
             ! Draw tick mark pointing left (in data units)
             call ctx%line(x_pos, y_pos, x_pos - tick_len_x, y_pos)
             
-            ! Draw label using standard tick formatter
-            label = format_tick_label(value, 'linear')
+            ! Draw label using consistent decimal places across the axis
+            label = format_tick_value_consistent(value, decimals_z)
             call render_text_to_ctx(ctx, x_pos - tick_len_x - pad_x, y_pos + 0.25_wp*pad_y, trim(adjustl(label)))
         end do
     end subroutine draw_3d_axis_ticks_and_labels
