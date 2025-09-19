@@ -5,6 +5,7 @@ module fortplot_raster_ticks
     use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
+    use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_line_styles, only: draw_styled_line
     use fortplot_raster_core, only: raster_image_t
@@ -174,8 +175,10 @@ contains
         integer :: tick_x, label_x, label_y, j
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: processed_len, math_len
 
         ! Draw x-axis tick labels with overlap prevention
         min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
@@ -197,7 +200,8 @@ contains
 
             ! Process LaTeX (allocation handled internally)
             call process_latex_in_text(trim(xtick_labels(j)), processed_text, processed_len)
-            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
@@ -224,8 +228,10 @@ contains
         integer :: tick_y, label_x, label_y, j
         integer :: label_width, label_height
         real(wp) :: min_t, max_t, tick_t
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: processed_len, math_len
 
         ! Draw y-axis tick labels
         min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
@@ -242,7 +248,8 @@ contains
 
             ! Process LaTeX (allocation handled internally)
             call process_latex_in_text(trim(ytick_labels(j)), processed_text, processed_len)
-            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
