@@ -226,11 +226,14 @@ contains
         real(wp) :: x_range, y_range
         real(wp) :: tick_len_y, tick_len_x
         real(wp) :: pad_x, pad_y
+        real(wp) :: tick_y_end, label_y_pos
+        real(wp) :: y_span
         integer :: decimals_x, decimals_y, decimals_z
         
         ! Use fractions of the current data ranges for tick lengths and padding
-        x_range = max(1.0e-12_wp, x_max - x_min)
-        y_range = max(1.0e-12_wp, y_max - y_min)
+        x_range = max(1.0e-12_wp, abs(x_max - x_min))
+        y_span = y_max - y_min
+        y_range = max(1.0e-12_wp, abs(y_span))
         tick_len_y = 0.02_wp * y_range   ! vertical tick length (in data units)
         tick_len_x = 0.02_wp * x_range   ! horizontal tick length (in data units)
         pad_x = 0.02_wp * x_range        ! horizontal text padding (data units)
@@ -252,13 +255,22 @@ contains
             ! Interpolate position along edge
             x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
-            
-            ! Draw tick mark pointing down (in data units)
-            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_len_y)
-            
+
+            ! Determine downward direction in device space based on Y span sign
+            if (y_span >= 0.0_wp) then
+                tick_y_end = y_pos - tick_len_y
+                label_y_pos = tick_y_end - pad_y
+            else
+                tick_y_end = y_pos + tick_len_y
+                label_y_pos = tick_y_end + pad_y
+            end if
+
+            ! Draw tick mark pointing down in device space
+            call ctx%line(x_pos, y_pos, x_pos, tick_y_end)
+
             ! Draw label using consistent decimal places across the axis
             label = format_tick_value_consistent(value, decimals_x)
-            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos + tick_len_y + pad_y, trim(adjustl(label)))
+            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, label_y_pos, trim(adjustl(label)))
         end do
         
         ! Y-axis ticks and labels (edge from corner 1 to corner 4)

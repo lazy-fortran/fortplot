@@ -20,6 +20,7 @@ module fortplot_raster
     use fortplot_raster_core, only: raster_image_t, create_raster_image, destroy_raster_image
     use fortplot_raster_axes, only: raster_draw_axes_and_labels, raster_render_ylabel, &
                                         raster_draw_axes_lines_and_ticks, raster_draw_axis_labels_only
+    use fortplot_raster_labels, only: raster_draw_axis_labels
     use fortplot_raster_rendering, only: raster_fill_heatmap, raster_fill_quad, fill_triangle, &
                                         raster_render_legend_specialized, raster_calculate_legend_dimensions, &
                                         raster_set_legend_border_width, raster_calculate_legend_position, &
@@ -456,7 +457,8 @@ contains
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
-        
+        character(len=:), allocatable :: title_str, xlabel_str, ylabel_str
+
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
 
@@ -465,12 +467,24 @@ contains
             call draw_3d_axes(this, x_min, x_max, y_min, y_max, &
                               merge(z_min, 0.0_wp, present(z_min)), &
                               merge(z_max, 1.0_wp, present(z_max)))
-            ! Draw title/xlabel/ylabel using existing raster helpers for labels only
+            ! Draw title/xlabel/ylabel without re-drawing 2D tick labels
             if (present(title) .or. present(xlabel) .or. present(ylabel)) then
-                call raster_draw_axis_labels_only(this%raster, this%width, this%height, this%plot_area, &
-                                                 xscale, yscale, symlog_threshold, &
-                                                 x_min, x_max, y_min, y_max, &
-                                                 title, xlabel, ylabel)
+                title_str = ""
+                xlabel_str = ""
+                ylabel_str = ""
+
+                if (present(title)) then
+                    if (allocated(title)) title_str = title
+                end if
+                if (present(xlabel)) then
+                    if (allocated(xlabel)) xlabel_str = xlabel
+                end if
+                if (present(ylabel)) then
+                    if (allocated(ylabel)) ylabel_str = ylabel
+                end if
+
+                call raster_draw_axis_labels(this%raster, this%width, this%height, this%plot_area, &
+                                             title_str, xlabel_str, ylabel_str)
             end if
         else
             ! Delegate to standard 2D axes module
