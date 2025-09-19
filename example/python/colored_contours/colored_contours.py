@@ -3,6 +3,7 @@
 
 import sys
 from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -15,7 +16,7 @@ else:
 
 def _parse_outdir() -> Path:
     args = sys.argv[:]
-    outdir_arg: str | None = None
+    outdir_arg: Optional[str] = None
     for i, a in enumerate(list(args)):
         if a.startswith("--outdir="):
             outdir_arg = a.split("=", 1)[1]

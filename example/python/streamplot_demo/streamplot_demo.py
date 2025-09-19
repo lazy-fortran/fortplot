@@ -4,6 +4,7 @@
 import numpy as np
 import sys
 from pathlib import Path
+from typing import Optional
 
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ else:
 
 def _parse_outdir() -> Path:
     args = sys.argv[:]
-    outdir_arg: str | None = None
+    outdir_arg: Optional[str] = None
     for i, a in enumerate(list(args)):
         if a.startswith("--outdir="):
             outdir_arg = a.split("=", 1)[1]

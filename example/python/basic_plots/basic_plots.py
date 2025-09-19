@@ -6,6 +6,7 @@ Equivalent to basic_plots.f90 for visual comparison
 
 import sys
 from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -20,7 +21,7 @@ else:
 # Support optional --outdir <path> or --outdir=<path>
 def _parse_outdir() -> Path:
     args = sys.argv[:]
-    outdir_arg: str | None = None
+    outdir_arg: Optional[str] = None
     # consume --outdir forms
     for i, a in enumerate(list(args)):
         if a.startswith("--outdir="):

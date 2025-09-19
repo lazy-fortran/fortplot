@@ -188,7 +188,7 @@ call savefig("log_plot.pdf")
 
 - Build: `make build` or `fpm build`
 - Tests: `make test` (full) or `make test-ci` (fast subset)
-- Examples: `make example` (Fortran), `make example_python`, `make example_matplotlib`
+- Examples: `make example` (Fortran), `make example_python`, `make example_matplotlib`, `make example_python_dual`
 
 ### Artifact Verification (required for rendering changes)
 
@@ -200,6 +200,21 @@ Dependencies for verification tools:
 - macOS (Homebrew): `brew install poppler ghostscript`
 
 In PRs and issues for output-affecting fixes, include the exact commands run, artifact paths, and short excerpts from tools (e.g., `pdftotext`) as evidence.
+
+### Python Example Outputs
+
+- All Python examples now accept an optional `--outdir` to override output location.
+- By default, outputs are consolidated under:
+  - `output/example/python/fortplot/<example>/` for fortplot backend
+  - `output/example/python/pyplot/<example>/` for matplotlib backend
+- Run both backends back-to-back for quick comparisons:
+
+```bash
+make example_python_dual
+# or per-example
+python3 example/python/basic_plots/basic_plots.py              # fortplot
+python3 example/python/basic_plots/basic_plots.py --matplotlib # matplotlib
+```
 
 #### Text annotations with coordinate systems
 ```fortran
