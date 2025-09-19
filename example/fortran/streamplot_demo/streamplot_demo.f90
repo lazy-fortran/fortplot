@@ -8,7 +8,6 @@ program streamplot_demo
     real(wp), dimension(ny) :: y
     real(wp), dimension(nx, ny) :: u, v
     integer :: i, j
-    type(figure_t) :: fig
 
     ! Create grid
     do i = 1, nx
