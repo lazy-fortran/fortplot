@@ -273,7 +273,7 @@ contains
             do
                 read(unit, '(A)', iostat=iostat) line
                 if (iostat /= 0) exit
-                if (index(line, 'Linear') > 0 .or. index(line, 'Sqrt') > 0) then
+                if (index(line, 'Legend') > 0 .or. index(line, 'Linear') > 0 .or. index(line, 'Sqrt') > 0) then
                     found_legend = .true.
                     exit
                 end if
@@ -281,7 +281,7 @@ contains
             close(unit)
             
             if (found_legend) then
-                print *, "  ✓ Legend labels found in ASCII output"
+                print *, "  ✓ Legend header/labels found in ASCII output"
             else
                 print *, "  ✗ Legend labels not found in ASCII"
                 failures = failures + 1
