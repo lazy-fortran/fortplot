@@ -49,7 +49,9 @@ class TestPdfAxesColor(unittest.TestCase):
 def _read_pdf_stream_text(path: str) -> str:
     """Return concatenated text of all PDF content streams, decompressing Flate when present."""
     import re, zlib
-    b = open(path, 'rb').read()
+    # Ensure the PDF file handle is properly closed to avoid ResourceWarning
+    with open(path, 'rb') as f:
+        b = f.read()
     s = b.decode('latin1', errors='ignore')
     out = []
     i = 0
