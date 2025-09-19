@@ -2,6 +2,7 @@
 import os
 import sys
 import tempfile
+import warnings
 import unittest
 
 # Ensure local python package path
@@ -33,7 +34,12 @@ class TestPdfAxesColor(unittest.TestCase):
             self.assertGreater(os.path.getsize(pdf_path), 200, "PDF file too small (likely empty)")
 
             # Read and normalize PDF content streams (handle Flate-compressed streams)
-            data = _read_pdf_stream_text(pdf_path)
+            # Also assert no ResourceWarning is raised while reading
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always', ResourceWarning)
+                data = _read_pdf_stream_text(pdf_path)
+                self.assertFalse(any(isinstance(x.message, ResourceWarning) for x in w),
+                                 "ResourceWarning emitted while reading PDF stream text")
 
             # Heuristic: the axes frame is emitted as " re S" (rectangle then stroke)
             # Our fix sets stroke color to black ("0 0 0 RG") immediately before frame.
