@@ -218,7 +218,7 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         
-        call core_savefig(self%state, self%plots, self%state%plot_count, filename, blocking, &
+        call core_savefig(self%state, self%plots, self%plot_count, filename, blocking, &
                          self%annotations, self%annotation_count)
     end subroutine savefig
     
@@ -229,7 +229,7 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
         
-        call core_savefig_with_status(self%state, self%plots, self%state%plot_count, &
+        call core_savefig_with_status(self%state, self%plots, self%plot_count, &
                                      filename, status, blocking, &
                                      self%annotations, self%annotation_count)
     end subroutine savefig_with_status
@@ -239,7 +239,7 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
         
-        call core_show(self%state, self%plots, self%state%plot_count, blocking, &
+        call core_show(self%state, self%plots, self%plot_count, blocking, &
                       self%annotations, self%annotation_count)
     end subroutine show
 
