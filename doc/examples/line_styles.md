@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `line_styles.f90` - Source code
-- Run the example to populate `output/example/fortran/line_styles/`
+- Generated media in `output/example/fortran/line_styles/`
 
 ## Running
 
@@ -21,5 +21,16 @@ make example ARGS="line_styles"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Line Styles
+
+![line_styles.png](../../media/examples/line_styles/line_styles.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/line_styles/line_styles.txt)
+
+[Download PDF](../../media/examples/line_styles/line_styles.pdf)
 

@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `unicode_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/unicode_demo/`
+- Generated media in `output/example/fortran/unicode_demo/`
 
 ## Running
 
@@ -21,5 +21,29 @@ make example ARGS="unicode_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Math Examples
+
+![math_examples.png](../../media/examples/unicode_demo/math_examples.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/unicode_demo/math_examples.txt)
+
+[Download PDF](../../media/examples/unicode_demo/math_examples.pdf)
+
+### Unicode Demo
+
+![unicode_demo.png](../../media/examples/unicode_demo/unicode_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/unicode_demo/unicode_demo.txt)
+
+[Download PDF](../../media/examples/unicode_demo/unicode_demo.pdf)
 
