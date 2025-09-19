@@ -26,7 +26,7 @@ module fortplot_text_layout
 
 contains
 
-    function has_mathtext(text) result(is_mathtext)
+    pure function has_mathtext(text) result(is_mathtext)
         !! Check if text contains math segments delimited by '$...$'
         character(len=*), intent(in) :: text
         logical :: is_mathtext
