@@ -23,7 +23,11 @@ program grid_demo
     call title('Basic Plot - Grid Demo')
     call xlabel('Time (s)')
     call ylabel('Amplitude')
-    ! Note: Grid functionality is not available in current API
+    
+    ! Enable grid lines to demonstrate the feature
+    ! Default: major grid on both axes
+    call grid(.true.)
+
     call savefig('output/example/fortran/grid_demo/grid_demo.png')
     call savefig('output/example/fortran/grid_demo/grid_demo.pdf')
     call savefig('output/example/fortran/grid_demo/grid_demo.txt')

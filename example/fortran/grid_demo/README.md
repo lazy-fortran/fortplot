@@ -8,7 +8,7 @@ Demonstrates grid functionality for enhanced plot readability.
 ## Files
 
 - `grid_demo.f90` - Source code
-- `grid_plot.png/pdf/txt` - Example outputs
+- `grid_demo.png/pdf/txt` - Example outputs
 
 ## Running
 
