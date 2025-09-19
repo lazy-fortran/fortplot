@@ -10,6 +10,7 @@ module fortplot_rendering
     use fortplot_contour_rendering
     use fortplot_mesh_rendering
     use fortplot_boxplot_rendering
+    use fortplot_errorbar_rendering, only: render_errorbar_plot
     implicit none
     
     private
@@ -19,6 +20,7 @@ module fortplot_rendering
     public :: render_fill_between_plot
     public :: render_boxplot_plot
     public :: render_markers
+    public :: render_errorbar_plot
     public :: render_solid_line
     public :: draw_filled_quad
     public :: draw_quad_edges
