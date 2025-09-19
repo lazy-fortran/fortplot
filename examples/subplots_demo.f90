@@ -22,22 +22,41 @@ program subplots_demo
         y4(i) = cos(2*x(i))
     end do
     
-    ! Create a 2x2 grid of subplots
+    ! Create a 2x2 grid of subplots and target each panel
     print *, "Creating 2x2 subplot grid..."
     call subplots(2, 2)
-    
-    ! Note: Currently the matplotlib-style API doesn't support 
-    ! targeting specific subplots after creation. This example
-    ! demonstrates that the function can be called successfully
-    ! and creates the subplot grid structure on the figure.
-    
-    ! Add a plot to demonstrate the grid exists
+
+    ! Panel (1,1)
+    call subplot(2, 2, 1)
     call plot(x, y1, label="sin(x)")
     call xlabel("x")
     call ylabel("y")
-    call title("Subplot Grid Demo")
-    call legend()
-    call grid()
+    call title("sin(x)")
+    call grid(.true.)
+
+    ! Panel (1,2)
+    call subplot(2, 2, 2)
+    call plot(x, y2, label="cos(x)")
+    call xlabel("x")
+    call ylabel("y")
+    call title("cos(x)")
+    call grid(.true.)
+
+    ! Panel (2,1)
+    call subplot(2, 2, 3)
+    call plot(x, y3, label="sin(2x)")
+    call xlabel("x")
+    call ylabel("y")
+    call title("sin(2x)")
+    call grid(.true.)
+
+    ! Panel (2,2)
+    call subplot(2, 2, 4)
+    call plot(x, y4, label="cos(2x)")
+    call xlabel("x")
+    call ylabel("y")
+    call title("cos(2x)")
+    call grid(.true.)
     
     ! Save the figure
     call savefig("subplots_demo.png")
