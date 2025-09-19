@@ -12,7 +12,8 @@ module fortplot_logging
     private
 
     public :: set_log_level, get_log_level, log_info, log_warning, log_error, log_debug
-    public :: LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
+    public :: LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
+              LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
     public :: initialize_warning_suppression, is_warnings_suppressed
 
     ! Log levels (in increasing verbosity)
@@ -120,7 +121,8 @@ contains
         end if
 
         ! Check for manual warning suppression override
-        call get_environment_variable('FORTPLOT_SUPPRESS_WARNINGS', env_value, status=status)
+        call get_environment_variable('FORTPLOT_SUPPRESS_WARNINGS', env_value, &
+                                      status=status)
         if (status == 0 .and. len_trim(env_value) > 0) then
             warnings_suppressed = parse_boolean_env(env_value)
             suppression_initialized = .true.
