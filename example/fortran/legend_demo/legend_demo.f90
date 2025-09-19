@@ -14,7 +14,6 @@ contains
 
     subroutine basic_legend_example()
         !! Basic legend usage with labeled plots
-        type(figure_t) :: fig
         real(wp), dimension(50) :: x, y1, y2
         integer :: i
         
@@ -46,7 +45,6 @@ contains
 
     subroutine positioned_legend_example()
         !! Demonstrate different legend positions
-        type(figure_t) :: fig1, fig2, fig3, fig4
         real(wp), dimension(20) :: x, y1, y2
         integer :: i
         
@@ -103,7 +101,6 @@ contains
 
     subroutine multi_function_legend_example()
         !! Complex legend with multiple mathematical functions
-        type(figure_t) :: fig
         real(wp), dimension(100) :: x, y1, y2, y3, y4
         integer :: i
         
@@ -113,7 +110,12 @@ contains
         x = [(real(i-1, wp) * 0.1_wp, i=1, 100)]
         y1 = exp(-x/2.0_wp) * cos(x)
         y2 = x * exp(-x/3.0_wp)
-        y3 = sin(x) / x
+        ! Avoid division by zero at x=0: define sin(x)/x = 1 at x=0
+        where (x == 0.0_wp)
+            y3 = 1.0_wp
+        elsewhere
+            y3 = sin(x) / x
+        end where
         y4 = x**2 * exp(-x)
         
         call figure(figsize=[8.0_wp, 6.0_wp])
@@ -122,10 +124,11 @@ contains
         call ylabel("f(x)")
         
         ! Add multiple labeled functions
-        call add_plot(x, y1, label="e^(-x/2)cos(x)")
-        call add_plot(x, y2, label="xe^(-x/3)")
+        ! Use mathtext with braces for multi-character superscripts
+        call add_plot(x, y1, label="e^{-x/2}cos(x)")
+        call add_plot(x, y2, label="xe^{-x/3}")
         call add_plot(x, y3, label="sin(x)/x")
-        call add_plot(x, y4, label="x²e^(-x)")
+        call add_plot(x, y4, label="x^{2}e^{-x}")
         
         ! Add legend
         call legend()
@@ -139,7 +142,6 @@ contains
 
     subroutine legend_box_styling_example()
         !! Demonstrate legend box styling and multiple entries
-        type(figure_t) :: fig
         real(wp), dimension(50) :: x, y1, y2, y3, y4
         integer :: i
         

@@ -113,7 +113,10 @@ def multi_function_legend_example():
     y1 = np.exp(-x/2.0) * np.cos(x)
     y2 = x * np.exp(-x/3.0)
     # Handle division by zero for sin(x)/x
-    y3 = np.where(x == 0, 1.0, np.sin(x) / x)
+    # Avoid RuntimeWarning by using numpy.divide with where + out
+    y3 = np.empty_like(x)
+    np.divide(np.sin(x), x, out=y3, where=x != 0)
+    y3[x == 0] = 1.0
     y4 = x**2 * np.exp(-x)
     
     plt.figure(figsize=(10, 7.5))
@@ -122,10 +125,11 @@ def multi_function_legend_example():
     plt.ylabel("f(x)")
     
     # Add multiple labeled functions
-    plt.plot(x, y1, linestyle="-", label="e^(-x/2)cos(x)")
-    plt.plot(x, y2, linestyle="--", label="xe^(-x/3)")
+    # Use mathtext with braces for multi-character superscripts
+    plt.plot(x, y1, linestyle="-", label="e^{-x/2}cos(x)")
+    plt.plot(x, y2, linestyle="--", label="xe^{-x/3}")
     plt.plot(x, y3, linestyle=":", label="sin(x)/x")
-    plt.plot(x, y4, linestyle="-.", label="x^2*exp(-x)")
+    plt.plot(x, y4, linestyle="-.", label="x^{2}e^{-x}")
     
     # Add legend
     plt.legend()
