@@ -99,6 +99,14 @@ contains
 
         w = 0.0_wp
         elem_font_size = base_font_size * element%font_size_ratio
+
+        ! Include radical head width for sqrt elements, then measure radicand recursively
+        if (element%element_type == 3) then
+            w = w + 0.6_wp * elem_font_size
+            w = w + estimate_mathtext_width(element%text, elem_font_size)
+            return
+        end if
+
         i = 1
         do while (i <= len_trim(element%text))
             char_len = utf8_char_length(element%text(i:i))

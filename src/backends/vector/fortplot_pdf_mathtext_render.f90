@@ -9,6 +9,7 @@ module fortplot_pdf_mathtext_render
     use fortplot_pdf_text_segments, only: render_mixed_font_at_position
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
     use fortplot_text_layout, only: preprocess_math_text
+    use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
     implicit none
     private
 
@@ -50,9 +51,49 @@ contains
         real(wp) :: elem_font_size, elem_y
         real(wp) :: char_width
         integer :: i, codepoint, char_len
+        real(wp) :: sym_w, rad_width, top_y
 
         elem_font_size = base_font_size * element%font_size_ratio
         elem_y = baseline_y + element%vertical_offset * base_font_size
+
+        ! Handle square root specially by drawing the radical (check mark + overbar)
+        if (element%element_type == 3) then
+            ! Width of radical symbol and radicand
+            sym_w = 0.6_wp * elem_font_size
+            rad_width = estimate_pdf_text_width(element%text, elem_font_size)
+
+            ! Place overbar slightly above baseline by approximately one font size
+            top_y = baseline_y + elem_font_size
+
+            ! Exit text object, draw path for radical, then re-enter text object
+            this%stream_data = this%stream_data // 'ET' // new_line('a')
+
+            ! Use current stroke settings; draw the two slanted ticks and horizontal bar
+            block
+                character(len=64) :: cmd
+                cmd = to_move_cmd(x_pos, baseline_y)
+                this%stream_data = this%stream_data // trim(adjustl(cmd)) // new_line('a')
+
+                cmd = to_line_cmd(x_pos + sym_w/2.0_wp, baseline_y + sym_w/2.0_wp)
+                this%stream_data = this%stream_data // trim(adjustl(cmd)) // new_line('a')
+
+                cmd = to_line_cmd(x_pos + sym_w, top_y)
+                this%stream_data = this%stream_data // trim(adjustl(cmd)) // new_line('a')
+
+                cmd = to_line_cmd(x_pos + sym_w + rad_width, top_y)
+                this%stream_data = this%stream_data // trim(adjustl(cmd)) // new_line('a')
+
+                this%stream_data = this%stream_data // 'S' // new_line('a')
+            end block
+
+            ! Re-enter text mode for the radicand
+            this%stream_data = this%stream_data // 'BT' // new_line('a')
+            call render_mixed_font_at_position(this, x_pos + sym_w, elem_y, &
+                 element%text, elem_font_size)
+
+            x_pos = x_pos + sym_w + rad_width
+            return
+        end if
 
         call render_mixed_font_at_position(this, x_pos, elem_y, element%text, &
             elem_font_size)
@@ -116,4 +157,19 @@ contains
         this%stream_data = this%stream_data // 'ET' // new_line('a')
     end subroutine render_mathtext_with_unicode_superscripts
 
+    pure function to_move_cmd(x, y) result(cmd)
+        use iso_fortran_env, only: wp => real64
+        real(wp), intent(in) :: x, y
+        character(len=64) :: cmd
+        write(cmd, '(F0.3,1X,F0.3,1X,A)') x, y, 'm'
+        cmd = trim(adjustl(cmd))
+    end function to_move_cmd
+
+    pure function to_line_cmd(x, y) result(cmd)
+        use iso_fortran_env, only: wp => real64
+        real(wp), intent(in) :: x, y
+        character(len=64) :: cmd
+        write(cmd, '(F0.3,1X,F0.3,1X,A)') x, y, 'l'
+        cmd = trim(adjustl(cmd))
+    end function to_line_cmd
 end module fortplot_pdf_mathtext_render
