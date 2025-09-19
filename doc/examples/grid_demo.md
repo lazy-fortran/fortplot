@@ -8,7 +8,7 @@ Source: [grid_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/examp
 Demonstrates grid functionality for enhanced plot readability.
 
 - `grid_demo.f90` - Source code
-- `grid_plot.png/pdf/txt` - Example outputs
+- `grid_demo.png/pdf/txt` - Example outputs
 
 - **Grid lines**: Major and minor grid lines
 - **Grid customization**: Line styles, colors, transparency
@@ -42,4 +42,3 @@ ASCII output:
 [Download ASCII](../../media/examples/grid_demo/grid_demo.txt)
 
 [Download PDF](../../media/examples/grid_demo/grid_demo.pdf)
-
