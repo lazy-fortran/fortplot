@@ -87,7 +87,7 @@ contains
         real(wp), allocatable :: x_proj(:), y_proj(:)
         real(wp) :: azim, elev, dist
         logical :: use_projection
-        integer :: plot_idx, n_points
+        integer :: plot_idx, n_points, previous_count
 
         use_projection = present(z)
         if (.not. allocated(self%plots)) then
@@ -114,6 +114,8 @@ contains
             call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
         end if
 
+        previous_count = self%plot_count
+
         if (use_projection) then
             call core_scatter(self%plots, self%state, self%plot_count, x_proj, y_proj, &
                               s=s, c=c, marker=marker, markersize=markersize, &
@@ -127,7 +129,18 @@ contains
                               show_colorbar=show_colorbar, default_color=default_color)
         end if
 
+        if (self%plot_count <= previous_count) then
+            return
+        end if
+
+        if (.not. allocated(self%plots)) then
+            return
+        end if
+
         plot_idx = self%plot_count
+        if (plot_idx < 1 .or. plot_idx > size(self%plots)) then
+            return
+        end if
 
         if (present(z)) then
             self%plots(plot_idx)%z = z

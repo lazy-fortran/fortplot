@@ -50,7 +50,7 @@ contains
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
-        integer :: n_points, plot_idx
+        integer :: n_points, plot_idx, previous_count
         real(wp), allocatable :: x_proj(:), y_proj(:)
         real(wp) :: azim, elev, dist
 
@@ -70,12 +70,22 @@ contains
         call get_default_view_angles(azim, elev, dist)
         call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
 
+        previous_count = self%plot_count
         call add_line_plot_data(self, x_proj, y_proj, label, linestyle, marker=marker)
 
-        plot_idx = self%plot_count
-        if (allocated(self%plots)) then
-            self%plots(plot_idx)%z = z
+        if (self%plot_count <= previous_count) then
+            return
         end if
+
+        plot_idx = self%plot_count
+        if (.not. allocated(self%plots)) then
+            return
+        end if
+        if (plot_idx < 1 .or. plot_idx > size(self%plots)) then
+            return
+        end if
+
+        self%plots(plot_idx)%z = z
 
         if (present(markersize)) then
             associate(unused_ms => markersize); end associate
