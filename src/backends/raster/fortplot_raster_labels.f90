@@ -133,14 +133,20 @@ contains
         type(plot_area_t), intent(in) :: plot_area
 
         ! The ylabel should be positioned to the left of the y-tick label edge
-        ! with an additional gap for clarity
-        ! y_tick_label_edge already accounts for the tick label width
+        ! with an additional gap for clarity. y_tick_label_edge already
+        ! accounts for the tick label width.
         compute_ylabel_x_pos = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
 
-        ! Ensure ylabel doesn't go off the left edge
-        if (compute_ylabel_x_pos < 5) then
-            compute_ylabel_x_pos = 5
-        end if
+        ! Ensure a minimum left margin so the label never hugs the canvas edge.
+        ! Match legacy behavior used in tests: at least 15px, scaled slightly
+        ! with text size to avoid visual crowding for very tall glyphs.
+        block
+            integer :: min_left_margin
+            min_left_margin = max(15, rotated_width / 4)
+            if (compute_ylabel_x_pos < min_left_margin) then
+                compute_ylabel_x_pos = min_left_margin
+            end if
+        end block
     end function compute_ylabel_x_pos
 
     subroutine render_title_centered(raster, width, height, plot_area, title_text)
