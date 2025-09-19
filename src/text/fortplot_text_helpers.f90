@@ -9,7 +9,7 @@ module fortplot_text_helpers
 
 contains
 
-    subroutine prepare_mathtext_if_needed(input_text, output_text, out_len)
+    pure subroutine prepare_mathtext_if_needed(input_text, output_text, out_len)
         !! If text contains ^ or _ but no $...$, wrap with $ delimiters
         !! so downstream mathtext-aware renderers parse superscripts/subscripts.
         character(len=*), intent(in) :: input_text
@@ -27,7 +27,7 @@ contains
             return
         end if
 
-        if (has_mathtext(trimmed)) then
+        if (has_mathtext(trimmed) .or. index(trimmed, '$') > 0) then
             ! Already mathtext-delimited
             output_text = trimmed
             out_len = n
@@ -48,4 +48,3 @@ contains
     end subroutine prepare_mathtext_if_needed
 
 end module fortplot_text_helpers
-

@@ -12,6 +12,7 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                 draw_pdf_mathtext, estimate_pdf_text_width
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
+    use fortplot_text_layout, only: has_mathtext
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -538,9 +539,8 @@ contains
         ! Mirror raster backend behavior: if '^'/'_' present but no $...$, wrap to enable mathtext
         call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
 
-        ! If math delimiters were added or existing math remains, route through mathtext renderer
-        if (index(math_ready(1:mlen), '$') > 0 .or. &
-            index(math_ready(1:mlen), '^') > 0 .or. index(math_ready(1:mlen), '_') > 0) then
+        ! Route through mathtext renderer only when math segments are present
+        if (has_mathtext(math_ready(1:mlen))) then
             if (present(font_size)) then
                 call draw_pdf_mathtext(ctx, x, y, math_ready(1:mlen), font_size)
             else

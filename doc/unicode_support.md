@@ -14,20 +14,20 @@ fortplot provides comprehensive support for Unicode characters and LaTeX-style G
 All 24 Greek letters are supported in both uppercase and lowercase forms:
 
 #### Lowercase Greek Letters
-- `\alpha` → α, `\beta` → β, `\gamma` → γ, `\delta` → δ
-- `\epsilon` → ε, `\zeta` → ζ, `\eta` → η, `\theta` → θ
-- `\iota` → ι, `\kappa` → κ, `\lambda` → λ, `\mu` → μ
-- `\nu` → ν, `\xi` → ξ, `\omicron` → ο, `\pi` → π
-- `\rho` → ρ, `\sigma` → σ, `\tau` → τ, `\upsilon` → υ
-- `\phi` → φ, `\chi` → χ, `\psi` → ψ, `\omega` → ω
+- `\\alpha` → α, `\\beta` → β, `\\gamma` → γ, `\\delta` → δ
+- `\\epsilon` → ε, `\\zeta` → ζ, `\\eta` → η, `\\theta` → θ
+- `\\iota` → ι, `\\kappa` → κ, `\\lambda` → λ, `\\mu` → μ
+- `\\nu` → ν, `\\xi` → ξ, `\\omicron` → ο, `\\pi` → π
+- `\\rho` → ρ, `\\sigma` → σ, `\\tau` → τ, `\\upsilon` → υ
+- `\\phi` → φ, `\\chi` → χ, `\\psi` → ψ, `\\omega` → ω
 
 #### Uppercase Greek Letters
-- `\Alpha` → Α, `\Beta` → Β, `\Gamma` → Γ, `\Delta` → Δ
-- `\Epsilon` → Ε, `\Zeta` → Ζ, `\Eta` → Η, `\Theta` → Θ
-- `\Iota` → Ι, `\Kappa` → Κ, `\Lambda` → Λ, `\Mu` → Μ
-- `\Nu` → Ν, `\Xi` → Ξ, `\Omicron` → Ο, `\Pi` → Π
-- `\Rho` → Ρ, `\Sigma` → Σ, `\Tau` → Τ, `\Upsilon` → Υ
-- `\Phi` → Φ, `\Chi` → Χ, `\Psi` → Ψ, `\Omega` → Ω
+- `\\Alpha` → Α, `\\Beta` → Β, `\\Gamma` → Γ, `\\Delta` → Δ
+- `\\Epsilon` → Ε, `\\Zeta` → Ζ, `\\Eta` → Η, `\\Theta` → Θ
+- `\\Iota` → Ι, `\\Kappa` → Κ, `\\Lambda` → Λ, `\\Mu` → Μ
+- `\\Nu` → Ν, `\\Xi` → Ξ, `\\Omicron` → Ο, `\\Pi` → Π
+- `\\Rho` → Ρ, `\\Sigma` → Σ, `\\Tau` → Τ, `\\Upsilon` → Υ
+- `\\Phi` → Φ, `\\Chi` → Χ, `\\Psi` → Ψ, `\\Omega` → Ω
 
 ### Backend-Specific Rendering
 
@@ -55,11 +55,11 @@ use fortplot
 type(figure_t) :: fig
 
 call fig%initialize()
-call fig%set_title("Schrödinger Equation: i\hbar\partial\psi/\partial t = H\psi")
-call fig%set_xlabel("Position \xi")
-call fig%set_ylabel("Wavefunction \Psi(\xi)")
-call fig%add_plot(x, psi_real, label="Re[\psi]")
-call fig%add_plot(x, psi_imag, label="Im[\psi]")
+call fig%set_title("Schrödinger Equation: i\\hbar\\partial\\psi/\\partial t = H\\psi")
+call fig%set_xlabel("Position \\xi")
+call fig%set_ylabel("Wavefunction \\Psi(\\xi)")
+call fig%add_plot(x, psi_real, label="Re[\\psi]")
+call fig%add_plot(x, psi_imag, label="Im[\\psi]")
 call fig%legend()
 
 ! Works with all backends
@@ -72,39 +72,39 @@ call fig%savefig("schrodinger.txt")  ! ASCII with Unicode
 
 ```fortran
 ! Wave equations
-call fig%set_title("Wave: \psi = A e^{i(\omega t - kx)}")
+call fig%set_title("Wave: \\psi = A e^{i(\\omega t - kx)}")
 
 ! Thermodynamics
 call fig%set_xlabel("Temperature T (K)")
-call fig%set_ylabel("Entropy \Delta S")
+call fig%set_ylabel("Entropy \\Delta S")
 
 ! Electromagnetic fields
-call fig%add_plot(time, electric_field, label="E-field: \epsilon E")
-call fig%add_plot(time, magnetic_field, label="B-field: \mu B")
+call fig%add_plot(time, electric_field, label="E-field: \\epsilon E")
+call fig%add_plot(time, magnetic_field, label="B-field: \\mu B")
 
 ! Statistical mechanics
-call fig%set_title("Distribution: P(\xi) = e^{-\beta H(\xi)}/Z")
+call fig%set_title("Distribution: P(\\xi) = e^{-\\beta H(\\xi)}/Z")
 ```
 
 ### Complex Mathematical Notation
 
 ```fortran
 ! Maxwell's equations
-call fig%set_title("Maxwell: \nabla \times E = -\partial B/\partial t")
+call fig%set_title("Maxwell: \\nabla \\times E = -\\partial B/\\partial t")
 
 ! Quantum mechanics
-call fig%set_xlabel("Momentum p = \hbar k")
-call fig%set_ylabel("Energy E = \hbar \omega")
+call fig%set_xlabel("Momentum p = \\hbar k")
+call fig%set_ylabel("Energy E = \\hbar \\omega")
 
 ! Statistical physics
-call fig%add_plot(temp, entropy, label="S = k_B ln(\Omega)")
+call fig%add_plot(temp, entropy, label="S = k_B ln(\\Omega)")
 ```
 
 ## Implementation Details
 
 ### Text Processing Pipeline
 
-1. **LaTeX Recognition**: Identifies `\command` patterns in text
+1. **LaTeX Recognition**: Identifies `\\command` patterns in text
 2. **Command Validation**: Checks against supported Greek letter commands
 3. **Unicode Conversion**: Maps LaTeX commands to Unicode codepoints
 4. **UTF-8 Encoding**: Converts Unicode codepoints to UTF-8 byte sequences
@@ -128,9 +128,9 @@ The Unicode support is implemented through several modules:
 ## Limitations and Known Issues
 
 ### Supported Commands
-- Currently supports Greek letters only
-- Mathematical operators (`\nabla`, `\partial`, etc.) are preserved as-is
-- Subscripts and superscripts are not yet supported
+- Greek letters via LaTeX-style commands (e.g., `\\alpha`, `\\beta`)
+- Mathematical operators (`\\nabla`, `\\partial`, etc.) are preserved as-is
+- Subscripts and superscripts via mathtext are supported across PNG and PDF backends
 
 ### Font Dependencies
 - PNG/PDF backends require system fonts with Unicode support
@@ -140,6 +140,12 @@ The Unicode support is implemented through several modules:
 ### Character Encoding
 - Input text should be UTF-8 compatible
 - Mixed encoding may produce unexpected results
+
+## Mathtext Behavior and Caveats
+
+- Auto-wrapping: If text contains `^` or `_` but no math delimiters, fortplot automatically wraps the text with `$...$` so superscripts/subscripts render correctly in both raster and PDF backends.
+- Respect existing math: If `$...$` math segments are present, they are used as-is and not modified.
+- Dollar signs in plain text: If any dollar sign appears outside a proper math segment (e.g., currency like `$5`), auto-wrapping is suppressed to avoid mis-parsing. In such cases, add explicit math delimiters around the intended math portion if needed.
 
 ## Testing
 
@@ -170,8 +176,7 @@ This generates demonstration plots showing Unicode rendering across all backends
 ## Future Enhancements
 
 Potential future additions:
-- Mathematical operators (`\nabla`, `\partial`, `\int`, etc.)
-- Subscripts and superscripts
 - Additional symbol sets (arrows, operators, etc.)
-- LaTeX math mode parsing
+- Expanded LaTeX math mode parsing
 - Custom symbol definitions
+

@@ -29,6 +29,17 @@ program test_text_helpers_mathtext_wrap
         stop 1
     end if
 
+    call prepare_mathtext_if_needed('price is $5 and cost^2', out, n)
+    if (out(1:n) /= 'price is $5 and cost^2') then
+        print *, 'FAIL: presence of $ should prevent auto-wrap'
+        stop 1
+    end if
+
+    call prepare_mathtext_if_needed('', out, n)
+    if (n /= 0) then
+        print *, 'FAIL: empty input should yield zero length'
+        stop 1
+    end if
+
     print *, 'PASS: prepare_mathtext_if_needed wraps as expected'
 end program test_text_helpers_mathtext_wrap
-
