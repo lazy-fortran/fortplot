@@ -5,6 +5,7 @@ module fortplot_raster
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_text, only: render_text_to_image, calculate_text_width, calculate_text_height
     use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_logging, only: log_error
     use fortplot_errors, only: fortplot_error_t, ERROR_INTERNAL
@@ -145,12 +146,14 @@ contains
         real(wp) :: px, py
         integer(1) :: r, g, b
         character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
-        ! Process LaTeX commands to Unicode
+        character(len=600) :: math_ready
+        integer :: processed_len, math_len
+        ! Process LaTeX commands
         call process_latex_in_text(text, processed_text, processed_len)
-
-        ! Escape Unicode characters for raster rendering
-        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+        ! Ensure mathtext gets parsed if superscripts/subscripts are present
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        ! Pass through Unicode (STB supports it)
+        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         ! Transform coordinates to plot area (like matplotlib)
         ! Note: Raster Y=0 at top, so we need to flip Y coordinates

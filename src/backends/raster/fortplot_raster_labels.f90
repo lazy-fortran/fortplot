@@ -7,6 +7,7 @@ module fortplot_raster_labels
                                         render_text_with_size, TITLE_FONT_SIZE
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
+    use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_core, only: raster_image_t
     use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, composite_bitmap_to_raster
@@ -33,8 +34,10 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title, xlabel, ylabel
-        character(len=500) :: processed_text, escaped_text
-        integer :: label_x, label_y, processed_len
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: label_x, label_y, processed_len, math_len
         integer :: label_width, label_height
 
         ! Title at top
@@ -45,7 +48,8 @@ contains
         ! X label at bottom
         if (len_trim(xlabel) > 0) then
             call process_latex_in_text(trim(xlabel), processed_text, processed_len)
-            call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+            call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+            call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
@@ -67,8 +71,10 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: ylabel
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: processed_len, math_len
         integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
         integer :: text_width, text_height, text_descent
         integer :: rotated_width, rotated_height
@@ -79,7 +85,8 @@ contains
 
         ! Process LaTeX
         call process_latex_in_text(trim(ylabel), processed_text, processed_len)
-        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         ! Calculate text dimensions
         text_width = calculate_text_width(trim(escaped_text))
@@ -155,8 +162,10 @@ contains
         integer, intent(in) :: width, height
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
-        character(len=500) :: processed_text, escaped_text
-        integer :: processed_len
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: processed_len, math_len
         integer :: title_px, title_py
         real(wp) :: title_px_real, title_py_real
 
@@ -181,9 +190,12 @@ contains
         integer, intent(out) :: processed_len
         real(wp), intent(out) :: title_px, title_py
         integer :: title_width
+        character(len=600) :: math_ready
+        integer :: math_len
 
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
-        call escape_unicode_for_raster(processed_text(1:processed_len), escaped_text)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         ! Calculate text width using the larger title font size
         title_width = calculate_text_width_with_size(trim(escaped_text), real(TITLE_FONT_SIZE, wp))
