@@ -232,6 +232,8 @@ contains
         do while (i <= n)
             if (input_text(i:i) == '$') then
                 in_math = .not. in_math
+                result_text(pos:pos) = '$'
+                pos = pos + 1
                 i = i + 1
                 cycle
             end if

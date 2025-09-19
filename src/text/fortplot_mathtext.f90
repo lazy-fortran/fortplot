@@ -119,11 +119,21 @@ contains
                         current_len = 0
                         i = i + 5
                         call parse_sqrt_content(input_text, i, n, temp_elements, element_count)
-                    else
+                        cycle
+                    end if
+                end if
+
+                if (i + 1 <= n) then
+                    select case (input_text(i+1:i+1))
+                    case ('_', '^', '$', '\')
+                        current_len = current_len + 1
+                        current_text(current_len:current_len) = input_text(i+1:i+1)
+                        i = i + 2
+                    case default
                         current_len = current_len + 1
                         current_text(current_len:current_len) = input_text(i:i)
                         i = i + 1
-                    end if
+                    end select
                 else
                     current_len = current_len + 1
                     current_text(current_len:current_len) = input_text(i:i)
