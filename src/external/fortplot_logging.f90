@@ -11,7 +11,7 @@ module fortplot_logging
     implicit none
     private
     
-    public :: set_log_level, log_info, log_warning, log_error, log_debug
+    public :: set_log_level, get_log_level, log_info, log_warning, log_error, log_debug
     public :: LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
     public :: initialize_warning_suppression, is_warnings_suppressed
     
@@ -40,6 +40,14 @@ contains
         integer, intent(in) :: level
         current_log_level = level
     end subroutine set_log_level
+
+    function get_log_level() result(level)
+        !! Get the current global logging level
+        !! Returns one of: LOG_LEVEL_SILENT, LOG_LEVEL_ERROR,
+        !!                  LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
+        integer :: level
+        level = current_log_level
+    end function get_log_level
 
     subroutine log_info(message)
         !! Log an informational message

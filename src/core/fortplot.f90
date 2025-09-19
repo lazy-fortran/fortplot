@@ -63,7 +63,7 @@ module fortplot
     use fortplot_animation, only: animation_t, FuncAnimation
     
     ! Logging functionality
-    use fortplot_logging, only: set_log_level, &
+    use fortplot_logging, only: set_log_level, get_log_level, &
                                 LOG_LEVEL_SILENT, LOG_LEVEL_ERROR, &
                                 LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
     
@@ -144,7 +144,7 @@ module fortplot
     public :: animation_t, FuncAnimation
     
     ! Logging interface
-    public :: set_log_level
+    public :: set_log_level, get_log_level
     public :: LOG_LEVEL_SILENT, LOG_LEVEL_ERROR
     public :: LOG_LEVEL_WARNING, LOG_LEVEL_INFO, LOG_LEVEL_DEBUG
     
