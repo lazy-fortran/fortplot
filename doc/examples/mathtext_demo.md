@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `mathtext_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/mathtext_demo/`
+- Generated media in `output/example/fortran/mathtext_demo/`
 
 ## Running
 
@@ -21,5 +21,9 @@ make example ARGS="mathtext_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Mathtext Demo
+
+![mathtext_demo.png](../../media/examples/mathtext_demo/mathtext_demo.png)
+
+[Download PDF](../../media/examples/mathtext_demo/mathtext_demo.pdf)
 

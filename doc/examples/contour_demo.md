@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `contour_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/contour_demo/`
+- Generated media in `output/example/fortran/contour_demo/`
 
 ## Running
 
@@ -21,5 +21,29 @@ make example ARGS="contour_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Contour Gaussian
+
+![contour_gaussian.png](../../media/examples/contour_demo/contour_gaussian.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/contour_demo/contour_gaussian.txt)
+
+[Download PDF](../../media/examples/contour_demo/contour_gaussian.pdf)
+
+### Mixed Plot
+
+![mixed_plot.png](../../media/examples/contour_demo/mixed_plot.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/contour_demo/mixed_plot.txt)
+
+[Download PDF](../../media/examples/contour_demo/mixed_plot.pdf)
 

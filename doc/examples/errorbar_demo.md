@@ -37,7 +37,7 @@ Perfect for scientific plotting where uncertainty visualization is essential.
 ## Files
 
 - `errorbar_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/errorbar_demo/`
+- Generated media in `output/example/fortran/errorbar_demo/`
 
 ## Running
 
@@ -47,5 +47,27 @@ make example ARGS="errorbar_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Errorbar Asymmetric
+
+![errorbar_asymmetric.png](../../media/examples/errorbar_demo/errorbar_asymmetric.png)
+
+### Errorbar Basic X
+
+![errorbar_basic_x.png](../../media/examples/errorbar_demo/errorbar_basic_x.png)
+
+### Errorbar Basic Y
+
+![errorbar_basic_y.png](../../media/examples/errorbar_demo/errorbar_basic_y.png)
+
+### Errorbar Combined
+
+![errorbar_combined.png](../../media/examples/errorbar_demo/errorbar_combined.png)
+
+### Errorbar Custom
+
+![errorbar_custom.png](../../media/examples/errorbar_demo/errorbar_custom.png)
+
+### Errorbar Scientific
+
+![errorbar_scientific.png](../../media/examples/errorbar_demo/errorbar_scientific.png)
 

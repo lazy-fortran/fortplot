@@ -21,6 +21,19 @@ make example ARGS="basic_plots"
 
 ## Output
 
+### Multi Line
+
+![multi_line.png](../../media/examples/basic_plots/multi_line.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/basic_plots/multi_line.txt)
+
+[Download PDF](../../media/examples/basic_plots/multi_line.pdf)
+
 ### Simple Plot
 
 ![simple_plot.png](../../media/examples/basic_plots/simple_plot.png)

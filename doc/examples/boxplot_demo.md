@@ -20,7 +20,7 @@ The demo creates boxplots showing data distribution, quartiles, and outliers.
 ## Files
 
 - `boxplot_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/boxplot_demo/`
+- Generated media in `output/example/fortran/boxplot_demo/`
 
 ## Running
 
@@ -30,5 +30,16 @@ make example ARGS="boxplot_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Boxplot Demo
+
+![boxplot_demo.png](../../media/examples/boxplot_demo/boxplot_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/boxplot_demo/boxplot_demo.txt)
+
+[Download PDF](../../media/examples/boxplot_demo/boxplot_demo.pdf)
 

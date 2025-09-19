@@ -42,7 +42,7 @@ call savefig('output.png')
 ## Files
 
 - `subplot_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/subplot_demo/`
+- Generated media in `output/example/fortran/subplot_demo/`
 
 ## Running
 
@@ -52,5 +52,11 @@ make example ARGS="subplot_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Subplot 1x3 Demo
+
+![subplot_1x3_demo.png](../../media/examples/subplot_demo/subplot_1x3_demo.png)
+
+### Subplot 2x2 Demo
+
+![subplot_2x2_demo.png](../../media/examples/subplot_demo/subplot_2x2_demo.png)
 

@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `format_string_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/format_string_demo/`
+- Generated media in `output/example/fortran/format_string_demo/`
 
 ## Running
 
@@ -21,5 +21,16 @@ make example ARGS="format_string_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Format String Demo
+
+![format_string_demo.png](../../media/examples/format_string_demo/format_string_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/format_string_demo/format_string_demo.txt)
+
+[Download PDF](../../media/examples/format_string_demo/format_string_demo.pdf)
 

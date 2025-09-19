@@ -46,7 +46,7 @@ y(5) = nan
 ## Files
 
 - `disconnected_lines.f90` - Source code
-- Run the example to populate `output/example/fortran/disconnected_lines/`
+- Generated media in `output/example/fortran/disconnected_lines/`
 
 ## Running
 
@@ -56,5 +56,16 @@ make example ARGS="disconnected_lines"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Disconnected Lines
+
+![disconnected_lines.png](../../media/examples/disconnected_lines/disconnected_lines.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/disconnected_lines/disconnected_lines.txt)
+
+[Download PDF](../../media/examples/disconnected_lines/disconnected_lines.pdf)
 

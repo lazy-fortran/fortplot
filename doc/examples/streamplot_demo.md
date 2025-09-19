@@ -21,6 +21,19 @@ make example ARGS="streamplot_demo"
 
 ## Output
 
+### Streamplot Arrows
+
+![streamplot_arrows.png](../../media/examples/streamplot_demo/streamplot_arrows.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/streamplot_demo/streamplot_arrows.txt)
+
+[Download PDF](../../media/examples/streamplot_demo/streamplot_arrows.pdf)
+
 ### Streamplot Demo
 
 ![streamplot_demo.png](../../media/examples/streamplot_demo/streamplot_demo.png)
