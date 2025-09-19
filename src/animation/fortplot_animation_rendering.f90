@@ -1,5 +1,5 @@
 module fortplot_animation_rendering
-    use iso_fortran_env, only: real64, wp => real64
+    use iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t, plot_data_t
     use fortplot_utils, only: initialize_backend
     implicit none
@@ -14,7 +14,7 @@ contains
 
     subroutine extract_frame_rgb_data(fig, rgb_data, status)
         type(figure_t), intent(inout) :: fig
-        real(real64), intent(out) :: rgb_data(:,:,:)
+        real(wp), intent(out) :: rgb_data(:,:,:)
         integer, intent(out) :: status
         
         status = 0

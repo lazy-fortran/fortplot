@@ -374,16 +374,15 @@ contains
 
     subroutine ascii_extract_rgb_data(this, width, height, rgb_data)
         !! Extract RGB data from ASCII backend (not supported - dummy data)
-        use, intrinsic :: iso_fortran_env, only: real64
         class(ascii_context), intent(in) :: this
         integer, intent(in) :: width, height
-        real(real64), intent(out) :: rgb_data(width, height, 3)
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         
         ! Reference otherwise-unused member without unreachable branch
         associate(unused_w => this%width); end associate
         
         ! ASCII backend doesn't have RGB data for animation - fill with dummy data
-        rgb_data = 0.0_real64  ! Black background
+        rgb_data = 0.0_wp  ! Black background
     end subroutine ascii_extract_rgb_data
 
     subroutine ascii_get_png_data(this, width, height, png_data, status)
