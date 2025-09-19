@@ -2,6 +2,8 @@
 """Demonstrates colored contour plots with different colormaps - Dual mode: fortplot or matplotlib"""
 
 import sys
+from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -11,6 +13,32 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: Optional[str] = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def default_gaussian_example():
     """Default colorblind-safe Gaussian example"""
@@ -32,12 +60,12 @@ def default_gaussian_example():
     # Use contourf for filled contours
     plt.contourf(X, Y, Z)
     
-    plt.savefig('gaussian_default.png')
-    plt.savefig('gaussian_default.pdf')
+    plt.savefig(out('gaussian_default.png'))
+    plt.savefig(out('gaussian_default.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('gaussian_default.txt')
+        plt.savefig(out('gaussian_default.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -67,12 +95,12 @@ def plasma_saddle_example():
     # Custom contour levels
     plt.contourf(X, Y, Z, custom_levels)
     
-    plt.savefig('saddle_plasma.png')
-    plt.savefig('saddle_plasma.pdf')
+    plt.savefig(out('saddle_plasma.png'))
+    plt.savefig(out('saddle_plasma.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('saddle_plasma.txt')
+        plt.savefig(out('saddle_plasma.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -97,12 +125,12 @@ def mixed_colormap_comparison():
     plt.ylabel("y")
     plt.title("Ripple Function - Inferno Colormap")
     plt.contourf(X, Y, Z)
-    plt.savefig('ripple_inferno.png')
-    plt.savefig('ripple_inferno.pdf')
+    plt.savefig(out('ripple_inferno.png'))
+    plt.savefig(out('ripple_inferno.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('ripple_inferno.txt')
+        plt.savefig(out('ripple_inferno.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -113,12 +141,12 @@ def mixed_colormap_comparison():
     plt.ylabel("y")
     plt.title("Ripple Function - Coolwarm Colormap")
     plt.contourf(X, Y, Z)
-    plt.savefig('ripple_coolwarm.png')
-    plt.savefig('ripple_coolwarm.pdf')
+    plt.savefig(out('ripple_coolwarm.png'))
+    plt.savefig(out('ripple_coolwarm.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('ripple_coolwarm.txt')
+        plt.savefig(out('ripple_coolwarm.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -129,12 +157,12 @@ def mixed_colormap_comparison():
     plt.ylabel("y")
     plt.title("Ripple Function - Jet Colormap")
     plt.contourf(X, Y, Z)
-    plt.savefig('ripple_jet.png')
-    plt.savefig('ripple_jet.pdf')
+    plt.savefig(out('ripple_jet.png'))
+    plt.savefig(out('ripple_jet.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('ripple_jet.txt')
+        plt.savefig(out('ripple_jet.txt'))
     
     if backend == "matplotlib":
         plt.close()
