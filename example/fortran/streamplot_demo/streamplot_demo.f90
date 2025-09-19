@@ -1,5 +1,6 @@
 program streamplot_demo
-    use fortplot
+    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot, only: figure, streamplot, xlabel, ylabel, title, savefig
     implicit none
 
     integer, parameter :: nx = 20, ny = 20
