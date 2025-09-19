@@ -13,6 +13,9 @@ module fortplot_figure_boxplot
     public :: add_boxplot
     public :: update_boxplot_ranges
     
+    interface
+    end interface
+    
 contains
     
     subroutine add_boxplot(plots, plot_count, data, position, width, label, &
@@ -94,6 +97,9 @@ contains
             plots(plot_idx)%horizontal = horizontal
         end if
         
+        ! Compute statistics (quartiles, whiskers, outliers)
+        call compute_boxplot_stats_inplace(plots(plot_idx))
+
         ! Color would need conversion from string to RGB
         ! For now, use default color from plot_data_t initialization
         if (present(color)) then
@@ -101,6 +107,70 @@ contains
             associate(unused_color_len => len_trim(color)); end associate
         end if
     end subroutine add_boxplot
+    
+    subroutine compute_boxplot_stats_inplace(plot)
+        !! Compute quartiles, whiskers, and outliers for a box plot in-place
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
+        type(plot_data_t), intent(inout) :: plot
+        real(wp), allocatable :: sorted(:)
+        integer :: n, i, q1_idx, q2_idx, q3_idx, n_out
+        real(wp) :: iqr, lfence, ufence
+        
+        if (.not. allocated(plot%box_data)) return
+        n = size(plot%box_data)
+        if (n == 0) return
+        
+        allocate(sorted(n))
+        sorted = plot%box_data
+        call sort_array(sorted)
+        
+        q1_idx = max(1, nint(0.25_wp * n))
+        q2_idx = max(1, nint(0.50_wp * n))
+        q3_idx = max(1, nint(0.75_wp * n))
+        plot%q1 = sorted(q1_idx)
+        plot%q2 = sorted(q2_idx)
+        plot%q3 = sorted(q3_idx)
+        
+        iqr = plot%q3 - plot%q1
+        lfence = plot%q1 - 1.5_wp * iqr
+        ufence = plot%q3 + 1.5_wp * iqr
+        
+        plot%whisker_low = sorted(1)
+        do i = 1, n
+            if (sorted(i) >= lfence) then
+                plot%whisker_low = sorted(i)
+                exit
+            end if
+        end do
+        
+        plot%whisker_high = sorted(n)
+        do i = n, 1, -1
+            if (sorted(i) <= ufence) then
+                plot%whisker_high = sorted(i)
+                exit
+            end if
+        end do
+        
+        if (plot%show_outliers) then
+            n_out = 0
+            do i = 1, n
+                if (sorted(i) < lfence .or. sorted(i) > ufence) n_out = n_out + 1
+            end do
+            if (n_out > 0) then
+                if (allocated(plot%outliers)) deallocate(plot%outliers)
+                allocate(plot%outliers(n_out))
+                n_out = 0
+                do i = 1, n
+                    if (sorted(i) < lfence .or. sorted(i) > ufence) then
+                        n_out = n_out + 1
+                        plot%outliers(n_out) = sorted(i)
+                    end if
+                end do
+            end if
+        end if
+        
+        if (allocated(sorted)) deallocate(sorted)
+    end subroutine compute_boxplot_stats_inplace
     
     subroutine update_boxplot_ranges(data, position, x_min, x_max, y_min, y_max, &
                                      x_range_set, y_range_set)

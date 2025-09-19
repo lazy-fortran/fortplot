@@ -31,17 +31,10 @@ program boxplot_demo
     call xlabel('Data Groups')
     call ylabel('Values')
     
-    ! Note: Box plot functionality would need to be implemented in fortplot
-    ! For now, create a simple line plot demonstration with the data
-    
-    ! Create x-axis data for each group
-    x_a = [(real(i, wp), i=1, 10)]
-    x_b = [(real(i, wp) + 0.1_wp, i=1, 10)]  ! Slight offset for visibility
-    x_c = [(real(i, wp) + 0.2_wp, i=1, 10)]  ! Slight offset for visibility
-    
-    call plot(x_a, group_a, label='Group A')
-    call plot(x_b, group_b, label='Group B')  
-    call plot(x_c, group_c, label='Group C')
+    ! Render box plots: simple vertical boxes with positions 1,2,3
+    call boxplot(group_a, position=1.0_wp, width=0.6_wp, label='Group A')
+    call boxplot(group_b, position=2.0_wp, width=0.6_wp, label='Group B')
+    call boxplot(group_c, position=3.0_wp, width=0.6_wp, label='Group C')
     call legend()
     
     call savefig('output/example/fortran/boxplot_demo/boxplot_demo.png')
