@@ -1,2 +1,7 @@
-# Documentation build requirements
-ford>=7.0.0
+# Python dependencies used by documentation workflows
+# - Used by .github/workflows/docs.yml (setup-python cache, pip install)
+# - Guarded by test/test_doc_requirements_file.f90 on CI (Windows/Linux)
+
+# FORD documentation generator (required)
+ford
+

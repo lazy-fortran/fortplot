@@ -16,7 +16,7 @@ both PNG and ASCII formats.
 ## Files
 
 - `fill_between_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/fill_between_demo/`
+- Generated media in `output/example/fortran/fill_between_demo/`
 
 ## Running
 
@@ -26,5 +26,25 @@ make example ARGS="fill_between_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Oo Fill Between
+
+![oo_fill_between.png](../../media/examples/fill_between_demo/oo_fill_between.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/fill_between_demo/oo_fill_between.txt)
+
+### Stateful Fill Between
+
+![stateful_fill_between.png](../../media/examples/fill_between_demo/stateful_fill_between.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/fill_between_demo/stateful_fill_between.txt)
 

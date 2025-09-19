@@ -60,6 +60,20 @@ def main():
     plt.savefig(out('streamplot_demo.png'))
     plt.savefig(out('streamplot_demo.pdf'))
 
+    # Arrow variant: emphasize direction with arrowheads
+    plt.figure(figsize=(10, 7.5))
+    plt.streamplot(
+        X, Y, U, V,
+        density=1.0,
+        arrowsize=1.5,
+        arrowstyle='->'
+    )
+    plt.xlabel('X')
+    plt.ylabel('Y')
+    plt.title('Streamline Plot Demo - With Arrows')
+    plt.savefig(out('streamplot_arrows.png'))
+    plt.savefig(out('streamplot_arrows.pdf'))
+
     # Export TXT for fortplot mode
     if backend == "fortplot":
         with open(out('streamplot_demo.txt'), 'w') as f:
@@ -70,6 +84,12 @@ def main():
             f.write("Y range: -2.0 to 2.0\n")
             f.write("Flow field: Circular (U=-Y, V=X)\n")
             f.write("Density: 1.0\n")
+        with open(out('streamplot_arrows.txt'), 'w') as f:
+            f.write("Streamline Plot Demo - With Arrows\n")
+            f.write("===================================\n\n")
+            f.write("Grid size: {}x{}\n".format(nx, ny))
+            f.write("Arrowstyle: ->\n")
+            f.write("Arrowsize: 1.5\n")
 
     print('Streamplot demo completed!')
 

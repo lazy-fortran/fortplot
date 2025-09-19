@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `annotation_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/annotation_demo/`
+- Generated media in `output/example/fortran/annotation_demo/`
 
 ## Running
 
@@ -21,5 +21,16 @@ make example ARGS="annotation_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Annotation Demo
+
+![annotation_demo.png](../../media/examples/annotation_demo/annotation_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/annotation_demo/annotation_demo.txt)
+
+[Download PDF](../../media/examples/annotation_demo/annotation_demo.pdf)
 

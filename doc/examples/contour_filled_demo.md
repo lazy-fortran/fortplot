@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `contour_filled_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/contour_filled_demo/`
+- Generated media in `output/example/fortran/contour_filled_demo/`
 
 ## Running
 
@@ -21,5 +21,16 @@ make example ARGS="contour_filled_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Contour Filled Demo
+
+![contour_filled_demo.png](../../media/examples/contour_filled_demo/contour_filled_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/contour_filled_demo/contour_filled_demo.txt)
+
+[Download PDF](../../media/examples/contour_filled_demo/contour_filled_demo.pdf)
 

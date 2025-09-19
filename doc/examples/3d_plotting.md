@@ -37,7 +37,7 @@ call fig%add_surface(x_grid, y_grid, z_grid, label="Surface")
 ## Files
 
 - `3d_plotting.f90` - Source code
-- Run the example to populate `output/example/fortran/3d_plotting/`
+- Generated media in `output/example/fortran/3d_plotting/`
 
 ## Running
 
@@ -47,5 +47,35 @@ make example ARGS="3d_plotting"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### 3d Helix
+
+![3d_helix.png](../../media/examples/3d_plotting/3d_helix.png)
+
+### Mixed Plots
+
+![mixed_plots.png](../../media/examples/3d_plotting/mixed_plots.png)
+
+### Parametric Curve
+
+![parametric_curve.png](../../media/examples/3d_plotting/parametric_curve.png)
+
+### Scatter Line Combo
+
+![scatter_line_combo.png](../../media/examples/3d_plotting/scatter_line_combo.png)
+
+### Scatter Multiple
+
+![scatter_multiple.png](../../media/examples/3d_plotting/scatter_multiple.png)
+
+### Scatter Sphere
+
+![scatter_sphere.png](../../media/examples/3d_plotting/scatter_sphere.png)
+
+### Surface Gaussian
+
+![surface_gaussian.png](../../media/examples/3d_plotting/surface_gaussian.png)
+
+### Surface Paraboloid
+
+![surface_paraboloid.png](../../media/examples/3d_plotting/surface_paraboloid.png)
 
