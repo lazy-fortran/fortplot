@@ -96,11 +96,10 @@ contains
     subroutine legend_clear(this)
         !! Clear all legend entries
         class(legend_t), intent(inout) :: this
+        type(legend_entry_t), allocatable :: empty(:)
         
-        if (allocated(this%entries)) then
-            deallocate(this%entries)
-        end if
-        allocate(this%entries(0))
+        allocate(empty(0))
+        call move_alloc(empty, this%entries)
         this%num_entries = 0
     end subroutine legend_clear
     
