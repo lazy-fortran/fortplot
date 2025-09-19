@@ -8,10 +8,11 @@ module fortplot_figure_rendering_pipeline
     use fortplot_context
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_BOXPLOT
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
-                                 render_markers
+                                 render_markers, render_boxplot_plot
     use fortplot_legend, only: legend_t
     implicit none
     
@@ -74,6 +75,10 @@ contains
             case (PLOT_TYPE_PCOLORMESH)
                 call process_pcolormesh_ranges(plots(i), first_plot, has_valid_data, &
                                               x_min_data, x_max_data, y_min_data, y_max_data)
+            
+            case (PLOT_TYPE_BOXPLOT)
+                call process_boxplot_ranges(plots(i), first_plot, has_valid_data, &
+                                            x_min_data, x_max_data, y_min_data, y_max_data)
                                               
             end select
         end do
@@ -247,6 +252,58 @@ contains
             end if
         end if
     end subroutine process_pcolormesh_ranges
+
+    subroutine process_boxplot_ranges(plot, first_plot, has_valid_data, &
+                                      x_min_data, x_max_data, y_min_data, y_max_data)
+        !! Process box plot data to calculate ranges
+        type(plot_data_t), intent(in) :: plot
+        logical, intent(inout) :: first_plot, has_valid_data
+        real(wp), intent(inout) :: x_min_data, x_max_data, y_min_data, y_max_data
+
+        real(wp) :: data_min, data_max
+        real(wp) :: pos, halfw
+        logical :: horiz
+
+        if (.not. allocated(plot%box_data)) return
+        if (size(plot%box_data) == 0) return
+
+        data_min = minval(plot%box_data)
+        data_max = maxval(plot%box_data)
+        pos = plot%position
+        halfw = 0.5_wp * plot%width
+        horiz = plot%horizontal
+
+        if (.not. horiz) then
+            ! Vertical box: x-range around position, y-range from data
+            if (first_plot) then
+                x_min_data = pos - halfw - 0.2_wp
+                x_max_data = pos + halfw + 0.2_wp
+                y_min_data = data_min - 0.1_wp * abs(data_max - data_min)
+                y_max_data = data_max + 0.1_wp * abs(data_max - data_min)
+                first_plot = .false.
+            else
+                x_min_data = min(x_min_data, pos - halfw - 0.2_wp)
+                x_max_data = max(x_max_data, pos + halfw + 0.2_wp)
+                y_min_data = min(y_min_data, data_min - 0.1_wp * abs(data_max - data_min))
+                y_max_data = max(y_max_data, data_max + 0.1_wp * abs(data_max - data_min))
+            end if
+        else
+            ! Horizontal box: swap axes
+            if (first_plot) then
+                x_min_data = data_min - 0.1_wp * abs(data_max - data_min)
+                x_max_data = data_max + 0.1_wp * abs(data_max - data_min)
+                y_min_data = pos - halfw - 0.2_wp
+                y_max_data = pos + halfw + 0.2_wp
+                first_plot = .false.
+            else
+                x_min_data = min(x_min_data, data_min - 0.1_wp * abs(data_max - data_min))
+                x_max_data = max(x_max_data, data_max + 0.1_wp * abs(data_max - data_min))
+                y_min_data = min(y_min_data, pos - halfw - 0.2_wp)
+                y_max_data = max(y_max_data, pos + halfw + 0.2_wp)
+            end if
+        end if
+        has_valid_data = .true.
+    end subroutine process_boxplot_ranges
     
     subroutine apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
                                          y_min_data, y_max_data)
@@ -505,7 +562,7 @@ contains
                                        width, height, &
                                        margin_left, margin_right, &
                                        margin_bottom, margin_top)
-                
+
             case (PLOT_TYPE_PCOLORMESH)
                 call render_pcolormesh_plot(backend, plots(i), &
                                           x_min_transformed, x_max_transformed, &
@@ -515,6 +572,9 @@ contains
 
             case (PLOT_TYPE_FILL)
                 call render_fill_between_plot(backend, plots(i), xscale, yscale, symlog_threshold)
+
+            case (PLOT_TYPE_BOXPLOT)
+                call render_boxplot_plot(backend, plots(i), xscale, yscale, symlog_threshold)
 
             end select
         end do
