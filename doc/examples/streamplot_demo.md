@@ -11,7 +11,7 @@ Update README.md in the example directory to provide a custom overview.
 ## Files
 
 - `streamplot_demo.f90` - Source code
-- Run the example to populate `output/example/fortran/streamplot_demo/`
+- Generated media in `output/example/fortran/streamplot_demo/`
 
 ## Running
 
@@ -21,5 +21,16 @@ make example ARGS="streamplot_demo"
 
 ## Output
 
-Run this example to generate plots and other media assets.
+### Streamplot Demo
+
+![streamplot_demo.png](../../media/examples/streamplot_demo/streamplot_demo.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/streamplot_demo/streamplot_demo.txt)
+
+[Download PDF](../../media/examples/streamplot_demo/streamplot_demo.pdf)
 
