@@ -42,8 +42,8 @@ The system automatically detects CI environments and suppresses warnings:
 
 ## Priority Order
 
-1. **Manual Suppression**: `FORTPLOT_SUPPRESS_WARNINGS` takes highest priority
-2. **Force Override**: `FORTPLOT_FORCE_WARNINGS` overrides CI auto-detection
+1. **Force Override**: `FORTPLOT_FORCE_WARNINGS` takes highest priority and forces warnings ON
+2. **Manual Suppression**: `FORTPLOT_SUPPRESS_WARNINGS` suppresses warnings when set
 3. **CI Auto-Detection**: Automatic suppression in detected CI environments
 4. **Default**: Warnings visible in development environments
 

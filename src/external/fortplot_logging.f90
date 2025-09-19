@@ -108,15 +108,7 @@ contains
 
         if (suppression_initialized) return
 
-        ! Check for manual warning suppression override
-        call get_environment_variable('FORTPLOT_SUPPRESS_WARNINGS', env_value, status=status)
-        if (status == 0 .and. len_trim(env_value) > 0) then
-            warnings_suppressed = parse_boolean_env(env_value)
-            suppression_initialized = .true.
-            return
-        end if
-
-        ! Check for force warnings override (takes precedence)
+        ! Check for force warnings override (takes precedence over all)
         call get_environment_variable('FORTPLOT_FORCE_WARNINGS', env_value, status=status)
         if (status == 0 .and. len_trim(env_value) > 0) then
             force_warnings = parse_boolean_env(env_value)
@@ -125,6 +117,14 @@ contains
                 suppression_initialized = .true.
                 return
             end if
+        end if
+
+        ! Check for manual warning suppression override
+        call get_environment_variable('FORTPLOT_SUPPRESS_WARNINGS', env_value, status=status)
+        if (status == 0 .and. len_trim(env_value) > 0) then
+            warnings_suppressed = parse_boolean_env(env_value)
+            suppression_initialized = .true.
+            return
         end if
 
         ! Auto-detect CI environment
