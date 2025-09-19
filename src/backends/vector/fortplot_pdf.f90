@@ -510,6 +510,7 @@ contains
                                                    x_min, x_max, y_min, y_max, &
                                                    title, xlabel, ylabel, &
                                                    z_min, z_max, has_3d_plots)
+        use fortplot_3d_axes, only: draw_3d_axes_to_raster
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -526,14 +527,20 @@ contains
         if (present(xlabel)) xlabel_str = xlabel
         if (present(ylabel)) ylabel_str = ylabel
 
-        call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
-                                     x_min, x_max, y_min, y_max, &
-                                     title_str, xlabel_str, ylabel_str, &
-                                     real(this%plot_area%left, wp), &
-                                     real(this%plot_area%bottom, wp), &
-                                     real(this%plot_area%width, wp), &
-                                     real(this%plot_area%height, wp), &
-                                     real(this%height, wp))
+        if (has_3d_plots) then
+            call draw_3d_axes_to_raster(this, x_min, x_max, y_min, y_max, &
+                                        merge(z_min, 0.0_wp, present(z_min)), &
+                                        merge(z_max, 1.0_wp, present(z_max)))
+        else
+            call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
+                                         x_min, x_max, y_min, y_max, &
+                                         title_str, xlabel_str, ylabel_str, &
+                                         real(this%plot_area%left, wp), &
+                                         real(this%plot_area%bottom, wp), &
+                                         real(this%plot_area%width, wp), &
+                                         real(this%plot_area%height, wp), &
+                                         real(this%height, wp))
+        end if
     end subroutine draw_axes_and_labels_backend_wrapper
 
     subroutine pdf_save_coordinates(this, x_min, x_max, y_min, y_max)

@@ -470,7 +470,6 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
-        
         ! Check if this is a raster backend and use split rendering if so
         select type (backend)
         class is (raster_context)

@@ -12,7 +12,7 @@ module fortplot_3d_axes
     public :: create_3d_axis_corners, project_3d_corners_to_2d
     public :: create_3d_axis_lines, project_3d_axis_lines
     public :: create_3d_tick_positions
-    public :: draw_3d_axes_to_raster, transform_corners_to_screen
+    public :: draw_3d_axes_to_raster, transform_corners_to_data
     
 contains
 
@@ -149,11 +149,8 @@ contains
         ! Project to 2D (still in data space)
         call project_3d_corners_to_2d(corners_3d, azim, elev, dist, corners_2d)
         
-        ! Now we need to transform from projected data space to screen space
-        ! This should use the same transformation as regular plot data
-        ! Transform each corner from data to screen coordinates
-        call transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, &
-                                       z_min, z_max)
+        ! Map projected coordinates into current data ranges; backend maps data->screen
+        call transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
         
         ! Draw axes matplotlib/MATLAB style - forming a corner shape
         ! Not all axes meet at the same point for proper 3D visualization
@@ -184,61 +181,32 @@ contains
         call draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_3d_axes_to_raster
 
-    subroutine transform_corners_to_screen(corners_2d, ctx, x_min, x_max, y_min, y_max, z_min, z_max)
-        !! Transform projected corners from data space to screen space
-        use fortplot_context, only: plot_context
+    subroutine transform_corners_to_data(corners_2d, x_min, x_max, y_min, y_max)
+        !! Transform projected corners from projection space to current data ranges
         real(wp), intent(inout) :: corners_2d(:,:)
-        class(plot_context), intent(in) :: ctx
-        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
         real(wp) :: proj_x_min, proj_x_max, proj_y_min, proj_y_max
-        real(wp) :: x_range, y_range
-        real(wp) :: x_scale, y_scale
-        real(wp) :: margin_left, margin_right, margin_top, margin_bottom
-        real(wp) :: plot_width, plot_height
+        real(wp) :: x_range_proj, y_range_proj
+        real(wp) :: x_range_data, y_range_data
         integer :: i
         
-        ! Get matplotlib-style margins (these should match what's used for regular plots)
-        margin_left = 80.0_wp
-        margin_right = 40.0_wp  
-        margin_bottom = 60.0_wp
-        margin_top = 60.0_wp
-        
-        ! Calculate plot area dimensions
-        plot_width = real(ctx%width, wp) - margin_left - margin_right
-        plot_height = real(ctx%height, wp) - margin_bottom - margin_top
-        
-        ! Find bounds of projected data
         proj_x_min = minval(corners_2d(1,:))
         proj_x_max = maxval(corners_2d(1,:))
         proj_y_min = minval(corners_2d(2,:))
         proj_y_max = maxval(corners_2d(2,:))
         
-        ! Calculate scaling factors with padding
-        x_range = proj_x_max - proj_x_min
-        y_range = proj_y_max - proj_y_min
+        x_range_proj = max(1.0e-12_wp, proj_x_max - proj_x_min)
+        y_range_proj = max(1.0e-12_wp, proj_y_max - proj_y_min)
         
-        if (x_range > 0.0_wp) then
-            x_scale = plot_width * 0.8_wp / x_range
-        else
-            x_scale = 1.0_wp
-        end if
+        x_range_data = max(1.0e-12_wp, x_max - x_min)
+        y_range_data = max(1.0e-12_wp, y_max - y_min)
         
-        if (y_range > 0.0_wp) then
-            y_scale = plot_height * 0.8_wp / y_range
-        else  
-            y_scale = 1.0_wp
-        end if
-        
-        ! Transform each corner to screen coordinates - center in plot area
         do i = 1, size(corners_2d, 2)
-            ! X: map to screen centered in plot area
-            corners_2d(1,i) = margin_left + plot_width * 0.5_wp + (corners_2d(1,i) - (proj_x_min + proj_x_max) * 0.5_wp) * x_scale
-            
-            ! Y: map to screen centered in plot area (flip Y axis)
-            corners_2d(2,i) = margin_top + plot_height * 0.5_wp - (corners_2d(2,i) - (proj_y_min + proj_y_max) * 0.5_wp) * y_scale
+            corners_2d(1,i) = x_min + (corners_2d(1,i) - proj_x_min) / x_range_proj * x_range_data
+            corners_2d(2,i) = y_min + (corners_2d(2,i) - proj_y_min) / y_range_proj * y_range_data
         end do
-    end subroutine transform_corners_to_screen
+    end subroutine transform_corners_to_data
     
     subroutine draw_3d_axis_ticks_and_labels(ctx, corners_2d, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw tick marks and labels on the visible 3D axes

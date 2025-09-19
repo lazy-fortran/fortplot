@@ -449,6 +449,7 @@ contains
                                                    title, xlabel, ylabel, &
                                                    z_min, z_max, has_3d_plots)
         !! Draw axes and labels - delegate to specialized axes module
+        use fortplot_3d_axes, only: draw_3d_axes_to_raster
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
@@ -457,16 +458,21 @@ contains
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         
-        ! Reference optional 3D parameters to keep interface stable
-        associate(dzmin=>z_min, dzmax=>z_max, dh3d=>has_3d_plots); end associate
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
-        
-        ! Delegate to axes module
-        call raster_draw_axes_and_labels(this%raster, this%width, this%height, this%plot_area, &
-                                        xscale, yscale, symlog_threshold, &
-                                        x_min, x_max, y_min, y_max, &
-                                        title, xlabel, ylabel)
+
+        if (has_3d_plots) then
+            ! Draw simplified 3D axes frame using current data ranges
+            call draw_3d_axes_to_raster(this, x_min, x_max, y_min, y_max, &
+                                        merge(z_min, 0.0_wp, present(z_min)), &
+                                        merge(z_max, 1.0_wp, present(z_max)))
+        else
+            ! Delegate to standard 2D axes module
+            call raster_draw_axes_and_labels(this%raster, this%width, this%height, this%plot_area, &
+                                            xscale, yscale, symlog_threshold, &
+                                            x_min, x_max, y_min, y_max, &
+                                            title, xlabel, ylabel)
+        end if
     end subroutine raster_draw_axes_and_labels_context
 
     subroutine raster_save_coordinates(this, x_min, x_max, y_min, y_max)
