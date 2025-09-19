@@ -49,6 +49,13 @@ contains
         esc = ''
         found = .false.
 
+        ! Common math symbols supported by Symbol font
+        ! U+221A (square root) maps to octal \214 in Symbol encoding
+        if (unicode_codepoint == 8730) then
+            symbol_char = achar(92)//'214'
+            return
+        end if
+
         call lookup_lowercase_greek(unicode_codepoint, esc, found)
         if (.not. found) call lookup_uppercase_greek(unicode_codepoint, esc, found)
 
