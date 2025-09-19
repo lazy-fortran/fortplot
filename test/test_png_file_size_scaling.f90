@@ -2,7 +2,6 @@ program test_png_file_size_scaling
     !! Test that PNG files scale appropriately with content complexity
     use fortplot, only: figure_t, wp
     use fortplot_logging, only: set_log_level, LOG_LEVEL_ERROR
-    use, intrinsic :: iso_fortran_env, only: real64
     implicit none
     
     integer :: simple_size, complex_size, empty_size
@@ -78,13 +77,13 @@ contains
     subroutine test_simple_plot(file_size)
         integer, intent(out) :: file_size
         type(figure_t) :: plt
-        real(real64), allocatable :: x(:), y(:)
+        real(wp), allocatable :: x(:), y(:)
         character(len=256) :: output_dir, filename
         
         call get_output_directory(output_dir)
         call plt%initialize(800, 600)  ! Medium size
         
-        x = create_linspace(0.0_real64, 10.0_real64, 10)
+        x = create_linspace(0.0_wp, 10.0_wp, 10)
         allocate(y(10))
         y = x
         
@@ -100,21 +99,21 @@ contains
     subroutine test_complex_plot(file_size)
         integer, intent(out) :: file_size
         type(figure_t) :: plt
-        real(real64), allocatable :: x(:), y1(:), y2(:), y3(:)
+        real(wp), allocatable :: x(:), y1(:), y2(:), y3(:)
         character(len=256) :: output_dir, filename
         integer :: i
         
         call get_output_directory(output_dir)
         call plt%initialize(1600, 1200)  ! Large size for more data
         
-        x = create_linspace(0.0_real64, 10.0_real64, 5000)  ! More data points
+        x = create_linspace(0.0_wp, 10.0_wp, 5000)  ! More data points
         allocate(y1(5000), y2(5000), y3(5000))
         
         ! Add multiple complex lines with high-frequency patterns
         do i = 1, size(x)
-            y1(i) = sin(x(i) * 10.0_real64) * cos(x(i) * 20.0_real64)
-            y2(i) = exp(-x(i)/5.0_real64) * sin(x(i) * 15.0_real64)
-            y3(i) = sin(x(i) * 30.0_real64) * cos(x(i) * 25.0_real64)
+            y1(i) = sin(x(i) * 10.0_wp) * cos(x(i) * 20.0_wp)
+            y2(i) = exp(-x(i)/5.0_wp) * sin(x(i) * 15.0_wp)
+            y3(i) = sin(x(i) * 30.0_wp) * cos(x(i) * 25.0_wp)
         end do
         
         call plt%add_plot(x, y1, label='High-frequency oscillation 1')
@@ -193,20 +192,20 @@ contains
     
     function create_linspace(start, stop, n) result(arr)
         !! Create linearly spaced array from start to stop with n points
-        real(real64), intent(in) :: start, stop
+        real(wp), intent(in) :: start, stop
         integer, intent(in) :: n
-        real(real64), allocatable :: arr(:)
+        real(wp), allocatable :: arr(:)
         integer :: i
-        real(real64) :: dx
+        real(wp) :: dx
         
         allocate(arr(n))
         
         if (n == 1) then
             arr(1) = start
         else
-            dx = (stop - start) / real(n - 1, real64)
+            dx = (stop - start) / real(n - 1, wp)
             do i = 1, n
-                arr(i) = start + real(i - 1, real64) * dx
+                arr(i) = start + real(i - 1, wp) * dx
             end do
         end if
     end function create_linspace
