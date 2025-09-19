@@ -1,5 +1,5 @@
 program test_streamplot_interface_color
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot, only: wp
     use fortplot_matplotlib_advanced, only: streamplot, get_global_figure, ensure_global_figure_initialized
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: plot_data_t

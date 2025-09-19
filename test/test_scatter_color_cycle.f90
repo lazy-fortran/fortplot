@@ -1,7 +1,6 @@
 program test_scatter_color_cycle
     !! Verify scatter plots share the default color cycle with line plots
-    use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot, only: figure_t
+    use fortplot, only: figure_t, wp
     use fortplot_figure_plot_management, only: next_plot_color
     implicit none
 
