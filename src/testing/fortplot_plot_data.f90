@@ -149,7 +149,15 @@ contains
         !! Contour/pcolormesh (z_grid over x/y grid) are 2D renderings and must not
         !! trigger 3D axes.
         class(plot_data_t), intent(in) :: self
-        is_3d = allocated(self%z)
+        if (allocated(self%z)) then
+            if (size(self%z) > 0) then
+                is_3d = .true.
+            else
+                is_3d = .false.
+            end if
+        else
+            is_3d = .false.
+        end if
     end function is_3d
 
 end module fortplot_plot_data
