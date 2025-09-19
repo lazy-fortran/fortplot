@@ -252,13 +252,13 @@ contains
             ! Interpolate position along edge
             x_pos = corners_2d(1,1) + (corners_2d(1,2) - corners_2d(1,1)) * real(i-1, wp) / real(n_ticks-1, wp)
             y_pos = corners_2d(2,1) + (corners_2d(2,2) - corners_2d(2,1)) * real(i-1, wp) / real(n_ticks-1, wp)
-            
-            ! Draw tick mark pointing down (in data units)
-            call ctx%line(x_pos, y_pos, x_pos, y_pos + tick_len_y)
-            
+
+            ! Draw tick mark pointing down (decrease data Y to move down in device space)
+            call ctx%line(x_pos, y_pos, x_pos, y_pos - tick_len_y)
+
             ! Draw label using consistent decimal places across the axis
             label = format_tick_value_consistent(value, decimals_x)
-            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos + tick_len_y + pad_y, trim(adjustl(label)))
+            call render_text_to_ctx(ctx, x_pos - 0.5_wp*pad_x, y_pos - tick_len_y - pad_y, trim(adjustl(label)))
         end do
         
         ! Y-axis ticks and labels (edge from corner 1 to corner 4)
