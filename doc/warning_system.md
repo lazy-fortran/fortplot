@@ -148,6 +148,25 @@ FORTPLOT_SUPPRESS_WARNINGS=1 make test 2>&1 | grep WARNING
 2. Verify CI detection: May be auto-suppressing
 3. Set explicit control: `export FORTPLOT_SUPPRESS_WARNINGS=0`
 
+## Querying And Restoring Log Level
+
+When temporarily increasing verbosity (for example during debugging), capture the
+current level with `get_log_level()` and restore it afterwards to avoid leaking
+state into other tests or applications:
+
+```fortran
+use fortplot, only: set_log_level, get_log_level, &
+                    LOG_LEVEL_DEBUG
+
+integer :: prev
+prev = get_log_level()
+call set_log_level(LOG_LEVEL_DEBUG)
+
+! ... perform debug operations ...
+
+call set_log_level(prev)
+```
+
 ### Performance Impact
 The warning suppression system has minimal performance impact:
 - Environment variables checked once during initialization
