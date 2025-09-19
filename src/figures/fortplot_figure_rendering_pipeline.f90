@@ -720,12 +720,12 @@ contains
             case (PLOT_TYPE_ERRORBAR)
                 call render_errorbar_plot(backend, plots(i), xscale, yscale, &
                                           symlog_threshold)
-                if (allocated(plots(i)%marker)) then
-                    call render_markers(backend, plots(i), &
-                                      x_min_transformed, x_max_transformed, &
-                                      y_min_transformed, y_max_transformed, &
-                                      xscale, yscale, symlog_threshold)
-                end if
+                ! Always attempt to render markers for errorbar plots; 
+                ! render_markers internally validates presence/emptiness.
+                call render_markers(backend, plots(i), &
+                                   x_min_transformed, x_max_transformed, &
+                                   y_min_transformed, y_max_transformed, &
+                                   xscale, yscale, symlog_threshold)
 
             end select
         end do
