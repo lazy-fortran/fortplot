@@ -52,7 +52,7 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: t
         real(wp) :: x0, x1
-        real(wp) :: xs0, xs1, ys0, ys1
+        ! no temporaries needed; transform per segment for cache friendliness
 
         x0 = pos - halfw; x1 = pos + halfw
 
@@ -147,4 +147,3 @@ contains
     end subroutine line_scaled
 
 end module fortplot_boxplot_rendering
-

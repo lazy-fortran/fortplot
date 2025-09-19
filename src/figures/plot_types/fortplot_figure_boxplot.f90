@@ -110,7 +110,6 @@ contains
     
     subroutine compute_boxplot_stats_inplace(plot)
         !! Compute quartiles, whiskers, and outliers for a box plot in-place
-        use, intrinsic :: ieee_arithmetic, only: ieee_is_finite
         type(plot_data_t), intent(inout) :: plot
         real(wp), allocatable :: sorted(:)
         integer :: n, i, q1_idx, q2_idx, q3_idx, n_out
