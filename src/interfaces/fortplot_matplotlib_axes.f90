@@ -25,20 +25,50 @@ contains
 
     subroutine xlabel(label_text)
         character(len=*), intent(in) :: label_text
+        integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
-        call fig%set_xlabel(label_text)
+        nrows = fig%subplot_rows
+        ncols = fig%subplot_cols
+        idx = fig%current_subplot
+        if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
+            row = (idx - 1) / ncols + 1
+            col = mod(idx - 1, ncols) + 1
+            call fig%subplot_set_xlabel(row, col, label_text)
+        else
+            call fig%set_xlabel(label_text)
+        end if
     end subroutine xlabel
 
     subroutine ylabel(label_text)
         character(len=*), intent(in) :: label_text
+        integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
-        call fig%set_ylabel(label_text)
+        nrows = fig%subplot_rows
+        ncols = fig%subplot_cols
+        idx = fig%current_subplot
+        if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
+            row = (idx - 1) / ncols + 1
+            col = mod(idx - 1, ncols) + 1
+            call fig%subplot_set_ylabel(row, col, label_text)
+        else
+            call fig%set_ylabel(label_text)
+        end if
     end subroutine ylabel
 
     subroutine title(title_text)
         character(len=*), intent(in) :: title_text
+        integer :: idx, nrows, ncols, row, col
         call ensure_fig_init()
-        call fig%set_title(title_text)
+        nrows = fig%subplot_rows
+        ncols = fig%subplot_cols
+        idx = fig%current_subplot
+        if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
+            row = (idx - 1) / ncols + 1
+            col = mod(idx - 1, ncols) + 1
+            call fig%subplot_set_title(row, col, title_text)
+        else
+            call fig%set_title(title_text)
+        end if
     end subroutine title
 
     subroutine legend(position, box, fontsize)
