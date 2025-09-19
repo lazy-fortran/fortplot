@@ -10,9 +10,9 @@ program test_pdf_unicode_uppercase
     logical :: has_symbol_font, has_upper_psi, has_upper_theta, has_upper_omega
 
     call figure()
-    call title('Uppercase: \Psi test')
-    call xlabel('Theta \Theta and Omega \Omega')
-    call ylabel('Check Psi \Psi in label')
+    call title('Uppercase: $\Psi$ test')
+    call xlabel('Theta $\Theta$ and Omega $\Omega$')
+    call ylabel('Check Psi $\Psi$ in label')
     call plot([0.0_wp, 1.0_wp], [0.0_wp, 1.0_wp])
     call savefig(out_pdf)
 

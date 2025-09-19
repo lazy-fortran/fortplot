@@ -125,10 +125,10 @@ contains
         
         ! Add multiple labeled functions
         ! Use mathtext with braces for multi-character superscripts
-        call add_plot(x, y1, label="e^{-x/2}cos(x)")
-        call add_plot(x, y2, label="xe^{-x/3}")
-        call add_plot(x, y3, label="sin(x)/x")
-        call add_plot(x, y4, label="x^{2}e^{-x}")
+        call add_plot(x, y1, label="$e^{-x/2}cos(x)$")
+        call add_plot(x, y2, label="$xe^{-x/3}$")
+        call add_plot(x, y3, label="$sin(x)/x$")
+        call add_plot(x, y4, label="$x^{2}e^{-x}$")
         
         ! Add legend
         call legend()

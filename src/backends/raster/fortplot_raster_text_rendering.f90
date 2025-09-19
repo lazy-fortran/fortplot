@@ -9,7 +9,7 @@ module fortplot_raster_text_rendering
                                   get_font_metrics
     use fortplot_mathtext, only: parse_mathtext, mathtext_element_t
     use fortplot_raster_primitives, only: draw_line_distance_aa
-    use fortplot_text_layout, only: has_mathtext, calculate_mathtext_width_internal, &
+    use fortplot_text_layout, only: has_mathtext, preprocess_math_text, calculate_mathtext_width_internal, &
                                     calculate_text_width_with_size_internal, &
                                     calculate_text_height_with_size_internal, &
                                     DEFAULT_FONT_SIZE
@@ -38,6 +38,8 @@ contains
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
+        character(len=2048) :: processed
+        integer :: plen
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -47,7 +49,8 @@ contains
         end if
 
         if (has_mathtext(text)) then
-            elements = parse_mathtext(text)
+            call preprocess_math_text(text, processed, plen)
+            elements = parse_mathtext(processed(1:plen))
             call render_mathtext_elements_internal(image_data, width, height, x, y, &
                 elements, r, g, b, real(DEFAULT_FONT_SIZE, wp))
             return
@@ -103,6 +106,8 @@ contains
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
+        character(len=2048) :: processed
+        integer :: plen
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -111,7 +116,8 @@ contains
         end if
 
         if (has_mathtext(text)) then
-            elements = parse_mathtext(text)
+            call preprocess_math_text(text, processed, plen)
+            elements = parse_mathtext(processed(1:plen))
             call render_mathtext_elements_internal(image_data, width, height, x, y, &
                 elements, r, g, b, pixel_height)
             return
@@ -237,13 +243,8 @@ contains
             if (elements(i)%element_type == 3) then
                 pen_y = y
 
-                if (has_mathtext(elements(i)%text)) then
-                    rad_width = calculate_mathtext_width_internal(&
-                        parse_mathtext(elements(i)%text), element_font_size)
-                else
-                    rad_width = calculate_text_width_with_size_internal(&
-                        elements(i)%text, element_font_size)
-                end if
+                rad_width = calculate_mathtext_width_internal(&
+                    parse_mathtext(elements(i)%text), element_font_size)
                 rad_height = calculate_text_height_with_size_internal(element_font_size)
                 sym_w = int(0.6_wp * element_font_size)
                 top_y = pen_y - rad_height
@@ -260,15 +261,9 @@ contains
                     real(pen_x + sym_w + rad_width, wp), real(top_y, wp), &
                     real(r, wp)/255.0_wp, real(g, wp)/255.0_wp, real(b, wp)/255.0_wp, &
                     0.1_wp)
-                if (has_mathtext(elements(i)%text)) then
-                    call render_mathtext_elements_internal(image_data, width, height, &
-                        pen_x + sym_w, pen_y, parse_mathtext(elements(i)%text), r, g, &
-                        b, element_font_size)
-                else
-                    call render_text_with_size_internal(image_data, width, height, &
-                        pen_x + sym_w, pen_y, elements(i)%text, r, g, b, &
-                        element_font_size)
-                end if
+                call render_mathtext_elements_internal(image_data, width, height, &
+                    pen_x + sym_w, pen_y, parse_mathtext(elements(i)%text), r, g, &
+                    b, element_font_size)
                 pen_x = pen_x + sym_w + rad_width
             else
                 pen_y = y - int(elements(i)%vertical_offset * base_font_size)

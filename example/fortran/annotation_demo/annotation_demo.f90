@@ -45,9 +45,9 @@ program annotation_demo
     call figure(figsize=[8.0_wp, 6.0_wp])
     
     ! Plot the data series
-    call add_plot(x, y_sin, label="Damped sine: sin(x)e^{-x/4}", linestyle="b-")
-    call add_plot(x, y_exp, label="Exponential: e^{-x} - 0.5", linestyle="r--")
-    call add_plot(x, y_quad, label="Quadratic: 0.1(x-3)^2 - 0.3", linestyle="g:")
+    call add_plot(x, y_sin, label="Damped sine: $sin(x)e^{-x/4}$", linestyle="b-")
+    call add_plot(x, y_exp, label="Exponential: $e^{-x} - 0.5$", linestyle="r--")
+    call add_plot(x, y_quad, label="Quadratic: $0.1(x-3)^2 - 0.3$", linestyle="g:")
     
     call title("Scientific Data with Text Annotations")
     call xlabel("Independent Variable (x)")
@@ -105,10 +105,10 @@ program annotation_demo
     
     ! === DEMONSTRATION 7: Mathematical expressions ===
     ! Add mathematical annotations using Unicode
-    call text(3.0_wp, 0.5_wp, "∂f/∂x = cos(x)e^{-x/4} - ¼sin(x)e^{-x/4}", &
+    call text(3.0_wp, 0.5_wp, "$∂f/∂x = cos(x)e^{-x/4} - ¼sin(x)e^{-x/4}$", &
                   coord_type=COORD_DATA, font_size=9.0_wp, alignment="center")
     
-    call text(5.0_wp, -0.2_wp, "lim_{x→∞} e^{-x} = 0", &
+    call text(5.0_wp, -0.2_wp, "$lim_{x→∞} e^{-x} = 0$", &
                   coord_type=COORD_DATA, font_size=10.0_wp, alignment="center")
     
     ! Add legend

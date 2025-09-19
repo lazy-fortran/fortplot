@@ -119,6 +119,16 @@ contains
             print *, "ERROR: Processed text should contain Unicode"
             stop 1
         end if
+
+        if (index(result_text(1:result_len), '\\alpha') /= 0) then
+            print *, "ERROR: LaTeX alpha command was not converted"
+            stop 1
+        end if
+
+        if (index(result_text(1:result_len), '\\pi') /= 0) then
+            print *, "ERROR: LaTeX pi command was not converted"
+            stop 1
+        end if
         
         print *, "test_mixed_latex_and_text: PASSED"
     end subroutine
@@ -149,7 +159,7 @@ contains
         integer :: result_len
         
         ! Complex text with multiple commands
-        input_text = "Equation: \alpha + \beta = \gamma"
+        input_text = "Equation: $\alpha + \beta = \gamma$"
         call process_latex_in_text(input_text, result_text, result_len)
         
         if (result_len == 0) then
@@ -167,7 +177,12 @@ contains
             print *, "ERROR: No Unicode found in processed text"
             stop 1
         end if
-        
+
+        if (index(result_text(1:result_len), '\\beta') /= 0) then
+            print *, "ERROR: LaTeX beta command was not converted"
+            stop 1
+        end if
+
         print *, "test_complete_text_processing: PASSED"
     end subroutine
 

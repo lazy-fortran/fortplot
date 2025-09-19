@@ -12,6 +12,7 @@ module fortplot_text_layout
 
     private
     public :: has_mathtext
+    public :: preprocess_math_text
     public :: calculate_text_width, calculate_text_width_with_size, calculate_text_height
     public :: calculate_text_descent
     public :: calculate_mathtext_width_internal, calculate_text_width_with_size_internal
@@ -26,13 +27,18 @@ module fortplot_text_layout
 contains
 
     function has_mathtext(text) result(is_mathtext)
-        !! Check if text contains mathematical notation markers
+        !! Check if text contains math segments delimited by '$...$'
         character(len=*), intent(in) :: text
         logical :: is_mathtext
+        integer :: first_dollar, second_dollar
 
-        is_mathtext = (index(text, '^') > 0) .or. &
-                      (index(text, '_') > 0) .or. &
-                      (index(text, '\') > 0)
+        first_dollar = index(text, '$')
+        if (first_dollar <= 0) then
+            is_mathtext = .false.
+        else
+            second_dollar = index(text(first_dollar+1:), '$')
+            is_mathtext = (second_dollar > 0)
+        end if
     end function has_mathtext
 
     function calculate_text_width(text) result(width)
@@ -47,6 +53,8 @@ contains
         type(mathtext_element_t), allocatable :: elements(:)
         integer :: ix0, iy0, ix1, iy1
         integer :: pen_px, rightmost
+        character(len=4096) :: processed
+        integer :: plen
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -57,7 +65,8 @@ contains
         end if
 
         if (has_mathtext(text)) then
-            elements = parse_mathtext(text)
+            call preprocess_math_text(text, processed, plen)
+            elements = parse_mathtext(processed(1:plen))
             width = calculate_mathtext_width_internal(elements, &
                 real(DEFAULT_FONT_SIZE, wp))
             return
@@ -97,6 +106,8 @@ contains
         real(wp), intent(in) :: pixel_height
         integer :: width
         type(mathtext_element_t), allocatable :: elements(:)
+        character(len=4096) :: processed
+        integer :: plen
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -106,7 +117,8 @@ contains
         end if
 
         if (has_mathtext(text)) then
-            elements = parse_mathtext(text)
+            call preprocess_math_text(text, processed, plen)
+            elements = parse_mathtext(processed(1:plen))
             width = calculate_mathtext_width_internal(elements, pixel_height)
             return
         end if
@@ -123,6 +135,8 @@ contains
         type(stb_fontinfo_t) :: font
         real(wp) :: scale
         type(mathtext_element_t), allocatable :: elements(:)
+        character(len=4096) :: processed
+        integer :: plen
 
         if (.not. is_font_initialized()) then
             if (.not. init_text_system()) then
@@ -132,7 +146,8 @@ contains
         end if
 
         if (has_mathtext(text)) then
-            elements = parse_mathtext(text)
+            call preprocess_math_text(text, processed, plen)
+            elements = parse_mathtext(processed(1:plen))
             height = calculate_mathtext_height_internal(elements, &
                 real(DEFAULT_FONT_SIZE, wp))
             return
@@ -187,13 +202,8 @@ contains
         do i = 1, size(elements)
             element_font_size = base_font_size * elements(i)%font_size_ratio
             if (elements(i)%element_type == 3) then
-                if (has_mathtext(elements(i)%text)) then
-                    element_width = calculate_mathtext_width_internal(&
-                        parse_mathtext(elements(i)%text), element_font_size)
-                else
-                    element_width = calculate_text_width_with_size_internal(&
-                        elements(i)%text, element_font_size)
-                end if
+                element_width = calculate_mathtext_width_internal(&
+                    parse_mathtext(elements(i)%text), element_font_size)
                 total_width = total_width + int(0.6_wp * element_font_size) + &
                     element_width
             else
@@ -203,6 +213,48 @@ contains
             end if
         end do
     end function calculate_mathtext_width_internal
+
+    subroutine preprocess_math_text(input_text, result_text, result_len)
+        !! Remove '$' delimiters and escape '^'/'_' outside math so they render literally
+        character(len=*), intent(in) :: input_text
+        character(len=*), intent(out) :: result_text
+        integer, intent(out) :: result_len
+        integer :: i, n, pos
+        logical :: in_math
+        character(len=1) :: ch
+
+        result_text = ''
+        result_len = 0
+        pos = 1
+        n = len_trim(input_text)
+        in_math = .false.
+
+        i = 1
+        do while (i <= n)
+            ch = input_text(i:i)
+            if (ch == '$') then
+                in_math = .not. in_math
+                i = i + 1
+                cycle
+            end if
+
+            if (.not. in_math .and. (ch == '_' .or. ch == '^')) then
+                ! Escape to prevent math parsing
+                result_text(pos:pos) = '\'
+                pos = pos + 1
+                result_text(pos:pos) = ch
+                pos = pos + 1
+                i = i + 1
+                cycle
+            end if
+
+            result_text(pos:pos) = ch
+            pos = pos + 1
+            i = i + 1
+        end do
+
+        result_len = pos - 1
+    end subroutine preprocess_math_text
 
     function calculate_text_width_with_size_internal(text, pixel_height) &
             result(width)

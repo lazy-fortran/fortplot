@@ -18,13 +18,13 @@ program mathtext_demo
     
     ! Create plot with mathematical notation
     call figure()
-    call plot(x, y1, label='f(x) = x^2')
-    call plot(x, y2, label='g(x) = 10e^{-x/3}')
+    call plot(x, y1, label='f(x) = $x^2$')
+    call plot(x, y2, label='g(x) = $10e^{-x/3}$')
     
     ! Add labels with mathematical notation
-    call xlabel('x_i')
-    call ylabel('y = f(x_i)')
-    call title('Mathematical Functions: x^2 and e^{-x/3}')
+    call xlabel('$x_i$')
+    call ylabel('$y = f(x_i)$')
+    call title('Mathematical Functions: $x^2$ and $e^{-x/3}$')
     call legend()
     call grid(.true.)
     
