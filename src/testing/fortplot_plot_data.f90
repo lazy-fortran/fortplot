@@ -144,10 +144,12 @@ module fortplot_plot_data
 contains
 
     logical function is_3d(self)
-        !! Check if plot data contains 3D information
-        !! Following KISS principle - simple check for z allocation
+        !! Check if plot represents true 3D data
+        !! A plot is 3D only when explicit 3D samples (x,y,z) are provided.
+        !! Contour/pcolormesh (z_grid over x/y grid) are 2D renderings and must not
+        !! trigger 3D axes.
         class(plot_data_t), intent(in) :: self
-        is_3d = allocated(self%z) .or. allocated(self%z_grid)
+        is_3d = allocated(self%z)
     end function is_3d
 
 end module fortplot_plot_data
