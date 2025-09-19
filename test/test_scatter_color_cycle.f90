@@ -1,20 +1,20 @@
 program test_scatter_color_cycle
     !! Verify scatter plots share the default color cycle with line plots
-    use, intrinsic :: iso_fortran_env, only: dp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
     use fortplot_figure_plot_management, only: next_plot_color
     implicit none
 
     type(figure_t) :: fig
-    real(dp) :: x(5), y_line(5), y_scatter(5)
-    real(dp) :: expected_color(3)
-    real(dp) :: scatter_color(3)
+    real(wp) :: x(5), y_line(5), y_scatter(5)
+    real(wp) :: expected_color(3)
+    real(wp) :: scatter_color(3)
 
     integer :: i
 
-    x = [(real(i, dp), i = 1, size(x))]
+    x = [(real(i, wp), i = 1, size(x))]
     y_line = x
-    y_scatter = x + 1.0_dp
+    y_scatter = x + 1.0_wp
 
     call fig%initialize()
 
@@ -26,7 +26,7 @@ program test_scatter_color_cycle
 
     scatter_color = fig%plots(fig%plot_count)%color
 
-    if (any(abs(scatter_color - expected_color) > 1.0e-12_dp)) then
+    if (any(abs(scatter_color - expected_color) > 1.0e-12_wp)) then
         print *, 'FAIL: scatter default color diverged from shared cycle'
         print *, '  expected:', expected_color
         print *, '  actual  :', scatter_color
