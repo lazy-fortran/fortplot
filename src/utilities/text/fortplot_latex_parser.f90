@@ -212,12 +212,11 @@ contains
     end subroutine codepoint_to_utf8
     
     subroutine process_latex_in_text(input_text, result_text, result_len)
-        !! Convert LaTeX-style greek commands to Unicode ONLY inside $...$
+        !! Convert LaTeX-style commands to Unicode while preserving math scopes
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
         integer :: i, pos, n
-        logical :: in_math
         integer :: cmd_end
         character(len=20) :: command, unicode_char
         logical :: success
@@ -226,20 +225,17 @@ contains
         result_len = 0
         pos = 1
         n = len_trim(input_text)
-        in_math = .false.
         i = 1
 
         do while (i <= n)
             if (input_text(i:i) == '$') then
-                in_math = .not. in_math
                 result_text(pos:pos) = '$'
                 pos = pos + 1
                 i = i + 1
                 cycle
             end if
 
-            if (in_math .and. i <= n .and. input_text(i:i) == '\') then
-                ! Scan a LaTeX command name after backslash
+            if (input_text(i:i) == '\') then
                 cmd_end = i + 1
                 do while (cmd_end <= n)
                     if (.not. is_alpha(input_text(cmd_end:cmd_end))) exit

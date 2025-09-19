@@ -106,9 +106,8 @@ contains
         integer :: result_len
         
         ! Process text with LaTeX commands
-        input_text = "The value $\alpha = 2\pi$ is important"
+        input_text = "The value \alpha = 2\pi is important"
         call process_latex_in_text(input_text, result_text, result_len)
-        print *, 'DEBUG mixed:', result_text(1:result_len)
         
         if (result_len == 0) then
             print *, "ERROR: Failed to process mixed text"
@@ -118,6 +117,16 @@ contains
         ! Result should contain Unicode characters
         if (.not. contains_unicode(result_text(1:result_len))) then
             print *, "ERROR: Processed text should contain Unicode"
+            stop 1
+        end if
+
+        if (index(result_text(1:result_len), '\\alpha') /= 0) then
+            print *, "ERROR: LaTeX alpha command was not converted"
+            stop 1
+        end if
+
+        if (index(result_text(1:result_len), '\\pi') /= 0) then
+            print *, "ERROR: LaTeX pi command was not converted"
             stop 1
         end if
         
@@ -152,7 +161,6 @@ contains
         ! Complex text with multiple commands
         input_text = "Equation: $\alpha + \beta = \gamma$"
         call process_latex_in_text(input_text, result_text, result_len)
-        print *, 'DEBUG complex:', result_text(1:result_len)
         
         if (result_len == 0) then
             print *, "ERROR: Failed to process complex text"
@@ -169,7 +177,12 @@ contains
             print *, "ERROR: No Unicode found in processed text"
             stop 1
         end if
-        
+
+        if (index(result_text(1:result_len), '\\beta') /= 0) then
+            print *, "ERROR: LaTeX beta command was not converted"
+            stop 1
+        end if
+
         print *, "test_complete_text_processing: PASSED"
     end subroutine
 
