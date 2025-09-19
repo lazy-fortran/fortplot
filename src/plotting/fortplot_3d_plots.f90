@@ -8,6 +8,8 @@ module fortplot_3d_plots
     use fortplot_figure_core, only: figure_t
     use fortplot_plot_data, only: PLOT_TYPE_CONTOUR
     use fortplot_2d_plots, only: add_line_plot_data
+    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_logging, only: log_error
 
     implicit none
 
@@ -48,15 +50,39 @@ contains
         real(wp), intent(in) :: x(:), y(:), z(:)
         character(len=*), intent(in), optional :: label, linestyle, marker
         real(wp), intent(in), optional :: markersize, linewidth
-        real(wp) :: z_dummy, ms_dummy, lw_dummy
-        character(len=1) :: m_dummy
-        if (present(markersize)) ms_dummy = markersize
-        if (present(linewidth)) lw_dummy = linewidth
-        if (present(marker)) m_dummy = marker(1:1)
-        if (size(z) > 0) z_dummy = z(1)
-        
-        ! Project 3D to 2D for basic plotting (z-axis ignored for now)
-        call add_line_plot_data(self, x, y, label, linestyle)
+        integer :: n_points, plot_idx
+        real(wp), allocatable :: x_proj(:), y_proj(:)
+        real(wp) :: azim, elev, dist
+
+        n_points = size(x)
+        if (size(y) /= n_points .or. size(z) /= n_points) then
+            call log_error('add_3d_plot: x, y, and z must have matching sizes')
+            return
+        end if
+
+        if (n_points == 0) then
+            call log_error('add_3d_plot: coordinate arrays must not be empty')
+            return
+        end if
+
+        allocate(x_proj(n_points))
+        allocate(y_proj(n_points))
+        call get_default_view_angles(azim, elev, dist)
+        call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
+
+        call add_line_plot_data(self, x_proj, y_proj, label, linestyle, marker=marker)
+
+        plot_idx = self%plot_count
+        if (allocated(self%plots)) then
+            self%plots(plot_idx)%z = z
+        end if
+
+        if (present(markersize)) then
+            associate(unused_ms => markersize); end associate
+        end if
+        if (present(linewidth)) then
+            associate(unused_lw => linewidth); end associate
+        end if
     end subroutine add_3d_line_plot_data
 
     subroutine add_surface_plot_data(self, x, y, z, label)

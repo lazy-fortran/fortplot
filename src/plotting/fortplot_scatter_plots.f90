@@ -8,6 +8,8 @@ module fortplot_scatter_plots
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_core_advanced, only: core_scatter
     use fortplot_figure_plot_management, only: next_plot_color
+    use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
+    use fortplot_logging, only: log_error
 
     implicit none
 
@@ -82,7 +84,12 @@ contains
         logical, intent(in), optional :: show_colorbar
         
         real(wp) :: default_color(3)
+        real(wp), allocatable :: x_proj(:), y_proj(:)
+        real(wp) :: azim, elev, dist
+        logical :: use_projection
+        integer :: plot_idx, n_points
 
+        use_projection = present(z)
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
         end if
@@ -90,16 +97,40 @@ contains
         self%state%plot_count = self%plot_count
         default_color = next_plot_color(self%state)
 
-        call core_scatter(self%plots, self%state, self%plot_count, x, y, s=s, c=c, &
-                          marker=marker, markersize=markersize, color=color, &
-                          colormap=colormap, vmin=vmin, vmax=vmax, label=label, &
-                          show_colorbar=show_colorbar, default_color=default_color)
+        if (use_projection) then
+            n_points = size(x)
+            if (size(y) /= n_points .or. size(z) /= n_points) then
+                call log_error('add_scatter: x, y, and z must have matching sizes')
+                return
+            end if
+            if (n_points == 0) then
+                call log_error('add_scatter: coordinate arrays must not be empty')
+                return
+            end if
+
+            allocate(x_proj(n_points))
+            allocate(y_proj(n_points))
+            call get_default_view_angles(azim, elev, dist)
+            call project_3d_to_2d(x, y, z, azim, elev, dist, x_proj, y_proj)
+        end if
+
+        if (use_projection) then
+            call core_scatter(self%plots, self%state, self%plot_count, x_proj, y_proj, &
+                              s=s, c=c, marker=marker, markersize=markersize, &
+                              color=color, colormap=colormap, vmin=vmin, vmax=vmax, &
+                              label=label, show_colorbar=show_colorbar, &
+                              default_color=default_color)
+        else
+            call core_scatter(self%plots, self%state, self%plot_count, x, y, s=s, c=c, &
+                              marker=marker, markersize=markersize, color=color, &
+                              colormap=colormap, vmin=vmin, vmax=vmax, label=label, &
+                              show_colorbar=show_colorbar, default_color=default_color)
+        end if
+
+        plot_idx = self%plot_count
 
         if (present(z)) then
-            if (.not. allocated(self%plots(self%plot_count)%z)) then
-                allocate(self%plots(self%plot_count)%z(size(z)))
-            end if
-            self%plots(self%plot_count)%z = z
+            self%plots(plot_idx)%z = z
         end if
 
         if (present(alpha)) then
