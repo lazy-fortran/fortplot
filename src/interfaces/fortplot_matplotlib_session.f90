@@ -102,10 +102,14 @@ contains
     end subroutine figure
 
     subroutine subplot(nrows, ncols, index)
-        !! Create a subplot placeholder matching matplotlib's subplot API
+        !! Select a subplot in an nrows-by-ncols grid (matplotlib-compatible)
+        !!
+        !! Behavior:
+        !! - On first call or when grid shape differs, (re)create the grid
+        !! - Set the current subplot selection to `index` (row-major order)
         integer, intent(in) :: nrows, ncols, index
         character(len=256) :: msg
-        logical, save :: subplot_warning_shown = .false.
+        integer :: rows, cols
 
         call ensure_global_figure_initialized()
 
@@ -119,14 +123,19 @@ contains
             return
         end if
 
-        write(msg, '(A,I0,A,I0,A,I0,A)') &
-            "Creating subplot ", index, " in ", nrows, "x", ncols, " grid"
-        call log_info(trim(msg))
+        rows = fig%subplot_rows
+        cols = fig%subplot_cols
 
-        if (index > 1 .and. .not. subplot_warning_shown) then
-            call log_warning("subplot: Multiple subplots not yet implemented")
-            subplot_warning_shown = .true.
+        ! (Re)create grid if missing or shape changed
+        if (rows /= nrows .or. cols /= ncols) then
+            call fig%subplots(nrows, ncols)
         end if
+
+        fig%current_subplot = index
+
+        write(msg, '(A,I0,A,I0,A,I0,A)') &
+            "Selected subplot ", index, " in ", nrows, "x", ncols, " grid"
+        call log_info(trim(msg))
     end subroutine subplot
 
     subroutine subplots(nrows, ncols)
@@ -141,6 +150,7 @@ contains
         end if
 
         call fig%subplots(nrows, ncols)
+        fig%current_subplot = 1
     end subroutine subplots
 
     function subplots_grid(nrows, ncols) result(axes)

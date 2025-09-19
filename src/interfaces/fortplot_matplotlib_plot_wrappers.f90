@@ -36,9 +36,22 @@ contains
     subroutine plot(x, y, label, linestyle)
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
+        integer :: idx, nrows, ncols, row, col
 
         call ensure_fig_init()
-        call fig%add_plot(x, y, label=label, linestyle=linestyle)
+
+        ! Route to subplot when a grid is active and a selection exists
+        nrows = fig%subplot_rows
+        ncols = fig%subplot_cols
+        idx = fig%current_subplot
+
+        if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
+            row = (idx - 1) / ncols + 1
+            col = mod(idx - 1, ncols) + 1
+            call fig%subplot_plot(row, col, x, y, label=label, linestyle=linestyle)
+        else
+            call fig%add_plot(x, y, label=label, linestyle=linestyle)
+        end if
     end subroutine plot
 
     subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
