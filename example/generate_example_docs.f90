@@ -1,5 +1,5 @@
 program generate_example_docs
-    !! Generate FORD documentation pages for fortplot examples
+    !! Generate documentation pages for fortplot examples
     use fortplot_documentation, only: PATH_MAX_LEN, get_example_count, get_example_dir, &
                                        get_example_name, process_example
     implicit none
@@ -7,7 +7,7 @@ program generate_example_docs
     character(len=PATH_MAX_LEN) :: example_dir, example_name
     integer :: n_examples, i
 
-    print *, "Generating example documentation..."
+    print *, 'Generating example documentation...'
 
     n_examples = get_example_count()
 
@@ -17,6 +17,6 @@ program generate_example_docs
         call process_example(trim(example_dir), trim(example_name))
     end do
 
-    print *, "Documentation generation complete!"
+    print *, 'Documentation generation complete!'
 
 end program generate_example_docs

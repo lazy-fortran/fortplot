@@ -5,11 +5,13 @@ title: Show Viewer Demo
 
 Source: [show_viewer_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/show_viewer_demo/show_viewer_demo.f90)
 
-This example demonstrates using the built-in viewer for interactive display.
+Documentation for this example is auto-generated.
+Update README.md in the example directory to provide a custom overview.
 
 ## Files
 
 - `show_viewer_demo.f90` - Source code
+- Run the example to populate `output/example/fortran/show_viewer_demo/`
 
 ## Running
 
@@ -17,42 +19,7 @@ This example demonstrates using the built-in viewer for interactive display.
 make example ARGS="show_viewer_demo"
 ```
 
-## Features Demonstrated
+## Output
 
-- **Interactive display**: Opens plot in system viewer
-- **Cross-platform**: Works on Linux, macOS, Windows
-- **Auto-detection**: Finds appropriate viewer
-- **Non-blocking**: Program continues after display
+Run this example to generate plots and other media assets.
 
-## Viewer Selection
-
-The library automatically selects viewers:
-
-### Linux
-- `xdg-open` (default)
-- `eog` (Eye of GNOME)
-- `feh` (lightweight viewer)
-
-### macOS
-- `open` (system default)
-- `Preview.app`
-
-### Windows
-- Default image viewer
-- Photos app
-
-## Usage
-
-```fortran
-! Create and display plot
-call fig%initialize()
-call fig%add_plot(x, y)
-call fig%show()  ! Opens in viewer
-```
-
-## Benefits
-
-- **Quick inspection**: No need to save files
-- **Development**: Rapid iteration
-- **Debugging**: Immediate visual feedback
-- **Presentations**: Live demonstrations
