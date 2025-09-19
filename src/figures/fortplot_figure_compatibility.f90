@@ -23,6 +23,7 @@ module fortplot_figure_compatibility
     public :: extract_rgb_data_for_animation_compat
     public :: extract_png_data_for_animation_compat
     public :: backend_color_compat, backend_line_compat, backend_associated_compat
+    public :: backend_arrow_compat
     public :: get_figure_x_min_compat, get_figure_x_max_compat
     public :: get_figure_y_min_compat, get_figure_y_max_compat
 
@@ -104,6 +105,14 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
         call draw_backend_line(state, x1, y1, x2, y2)
     end subroutine backend_line_compat
+    
+    subroutine backend_arrow_compat(state, x, y, dx, dy, size, style)
+        !! Draw arrow using backend (compatibility wrapper)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        call draw_backend_arrow(state, x, y, dx, dy, size, style)
+    end subroutine backend_arrow_compat
     
     function get_figure_x_min_compat(state) result(x_min)
         !! Get x minimum value (compatibility wrapper)

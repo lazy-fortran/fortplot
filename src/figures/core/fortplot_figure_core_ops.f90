@@ -329,7 +329,7 @@ module fortplot_figure_core_accessors
     public :: core_get_width, core_get_height, core_get_rendered, core_set_rendered
     public :: core_get_plot_count, core_get_plots, core_get_x_min, core_get_x_max
     public :: core_get_y_min, core_get_y_max, core_backend_color, core_backend_associated
-    public :: core_backend_line, core_setup_png_backend_for_animation
+    public :: core_backend_line, core_setup_png_backend_for_animation, core_backend_arrow
     public :: core_extract_rgb_data_for_animation, core_extract_png_data_for_animation
 
 contains
@@ -411,6 +411,13 @@ contains
         real(wp), intent(in) :: x1, y1, x2, y2
         call figure_backend_line(state, x1, y1, x2, y2)
     end subroutine core_backend_line
+
+    subroutine core_backend_arrow(state, x, y, dx, dy, size, style)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        call figure_backend_arrow(state, x, y, dx, dy, size, style)
+    end subroutine core_backend_arrow
 
     ! Animation support - delegate to animation module
     subroutine core_setup_png_backend_for_animation(state)

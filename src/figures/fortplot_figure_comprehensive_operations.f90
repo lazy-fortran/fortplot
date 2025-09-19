@@ -55,7 +55,7 @@ module fortplot_figure_comprehensive_operations
     public :: figure_get_width, figure_get_height, figure_get_rendered, figure_set_rendered
     public :: figure_get_plot_count, figure_get_plots
     public :: figure_get_x_min, figure_get_x_max, figure_get_y_min, figure_get_y_max
-    public :: figure_backend_color, figure_backend_associated, figure_backend_line
+    public :: figure_backend_color, figure_backend_associated, figure_backend_line, figure_backend_arrow
     
     ! Additional operations needed by core
     public :: update_data_ranges_figure, update_data_ranges_pcolormesh_figure
@@ -78,7 +78,7 @@ module fortplot_figure_comprehensive_operations
     public :: core_get_width, core_get_height, core_get_rendered, core_set_rendered
     public :: core_get_plot_count, core_get_plots, core_get_x_min, core_get_x_max
     public :: core_get_y_min, core_get_y_max, core_backend_color, core_backend_associated
-    public :: core_backend_line, core_setup_png_backend_for_animation
+    public :: core_backend_line, core_setup_png_backend_for_animation, core_backend_arrow
     public :: core_extract_rgb_data_for_animation, core_extract_png_data_for_animation
     
     ! Utility operations from core_utils module

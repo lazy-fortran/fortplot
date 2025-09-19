@@ -127,6 +127,7 @@ module fortplot_figure_core
         procedure :: extract_png_data_for_animation
         procedure :: backend_color
         procedure :: backend_line
+        procedure :: backend_arrow
         procedure :: backend_associated
         procedure :: get_x_min
         procedure :: get_x_max
@@ -399,6 +400,11 @@ contains
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x1, y1, x2, y2
         call core_backend_line(self%state, x1, y1, x2, y2)
     end subroutine backend_line
+    subroutine backend_arrow(self, x, y, dx, dy, size, style)
+        class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        call core_backend_arrow(self%state, x, y, dx, dy, size, style)
+    end subroutine backend_arrow
     function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self; real(wp) :: x_min
         x_min = core_get_x_min(self%state)
