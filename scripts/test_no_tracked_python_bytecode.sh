@@ -4,7 +4,7 @@ set -euo pipefail
 # Guard against Python bytecode being tracked in git
 # Fails if any '*.pyc' files or '__pycache__' directories are tracked.
 
-tracked=$(git ls-files -z | tr '\0' '\n' | rg -n '(^|/)__pycache__\/|\.pyc$' || true)
+tracked=$(git ls-files -z | tr '\0' '\n' | grep -En '(^|/)__pycache__/|\.pyc$' || true)
 
 if [[ -n "$tracked" ]]; then
   echo "ERROR: Tracked Python bytecode detected:" >&2
