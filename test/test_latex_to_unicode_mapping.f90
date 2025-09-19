@@ -106,8 +106,9 @@ contains
         integer :: result_len
         
         ! Process text with LaTeX commands
-        input_text = "The value \alpha = 2\pi is important"
+        input_text = "The value $\alpha = 2\pi$ is important"
         call process_latex_in_text(input_text, result_text, result_len)
+        print *, 'DEBUG mixed:', result_text(1:result_len)
         
         if (result_len == 0) then
             print *, "ERROR: Failed to process mixed text"
@@ -149,8 +150,9 @@ contains
         integer :: result_len
         
         ! Complex text with multiple commands
-        input_text = "Equation: \alpha + \beta = \gamma"
+        input_text = "Equation: $\alpha + \beta = \gamma$"
         call process_latex_in_text(input_text, result_text, result_len)
+        print *, 'DEBUG complex:', result_text(1:result_len)
         
         if (result_len == 0) then
             print *, "ERROR: Failed to process complex text"

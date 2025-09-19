@@ -212,64 +212,55 @@ contains
     end subroutine codepoint_to_utf8
     
     subroutine process_latex_in_text(input_text, result_text, result_len)
+        !! Convert LaTeX-style greek commands to Unicode ONLY inside $...$
         character(len=*), intent(in) :: input_text
         character(len=*), intent(out) :: result_text
         integer, intent(out) :: result_len
-        integer :: commands(20, 2), num_commands
-        integer :: i, pos, last_pos, cmd_start, cmd_end
+        integer :: i, pos, n
+        logical :: in_math
+        integer :: cmd_end
         character(len=20) :: command, unicode_char
         logical :: success
-        
+
         result_text = ""
         result_len = 0
-        
-        ! Find all LaTeX commands
-        call find_all_latex_commands(input_text, commands, num_commands)
-        
-        if (num_commands == 0) then
-            ! No commands found, copy input as-is
-            result_text = input_text
-            result_len = len_trim(input_text)
-            return
-        end if
-        
-        last_pos = 1
         pos = 1
-        
-        ! Process each command
-        do i = 1, num_commands
-            cmd_start = commands(i, 1)
-            cmd_end = commands(i, 2)
-            
-            ! Copy text before command
-            if (cmd_start > last_pos) then
-                result_text(pos:pos + cmd_start - last_pos - 1) = input_text(last_pos:cmd_start - 1)
-                pos = pos + cmd_start - last_pos
+        n = len_trim(input_text)
+        in_math = .false.
+        i = 1
+
+        do while (i <= n)
+            if (input_text(i:i) == '$') then
+                in_math = .not. in_math
+                i = i + 1
+                cycle
             end if
-            
-            ! Extract and convert command
-            call extract_latex_command(input_text, cmd_start, cmd_end, command)
-            call latex_to_unicode(trim(command), unicode_char, success)
-            
-            if (success) then
-                ! Add Unicode character
-                result_text(pos:pos + len_trim(unicode_char) - 1) = trim(unicode_char)
-                pos = pos + len_trim(unicode_char)
-            else
-                ! Keep original command if conversion fails
-                result_text(pos:pos + cmd_end - cmd_start) = input_text(cmd_start:cmd_end)
-                pos = pos + cmd_end - cmd_start + 1
+
+            if (in_math .and. i <= n .and. input_text(i:i) == '\') then
+                ! Scan a LaTeX command name after backslash
+                cmd_end = i + 1
+                do while (cmd_end <= n)
+                    if (.not. is_alpha(input_text(cmd_end:cmd_end))) exit
+                    cmd_end = cmd_end + 1
+                end do
+                if (cmd_end - 1 > i) then
+                    call extract_latex_command(input_text, i, cmd_end - 1, command)
+                    call latex_to_unicode(trim(command), unicode_char, success)
+                    if (success) then
+                        result_text(pos:pos + len_trim(unicode_char) - 1) = trim(unicode_char)
+                        pos = pos + len_trim(unicode_char)
+                        i = cmd_end
+                        cycle
+                    end if
+                end if
+                ! If not a recognized command, fall through and copy the backslash
             end if
-            
-            last_pos = cmd_end + 1
+
+            result_text(pos:pos) = input_text(i:i)
+            pos = pos + 1
+            i = i + 1
         end do
-        
-        ! Copy remaining text
-        if (last_pos <= len_trim(input_text)) then
-            result_text(pos:pos + len_trim(input_text) - last_pos) = input_text(last_pos:len_trim(input_text))
-            pos = pos + len_trim(input_text) - last_pos + 1
-        end if
-        
+
         result_len = pos - 1
     end subroutine process_latex_in_text
 

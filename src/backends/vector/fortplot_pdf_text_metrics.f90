@@ -3,6 +3,7 @@ module fortplot_pdf_text_metrics
 
     use iso_fortran_env, only: wp => real64
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_pdf_core, only: PDF_LABEL_SIZE
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length, check_utf8_sequence
     implicit none
@@ -40,7 +41,7 @@ contains
         fs = PDF_LABEL_SIZE
         if (present(font_size)) fs = font_size
 
-        if (index(text, '^') > 0 .or. index(text, '_') > 0) then
+        if (has_mathtext(text)) then
             width = estimate_mathtext_width(text, fs)
         else
             width = estimate_plain_text_width(text, fs)
@@ -78,10 +79,13 @@ contains
         character(len=*), intent(in) :: text
         real(wp), intent(in) :: fs
         type(mathtext_element_t), allocatable :: elements(:)
+        character(len=4096) :: processed
+        integer :: plen
         integer :: i
 
         w = 0.0_wp
-        elements = parse_mathtext(text)
+        call preprocess_math_text(text, processed, plen)
+        elements = parse_mathtext(processed(1:plen))
         do i = 1, size(elements)
             w = w + measure_mathtext_element_width(elements(i), fs)
         end do

@@ -8,6 +8,7 @@ module fortplot_pdf_mathtext_render
     use fortplot_pdf_text_render, only: draw_mixed_font_text
     use fortplot_pdf_text_segments, only: render_mixed_font_at_position
     use fortplot_unicode, only: utf8_to_codepoint, utf8_char_length
+    use fortplot_text_layout, only: preprocess_math_text
     implicit none
     private
 
@@ -23,23 +24,19 @@ contains
         character(len=*), intent(in) :: text
         real(wp), intent(in), optional :: font_size
 
-        character(len=1024) :: preprocessed_text
+        character(len=2048) :: preprocessed_text
         integer :: processed_len
+        character(len=4096) :: math_ready
+        integer :: mlen
         real(wp) :: fs
 
         fs = PDF_LABEL_SIZE
         if (present(font_size)) fs = font_size
 
         call process_latex_in_text(text, preprocessed_text, processed_len)
-
-        if (index(preprocessed_text(1:processed_len), '^') > 0 .or. &
-            index(preprocessed_text(1:processed_len), '_') > 0) then
-            call render_mathtext_with_unicode_superscripts(this, x, y, &
-                preprocessed_text(1:processed_len), fs)
-        else
-            call render_text_with_unicode_superscripts(this, x, y, &
-                preprocessed_text(1:processed_len), fs)
-        end if
+        call preprocess_math_text(preprocessed_text(1:processed_len), math_ready, mlen)
+        call render_mathtext_with_unicode_superscripts(this, x, y, &
+            math_ready(1:mlen), fs)
     end subroutine draw_pdf_mathtext
 
     subroutine render_mathtext_element_pdf(this, element, x_pos, baseline_y, &

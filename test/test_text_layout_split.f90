@@ -37,7 +37,7 @@ program test_text_layout_split
         error stop "descent should be positive"
     end if
 
-    if (.not. has_mathtext('x^2 + y_1')) then
+    if (.not. has_mathtext('$x^2 + y_1$')) then
         error stop "mathtext markers should be detected"
     end if
 
