@@ -49,7 +49,9 @@ contains
         real(wp), intent(in), optional :: color(3)
 
         call ensure_fig_init()
-        call fig%add_plot(x, y, label=label, linestyle=linestyle)
+        ! Route to the actual errorbar implementation so error bars are visible
+        call errorbar_impl(fig, x, y, xerr=xerr, yerr=yerr, label=label, &
+                           capsize=capsize, marker=marker, color=color)
     end subroutine errorbar
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
