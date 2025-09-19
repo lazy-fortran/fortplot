@@ -5,6 +5,7 @@ module fortplot_3d_axes
     !! tick positions and projecting them to 2D coordinates
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot_axes, only: format_tick_label
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     implicit none
     
