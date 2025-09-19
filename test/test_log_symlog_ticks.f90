@@ -6,7 +6,9 @@ program test_log_symlog_ticks
     implicit none
     
     call test_should_handle_log_scale_ranges()
+    call test_should_format_log_ticks_as_powers_of_ten()
     call test_should_handle_symlog_with_linear_threshold()
+    call test_should_include_symlog_threshold_ticks()
     call test_should_maintain_coordinate_bounds()
     call test_should_handle_scientific_ranges()
     
@@ -43,6 +45,35 @@ contains
         end if
     end subroutine test_should_handle_log_scale_ranges
 
+    subroutine test_should_format_log_ticks_as_powers_of_ten()
+        !! Ensure log scale emits matplotlib-style power-of-ten labels
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        real(wp) :: ticks(MAX_TICKS)
+        integer :: num_ticks
+
+        call compute_scale_ticks('log', 1.0_wp, 1000.0_wp, 1.0_wp, ticks, num_ticks)
+
+        if (num_ticks < 3) then
+            print *, 'FAIL: expected multiple log ticks, got', num_ticks
+            stop 1
+        end if
+
+        if (trim(format_tick_label(ticks(1), 'log')) /= '10^{0}') then
+            print *, 'FAIL: log tick at 1 should be formatted as 10^{0}'
+            stop 1
+        end if
+
+        if (trim(format_tick_label(ticks(2), 'log')) /= '10^{1}') then
+            print *, 'FAIL: log tick at 10 should be formatted as 10^{1}'
+            stop 1
+        end if
+
+        if (trim(format_tick_label(ticks(3), 'log')) /= '10^{2}') then
+            print *, 'FAIL: log tick at 100 should be formatted as 10^{2}'
+            stop 1
+        end if
+    end subroutine test_should_format_log_ticks_as_powers_of_ten
+
     subroutine test_should_handle_symlog_with_linear_threshold()
         !! Symlog should handle ranges crossing zero appropriately
         character(len=20) :: labels(7)
@@ -66,6 +97,56 @@ contains
             stop 1
         end if
     end subroutine test_should_handle_symlog_with_linear_threshold
+
+    subroutine test_should_include_symlog_threshold_ticks()
+        !! Validate symlog ticks include threshold boundary once with power formatting
+        use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
+        real(wp) :: ticks(MAX_TICKS)
+        integer :: num_ticks, i
+        logical :: found_negative_threshold, found_positive_threshold
+        character(len=20) :: label
+
+        call compute_scale_ticks('symlog', -150.0_wp, 120000.0_wp, 10.0_wp, ticks, num_ticks)
+
+        found_negative_threshold = .false.
+        found_positive_threshold = .false.
+
+        do i = 1, num_ticks
+            if (abs(ticks(i) + 10.0_wp) <= 1.0e-9_wp) then
+                label = trim(format_tick_label(ticks(i), 'symlog'))
+                if (label /= '-10^{1}') then
+                    print *, 'FAIL: symlog negative threshold should be -10^{1}, got', label
+                    stop 1
+                end if
+                if (found_negative_threshold) then
+                    print *, 'FAIL: duplicate negative threshold tick detected'
+                    stop 1
+                end if
+                found_negative_threshold = .true.
+            else if (abs(ticks(i) - 10.0_wp) <= 1.0e-9_wp) then
+                label = trim(format_tick_label(ticks(i), 'symlog'))
+                if (label /= '10^{1}') then
+                    print *, 'FAIL: symlog positive threshold should be 10^{1}, got', label
+                    stop 1
+                end if
+                if (found_positive_threshold) then
+                    print *, 'FAIL: duplicate positive threshold tick detected'
+                    stop 1
+                end if
+                found_positive_threshold = .true.
+            end if
+        end do
+
+        if (.not. found_negative_threshold) then
+            print *, 'FAIL: missing negative symlog threshold tick'
+            stop 1
+        end if
+
+        if (.not. found_positive_threshold) then
+            print *, 'FAIL: missing positive symlog threshold tick'
+            stop 1
+        end if
+    end subroutine test_should_include_symlog_threshold_ticks
 
     subroutine test_should_maintain_coordinate_bounds()
         !! Coordinate transformations should generate consistent labels
