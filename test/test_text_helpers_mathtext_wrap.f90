@@ -3,6 +3,7 @@ program test_text_helpers_mathtext_wrap
     implicit none
 
     character(len=256) :: out
+    character(len=6)   :: small
     integer :: n
 
     call prepare_mathtext_if_needed('x^3', out, n)
@@ -38,6 +39,19 @@ program test_text_helpers_mathtext_wrap
     call prepare_mathtext_if_needed('', out, n)
     if (n /= 0) then
         print *, 'FAIL: empty input should yield zero length'
+        stop 1
+    end if
+
+    ! Small-buffer truncation behavior: input requires 8 chars ('$x^1234$'),
+    ! but buffer is only 6; ensure safe wrap with truncation and correct length
+    small = ''
+    call prepare_mathtext_if_needed('x^1234', small, n)
+    if (n /= len(small)) then
+        print *, 'FAIL: small buffer out_len mismatch'
+        stop 1
+    end if
+    if (small(1:1) /= '$' .or. small(n:n) /= '$') then
+        print *, 'FAIL: small buffer should still be wrapped with $ delimiters'
         stop 1
     end if
 
