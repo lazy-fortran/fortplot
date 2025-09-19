@@ -278,14 +278,24 @@ contains
         real(wp) :: x1, y1, x2, y2, x3, y3  ! Triangle vertices
         real(wp) :: magnitude
         integer(1) :: r, g, b
+        real(wp) :: px, py, ddx, ddy
         associate(dsl=>len_trim(style)); end associate
         
+        ! Transform data coordinates to pixel coordinates
+        px = (x - this%x_min) / (this%x_max - this%x_min) * real(this%plot_area%width, wp) + real(this%plot_area%left, wp)
+        py = real(this%plot_area%bottom + this%plot_area%height, wp) - &
+             (y - this%y_min) / (this%y_max - this%y_min) * real(this%plot_area%height, wp)
+        
+        ! Scale direction components to pixel units (account for inverted Y)
+        ddx = dx * ( real(this%plot_area%width, wp) / max(1.0_wp, (this%x_max - this%x_min)) )
+        ddy = -dy * ( real(this%plot_area%height, wp) / max(1.0_wp, (this%y_max - this%y_min)) )
+        
         ! Normalize direction vector
-        magnitude = sqrt(dx*dx + dy*dy)
+        magnitude = sqrt(ddx*ddx + ddy*ddy)
         if (magnitude < 1e-10_wp) return  ! Avoid division by zero
         
-        norm_dx = dx / magnitude
-        norm_dy = dy / magnitude
+        norm_dx = ddx / magnitude
+        norm_dy = ddy / magnitude
         
         ! Calculate arrow dimensions based on size
         arrow_length = size * 8.0_wp  ! Scale factor for reasonable arrow size
@@ -295,17 +305,16 @@ contains
         perp_x = -norm_dy
         perp_y = norm_dx
         
-        ! Calculate triangle vertices for arrow head
-        ! Tip of arrow at (x, y)
-        x1 = x
-        y1 = y
+        ! Calculate triangle vertices for arrow head (tip at pixel coords)
+        x1 = px
+        y1 = py
         
         ! Base vertices of arrow head
-        x2 = x - arrow_length * norm_dx + arrow_width * perp_x
-        y2 = y - arrow_length * norm_dy + arrow_width * perp_y
+        x2 = px - arrow_length * norm_dx + arrow_width * perp_x
+        y2 = py - arrow_length * norm_dy + arrow_width * perp_y
         
-        x3 = x - arrow_length * norm_dx - arrow_width * perp_x
-        y3 = y - arrow_length * norm_dy - arrow_width * perp_y
+        x3 = px - arrow_length * norm_dx - arrow_width * perp_x
+        y3 = py - arrow_length * norm_dy - arrow_width * perp_y
         
         ! Get current color for filling
         call this%raster%get_color_bytes(r, g, b)
