@@ -3,6 +3,8 @@
 
 import numpy as np
 import sys
+from pathlib import Path
+from typing import Optional
 
 if "--matplotlib" in sys.argv:
     import matplotlib.pyplot as plt
@@ -10,6 +12,32 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: Optional[str] = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def main():
     nx, ny = 20, 20
@@ -29,12 +57,12 @@ def main():
     plt.xlabel('X')
     plt.ylabel('Y')
     plt.title('Streamline Plot Demo - Circular Flow')
-    plt.savefig('streamplot_demo.png')
-    plt.savefig('streamplot_demo.pdf')
+    plt.savefig(out('streamplot_demo.png'))
+    plt.savefig(out('streamplot_demo.pdf'))
 
     # Export TXT for fortplot mode
     if backend == "fortplot":
-        with open('streamplot_demo.txt', 'w') as f:
+        with open(out('streamplot_demo.txt'), 'w') as f:
             f.write("Streamline Plot Demo - Circular Flow\n")
             f.write("=====================================\n\n")
             f.write("Grid size: {}x{}\n".format(nx, ny))

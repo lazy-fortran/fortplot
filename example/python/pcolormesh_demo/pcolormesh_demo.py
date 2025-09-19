@@ -2,6 +2,8 @@
 """Demonstrates pcolormesh functionality with different colormaps - Dual mode: fortplot or matplotlib"""
 
 import sys
+from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -11,6 +13,32 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: Optional[str] = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def demo_basic_gradient():
     """Basic pcolormesh with simple gradient"""
@@ -35,12 +63,12 @@ def demo_basic_gradient():
     plt.ylabel('Y coordinate')
     plt.pcolormesh(x, y, C, cmap='viridis')
     
-    plt.savefig('pcolormesh_basic.png')
-    plt.savefig('pcolormesh_basic.pdf')
+    plt.savefig(out('pcolormesh_basic.png'))
+    plt.savefig(out('pcolormesh_basic.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('pcolormesh_basic.txt')
+        plt.savefig(out('pcolormesh_basic.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -69,12 +97,12 @@ def demo_sinusoidal_pattern():
     plt.ylabel('Y coordinate')
     plt.pcolormesh(x, y, C, cmap='coolwarm')
     
-    plt.savefig('pcolormesh_sinusoidal.png')
-    plt.savefig('pcolormesh_sinusoidal.pdf')
+    plt.savefig(out('pcolormesh_sinusoidal.png'))
+    plt.savefig(out('pcolormesh_sinusoidal.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('pcolormesh_sinusoidal.txt')
+        plt.savefig(out('pcolormesh_sinusoidal.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -102,12 +130,12 @@ def demo_different_colormaps():
     plt.ylabel('Y coordinate')
     plt.pcolormesh(x, y, C, cmap='plasma')
     
-    plt.savefig('pcolormesh_plasma.png')
-    plt.savefig('pcolormesh_plasma.pdf')
+    plt.savefig(out('pcolormesh_plasma.png'))
+    plt.savefig(out('pcolormesh_plasma.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('pcolormesh_plasma.txt')
+        plt.savefig(out('pcolormesh_plasma.txt'))
     
     if backend == "matplotlib":
         plt.close()

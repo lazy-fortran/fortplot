@@ -5,6 +5,8 @@ Equivalent to scale_examples.f90 for visual comparison
 """
 
 import sys
+from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -14,6 +16,32 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: Optional[str] = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def log_scale_demo():
     """Log scale demonstration - equivalent to Fortran version"""
@@ -29,12 +57,12 @@ def log_scale_demo():
     plt.title('Log Scale Example')
     plt.xlabel('x')
     plt.ylabel('exp(0.2x)')
-    plt.savefig('log_scale.png')
-    plt.savefig('log_scale.pdf')
+    plt.savefig(out('log_scale.png'))
+    plt.savefig(out('log_scale.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('log_scale.txt')
+        plt.savefig(out('log_scale.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -55,12 +83,12 @@ def symlog_scale_demo():
     plt.title('Symlog Scale Example')
     plt.xlabel('x')
     plt.ylabel('x^3 - 50x')
-    plt.savefig('symlog_scale.png')
-    plt.savefig('symlog_scale.pdf')
+    plt.savefig(out('symlog_scale.png'))
+    plt.savefig(out('symlog_scale.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('symlog_scale.txt')
+        plt.savefig(out('symlog_scale.txt'))
     
     if backend == "matplotlib":
         plt.close()

@@ -2,6 +2,8 @@
 """Demonstrates different marker types and styles - Dual mode: fortplot or matplotlib"""
 
 import sys
+from pathlib import Path
+from typing import Optional
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -11,6 +13,33 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+# Determine output directory and helper
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: Optional[str] = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def demo_scatter_plot():
     """Creates a scatter plot to demonstrate markers in practical use"""
@@ -30,12 +59,12 @@ def demo_scatter_plot():
     plt.plot(x, np.sin(x), linestyle="-", label='Sin(x) Reference')
     
     plt.legend()
-    plt.savefig('scatter_plot.png')
-    plt.savefig('scatter_plot.pdf')
+    plt.savefig(out('scatter_plot.png'))
+    plt.savefig(out('scatter_plot.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('scatter_plot.txt')
+        plt.savefig(out('scatter_plot.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -63,8 +92,8 @@ def demo_all_marker_types():
     ax.plot(x, y4, 'x', label='Cross')
     
     ax.legend()
-    plt.savefig('all_marker_types.png', dpi=100)
-    plt.savefig('all_marker_types.pdf')
+    plt.savefig(out('all_marker_types.png'), dpi=100)
+    plt.savefig(out('all_marker_types.pdf'))
     plt.close()
 
 def demo_marker_colors():
@@ -86,8 +115,8 @@ def demo_marker_colors():
     ax.plot(x, y3, 'D', label='Orange diamonds')
     
     ax.legend()
-    plt.savefig('marker_colors.png', dpi=100)
-    plt.savefig('marker_colors.pdf')
+    plt.savefig(out('marker_colors.png'), dpi=100)
+    plt.savefig(out('marker_colors.pdf'))
     plt.close()
 
 if __name__ == "__main__":

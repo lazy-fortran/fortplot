@@ -6,8 +6,21 @@ Equivalent to fortplotlib's scatter_demo.f90
 This shows the matplotlib approach for comparison with fortplotlib's cleaner API.
 """
 
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+
+# Standardize output location under repo_root/output/example/python/pyplot/<example>
+backend = "matplotlib"
+def _default_outdir() -> Path:
+    repo_root = Path(__file__).resolve().parents[3]
+    example_name = Path(__file__).resolve().parent.name
+    p = repo_root / "output" / "example" / "python" / "pyplot" / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+_OUTDIR = _default_outdir()
+def out(name: str) -> str:
+    return str(_OUTDIR / name)
 
 # Basic 2D scatter plot
 n = 50
@@ -21,7 +34,7 @@ plt.ylabel('Y')
 plt.title('Basic Scatter Plot')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.savefig('scatter_basic.png', dpi=100)
+plt.savefig(out('scatter_basic.png'), dpi=100)
 plt.close()
 
 # Multiple scatter plots with different colors and sizes
@@ -48,7 +61,7 @@ plt.ylabel('Y')
 plt.title('Multiple Scatter Plots')
 plt.legend()
 plt.grid(True, alpha=0.3)
-plt.savefig('scatter_multi.png', dpi=100)
+plt.savefig(out('scatter_multi.png'), dpi=100)
 plt.close()
 
 # Gaussian distribution scatter
@@ -68,7 +81,7 @@ plt.ylabel('Y')
 plt.title('Gaussian Distribution')
 plt.grid(True, alpha=0.3)
 plt.axis('equal')
-plt.savefig('scatter_gaussian.png', dpi=100)
+plt.savefig(out('scatter_gaussian.png'), dpi=100)
 plt.close()
 
 print("2D scatter plot demos complete!")
