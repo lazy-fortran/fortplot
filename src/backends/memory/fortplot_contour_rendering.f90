@@ -191,9 +191,17 @@ contains
 
     subroutine fill_region_even_odd(backend, polys)
         !! Fill a set of closed rings using even-odd rule via scanline slabs
+        !!
+        !! Previous implementation filled axis-aligned rectangles using x-intersections
+        !! at the slice midpoint (ym). This produced blocky edges for diagonals/curves.
+        !!
+        !! Improvement: compute x-intersections at both y0 and y1 of each slab and
+        !! fill trapezoids [xL(y0), xR(y0), xR(y1), xL(y1)], which exactly covers
+        !! polygon area for linear edges between vertices and eliminates stair-steps.
         class(plot_context), intent(inout) :: backend
         type(contour_polygon_t), intent(in) :: polys(:)
-        real(wp), allocatable :: yvals(:), xs(:)
+        real(wp), allocatable :: yvals(:)
+        real(wp), allocatable :: xs_mid(:), xs0(:), xs1(:)
         integer :: i, j, n, m, k, p
         real(wp) :: y0, y1, ym
         real(wp) :: xq(4), yq(4)
@@ -209,20 +217,39 @@ contains
             if (y1 <= y0) cycle
             ym = 0.5_wp*(y0 + y1)
 
-            ! Intersections with all ring edges at y = ym
-            call collect_x_intersections(polys, ym, xs)
-            n = size(xs)
-            if (n < 2) cycle
+            ! Intersections with all ring edges at y = y0, y1 (primary) and ym (fallback)
+            call collect_x_intersections(polys, y0, xs0)
+            call collect_x_intersections(polys, y1, xs1)
+            n = min(size(xs0), size(xs1))
+            if (n >= 2 .and. mod(n, 2) == 0 .and. size(xs0) == size(xs1)) then
+                call sort_real(xs0)
+                call sort_real(xs1)
+                do p = 1, n-1, 2
+                    if (p+1 > n) exit
+                    xq = [ xs0(p), xs0(p+1), xs1(p+1), xs1(p) ]
+                    yq = [ y0,     y0,        y1,      y1     ]
+                    call backend%fill_quad(xq, yq)
+                end do
+            else
+                ! Fallback to midpoint rectangles if intersection counts mismatch
+                call collect_x_intersections(polys, ym, xs_mid)
+                if (allocated(xs_mid)) then
+                    n = size(xs_mid)
+                    if (n >= 2) then
+                        call sort_real(xs_mid)
+                        do p = 1, n-1, 2
+                            if (p+1 > n) exit
+                            xq = [ xs_mid(p), xs_mid(p+1), xs_mid(p+1), xs_mid(p) ]
+                            yq = [ y0,        y0,          y1,          y1        ]
+                            call backend%fill_quad(xq, yq)
+                        end do
+                    end if
+                end if
+            end if
 
-            ! Sort and fill between pairs (even-odd rule)
-            call sort_real(xs)
-            do p = 1, n-1, 2
-                if (p+1 > n) exit
-                xq = [ xs(p), xs(p+1), xs(p+1), xs(p) ]
-                yq = [ y0,    y0,     y1,     y1    ]
-                call backend%fill_quad(xq, yq)
-            end do
-            if (allocated(xs)) deallocate(xs)
+            if (allocated(xs0))     deallocate(xs0)
+            if (allocated(xs1))     deallocate(xs1)
+            if (allocated(xs_mid))  deallocate(xs_mid)
         end do
 
         if (allocated(yvals)) deallocate(yvals)
@@ -233,8 +260,7 @@ contains
             type(contour_polygon_t), intent(in) :: polys(:)
             real(wp), allocatable, intent(out) :: yvals(:)
             real(wp), allocatable :: tmp(:)
-            integer :: i, n, t, s
-            s = 0
+            integer :: i, n, t
             allocate(tmp(0))
             do i = 1, size(polys)
                 if (.not. allocated(polys(i)%y)) cycle
