@@ -5,6 +5,7 @@ Equivalent to basic_plots.f90 for visual comparison
 """
 
 import sys
+from pathlib import Path
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -14,6 +15,36 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+# Determine output directory (default to repo_root/output/example/python/<backend>/<example>/)
+# Support optional --outdir <path> or --outdir=<path>
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: str | None = None
+    # consume --outdir forms
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            # remove both
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def simple_plots():
     """Simple plot - equivalent to Fortran functional API"""
@@ -29,12 +60,12 @@ def simple_plots():
     plt.title('Simple Sine Wave')
     plt.xlabel('x')
     plt.ylabel('sin(x)')
-    plt.savefig('simple_plot.png')
-    plt.savefig('simple_plot.pdf')
+    plt.savefig(out('simple_plot.png'))
+    plt.savefig(out('simple_plot.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('simple_plot.txt')
+        plt.savefig(out('simple_plot.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -56,12 +87,12 @@ def multi_line_plot():
     plt.plot(x, sx, label="sin(x)")
     plt.plot(x, cx, label="cos(x)")
     plt.legend()
-    plt.savefig('multi_line.png')
-    plt.savefig('multi_line.pdf')
+    plt.savefig(out('multi_line.png'))
+    plt.savefig(out('multi_line.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('multi_line.txt')
+        plt.savefig(out('multi_line.txt'))
     
     if backend == "matplotlib":
         plt.close()

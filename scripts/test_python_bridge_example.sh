@@ -11,6 +11,13 @@ OUT_FILE="$ROOT_DIR/output/python_bridge_demo.png"
 # Ensure output dir exists
 mkdir -p "$ROOT_DIR/output"
 
+# Guard: ensure command file exists with a clear error (Issue #1284)
+if [ ! -f "$CMD_FILE" ]; then
+  echo "Required command file missing: $CMD_FILE" >&2
+  echo "Please restore or ensure it is packaged. See example/python_bridge/commands_basic.txt" >&2
+  exit 4
+fi
+
 # Locate bridge executable via the Python helper (avoids hardcoding build paths)
 # Use PYTHONPATH to include the repo's python/ directory (robust when running from stdin)
 BRIDGE_EXE=$(PYTHONPATH="$ROOT_DIR/python${PYTHONPATH+:$PYTHONPATH}" python3 - <<'PY'

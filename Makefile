@@ -23,7 +23,7 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
-.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune verify-warnings
+.PHONY: all build example debug test clean help matplotlib example_python example_matplotlib example_python_dual doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune verify-warnings
 
 # Default target
 all: build
@@ -120,6 +120,19 @@ example_matplotlib:
 		fi; \
 	done
 	@echo "Matplotlib comparison plots generated!"
+
+# Run Python examples in both modes and consolidate outputs
+example_python_dual:
+	@echo "Running Python examples in both modes (fortplot + matplotlib)..."
+	@for dir in example/python/*/; do \
+		if ls "$$dir"*.py >/dev/null 2>&1; then \
+			echo "[fortplot] $$dir"; \
+			cd "$$dir" && python3 *.py && cd - > /dev/null; \
+			echo "[matplotlib] $$dir"; \
+			cd "$$dir" && python3 *.py --matplotlib && cd - > /dev/null; \
+		fi; \
+	done
+	@echo "Dual-mode Python example runs completed!"
 
 # Legacy matplotlib target (deprecated, use example_matplotlib)
 matplotlib: example_matplotlib
@@ -324,6 +337,7 @@ help:
 	@echo "  example          - Build and run all Fortran examples"
 	@echo "  example_python   - Run Python examples with fortplot"
 	@echo "  example_matplotlib - Run Python examples with matplotlib (comparison)"
+	@echo "  example_python_dual - Run Python examples with both backends and consolidate outputs"
 	@echo "  debug            - Build and run apps for debugging"
 	@echo "  test             - Run all tests"
 	@echo "  test-ci          - Run CI-optimized tests (skip heavy I/O, MPEG tests)"

@@ -6,9 +6,22 @@ Equivalent to fortplotlib's scatter3d_demo.f90
 This shows the matplotlib approach for comparison with fortplotlib's cleaner API.
 """
 
+from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+
+# Standardize output location under repo_root/output/example/python/pyplot/<example>
+backend = "matplotlib"
+def _default_outdir() -> Path:
+    repo_root = Path(__file__).resolve().parents[3]
+    example_name = Path(__file__).resolve().parent.name
+    p = repo_root / "output" / "example" / "python" / "pyplot" / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+_OUTDIR = _default_outdir()
+def out(name: str) -> str:
+    return str(_OUTDIR / name)
 
 # Generate the same data as fortplotlib example
 n = 100
@@ -29,7 +42,7 @@ ax.set_ylabel('Y Label')
 ax.set_zlabel('Z Label')
 ax.set_title('3D Scatter Plot')
 ax.legend()
-plt.savefig('scatter3d_demo.png', dpi=100)
+plt.savefig(out('scatter3d_demo.png'), dpi=100)
 plt.close()
 
 # Multiple scatter plots
@@ -50,7 +63,7 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 ax.set_title('Multiple 3D Scatter Plots')
 ax.legend()
-plt.savefig('scatter3d_multi.png', dpi=100)
+plt.savefig(out('scatter3d_multi.png'), dpi=100)
 plt.close()
 
 # Parametric curve with scatter points
@@ -76,7 +89,7 @@ ax.set_ylabel('Y')
 ax.set_zlabel('Z')
 ax.set_title('Parametric Curve with Points')
 ax.legend()
-plt.savefig('scatter3d_curve.png', dpi=100)
+plt.savefig(out('scatter3d_curve.png'), dpi=100)
 plt.close()
 
 print("3D scatter plot demos complete!")

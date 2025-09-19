@@ -3,6 +3,7 @@
 Shows legend positioning, labeling, and rendering across all backends - Dual mode: fortplot or matplotlib"""
 
 import sys
+from pathlib import Path
 import numpy as np
 
 # Dual-mode import: --matplotlib uses matplotlib, default uses fortplot
@@ -12,6 +13,32 @@ if "--matplotlib" in sys.argv:
 else:
     import fortplot.fortplot as plt
     backend = "fortplot"
+
+def _parse_outdir() -> Path:
+    args = sys.argv[:]
+    outdir_arg: str | None = None
+    for i, a in enumerate(list(args)):
+        if a.startswith("--outdir="):
+            outdir_arg = a.split("=", 1)[1]
+            sys.argv.pop(i)
+            break
+        if a == "--outdir" and i + 1 < len(args):
+            outdir_arg = args[i + 1]
+            del sys.argv[i:i+2]
+            break
+    if outdir_arg:
+        p = Path(outdir_arg).expanduser().resolve()
+    else:
+        repo_root = Path(__file__).resolve().parents[3]
+        example_name = Path(__file__).resolve().parent.name
+        backend_dir = "pyplot" if backend == "matplotlib" else "fortplot"
+        p = repo_root / "output" / "example" / "python" / backend_dir / example_name
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+_OUTDIR = _parse_outdir()
+def out(name: str) -> str:
+    return str((_OUTDIR / name))
 
 def basic_legend_example():
     """Basic legend usage with labeled plots"""
@@ -34,12 +61,12 @@ def basic_legend_example():
     # Add legend with default position (upper right)
     plt.legend()
     
-    plt.savefig('basic_legend.png')
-    plt.savefig('basic_legend.pdf')
+    plt.savefig(out('basic_legend.png'))
+    plt.savefig(out('basic_legend.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('basic_legend.txt')
+        plt.savefig(out('basic_legend.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -64,12 +91,12 @@ def positioned_legend_example():
     plt.plot(x, y2, linestyle="--", label="log(x)")
     plt.legend()
     
-    plt.savefig('legend_positioning.png')
-    plt.savefig('legend_positioning.pdf')
+    plt.savefig(out('legend_positioning.png'))
+    plt.savefig(out('legend_positioning.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('legend_positioning.txt')
+        plt.savefig(out('legend_positioning.txt'))
     
     if backend == "matplotlib":
         plt.close()
@@ -102,12 +129,12 @@ def multi_function_legend_example():
     # Add legend
     plt.legend()
     
-    plt.savefig('multi_function_legend.png')
-    plt.savefig('multi_function_legend.pdf')
+    plt.savefig(out('multi_function_legend.png'))
+    plt.savefig(out('multi_function_legend.pdf'))
     
     # Save TXT for fortplot only
     if backend == "fortplot":
-        plt.savefig('multi_function_legend.txt')
+        plt.savefig(out('multi_function_legend.txt'))
     
     if backend == "matplotlib":
         plt.close()
