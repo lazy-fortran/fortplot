@@ -8,6 +8,7 @@ module fortplot_mathtext
     private
     public :: mathtext_element_t, parse_mathtext, render_mathtext_elements
     public :: calculate_mathtext_width, calculate_mathtext_height
+    public :: ELEMENT_NORMAL, ELEMENT_SUPERSCRIPT, ELEMENT_SUBSCRIPT, ELEMENT_SQRT
 
     ! Mathematical text element types
     integer, parameter :: ELEMENT_NORMAL = 0
