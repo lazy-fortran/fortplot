@@ -21,6 +21,8 @@ module fortplot_figure_core_io
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context
+    use fortplot_margins, only: calculate_plot_area
+    use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
                                                     setup_coordinate_system, &
                                                     render_figure_background, &
@@ -31,7 +33,7 @@ module fortplot_figure_core_io
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, subplot_data_t
     implicit none
 
     private
@@ -39,7 +41,8 @@ module fortplot_figure_core_io
 
 contains
 
-    subroutine savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count)
+    subroutine savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count, &
+                              subplots_array, subplot_rows, subplot_cols)
         !! Save figure to file (backward compatibility version)
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
@@ -49,12 +52,15 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        ! Optional subplot data for multi-axes rendering
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         integer :: status
         
         ! Delegate to version with status reporting
         call savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count)
+                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
         
         ! Log error if save failed (maintains existing behavior)
         if (status /= SUCCESS) then
@@ -63,7 +69,7 @@ contains
     end subroutine savefig_figure
     
     subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
-                                          annotations, annotation_count)
+                                          annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
         !! Save figure to file with error status reporting
         !! Added Issue #854: File path validation for user input safety
         use fortplot_annotations, only: text_annotation_t
@@ -76,6 +82,9 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        ! Optional subplot data for multi-axes rendering
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         character(len=20) :: required_backend, current_backend
         logical :: block, need_backend_switch
@@ -118,14 +127,16 @@ contains
         
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
+                                   subplots_array, subplot_rows, subplot_cols)
         end if
         
         ! Save the figure with status checking
         call save_backend_with_status(state%backend, filename, status)
     end subroutine savefig_with_status_figure
 
-    subroutine show_figure(state, plots, plot_count, blocking, annotations, annotation_count)
+    subroutine show_figure(state, plots, plot_count, blocking, annotations, annotation_count, &
+                           subplots_array, subplot_rows, subplot_cols)
         !! Display the figure
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
@@ -134,6 +145,9 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        ! Optional subplot data for multi-axes rendering
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
         logical :: block
         
@@ -144,7 +158,8 @@ contains
         
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+            call render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
+                                   subplots_array, subplot_rows, subplot_cols)
         end if
         
         ! Display the figure
@@ -156,7 +171,8 @@ contains
         end if
     end subroutine show_figure
 
-    subroutine render_figure_impl(state, plots, plot_count, annotations, annotation_count)
+    subroutine render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
+                                  subplots_array, subplot_rows, subplot_cols)
         !! Main rendering pipeline implementation
         !! Fixed Issue #432: Always render axes/labels even with no plot data
         !! Fixed Issue #844: ASCII annotation functionality
@@ -166,7 +182,94 @@ contains
         integer, intent(in) :: plot_count
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
+        ! Optional subplot data for multi-axes rendering
+        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        integer, intent(in), optional :: subplot_rows, subplot_cols
         
+        logical :: have_subplots
+        integer :: nr, nc, i, j, idx
+        real(wp) :: base_left, base_right, base_bottom, base_top
+        real(wp) :: cell_w, cell_h, left_f, right_f, bottom_f, top_f
+        real(wp) :: lxmin, lxmax, lymin, lymax
+        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+        
+        have_subplots = .false.
+        if (present(subplots_array) .and. present(subplot_rows) .and. present(subplot_cols)) then
+            if (size(subplots_array, 1) == subplot_rows .and. size(subplots_array, 2) == subplot_cols) then
+                have_subplots = (subplot_rows > 0 .and. subplot_cols > 0)
+            end if
+        end if
+        
+        if (have_subplots) then
+            ! Define a base area within the canvas for all subplots
+            base_left   = 0.10_wp
+            base_right  = 0.95_wp
+            base_bottom = 0.10_wp
+            base_top    = 0.90_wp
+            nr = subplot_rows; nc = subplot_cols
+            cell_w = (base_right - base_left) / real(nc, wp)
+            cell_h = (base_top   - base_bottom) / real(nr, wp)
+            
+            do i = 1, nr
+                do j = 1, nc
+                    idx = (i - 1) * nc + j
+                    left_f   = base_left   + real(j-1, wp) * cell_w
+                    right_f  = base_left   + real(j,   wp) * cell_w
+                    bottom_f = base_bottom + real(nr-i, wp) * cell_h
+                    top_f    = base_bottom + real(nr-i+1, wp) * cell_h
+                    
+                    ! Update backend plot area to this cell
+                    select type (bk => state%backend)
+                    class is (png_context)
+                        bk%margins%left = left_f
+                        bk%margins%right = right_f
+                        bk%margins%bottom = bottom_f
+                        bk%margins%top = top_f
+                        call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+                    class is (pdf_context)
+                        bk%margins%left = left_f
+                        bk%margins%right = right_f
+                        bk%margins%bottom = bottom_f
+                        bk%margins%top = top_f
+                        call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+                    class is (ascii_context)
+                        ! ASCII backend ignores plot area; keep defaults
+                    class default
+                        ! Unknown backend; fall back to single-axes behavior below
+                    end select
+                    
+                    ! Compute local data ranges for this subplot
+                    call calculate_figure_data_ranges(subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
+                                                    subplots_array(i,j)%xlim_set, subplots_array(i,j)%ylim_set, &
+                                                    lxmin, lxmax, lymin, lymax, &
+                                                    lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                                    state%xscale, state%yscale, state%symlog_threshold)
+                    
+                    call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, lymin_t, lymax_t)
+                    
+                    ! Render axes and plots for this subplot
+                    call render_figure_axes(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                                           lxmin, lxmax, lymin, lymax, &
+                                           subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
+                                           subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+                    if (subplots_array(i,j)%plot_count > 0) then
+                        call render_all_plots(state%backend, subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
+                                             lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                             state%xscale, state%yscale, state%symlog_threshold, &
+                                             state%width, state%height, &
+                                             state%margin_left, state%margin_right, state%margin_bottom, state%margin_top)
+                    end if
+                    call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                                                       lxmin, lxmax, lymin, lymax, &
+                                                       subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
+                                                       subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+                end do
+            end do
+            state%rendered = .true.
+            return
+        end if
+        
+        ! Single-axes rendering path (legacy)
         ! Calculate final data ranges
         call calculate_figure_data_ranges(plots, plot_count, &
                                         state%xlim_set, state%ylim_set, &
