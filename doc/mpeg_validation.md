@@ -61,7 +61,7 @@ end select
 - Output path validation
 - FFmpeg availability verification
 
-**Stage 2: Pipeline Monitoring** 
+**Stage 2: Pipeline Monitoring**
 - Real-time pipe health during frame transmission
 - Frame data integrity checking
 - Memory usage and error detection
@@ -84,15 +84,15 @@ Animation save now returns comprehensive status reflecting all validation stages
 subroutine enhanced_animation_save_example()
     type(animation_t) :: anim
     integer :: status
-    
+
     call anim%save("animation.mp4", fps=24, status=status)
-    
+
     select case (status)
     case (0)
         print *, "✓ Animation created and fully validated"
     case (-1)
         print *, "✗ FFmpeg not available"
-    case (-3) 
+    case (-3)
         print *, "✗ Invalid file format"
     case (-4)
         print *, "✗ Pipe connection failed"
@@ -167,7 +167,7 @@ File validation failed:
 ```fortran
 ! Enable detailed validation logging
 use fortplot_logging
-call set_log_level(LOG_DEBUG)
+call set_log_level(LOG_LEVEL_DEBUG)
 call anim%save("debug.mp4", fps=24, status=status)
 ! Outputs detailed pipe and validation diagnostics
 ```
@@ -266,7 +266,7 @@ type(animation_t) :: anim
 integer :: status
 
 ! Enable detailed diagnostics
-call set_log_level(LOG_DEBUG)
+call set_log_level(LOG_LEVEL_DEBUG)
 
 ! Save with enhanced error reporting
 call anim%save("debug.mp4", fps=24, status=status)
