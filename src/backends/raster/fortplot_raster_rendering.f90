@@ -256,10 +256,9 @@ contains
 
     subroutine raster_extract_rgb_data(raster, width, height, rgb_data)
         !! Extract RGB data from PNG backend
-        use, intrinsic :: iso_fortran_env, only: real64
         type(raster_image_t), intent(in) :: raster
         integer, intent(in) :: width, height
-        real(real64), intent(out) :: rgb_data(width, height, 3)
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         integer :: x, y, idx_base
         
         do y = 1, height
@@ -269,9 +268,9 @@ contains
                 idx_base = ((y-1) * width + (x-1)) * 3
                 
                 ! Extract RGB values (normalized to 0-1)
-                rgb_data(x, y, 1) = real(raster%image_data(idx_base + 1), real64) / 255.0_real64
-                rgb_data(x, y, 2) = real(raster%image_data(idx_base + 2), real64) / 255.0_real64
-                rgb_data(x, y, 3) = real(raster%image_data(idx_base + 3), real64) / 255.0_real64
+                rgb_data(x, y, 1) = real(raster%image_data(idx_base + 1), wp) / 255.0_wp
+                rgb_data(x, y, 2) = real(raster%image_data(idx_base + 2), wp) / 255.0_wp
+                rgb_data(x, y, 3) = real(raster%image_data(idx_base + 3), wp) / 255.0_wp
             end do
         end do
     end subroutine raster_extract_rgb_data

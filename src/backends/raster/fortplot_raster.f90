@@ -411,10 +411,9 @@ contains
     end subroutine raster_calculate_legend_position_context
 
     subroutine raster_extract_rgb_data_context(this, width, height, rgb_data)
-        use, intrinsic :: iso_fortran_env, only: real64
         class(raster_context), intent(in) :: this
         integer, intent(in) :: width, height
-        real(real64), intent(out) :: rgb_data(width, height, 3)
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         
         call raster_extract_rgb_data(this%raster, width, height, rgb_data)
     end subroutine raster_extract_rgb_data_context

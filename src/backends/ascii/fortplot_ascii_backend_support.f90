@@ -7,7 +7,7 @@ module fortplot_ascii_backend_support
     !! Author: fortplot contributors
     
     use fortplot_plot_data, only: plot_data_t
-    use, intrinsic :: iso_fortran_env, only: wp => real64, real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
     
     private
@@ -19,10 +19,10 @@ contains
     subroutine extract_ascii_rgb_data(width, height, rgb_data)
         !! Extract RGB data from ASCII backend (not supported - dummy data)
         integer, intent(in) :: width, height
-        real(real64), intent(out) :: rgb_data(width, height, 3)
+        real(wp), intent(out) :: rgb_data(width, height, 3)
         
         ! ASCII backend doesn't have RGB data for animation - fill with dummy data
-        rgb_data = 0.0_real64  ! Black background
+        rgb_data = 0.0_wp  ! Black background
     end subroutine extract_ascii_rgb_data
 
     subroutine get_ascii_png_data(width, height, png_data, status)
