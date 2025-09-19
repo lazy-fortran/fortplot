@@ -206,7 +206,7 @@ contains
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                state%symlog_threshold, state%x_min, state%x_max, &
                                state%y_min, state%y_max, state%title, &
-                               state%xlabel, state%ylabel)
+                               state%xlabel, state%ylabel, plots, plot_count)
         
         ! Render all plots (only if there are plots to render)
         if (plot_count > 0) then
@@ -223,7 +223,7 @@ contains
         call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
                                            state%symlog_threshold, state%x_min, state%x_max, &
                                            state%y_min, state%y_max, state%title, &
-                                           state%xlabel, state%ylabel)
+                                           state%xlabel, state%ylabel, plots, plot_count)
         
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
