@@ -198,7 +198,8 @@ contains
                                   state%symlog_threshold, state%x_min, state%x_max, &
                                   state%y_min, state%y_max, &
                                   state%x_min_transformed, state%x_max_transformed, &
-                                  state%y_min_transformed, state%y_max_transformed)
+                                  state%y_min_transformed, state%y_max_transformed, &
+                                  state%grid_linestyle)
         end if
         
         ! Render axes
@@ -581,4 +582,3 @@ contains
 
 end module fortplot_figure_core_compat
 ! ==== End: src/figures/core/fortplot_figure_core_compat.f90 ====
-
