@@ -127,7 +127,7 @@ contains
         integer :: n_traj, i, j
         integer :: nx, ny
         real(wp) :: asize
-        character(len=4) :: astyle
+        character(len=16) :: astyle
 
         call ensure_fig_init()
 
@@ -166,7 +166,11 @@ contains
         ! Optional: draw arrows along streamlines when requested
         if (present(arrow_scale) .or. present(arrowsize) .or. present(arrowstyle)) then
             asize = 1.0_wp
-            if (present(arrowsize)) asize = arrowsize
+            if (present(arrowsize)) then
+                asize = arrowsize
+            else if (present(arrow_scale)) then
+                asize = arrow_scale
+            end if
             astyle = 'filled'
             if (present(arrowstyle)) astyle = arrowstyle
             do i = 1, n_traj
