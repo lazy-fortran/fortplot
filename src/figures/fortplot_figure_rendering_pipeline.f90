@@ -9,10 +9,10 @@ module fortplot_figure_rendering_pipeline
     use fortplot_scales, only: apply_scale_transform, clamp_extreme_log_range
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                   PLOT_TYPE_PCOLORMESH, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                  PLOT_TYPE_BOXPLOT
+                                  PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
-                                 render_markers, render_boxplot_plot
+                                 render_markers, render_boxplot_plot, render_errorbar_plot
     use fortplot_legend, only: legend_t
     implicit none
     
@@ -62,6 +62,10 @@ contains
             case (PLOT_TYPE_SCATTER)
                 ! Scatter uses same x/y range computation as line plots
                 call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &
+                                             x_min_data, x_max_data, y_min_data, y_max_data)
+
+            case (PLOT_TYPE_ERRORBAR)
+                call process_errorbar_ranges(plots(i), first_plot, has_valid_data, &
                                              x_min_data, x_max_data, y_min_data, y_max_data)
 
             case (PLOT_TYPE_FILL)
@@ -304,6 +308,58 @@ contains
         end if
         has_valid_data = .true.
     end subroutine process_boxplot_ranges
+
+    subroutine process_errorbar_ranges(plot, first_plot, has_valid_data, &
+                                       x_min_data, x_max_data, y_min_data, y_max_data)
+        !! Process errorbar plot data to calculate ranges including error extents
+        type(plot_data_t), intent(in) :: plot
+        logical, intent(inout) :: first_plot, has_valid_data
+        real(wp), intent(inout) :: x_min_data, x_max_data, y_min_data, y_max_data
+
+        real(wp) :: xmin, xmax, ymin, ymax
+        integer :: n
+
+        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
+        if (size(plot%x) == 0 .or. size(plot%y) == 0) return
+        n = min(size(plot%x), size(plot%y))
+
+        xmin = minval(plot%x(1:n))
+        xmax = maxval(plot%x(1:n))
+        ymin = minval(plot%y(1:n))
+        ymax = maxval(plot%y(1:n))
+
+        if (plot%has_xerr) then
+            if (plot%asymmetric_xerr .and. allocated(plot%xerr_lower) .and. allocated(plot%xerr_upper)) then
+                xmin = min(xmin, minval(plot%x(1:n) - plot%xerr_lower(1:n)))
+                xmax = max(xmax, maxval(plot%x(1:n) + plot%xerr_upper(1:n)))
+            else if (allocated(plot%xerr)) then
+                xmin = min(xmin, minval(plot%x(1:n) - plot%xerr(1:n)))
+                xmax = max(xmax, maxval(plot%x(1:n) + plot%xerr(1:n)))
+            end if
+        end if
+
+        if (plot%has_yerr) then
+            if (plot%asymmetric_yerr .and. allocated(plot%yerr_lower) .and. allocated(plot%yerr_upper)) then
+                ymin = min(ymin, minval(plot%y(1:n) - plot%yerr_lower(1:n)))
+                ymax = max(ymax, maxval(plot%y(1:n) + plot%yerr_upper(1:n)))
+            else if (allocated(plot%yerr)) then
+                ymin = min(ymin, minval(plot%y(1:n) - plot%yerr(1:n)))
+                ymax = max(ymax, maxval(plot%y(1:n) + plot%yerr(1:n)))
+            end if
+        end if
+
+        if (first_plot) then
+            x_min_data = xmin; x_max_data = xmax
+            y_min_data = ymin; y_max_data = ymax
+            first_plot = .false.
+        else
+            x_min_data = min(x_min_data, xmin)
+            x_max_data = max(x_max_data, xmax)
+            y_min_data = min(y_min_data, ymin)
+            y_max_data = max(y_max_data, ymax)
+        end if
+        has_valid_data = .true.
+    end subroutine process_errorbar_ranges
     
     subroutine apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
                                          y_min_data, y_max_data)
@@ -643,6 +699,15 @@ contains
 
             case (PLOT_TYPE_BOXPLOT)
                 call render_boxplot_plot(backend, plots(i), xscale, yscale, symlog_threshold)
+
+            case (PLOT_TYPE_ERRORBAR)
+                call render_errorbar_plot(backend, plots(i), xscale, yscale, symlog_threshold)
+                if (allocated(plots(i)%marker)) then
+                    call render_markers(backend, plots(i), &
+                                      x_min_transformed, x_max_transformed, &
+                                      y_min_transformed, y_max_transformed, &
+                                      xscale, yscale, symlog_threshold)
+                end if
 
             end select
         end do
