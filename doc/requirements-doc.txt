@@ -1,0 +1,9 @@
+# Python dependencies for GitHub Pages documentation build
+#
+# The documentation is generated with FORD (Fortran Documenter), which is
+# distributed as a Python package. The docs workflow installs this file via:
+#   pip install -r doc/requirements-doc.txt
+# Keep this list minimal to speed up CI and avoid unnecessary pins.
+
+ford
+
