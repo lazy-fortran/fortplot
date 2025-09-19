@@ -152,13 +152,12 @@ contains
         real(wp), intent(in) :: legend_x, legend_y
         integer :: i
         real(wp) :: text_x, text_y
-        character(len=20) :: legend_line
 
         ! Optional header for better readability in ASCII output
         text_x = legend_x
         text_y = max(1.0_wp, min(legend_y - 1.0_wp, real(28, wp)))
         call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
-        call backend%text(text_x, text_y, 'Legend')
+        call backend%text(text_x, text_y, 'ASCII Legend')
 
         do i = 1, legend%num_entries
             ! For ASCII, arrange entries vertically going downward
