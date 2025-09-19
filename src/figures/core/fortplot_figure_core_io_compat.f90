@@ -187,11 +187,6 @@ contains
         integer, intent(in), optional :: subplot_rows, subplot_cols
         
         logical :: have_subplots
-        integer :: nr, nc, i, j, idx
-        real(wp) :: base_left, base_right, base_bottom, base_top
-        real(wp) :: cell_w, cell_h, left_f, right_f, bottom_f, top_f
-        real(wp) :: lxmin, lxmax, lymin, lymax
-        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
         
         have_subplots = .false.
         if (present(subplots_array) .and. present(subplot_rows) .and. present(subplot_cols)) then
@@ -201,70 +196,7 @@ contains
         end if
         
         if (have_subplots) then
-            ! Define a base area within the canvas for all subplots
-            base_left   = 0.10_wp
-            base_right  = 0.95_wp
-            base_bottom = 0.10_wp
-            base_top    = 0.90_wp
-            nr = subplot_rows; nc = subplot_cols
-            cell_w = (base_right - base_left) / real(nc, wp)
-            cell_h = (base_top   - base_bottom) / real(nr, wp)
-            
-            do i = 1, nr
-                do j = 1, nc
-                    idx = (i - 1) * nc + j
-                    left_f   = base_left   + real(j-1, wp) * cell_w
-                    right_f  = base_left   + real(j,   wp) * cell_w
-                    bottom_f = base_bottom + real(nr-i, wp) * cell_h
-                    top_f    = base_bottom + real(nr-i+1, wp) * cell_h
-                    
-                    ! Update backend plot area to this cell
-                    select type (bk => state%backend)
-                    class is (png_context)
-                        bk%margins%left = left_f
-                        bk%margins%right = right_f
-                        bk%margins%bottom = bottom_f
-                        bk%margins%top = top_f
-                        call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
-                    class is (pdf_context)
-                        bk%margins%left = left_f
-                        bk%margins%right = right_f
-                        bk%margins%bottom = bottom_f
-                        bk%margins%top = top_f
-                        call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
-                    class is (ascii_context)
-                        ! ASCII backend ignores plot area; keep defaults
-                    class default
-                        ! Unknown backend; fall back to single-axes behavior below
-                    end select
-                    
-                    ! Compute local data ranges for this subplot
-                    call calculate_figure_data_ranges(subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
-                                                    subplots_array(i,j)%xlim_set, subplots_array(i,j)%ylim_set, &
-                                                    lxmin, lxmax, lymin, lymax, &
-                                                    lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                                    state%xscale, state%yscale, state%symlog_threshold)
-                    
-                    call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, lymin_t, lymax_t)
-                    
-                    ! Render axes and plots for this subplot
-                    call render_figure_axes(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                                           lxmin, lxmax, lymin, lymax, &
-                                           subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
-                                           subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
-                    if (subplots_array(i,j)%plot_count > 0) then
-                        call render_all_plots(state%backend, subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
-                                             lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                             state%xscale, state%yscale, state%symlog_threshold, &
-                                             state%width, state%height, &
-                                             state%margin_left, state%margin_right, state%margin_bottom, state%margin_top)
-                    end if
-                    call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
-                                                       lxmin, lxmax, lymin, lymax, &
-                                                       subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
-                                                       subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
-                end do
-            end do
+            call render_subplots_impl(state, subplots_array, subplot_rows, subplot_cols)
             state%rendered = .true.
             return
         end if
@@ -282,15 +214,100 @@ contains
                                         state%xscale, state%yscale, &
                                         state%symlog_threshold)
         
-        ! Setup coordinate system
+        call render_single_axes_impl(state, plots, plot_count, annotations, annotation_count)
+        state%rendered = .true.
+    end subroutine render_figure_impl
+
+    subroutine render_subplots_impl(state, subplots_array, subplot_rows, subplot_cols)
+        !! Render a grid of subplots with independent axes/labels per cell
+        type(figure_state_t), intent(inout) :: state
+        type(subplot_data_t), intent(in) :: subplots_array(:,:)
+        integer, intent(in) :: subplot_rows, subplot_cols
+
+        integer :: nr, nc, i, j
+        real(wp) :: base_left, base_right, base_bottom, base_top
+        real(wp) :: cell_w, cell_h, left_f, right_f, bottom_f, top_f
+        real(wp) :: lxmin, lxmax, lymin, lymax
+        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+
+        base_left   = 0.10_wp
+        base_right  = 0.95_wp
+        base_bottom = 0.10_wp
+        base_top    = 0.90_wp
+        nr = subplot_rows; nc = subplot_cols
+        cell_w = (base_right - base_left) / real(nc, wp)
+        cell_h = (base_top   - base_bottom) / real(nr, wp)
+
+        do i = 1, nr
+            do j = 1, nc
+                left_f   = base_left   + real(j-1, wp) * cell_w
+                right_f  = base_left   + real(j,   wp) * cell_w
+                bottom_f = base_bottom + real(nr-i, wp) * cell_h
+                top_f    = base_bottom + real(nr-i+1, wp) * cell_h
+
+                select type (bk => state%backend)
+                class is (png_context)
+                    bk%margins%left = left_f
+                    bk%margins%right = right_f
+                    bk%margins%bottom = bottom_f
+                    bk%margins%top = top_f
+                    call calculate_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+                class is (pdf_context)
+                    bk%margins%left = left_f
+                    bk%margins%right = right_f
+                    bk%margins%bottom = bottom_f
+                    bk%margins%top = top_f
+                    call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, bk%plot_area)
+                class is (ascii_context)
+                    ! ASCII backend ignores plot area; keep defaults
+                class default
+                    ! Unknown backend; fall back to defaults silently
+                end select
+
+                call calculate_figure_data_ranges(subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
+                                                subplots_array(i,j)%xlim_set, subplots_array(i,j)%ylim_set, &
+                                                lxmin, lxmax, lymin, lymax, &
+                                                lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                                state%xscale, state%yscale, state%symlog_threshold)
+
+                call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, lymin_t, lymax_t)
+
+                call render_figure_axes(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                                       lxmin, lxmax, lymin, lymax, &
+                                       subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
+                                       subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+
+                if (subplots_array(i,j)%plot_count > 0) then
+                    call render_all_plots(state%backend, subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
+                                         lxmin_t, lxmax_t, lymin_t, lymax_t, &
+                                         state%xscale, state%yscale, state%symlog_threshold, &
+                                         state%width, state%height, &
+                                         state%margin_left, state%margin_right, state%margin_bottom, state%margin_top)
+                end if
+
+                call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                                                   lxmin, lxmax, lymin, lymax, &
+                                                   subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
+                                                   subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+            end do
+        end do
+    end subroutine render_subplots_impl
+
+    subroutine render_single_axes_impl(state, plots, plot_count, annotations, annotation_count)
+        !! Render the legacy single-axes path
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+
         call setup_coordinate_system(state%backend, &
                                    state%x_min_transformed, state%x_max_transformed, &
                                    state%y_min_transformed, state%y_max_transformed)
-        
-        ! Render background
+
         call render_figure_background(state%backend)
-        
-        ! Render grid if enabled
+
         if (state%grid_enabled) then
             call render_grid_lines(state%backend, state%grid_enabled, &
                                   state%grid_which, state%grid_axis, &
@@ -304,14 +321,12 @@ contains
                                   state%y_min_transformed, state%y_max_transformed, &
                                   state%grid_linestyle)
         end if
-        
-        ! Render axes
+
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                state%symlog_threshold, state%x_min, state%x_max, &
                                state%y_min, state%y_max, state%title, &
                                state%xlabel, state%ylabel, plots, plot_count)
-        
-        ! Render all plots (only if there are plots to render)
+
         if (plot_count > 0) then
             call render_all_plots(state%backend, plots, plot_count, &
                                  state%x_min_transformed, state%x_max_transformed, &
@@ -321,19 +336,16 @@ contains
                                  state%margin_left, state%margin_right, &
                                  state%margin_bottom, state%margin_top)
         end if
-        
-        ! Render axis labels AFTER plots (for raster backends only to prevent overlap)
+
         call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
                                            state%symlog_threshold, state%x_min, state%x_max, &
                                            state%y_min, state%y_max, state%title, &
                                            state%xlabel, state%ylabel, plots, plot_count)
-        
-        ! Render legend if requested
+
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call state%legend_data%render(state%backend)
         end if
-        
-        ! Render annotations if any exist (Issue #844: ASCII annotation functionality)
+
         if (present(annotations) .and. present(annotation_count)) then
             if (annotation_count > 0) then
                 call render_figure_annotations(state%backend, annotations, annotation_count, &
@@ -344,9 +356,7 @@ contains
                                               state%margin_bottom, state%margin_top)
             end if
         end if
-        
-        state%rendered = .true.
-    end subroutine render_figure_impl
+    end subroutine render_single_axes_impl
 
 end module fortplot_figure_core_io
 ! ==== End: src/figures/core/fortplot_figure_core_io.f90 ====
