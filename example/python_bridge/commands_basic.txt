@@ -1,0 +1,15 @@
+FIGURE
+640 480
+PLOT
+3
+0.0
+1.0
+2.0
+0.0
+1.0
+0.0
+TITLE
+Python bridge demo
+SAVEFIG
+output/python_bridge_demo.png
+QUIT
