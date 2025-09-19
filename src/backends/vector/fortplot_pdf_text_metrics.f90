@@ -9,6 +9,25 @@ module fortplot_pdf_text_metrics
     private
 
     public :: estimate_pdf_text_width
+    ! Helvetica widths indexed by WinAnsi code points for exact PDF sizing
+    ! Data derived from Matplotlib Helvetica AFM file (PSF compatible license)
+    integer, parameter, private :: helvetica_width_table(0:255) = [ integer :: &
+        500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, &
+        500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, &
+        278, 278, 355, 556, 556, 889, 667, 222, 333, 333, 389, 584, 278, 333, 278, 278, &
+        556, 556, 556, 556, 556, 556, 556, 556, 556, 556, 278, 278, 584, 584, 584, 556, &
+        1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, &
+        667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, &
+        222, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, &
+        556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584, 500, &
+        500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, &
+        500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, &
+        500, 333, 556, 556, 167, 556, 556, 556, 556, 191, 333, 556, 333, 333, 500, 500, &
+        500, 556, 556, 556, 278, 500, 537, 350, 222, 333, 333, 556, 1000, 1000, 500, 611, &
+        500, 333, 333, 333, 333, 333, 333, 333, 333, 500, 333, 333, 500, 333, 333, 333, &
+        1000, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, &
+        500, 1000, 500, 370, 500, 500, 500, 500, 556, 778, 1000, 365, 500, 500, 500, 500, &
+        500, 889, 500, 500, 500, 278, 500, 500, 222, 611, 944, 611, 500, 500, 500, 500 ]
 
 contains
 
@@ -94,41 +113,14 @@ contains
     end function measure_mathtext_element_width
 
     integer function helv_width_units(codepoint) result(wu)
-        !! Return Helvetica (Base14) advance width in 1000-unit em for given codepoint
+        !! Return Helvetica advance width in 1000-unit em for given codepoint
         integer, intent(in) :: codepoint
 
-        select case(codepoint)
-        case(32)
-            wu = 278
-        case(45)
-            wu = 333
-        case(46)
-            wu = 278
-        case(48:57)
-            wu = 556
-        case(40, 41)
-            wu = 333
-        case(43)
-            wu = 584
-        case(44)
-            wu = 278
-        case(47)
-            wu = 278
-        case(69)
-            wu = 556
-        case(101)
-            wu = 444
-        case(88, 120)
-            wu = 667
-        case default
-            if (codepoint >= 65 .and. codepoint <= 90) then
-                wu = 667
-            else if (codepoint >= 97 .and. codepoint <= 122) then
-                wu = 444
-            else
-                wu = 500
-            end if
-        end select
+        if (codepoint >= 0 .and. codepoint <= 255) then
+            wu = helvetica_width_table(codepoint)
+        else
+            wu = 500
+        end if
     end function helv_width_units
 
 end module fortplot_pdf_text_metrics
