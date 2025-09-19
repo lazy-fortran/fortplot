@@ -113,7 +113,10 @@ def multi_function_legend_example():
     y1 = np.exp(-x/2.0) * np.cos(x)
     y2 = x * np.exp(-x/3.0)
     # Handle division by zero for sin(x)/x
-    y3 = np.where(x == 0, 1.0, np.sin(x) / x)
+    # Avoid RuntimeWarning by using numpy.divide with where + out
+    y3 = np.empty_like(x)
+    np.divide(np.sin(x), x, out=y3, where=x != 0)
+    y3[x == 0] = 1.0
     y4 = x**2 * np.exp(-x)
     
     plt.figure(figsize=(10, 7.5))
