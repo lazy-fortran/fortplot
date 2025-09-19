@@ -272,10 +272,14 @@ contains
 
                 call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, lymin_t, lymax_t)
 
-                call render_figure_axes(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                                       state%symlog_threshold, &
                                        lxmin, lxmax, lymin, lymax, &
-                                       subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
-                                       subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+                                       subplots_array(i,j)%title, &
+                                       subplots_array(i,j)%xlabel, &
+                                       subplots_array(i,j)%ylabel, &
+                                       subplots_array(i,j)%plots, &
+                                       subplots_array(i,j)%plot_count)
 
                 if (subplots_array(i,j)%plot_count > 0) then
                     call render_all_plots(state%backend, subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
@@ -285,10 +289,14 @@ contains
                                          state%margin_left, state%margin_right, state%margin_bottom, state%margin_top)
                 end if
 
-                call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, state%symlog_threshold, &
+                call render_figure_axes_labels_only(state%backend, state%xscale, &
+                                                   state%yscale, state%symlog_threshold, &
                                                    lxmin, lxmax, lymin, lymax, &
-                                                   subplots_array(i,j)%title, subplots_array(i,j)%xlabel, subplots_array(i,j)%ylabel, &
-                                                   subplots_array(i,j)%plots, subplots_array(i,j)%plot_count)
+                                                   subplots_array(i,j)%title, &
+                                                   subplots_array(i,j)%xlabel, &
+                                                   subplots_array(i,j)%ylabel, &
+                                                   subplots_array(i,j)%plots, &
+                                                   subplots_array(i,j)%plot_count)
             end do
         end do
     end subroutine render_subplots_impl
