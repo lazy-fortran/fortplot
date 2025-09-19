@@ -260,8 +260,7 @@ contains
             type(contour_polygon_t), intent(in) :: polys(:)
             real(wp), allocatable, intent(out) :: yvals(:)
             real(wp), allocatable :: tmp(:)
-            integer :: i, n, t, s
-            s = 0
+            integer :: i, n, t
             allocate(tmp(0))
             do i = 1, size(polys)
                 if (.not. allocated(polys(i)%y)) cycle
