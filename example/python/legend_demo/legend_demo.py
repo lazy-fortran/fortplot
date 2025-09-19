@@ -122,10 +122,11 @@ def multi_function_legend_example():
     plt.ylabel("f(x)")
     
     # Add multiple labeled functions
-    plt.plot(x, y1, linestyle="-", label="e^(-x/2)cos(x)")
-    plt.plot(x, y2, linestyle="--", label="xe^(-x/3)")
+    # Use mathtext with braces for multi-character superscripts
+    plt.plot(x, y1, linestyle="-", label="e^{-x/2}cos(x)")
+    plt.plot(x, y2, linestyle="--", label="xe^{-x/3}")
     plt.plot(x, y3, linestyle=":", label="sin(x)/x")
-    plt.plot(x, y4, linestyle="-.", label="x^2*exp(-x)")
+    plt.plot(x, y4, linestyle="-.", label="x^{2}e^{-x}")
     
     # Add legend
     plt.legend()
