@@ -61,6 +61,8 @@ test-fast: create_test_dirs
 test-ci:
 	$(call _timeout_notice)
 	@echo "Running CI-optimized test suite (essential tests only)$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
+	@# Guard: ensure no Python bytecode is tracked
+	@$(TIMEOUT_PREFIX) bash scripts/test_no_tracked_python_bytecode.sh || exit 1
 	@echo "Testing core functionality, axes, backend basics"
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_public_api || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_simple_validation || exit 1
