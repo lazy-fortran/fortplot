@@ -7,6 +7,7 @@ fpm run --example pcolormesh_demo >/dev/null
 fpm run --example pcolormesh_negative >/dev/null
 fpm run --example marker_demo >/dev/null
 fpm run --example line_styles >/dev/null
+fpm run --example errorbar_demo >/dev/null
 
 # Additional visual regression examples (ylabel spacing, PDF scale, subplots, unicode, show viewer)
 fpm run --example label_positioning_demo >/dev/null
@@ -213,6 +214,22 @@ for f in \
       echo "ERROR: $f has too few unique colors ($c) — contours may be missing" >&2
       exit 1
     fi
+  fi
+done
+
+# Errorbar demo outputs should exist and be non-trivial
+for f in \
+  output/example/fortran/errorbar_demo/errorbar_basic_y.png \
+  output/example/fortran/errorbar_demo/errorbar_basic_x.png \
+  output/example/fortran/errorbar_demo/errorbar_combined.png \
+  output/example/fortran/errorbar_demo/errorbar_asymmetric.png \
+  output/example/fortran/errorbar_demo/errorbar_scientific.png
+  do
+  if [[ -f "$f" ]]; then
+    check_png_size "$f" 4000
+  else
+    echo "ERROR: Missing errorbar demo artifact $f" >&2
+    exit 1
   fi
 done
 

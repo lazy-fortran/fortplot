@@ -164,6 +164,8 @@ doc:
 	# Generate streamplot and pcolormesh demos so images are available in docs
 	$(MAKE) example ARGS="streamplot_demo" >/dev/null
 	$(MAKE) example ARGS="pcolormesh_demo" >/dev/null
+	# Generate errorbar demo so example page has images (fixes #1299)
+	$(MAKE) example ARGS="errorbar_demo" >/dev/null
 	# Generate marker demo so marker images (including all_marker_types.png) are present (fixes #1109)
 	$(MAKE) example ARGS="marker_demo" >/dev/null
 	# Generate animation demo so MP4 is available for docs (fixes #1085)
