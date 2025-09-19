@@ -20,15 +20,22 @@ contains
 
     subroutine process_text_segments(this, text, in_symbol_font, font_size)
         !! Process text segments for mixed font rendering
+        !! Groups consecutive glyphs for the same font into a single Tj to
+        !! avoid odd intra-word spacing in some PDF viewers.
         class(pdf_context_core), intent(inout) :: this
         character(len=*), intent(in) :: text
         logical, intent(inout) :: in_symbol_font
         real(wp), intent(in) :: font_size
         integer :: i, codepoint, char_len
         character(len=8) :: symbol_char
-        character(len=8) :: escaped_char
-        integer :: esc_len
         logical :: is_valid
+        character(len=2048) :: buffer
+        integer :: buf_len
+        logical :: buf_is_symbol
+
+        buffer = ''
+        buf_len = 0
+        buf_is_symbol = in_symbol_font
 
         i = 1
         do while (i <= len_trim(text))
@@ -38,23 +45,11 @@ contains
                 codepoint = ichar(text(i:i))
                 call unicode_to_symbol_char(codepoint, symbol_char)
                 if (len_trim(symbol_char) > 0) then
-                    if (.not. in_symbol_font) then
-                        call switch_to_symbol_font(this, font_size)
-                        in_symbol_font = .true.
-                    end if
-                    this%stream_data = this%stream_data // '(' // trim(symbol_char) // &
-                        ') Tj' // new_line('a')
+                    if (.not. buf_is_symbol .and. buf_len > 0) call flush_buffer()
+                    call append_symbol_esc(symbol_char)
                 else
-                    if (in_symbol_font) then
-                        call switch_to_helvetica_font(this, font_size)
-                        in_symbol_font = .false.
-                    end if
-                    escaped_char = ''
-                    esc_len = 0
-                    call escape_pdf_string(text(i:i), escaped_char, &
-                        esc_len)
-                    this%stream_data = this%stream_data // '(' // &
-                        escaped_char(1:esc_len) // ') Tj' // new_line('a')
+                    if (buf_is_symbol .and. buf_len > 0) call flush_buffer()
+                    call append_escaped_helvetica(text(i:i))
                 end if
                 i = i + 1
             else
@@ -67,18 +62,63 @@ contains
 
                 call unicode_to_symbol_char(codepoint, symbol_char)
                 if (len_trim(symbol_char) > 0) then
-                    if (.not. in_symbol_font) then
-                        call switch_to_symbol_font(this, font_size)
-                        in_symbol_font = .true.
-                    end if
-                    this%stream_data = this%stream_data // '(' // trim(symbol_char) // &
-                        ') Tj' // new_line('a')
+                    if (.not. buf_is_symbol .and. buf_len > 0) call flush_buffer()
+                    call append_symbol_esc(symbol_char)
                 else
+                    call flush_buffer()
                     call emit_pdf_escape_or_fallback(this, codepoint, font_size)
                 end if
                 i = i + max(1, char_len)
             end if
         end do
+
+        call flush_buffer()
+
+    contains
+
+        subroutine flush_buffer()
+            if (buf_len <= 0) return
+            if (buf_is_symbol .and. .not. in_symbol_font) then
+                call switch_to_symbol_font(this, font_size)
+                in_symbol_font = .true.
+            else if ((.not. buf_is_symbol) .and. in_symbol_font) then
+                call switch_to_helvetica_font(this, font_size)
+                in_symbol_font = .false.
+            end if
+            this%stream_data = this%stream_data // '(' // buffer(1:buf_len) // ') Tj' // &
+                new_line('a')
+            buf_len = 0
+        end subroutine flush_buffer
+
+        subroutine append_escaped_helvetica(ch)
+            character(len=*), intent(in) :: ch
+            character(len=12) :: escaped
+            integer :: elen
+            escaped = ''
+            elen = 0
+            call escape_pdf_string(ch, escaped, elen)
+            if (buf_len + elen > len(buffer)) then
+                call flush_buffer()
+            end if
+            if (buf_len == 0) buf_is_symbol = .false.
+            buffer(buf_len+1:buf_len+elen) = escaped(1:elen)
+            buf_len = buf_len + elen
+        end subroutine append_escaped_helvetica
+
+        subroutine append_symbol_esc(seq)
+            character(len=*), intent(in) :: seq
+            integer :: slen
+            slen = len_trim(seq)
+            if (slen <= 0) return
+            if (buf_len + slen > len(buffer)) then
+                call flush_buffer()
+            end if
+            if (buf_len == 0) buf_is_symbol = .true.
+            buffer(buf_len+1:buf_len+slen) = seq(1:slen)
+            buf_len = buf_len + slen
+        end subroutine append_symbol_esc
+
+        ! Internal helper procedures for buffering glyph emission
     end subroutine process_text_segments
 
     subroutine emit_pdf_escape_or_fallback(this, codepoint, font_size)
