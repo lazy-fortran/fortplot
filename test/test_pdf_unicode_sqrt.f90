@@ -38,5 +38,11 @@ program test_pdf_unicode_sqrt
         stop 1
     end if
 
+    ! Ensure the character following the radical (here 'x') renders as a normal text segment
+    if (index(stream_text, '(x) Tj') == 0) then
+        print *, 'FAIL: Expected following text segment for x not found'
+        stop 1
+    end if
+
     print *, 'PASS: Unicode square root renders in PDF without fallback'
 end program test_pdf_unicode_sqrt
