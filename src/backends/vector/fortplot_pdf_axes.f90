@@ -11,6 +11,7 @@ module fortplot_pdf_axes
     use fortplot_pdf_text, only: draw_pdf_text, draw_pdf_text_bold, &
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                 draw_pdf_mathtext, estimate_pdf_text_width
+    use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
@@ -528,21 +529,24 @@ contains
         real(wp), intent(in), optional :: font_size
         character(len=512) :: processed
         integer :: plen
+        character(len=600) :: math_ready
+        integer :: mlen
 
         ! For PDF, we need to handle Unicode superscripts properly
         ! The mathtext system will render them as superscripts
         call process_latex_in_text(text, processed, plen)
-        
-        ! Now check if the processed text contains mathematical notation
-        if (index(processed(1:plen), '^') > 0 .or. index(processed(1:plen), '_') > 0) then
-            ! Use mathtext rendering for superscripts/subscripts on the processed text
+        ! Mirror raster backend behavior: if '^'/'_' present but no $...$, wrap to enable mathtext
+        call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
+
+        ! If math delimiters were added or existing math remains, route through mathtext renderer
+        if (index(math_ready(1:mlen), '$') > 0 .or. &
+            index(math_ready(1:mlen), '^') > 0 .or. index(math_ready(1:mlen), '_') > 0) then
             if (present(font_size)) then
-                call draw_pdf_mathtext(ctx, x, y, processed(1:plen), font_size)
+                call draw_pdf_mathtext(ctx, x, y, math_ready(1:mlen), font_size)
             else
-                call draw_pdf_mathtext(ctx, x, y, processed(1:plen))
+                call draw_pdf_mathtext(ctx, x, y, math_ready(1:mlen))
             end if
         else
-            ! Use regular mixed-font rendering for the processed text
             if (present(font_size)) then
                 call draw_mixed_font_text(ctx, x, y, processed(1:plen), font_size)
             else
