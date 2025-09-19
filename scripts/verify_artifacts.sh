@@ -10,6 +10,8 @@ fpm run --example line_styles >/dev/null
 
 # Additional visual regression examples (ylabel spacing, PDF scale, subplots, unicode, show viewer)
 fpm run --example label_positioning_demo >/dev/null
+# Generate explicit ylabel comparison artifacts so left-margin checks run (fixes #1294)
+fpm run --example ylabel_comparison >/dev/null
 fpm run --example test_pdf_scale_regression >/dev/null
 fpm run --example subplots_grid_demo >/dev/null
 fpm run --example unicode_demo >/dev/null
