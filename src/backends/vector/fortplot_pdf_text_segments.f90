@@ -43,6 +43,34 @@ contains
 
             if (char_len <= 1) then
                 codepoint = ichar(text(i:i))
+
+                ! Special-case common ASCII characters that require distinct Tj segments
+                ! - Space: emit as "( ) Tj" to preserve exact spacing across viewers
+                ! - Parentheses: emit as separate escaped glyphs "(\() Tj" and "(\)) Tj"
+                if (text(i:i) == ' ') then
+                    call flush_buffer()
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this, font_size)
+                        in_symbol_font = .false.
+                    end if
+                    this%stream_data = this%stream_data // '( ) Tj' // new_line('a')
+                    i = i + 1
+                    cycle
+                else if (text(i:i) == '(' .or. text(i:i) == ')') then
+                    call flush_buffer()
+                    if (in_symbol_font) then
+                        call switch_to_helvetica_font(this, font_size)
+                        in_symbol_font = .false.
+                    end if
+                    if (text(i:i) == '(') then
+                        this%stream_data = this%stream_data // '(\() Tj' // new_line('a')
+                    else
+                        this%stream_data = this%stream_data // '(\)) Tj' // new_line('a')
+                    end if
+                    i = i + 1
+                    cycle
+                end if
+
                 call unicode_to_symbol_char(codepoint, symbol_char)
                 if (len_trim(symbol_char) > 0) then
                     if (.not. buf_is_symbol .and. buf_len > 0) call flush_buffer()
