@@ -201,8 +201,8 @@ for f in \
     elif command -v magick >/dev/null 2>&1; then
       c=$(magick identify -format %k "$f" 2>/dev/null || echo 0)
     else
-      echo "Missing ImageMagick 'identify'" >&2
-      exit 2
+      echo "Missing ImageMagick (identify/magick) — skipping color-count check for $f" >&2
+      continue
     fi
     echo "[colors] $f => $c"
     if [[ $c -gt 1200 ]]; then
