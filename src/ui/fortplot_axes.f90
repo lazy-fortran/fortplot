@@ -23,6 +23,7 @@ module fortplot_axes
     real(wp), parameter :: NO_DECIMAL_THRESHOLD = 100.0_wp         ! No decimal places for abs(value) >= this
     real(wp), parameter :: ONE_DECIMAL_THRESHOLD = 10.0_wp         ! One decimal place for abs(value) >= this
     real(wp), parameter :: TWO_DECIMAL_THRESHOLD = 1.0_wp          ! Two decimal places for abs(value) >= this
+    real(wp), parameter :: TICK_EPS = 1.0e-10_wp                   ! Numerical tolerance for tick comparisons
     
 contains
 
@@ -125,18 +126,22 @@ contains
         
         ! Add negative log region ticks
         if (data_min < -threshold) then
-            call add_negative_symlog_ticks(data_min, -threshold, tick_positions, num_ticks)
+            call add_negative_symlog_ticks(data_min, min(-threshold, data_max), tick_positions, num_ticks)
         end if
-        
+
         ! Add linear region ticks (only for the region within threshold bounds)
         if (max(data_min, -threshold) <= min(data_max, threshold)) then
             call add_linear_symlog_ticks(max(data_min, -threshold), min(data_max, threshold), &
                                        tick_positions, num_ticks)
         end if
-        
+
         ! Add positive log region ticks
         if (data_max > threshold) then
-            call add_positive_symlog_ticks(threshold, data_max, tick_positions, num_ticks)
+            call add_positive_symlog_ticks(max(threshold, data_min), data_max, tick_positions, num_ticks)
+        end if
+
+        if (num_ticks > 1) then
+            call sort_tick_positions(tick_positions, num_ticks)
         end if
     end subroutine compute_symlog_ticks
 
@@ -224,12 +229,13 @@ contains
         do power = start_power, end_power
             if (num_ticks >= MAX_TICKS) exit
             current_power = -(10.0_wp**power)
-            
-            ! Check if tick is within bounds, excluding threshold boundary
-            if (current_power >= data_min - 1.0e-10_wp .and. &
-                current_power < upper_bound - 1.0e-10_wp) then
-                num_ticks = num_ticks + 1
-                tick_positions(num_ticks) = current_power
+
+            if (current_power >= data_min - TICK_EPS .and. &
+                current_power <= upper_bound + TICK_EPS) then
+                if (.not. tick_exists(current_power, tick_positions, num_ticks)) then
+                    num_ticks = num_ticks + 1
+                    tick_positions(num_ticks) = current_power
+                end if
             end if
         end do
     end subroutine add_negative_symlog_ticks
@@ -250,10 +256,12 @@ contains
         
         ! Always include zero if it's in the range
         if (lower_bound <= 0.0_wp .and. upper_bound >= 0.0_wp .and. num_ticks < MAX_TICKS) then
-            num_ticks = num_ticks + 1
-            tick_positions(num_ticks) = 0.0_wp
+            if (.not. tick_exists(0.0_wp, tick_positions, num_ticks)) then
+                num_ticks = num_ticks + 1
+                tick_positions(num_ticks) = 0.0_wp
+            end if
         end if
-        
+
         ! Add additional linear ticks
         step = range / real(max_linear_ticks + 1, wp)
         step = calculate_nice_step(step)
@@ -264,8 +272,10 @@ contains
         do while (tick_value <= upper_bound .and. num_ticks < MAX_TICKS)
             ! Skip zero if already added, avoid duplicates
             if (abs(tick_value) > 1.0e-10_wp) then
-                num_ticks = num_ticks + 1
-                tick_positions(num_ticks) = tick_value
+                if (.not. tick_exists(tick_value, tick_positions, num_ticks)) then
+                    num_ticks = num_ticks + 1
+                    tick_positions(num_ticks) = tick_value
+                end if
             end if
             tick_value = tick_value + step
         end do
@@ -291,16 +301,38 @@ contains
         do power = start_power, end_power
             if (num_ticks >= MAX_TICKS) exit
             current_power = 10.0_wp**power
-            
-            ! Check if tick is within bounds, excluding threshold boundary
-            if (current_power > lower_bound + 1.0e-10_wp .and. &
-                current_power <= data_max + 1.0e-10_wp) then
-                num_ticks = num_ticks + 1
-                tick_positions(num_ticks) = current_power
+
+            if (current_power >= lower_bound - TICK_EPS .and. &
+                current_power <= data_max + TICK_EPS) then
+                if (.not. tick_exists(current_power, tick_positions, num_ticks)) then
+                    num_ticks = num_ticks + 1
+                    tick_positions(num_ticks) = current_power
+                end if
             end if
         end do
     end subroutine add_positive_symlog_ticks
-    
+
+    subroutine sort_tick_positions(values, count)
+        real(wp), intent(inout) :: values(MAX_TICKS)
+        integer, intent(in) :: count
+        integer :: i, j
+        real(wp) :: key
+
+        if (count <= 1) return
+
+        do i = 2, count
+            key = values(i)
+            j = i - 1
+            do
+                if (j < 1) exit
+                if (values(j) <= key) exit
+                values(j + 1) = values(j)
+                j = j - 1
+            end do
+            values(j + 1) = key
+        end do
+    end subroutine sort_tick_positions
+
     function is_power_of_ten(value) result(is_power)
         real(wp), intent(in) :: value
         logical :: is_power
@@ -308,8 +340,26 @@ contains
         log_val = log10(abs(value))
         is_power = abs(log_val - nint(log_val)) < 1.0e-10_wp
     end function is_power_of_ten
-    
+
     ! format_power_of_ten moved to fortplot_tick_formatting to reduce duplication
-    
+
+    logical function tick_exists(value, tick_positions, num_ticks)
+        real(wp), intent(in) :: value
+        real(wp), intent(in) :: tick_positions(MAX_TICKS)
+        integer, intent(in) :: num_ticks
+        integer :: i
+        real(wp) :: tolerance
+
+        tolerance = TICK_EPS * max(1.0_wp, abs(value))
+        tick_exists = .false.
+
+        do i = 1, num_ticks
+            if (abs(tick_positions(i) - value) <= tolerance) then
+                tick_exists = .true.
+                return
+            end if
+        end do
+    end function tick_exists
+
 
 end module fortplot_axes
