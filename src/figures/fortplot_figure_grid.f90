@@ -86,24 +86,17 @@ contains
         real(wp), intent(in) :: x_min_transformed, x_max_transformed
         real(wp), intent(in) :: y_min_transformed, y_max_transformed
         
-        real(wp) :: major_ticks(50)  ! Fixed size array
+        real(wp) :: major_ticks(50)
         real(wp) :: tick_val, x1, y1, x2, y2, alpha_val
-        integer :: i, plot_width, plot_height, num_ticks
-        integer :: plot_x, plot_y
+        integer :: i, num_ticks
         real(wp) :: grid_color(3)
         
         if (.not. grid_enabled) return
         
-        ! Calculate plot area in pixels
-        plot_x = nint(margin_left * width)
-        plot_y = nint(margin_bottom * height)
-        plot_width = nint((1.0_wp - margin_left - margin_right) * width)
-        plot_height = nint((1.0_wp - margin_bottom - margin_top) * height)
-        
-        ! Set grid color (gray) and alpha
+        ! Set grid color (gray) and alpha (alpha currently backend-specific; kept for API parity)
         grid_color = [0.7_wp, 0.7_wp, 0.7_wp]
         alpha_val = grid_alpha
-        
+
         ! Draw X-axis grid lines (vertical lines)
         if (grid_axis == 'x' .or. grid_axis == 'b') then
             ! Get major ticks for x-axis
@@ -115,17 +108,16 @@ contains
                 do i = 1, num_ticks
                     tick_val = major_ticks(i)
                     if (tick_val >= x_min .and. tick_val <= x_max) then
-                        ! Transform tick value to plot coordinates
+                        ! Transform tick value to backend data coordinates
                         tick_val = apply_scale_transform(tick_val, xscale, symlog_threshold)
                         
-                        ! Convert to pixel coordinates
-                        x1 = plot_x + (tick_val - x_min_transformed) / &
-                             (x_max_transformed - x_min_transformed) * plot_width
-                        y1 = real(plot_y, wp)
-                        x2 = x1
-                        y2 = real(plot_y + plot_height, wp)
-                        
-                        ! Draw grid line
+                        ! In backend data coordinates, a vertical grid line is x = tick_val
+                        x1 = tick_val
+                        y1 = y_min_transformed
+                        x2 = tick_val
+                        y2 = y_max_transformed
+
+                        ! Draw grid line in backend coordinate space
                         call backend%color(grid_color(1), grid_color(2), grid_color(3))
                         call backend%line(x1, y1, x2, y2)
                     end if
@@ -144,17 +136,16 @@ contains
                 do i = 1, num_ticks
                     tick_val = major_ticks(i)
                     if (tick_val >= y_min .and. tick_val <= y_max) then
-                        ! Transform tick value to plot coordinates
+                        ! Transform tick value to backend data coordinates
                         tick_val = apply_scale_transform(tick_val, yscale, symlog_threshold)
-                        
-                        ! Convert to pixel coordinates
-                        x1 = real(plot_x, wp)
-                        y1 = plot_y + (tick_val - y_min_transformed) / &
-                             (y_max_transformed - y_min_transformed) * plot_height
-                        x2 = real(plot_x + plot_width, wp)
-                        y2 = y1
-                        
-                        ! Draw grid line
+
+                        ! In backend data coordinates, a horizontal grid line is y = tick_val
+                        x1 = x_min_transformed
+                        y1 = tick_val
+                        x2 = x_max_transformed
+                        y2 = tick_val
+
+                        ! Draw grid line in backend coordinate space
                         call backend%color(grid_color(1), grid_color(2), grid_color(3))
                         call backend%line(x1, y1, x2, y2)
                     end if
