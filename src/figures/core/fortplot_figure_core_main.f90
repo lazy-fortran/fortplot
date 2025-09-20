@@ -160,20 +160,38 @@ contains
         call core_add_hist(self%plots, self%state, data, bins, density, label, color, self%plot_count)
     end subroutine add_hist
 
-    subroutine boxplot(self, data, position, width, label, show_outliers, notch, horizontal, color)
-        class(figure_t), intent(inout) :: self; real(wp), intent(in) :: data(:)
-        real(wp), intent(in), optional :: position, width; character(len=*), intent(in), optional :: label
-        logical, intent(in), optional :: show_outliers, notch, horizontal; real(wp), intent(in), optional :: color(3)
-        call core_boxplot(self%plots, self%state, data, position, width, label, &
-                         show_outliers, notch, horizontal, color, self%plot_count)
+    subroutine boxplot(self, data, position, width, label, show_outliers, &
+                       horizontal, color)
+        !! Create a box plot
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: data(:)
+        real(wp), intent(in), optional :: position
+        real(wp), intent(in), optional :: width
+        character(len=*), intent(in), optional :: label
+        logical, intent(in), optional :: show_outliers
+        logical, intent(in), optional :: horizontal
+        real(wp), intent(in), optional :: color(3)
+
+        call core_boxplot(self%plots, self%plot_count, data, position, width, label, &
+                         show_outliers, horizontal, color, size(self%plots))
     end subroutine boxplot
 
-    subroutine scatter(self, x, y, s, c, marker, alpha, label, edgecolors, linewidths)
-        class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x(:), y(:)
-        real(wp), intent(in), optional :: s(:), c(:), alpha, linewidths
-        character(len=*), intent(in), optional :: marker, label, edgecolors
-        call core_scatter(self%plots, self%state, x, y, s, c, marker, alpha, label, &
-                         edgecolors, linewidths, self%plot_count)
+    subroutine scatter(self, x, y, s, c, marker, markersize, color, &
+                      colormap, alpha, edgecolor, facecolor, linewidth, &
+                      vmin, vmax, label, show_colorbar)
+        !! Add an efficient scatter plot using a single plot object
+        !! Properly handles thousands of points without O(n) overhead
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:), y(:)
+        real(wp), intent(in), optional :: s(:), c(:)
+        character(len=*), intent(in), optional :: marker, colormap, label
+        real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
+        real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
+        logical, intent(in), optional :: show_colorbar
+
+        real(wp) :: default_color(3) = [0.0_wp, 0.0_wp, 1.0_wp]
+        call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, marker, markersize, &
+                         color, colormap, vmin, vmax, label, show_colorbar, default_color)
     end subroutine scatter
 
     subroutine clear(self)
@@ -291,7 +309,7 @@ contains
 
     subroutine add_pie(self, values, labels, autopct, startangle, colors, explode)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: values(:)
-        character(len=*), intent(in), optional :: labels(:), autopct, colors(:); real(wp), intent(in), optional :: startangle, explode(:)
+        character(len=*), intent(in), optional :: labels(:), autopct; real(wp), intent(in), optional :: colors(:,:), startangle, explode(:)
         call figure_add_pie(self%state, self%plots, self%plot_count, values, labels, colors, explode, start_angle=startangle)
     end subroutine add_pie
 
