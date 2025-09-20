@@ -15,12 +15,18 @@ module fortplot_3d_axes
     private
     public :: draw_3d_axes
     
-    ! Constants for 3D visualization
+    ! Constants for 3D visualization - percentage of axis length for true consistency
     integer, parameter :: MAX_TICKS_PER_AXIS = 10
-    real(wp), parameter :: FIXED_TICK_LENGTH = 0.05_wp   ! Fixed tick length in data units
-    real(wp), parameter :: FIXED_LABEL_PADDING = 0.1_wp  ! Fixed label padding in data units
-    real(wp), parameter :: Z_LABEL_EXTRA_SPACING = 0.05_wp ! Extra spacing for Z-axis labels
-    real(wp), parameter :: EPSILON = 1.0e-12_wp          ! Numerical epsilon for divisions
+    ! Constants for visually consistent tick appearance (percentages of rendered axis length)
+    real(wp), parameter :: VISUAL_TICK_PERCENT = 0.04_wp      ! Preferred tick length as 4% of rendered axis length
+    real(wp), parameter :: VISUAL_PADDING_PERCENT = 0.06_wp   ! Preferred label padding as 6% of rendered axis length
+    real(wp), parameter :: VISUAL_Z_EXTRA_PERCENT = 0.03_wp   ! Preferred extra Z-axis spacing as 3% of rendered axis length
+    ! Hard clamps to avoid extremes (fractions of edge length)
+    real(wp), parameter :: VISUAL_TICK_MIN = 0.01_wp
+    real(wp), parameter :: VISUAL_TICK_MAX = 0.06_wp
+    real(wp), parameter :: VISUAL_PADDING_MIN = 0.03_wp
+    real(wp), parameter :: VISUAL_PADDING_MAX = 0.12_wp
+    real(wp), parameter :: EPSILON = 1.0e-12_wp            ! Numerical epsilon for divisions
     
     ! Axis identification
     integer, parameter :: X_AXIS = 1, Y_AXIS = 2, Z_AXIS = 3
@@ -152,17 +158,17 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
         
         ! Draw each axis independently using the same pattern
-        call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, y_min, y_max)
-        call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, y_min, y_max)  
-        call draw_single_axis_ticks(ctx, corners_2d, Z_AXIS, z_min, z_max, y_min, y_max)
+        call draw_single_axis_ticks(ctx, corners_2d, X_AXIS, x_min, x_max, x_min, x_max, y_min, y_max, z_min, z_max)
+        call draw_single_axis_ticks(ctx, corners_2d, Y_AXIS, y_min, y_max, x_min, x_max, y_min, y_max, z_min, z_max)  
+        call draw_single_axis_ticks(ctx, corners_2d, Z_AXIS, z_min, z_max, x_min, x_max, y_min, y_max, z_min, z_max)
     end subroutine draw_all_axis_ticks
 
-    subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, y_min, y_max)
+    subroutine draw_single_axis_ticks(ctx, corners_2d, axis_id, axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max)
         !! Draw ticks and labels for a single axis
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2,8)
         integer, intent(in) :: axis_id
-        real(wp), intent(in) :: axis_min, axis_max, y_min, y_max
+        real(wp), intent(in) :: axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max
         
         real(wp) :: tick_values(MAX_TICKS_PER_AXIS), step_size
         real(wp) :: nice_min, nice_max
@@ -184,23 +190,55 @@ contains
         end select
         
         call draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
-                               axis_min, axis_max, y_min, y_max, decimals, axis_id)
+                               axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
     end subroutine draw_single_axis_ticks
 
     subroutine draw_ticks_on_edge(ctx, corners_2d, corner1, corner2, tick_values, n_ticks, &
-                                 axis_min, axis_max, y_min, y_max, decimals, axis_id)
-        !! Draw tick marks and labels along a specific edge
+                                 axis_min, axis_max, x_min, x_max, y_min, y_max, z_min, z_max, decimals, axis_id)
+        !! Draw tick marks and labels along a specific edge with visually consistent lengths
         class(plot_context), intent(inout) :: ctx
         real(wp), intent(in) :: corners_2d(2,8)
         integer, intent(in) :: corner1, corner2, n_ticks, decimals, axis_id
-        real(wp), intent(in) :: tick_values(:), axis_min, axis_max, y_min, y_max
-        
+        real(wp), intent(in) :: tick_values(:), axis_min, axis_max
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max, z_min, z_max
+
         real(wp) :: tick_pos(2), tick_end(2), label_pos(2)
         real(wp) :: range_factor
+        real(wp) :: edge_vec(2), edge_len, normal_vec(2), edge_mid(2), plot_center(2)
+        real(wp) :: tick_length_screen, padding_screen, extra_screen
         character(len=32) :: label
         integer :: i
+    ! Pixel/back-end scale and temporary deltas (declare here per Fortran rules)
+    real(wp) :: width_scale, height_scale, canvas_w_px, canvas_h_px
+    real(wp) :: tick_px, pad_px, extra_px
+    real(wp) :: dx, dx_pad, dy, dy_pad
+
+        ! Compute edge direction and its rendered length (in current 2D drawing coords)
+        edge_vec(1) = corners_2d(1,corner2) - corners_2d(1,corner1)
+        edge_vec(2) = corners_2d(2,corner2) - corners_2d(2,corner1)
+        edge_len    = sqrt(edge_vec(1)**2 + edge_vec(2)**2)
+        if (edge_len <= EPSILON) return
+
+        ! Unit outward normal (choose the one pointing away from the box center)
+        normal_vec = [ -edge_vec(2)/edge_len, edge_vec(1)/edge_len ]
+        edge_mid   = 0.5_wp * [ corners_2d(1,corner1)+corners_2d(1,corner2), &
+                                 corners_2d(2,corner1)+corners_2d(2,corner2) ]
+        plot_center = [ sum(corners_2d(1,:))/8.0_wp, sum(corners_2d(2,:))/8.0_wp ]
+        if ( (normal_vec(1)*(edge_mid(1)-plot_center(1)) + normal_vec(2)*(edge_mid(2)-plot_center(2))) < 0.0_wp ) then
+            normal_vec = -normal_vec
+        end if
+
+    ! Compute pixel dimensions of the whole plot area via backend scales
+    width_scale  = ctx%get_width_scale()
+    height_scale = ctx%get_height_scale()
+    canvas_w_px  = width_scale  * (x_max - x_min)    ! approx canvas width in pixels
+    canvas_h_px  = height_scale * (y_max - y_min)    ! approx canvas height in pixels
+
+    ! Desired tick length in pixels (fraction of smaller canvas dimension), clamped
+    tick_px = max(4.0_wp, min(12.0_wp, VISUAL_TICK_PERCENT * min(canvas_w_px, canvas_h_px)))
+    pad_px  = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT * min(canvas_w_px, canvas_h_px)))
+    extra_px = merge(max(0.0_wp, VISUAL_Z_EXTRA_PERCENT) * min(canvas_w_px, canvas_h_px), 0.0_wp, axis_id == Z_AXIS)
         
-        ! Use fixed tick length and padding for consistency across all plots
         do i = 1, n_ticks
             ! Skip ticks outside axis range
             if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
@@ -210,10 +248,24 @@ contains
             tick_pos(1) = corners_2d(1,corner1) + range_factor * (corners_2d(1,corner2) - corners_2d(1,corner1))
             tick_pos(2) = corners_2d(2,corner1) + range_factor * (corners_2d(2,corner2) - corners_2d(2,corner1))
             
-            ! Calculate tick mark endpoint and label position based on axis type
-            call calculate_tick_geometry_by_axis(tick_pos, tick_end, label_pos, &
-                                               FIXED_TICK_LENGTH, FIXED_LABEL_PADDING, &
-                                               axis_id, y_min, y_max)
+            ! Convert pixel lengths to data-space deltas and place axis-aligned ticks
+            if (axis_id == Z_AXIS) then
+                ! horizontal ticks: convert pixel -> data-x using width_scale
+                dx = sign(1.0_wp, normal_vec(1)) * (tick_px / max(EPSILON, width_scale))
+                dx_pad = sign(1.0_wp, normal_vec(1)) * ((pad_px + extra_px) / max(EPSILON, width_scale))
+                tick_end(1) = tick_pos(1) + dx
+                tick_end(2) = tick_pos(2)
+                label_pos(1) = tick_end(1) + dx_pad
+                label_pos(2) = tick_pos(2)
+            else
+                ! vertical ticks for X/Y: convert pixel -> data-y using height_scale
+                dy = sign(1.0_wp, normal_vec(2)) * (tick_px / max(EPSILON, height_scale))
+                dy_pad = sign(1.0_wp, normal_vec(2)) * ((pad_px + extra_px) / max(EPSILON, height_scale))
+                tick_end(1) = tick_pos(1)
+                tick_end(2) = tick_pos(2) + dy
+                label_pos(1) = tick_pos(1)
+                label_pos(2) = tick_end(2) + dy_pad
+            end if
             
             ! Draw tick mark
             call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
@@ -224,71 +276,6 @@ contains
         end do
     end subroutine draw_ticks_on_edge
 
-    subroutine calculate_tick_geometry_by_axis(tick_pos, tick_end, label_pos, tick_length, &
-                                             padding, axis_id, y_min, y_max)
-        !! Calculate tick mark endpoint and label position based on specific axis
-        real(wp), intent(in) :: tick_pos(2), tick_length, padding, y_min, y_max
-        integer, intent(in) :: axis_id
-        real(wp), intent(out) :: tick_end(2), label_pos(2)
-        
-        real(wp) :: y_span
-        
-        y_span = y_max - y_min
-        
-        select case (axis_id)
-        case (X_AXIS)
-            ! X-axis: ticks point downward/upward based on Y-axis orientation
-            if (y_span >= 0.0_wp) then
-                ! Normal orientation: tick down, label below
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) - tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) - padding
-            else
-                ! Inverted orientation: tick up, label above
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) + tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) + padding
-            end if
-            
-        case (Y_AXIS)
-            ! Y-axis: ticks point downward/upward (SAME AS X-AXIS - revert to original)
-            if (y_span >= 0.0_wp) then
-                ! Normal orientation: tick down, label below
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) - tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) - padding
-            else
-                ! Inverted orientation: tick up, label above
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) + tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) + padding
-            end if
-            
-        case (Z_AXIS)
-            ! Z-axis: ticks point leftward (horizontal), labels to the left with extra spacing
-            tick_end(1) = tick_pos(1) - tick_length
-            tick_end(2) = tick_pos(2)
-            label_pos(1) = tick_end(1) - padding - Z_LABEL_EXTRA_SPACING  ! Extra spacing for Z-axis labels
-            label_pos(2) = tick_pos(2)
-            
-        case default
-            ! Fallback to X-axis behavior
-            if (y_span >= 0.0_wp) then
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) - tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) - padding
-            else
-                tick_end(1) = tick_pos(1)
-                tick_end(2) = tick_pos(2) + tick_length
-                label_pos(1) = tick_pos(1)
-                label_pos(2) = tick_end(2) + padding
-            end if
-        end select
-    end subroutine calculate_tick_geometry_by_axis
+    ! ...existing code...
 
 end module fortplot_3d_axes
