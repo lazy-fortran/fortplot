@@ -1,30 +1,4 @@
-! Consolidated (Issue #934)
-
-! ==== Begin: src/figures/core/fortplot_figure_core.f90 ====
-
 module fortplot_figure_core
-    !! Core figure management module for scientific plotting
-    !!
-    !! ARCHITECTURAL DESIGN:
-    !! ====================
-    !! This module implements the Facade Pattern to provide a clean, unified
-    !! interface for figure operations while delegating complex functionality
-    !! to specialized modules.
-    !!
-    !! DESIGN PATTERNS USED:
-    !! - Facade Pattern: Single entry point hiding subsystem complexity
-    !! - Delegation Pattern: Methods delegate to specialized operations modules
-    !! - Strategy Pattern: Backend selection for rendering
-    !! - State Pattern: Figure state management through figure_state_t
-    !!
-    !! ARCHITECTURAL BENEFITS:
-    !! - Clean separation between interface and implementation
-    !! - Reduced coupling through dependency injection
-    !! - Maintainable code through clear responsibility boundaries
-    !! - Extensible design supporting new plot types and backends
-    !!
-    !! DELEGATION ARCHITECTURE: All operations delegate to specialized modules
-    !! maintaining clean separation of concerns and architectural compliance.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -1008,4 +982,3 @@ contains
     end function subplot_title
 
 end module fortplot_figure_core
-! ==== End: src/figures/core/fortplot_figure_core.f90 ====
