@@ -14,9 +14,9 @@ module fortplot_figure_core
     use fortplot_figure_comprehensive_operations
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, figure_backend_associated, figure_backend_line
     use fortplot_figure_core_specialized_plots
-    use fortplot_figure_core_properties
-    use fortplot_figure_core_animation
-    use fortplot_figure_core_subplots
+    ! use fortplot_figure_core_properties  ! Conflicts with comprehensive_operations
+    ! use fortplot_figure_core_animation  ! Temporarily disabled
+    ! use fortplot_figure_core_subplots  ! Temporarily disabled
     implicit none
 
     private

@@ -27,8 +27,9 @@ contains
         integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot
         integer, intent(in) :: nrows, ncols
 
+        logical :: subplot_active
         call create_subplots(subplots_array, subplot_rows, &
-                             subplot_cols, current_subplot, nrows, ncols)
+                             subplot_cols, nrows, ncols, subplot_active)
     end subroutine figure_subplots_wrapper
 
     subroutine figure_subplot_plot_wrapper(subplots_array, subplot_rows, &

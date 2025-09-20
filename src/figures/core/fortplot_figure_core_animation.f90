@@ -30,7 +30,7 @@ contains
 
         state%width = width
         state%height = height
-        state%backend = 'png'
+        ! Note: Backend setup should be done separately
         state%rendered = .false.
     end subroutine figure_setup_png_backend_for_animation
 
@@ -91,7 +91,7 @@ contains
         integer, intent(inout) :: plot_count
 
         ! Create a twin x-axis
-        state%has_twin_x = .true.
+        ! Note: Twin axis support not yet implemented in figure_state_t
     end subroutine figure_twinx
 
     subroutine figure_twiny(state, plots, plot_count)
@@ -100,7 +100,7 @@ contains
         integer, intent(inout) :: plot_count
 
         ! Create a twin y-axis
-        state%has_twin_y = .true.
+        ! Note: Twin axis support not yet implemented in figure_state_t
     end subroutine figure_twiny
 
 end module fortplot_figure_core_animation
