@@ -16,7 +16,7 @@ program test_doc_core
     call assert_eq('get_output_title noext', get_output_title('multi_line'), 'Multi Line')
 
     ! build_python_path
-    call build_python_path('basic_plots', got)
+    got = build_python_path('basic_plots')
     want = 'example/python/basic_plots/basic_plots.py'
     call assert_eq('build_python_path', got, want)
 
@@ -25,7 +25,7 @@ program test_doc_core
     call assert_eq('replace_extension', replace_extension('image.png','pdf'), 'image.pdf')
 
     ! build_fortran_url suffix check
-    call build_fortran_url('marker_demo', url)
+    url = build_fortran_url('marker_demo', 'marker_demo.f90')
     if (index(url, '/example/fortran/marker_demo/marker_demo.f90') == 0) then
         print *, 'FAIL: build_fortran_url suffix mismatch:', trim(url)
         stop 1
