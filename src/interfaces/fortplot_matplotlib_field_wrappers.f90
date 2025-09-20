@@ -263,7 +263,9 @@ contains
             return
         end if
 
-        call fig%add_contour(x, y, z, levels=null(), label=label)
+        call fig%add_surface(x, y, z, label=label, colormap=colormap, &
+                             show_colorbar=show_colorbar, alpha=alpha, &
+                             edgecolor=edgecolor, linewidth=linewidth)
     end subroutine add_surface
 
     subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, &

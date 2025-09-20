@@ -18,8 +18,8 @@ module fortplot_figure_operations
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
-                                     figure_add_contour_filled, figure_add_pcolormesh, &
-                                     figure_add_fill_between
+                                     figure_add_contour_filled, figure_add_surface, &
+                                     figure_add_pcolormesh, figure_add_fill_between
     use fortplot_figure_histogram, only: hist_figure
     use fortplot_figure_streamlines, only: streamplot_figure
     use fortplot_figure_boxplot, only: add_boxplot
@@ -41,7 +41,7 @@ module fortplot_figure_operations
 
     private
     public :: figure_add_plot_operation, figure_add_contour_operation, figure_add_contour_filled_operation
-    public :: figure_add_pcolormesh_operation, figure_add_fill_between_operation
+    public :: figure_add_surface_operation, figure_add_pcolormesh_operation, figure_add_fill_between_operation
     public :: figure_streamplot_operation, figure_hist_operation
     public :: figure_boxplot_operation, figure_scatter_operation, figure_set_xlabel_operation
     public :: figure_set_ylabel_operation, figure_set_title_operation, figure_set_xscale_operation
@@ -82,10 +82,25 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
-        
+
         call figure_add_contour_filled(plots, state, x_grid, y_grid, z_grid, &
                                       levels, colormap, show_colorbar, label)
     end subroutine figure_add_contour_filled_operation
+
+    subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, z_grid, label, &
+                                            colormap, show_colorbar, alpha, edgecolor, linewidth)
+        !! Add a 3D surface plot to the figure
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        character(len=*), intent(in), optional :: label, colormap
+        logical, intent(in), optional :: show_colorbar
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call figure_add_surface(plots, state, x_grid, y_grid, z_grid, label, colormap, &
+                                show_colorbar, alpha, edgecolor, linewidth)
+    end subroutine figure_add_surface_operation
 
     subroutine figure_add_pcolormesh_operation(plots, state, x, y, c, colormap, &
                                               vmin, vmax, edgecolors, linewidths)

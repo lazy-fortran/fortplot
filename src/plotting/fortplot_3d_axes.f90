@@ -112,7 +112,7 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
         real(wp) :: proj_bounds(4), data_ranges(2)
-        integer :: i
+    integer :: i
         
         ! Find projection bounds
         proj_bounds(1) = minval(corners_2d(1,:))  ! proj_x_min
@@ -207,11 +207,25 @@ contains
         real(wp) :: edge_vec(2), edge_len, normal_vec(2), edge_mid(2), plot_center(2)
         real(wp) :: tick_length_screen, padding_screen, extra_screen
         character(len=32) :: label
-        integer :: i
-    ! Pixel/back-end scale and temporary deltas (declare here per Fortran rules)
-    real(wp) :: width_scale, height_scale, canvas_w_px, canvas_h_px
-    real(wp) :: tick_px, pad_px, extra_px
-    real(wp) :: dx, dx_pad, dy, dy_pad
+        integer :: i, j
+        logical :: skip_label
+        real(wp), parameter :: MIN_LABEL_SPACING_PX = 22.0_wp
+        ! Pixel/back-end scale and temporary deltas (declare here per Fortran rules)
+        real(wp) :: width_scale, height_scale, canvas_w_px, canvas_h_px
+        real(wp) :: tick_px, pad_px, extra_px
+        real(wp) :: dx, dx_pad, dy, dy_pad
+        real(wp) :: tol
+
+        ! Buffers for a clean two-pass layout: collect candidates, then select/draw
+        real(wp) :: cand_label_pos(2, MAX_TICKS_PER_AXIS)
+        logical  :: cand_valid(MAX_TICKS_PER_AXIS)
+        logical  :: cand_endpoint(MAX_TICKS_PER_AXIS)
+        character(len=32) :: cand_text(MAX_TICKS_PER_AXIS)
+        integer  :: order(MAX_TICKS_PER_AXIS)
+        integer  :: n_valid
+        real(wp) :: last_drawn_px(2)
+        logical  :: have_last
+        real(wp) :: dxp, dyp, dist_px
 
         ! Compute edge direction and its rendered length (in current 2D drawing coords)
         edge_vec(1) = corners_2d(1,corner2) - corners_2d(1,corner1)
@@ -228,26 +242,32 @@ contains
             normal_vec = -normal_vec
         end if
 
-    ! Compute pixel dimensions of the whole plot area via backend scales
-    width_scale  = ctx%get_width_scale()
-    height_scale = ctx%get_height_scale()
-    canvas_w_px  = width_scale  * (x_max - x_min)    ! approx canvas width in pixels
-    canvas_h_px  = height_scale * (y_max - y_min)    ! approx canvas height in pixels
+        ! Compute pixel dimensions of the whole plot area via backend scales
+        width_scale  = ctx%get_width_scale()
+        height_scale = ctx%get_height_scale()
+        canvas_w_px  = width_scale  * (x_max - x_min)    ! approx canvas width in pixels
+        canvas_h_px  = height_scale * (y_max - y_min)    ! approx canvas height in pixels
 
-    ! Desired tick length in pixels (fraction of smaller canvas dimension), clamped
-    tick_px = max(4.0_wp, min(12.0_wp, VISUAL_TICK_PERCENT * min(canvas_w_px, canvas_h_px)))
-    pad_px  = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT * min(canvas_w_px, canvas_h_px)))
-    extra_px = merge(max(0.0_wp, VISUAL_Z_EXTRA_PERCENT) * min(canvas_w_px, canvas_h_px), 0.0_wp, axis_id == Z_AXIS)
+        ! Desired tick length in pixels (fraction of smaller canvas dimension), clamped
+        tick_px = max(4.0_wp, min(12.0_wp, VISUAL_TICK_PERCENT * min(canvas_w_px, canvas_h_px)))
+        pad_px  = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT * min(canvas_w_px, canvas_h_px)))
+        extra_px = merge(max(0.0_wp, VISUAL_Z_EXTRA_PERCENT) * min(canvas_w_px, canvas_h_px), 0.0_wp, axis_id == Z_AXIS)
+        
+        ! Initialize candidate buffers
+        cand_valid = .false.
+        cand_endpoint = .false.
+        n_valid = 0
+        tol = 1.0e-9_wp * max(1.0_wp, abs(axis_max - axis_min))
         
         do i = 1, n_ticks
             ! Skip ticks outside axis range
             if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
-            
+
             ! Interpolate position along edge
             range_factor = (tick_values(i) - axis_min) / max(EPSILON, axis_max - axis_min)
             tick_pos(1) = corners_2d(1,corner1) + range_factor * (corners_2d(1,corner2) - corners_2d(1,corner1))
             tick_pos(2) = corners_2d(2,corner1) + range_factor * (corners_2d(2,corner2) - corners_2d(2,corner1))
-            
+
             ! Convert pixel lengths to data-space deltas and place axis-aligned ticks
             if (axis_id == Z_AXIS) then
                 ! horizontal ticks: convert pixel -> data-x using width_scale
@@ -266,13 +286,58 @@ contains
                 label_pos(1) = tick_pos(1)
                 label_pos(2) = tick_end(2) + dy_pad
             end if
-            
-            ! Draw tick mark
+
+            ! Always draw tick mark
             call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
-            
-            ! Draw label
-            label = format_tick_value_consistent(tick_values(i), decimals)
-            call ctx%text(label_pos(1), label_pos(2), trim(adjustl(label)))
+
+            ! Record candidate label info
+            cand_valid(i) = .true.
+            cand_label_pos(:, i) = label_pos
+            cand_text(i) = format_tick_value_consistent(tick_values(i), decimals)
+            cand_endpoint(i) = (abs(tick_values(i) - axis_min) <= tol) .or. &
+                               (abs(tick_values(i) - axis_max) <= tol)
+
+            ! Shared-corner duplicate prevention: drop one side
+            if (axis_id == X_AXIS .and. i == n_ticks) cand_valid(i) = .false.
+            if (axis_id == Y_AXIS .and. i == 1)      cand_valid(i) = .false.
+        end do
+
+        ! Build drawing order: endpoints first (excluding shared-corner-suppressed), then others
+        j = 0
+        do i = 1, n_ticks
+            if (cand_valid(i) .and. cand_endpoint(i)) then
+                j = j + 1
+                order(j) = i
+            end if
+        end do
+        do i = 1, n_ticks
+            if (cand_valid(i) .and. .not. cand_endpoint(i)) then
+                j = j + 1
+                order(j) = i
+            end if
+        end do
+
+        ! Greedy selection with pixel-spacing constraint
+        have_last = .false.
+        do i = 1, j
+            if (.not. cand_valid(order(i))) cycle
+            if (.not. have_last) then
+                call ctx%text(cand_label_pos(1,order(i)), cand_label_pos(2,order(i)), &
+                              trim(adjustl(cand_text(order(i)))))
+                last_drawn_px = [ cand_label_pos(1,order(i))*width_scale, &
+                                  cand_label_pos(2,order(i))*height_scale ]
+                have_last = .true.
+            else
+                dxp = cand_label_pos(1,order(i))*width_scale - last_drawn_px(1)
+                dyp = cand_label_pos(2,order(i))*height_scale - last_drawn_px(2)
+                dist_px = sqrt(dxp*dxp + dyp*dyp)
+                if (dist_px >= MIN_LABEL_SPACING_PX) then
+                    call ctx%text(cand_label_pos(1,order(i)), cand_label_pos(2,order(i)), &
+                                  trim(adjustl(cand_text(order(i)))))
+                    last_drawn_px = [ cand_label_pos(1,order(i))*width_scale, &
+                                      cand_label_pos(2,order(i))*height_scale ]
+                end if
+            end if
         end do
     end subroutine draw_ticks_on_edge
 
