@@ -2,11 +2,10 @@ module fortplot_3d_plots
     !! 3D plot operations module
     !! 
     !! This module handles all 3D plot operations including 3D line plots
-    !! and surface plots (rendered as contour representations).
+    !! and surface plots rendered using the dedicated 3D surface pipeline.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use fortplot_plot_data, only: PLOT_TYPE_CONTOUR
     use fortplot_2d_plots, only: add_line_plot_data
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_logging, only: log_error
@@ -17,7 +16,6 @@ module fortplot_3d_plots
     public :: add_3d_plot
     public :: add_surface
     public :: add_3d_line_plot_data
-    public :: add_surface_plot_data
 
 contains
 
@@ -35,13 +33,17 @@ contains
                                   marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
-    subroutine add_surface(self, x, y, z, label)
+    subroutine add_surface(self, x, y, z, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
         !! Add surface plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:,:)
         character(len=*), intent(in), optional :: label
-        
-        call add_surface_plot_data(self, x, y, z, label)
+        character(len=*), intent(in), optional :: colormap
+        logical, intent(in), optional :: show_colorbar
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call self%add_surface(x, y, z, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
     end subroutine add_surface
 
     subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)
@@ -94,40 +96,5 @@ contains
             associate(unused_lw => linewidth); end associate
         end if
     end subroutine add_3d_line_plot_data
-
-    subroutine add_surface_plot_data(self, x, y, z, label)
-        !! Add surface plot data (simplified as contour representation)
-        class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), z(:,:)
-        character(len=*), intent(in), optional :: label
-        
-        integer :: plot_idx
-        
-        ! Get current plot index
-        self%plot_count = self%plot_count + 1
-        plot_idx = self%plot_count
-        
-        ! Ensure plots array is allocated
-        if (.not. allocated(self%plots)) then
-            allocate(self%plots(self%state%max_plots))
-        else if (plot_idx > size(self%plots)) then
-            return
-        end if
-        
-        self%plots(plot_idx)%plot_type = PLOT_TYPE_CONTOUR
-        
-        ! Store grid data
-        allocate(self%plots(plot_idx)%x_grid(size(x)))
-        allocate(self%plots(plot_idx)%y_grid(size(y)))
-        allocate(self%plots(plot_idx)%z_grid(size(z, 1), size(z, 2)))
-        
-        self%plots(plot_idx)%x_grid = x
-        self%plots(plot_idx)%y_grid = y
-        self%plots(plot_idx)%z_grid = z
-        
-        if (present(label) .and. len_trim(label) > 0) then
-            self%plots(plot_idx)%label = label
-        end if
-    end subroutine add_surface_plot_data
 
 end module fortplot_3d_plots

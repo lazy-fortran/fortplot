@@ -34,7 +34,8 @@ module fortplot_figure_core
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
-                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+                                    PLOT_TYPE_SURFACE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
@@ -44,7 +45,8 @@ module fortplot_figure_core
     private
     public :: figure_t, plot_data_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+              PLOT_TYPE_SURFACE
 
     !! CORE TYPE DEFINITION
     type :: figure_t
@@ -76,6 +78,7 @@ module fortplot_figure_core
         procedure :: plot => add_plot
         procedure :: add_contour
         procedure :: add_contour_filled
+        procedure :: add_surface
         procedure :: add_pcolormesh
         procedure :: streamplot
         procedure :: savefig
@@ -176,10 +179,22 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
-        
+
         call core_add_contour_filled(self%plots, self%state, x_grid, y_grid, z_grid, &
                                      levels, colormap, show_colorbar, label, self%plot_count)
     end subroutine add_contour_filled
+
+    subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        character(len=*), intent(in), optional :: label, colormap
+        logical, intent(in), optional :: show_colorbar
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call core_add_surface(self%plots, self%state, x_grid, y_grid, z_grid, label, colormap, &
+                              show_colorbar, alpha, edgecolor, linewidth, self%plot_count)
+    end subroutine add_surface
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         class(figure_t), intent(inout) :: self

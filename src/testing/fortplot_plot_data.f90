@@ -15,7 +15,8 @@ module fortplot_plot_data
     public :: plot_data_t, arrow_data_t, subplot_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
-              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+              PLOT_TYPE_SURFACE
     public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
@@ -28,6 +29,7 @@ module fortplot_plot_data
     integer, parameter :: PLOT_TYPE_BOXPLOT = 7
     integer, parameter :: PLOT_TYPE_SCATTER = 8
     integer, parameter :: PLOT_TYPE_FILL = 9
+    integer, parameter :: PLOT_TYPE_SURFACE = 10
 
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
@@ -67,6 +69,14 @@ module fortplot_plot_data
         logical :: fill_contours = .false.
         character(len=20) :: colormap = 'crest'
         logical :: show_colorbar = .true.
+        ! Surface plot properties
+        logical :: surface_show_colorbar = .false.
+        real(wp) :: surface_alpha = 1.0_wp
+        real(wp) :: surface_linewidth = 1.0_wp
+        logical :: surface_use_colormap = .false.
+        real(wp) :: surface_edgecolor(3) = [0.0_wp, 0.447_wp, 0.698_wp]
+        ! Store requested colormap name for future renderer parity
+        character(len=:), allocatable :: surface_colormap
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
         ! Bar chart data
@@ -150,14 +160,20 @@ contains
         !! trigger 3D axes.
         class(plot_data_t), intent(in) :: self
         if (allocated(self%z)) then
-            if (size(self%z) > 0) then
-                is_3d = .true.
+            is_3d = size(self%z) > 0
+            return
+        end if
+
+        if (self%plot_type == PLOT_TYPE_SURFACE) then
+            if (allocated(self%z_grid)) then
+                is_3d = size(self%z_grid) > 0
             else
                 is_3d = .false.
             end if
-        else
-            is_3d = .false.
+            return
         end if
+
+        is_3d = .false.
     end function is_3d
 
 end module fortplot_plot_data

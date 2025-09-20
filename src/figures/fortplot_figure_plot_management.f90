@@ -6,7 +6,7 @@ module fortplot_figure_plot_management
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, PLOT_TYPE_SURFACE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
@@ -16,7 +16,7 @@ module fortplot_figure_plot_management
     
     private
     public :: add_line_plot_data, add_contour_plot_data, add_colored_contour_plot_data
-    public :: add_pcolormesh_plot_data, add_fill_between_plot_data
+    public :: add_surface_plot_data, add_pcolormesh_plot_data, add_fill_between_plot_data
     public :: generate_default_contour_levels
     public :: setup_figure_legend, update_plot_ydata, validate_plot_data
     public :: next_plot_color
@@ -241,6 +241,12 @@ contains
         if (allocated(plot%fill_between_data%mask)) deallocate(plot%fill_between_data%mask)
         plot%fill_between_data%has_mask = .false.
         plot%fill_alpha = 1.0_wp
+        plot%surface_show_colorbar = .false.
+        plot%surface_alpha = 1.0_wp
+        plot%surface_linewidth = 1.0_wp
+        plot%surface_use_colormap = .false.
+        plot%surface_edgecolor = [0.0_wp, 0.447_wp, 0.698_wp]
+        if (allocated(plot%surface_colormap)) deallocate(plot%surface_colormap)
     end subroutine reset_plot_storage
 
     subroutine add_contour_plot_data(plots, plot_count, max_plots, colors, &
@@ -340,6 +346,75 @@ contains
         plots(plot_count)%use_color_levels = .true.
         plots(plot_count)%fill_contours = .true.
     end subroutine add_colored_contour_plot_data
+
+    subroutine add_surface_plot_data(plots, plot_count, max_plots, colors, &
+                                     x_grid, y_grid, z_grid, label, colormap, &
+                                     show_colorbar, alpha, edgecolor, linewidth)
+        !! Add 3D surface plot data using structured grid storage
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer, intent(inout) :: plot_count
+        integer, intent(in) :: max_plots
+        real(wp), intent(in) :: colors(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        character(len=*), intent(in), optional :: label, colormap
+        logical, intent(in), optional :: show_colorbar
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        real(wp) :: default_color(3)
+
+        if (plot_count >= max_plots) then
+            call log_warning("Maximum number of plots reached")
+            return
+        end if
+
+        plot_count = plot_count + 1
+
+        plots(plot_count)%plot_type = PLOT_TYPE_SURFACE
+
+        if (allocated(plots(plot_count)%x_grid)) deallocate(plots(plot_count)%x_grid)
+        if (allocated(plots(plot_count)%y_grid)) deallocate(plots(plot_count)%y_grid)
+        if (allocated(plots(plot_count)%z_grid)) deallocate(plots(plot_count)%z_grid)
+        allocate(plots(plot_count)%x_grid(size(x_grid)))
+        allocate(plots(plot_count)%y_grid(size(y_grid)))
+        allocate(plots(plot_count)%z_grid(size(z_grid,1), size(z_grid,2)))
+        plots(plot_count)%x_grid = x_grid
+        plots(plot_count)%y_grid = y_grid
+        plots(plot_count)%z_grid = z_grid
+
+        if (present(label)) then
+            plots(plot_count)%label = label
+        end if
+
+        default_color = colors(:, mod(plot_count-1, size(colors, 2)) + 1)
+        plots(plot_count)%color = default_color
+
+        if (present(edgecolor)) then
+            plots(plot_count)%color = edgecolor
+            plots(plot_count)%surface_edgecolor = edgecolor
+        else
+            plots(plot_count)%surface_edgecolor = default_color
+        end if
+
+        plots(plot_count)%surface_alpha = 1.0_wp
+        if (present(alpha)) plots(plot_count)%surface_alpha = max(0.0_wp, min(1.0_wp, alpha))
+
+        plots(plot_count)%surface_linewidth = 1.0_wp
+        if (present(linewidth)) plots(plot_count)%surface_linewidth = max(1.0e-6_wp, linewidth)
+
+        plots(plot_count)%surface_use_colormap = .false.
+        if (allocated(plots(plot_count)%surface_colormap)) deallocate(plots(plot_count)%surface_colormap)
+        if (present(colormap)) then
+            if (len_trim(colormap) > 0) then
+                allocate(character(len=len_trim(colormap)) :: plots(plot_count)%surface_colormap)
+                plots(plot_count)%surface_colormap = trim(colormap)
+                plots(plot_count)%surface_use_colormap = .true.
+            end if
+        end if
+
+        plots(plot_count)%surface_show_colorbar = .false.
+        if (present(show_colorbar)) plots(plot_count)%surface_show_colorbar = show_colorbar
+    end subroutine add_surface_plot_data
     
     subroutine add_pcolormesh_plot_data(plots, plot_count, max_plots, &
                                        x, y, c, colormap, vmin, vmax, &

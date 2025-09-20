@@ -33,7 +33,7 @@ module fortplot_figure_comprehensive_operations
     ! Re-export ALL operations needed by core module
     ! Operations module functions (exact names used by core)
     public :: figure_add_plot_operation, figure_add_contour_operation, figure_add_contour_filled_operation
-    public :: figure_add_pcolormesh_operation, figure_add_fill_between_operation
+    public :: figure_add_surface_operation, figure_add_pcolormesh_operation, figure_add_fill_between_operation
     public :: figure_streamplot_operation, figure_hist_operation
     public :: figure_boxplot_operation, figure_scatter_operation, figure_set_xlabel_operation
     public :: figure_set_ylabel_operation, figure_set_title_operation, figure_set_xscale_operation
@@ -61,7 +61,7 @@ module fortplot_figure_comprehensive_operations
     public :: update_data_ranges_figure, update_data_ranges_pcolormesh_figure
     
     ! Core operations extracted from main module
-    public :: core_initialize, core_add_plot, core_add_contour, core_add_contour_filled
+    public :: core_initialize, core_add_plot, core_add_contour, core_add_contour_filled, core_add_surface
     public :: core_add_pcolormesh, core_add_fill_between
     public :: core_streamplot, core_savefig, core_savefig_with_status
     public :: core_show
