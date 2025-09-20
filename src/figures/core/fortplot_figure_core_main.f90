@@ -14,9 +14,9 @@ module fortplot_figure_core
     use fortplot_figure_comprehensive_operations
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, figure_backend_associated, figure_backend_line
     use fortplot_figure_core_specialized_plots
-    ! use fortplot_figure_core_properties  ! Conflicts with comprehensive_operations
-    ! use fortplot_figure_core_animation  ! Temporarily disabled
-    ! use fortplot_figure_core_subplots  ! Temporarily disabled
+    ! Note: Properties functions come from comprehensive_operations to avoid conflicts
+    ! Note: Animation functions converted to core_* calls
+    ! Note: Subplot functions use original figure_* naming
     implicit none
 
     private
@@ -178,7 +178,10 @@ contains
 
     subroutine clear(self)
         class(figure_t), intent(inout) :: self
-        call core_clear(self%state, self%streamlines, self%plots, self%plot_count, self%title, self%xlabel, self%ylabel)
+        call core_clear(self%state, self%streamlines, &
+                       self%subplots_array, self%subplot_rows, self%subplot_cols, &
+                       self%current_subplot, self%title, self%xlabel, self%ylabel, &
+                       self%plot_count, self%annotation_count)
     end subroutine clear
 
     subroutine clear_streamlines(self)
@@ -193,89 +196,89 @@ contains
     !! PROPERTY MANAGEMENT - Delegated to properties module
     subroutine set_xlabel(self, label)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: label
-        call figure_set_xlabel(self%xlabel, label)
+        call core_set_xlabel(self%state, self%xlabel, label)
     end subroutine set_xlabel
 
     subroutine set_ylabel(self, label)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: label
-        call figure_set_ylabel(self%ylabel, label)
+        call core_set_ylabel(self%state, self%ylabel, label)
     end subroutine set_ylabel
 
     subroutine set_title(self, title)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: title
-        call figure_set_title(self%title, title)
+        call core_set_title(self%state, self%title, title)
     end subroutine set_title
 
     subroutine set_xscale(self, scale, threshold)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold; call figure_set_xscale(self%state, scale, threshold)
+        real(wp), intent(in), optional :: threshold; call core_set_xscale(self%state, scale, threshold)
     end subroutine set_xscale
 
     subroutine set_yscale(self, scale, threshold)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: scale
-        real(wp), intent(in), optional :: threshold; call figure_set_yscale(self%state, scale, threshold)
+        real(wp), intent(in), optional :: threshold; call core_set_yscale(self%state, scale, threshold)
     end subroutine set_yscale
 
     subroutine set_xlim(self, x_min, x_max)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x_min, x_max
-        call figure_set_xlim(self%state, x_min, x_max)
+        call core_set_xlim(self%state, x_min, x_max)
     end subroutine set_xlim
 
     subroutine set_ylim(self, y_min, y_max)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: y_min, y_max
-        call figure_set_ylim(self%state, y_min, y_max)
+        call core_set_ylim(self%state, y_min, y_max)
     end subroutine set_ylim
 
     subroutine set_line_width(self, width)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: width
-        call figure_set_line_width(self%state, width)
+        call core_set_line_width(self%state, width)
     end subroutine set_line_width
 
     subroutine set_ydata(self, plot_index, y_data)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: plot_index; real(wp), intent(in) :: y_data(:)
-        call figure_set_ydata(self%plots, self%plot_count, plot_index, y_data)
+        call core_set_ydata(self%plots, self%state%plot_count, plot_index, y_data)
     end subroutine set_ydata
 
     function get_width(self) result(width)
-        class(figure_t), intent(in) :: self; integer :: width; width = figure_get_width(self%state)
+        class(figure_t), intent(in) :: self; integer :: width; width = core_get_width(self%state)
     end function get_width
 
     function get_height(self) result(height)
-        class(figure_t), intent(in) :: self; integer :: height; height = figure_get_height(self%state)
+        class(figure_t), intent(in) :: self; integer :: height; height = core_get_height(self%state)
     end function get_height
 
     function get_rendered(self) result(rendered)
-        class(figure_t), intent(in) :: self; logical :: rendered; rendered = figure_get_rendered(self%state)
+        class(figure_t), intent(in) :: self; logical :: rendered; rendered = core_get_rendered(self%state)
     end function get_rendered
 
     subroutine set_rendered(self, rendered)
         class(figure_t), intent(inout) :: self; logical, intent(in) :: rendered
-        call figure_set_rendered(self%state, rendered)
+        call core_set_rendered(self%state, rendered)
     end subroutine set_rendered
 
     function get_plot_count(self) result(count)
-        class(figure_t), intent(in) :: self; integer :: count; count = figure_get_plot_count(self%plot_count)
+        class(figure_t), intent(in) :: self; integer :: count; count = core_get_plot_count(self%state)
     end function get_plot_count
 
     function get_plots(self) result(plot_array)
         class(figure_t), intent(in) :: self; type(plot_data_t), allocatable :: plot_array(:)
-        plot_array = figure_get_plots(self%plots)
+        plot_array = core_get_plots(self%plots)
     end function get_plots
 
     function get_x_min(self) result(x_min)
-        class(figure_t), intent(in) :: self; real(wp) :: x_min; x_min = figure_get_x_min(self%plots, self%plot_count)
+        class(figure_t), intent(in) :: self; real(wp) :: x_min; x_min = core_get_x_min(self%state)
     end function get_x_min
 
     function get_x_max(self) result(x_max)
-        class(figure_t), intent(in) :: self; real(wp) :: x_max; x_max = figure_get_x_max(self%plots, self%plot_count)
+        class(figure_t), intent(in) :: self; real(wp) :: x_max; x_max = core_get_x_max(self%state)
     end function get_x_max
 
     function get_y_min(self) result(y_min)
-        class(figure_t), intent(in) :: self; real(wp) :: y_min; y_min = figure_get_y_min(self%plots, self%plot_count)
+        class(figure_t), intent(in) :: self; real(wp) :: y_min; y_min = core_get_y_min(self%state)
     end function get_y_min
 
     function get_y_max(self) result(y_max)
-        class(figure_t), intent(in) :: self; real(wp) :: y_max; y_max = figure_get_y_max(self%plots, self%plot_count)
+        class(figure_t), intent(in) :: self; real(wp) :: y_max; y_max = core_get_y_max(self%state)
     end function get_y_max
 
     !! SPECIALIZED PLOTS - Delegated to specialized plots module
@@ -289,7 +292,7 @@ contains
     subroutine add_pie(self, values, labels, autopct, startangle, colors, explode)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:), autopct, colors(:); real(wp), intent(in), optional :: startangle, explode(:)
-        call figure_add_pie(self%state, self%plots, self%plot_count, values, labels, colors, explode, startangle=startangle)
+        call figure_add_pie(self%state, self%plots, self%plot_count, values, labels, colors, explode, start_angle=startangle)
     end subroutine add_pie
 
     subroutine add_polar(self, theta, r, label, linestyle, color)
@@ -323,83 +326,99 @@ contains
     end subroutine add_fill_between
 
     !! ANIMATION AND BACKEND - Delegated to animation module
-    subroutine setup_png_backend_for_animation(self, width, height, title, xlabel, ylabel)
-        class(figure_t), intent(inout) :: self; integer, intent(in) :: width, height
-        character(len=*), intent(in) :: title, xlabel, ylabel
-        call figure_setup_png_backend_for_animation(self%state, self%plots, self%plot_count, width, height, title, xlabel, ylabel)
+    subroutine setup_png_backend_for_animation(self)
+        class(figure_t), intent(inout) :: self
+        call core_setup_png_backend_for_animation(self%state)
     end subroutine setup_png_backend_for_animation
 
-    function extract_rgb_data_for_animation(self) result(rgb_data)
-        class(figure_t), intent(in) :: self; integer, allocatable :: rgb_data(:,:,:)
-        rgb_data = figure_extract_rgb_data_for_animation(self%state, self%plots, self%plot_count)
-    end function extract_rgb_data_for_animation
+    subroutine extract_rgb_data_for_animation(self, rgb_data)
+        class(figure_t), intent(inout) :: self; real(wp), intent(out) :: rgb_data(:,:,:)
+        call core_extract_rgb_data_for_animation(self%state, rgb_data, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count, self%state%rendered)
+    end subroutine extract_rgb_data_for_animation
 
-    function extract_png_data_for_animation(self) result(png_data)
-        class(figure_t), intent(in) :: self; integer(1), allocatable :: png_data(:)
-        png_data = figure_extract_png_data_for_animation(self%state, self%plots, self%plot_count)
-    end function extract_png_data_for_animation
+    subroutine extract_png_data_for_animation(self, png_data, status)
+        class(figure_t), intent(inout) :: self; integer(1), allocatable, intent(out) :: png_data(:)
+        integer, intent(out) :: status
+        call core_extract_png_data_for_animation(self%state, png_data, status, self%plots, &
+            self%state%plot_count, self%annotations, self%annotation_count, self%state%rendered)
+    end subroutine extract_png_data_for_animation
 
     subroutine backend_color(self, r, g, b)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: r, g, b
-        call figure_backend_color_wrapper(self%state, r, g, b)
+        call core_backend_color(self%state, r, g, b)
     end subroutine backend_color
 
     subroutine backend_line(self, x1, y1, x2, y2)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x1, y1, x2, y2
-        call figure_backend_line_wrapper(self%state, x1, y1, x2, y2)
+        call core_backend_line(self%state, x1, y1, x2, y2)
     end subroutine backend_line
 
-    subroutine backend_arrow(self)
-        class(figure_t), intent(inout) :: self; call figure_backend_arrow_wrapper(self%state, self%arrow_data, self%plot_count)
+    subroutine backend_arrow(self, x, y, dx, dy, size, style)
+        class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x, y, dx, dy, size
+        character(len=*), intent(in) :: style
+        call core_backend_arrow(self%state, x, y, dx, dy, size, style)
     end subroutine backend_arrow
 
     function backend_associated(self) result(associated)
-        class(figure_t), intent(in) :: self; logical :: associated; associated = figure_backend_associated_wrapper(self%state)
+        class(figure_t), intent(in) :: self; logical :: associated; associated = core_backend_associated(self%state)
     end function backend_associated
 
     subroutine twinx(self)
-        class(figure_t), intent(inout) :: self; call figure_twinx(self%state, self%plots, self%plot_count)
+        !! Placeholder for twin x-axis support (not yet implemented)
+        class(figure_t), intent(inout) :: self
+        call log_warning('twinx: dual axis plots not yet implemented')
     end subroutine twinx
 
     subroutine twiny(self)
-        class(figure_t), intent(inout) :: self; call figure_twiny(self%state, self%plots, self%plot_count)
+        !! Placeholder for twin y-axis support (not yet implemented)
+        class(figure_t), intent(inout) :: self
+        call log_warning('twiny: dual axis plots not yet implemented')
     end subroutine twiny
 
     !! SUBPLOT OPERATIONS - Delegated to subplots module
     subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: nrows, ncols
-        call figure_subplots_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, self%current_subplot, nrows, ncols)
+        call figure_subplots(self%subplots_array, self%subplot_rows, &
+                            self%subplot_cols, self%current_subplot, nrows, ncols)
     end subroutine subplots
 
     subroutine subplot_plot(self, row, col, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: row, col; real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle; real(wp), intent(in), optional :: color(3)
-        call figure_subplot_plot_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col, x, y, label, linestyle, color, self%state%colors, 6)
+        call figure_subplot_plot(self%subplots_array, self%subplot_rows, &
+                                self%subplot_cols, row, col, x, y, label, &
+                                linestyle, color, self%state%colors, 6)
     end subroutine subplot_plot
 
     function subplot_plot_count(self, row, col) result(count)
         class(figure_t), intent(in) :: self; integer, intent(in) :: row, col; integer :: count
-        count = figure_subplot_plot_count_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col)
+        count = figure_subplot_plot_count(self%subplots_array, self%subplot_rows, &
+                                         self%subplot_cols, row, col)
     end function subplot_plot_count
 
     subroutine subplot_set_title(self, row, col, title)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: row, col; character(len=*), intent(in) :: title
-        call figure_subplot_set_title_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col, title)
+        call figure_subplot_set_title(self%subplots_array, self%subplot_rows, &
+                                     self%subplot_cols, row, col, title)
     end subroutine subplot_set_title
 
     subroutine subplot_set_xlabel(self, row, col, xlabel)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: row, col; character(len=*), intent(in) :: xlabel
-        call figure_subplot_set_xlabel_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col, xlabel)
+        call figure_subplot_set_xlabel(self%subplots_array, self%subplot_rows, &
+                                      self%subplot_cols, row, col, xlabel)
     end subroutine subplot_set_xlabel
 
     subroutine subplot_set_ylabel(self, row, col, ylabel)
         class(figure_t), intent(inout) :: self; integer, intent(in) :: row, col; character(len=*), intent(in) :: ylabel
-        call figure_subplot_set_ylabel_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col, ylabel)
+        call figure_subplot_set_ylabel(self%subplots_array, self%subplot_rows, &
+                                      self%subplot_cols, row, col, ylabel)
     end subroutine subplot_set_ylabel
 
     function subplot_title(self, row, col) result(title)
         class(figure_t), intent(in) :: self; integer, intent(in) :: row, col; character(len=:), allocatable :: title
-        title = figure_subplot_title_wrapper(self%subplots_array, self%subplot_rows, self%subplot_cols, row, col)
+        title = figure_subplot_title(self%subplots_array, self%subplot_rows, &
+                                     self%subplot_cols, row, col)
     end function subplot_title
 
     !! CLEANUP
