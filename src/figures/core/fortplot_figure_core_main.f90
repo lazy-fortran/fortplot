@@ -103,7 +103,8 @@ contains
 
     subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
-        character(len=*), intent(in), optional :: label, colormap, edgecolor
+        character(len=*), intent(in), optional :: label, colormap
+        real(wp), intent(in), optional :: edgecolor(3)
         logical, intent(in), optional :: show_colorbar; real(wp), intent(in), optional :: alpha, linewidth
         call core_add_surface(self%plots, self%state, x_grid, y_grid, z_grid, label, colormap, &
                              show_colorbar, alpha, edgecolor, linewidth, self%plot_count)
@@ -111,7 +112,8 @@ contains
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x(:), y(:), c(:,:)
-        character(len=*), intent(in), optional :: colormap, edgecolors
+        character(len=*), intent(in), optional :: colormap
+        real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: vmin, vmax, linewidths
         call core_add_pcolormesh(self%plots, self%state, x, y, c, colormap, &
                                 vmin, vmax, edgecolors, linewidths, self%plot_count)
@@ -120,31 +122,31 @@ contains
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, atol, max_time)
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth, rtol, atol, max_time
-        character(len=*), intent(in), optional :: color
+        real(wp), intent(in), optional :: color(3)
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
-                            density, color, linewidth, rtol, atol, max_time)
+                            density, color)
     end subroutine streamplot
 
     subroutine savefig(self, filename, blocking)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
         call core_savefig(self%state, self%plots, self%plot_count, filename, blocking, &
-                         self%streamlines, self%title, self%xlabel, self%ylabel, &
-                         self%subplots_array, self%subplot_rows, self%subplot_cols)
+                         self%annotations, self%annotation_count, self%subplots_array, &
+                         self%subplot_rows, self%subplot_cols)
     end subroutine savefig
 
     subroutine savefig_with_status(self, filename, status, blocking)
         class(figure_t), intent(inout) :: self; character(len=*), intent(in) :: filename
         integer, intent(out) :: status; logical, intent(in), optional :: blocking
         call core_savefig_with_status(self%state, self%plots, self%plot_count, filename, status, blocking, &
-                                     self%streamlines, self%title, self%xlabel, self%ylabel, &
-                                     self%subplots_array, self%subplot_rows, self%subplot_cols)
+                                     self%annotations, self%annotation_count, self%subplots_array, &
+                                     self%subplot_rows, self%subplot_cols)
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
         class(figure_t), intent(inout) :: self; logical, intent(in), optional :: blocking
-        call core_show(self%state, self%plots, self%plot_count, blocking, self%streamlines, &
-                      self%title, self%xlabel, self%ylabel, self%subplots_array, self%subplot_rows, self%subplot_cols)
+        call core_show(self%state, self%plots, self%plot_count, blocking, self%annotations, &
+                      self%annotation_count, self%subplots_array, self%subplot_rows, self%subplot_cols)
     end subroutine show
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
@@ -157,7 +159,7 @@ contains
         class(figure_t), intent(inout) :: self; real(wp), intent(in) :: data(:)
         integer, intent(in), optional :: bins; logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label; real(wp), intent(in), optional :: color(3)
-        call core_add_hist(self%plots, self%state, data, bins, density, label, color, self%plot_count)
+        call core_hist(self%plots, self%state, self%plot_count, data, bins, density, label, color)
     end subroutine add_hist
 
     subroutine boxplot(self, data, position, width, label, show_outliers, &
@@ -170,7 +172,7 @@ contains
         character(len=*), intent(in), optional :: label
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
-        real(wp), intent(in), optional :: color(3)
+        character(len=*), intent(in), optional :: color
 
         call core_boxplot(self%plots, self%plot_count, data, position, width, label, &
                          show_outliers, horizontal, color, size(self%plots))
@@ -280,7 +282,10 @@ contains
 
     function get_plots(self) result(plot_array)
         class(figure_t), intent(in) :: self; type(plot_data_t), allocatable :: plot_array(:)
-        plot_array = core_get_plots(self%plots)
+        if (allocated(self%plots)) then
+            allocate(plot_array(size(self%plots)))
+            plot_array = self%plots
+        end if
     end function get_plots
 
     function get_x_min(self) result(x_min)

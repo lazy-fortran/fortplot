@@ -54,9 +54,9 @@ contains
     subroutine render_all_plots(fig)
         type(figure_t), intent(inout) :: fig
         integer :: i
-        type(plot_data_t), pointer :: plots(:)
+        type(plot_data_t), allocatable :: plots(:)
         
-        plots => fig%get_plots()
+        plots = fig%get_plots()
         do i = 1, fig%get_plot_count()
             call render_single_plot(fig, plots(i))
         end do
