@@ -1,30 +1,4 @@
-! Consolidated (Issue #934)
-
-! ==== Begin: src/figures/core/fortplot_figure_core.f90 ====
-
 module fortplot_figure_core
-    !! Core figure management module for scientific plotting
-    !!
-    !! ARCHITECTURAL DESIGN:
-    !! ====================
-    !! This module implements the Facade Pattern to provide a clean, unified
-    !! interface for figure operations while delegating complex functionality
-    !! to specialized modules.
-    !!
-    !! DESIGN PATTERNS USED:
-    !! - Facade Pattern: Single entry point hiding subsystem complexity
-    !! - Delegation Pattern: Methods delegate to specialized operations modules
-    !! - Strategy Pattern: Backend selection for rendering
-    !! - State Pattern: Figure state management through figure_state_t
-    !!
-    !! ARCHITECTURAL BENEFITS:
-    !! - Clean separation between interface and implementation
-    !! - Reduced coupling through dependency injection
-    !! - Maintainable code through clear responsibility boundaries
-    !! - Extensible design supporting new plot types and backends
-    !!
-    !! DELEGATION ARCHITECTURE: All operations delegate to specialized modules
-    !! maintaining clean separation of concerns and architectural compliance.
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
@@ -34,7 +8,8 @@ module fortplot_figure_core
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
-                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+                                    PLOT_TYPE_SURFACE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
@@ -44,7 +19,8 @@ module fortplot_figure_core
     private
     public :: figure_t, plot_data_t, subplot_data_t
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
-              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL
+              PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+              PLOT_TYPE_SURFACE
 
     !! CORE TYPE DEFINITION
     type :: figure_t
@@ -76,6 +52,7 @@ module fortplot_figure_core
         procedure :: plot => add_plot
         procedure :: add_contour
         procedure :: add_contour_filled
+        procedure :: add_surface
         procedure :: add_pcolormesh
         procedure :: streamplot
         procedure :: savefig
@@ -176,10 +153,22 @@ contains
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
-        
+
         call core_add_contour_filled(self%plots, self%state, x_grid, y_grid, z_grid, &
                                      levels, colormap, show_colorbar, label, self%plot_count)
     end subroutine add_contour_filled
+
+    subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        character(len=*), intent(in), optional :: label, colormap
+        logical, intent(in), optional :: show_colorbar
+        real(wp), intent(in), optional :: alpha, linewidth
+        real(wp), intent(in), optional :: edgecolor(3)
+
+        call core_add_surface(self%plots, self%state, x_grid, y_grid, z_grid, label, colormap, &
+                              show_colorbar, alpha, edgecolor, linewidth, self%plot_count)
+    end subroutine add_surface
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
         class(figure_t), intent(inout) :: self
@@ -993,4 +982,3 @@ contains
     end function subplot_title
 
 end module fortplot_figure_core
-! ==== End: src/figures/core/fortplot_figure_core.f90 ====
