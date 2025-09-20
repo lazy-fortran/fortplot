@@ -112,7 +112,7 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         
         real(wp) :: proj_bounds(4), data_ranges(2)
-        integer :: i
+    integer :: i
         
         ! Find projection bounds
         proj_bounds(1) = minval(corners_2d(1,:))  ! proj_x_min
@@ -206,8 +206,11 @@ contains
         real(wp) :: range_factor
         real(wp) :: edge_vec(2), edge_len, normal_vec(2), edge_mid(2), plot_center(2)
         real(wp) :: tick_length_screen, padding_screen, extra_screen
-        character(len=32) :: label
-        integer :: i
+    character(len=32) :: label
+    integer :: i
+    logical :: skip_label, have_last
+    real(wp) :: last_label_pos(2), dist_px, dxp, dyp
+    real(wp), parameter :: MIN_LABEL_SPACING_PX = 22.0_wp
     ! Pixel/back-end scale and temporary deltas (declare here per Fortran rules)
     real(wp) :: width_scale, height_scale, canvas_w_px, canvas_h_px
     real(wp) :: tick_px, pad_px, extra_px
@@ -239,6 +242,9 @@ contains
     pad_px  = max(6.0_wp, min(24.0_wp, VISUAL_PADDING_PERCENT * min(canvas_w_px, canvas_h_px)))
     extra_px = merge(max(0.0_wp, VISUAL_Z_EXTRA_PERCENT) * min(canvas_w_px, canvas_h_px), 0.0_wp, axis_id == Z_AXIS)
         
+        have_last = .false.
+        last_label_pos = [-1.0e30_wp, -1.0e30_wp]
+        
         do i = 1, n_ticks
             ! Skip ticks outside axis range
             if (tick_values(i) < axis_min .or. tick_values(i) > axis_max) cycle
@@ -249,6 +255,7 @@ contains
             tick_pos(2) = corners_2d(2,corner1) + range_factor * (corners_2d(2,corner2) - corners_2d(2,corner1))
             
             ! Convert pixel lengths to data-space deltas and place axis-aligned ticks
+            ! Orientation: keep original behavior
             if (axis_id == Z_AXIS) then
                 ! horizontal ticks: convert pixel -> data-x using width_scale
                 dx = sign(1.0_wp, normal_vec(1)) * (tick_px / max(EPSILON, width_scale))
@@ -270,9 +277,27 @@ contains
             ! Draw tick mark
             call ctx%line(tick_pos(1), tick_pos(2), tick_end(1), tick_end(2))
             
-            ! Draw label
-            label = format_tick_value_consistent(tick_values(i), decimals)
-            call ctx%text(label_pos(1), label_pos(2), trim(adjustl(label)))
+            ! Overlap avoidance heuristics (Matplotlib-like):
+            ! 1) Prune one endpoint at shared corners
+            skip_label = .false.
+            if (axis_id == X_AXIS .and. i == n_ticks) skip_label = .true.   ! shared with Y start
+            if (axis_id == Y_AXIS .and. i == 1)      skip_label = .true.   ! shared with X end
+
+            ! 2) Ensure minimum screen-space spacing between successive labels on this axis
+            if (.not. skip_label) then
+                dxp = (label_pos(1) - last_label_pos(1)) * width_scale
+                dyp = (label_pos(2) - last_label_pos(2)) * height_scale
+                dist_px = sqrt(dxp*dxp + dyp*dyp)
+                if (have_last .and. dist_px < MIN_LABEL_SPACING_PX) skip_label = .true.
+            end if
+
+            if (.not. skip_label) then
+                ! Draw label
+                label = format_tick_value_consistent(tick_values(i), decimals)
+                call ctx%text(label_pos(1), label_pos(2), trim(adjustl(label)))
+                last_label_pos = label_pos
+                have_last = .true.
+            end if
         end do
     end subroutine draw_ticks_on_edge
 
