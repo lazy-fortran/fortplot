@@ -95,6 +95,8 @@ contains
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if
+
+        self%state%plot_count = self%plot_count
     end subroutine add_bar_plot_data
 
 end module fortplot_plot_bars

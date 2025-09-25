@@ -160,31 +160,55 @@ contains
     
     subroutine test_bar_api()
         real(8) :: x(5), height(5)
+        type(figure_t), pointer :: fig
+        integer :: previous_count
         
         x = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0]
         height = [3.0d0, 7.0d0, 2.0d0, 5.0d0, 8.0d0]
-        
+
+        call figure()
         call bar(x, height)
         call check_result("bar basic call", .true.)
-        
+        fig => get_global_figure()
+        call check_result("bar syncs state count after first call", &
+                          fig%state%plot_count == fig%plot_count)
+
         call bar(x, height, width=0.5d0)
         call check_result("bar with width", .true.)
-        
-        ! Skip color test - requires RGB array
-        call check_result("bar with color", .true.)
+        fig => get_global_figure()
+        call check_result("bar syncs state count after width call", &
+                          fig%state%plot_count == fig%plot_count)
+
+        previous_count = fig%plot_count
+        call bar(x, height, label='Category A')
+        fig => get_global_figure()
+        call check_result("bar increments plot count", &
+                          fig%plot_count == previous_count + 1)
+        call check_result("bar keeps state and figure counts aligned", &
+                          fig%state%plot_count == fig%plot_count)
+        call check_result("bar stores legend label", &
+                          len_trim(fig%plots(fig%plot_count)%label) > 0)
     end subroutine test_bar_api
-    
+
     subroutine test_barh_api()
         real(8) :: y(5), width(5)
+        type(figure_t), pointer :: fig
         
         y = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0]
         width = [3.0d0, 7.0d0, 2.0d0, 5.0d0, 8.0d0]
-        
+
+        call figure()
         call barh(y, width)
         call check_result("barh basic call", .true.)
-        
+        fig => get_global_figure()
+        call check_result("barh syncs state count after first call", &
+                          fig%state%plot_count == fig%plot_count)
+
         call barh(y, width, height=0.5d0)
         call check_result("barh with height", .true.)
+        fig => get_global_figure()
+        call check_result("barh syncs state count after height call", &
+                          fig%state%plot_count == fig%plot_count)
     end subroutine test_barh_api
     
     subroutine test_histogram_api()

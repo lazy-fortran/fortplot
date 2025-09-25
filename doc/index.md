@@ -32,6 +32,7 @@ and links directly to the source code.
 - [Animation](./examples/animation.html) - Documentation for this example is auto-generated.
 - [Annotation Demo](./examples/annotation_demo.html) - Documentation for this example is auto-generated.
 - [Ascii Heatmap](./examples/ascii_heatmap.html) - Documentation for this example is auto-generated.
+- [Bar Chart Demo](./examples/bar_chart_demo.html) - Grouped vertical and horizontal bar charts.
 - [Basic Plots](./examples/basic_plots.html) - Documentation for this example is auto-generated.
 - [Boxplot Demo](./examples/boxplot_demo.html) - Demonstrates box-and-whisker plots for statistical data visualization.
 - [Colored Contours](./examples/colored_contours.html) - Documentation for this example is auto-generated.
