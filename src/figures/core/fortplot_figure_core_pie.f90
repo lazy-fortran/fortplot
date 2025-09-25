@@ -87,8 +87,9 @@ contains
             ha_value = determine_alignment(mid_angle)
             call append_figure_annotation(self, center_x + outer_radius * &
                                           cos(mid_angle), center_y + outer_radius * &
-                                          sin(mid_angle), trim(pie_plot%pie_labels(i)), &
-                                          ha_value, 'center')
+                                          sin(mid_angle), &
+                                          trim(pie_plot%pie_labels(i)), ha_value, &
+                                          'center')
         end do
     end subroutine add_label_annotations
 
@@ -133,125 +134,211 @@ contains
         character(len=:), allocatable, intent(out) :: text
         logical, intent(inout) :: warned
 
-        character(len=:), allocatable :: fmt_trimmed
-        character(len=:), allocatable :: prefix_raw, suffix_raw
-        character(len=:), allocatable :: prefix, suffix
-        character(len=32) :: fmt_spec
-        character(len=64) :: buffer
-        integer :: fmt_len, spec_start, spec_end
-        integer :: pos_dot, precision, ios
-        integer :: i
+        integer :: fmt_len, idx, spec_end
+        integer :: width, precision
         real(wp) :: percent
+        logical :: ok, plus_flag, space_flag, left_flag, zero_flag
+        character(len=:), allocatable :: chunk
 
         text = ''
         if (total_value <= 0.0_wp) return
         if (len_trim(fmt) == 0) return
 
-        fmt_trimmed = trim(fmt)
-        fmt_len = len(fmt_trimmed)
-
-        spec_start = 0
-        spec_end = 0
-        i = 1
-        do while (i <= fmt_len)
-            if (fmt_trimmed(i:i) == '%') then
-                if (i < fmt_len .and. fmt_trimmed(i + 1:i + 1) == '%') then
-                    i = i + 2
-                else
-                    spec_start = i
-                    exit
-                end if
-            else
-                i = i + 1
-            end if
-        end do
-
-        if (spec_start <= 0) then
-            if (.not. warned) then
-                call log_warning('pie: unsupported autopct format, ' // &
-                                 'skipping percentage labels')
-                warned = .true.
-            end if
-            return
-        end if
-
-        i = spec_start + 1
-        do while (i <= fmt_len)
-            if (fmt_trimmed(i:i) == 'f' .or. fmt_trimmed(i:i) == 'F') then
-                spec_end = i
-                exit
-            end if
-            if (fmt_trimmed(i:i) == '%') exit
-            i = i + 1
-        end do
-
-        if (spec_end <= spec_start) then
-            if (.not. warned) then
-                call log_warning('pie: unsupported autopct format, ' // &
-                                 'skipping percentage labels')
-                warned = .true.
-            end if
-            return
-        end if
-
-        if (spec_start > 1) then
-            prefix_raw = fmt_trimmed(1:spec_start - 1)
-        else
-            prefix_raw = ''
-        end if
-        if (spec_end < fmt_len) then
-            suffix_raw = fmt_trimmed(spec_end + 1:fmt_len)
-        else
-            suffix_raw = ''
-        end if
-
-        prefix = collapse_percent_literals(prefix_raw)
-        suffix = collapse_percent_literals(suffix_raw)
-
-        ios = 0
-        pos_dot = index(fmt_trimmed(spec_start:spec_end), '.')
-        if (pos_dot > 0) then
-            pos_dot = spec_start + pos_dot - 1
-            if (pos_dot + 1 <= spec_end - 1) then
-                read(fmt_trimmed(pos_dot + 1:spec_end - 1), *, iostat=ios) precision
-            else
-                precision = 1
-            end if
-        else
-            precision = 1
-        end if
-        if (ios /= 0) precision = 1
-        if (precision < 0) precision = 0
-        write(fmt_spec, '(A,I0,A)') '(f0.', precision, ')'
-
+        fmt_len = len(fmt)
         percent = 100.0_wp * value / max(total_value, tiny(1.0_wp))
-        write(buffer, fmt_spec) percent
 
-        text = prefix // trim(buffer) // suffix
-    end subroutine format_autopct_value
-
-    pure module function collapse_percent_literals(raw) result(text_out)
-        character(len=*), intent(in) :: raw
-        character(len=:), allocatable :: text_out
-        integer :: raw_len, i
-
-        raw_len = len(raw)
-        text_out = ''
-        if (raw_len <= 0) return
-
-        i = 1
-        do while (i <= raw_len)
-            if (i < raw_len) then
-                if (raw(i:i) == '%' .and. raw(i + 1:i + 1) == '%') then
-                    text_out = text_out // '%'
-                    i = i + 2
+        idx = 1
+        do while (idx <= fmt_len)
+            if (fmt(idx:idx) == '%') then
+                if (idx < fmt_len .and. fmt(idx + 1:idx + 1) == '%') then
+                    text = text // '%'
+                    idx = idx + 2
                     cycle
                 end if
+
+                call parse_autopct_spec(fmt, idx, spec_end, width, precision, &
+                                        plus_flag, space_flag, left_flag, &
+                                        zero_flag, ok)
+                if (.not. ok) then
+                    if (.not. warned) then
+                        call log_warning('pie: unsupported autopct format, ' // &
+                                         'skipping percentage labels')
+                        warned = .true.
+                    end if
+                    text = ''
+                    return
+                end if
+
+                call build_autopct_chunk(percent, width, precision, plus_flag, &
+                                         space_flag, left_flag, zero_flag, chunk)
+                text = text // chunk
+                idx = spec_end + 1
+            else
+                text = text // fmt(idx:idx)
+                idx = idx + 1
             end if
-            text_out = text_out // raw(i:i)
-            i = i + 1
         end do
-    end function collapse_percent_literals
+    end subroutine format_autopct_value
+
+    module subroutine parse_autopct_spec(fmt, start_pos, spec_end, width, &
+                                         precision, plus_flag, space_flag, &
+                                         left_flag, zero_flag, ok)
+        character(len=*), intent(in) :: fmt
+        integer, intent(in) :: start_pos
+        integer, intent(out) :: spec_end
+        integer, intent(out) :: width, precision
+        logical, intent(out) :: plus_flag, space_flag, left_flag, zero_flag
+        logical, intent(out) :: ok
+
+        character(len=:), allocatable :: spec_body
+        integer :: fmt_len, body_len, idx
+        integer :: width_start, precision_start
+        integer :: ios
+
+        fmt_len = len(fmt)
+        spec_end = 0
+        do idx = start_pos + 1, fmt_len
+            if (fmt(idx:idx) == 'f' .or. fmt(idx:idx) == 'F') then
+                spec_end = idx
+                exit
+            end if
+            if (fmt(idx:idx) == '%') then
+                ok = .false.
+                return
+            end if
+        end do
+
+        if (spec_end <= start_pos) then
+            ok = .false.
+            return
+        end if
+
+        if (spec_end > start_pos + 1) then
+            spec_body = fmt(start_pos + 1:spec_end - 1)
+        else
+            spec_body = ''
+        end if
+
+        plus_flag = .false.
+        space_flag = .false.
+        left_flag = .false.
+        zero_flag = .false.
+        width = 0
+        precision = -1
+        ios = 0
+
+        body_len = len(spec_body)
+        idx = 1
+        do while (idx <= body_len)
+            select case (spec_body(idx:idx))
+            case ('+')
+                plus_flag = .true.
+                idx = idx + 1
+            case (' ')
+                space_flag = .true.
+                idx = idx + 1
+            case ('-')
+                left_flag = .true.
+                idx = idx + 1
+            case ('0')
+                zero_flag = .true.
+                idx = idx + 1
+            case ('#')
+                idx = idx + 1
+            case default
+                exit
+            end select
+        end do
+
+        if (left_flag) zero_flag = .false.
+
+        width_start = idx
+        do while (idx <= body_len)
+            if (spec_body(idx:idx) < '0' .or. spec_body(idx:idx) > '9') exit
+            idx = idx + 1
+        end do
+        if (idx > width_start) then
+            read(spec_body(width_start:idx - 1), *, iostat=ios) width
+            if (ios /= 0) width = 0
+        end if
+
+        if (idx <= body_len) then
+            if (spec_body(idx:idx) == '.') then
+                idx = idx + 1
+                precision_start = idx
+                do while (idx <= body_len)
+                    if (spec_body(idx:idx) < '0' .or. spec_body(idx:idx) > '9') exit
+                    idx = idx + 1
+                end do
+                if (idx > precision_start) then
+                    read(spec_body(precision_start:idx - 1), *, iostat=ios) precision
+                    if (ios /= 0) precision = -1
+                else
+                    precision = 0
+                end if
+            end if
+        end if
+
+        if (idx <= body_len) then
+            ok = .false.
+            return
+        end if
+
+        if (precision < 0) precision = 6
+        ok = .true.
+    end subroutine parse_autopct_spec
+
+    module subroutine build_autopct_chunk(percent, width, precision, plus_flag, &
+                                          space_flag, left_flag, zero_flag, chunk)
+        real(wp), intent(in) :: percent
+        integer, intent(in) :: width, precision
+        logical, intent(in) :: plus_flag, space_flag, left_flag, zero_flag
+        character(len=:), allocatable, intent(out) :: chunk
+
+        character(len=64) :: buffer
+        character(len=32) :: fmt_spec
+        character(len=:), allocatable :: base
+        integer :: pad_len
+        logical :: negative
+        character(len=1) :: sign_char
+
+        write(fmt_spec, '(A,I0,A,I0,A)') '(f', max(precision + 8, 24), '.', &
+                                         precision, ')'
+        write(buffer, fmt_spec) percent
+        base = trim(adjustl(buffer))
+        if (len(base) == 0) base = '0'
+
+        negative = (base(1:1) == '-')
+        if (.not. negative) then
+            if (plus_flag) then
+                base = '+' // base
+            else if (space_flag) then
+                base = ' ' // base
+            end if
+        end if
+
+        chunk = base
+        if (width > len(chunk)) then
+            pad_len = width - len(chunk)
+            if (left_flag) then
+                chunk = chunk // repeat(' ', pad_len)
+            else if (zero_flag) then
+                if (len(chunk) > 0) then
+                    sign_char = chunk(1:1)
+                    select case (sign_char)
+                    case ('+', '-', ' ')
+                        chunk = sign_char // repeat('0', pad_len) // chunk(2:)
+                    case default
+                        chunk = repeat('0', pad_len) // chunk
+                    end select
+                else
+                    chunk = repeat('0', pad_len)
+                end if
+            else
+                chunk = repeat(' ', pad_len) // chunk
+            end if
+        end if
+    end subroutine build_autopct_chunk
 
     pure module function determine_alignment(angle) result(alignment)
         real(wp), intent(in) :: angle

@@ -26,24 +26,26 @@ contains
         explode_vals = [0.0_wp, 0.2_wp, 0.1_wp, 0.0_wp]
         labels = ['North', 'Zero ', 'East ', 'West ']
 
-        call fig%add_pie(values, labels=labels, autopct='Share %.1f%%', &
-                          explode=explode_vals)
+        call fig%add_pie(values, labels=labels, &
+                          autopct='Share %%=%.1f%%%% of total', explode=explode_vals)
 
         call assert_true(fig%plot_count == 1, 'pie adds a single plot')
-        call assert_true(fig%plots(1)%plot_type == PLOT_TYPE_PIE, 'plot type stored as pie')
+        call assert_true(fig%plots(1)%plot_type == PLOT_TYPE_PIE, &
+                         'plot type stored as pie')
         call assert_true(fig%plots(1)%pie_slice_count == 3, 'zero values ignored')
 
         expected_values = [50.0_wp, 25.0_wp, 25.0_wp]
         do i = 1, 3
-            call assert_close(fig%plots(1)%pie_values(i), expected_values(i), 1.0e-9_wp, &
-                               'pie value matches input')
+            call assert_close(fig%plots(1)%pie_values(i), expected_values(i), &
+                               1.0e-9_wp, 'pie value matches input')
         end do
         call assert_true(all(fig%plots(1)%pie_source_index(1:3) == [1, 3, 4]), &
             'source indices map positives')
         call assert_close(fig%plots(1)%pie_offsets(2), 0.1_wp, 1.0e-9_wp, &
                                'explode fraction stored as offset')
 
-        call assert_true(fig%annotation_count == 6, 'annotations include autopct and labels')
+        call assert_true(fig%annotation_count == 6, &
+                         'annotations include autopct and labels')
         autopct_count = 0
         found_share_50 = .false.
         found_share_25 = .false.
@@ -51,9 +53,9 @@ contains
             if (index(trim(fig%annotations(i)%text), '%') > 0) then
                 autopct_count = autopct_count + 1
                 select case (trim(fig%annotations(i)%text))
-                case ('Share 50.0%')
+                case ('Share %=50.0%% of total')
                     found_share_50 = .true.
-                case ('Share 25.0%')
+                case ('Share %=25.0%% of total')
                     found_share_25 = .true.
                 end select
             end if
@@ -72,7 +74,8 @@ contains
             case ('West');  found_west = .true.
             end select
         end do
-        call assert_true(found_north .and. found_east .and. found_west, 'label annotations placed')
+        call assert_true(found_north .and. found_east .and. found_west, &
+                         'label annotations placed')
 
     end subroutine run_pie_data_checks
 
