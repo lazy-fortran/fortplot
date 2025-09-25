@@ -133,18 +133,40 @@ contains
         character(len=:), allocatable, intent(out) :: text
         logical, intent(inout) :: warned
 
-        integer :: pos_dot, pos_f, precision, ios
+        character(len=:), allocatable :: fmt_trimmed
+        character(len=:), allocatable :: prefix_raw, suffix_raw
+        character(len=:), allocatable :: prefix, suffix
         character(len=32) :: fmt_spec
         character(len=64) :: buffer
+        integer :: fmt_len, spec_start, spec_end
+        integer :: pos_dot, precision, ios
+        integer :: i
         real(wp) :: percent
 
         text = ''
         if (total_value <= 0.0_wp) return
         if (len_trim(fmt) == 0) return
 
-        pos_dot = index(fmt, '%.')
-        pos_f = index(fmt, 'f')
-        if (pos_dot <= 0 .or. pos_f <= pos_dot + 1) then
+        fmt_trimmed = trim(fmt)
+        fmt_len = len(fmt_trimmed)
+
+        spec_start = 0
+        spec_end = 0
+        i = 1
+        do while (i <= fmt_len)
+            if (fmt_trimmed(i:i) == '%') then
+                if (i < fmt_len .and. fmt_trimmed(i + 1:i + 1) == '%') then
+                    i = i + 2
+                else
+                    spec_start = i
+                    exit
+                end if
+            else
+                i = i + 1
+            end if
+        end do
+
+        if (spec_start <= 0) then
             if (.not. warned) then
                 call log_warning('pie: unsupported autopct format, ' // &
                                  'skipping percentage labels')
@@ -153,7 +175,51 @@ contains
             return
         end if
 
-        read(fmt(pos_dot + 2:pos_f - 1), *, iostat=ios) precision
+        i = spec_start + 1
+        do while (i <= fmt_len)
+            if (fmt_trimmed(i:i) == 'f' .or. fmt_trimmed(i:i) == 'F') then
+                spec_end = i
+                exit
+            end if
+            if (fmt_trimmed(i:i) == '%') exit
+            i = i + 1
+        end do
+
+        if (spec_end <= spec_start) then
+            if (.not. warned) then
+                call log_warning('pie: unsupported autopct format, ' // &
+                                 'skipping percentage labels')
+                warned = .true.
+            end if
+            return
+        end if
+
+        if (spec_start > 1) then
+            prefix_raw = fmt_trimmed(1:spec_start - 1)
+        else
+            prefix_raw = ''
+        end if
+        if (spec_end < fmt_len) then
+            suffix_raw = fmt_trimmed(spec_end + 1:fmt_len)
+        else
+            suffix_raw = ''
+        end if
+
+        prefix = collapse_percent_literals(prefix_raw)
+        suffix = collapse_percent_literals(suffix_raw)
+
+        ios = 0
+        pos_dot = index(fmt_trimmed(spec_start:spec_end), '.')
+        if (pos_dot > 0) then
+            pos_dot = spec_start + pos_dot - 1
+            if (pos_dot + 1 <= spec_end - 1) then
+                read(fmt_trimmed(pos_dot + 1:spec_end - 1), *, iostat=ios) precision
+            else
+                precision = 1
+            end if
+        else
+            precision = 1
+        end if
         if (ios /= 0) precision = 1
         if (precision < 0) precision = 0
         write(fmt_spec, '(A,I0,A)') '(f0.', precision, ')'
@@ -161,12 +227,31 @@ contains
         percent = 100.0_wp * value / max(total_value, tiny(1.0_wp))
         write(buffer, fmt_spec) percent
 
-        if (index(fmt, '%%') > 0) then
-            text = trim(buffer) // '%'
-        else
-            text = trim(buffer)
-        end if
+        text = prefix // trim(buffer) // suffix
     end subroutine format_autopct_value
+
+    pure module function collapse_percent_literals(raw) result(text_out)
+        character(len=*), intent(in) :: raw
+        character(len=:), allocatable :: text_out
+        integer :: raw_len, i
+
+        raw_len = len(raw)
+        text_out = ''
+        if (raw_len <= 0) return
+
+        i = 1
+        do while (i <= raw_len)
+            if (i < raw_len) then
+                if (raw(i:i) == '%' .and. raw(i + 1:i + 1) == '%') then
+                    text_out = text_out // '%'
+                    i = i + 2
+                    cycle
+                end if
+            end if
+            text_out = text_out // raw(i:i)
+            i = i + 1
+        end do
+    end function collapse_percent_literals
 
     pure module function determine_alignment(angle) result(alignment)
         real(wp), intent(in) :: angle

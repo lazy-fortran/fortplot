@@ -18,6 +18,7 @@ contains
         real(wp) :: expected_values(3)
         integer :: i, autopct_count
         logical :: found_north, found_east, found_west
+        logical :: found_share_50, found_share_25
 
         call fig%initialize()
 
@@ -25,7 +26,8 @@ contains
         explode_vals = [0.0_wp, 0.2_wp, 0.1_wp, 0.0_wp]
         labels = ['North', 'Zero ', 'East ', 'West ']
 
-        call fig%add_pie(values, labels=labels, autopct='%.1f%%', explode=explode_vals)
+        call fig%add_pie(values, labels=labels, autopct='Share %.1f%%', &
+                          explode=explode_vals)
 
         call assert_true(fig%plot_count == 1, 'pie adds a single plot')
         call assert_true(fig%plots(1)%plot_type == PLOT_TYPE_PIE, 'plot type stored as pie')
@@ -43,10 +45,22 @@ contains
 
         call assert_true(fig%annotation_count == 6, 'annotations include autopct and labels')
         autopct_count = 0
+        found_share_50 = .false.
+        found_share_25 = .false.
         do i = 1, fig%annotation_count
-            if (index(trim(fig%annotations(i)%text), '%') > 0) autopct_count = autopct_count + 1
+            if (index(trim(fig%annotations(i)%text), '%') > 0) then
+                autopct_count = autopct_count + 1
+                select case (trim(fig%annotations(i)%text))
+                case ('Share 50.0%')
+                    found_share_50 = .true.
+                case ('Share 25.0%')
+                    found_share_25 = .true.
+                end select
+            end if
         end do
         call assert_true(autopct_count == 3, 'autopct annotations present')
+        call assert_true(found_share_50, 'autopct keeps prefix for majority slice')
+        call assert_true(found_share_25, 'autopct keeps prefix for remaining slices')
 
         found_north = .false.
         found_east = .false.
