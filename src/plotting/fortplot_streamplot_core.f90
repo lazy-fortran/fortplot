@@ -206,11 +206,14 @@ contains
         integer, intent(in) :: traj_idx, point_idx
         real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
         real(wp), intent(out) :: arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag
-        
-        ! Get arrow position from trajectory
-        arrow_x = real(trajectories(traj_idx, point_idx, 1), wp)
-        arrow_y = real(trajectories(traj_idx, point_idx, 2), wp)
-        
+        real(wp) :: grid_x_idx, grid_y_idx
+
+        ! Get arrow position from trajectory and convert to data coordinates
+        grid_x_idx = real(trajectories(traj_idx, point_idx, 1), wp)
+        grid_y_idx = real(trajectories(traj_idx, point_idx, 2), wp)
+        arrow_x = map_grid_index_to_coord(grid_x_idx, x_grid)
+        arrow_y = map_grid_index_to_coord(grid_y_idx, y_grid)
+
         ! Calculate arrow direction from velocity field at this position
         call interpolate_velocity_at_point(arrow_x, arrow_y, x_grid, y_grid, &
                                          u_field, v_field, arrow_dx, arrow_dy, speed_mag)
@@ -289,18 +292,35 @@ contains
         ! Convert from grid indices to data coordinates
         do j = 1, n_points
             ! trajectory coordinates are grid indices, convert to data coordinates
-            traj_x(j) = x_grid(1) + real(trajectories(traj_idx, j, 1), wp) * &
-                       (x_grid(size(x_grid)) - x_grid(1)) / real(size(x_grid) - 1, wp)
-            traj_y(j) = y_grid(1) + real(trajectories(traj_idx, j, 2), wp) * &
-                       (y_grid(size(y_grid)) - y_grid(1)) / real(size(y_grid) - 1, wp)
+            traj_x(j) = map_grid_index_to_coord(real(trajectories(traj_idx, j, 1), wp), &
+                                               x_grid)
+            traj_y(j) = map_grid_index_to_coord(real(trajectories(traj_idx, j, 2), wp), &
+                                               y_grid)
         end do
         
         ! Add trajectory as line plot to figure
         call add_streamline_to_figure(fig, traj_x, traj_y, line_color)
-        
+
         if (allocated(traj_x)) deallocate(traj_x)
         if (allocated(traj_y)) deallocate(traj_y)
     end subroutine convert_and_add_trajectory
+
+    pure function map_grid_index_to_coord(grid_index, grid_values) result(coord)
+        !! Convert matplotlib-style grid index to data coordinate
+        real(wp), intent(in) :: grid_index
+        real(wp), intent(in) :: grid_values(:)
+        real(wp) :: coord
+        real(wp) :: span, denom
+
+        if (size(grid_values) <= 1) then
+            coord = grid_values(1)
+            return
+        end if
+
+        span = grid_values(size(grid_values)) - grid_values(1)
+        denom = real(size(grid_values) - 1, wp)
+        coord = grid_values(1) + grid_index * span / denom
+    end function map_grid_index_to_coord
 
     subroutine add_streamline_to_figure(fig, traj_x, traj_y, line_color)
         !! Add streamline trajectory to figure as line plot
