@@ -856,7 +856,7 @@ contains
     end subroutine twiny
 
     subroutine add_pie(self, values, labels, autopct, startangle, colors, explode)
-        !! Create a pie chart with optional exploded wedges and percentage labels
+        !! Create a pie chart and register annotations for labels and percentages
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: values(:)
         character(len=*), intent(in), optional :: labels(:)
@@ -865,146 +865,179 @@ contains
         character(len=*), intent(in), optional :: colors(:)
         real(wp), intent(in), optional :: explode(:)
 
-        integer :: plot_idx, i
-        real(wp) :: total, mid_angle, center_x, center_y
-        real(wp) :: outer_radius, offset_value
-        character(len=:), allocatable :: autopct_fmt
-        character(len=:), allocatable :: formatted
-        character(len=8) :: ha_value
+        call core_add_pie(self%plots, self%state, values, labels=labels, &
+                          autopct=autopct, startangle=startangle, colors=colors, &
+                          explode=explode, plot_count=self%plot_count)
 
-        call core_add_pie(self%plots, self%state, values, labels=labels, autopct=autopct, &
-                          startangle=startangle, colors=colors, explode=explode, &
-                          plot_count=self%plot_count)
         self%plot_count = self%state%plot_count
         if (self%plot_count <= 0) return
 
-        plot_idx = self%plot_count
-        associate(pie_plot => self%plots(plot_idx))
-            if (pie_plot%pie_slice_count <= 0) return
-            total = sum(pie_plot%pie_values)
-            outer_radius = pie_plot%pie_radius * 1.15_wp
-
-            if (present(autopct)) then
-                autopct_fmt = trim(autopct)
-                do i = 1, pie_plot%pie_slice_count
-                    call format_autopct_value(pie_plot%pie_values(i), total, autopct_fmt, formatted)
-                    if (len_trim(formatted) == 0) cycle
-                    call append_annotation(pie_plot%pie_label_pos(1, i), &
-                                            pie_plot%pie_label_pos(2, i), formatted, &
-                                            'center', 'center')
-                end do
-            end if
-
-            if (allocated(pie_plot%pie_labels)) then
-                do i = 1, pie_plot%pie_slice_count
-                    if (len_trim(pie_plot%pie_labels(i)) == 0) cycle
-                    mid_angle = 0.5_wp * (pie_plot%pie_start(i) + pie_plot%pie_end(i))
-                    offset_value = pie_plot%pie_offsets(i)
-                    center_x = pie_plot%pie_center(1) + offset_value * cos(mid_angle)
-                    center_y = pie_plot%pie_center(2) + offset_value * sin(mid_angle)
-                    call determine_alignment(mid_angle, ha_value)
-                    call append_annotation(center_x + outer_radius * cos(mid_angle), &
-                                            center_y + outer_radius * sin(mid_angle), &
-                                            trim(pie_plot%pie_labels(i)), ha_value, 'center')
-                end do
-            end if
-        end associate
-
-    contains
-
-        subroutine format_autopct_value(value, total_value, fmt, text)
-            !! Format percentage text using matplotlib-style fmt strings
-            real(wp), intent(in) :: value, total_value
-            character(len=*), intent(in) :: fmt
-            character(len=:), allocatable, intent(out) :: text
-
-            integer :: pos_dot, pos_f, precision, ios
-            character(len=32) :: fmt_spec
-            character(len=64) :: buffer
-            real(wp) :: percent
-            logical, save :: warned = .false.
-
-            text = ''
-            if (total_value <= 0.0_wp) return
-            if (len_trim(fmt) == 0) return
-
-            pos_dot = index(fmt, '%.')
-            pos_f = index(fmt, 'f')
-            if (pos_dot <= 0 .or. pos_f <= pos_dot + 1) then
-                if (.not. warned) then
-                    call log_warning('pie: unsupported autopct format, skipping percentage labels')
-                    warned = .true.
-                end if
-                return
-            end if
-
-            read(fmt(pos_dot + 2:pos_f - 1), *, iostat=ios) precision
-            if (ios /= 0) precision = 1
-            if (precision < 0) precision = 0
-            write(fmt_spec, '(A,I0,A)') '(f0.', precision, ')'
-
-            percent = 100.0_wp * value / max(total_value, tiny(1.0_wp))
-            write(buffer, fmt_spec) percent
-
-            if (index(fmt, '%%') > 0) then
-                text = trim(buffer) // '%'
-            else
-                text = trim(buffer)
-            end if
-        end subroutine format_autopct_value
-
-        subroutine determine_alignment(angle, alignment)
-            !! Choose horizontal alignment based on wedge angle
-            real(wp), intent(in) :: angle
-            character(len=8), intent(out) :: alignment
-
-            real(wp) :: cos_val
-
-            cos_val = cos(angle)
-            if (cos_val < -0.3_wp) then
-                alignment = 'right'
-            else if (cos_val > 0.3_wp) then
-                alignment = 'left'
-            else
-                alignment = 'center'
-            end if
-        end subroutine determine_alignment
-
-        subroutine append_annotation(x, y, text, ha_value, va_value)
-            !! Append a text annotation to the figure safely
-            real(wp), intent(in) :: x, y
-            character(len=*), intent(in) :: text
-            character(len=*), intent(in) :: ha_value, va_value
-            type(text_annotation_t) :: annotation
-            logical :: valid
-            character(len=256) :: error_message
-
-            if (len_trim(text) == 0) return
-            if (.not. allocated(self%annotations)) then
-                allocate(self%annotations(self%max_annotations))
-            end if
-            if (self%annotation_count >= self%max_annotations) then
-                call log_warning('pie: maximum annotation capacity reached; skipping label')
-                return
-            end if
-
-            annotation = create_text_annotation(text=trim(text), x=x, y=y, coord_type=COORD_DATA)
-            annotation%ha = trim(ha_value)
-            annotation%alignment = trim(ha_value)
-            annotation%va = trim(va_value)
-            annotation%font_size = 12.0_wp
-            call validate_annotation(annotation, valid, error_message)
-            annotation%validated = .true.
-            annotation%valid = valid
-            if (valid) then
-                self%annotation_count = self%annotation_count + 1
-                self%annotations(self%annotation_count) = annotation
-            else
-                call log_warning('Skipping invalid annotation: ' // trim(error_message))
-            end if
-        end subroutine append_annotation
-
+        call add_pie_annotations(self, self%plots(self%plot_count))
     end subroutine add_pie
+
+    subroutine add_pie_annotations(self, pie_plot)
+        !! Attach autopct and label annotations for a pie plot
+        class(figure_t), intent(inout) :: self
+        type(plot_data_t), intent(in) :: pie_plot
+
+        if (pie_plot%pie_slice_count <= 0) return
+        call add_autopct_annotations(self, pie_plot)
+        call add_label_annotations(self, pie_plot)
+    end subroutine add_pie_annotations
+
+    subroutine add_autopct_annotations(self, pie_plot)
+        !! Add percentage annotations inside each pie slice
+        class(figure_t), intent(inout) :: self
+        type(plot_data_t), intent(in) :: pie_plot
+
+        integer :: i
+        real(wp) :: total
+        character(len=:), allocatable :: text
+        logical :: warned
+
+        if (.not. allocated(pie_plot%pie_autopct)) return
+        if (pie_plot%pie_slice_count <= 0) return
+
+        total = sum(pie_plot%pie_values(1:pie_plot%pie_slice_count))
+        if (total <= 0.0_wp) return
+
+        warned = .false.
+        do i = 1, pie_plot%pie_slice_count
+            call format_autopct_value(pie_plot%pie_values(i), total, &
+                                      pie_plot%pie_autopct, text, warned)
+            if (len_trim(text) == 0) cycle
+            call append_figure_annotation(self, pie_plot%pie_label_pos(1, i), &
+                                          pie_plot%pie_label_pos(2, i), text, 'center', &
+                                          'center')
+        end do
+    end subroutine add_autopct_annotations
+
+    subroutine add_label_annotations(self, pie_plot)
+        !! Add external slice labels with angle-aware alignment
+        class(figure_t), intent(inout) :: self
+        type(plot_data_t), intent(in) :: pie_plot
+
+        integer :: i
+        real(wp) :: mid_angle, offset_value, center_x, center_y, outer_radius
+        character(len=8) :: ha_value
+
+        if (.not. allocated(pie_plot%pie_labels)) return
+        if (pie_plot%pie_slice_count <= 0) return
+
+        outer_radius = pie_plot%pie_radius * 1.15_wp
+        do i = 1, pie_plot%pie_slice_count
+            if (len_trim(pie_plot%pie_labels(i)) == 0) cycle
+            mid_angle = 0.5_wp * (pie_plot%pie_start(i) + pie_plot%pie_end(i))
+            offset_value = 0.0_wp
+            if (allocated(pie_plot%pie_offsets)) then
+                if (i <= size(pie_plot%pie_offsets)) then
+                    offset_value = pie_plot%pie_offsets(i)
+                end if
+            end if
+            center_x = pie_plot%pie_center(1) + offset_value * cos(mid_angle)
+            center_y = pie_plot%pie_center(2) + offset_value * sin(mid_angle)
+            ha_value = determine_alignment(mid_angle)
+            call append_figure_annotation(self, center_x + outer_radius * &
+                                          cos(mid_angle), center_y + outer_radius * &
+                                          sin(mid_angle), trim(pie_plot%pie_labels(i)), &
+                                          ha_value, 'center')
+        end do
+    end subroutine add_label_annotations
+
+    subroutine append_figure_annotation(self, x, y, text, ha_value, va_value)
+        !! Safely append a text annotation to the figure
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=*), intent(in) :: ha_value, va_value
+        type(text_annotation_t) :: annotation
+        logical :: valid
+        character(len=256) :: error_message
+
+        if (len_trim(text) == 0) return
+        if (.not. allocated(self%annotations)) then
+            allocate(self%annotations(self%max_annotations))
+        end if
+        if (self%annotation_count >= self%max_annotations) then
+            call log_warning('pie: maximum annotation capacity reached; ' // &
+                             'skipping label')
+            return
+        end if
+
+        annotation = create_text_annotation(text=trim(text), x=x, y=y, &
+                                            coord_type=COORD_DATA)
+        annotation%ha = trim(ha_value)
+        annotation%alignment = trim(ha_value)
+        annotation%va = trim(va_value)
+        annotation%font_size = 12.0_wp
+        call validate_annotation(annotation, valid, error_message)
+        annotation%validated = .true.
+        annotation%valid = valid
+        if (valid) then
+            self%annotation_count = self%annotation_count + 1
+            self%annotations(self%annotation_count) = annotation
+        else
+            call log_warning('Skipping invalid annotation: ' // &
+                             trim(error_message))
+        end if
+    end subroutine append_figure_annotation
+
+    subroutine format_autopct_value(value, total_value, fmt, text, warned)
+        !! Format percentage text using matplotlib-style fmt strings
+        real(wp), intent(in) :: value, total_value
+        character(len=*), intent(in) :: fmt
+        character(len=:), allocatable, intent(out) :: text
+        logical, intent(inout) :: warned
+
+        integer :: pos_dot, pos_f, precision, ios
+        character(len=32) :: fmt_spec
+        character(len=64) :: buffer
+        real(wp) :: percent
+
+        text = ''
+        if (total_value <= 0.0_wp) return
+        if (len_trim(fmt) == 0) return
+
+        pos_dot = index(fmt, '%.')
+        pos_f = index(fmt, 'f')
+        if (pos_dot <= 0 .or. pos_f <= pos_dot + 1) then
+            if (.not. warned) then
+                call log_warning('pie: unsupported autopct format, skipping percentage labels')
+                warned = .true.
+            end if
+            return
+        end if
+
+        read(fmt(pos_dot + 2:pos_f - 1), *, iostat=ios) precision
+        if (ios /= 0) precision = 1
+        if (precision < 0) precision = 0
+        write(fmt_spec, '(A,I0,A)') '(f0.', precision, ')'
+
+        percent = 100.0_wp * value / max(total_value, tiny(1.0_wp))
+        write(buffer, fmt_spec) percent
+
+        if (index(fmt, '%%') > 0) then
+            text = trim(buffer) // '%'
+        else
+            text = trim(buffer)
+        end if
+    end subroutine format_autopct_value
+
+    pure function determine_alignment(angle) result(alignment)
+        !! Choose horizontal alignment based on wedge angle
+        real(wp), intent(in) :: angle
+        character(len=8) :: alignment
+        real(wp) :: cos_val
+
+        cos_val = cos(angle)
+        if (cos_val < -0.3_wp) then
+            alignment = 'right'
+        else if (cos_val > 0.3_wp) then
+            alignment = 'left'
+        else
+            alignment = 'center'
+        end if
+    end function determine_alignment
 
     !! SUBPLOT OPERATIONS - Delegated to management module
     

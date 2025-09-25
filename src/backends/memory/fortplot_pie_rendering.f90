@@ -19,7 +19,7 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 
-        integer :: slice_count, seg_count, i, j
+        integer :: slice_count, seg_count, i, j, required_size
         real(wp) :: angle_start, angle_end, angle_span, mid_angle
         real(wp) :: step_angle, angle_a, angle_b
         real(wp) :: center_x, center_y, radius, offset_value
@@ -50,7 +50,9 @@ contains
             mid_angle = angle_start + 0.5_wp * angle_span
             offset_value = 0.0_wp
             if (allocated(plot_data%pie_offsets)) then
-                if (size(plot_data%pie_offsets) >= i) offset_value = plot_data%pie_offsets(i)
+                if (size(plot_data%pie_offsets) >= i) then
+                    offset_value = plot_data%pie_offsets(i)
+                end if
             end if
 
             center_x = plot_data%pie_center(1) + offset_value * cos(mid_angle)
@@ -59,10 +61,12 @@ contains
             center_y_t = apply_scale_transform(center_y, yscale, symlog_threshold)
 
             seg_count = max(8, int(abs(angle_span) / MIN_SEGMENT_ANGLE) + 1)
-            allocate(edge_x(seg_count + 1))
-            allocate(edge_y(seg_count + 1))
+            required_size = seg_count + 1
+            call ensure_edge_capacity(edge_x, required_size)
+            call ensure_edge_capacity(edge_y, required_size)
 
-            call backend%color(plot_data%pie_colors(1, i), plot_data%pie_colors(2, i), plot_data%pie_colors(3, i))
+            call backend%color(plot_data%pie_colors(1, i), plot_data%pie_colors(2, i), &
+                               plot_data%pie_colors(3, i))
 
             step_angle = angle_span / real(seg_count, wp)
             do j = 0, seg_count - 1
@@ -102,14 +106,31 @@ contains
             call backend%color(edge_color(1), edge_color(2), edge_color(3))
             call backend%set_line_width(1.0_wp)
             call backend%line(center_x_t, center_y_t, edge_x(1), edge_y(1))
-            call backend%line(center_x_t, center_y_t, edge_x(seg_count + 1), edge_y(seg_count + 1))
+            call backend%line(center_x_t, center_y_t, edge_x(seg_count + 1), &
+                              edge_y(seg_count + 1))
             do j = 1, seg_count
                 call backend%line(edge_x(j), edge_y(j), edge_x(j + 1), edge_y(j + 1))
             end do
-
-            deallocate(edge_x)
-            deallocate(edge_y)
         end do
     end subroutine render_pie_plot
+
+    subroutine ensure_edge_capacity(buffer, required)
+        !! Ensure that the working edge buffer has at least the required size
+        real(wp), allocatable, intent(inout) :: buffer(:)
+        integer, intent(in) :: required
+        real(wp), allocatable :: tmp(:)
+
+        if (required <= 0) then
+            if (allocated(buffer)) call move_alloc(buffer, tmp)
+            return
+        end if
+
+        if (.not. allocated(buffer)) then
+            allocate(buffer(required))
+        else if (size(buffer) < required) then
+            allocate(tmp(required))
+            call move_alloc(tmp, buffer)
+        end if
+    end subroutine ensure_edge_capacity
 
 end module fortplot_pie_rendering
