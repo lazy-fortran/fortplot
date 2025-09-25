@@ -26,10 +26,7 @@ make example ARGS="example_name"
 ### Statistical and Categorical
 - [errorbar_demo](./errorbar_demo/) - Error bars for scientific data
 - [boxplot_demo](./boxplot_demo/) - Box-and-whisker plots
-  
-Note: Dedicated bar chart and histogram example programs are not yet included
-in the examples directory. See tests under `test/` exercising `bar`, `barh`,
-and `hist` functionality, and use the plotting APIs in your applications.
+- [bar_chart_demo](./bar_chart_demo/) - Grouped vertical and horizontal bars
 
 ### Advanced Plotting
 - [3d_plotting](./3d_plotting/) - 3D surface and line plots
