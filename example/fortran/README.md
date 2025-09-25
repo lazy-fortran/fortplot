@@ -27,6 +27,7 @@ make example ARGS="example_name"
 - [errorbar_demo](./errorbar_demo/) - Error bars for scientific data
 - [boxplot_demo](./boxplot_demo/) - Box-and-whisker plots
 - [bar_chart_demo](./bar_chart_demo/) - Grouped vertical and horizontal bars
+- [pie_chart_demo](./pie_chart_demo/) - Pie charts with autopct labels and exploded wedges
 
 ### Advanced Plotting
 - [3d_plotting](./3d_plotting/) - 3D surface and line plots

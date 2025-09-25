@@ -19,7 +19,8 @@ module fortplot_figure_operations
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
                                      figure_add_contour_filled, figure_add_surface, &
-                                     figure_add_pcolormesh, figure_add_fill_between
+                                     figure_add_pcolormesh, figure_add_fill_between, &
+                                     figure_add_pie
     use fortplot_figure_histogram, only: hist_figure
     use fortplot_figure_streamlines, only: streamplot_figure
     use fortplot_figure_boxplot, only: add_boxplot
@@ -42,6 +43,7 @@ module fortplot_figure_operations
     private
     public :: figure_add_plot_operation, figure_add_contour_operation, figure_add_contour_filled_operation
     public :: figure_add_surface_operation, figure_add_pcolormesh_operation, figure_add_fill_between_operation
+    public :: figure_add_pie_operation
     public :: figure_streamplot_operation, figure_hist_operation
     public :: figure_boxplot_operation, figure_scatter_operation, figure_set_xlabel_operation
     public :: figure_set_ylabel_operation, figure_set_title_operation, figure_set_xscale_operation
@@ -131,6 +133,20 @@ contains
 
         call figure_add_fill_between(plots, state, x, upper, lower, mask, color_string, alpha)
     end subroutine figure_add_fill_between_operation
+
+    subroutine figure_add_pie_operation(plots, state, values, labels, startangle, color_strings, explode, autopct)
+        !! Add a pie chart to the figure
+        type(plot_data_t), intent(inout) :: plots(:)
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: values(:)
+        character(len=*), intent(in), optional :: labels(:)
+        real(wp), intent(in), optional :: startangle
+        character(len=*), intent(in), optional :: color_strings(:)
+        real(wp), intent(in), optional :: explode(:)
+        character(len=*), intent(in), optional :: autopct
+
+        call figure_add_pie(plots, state, values, labels, startangle, color_strings, explode, autopct)
+    end subroutine figure_add_pie_operation
 
     subroutine figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                           density, color)

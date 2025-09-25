@@ -247,6 +247,18 @@ contains
         plot%surface_use_colormap = .false.
         plot%surface_edgecolor = [0.0_wp, 0.447_wp, 0.698_wp]
         if (allocated(plot%surface_colormap)) deallocate(plot%surface_colormap)
+        plot%pie_slice_count = 0
+        if (allocated(plot%pie_start)) deallocate(plot%pie_start)
+        if (allocated(plot%pie_end)) deallocate(plot%pie_end)
+        if (allocated(plot%pie_offsets)) deallocate(plot%pie_offsets)
+        if (allocated(plot%pie_colors)) deallocate(plot%pie_colors)
+        if (allocated(plot%pie_label_pos)) deallocate(plot%pie_label_pos)
+        if (allocated(plot%pie_values)) deallocate(plot%pie_values)
+        if (allocated(plot%pie_source_index)) deallocate(plot%pie_source_index)
+        if (allocated(plot%pie_labels)) deallocate(plot%pie_labels)
+        if (allocated(plot%pie_autopct)) deallocate(plot%pie_autopct)
+        plot%pie_radius = 1.0_wp
+        plot%pie_center = [0.0_wp, 0.0_wp]
     end subroutine reset_plot_storage
 
     subroutine add_contour_plot_data(plots, plot_count, max_plots, colors, &
