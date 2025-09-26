@@ -8,6 +8,7 @@ program test_pie_chart
 
     call run_pie_data_checks()
     call run_auto_autopct_checks()
+    call run_autopct_literal_preservation_checks()
 
 contains
 
@@ -112,6 +113,37 @@ contains
         call assert_true(has_integer_label, 'auto autopct formats integer percentages')
         call assert_true(has_fractional_label, 'auto autopct keeps one decimal for fractions')
     end subroutine run_auto_autopct_checks
+
+    subroutine run_autopct_literal_preservation_checks()
+        type(figure_t) :: fig
+        real(wp) :: values(2)
+        integer :: i
+        logical :: found_first, found_second
+
+        call fig%initialize()
+
+        values = [40.0_wp, 60.0_wp]
+        call fig%add_pie(values, autopct='Share %.1f%% done: %%')
+
+        call assert_true(fig%annotation_count == 2, &
+                         'literal autopct creates one label per slice')
+
+        found_first = .false.
+        found_second = .false.
+        do i = 1, fig%annotation_count
+            select case (trim(fig%annotations(i)%text))
+            case ('Share 40.0% done: %')
+                found_first = .true.
+            case ('Share 60.0% done: %')
+                found_second = .true.
+            end select
+        end do
+
+        call assert_true(found_first, &
+                         'autopct retains literal prefix/suffix for first slice')
+        call assert_true(found_second, &
+                         'autopct retains literal prefix/suffix for second slice')
+    end subroutine run_autopct_literal_preservation_checks
 
     subroutine assert_true(condition, description)
         logical, intent(in) :: condition

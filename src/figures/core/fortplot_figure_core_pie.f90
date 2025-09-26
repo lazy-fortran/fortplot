@@ -134,13 +134,15 @@ contains
         character(len=:), allocatable, intent(out) :: text
         logical, intent(inout) :: warned
 
-        integer :: fmt_len, idx, spec_end
+        integer :: fmt_len, idx, spec_end, spec_start
         integer :: width, precision
         real(wp) :: percent
         logical :: ok, plus_flag, space_flag, left_flag, zero_flag
         character(len=:), allocatable :: chunk
         character(len=:), allocatable :: trimmed_fmt
+        character(len=:), allocatable :: literal
         integer :: auto_precision
+        integer :: next_percent, literal_len
 
         text = ''
         if (total_value <= 0.0_wp) return
@@ -164,35 +166,55 @@ contains
         end if
 
         idx = 1
-        do while (idx <= fmt_len)
-            if (fmt(idx:idx) == '%') then
-                if (idx < fmt_len .and. fmt(idx + 1:idx + 1) == '%') then
-                    text = text // '%'
-                    idx = idx + 2
-                    cycle
-                end if
+        do
+            if (idx > fmt_len) exit
 
-                call parse_autopct_spec(fmt, idx, spec_end, width, precision, &
-                                        plus_flag, space_flag, left_flag, &
-                                        zero_flag, ok)
-                if (.not. ok) then
-                    if (.not. warned) then
-                        call log_warning('pie: unsupported autopct format, ' // &
-                                         'skipping percentage labels')
-                        warned = .true.
-                    end if
-                    text = ''
-                    return
-                end if
-
-                call build_autopct_chunk(percent, width, precision, plus_flag, &
-                                         space_flag, left_flag, zero_flag, chunk)
-                text = text // chunk
-                idx = spec_end + 1
-            else
-                text = text // fmt(idx:idx)
-                idx = idx + 1
+            next_percent = index(fmt(idx:), '%')
+            if (next_percent == 0) then
+                text = text // fmt(idx:fmt_len)
+                exit
             end if
+
+            if (next_percent > 1) then
+                literal_len = next_percent - 1
+                literal = fmt(idx:idx + literal_len - 1)
+                text = text // literal
+            end if
+
+            spec_start = idx + next_percent - 1
+            if (spec_start >= fmt_len) then
+                if (.not. warned) then
+                    call log_warning('pie: unsupported autopct format, ' // &
+                                     'skipping percentage labels')
+                    warned = .true.
+                end if
+                text = ''
+                return
+            end if
+
+            if (fmt(spec_start + 1:spec_start + 1) == '%') then
+                text = text // '%'
+                idx = spec_start + 2
+                cycle
+            end if
+
+            call parse_autopct_spec(fmt, spec_start, spec_end, width, precision, &
+                                    plus_flag, space_flag, left_flag, zero_flag, &
+                                    ok)
+            if (.not. ok) then
+                if (.not. warned) then
+                    call log_warning('pie: unsupported autopct format, ' // &
+                                     'skipping percentage labels')
+                    warned = .true.
+                end if
+                text = ''
+                return
+            end if
+
+            call build_autopct_chunk(percent, width, precision, plus_flag, &
+                                     space_flag, left_flag, zero_flag, chunk)
+            text = text // chunk
+            idx = spec_end + 1
         end do
     end subroutine format_autopct_value
 
