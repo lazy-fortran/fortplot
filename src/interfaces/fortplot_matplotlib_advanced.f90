@@ -9,7 +9,7 @@ module fortplot_matplotlib_advanced
         add_contour_filled, add_pcolormesh, add_surface
     use fortplot_matplotlib_axes, only: &
         xlabel, ylabel, title, legend, grid, xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata
+        set_line_width, set_ydata, use_axis, get_active_axis
     use fortplot_matplotlib_session, only: &
         ensure_global_figure_initialized, get_global_figure, figure, subplot, &
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
@@ -31,7 +31,7 @@ module fortplot_matplotlib_advanced
 
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
-    public :: set_line_width, set_ydata
+    public :: set_line_width, set_ydata, use_axis, get_active_axis
 
     public :: figure, subplot, subplots, subplots_grid
     public :: savefig, savefig_with_status

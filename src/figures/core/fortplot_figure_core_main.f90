@@ -9,12 +9,14 @@ module fortplot_figure_core
                                     PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
                                     PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
                                     PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                    PLOT_TYPE_SURFACE
+                                    PLOT_TYPE_SURFACE, AXIS_PRIMARY, &
+                                    AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, &
         figure_backend_associated, figure_backend_line
+    use fortplot_string_utils, only: to_lowercase
     implicit none
 
     private
@@ -86,6 +88,8 @@ module fortplot_figure_core
         procedure :: add_fill_between
         procedure :: twinx
         procedure :: twiny
+        procedure :: use_axis
+        procedure :: get_active_axis
         ! Subplot methods
         procedure :: subplots
         procedure :: subplot_plot
@@ -352,7 +356,7 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         
-        call core_boxplot(self%plots, self%plot_count, data, position, width, &
+        call core_boxplot(self%plots, self%state, self%plot_count, data, position, width, &
                           label, show_outliers, horizontal, color, &
                           self%state%max_plots)
     end subroutine boxplot
@@ -559,13 +563,83 @@ contains
 
     subroutine twinx(self)
         class(figure_t), intent(inout) :: self
-        call log_warning('twinx: dual axis plots not yet implemented')
+
+        if (.not. self%state%has_twinx) then
+            self%state%has_twinx = .true.
+            if (.not. self%state%twinx_ylim_set) then
+                self%state%twinx_y_min = self%state%y_min
+                self%state%twinx_y_max = self%state%y_max
+            end if
+            self%state%twinx_yscale = self%state%yscale
+            self%state%twinx_y_min_transformed = self%state%y_min_transformed
+            self%state%twinx_y_max_transformed = self%state%y_max_transformed
+            if (.not. allocated(self%state%twinx_ylabel)) then
+                self%state%twinx_ylabel = ''
+            end if
+        end if
+
+        self%state%active_axis = AXIS_TWINX
     end subroutine twinx
 
     subroutine twiny(self)
         class(figure_t), intent(inout) :: self
-        call log_warning('twiny: dual axis plots not yet implemented')
+
+        if (.not. self%state%has_twiny) then
+            self%state%has_twiny = .true.
+            if (.not. self%state%twiny_xlim_set) then
+                self%state%twiny_x_min = self%state%x_min
+                self%state%twiny_x_max = self%state%x_max
+            end if
+            self%state%twiny_xscale = self%state%xscale
+            self%state%twiny_x_min_transformed = self%state%x_min_transformed
+            self%state%twiny_x_max_transformed = self%state%x_max_transformed
+            if (.not. allocated(self%state%twiny_xlabel)) then
+                self%state%twiny_xlabel = ''
+            end if
+        end if
+
+        self%state%active_axis = AXIS_TWINY
     end subroutine twiny
+
+    subroutine use_axis(self, axis_name)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: axis_name
+        character(len=:), allocatable :: normalized
+
+        normalized = to_lowercase(adjustl(axis_name))
+
+        select case (trim(normalized))
+        case ('left', 'primary', 'default', 'y')
+            self%state%active_axis = AXIS_PRIMARY
+        case ('right', 'twinx', 'secondary', 'y2')
+            self%state%has_twinx = .true.
+            if (.not. allocated(self%state%twinx_ylabel)) self%state%twinx_ylabel = ''
+            self%state%active_axis = AXIS_TWINX
+        case ('top', 'twiny', 'x2')
+            self%state%has_twiny = .true.
+            if (.not. allocated(self%state%twiny_xlabel)) self%state%twiny_xlabel = ''
+            self%state%active_axis = AXIS_TWINY
+        case ('bottom', 'x')
+            self%state%active_axis = AXIS_PRIMARY
+        case default
+            call log_warning('use_axis: unknown axis "' // trim(axis_name) // '"; using primary axis')
+            self%state%active_axis = AXIS_PRIMARY
+        end select
+    end subroutine use_axis
+
+    function get_active_axis(self) result(axis_name)
+        class(figure_t), intent(in) :: self
+        character(len=10) :: axis_name
+
+        select case (self%state%active_axis)
+        case (AXIS_TWINX)
+            axis_name = 'twinx'
+        case (AXIS_TWINY)
+            axis_name = 'twiny'
+        case default
+            axis_name = 'primary'
+        end select
+    end function get_active_axis
 
     !! SUBPLOT OPERATIONS - Delegated to management module
     

@@ -20,6 +20,8 @@ module fortplot_matplotlib_axes
     public :: set_yscale
     public :: set_line_width
     public :: set_ydata
+    public :: use_axis
+    public :: get_active_axis
 
 contains
 
@@ -134,5 +136,17 @@ contains
         call ensure_fig_init()
         call fig%set_ydata(1, ydata)
     end subroutine set_ydata
+
+    subroutine use_axis(axis_name)
+        character(len=*), intent(in) :: axis_name
+        call ensure_fig_init()
+        call fig%use_axis(axis_name)
+    end subroutine use_axis
+
+    function get_active_axis() result(axis_name)
+        character(len=10) :: axis_name
+        call ensure_fig_init()
+        axis_name = fig%get_active_axis()
+    end function get_active_axis
 
 end module fortplot_matplotlib_axes

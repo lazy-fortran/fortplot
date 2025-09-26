@@ -12,7 +12,11 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
                                   PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR
+                                  PLOT_TYPE_BAR, AXIS_PRIMARY, AXIS_TWINX, &
+                                  AXIS_TWINY
+    use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
+                                     raster_draw_secondary_x_axis_top
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
@@ -51,7 +55,9 @@ contains
     
     subroutine render_figure_axes(backend, xscale, yscale, symlog_threshold, &
                                  x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
-                                 plots, plot_count)
+                                 plots, plot_count, has_twinx, twinx_y_min, twinx_y_max, &
+                                 twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, twiny_x_max, &
+                                 twiny_xlabel, twiny_xscale)
         !! Render figure axes and labels
         !! For raster backends, split rendering to prevent label overlap issues
         use fortplot_raster, only: raster_context
@@ -62,10 +68,50 @@ contains
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
+        logical, intent(in), optional :: has_twinx, has_twiny
+        real(wp), intent(in), optional :: twinx_y_min, twinx_y_max
+        real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, twiny_xlabel
+        character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
         logical :: has_3d
         real(wp) :: zmin, zmax
+        logical :: has_twinx_local, has_twiny_local
+        real(wp) :: twinx_y_min_local, twinx_y_max_local
+        real(wp) :: twiny_x_min_local, twiny_x_max_local
+        character(len=16) :: twinx_scale_local, twiny_scale_local
 
         call detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
+
+        has_twinx_local = .false.
+        has_twiny_local = .false.
+        twinx_scale_local = yscale
+        twiny_scale_local = xscale
+
+        if (present(has_twinx)) then
+            has_twinx_local = has_twinx
+            if (has_twinx_local) then
+                if (present(twinx_y_min) .and. present(twinx_y_max)) then
+                    twinx_y_min_local = twinx_y_min
+                    twinx_y_max_local = twinx_y_max
+                else
+                    has_twinx_local = .false.
+                end if
+                if (has_twinx_local .and. present(twinx_yscale)) twinx_scale_local = twinx_yscale
+            end if
+        end if
+
+        if (present(has_twiny)) then
+            has_twiny_local = has_twiny
+            if (has_twiny_local) then
+                if (present(twiny_x_min) .and. present(twiny_x_max)) then
+                    twiny_x_min_local = twiny_x_min
+                    twiny_x_max_local = twiny_x_max
+                else
+                    has_twiny_local = .false.
+                end if
+                if (has_twiny_local .and. present(twiny_xscale)) twiny_scale_local = twiny_xscale
+            end if
+        end if
         ! Check if this is a raster backend and use split rendering if so
         select type (backend)
         class is (raster_context)
@@ -103,7 +149,9 @@ contains
     subroutine render_figure_axes_labels_only(backend, xscale, yscale, symlog_threshold, &
                                              x_min, x_max, y_min, y_max, &
                                              title, xlabel, ylabel, &
-                                             plots, plot_count)
+                                             plots, plot_count, has_twinx, twinx_y_min, twinx_y_max, &
+                                             twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, twiny_x_max, &
+                                             twiny_xlabel, twiny_xscale)
         !! Render ONLY axis labels (for raster backends after plots are drawn)
         use fortplot_raster, only: raster_context
         class(plot_context), intent(inout) :: backend
@@ -113,9 +161,49 @@ contains
         character(len=:), allocatable, intent(in) :: title, xlabel, ylabel
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
+        logical, intent(in), optional :: has_twinx, has_twiny
+        real(wp), intent(in), optional :: twinx_y_min, twinx_y_max
+        real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
+        character(len=:), allocatable, intent(in), optional :: twinx_ylabel, twiny_xlabel
+        character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
         logical :: has_3d
         real(wp) :: zmin_dummy, zmax_dummy
+        logical :: has_twinx_local, has_twiny_local
+        real(wp) :: twinx_y_min_local, twinx_y_max_local
+        real(wp) :: twiny_x_min_local, twiny_x_max_local
+        character(len=16) :: twinx_scale_local, twiny_scale_local
         call detect_3d_extent(plots, plot_count, has_3d, zmin_dummy, zmax_dummy)
+
+        has_twinx_local = .false.
+        has_twiny_local = .false.
+        twinx_scale_local = yscale
+        twiny_scale_local = xscale
+
+        if (present(has_twinx)) then
+            has_twinx_local = has_twinx
+            if (has_twinx_local) then
+                if (present(twinx_y_min) .and. present(twinx_y_max)) then
+                    twinx_y_min_local = twinx_y_min
+                    twinx_y_max_local = twinx_y_max
+                else
+                    has_twinx_local = .false.
+                end if
+                if (has_twinx_local .and. present(twinx_yscale)) twinx_scale_local = twinx_yscale
+            end if
+        end if
+
+        if (present(has_twiny)) then
+            has_twiny_local = has_twiny
+            if (has_twiny_local) then
+                if (present(twiny_x_min) .and. present(twiny_x_max)) then
+                    twiny_x_min_local = twiny_x_min
+                    twiny_x_max_local = twiny_x_max
+                else
+                    has_twiny_local = .false.
+                end if
+                if (has_twiny_local .and. present(twiny_xscale)) twiny_scale_local = twiny_xscale
+            end if
+        end if
         
         ! Only render labels for raster backends
         select type (backend)
@@ -127,6 +215,28 @@ contains
                                                   y_min, y_max, &
                                                   title, xlabel, &
                                                   ylabel)
+                if (has_twinx_local) then
+                    if (present(twinx_ylabel)) then
+                        call raster_draw_secondary_y_axis(backend%raster, backend%width, backend%height, &
+                                                          backend%plot_area, twinx_scale_local, symlog_threshold, &
+                                                          twinx_y_min_local, twinx_y_max_local, ylabel=twinx_ylabel)
+                    else
+                        call raster_draw_secondary_y_axis(backend%raster, backend%width, backend%height, &
+                                                          backend%plot_area, twinx_scale_local, symlog_threshold, &
+                                                          twinx_y_min_local, twinx_y_max_local)
+                    end if
+                end if
+                if (has_twiny_local) then
+                    if (present(twiny_xlabel)) then
+                        call raster_draw_secondary_x_axis_top(backend%raster, backend%width, backend%height, &
+                                                             backend%plot_area, twiny_scale_local, symlog_threshold, &
+                                                             twiny_x_min_local, twiny_x_max_local, xlabel=twiny_xlabel)
+                    else
+                        call raster_draw_secondary_x_axis_top(backend%raster, backend%width, backend%height, &
+                                                             backend%plot_area, twiny_scale_local, symlog_threshold, &
+                                                             twiny_x_min_local, twiny_x_max_local)
+                    end if
+                end if
             end if
         end select
     end subroutine render_figure_axes_labels_only
@@ -345,7 +455,7 @@ contains
                                y_min_transformed, y_max_transformed, &
                                xscale, yscale, symlog_threshold, &
                                width, height, margin_left, margin_right, &
-                               margin_bottom, margin_top)
+                               margin_bottom, margin_top, state)
         !! Render all plots in the figure
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plots(:)
@@ -356,80 +466,141 @@ contains
         real(wp), intent(in) :: symlog_threshold
         integer, intent(in) :: width, height
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
-        
+        type(figure_state_t), intent(in), optional :: state
+
         integer :: i
-        
+        logical :: has_state, restore_needed
+        real(wp) :: x_min_curr, x_max_curr, y_min_curr, y_max_curr
+        character(len=10) :: xscale_curr, yscale_curr
+        real(wp) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
+
+        has_state = present(state)
+        if (has_state) then
+            primary_x_min = state%x_min_transformed
+            primary_x_max = state%x_max_transformed
+            primary_y_min = state%y_min_transformed
+            primary_y_max = state%y_max_transformed
+        end if
+
         do i = 1, plot_count
+            if (has_state) then
+                select case (plots(i)%axis)
+                case (AXIS_TWINX)
+                    x_min_curr = state%x_min_transformed
+                    x_max_curr = state%x_max_transformed
+                    y_min_curr = state%twinx_y_min_transformed
+                    y_max_curr = state%twinx_y_max_transformed
+                    xscale_curr = state%xscale
+                    yscale_curr = state%twinx_yscale
+                    restore_needed = .true.
+                case (AXIS_TWINY)
+                    x_min_curr = state%twiny_x_min_transformed
+                    x_max_curr = state%twiny_x_max_transformed
+                    y_min_curr = state%y_min_transformed
+                    y_max_curr = state%y_max_transformed
+                    xscale_curr = state%twiny_xscale
+                    yscale_curr = state%yscale
+                    restore_needed = .true.
+                case default
+                    x_min_curr = primary_x_min
+                    x_max_curr = primary_x_max
+                    y_min_curr = primary_y_min
+                    y_max_curr = primary_y_max
+                    xscale_curr = state%xscale
+                    yscale_curr = state%yscale
+                    restore_needed = .false.
+                end select
+                if (restore_needed) then
+                    call backend%set_coordinates(x_min_curr, x_max_curr, y_min_curr, y_max_curr)
+                end if
+            else
+                x_min_curr = x_min_transformed
+                x_max_curr = x_max_transformed
+                y_min_curr = y_min_transformed
+                y_max_curr = y_max_transformed
+                xscale_curr = xscale
+                yscale_curr = yscale
+                restore_needed = .false.
+            end if
+
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
                 call render_line_plot(backend, plots(i), &
-                                    xscale, yscale, symlog_threshold)
+                                    xscale_curr, yscale_curr, symlog_threshold)
                 
                 if (allocated(plots(i)%marker)) then
                     call render_markers(backend, plots(i), &
-                                      x_min_transformed, x_max_transformed, &
-                                      y_min_transformed, y_max_transformed, &
-                                      xscale, yscale, symlog_threshold)
+                                      x_min_curr, x_max_curr, &
+                                      y_min_curr, y_max_curr, &
+                                      xscale_curr, yscale_curr, symlog_threshold)
                 end if
                 
             case (PLOT_TYPE_SCATTER)
                 ! Scatter plots render only markers (no connecting line)
                 if (allocated(plots(i)%marker)) then
                     call render_markers(backend, plots(i), &
-                                      x_min_transformed, x_max_transformed, &
-                                      y_min_transformed, y_max_transformed, &
-                                      xscale, yscale, symlog_threshold)
+                                      x_min_curr, x_max_curr, &
+                                      y_min_curr, y_max_curr, &
+                                      xscale_curr, yscale_curr, symlog_threshold)
                 end if
 
             case (PLOT_TYPE_CONTOUR)
                 call render_contour_plot(backend, plots(i), &
-                                       x_min_transformed, x_max_transformed, &
-                                       y_min_transformed, y_max_transformed, &
-                                       xscale, yscale, symlog_threshold, &
+                                       x_min_curr, x_max_curr, &
+                                       y_min_curr, y_max_curr, &
+                                       xscale_curr, yscale_curr, symlog_threshold, &
                                        width, height, &
                                        margin_left, margin_right, &
                                        margin_bottom, margin_top)
 
             case (PLOT_TYPE_PCOLORMESH)
                 call render_pcolormesh_plot(backend, plots(i), &
-                                          x_min_transformed, x_max_transformed, &
-                                          y_min_transformed, y_max_transformed, &
-                                          xscale, yscale, symlog_threshold, &
+                                          x_min_curr, x_max_curr, &
+                                          y_min_curr, y_max_curr, &
+                                          xscale_curr, yscale_curr, symlog_threshold, &
                                           width, height, margin_right)
 
             case (PLOT_TYPE_SURFACE)
                 call render_surface_plot(backend, plots(i), &
-                                         x_min_transformed, x_max_transformed, &
-                                         y_min_transformed, y_max_transformed, &
-                                         xscale, yscale, symlog_threshold)
+                                         x_min_curr, x_max_curr, &
+                                         y_min_curr, y_max_curr, &
+                                         xscale_curr, yscale_curr, symlog_threshold)
 
             case (PLOT_TYPE_FILL)
-                call render_fill_between_plot(backend, plots(i), xscale, yscale, &
+                call render_fill_between_plot(backend, plots(i), xscale_curr, yscale_curr, &
                                               symlog_threshold)
 
             case (PLOT_TYPE_BAR)
-                call render_bar_plot(backend, plots(i), xscale, yscale, &
+                call render_bar_plot(backend, plots(i), xscale_curr, yscale_curr, &
                                      symlog_threshold)
 
             case (PLOT_TYPE_PIE)
-                call render_pie_plot(backend, plots(i), xscale, yscale, symlog_threshold)
+                call render_pie_plot(backend, plots(i), xscale_curr, yscale_curr, symlog_threshold)
 
             case (PLOT_TYPE_BOXPLOT)
-                call render_boxplot_plot(backend, plots(i), xscale, yscale, &
-                                         symlog_threshold)
+                call render_boxplot_plot(backend, plots(i), xscale_curr, yscale_curr, &
+                                        symlog_threshold)
 
             case (PLOT_TYPE_ERRORBAR)
-                call render_errorbar_plot(backend, plots(i), xscale, yscale, &
+                call render_errorbar_plot(backend, plots(i), xscale_curr, yscale_curr, &
                                           symlog_threshold)
                 ! Always attempt to render markers for errorbar plots; 
                 ! render_markers internally validates presence/emptiness.
                 call render_markers(backend, plots(i), &
-                                   x_min_transformed, x_max_transformed, &
-                                   y_min_transformed, y_max_transformed, &
-                                   xscale, yscale, symlog_threshold)
+                                   x_min_curr, x_max_curr, &
+                                   y_min_curr, y_max_curr, &
+                                   xscale_curr, yscale_curr, symlog_threshold)
 
             end select
+
+            if (has_state .and. restore_needed) then
+                call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, primary_y_max)
+            end if
         end do
+
+        if (has_state) then
+            call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, primary_y_max)
+        end if
     end subroutine render_all_plots
 
 end module fortplot_figure_rendering_pipeline

@@ -13,6 +13,7 @@ module fortplot_plot_data
 
     private
     public :: plot_data_t, arrow_data_t, subplot_t, subplot_data_t
+    public :: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
@@ -35,6 +36,11 @@ module fortplot_plot_data
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
     real(wp), parameter :: IQR_WHISKER_MULTIPLIER = 1.5_wp
+
+    ! Axis selection identifiers for multi-axis figures
+    integer, parameter :: AXIS_PRIMARY = 0
+    integer, parameter :: AXIS_TWINX  = 1
+    integer, parameter :: AXIS_TWINY  = 2
 
     type :: arrow_data_t
         !! Data container for streamplot arrows
@@ -135,6 +141,8 @@ module fortplot_plot_data
         character(len=:), allocatable :: pie_autopct
         real(wp) :: pie_radius = 1.0_wp
         real(wp) :: pie_center(2) = [0.0_wp, 0.0_wp]
+        ! Axis assignment (primary by default)
+        integer :: axis = AXIS_PRIMARY
     contains
         procedure :: is_3d
     end type plot_data_t

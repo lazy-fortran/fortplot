@@ -8,7 +8,7 @@ module fortplot_figure_initialization
     use fortplot_context
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     implicit none
     
     private
@@ -43,6 +43,25 @@ module fortplot_figure_initialization
         real(wp) :: x_min_transformed, x_max_transformed
         real(wp) :: y_min_transformed, y_max_transformed
         logical :: xlim_set = .false., ylim_set = .false.
+
+        ! Secondary axis support
+        integer :: active_axis = AXIS_PRIMARY
+        logical :: has_twinx = .false.
+        logical :: has_twiny = .false.
+        character(len=:), allocatable :: twinx_ylabel
+        character(len=:), allocatable :: twiny_xlabel
+        character(len=10) :: twinx_yscale = 'linear'
+        character(len=10) :: twiny_xscale = 'linear'
+        logical :: twinx_ylim_set = .false.
+        logical :: twiny_xlim_set = .false.
+        real(wp) :: twinx_y_min = 0.0_wp
+        real(wp) :: twinx_y_max = 1.0_wp
+        real(wp) :: twiny_x_min = 0.0_wp
+        real(wp) :: twiny_x_max = 1.0_wp
+        real(wp) :: twinx_y_min_transformed = 0.0_wp
+        real(wp) :: twinx_y_max_transformed = 1.0_wp
+        real(wp) :: twiny_x_min_transformed = 0.0_wp
+        real(wp) :: twiny_x_max_transformed = 1.0_wp
         
         ! Labels
         character(len=:), allocatable :: title
@@ -156,6 +175,24 @@ contains
             allocate(new_entries(0))
             call move_alloc(new_entries, state%legend_data%entries)
         end block
+
+        state%active_axis = AXIS_PRIMARY
+        state%has_twinx = .false.
+        state%has_twiny = .false.
+        state%twinx_ylim_set = .false.
+        state%twiny_xlim_set = .false.
+        state%twinx_yscale = 'linear'
+        state%twiny_xscale = 'linear'
+        state%twinx_y_min = 0.0_wp
+        state%twinx_y_max = 1.0_wp
+        state%twiny_x_min = 0.0_wp
+        state%twiny_x_max = 1.0_wp
+        state%twinx_y_min_transformed = 0.0_wp
+        state%twinx_y_max_transformed = 1.0_wp
+        state%twiny_x_min_transformed = 0.0_wp
+        state%twiny_x_max_transformed = 1.0_wp
+        if (allocated(state%twinx_ylabel)) deallocate(state%twinx_ylabel)
+        if (allocated(state%twiny_xlabel)) deallocate(state%twiny_xlabel)
     end subroutine initialize_figure_state
     
     subroutine reset_figure_state(state)
@@ -181,6 +218,24 @@ contains
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
+
+        state%active_axis = AXIS_PRIMARY
+        state%has_twinx = .false.
+        state%has_twiny = .false.
+        state%twinx_ylim_set = .false.
+        state%twiny_xlim_set = .false.
+        state%twinx_yscale = 'linear'
+        state%twiny_xscale = 'linear'
+        state%twinx_y_min = 0.0_wp
+        state%twinx_y_max = 1.0_wp
+        state%twiny_x_min = 0.0_wp
+        state%twiny_x_max = 1.0_wp
+        state%twinx_y_min_transformed = 0.0_wp
+        state%twinx_y_max_transformed = 1.0_wp
+        state%twiny_x_min_transformed = 0.0_wp
+        state%twiny_x_max_transformed = 1.0_wp
+        if (allocated(state%twinx_ylabel)) deallocate(state%twinx_ylabel)
+        if (allocated(state%twiny_xlabel)) deallocate(state%twiny_xlabel)
         
         state%has_error = .false.
     end subroutine reset_figure_state
@@ -216,10 +271,28 @@ contains
         !! Set figure labels
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in), optional :: title, xlabel, ylabel
-        
+
         if (present(title)) state%title = title
-        if (present(xlabel)) state%xlabel = xlabel
-        if (present(ylabel)) state%ylabel = ylabel
+
+        if (present(xlabel)) then
+            select case (state%active_axis)
+            case (AXIS_TWINY)
+                state%twiny_xlabel = xlabel
+                state%has_twiny = .true.
+            case default
+                state%xlabel = xlabel
+            end select
+        end if
+
+        if (present(ylabel)) then
+            select case (state%active_axis)
+            case (AXIS_TWINX)
+                state%twinx_ylabel = ylabel
+                state%has_twinx = .true.
+            case default
+                state%ylabel = ylabel
+            end select
+        end if
     end subroutine set_figure_labels
     
     subroutine set_figure_scales(state, xscale, yscale, threshold)
@@ -228,26 +301,55 @@ contains
         character(len=*), intent(in), optional :: xscale, yscale
         real(wp), intent(in), optional :: threshold
         
-        if (present(xscale)) state%xscale = xscale
-        if (present(yscale)) state%yscale = yscale
+        if (present(xscale)) then
+            if (state%active_axis == AXIS_TWINY) then
+                state%twiny_xscale = xscale
+                state%has_twiny = .true.
+            else
+                state%xscale = xscale
+            end if
+        end if
+
+        if (present(yscale)) then
+            if (state%active_axis == AXIS_TWINX) then
+                state%twinx_yscale = yscale
+                state%has_twinx = .true.
+            else
+                state%yscale = yscale
+            end if
+        end if
         if (present(threshold)) state%symlog_threshold = threshold
     end subroutine set_figure_scales
-    
+
     subroutine set_figure_limits(state, x_min, x_max, y_min, y_max)
         !! Set axis limits
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in), optional :: x_min, x_max, y_min, y_max
-        
+
         if (present(x_min) .and. present(x_max)) then
-            state%x_min = x_min
-            state%x_max = x_max
-            state%xlim_set = .true.
+            if (state%active_axis == AXIS_TWINY) then
+                state%twiny_x_min = x_min
+                state%twiny_x_max = x_max
+                state%twiny_xlim_set = .true.
+                state%has_twiny = .true.
+            else
+                state%x_min = x_min
+                state%x_max = x_max
+                state%xlim_set = .true.
+            end if
         end if
-        
+
         if (present(y_min) .and. present(y_max)) then
-            state%y_min = y_min
-            state%y_max = y_max
-            state%ylim_set = .true.
+            if (state%active_axis == AXIS_TWINX) then
+                state%twinx_y_min = y_min
+                state%twinx_y_max = y_max
+                state%twinx_ylim_set = .true.
+                state%has_twinx = .true.
+            else
+                state%y_min = y_min
+                state%y_max = y_max
+                state%ylim_set = .true.
+            end if
         end if
     end subroutine set_figure_limits
 

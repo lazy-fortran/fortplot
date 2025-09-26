@@ -18,7 +18,7 @@ contains
                                           x_min, x_max, y_min, y_max, &
                                           x_min_transformed, x_max_transformed, &
                                           y_min_transformed, y_max_transformed, &
-                                          xscale, yscale, symlog_threshold)
+                                          xscale, yscale, symlog_threshold, axis_filter)
         !! Calculate overall data ranges for the figure with robust edge case handling
         !! Fixed Issue #432: Handles zero-size arrays and single points properly
         type(plot_data_t), intent(in) :: plots(:)
@@ -29,10 +29,16 @@ contains
         real(wp), intent(out) :: y_min_transformed, y_max_transformed
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
-        
+        integer, intent(in), optional :: axis_filter
+
         real(wp) :: x_min_data, x_max_data, y_min_data, y_max_data
         logical :: first_plot, has_valid_data
         integer :: i
+        integer :: filtered_axis
+        logical :: use_filter
+
+        use_filter = present(axis_filter)
+        if (use_filter) filtered_axis = axis_filter
         
         ! Initialize data ranges and check for early return
         call initialize_data_ranges(xlim_set, ylim_set, x_min, x_max, y_min, y_max, &
@@ -45,6 +51,9 @@ contains
         
         ! Process all plots to calculate data ranges
         do i = 1, plot_count
+            if (use_filter) then
+                if (plots(i)%axis /= filtered_axis) cycle
+            end if
             select case (plots(i)%plot_type)
             case (PLOT_TYPE_LINE)
                 call process_line_plot_ranges(plots(i), first_plot, has_valid_data, &

@@ -1,6 +1,8 @@
 program test_matplotlib_new_functions
     !! Test the new matplotlib-compatible functions
     use fortplot
+    use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_matplotlib_session, only: get_global_figure
     use iso_fortran_env, only: real64
     use test_output_helpers, only: ensure_test_output_dir
     implicit none
@@ -8,6 +10,8 @@ program test_matplotlib_new_functions
     real(real64), allocatable :: x(:), y(:), z(:,:)
     real(real64), allocatable :: theta(:), r(:)
     real(real64), allocatable :: values(:)
+    real(real64), allocatable :: y_secondary(:), y_top(:)
+    class(figure_t), pointer :: fig_ptr
     logical, allocatable :: mask(:)
     character(len=:), allocatable :: output_dir
     integer :: i, j
@@ -116,19 +120,88 @@ program test_matplotlib_new_functions
 
     deallocate(mask)
     
-    ! Test twinx and twiny (will show warnings as not fully implemented)
+    ! Test twinx and twiny with independent scaling and labels
+    allocate(y_secondary(size(x)), y_top(size(x)))
+    do i = 1, size(x)
+        y_secondary(i) = 12.0_real64 + 0.4_real64 * x(i)
+        y_top(i) = log(1.0_real64 + real(i, real64))
+    end do
+
     call figure()
-    call plot(x, y)
+    call plot(x, y, label="primary axis")
+    call ylabel("Primary amplitude")
+
     call twinx()
+    call plot(x, y_secondary, label="secondary axis")
+    call ylabel("Secondary amplitude")
+    call set_yscale("log")
+
     call twiny()
-    call title("twinx/twiny test - Dual axes (placeholders)")
+    call plot(y_top, y, label="top axis")
+    call set_xscale("log")
+    call xlabel("Log-scaled index")
+
+    call use_axis("primary")
+    call xlabel("Sample index")
+    call title("Twin axis verification")
+    call legend()
     call savefig(trim(output_dir)//'test_twin_axes.png')
-    print *, "✓ twinx() and twiny() functions accessible (placeholders)"
+
+    fig_ptr => get_global_figure()
+    if (.not. associated(fig_ptr)) then
+        print *, "ERROR: global figure pointer not associated for twin axis test"
+        stop 1
+    end if
+    if (fig_ptr%plot_count /= 3) then
+        print *, "ERROR: expected 3 plots for twin axis test, got", fig_ptr%plot_count
+        stop 1
+    end if
+    if (.not. fig_ptr%state%has_twinx) then
+        print *, "ERROR: twinx() did not update state%%has_twinx"
+        stop 1
+    end if
+    if (.not. fig_ptr%state%has_twiny) then
+        print *, "ERROR: twiny() did not update state%%has_twiny"
+        stop 1
+    end if
+    if (fig_ptr%plots(1)%axis /= AXIS_PRIMARY) then
+        print *, "ERROR: primary plot not tagged with AXIS_PRIMARY"
+        stop 1
+    end if
+    if (fig_ptr%plots(2)%axis /= AXIS_TWINX) then
+        print *, "ERROR: second plot not tagged with AXIS_TWINX"
+        stop 1
+    end if
+    if (fig_ptr%plots(3)%axis /= AXIS_TWINY) then
+        print *, "ERROR: third plot not tagged with AXIS_TWINY"
+        stop 1
+    end if
+    if (trim(fig_ptr%state%yscale) /= 'linear') then
+        print *, "ERROR: primary axis scale modified unexpectedly"
+        stop 1
+    end if
+    if (trim(fig_ptr%state%twinx_yscale) /= 'log') then
+        print *, "ERROR: twinx axis scale not captured as log"
+        stop 1
+    end if
+    if (trim(fig_ptr%state%twiny_xscale) /= 'log') then
+        print *, "ERROR: twiny axis scale not captured as log"
+        stop 1
+    end if
+    if (.not. allocated(fig_ptr%state%twinx_ylabel)) then
+        print *, "ERROR: twinx ylabel not stored"
+        stop 1
+    end if
+    if (.not. allocated(fig_ptr%state%twiny_xlabel)) then
+        print *, "ERROR: twiny xlabel not stored"
+        stop 1
+    end if
+    print *, "✓ twinx() and twiny() render independent axes"
     
     print *, ""
     print *, "All new matplotlib-compatible functions are accessible!"
     print *, "Test images saved under ", trim(output_dir)
     
-    deallocate(x, y, z, theta, r, values)
+    deallocate(x, y, z, theta, r, values, y_secondary, y_top)
     
 end program test_matplotlib_new_functions

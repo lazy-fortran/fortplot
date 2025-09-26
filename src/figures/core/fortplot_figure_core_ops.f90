@@ -520,7 +520,7 @@ contains
         real(wp), intent(in) :: default_color(3)
         
         ! Delegate to efficient scatter implementation
-        call figure_scatter_operation(plots, state%plot_count, &
+        call figure_scatter_operation(state, plots, state%plot_count, &
                                      x, y, s, c, marker, markersize, color, &
                                      colormap, vmin, vmax, label, show_colorbar, &
                                      default_color)
@@ -546,10 +546,11 @@ contains
         call figure_hist_operation(plots, state, plot_count, data, bins, density, label, color)
     end subroutine core_hist
 
-    subroutine core_boxplot(plots, plot_count, data, position, width, label, &
+    subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
                            show_outliers, horizontal, color, max_plots)
         !! Create a box plot
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
+        type(figure_state_t), intent(in) :: state
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
@@ -560,7 +561,7 @@ contains
         character(len=*), intent(in), optional :: color
         integer, intent(in) :: max_plots
         
-        call figure_boxplot_operation(plots, plot_count, data, position, width, label, &
+        call figure_boxplot_operation(state, plots, plot_count, data, position, width, label, &
                                      show_outliers, horizontal, color, max_plots)
     end subroutine core_boxplot
 
