@@ -11,7 +11,7 @@ module fortplot_streamplot_core
     use fortplot_streamplot_matplotlib
     use fortplot_streamplot_arrow_utils, only: &
         validate_streamplot_arrow_parameters, compute_streamplot_arrows, &
-        map_grid_index_to_coord
+        replace_stream_arrows, map_grid_index_to_coord
 
     implicit none
 
@@ -126,24 +126,12 @@ contains
         character(len=*), intent(in) :: arrow_style
         
         type(arrow_data_t), allocatable :: computed(:)
-        logical :: had_existing
-
-        had_existing = .false.
-        if (allocated(fig%state%stream_arrows)) then
-            had_existing = size(fig%state%stream_arrows) > 0
-            deallocate(fig%state%stream_arrows)
-        end if
 
         call compute_streamplot_arrows(trajectories, n_trajectories, &
             trajectory_lengths, x_grid, y_grid, arrow_size, arrow_style, &
             computed)
 
-        if (allocated(computed)) then
-            call move_alloc(computed, fig%state%stream_arrows)
-            fig%state%rendered = .false.
-        else
-            if (had_existing) fig%state%rendered = .false.
-        end if
+        call replace_stream_arrows(fig%state, computed)
     end subroutine generate_streamplot_arrows
 
     subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, &

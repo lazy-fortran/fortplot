@@ -8,7 +8,7 @@ module fortplot_figure_streamlines
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_streamplot_arrow_utils, only: compute_streamplot_arrows, &
-        map_grid_index_to_coord
+        map_grid_index_to_coord, replace_stream_arrows
     implicit none
     
     private
@@ -63,7 +63,6 @@ contains
         integer, allocatable :: trajectory_lengths(:)
         real(wp), allocatable :: traj_x(:), traj_y(:)
         type(arrow_data_t), allocatable :: computed_arrows(:)
-        logical :: had_arrows
         real(wp), parameter :: default_arrow_size = 1.0_wp
         character(len=2), parameter :: default_arrow_style = '->'
         
@@ -94,22 +93,11 @@ contains
         call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, &
             n_trajectories, trajectory_lengths)
 
-        had_arrows = .false.
-        if (allocated(state%stream_arrows)) then
-            had_arrows = size(state%stream_arrows) > 0
-            deallocate(state%stream_arrows)
-        end if
-
         call compute_streamplot_arrows(trajectories, n_trajectories, &
             trajectory_lengths, x, y, default_arrow_size, &
             default_arrow_style, computed_arrows)
 
-        if (allocated(computed_arrows)) then
-            call move_alloc(computed_arrows, state%stream_arrows)
-            state%rendered = .false.
-        else
-            if (had_arrows) state%rendered = .false.
-        end if
+        call replace_stream_arrows(state, computed_arrows)
         
         ! Add each trajectory as a line plot
         do i = 1, n_trajectories

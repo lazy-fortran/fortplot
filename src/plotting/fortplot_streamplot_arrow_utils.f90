@@ -4,12 +4,14 @@ module fortplot_streamplot_arrow_utils
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_plot_data, only: arrow_data_t
+    use fortplot_figure_initialization, only: figure_state_t
 
     implicit none
     private
 
     public :: validate_streamplot_arrow_parameters
     public :: compute_streamplot_arrows
+    public :: replace_stream_arrows
     public :: map_grid_index_to_coord
 
 contains
@@ -127,6 +129,27 @@ contains
         if (allocated(traj_y)) deallocate(traj_y)
         if (allocated(arc_lengths)) deallocate(arc_lengths)
     end subroutine compute_streamplot_arrows
+
+    subroutine replace_stream_arrows(state, arrows)
+        !! Replace figure state stream arrows and manage rendered flag
+        type(figure_state_t), intent(inout) :: state
+        type(arrow_data_t), allocatable, intent(inout) :: arrows(:)
+
+        logical :: had_arrows
+
+        had_arrows = .false.
+        if (allocated(state%stream_arrows)) then
+            had_arrows = size(state%stream_arrows) > 0
+            deallocate(state%stream_arrows)
+        end if
+
+        if (allocated(arrows)) then
+            call move_alloc(arrows, state%stream_arrows)
+            state%rendered = .false.
+        else
+            if (had_arrows) state%rendered = .false.
+        end if
+    end subroutine replace_stream_arrows
 
     pure function map_grid_index_to_coord(grid_index, grid_values) result(coord)
         !! Convert matplotlib-style grid index to data coordinate
