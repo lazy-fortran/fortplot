@@ -5,13 +5,13 @@ program test_unicode_superscript
 
     real(dp) :: x(10), y(10)
     integer :: i
-    
+
     ! Generate simple data
     do i = 1, 10
         x(i) = real(i, dp)
         y(i) = x(i)**2
     end do
-    
+
     ! Test PNG rendering with Unicode superscript
     call figure()
     call plot(x, y)
@@ -20,7 +20,7 @@ program test_unicode_superscript
     call ylabel("y")
     call savefig('test_png_unicode.png')
     print *, "Created PNG test file"
-    
+
     ! Test PDF rendering with Unicode superscript
     call figure()
     call plot(x, y)
@@ -29,5 +29,5 @@ program test_unicode_superscript
     call ylabel("y")
     call savefig('test_pdf_unicode.pdf')
     print *, "Created PDF test file"
-    
+
 end program test_unicode_superscript
