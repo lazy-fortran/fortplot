@@ -15,7 +15,7 @@ listed here the next time the documentation is rebuilt.
 - [Animation](./animation.html) - Documentation for this example is auto-generated.
 - [Annotation Demo](./annotation_demo.html) - Documentation for this example is auto-generated.
 - [Ascii Heatmap](./ascii_heatmap.html) - Documentation for this example is auto-generated.
-- [Bar Chart Demo](./bar_chart_demo.html) - Grouped vertical and horizontal bar charts.
+- [Bar Chart Demo](./bar_chart_demo.html) - Grouped bar charts for categorical comparisons using both the pyplot-style
 - [Basic Plots](./basic_plots.html) - Documentation for this example is auto-generated.
 - [Boxplot Demo](./boxplot_demo.html) - Demonstrates box-and-whisker plots for statistical data visualization.
 - [Colored Contours](./colored_contours.html) - Documentation for this example is auto-generated.
@@ -32,12 +32,15 @@ listed here the next time the documentation is rebuilt.
 - [Mathtext Demo](./mathtext_demo.html) - Documentation for this example is auto-generated.
 - [Pcolormesh Demo](./pcolormesh_demo.html) - Documentation for this example is auto-generated.
 - [Pcolormesh Negative](./pcolormesh_negative.html) - Documentation for this example is auto-generated.
+- [Pie Chart Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pie_chart_demo) - Documentation pending; browse the source tree.
+- [Polar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/polar_demo) - Documentation pending; browse the source tree.
 - [Scale Examples](./scale_examples.html) - Documentation for this example is auto-generated.
 - [Scatter Demo](./scatter_demo.html) - Demonstrates enhanced scatter plotting with color mapping, variable marker sizes, and bubble charts.
 - [Show Viewer Demo](./show_viewer_demo.html) - Documentation for this example is auto-generated.
 - [Smart Show Demo](./smart_show_demo.html) - Documentation for this example is auto-generated.
 - [Streamplot Demo](./streamplot_demo.html) - Documentation for this example is auto-generated.
 - [Subplot Demo](./subplot_demo.html) - Demonstration of subplot functionality using the stateful API.
+- [Twin Axes Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/twin_axes_demo) - Documentation pending; browse the source tree.
 - [Unicode Demo](./unicode_demo.html) - Documentation for this example is auto-generated.
 
 <!-- AUTO_EXAMPLES_END -->

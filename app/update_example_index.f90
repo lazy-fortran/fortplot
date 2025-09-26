@@ -1,5 +1,6 @@
 program update_example_index
     use, intrinsic :: iso_fortran_env, only: error_unit
+    use fortplot_doc_utils, only: file_exists, title_case
     implicit none
 
     type :: example_entry_t
@@ -70,7 +71,7 @@ contains
         allocate(character(len=name_len) :: entry%name)
         entry%name = trim(raw_name)
 
-        entry%title = to_title_case(entry%name)
+        entry%title = title_case(entry%name)
 
         doc_path = 'doc/examples/' // entry%name // '.md'
         entry%has_doc = file_exists(doc_path)
@@ -329,97 +330,6 @@ contains
             out(idx+1:idx+3) = '...'
         end if
     end function truncate_desc
-
-    pure function to_title_case(name) result(out)
-        character(len=*), intent(in) :: name
-        character(len=:), allocatable :: out
-        character(len=1) :: ch
-        integer :: i
-        logical :: new_word
-
-        out = ''
-        new_word = .true.
-        do i = 1, len_trim(name)
-            ch = name(i:i)
-            select case (ch)
-            case ('_', '-')
-                if (len(out) > 0) then
-                    if (out(len(out):len(out)) /= ' ') then
-                        out = out // ' '
-                    end if
-                end if
-                new_word = .true.
-            case default
-                if (new_word) then
-                    out = out // char_upper(ch)
-                    new_word = .false.
-                else
-                    if (len(out) > 0) then
-                        if (is_digit(out(len(out):len(out))) .and. &
-                            is_alpha(ch)) then
-                            out = out // char_upper(ch)
-                        else
-                            out = out // char_lower(ch)
-                        end if
-                    else
-                        out = out // char_lower(ch)
-                    end if
-                end if
-            end select
-        end do
-        if (len(out) > 0) then
-            if (out(len(out):len(out)) == ' ') then
-                out = out(1:len(out)-1)
-            end if
-        end if
-    end function to_title_case
-
-    pure function char_lower(ch) result(out)
-        character(len=1), intent(in) :: ch
-        character(len=1) :: out
-        integer :: code
-
-        code = iachar(ch)
-        if (code >= iachar('A') .and. code <= iachar('Z')) then
-            out = achar(code + 32)
-        else
-            out = ch
-        end if
-    end function char_lower
-
-    pure function char_upper(ch) result(out)
-        character(len=1), intent(in) :: ch
-        character(len=1) :: out
-        integer :: code
-
-        code = iachar(ch)
-        if (code >= iachar('a') .and. code <= iachar('z')) then
-            out = achar(code - 32)
-        else
-            out = ch
-        end if
-    end function char_upper
-
-    pure logical function is_digit(ch)
-        character(len=1), intent(in) :: ch
-        integer :: code
-
-        code = iachar(ch)
-        is_digit = code >= iachar('0') .and. code <= iachar('9')
-    end function is_digit
-
-    pure logical function is_alpha(ch)
-        character(len=1), intent(in) :: ch
-        integer :: code
-
-        code = iachar(char_lower(ch))
-        is_alpha = code >= iachar('a') .and. code <= iachar('z')
-    end function is_alpha
-
-    logical function file_exists(path)
-        character(len=*), intent(in) :: path
-        inquire(file=trim(path), exist=file_exists)
-    end function file_exists
 
     subroutine run_command(command, action_desc)
         character(len=*), intent(in) :: command

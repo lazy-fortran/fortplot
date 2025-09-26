@@ -2,6 +2,9 @@ module fortplot_documentation
     !! Consolidated documentation generation module combining core utilities,
     !! processing logic, and output generation
     use fortplot_directory_listing, only: list_directory_entries
+    use fortplot_doc_utils, only: &
+        build_file_path, check_file_exists, file_exists, get_file_extension, &
+        lowercase_string, replace_extension, title_case
     implicit none
     private
 
@@ -83,45 +86,6 @@ contains
     ! Core Utilities Section (from doc_core)
     ! ========================================
 
-    logical function check_file_exists(dir, filename)
-        character(len=*), intent(in) :: dir, filename
-        character(len=PATH_MAX_LEN) :: full_path
-        logical :: exists
-
-        ! Build full path
-        full_path = trim(adjustl(dir)) // '/' // trim(adjustl(filename))
-
-        ! Check existence
-        inquire(file=full_path, exist=exists)
-        check_file_exists = exists
-    end function check_file_exists
-
-    function get_file_extension(filename) result(extension)
-        character(len=*), intent(in) :: filename
-        character(len=:), allocatable :: extension
-        integer :: dot_pos
-
-        dot_pos = index(filename, '.', back=.true.)
-        if (dot_pos > 0) then
-            extension = filename(dot_pos+1:)
-        else
-            extension = ''
-        end if
-    end function get_file_extension
-
-    function replace_extension(filename, new_ext) result(new_filename)
-        character(len=*), intent(in) :: filename, new_ext
-        character(len=:), allocatable :: new_filename
-        integer :: dot_pos
-
-        dot_pos = index(filename, '.', back=.true.)
-        if (dot_pos > 0) then
-            new_filename = filename(1:dot_pos) // trim(new_ext)
-        else
-            new_filename = trim(filename) // '.' // trim(new_ext)
-        end if
-    end function replace_extension
-
     subroutine copy_file_content(input_file, output_file)
         character(len=*), intent(in) :: input_file, output_file
         integer :: input_unit, output_unit, ios
@@ -144,13 +108,6 @@ contains
         close(input_unit)
         close(output_unit)
     end subroutine copy_file_content
-
-    pure subroutine build_file_path(dir, filename, full_path)
-        character(len=*), intent(in) :: dir, filename
-        character(len=PATH_MAX_LEN), intent(out) :: full_path
-
-        full_path = trim(adjustl(dir)) // '/' // trim(adjustl(filename))
-    end subroutine build_file_path
 
     pure subroutine build_readme_path(example_dir, readme_file)
         character(len=*), intent(in) :: example_dir
@@ -190,41 +147,6 @@ contains
 
         local_path = 'example/' // trim(example_name) // '.f90'
     end subroutine build_local_fortran_path
-
-    function title_case(input_str) result(output_str)
-        character(len=*), intent(in) :: input_str
-        character(len=:), allocatable :: output_str
-        integer :: i
-        logical :: capitalize_next
-
-        output_str = input_str
-        capitalize_next = .true.
-
-        do i = 1, len(output_str)
-            if (capitalize_next .and. output_str(i:i) >= 'a' .and. output_str(i:i) <= 'z') then
-                output_str(i:i) = char(ichar(output_str(i:i)) - 32)
-                capitalize_next = .false.
-            else if (output_str(i:i) == '_' .or. output_str(i:i) == ' ') then
-                output_str(i:i) = ' '
-                capitalize_next = .true.
-            else
-                capitalize_next = .false.
-            end if
-        end do
-    end function title_case
-
-    function lowercase_string(input_str) result(output_str)
-        character(len=*), intent(in) :: input_str
-        character(len=:), allocatable :: output_str
-        integer :: i
-
-        output_str = input_str
-        do i = 1, len(output_str)
-            if (output_str(i:i) >= 'A' .and. output_str(i:i) <= 'Z') then
-                output_str(i:i) = char(ichar(output_str(i:i)) + 32)
-            end if
-        end do
-    end function lowercase_string
 
     function get_output_title(filename) result(title)
         character(len=*), intent(in) :: filename
