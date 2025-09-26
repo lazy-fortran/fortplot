@@ -243,6 +243,12 @@ contains
 
     subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max)
         !! Render only the figure title without drawing axes
+        use fortplot_raster, only: raster_context
+        use fortplot_raster_labels, only: render_title_centered
+        use fortplot_pdf, only: pdf_context
+        use fortplot_pdf_core, only: PDF_TITLE_SIZE
+        use fortplot_pdf_text, only: estimate_pdf_text_width
+        use fortplot_ascii, only: ascii_context
         class(plot_context), intent(inout) :: backend
         character(len=:), allocatable, intent(in) :: title
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
@@ -251,12 +257,47 @@ contains
         if (.not. allocated(title)) return
         if (len_trim(title) == 0) return
 
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        select type (backend)
+        class is (raster_context)
+            call render_title_centered(backend%raster, backend%width, backend%height, &
+                                       backend%plot_area, trim(title))
+            return
+        class is (pdf_context)
+            block
+                real(wp) :: area_width
+                real(wp) :: area_height
+                real(wp) :: title_width_pdf
+                real(wp) :: x_range
+                real(wp) :: y_range
+                real(wp) :: x_fraction
+                real(wp) :: x_start
+                real(wp) :: y_offset
+
+                area_width = max(1.0e-9_wp, real(backend%plot_area%width, wp))
+                area_height = max(1.0e-9_wp, real(backend%plot_area%height, wp))
+                x_range = max(1.0e-9_wp, x_max - x_min)
+                y_range = max(1.0e-9_wp, y_max - y_min)
+
+                title_width_pdf = estimate_pdf_text_width(trim(title), PDF_TITLE_SIZE)
+                x_fraction = min(1.0_wp, title_width_pdf / area_width)
+                x_start = x_min + 0.5_wp * x_range * (1.0_wp - x_fraction)
+
+                y_offset = (20.0_wp / area_height) * y_range
+                call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+                call backend%text(x_start, y_max + y_offset, trim(title))
+            end block
+            return
+        class is (ascii_context)
+            call backend%set_title(trim(title))
+            return
+        class default
+            call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+        end select
 
         y_span = max(1.0e-6_wp, y_max - y_min)
         x_pos = 0.5_wp * (x_min + x_max)
         y_pos = y_max + 0.08_wp * y_span
-        call backend%text(x_pos, y_pos, title)
+        call backend%text(x_pos, y_pos, trim(title))
     end subroutine render_title_only
 
     subroutine detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
