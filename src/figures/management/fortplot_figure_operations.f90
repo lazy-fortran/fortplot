@@ -35,10 +35,11 @@ module fortplot_figure_operations
                                                     render_figure_background, &
                                                     render_figure_axes, &
                                                     render_all_plots, &
-                                                    render_figure_axes_labels_only
+                                                    render_figure_axes_labels_only, &
+                                                    render_title_only
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
-    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal
+    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, only_pie_plots
     implicit none
 
     private
@@ -359,6 +360,8 @@ contains
         real(wp) :: twinx_y_min_trans, twinx_y_max_trans
         real(wp) :: twiny_x_min, twiny_x_max
         real(wp) :: twiny_x_min_trans, twiny_x_max_trans
+        logical :: has_pie_plots
+        logical :: pie_only
 
         ! Calculate final data ranges
         call calculate_figure_data_ranges(plots, plot_count, &
@@ -420,8 +423,11 @@ contains
             state%twiny_x_max_transformed = twiny_x_max_trans
         end if
 
-        if (contains_pie_plot(plots, plot_count)) then
+        has_pie_plots = contains_pie_plot(plots, plot_count)
+        pie_only = .false.
+        if (has_pie_plots) then
             call enforce_pie_axis_equal(state)
+            pie_only = only_pie_plots(plots, plot_count)
         end if
         
         ! Setup coordinate system
@@ -447,16 +453,21 @@ contains
                                   state%grid_linestyle)
         end if
         
-        ! Render axes
-        call render_figure_axes(state%backend, state%xscale, state%yscale, &
-                               state%symlog_threshold, state%x_min, state%x_max, &
-                               state%y_min, state%y_max, state%title, &
-                               state%xlabel, state%ylabel, plots, plot_count, &
-                               has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
-                               twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
-                               twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
-                               twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                               twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+        ! Render axes or title depending on plot types
+        if (.not. pie_only) then
+            call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                                   state%symlog_threshold, state%x_min, state%x_max, &
+                                   state%y_min, state%y_max, state%title, &
+                                   state%xlabel, state%ylabel, plots, plot_count, &
+                                   has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                                   twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                                   twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                                   twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                                   twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+        else
+            call render_title_only(state%backend, state%title, state%x_min, state%x_max, &
+                                   state%y_min, state%y_max)
+        end if
         
         ! Render all plots (only if there are plots to render)
         if (plot_count > 0) then
@@ -470,15 +481,17 @@ contains
         end if
         
         ! Render axis labels AFTER plots (for raster backends only to prevent overlap)
-        call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
-                                           state%symlog_threshold, state%x_min, state%x_max, &
-                                           state%y_min, state%y_max, state%title, &
-                                           state%xlabel, state%ylabel, plots, plot_count, &
-                                           has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
-                                           twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
-                                           twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
-                                           twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
-                                           twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+        if (.not. pie_only) then
+            call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
+                                               state%symlog_threshold, state%x_min, state%x_max, &
+                                               state%y_min, state%y_max, state%title, &
+                                               state%xlabel, state%ylabel, plots, plot_count, &
+                                               has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                                               twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                                               twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                                               twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                                               twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+        end if
         
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
