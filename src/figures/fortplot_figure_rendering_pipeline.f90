@@ -11,11 +11,12 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE
+                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
-                                 render_markers, render_boxplot_plot, render_errorbar_plot
+                                 render_markers, render_boxplot_plot, render_errorbar_plot, &
+                                 render_pie_plot
     use fortplot_legend, only: legend_t
     implicit none
     
@@ -78,6 +79,10 @@ contains
                 call process_fill_between_ranges(plots(i), first_plot, has_valid_data, &
                                                 x_min_data, x_max_data, &
                                                 y_min_data, y_max_data)
+
+            case (PLOT_TYPE_PIE)
+                call process_pie_ranges(plots(i), first_plot, has_valid_data, &
+                                        x_min_data, x_max_data, y_min_data, y_max_data)
 
             case (PLOT_TYPE_CONTOUR)
                 call process_contour_plot_ranges(plots(i), first_plot, has_valid_data, &
@@ -217,6 +222,50 @@ contains
 
         if (considered) has_valid_data = .true.
     end subroutine process_fill_between_ranges
+
+    subroutine process_pie_ranges(plot, first_plot, has_valid_data, x_min_data, x_max_data, y_min_data, y_max_data)
+        !! Process pie chart slices to compute axis ranges
+        type(plot_data_t), intent(in) :: plot
+        logical, intent(inout) :: first_plot, has_valid_data
+        real(wp), intent(inout) :: x_min_data, x_max_data, y_min_data, y_max_data
+
+        real(wp) :: radius_extent, offset_max
+        real(wp) :: cx, cy
+
+        if (plot%pie_slice_count <= 0) return
+
+        radius_extent = plot%pie_radius
+        offset_max = 0.0_wp
+        if (allocated(plot%pie_offsets)) then
+            if (size(plot%pie_offsets) >= plot%pie_slice_count) then
+                offset_max = maxval(plot%pie_offsets(1:plot%pie_slice_count))
+                offset_max = max(offset_max, 0.0_wp)
+            end if
+        end if
+
+        radius_extent = radius_extent + offset_max
+        if (allocated(plot%pie_labels)) then
+            radius_extent = radius_extent + 0.25_wp * plot%pie_radius
+        end if
+
+        cx = plot%pie_center(1)
+        cy = plot%pie_center(2)
+
+        if (first_plot) then
+            x_min_data = cx - radius_extent
+            x_max_data = cx + radius_extent
+            y_min_data = cy - radius_extent
+            y_max_data = cy + radius_extent
+            first_plot = .false.
+        else
+            x_min_data = min(x_min_data, cx - radius_extent)
+            x_max_data = max(x_max_data, cx + radius_extent)
+            y_min_data = min(y_min_data, cy - radius_extent)
+            y_max_data = max(y_max_data, cy + radius_extent)
+        end if
+
+        has_valid_data = .true.
+    end subroutine process_pie_ranges
 
     subroutine process_contour_plot_ranges(plot, first_plot, has_valid_data, &
                                           x_min_data, x_max_data, y_min_data, y_max_data)
@@ -890,6 +939,9 @@ contains
             case (PLOT_TYPE_FILL)
                 call render_fill_between_plot(backend, plots(i), xscale, yscale, &
                                               symlog_threshold)
+
+            case (PLOT_TYPE_PIE)
+                call render_pie_plot(backend, plots(i), xscale, yscale, symlog_threshold)
 
             case (PLOT_TYPE_BOXPLOT)
                 call render_boxplot_plot(backend, plots(i), xscale, yscale, &

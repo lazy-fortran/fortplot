@@ -16,7 +16,7 @@ module fortplot_plot_data
     public :: PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
               PLOT_TYPE_ERRORBAR, PLOT_TYPE_BAR, PLOT_TYPE_HISTOGRAM, &
               PLOT_TYPE_BOXPLOT, PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-              PLOT_TYPE_SURFACE
+              PLOT_TYPE_SURFACE, PLOT_TYPE_PIE
     public :: HALF_WIDTH, IQR_WHISKER_MULTIPLIER
 
     ! Plot type constants
@@ -30,6 +30,7 @@ module fortplot_plot_data
     integer, parameter :: PLOT_TYPE_SCATTER = 8
     integer, parameter :: PLOT_TYPE_FILL = 9
     integer, parameter :: PLOT_TYPE_SURFACE = 10
+    integer, parameter :: PLOT_TYPE_PIE = 11
 
     ! Constants for calculations
     real(wp), parameter :: HALF_WIDTH = 0.5_wp
@@ -121,6 +122,19 @@ module fortplot_plot_data
         ! Filled polygon data (fill_between)
         type(fill_between_data_t) :: fill_between_data
         real(wp) :: fill_alpha = 1.0_wp
+        ! Pie chart data
+        integer :: pie_slice_count = 0
+        real(wp), allocatable :: pie_start(:)
+        real(wp), allocatable :: pie_end(:)
+        real(wp), allocatable :: pie_offsets(:)
+        real(wp), allocatable :: pie_colors(:,:)
+        real(wp), allocatable :: pie_label_pos(:,:)
+        real(wp), allocatable :: pie_values(:)
+        integer, allocatable :: pie_source_index(:)
+        character(len=:), allocatable :: pie_labels(:)
+        character(len=:), allocatable :: pie_autopct
+        real(wp) :: pie_radius = 1.0_wp
+        real(wp) :: pie_center(2) = [0.0_wp, 0.0_wp]
     contains
         procedure :: is_3d
     end type plot_data_t
