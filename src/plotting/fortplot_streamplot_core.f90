@@ -67,7 +67,7 @@ contains
         ! Generate arrows if requested
         if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
             call generate_streamplot_arrows(self, trajectories, n_trajectories, trajectory_lengths, &
-                                          x, y, u, v, arrow_size_val, arrow_style_val)
+                                          x, y, arrow_size_val, arrow_style_val)
         end if
         
         ! Add trajectories to figure
@@ -131,129 +131,142 @@ contains
     end subroutine generate_streamlines
 
     subroutine generate_streamplot_arrows(fig, trajectories, n_trajectories, trajectory_lengths, &
-                                        x_grid, y_grid, u_field, v_field, arrow_size, arrow_style)
-        !! Generate arrows along streamlines using matplotlib-compatible placement algorithm
+                                        x_grid, y_grid, arrow_size, arrow_style)
+        !! Generate one arrow per streamline, matching matplotlib placement (midpoint arrow)
         class(figure_t), intent(inout) :: fig
         real, intent(in) :: trajectories(:,:,:)
         integer, intent(in) :: n_trajectories, trajectory_lengths(:)
-        real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
         real(wp), intent(in) :: arrow_size
         character(len=*), intent(in) :: arrow_style
         
-        integer :: max_arrows, arrow_count
-        
-        ! Calculate maximum possible arrows based on density and trajectory count
-        max_arrows = max(1, min(500, n_trajectories * 3))  ! Limit to prevent memory issues
-        
-        ! Allocate arrow data array
-        if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
-        allocate(fig%arrow_data(max_arrows))
-        
+        integer :: traj_idx, n_points, target_index, arrow_count
+        real(wp), allocatable :: traj_x(:), traj_y(:)
+        real(wp), allocatable :: arc_lengths(:)
+        real(wp) :: total_length, half_length, arrow_tail_x, arrow_tail_y
+        real(wp) :: arrow_head_x, arrow_head_y, dx, dy, direction_norm
+        type(arrow_data_t), allocatable :: arrow_buffer(:), trimmed(:)
+
         arrow_count = 0
-        
-        ! Place arrows along trajectories
-        call place_arrows_on_trajectories(fig, trajectories, n_trajectories, trajectory_lengths, &
-                                        x_grid, y_grid, u_field, v_field, arrow_size, arrow_style, &
-                                        max_arrows, arrow_count)
-        
-        ! Resize arrow array to actual count
-        call finalize_arrow_array(fig, arrow_count)
-    end subroutine generate_streamplot_arrows
 
-    subroutine place_arrows_on_trajectories(fig, trajectories, n_trajectories, trajectory_lengths, &
-                                          x_grid, y_grid, u_field, v_field, arrow_size, arrow_style, &
-                                          max_arrows, arrow_count)
-        !! Place arrows at regular intervals along each trajectory
-        class(figure_t), intent(inout) :: fig
-        real, intent(in) :: trajectories(:,:,:)
-        integer, intent(in) :: n_trajectories, trajectory_lengths(:), max_arrows
-        real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:), arrow_size
-        character(len=*), intent(in) :: arrow_style
-        integer, intent(inout) :: arrow_count
-        
-        integer :: traj_idx, arrow_interval, point_idx
-        real(wp) :: arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag
-        
-        ! Place arrows along each trajectory at regular intervals
+        if (allocated(fig%arrow_data)) then
+            deallocate(fig%arrow_data)
+        end if
+
+        if (n_trajectories <= 0) return
+
+        allocate(arrow_buffer(n_trajectories))
+
         do traj_idx = 1, n_trajectories
-            if (trajectory_lengths(traj_idx) < 5) cycle  ! Skip very short trajectories
-            
-            ! Calculate arrow interval based on trajectory length (matplotlib-style)
-            arrow_interval = max(1, trajectory_lengths(traj_idx) / 3)  ! ~3 arrows per trajectory
-            
-            ! Place arrows at intervals along the trajectory
-            do point_idx = arrow_interval, trajectory_lengths(traj_idx) - 1, arrow_interval
-                if (arrow_count >= max_arrows) exit
-                
-                ! Get arrow position and direction
-                call calculate_arrow_properties(trajectories, traj_idx, point_idx, x_grid, y_grid, &
-                                              u_field, v_field, arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag)
-                
-                ! Skip if velocity is too small
-                if (speed_mag < EPSILON_COMPARE) cycle
-                
-                ! Store arrow data
-                call store_arrow_data(fig, arrow_count, arrow_x, arrow_y, arrow_dx, arrow_dy, &
-                                    speed_mag, arrow_size, arrow_style)
-            end do
+            n_points = trajectory_lengths(traj_idx)
+            if (n_points < 2) cycle
+
+            call extract_trajectory_data(trajectories, traj_idx, n_points, x_grid, y_grid, &
+                                         traj_x, traj_y)
+
+            call compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
+            if (total_length <= EPSILON_COMPARE) cycle
+
+            half_length = 0.5_wp * total_length
+            target_index = locate_half_length(arc_lengths, half_length)
+            if (target_index < 1 .or. target_index >= n_points) cycle
+
+            arrow_tail_x = traj_x(target_index)
+            arrow_tail_y = traj_y(target_index)
+            arrow_head_x = 0.5_wp * (arrow_tail_x + traj_x(target_index + 1))
+            arrow_head_y = 0.5_wp * (arrow_tail_y + traj_y(target_index + 1))
+
+            dx = arrow_head_x - arrow_tail_x
+            dy = arrow_head_y - arrow_tail_y
+            direction_norm = sqrt(dx*dx + dy*dy)
+            if (direction_norm <= EPSILON_COMPARE) cycle
+
+            arrow_count = arrow_count + 1
+            arrow_buffer(arrow_count)%x = arrow_tail_x
+            arrow_buffer(arrow_count)%y = arrow_tail_y
+            arrow_buffer(arrow_count)%dx = dx / direction_norm
+            arrow_buffer(arrow_count)%dy = dy / direction_norm
+            arrow_buffer(arrow_count)%size = arrow_size
+            arrow_buffer(arrow_count)%style = arrow_style
         end do
-    end subroutine place_arrows_on_trajectories
 
-    subroutine calculate_arrow_properties(trajectories, traj_idx, point_idx, x_grid, y_grid, &
-                                        u_field, v_field, arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag)
-        !! Calculate arrow position and direction at trajectory point
-        real, intent(in) :: trajectories(:,:,:)
-        integer, intent(in) :: traj_idx, point_idx
-        real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
-        real(wp), intent(out) :: arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag
-        real(wp) :: grid_x_idx, grid_y_idx
-
-        ! Get arrow position from trajectory and convert to data coordinates
-        grid_x_idx = real(trajectories(traj_idx, point_idx, 1), wp)
-        grid_y_idx = real(trajectories(traj_idx, point_idx, 2), wp)
-        arrow_x = map_grid_index_to_coord(grid_x_idx, x_grid)
-        arrow_y = map_grid_index_to_coord(grid_y_idx, y_grid)
-
-        ! Calculate arrow direction from velocity field at this position
-        call interpolate_velocity_at_point(arrow_x, arrow_y, x_grid, y_grid, &
-                                         u_field, v_field, arrow_dx, arrow_dy, speed_mag)
-    end subroutine calculate_arrow_properties
-
-    subroutine store_arrow_data(fig, arrow_count, arrow_x, arrow_y, arrow_dx, arrow_dy, &
-                               speed_mag, arrow_size, arrow_style)
-        !! Store normalized arrow data in figure
-        class(figure_t), intent(inout) :: fig
-        integer, intent(inout) :: arrow_count
-        real(wp), intent(in) :: arrow_x, arrow_y, arrow_dx, arrow_dy, speed_mag, arrow_size
-        character(len=*), intent(in) :: arrow_style
-        
-        ! Normalize direction vector
-        real(wp) :: norm_dx, norm_dy
-        
-        norm_dx = arrow_dx / speed_mag
-        norm_dy = arrow_dy / speed_mag
-        
-        ! Store arrow data
-        arrow_count = arrow_count + 1
-        fig%arrow_data(arrow_count)%x = arrow_x
-        fig%arrow_data(arrow_count)%y = arrow_y
-        fig%arrow_data(arrow_count)%dx = norm_dx
-        fig%arrow_data(arrow_count)%dy = norm_dy
-        fig%arrow_data(arrow_count)%size = arrow_size
-        fig%arrow_data(arrow_count)%style = arrow_style
-    end subroutine store_arrow_data
-
-    subroutine finalize_arrow_array(fig, arrow_count)
-        !! Resize arrow array to actual count or deallocate if empty
-        class(figure_t), intent(inout) :: fig
-        integer, intent(in) :: arrow_count
-        
         if (arrow_count > 0) then
-            fig%arrow_data = fig%arrow_data(1:arrow_count)
+            allocate(trimmed(arrow_count))
+            trimmed = arrow_buffer(1:arrow_count)
+            call move_alloc(trimmed, fig%arrow_data)
         else
             if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
         end if
-    end subroutine finalize_arrow_array
+
+        if (allocated(arrow_buffer)) deallocate(arrow_buffer)
+        if (allocated(traj_x)) deallocate(traj_x)
+        if (allocated(traj_y)) deallocate(traj_y)
+        if (allocated(arc_lengths)) deallocate(arc_lengths)
+    end subroutine generate_streamplot_arrows
+
+    subroutine extract_trajectory_data(trajectories, traj_idx, n_points, x_grid, y_grid, &
+                                      traj_x, traj_y)
+        !! Convert stored grid indices into data coordinates for a trajectory
+        real, intent(in) :: trajectories(:,:,:)
+        integer, intent(in) :: traj_idx, n_points
+        real(wp), intent(in) :: x_grid(:), y_grid(:)
+        real(wp), allocatable, intent(inout) :: traj_x(:), traj_y(:)
+
+        integer :: j
+
+        if (allocated(traj_x)) deallocate(traj_x)
+        if (allocated(traj_y)) deallocate(traj_y)
+        allocate(traj_x(n_points), traj_y(n_points))
+
+        do j = 1, n_points
+            traj_x(j) = map_grid_index_to_coord(real(trajectories(traj_idx, j, 1), wp), x_grid)
+            traj_y(j) = map_grid_index_to_coord(real(trajectories(traj_idx, j, 2), wp), y_grid)
+        end do
+    end subroutine extract_trajectory_data
+
+    subroutine compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
+        !! Compute cumulative arc lengths along a trajectory
+        real(wp), intent(in) :: traj_x(:), traj_y(:)
+        real(wp), allocatable, intent(inout) :: arc_lengths(:)
+        real(wp), intent(out) :: total_length
+
+        integer :: n_segments, i
+        real(wp) :: segment_length
+
+        n_segments = size(traj_x) - 1
+        if (allocated(arc_lengths)) deallocate(arc_lengths)
+
+        if (n_segments <= 0) then
+            total_length = 0.0_wp
+            return
+        end if
+
+        allocate(arc_lengths(n_segments))
+        total_length = 0.0_wp
+
+        do i = 1, n_segments
+            segment_length = sqrt((traj_x(i + 1) - traj_x(i))**2 + &
+                                  (traj_y(i + 1) - traj_y(i))**2)
+            total_length = total_length + segment_length
+            arc_lengths(i) = total_length
+        end do
+    end subroutine compute_segment_lengths
+
+    integer function locate_half_length(arc_lengths, half_length) result(target_index)
+        !! Locate the index of the point just before the halfway distance
+        real(wp), intent(in) :: arc_lengths(:), half_length
+
+        integer :: i
+
+        target_index = size(arc_lengths)
+
+        do i = 1, size(arc_lengths)
+            if (arc_lengths(i) >= half_length) then
+                target_index = i
+                exit
+            end if
+        end do
+    end function locate_half_length
 
     subroutine add_trajectories_to_figure(fig, trajectories, n_trajectories, lengths, trajectory_color, x_grid, y_grid)
         !! Add streamline trajectories to figure as regular plots
@@ -359,103 +372,5 @@ contains
         fig%plots(plot_idx)%color = line_color
     end subroutine add_streamline_to_figure
 
-    subroutine interpolate_velocity_at_point(x_pos, y_pos, x_grid, y_grid, u_field, v_field, &
-                                           u_interp, v_interp, speed_mag)
-        !! Bilinear interpolation of velocity field at given position
-        real(wp), intent(in) :: x_pos, y_pos
-        real(wp), intent(in) :: x_grid(:), y_grid(:), u_field(:,:), v_field(:,:)
-        real(wp), intent(out) :: u_interp, v_interp, speed_mag
-        
-        integer :: i, j, i_next, j_next
-        real(wp) :: x_frac, y_frac
-        
-        ! Find grid indices
-        call find_grid_indices(x_pos, y_pos, x_grid, y_grid, i, j, i_next, j_next)
-        
-        ! Calculate interpolation weights
-        call calculate_interpolation_weights(x_pos, y_pos, x_grid, y_grid, i, j, i_next, j_next, x_frac, y_frac)
-        
-        ! Perform bilinear interpolation
-        call perform_bilinear_interpolation(u_field, v_field, i, j, i_next, j_next, &
-                                          x_frac, y_frac, u_interp, v_interp)
-        
-        ! Calculate speed magnitude
-        speed_mag = sqrt(u_interp**2 + v_interp**2)
-    end subroutine interpolate_velocity_at_point
-
-    subroutine find_grid_indices(x_pos, y_pos, x_grid, y_grid, i, j, i_next, j_next)
-        !! Find grid indices for interpolation
-        real(wp), intent(in) :: x_pos, y_pos, x_grid(:), y_grid(:)
-        integer, intent(out) :: i, j, i_next, j_next
-        
-        ! Find grid indices
-        i = 1
-        do while (i < size(x_grid) .and. x_grid(i) < x_pos)
-            i = i + 1
-        end do
-        i = max(1, min(size(x_grid) - 1, i - 1))
-        
-        j = 1
-        do while (j < size(y_grid) .and. y_grid(j) < y_pos)
-            j = j + 1
-        end do
-        j = max(1, min(size(y_grid) - 1, j - 1))
-        
-        i_next = min(size(x_grid), i + 1)
-        j_next = min(size(y_grid), j + 1)
-    end subroutine find_grid_indices
-
-    subroutine calculate_interpolation_weights(x_pos, y_pos, x_grid, y_grid, i, j, i_next, j_next, x_frac, y_frac)
-        !! Calculate interpolation weights for bilinear interpolation
-        real(wp), intent(in) :: x_pos, y_pos, x_grid(:), y_grid(:)
-        integer, intent(in) :: i, j, i_next, j_next
-        real(wp), intent(out) :: x_frac, y_frac
-        
-        ! Calculate interpolation weights
-        if (i_next > i) then
-            x_frac = (x_pos - x_grid(i)) / (x_grid(i_next) - x_grid(i))
-        else
-            x_frac = 0.0_wp
-        end if
-        
-        if (j_next > j) then
-            y_frac = (y_pos - y_grid(j)) / (y_grid(j_next) - y_grid(j))
-        else
-            y_frac = 0.0_wp
-        end if
-    end subroutine calculate_interpolation_weights
-
-    subroutine perform_bilinear_interpolation(u_field, v_field, i, j, i_next, j_next, &
-                                            x_frac, y_frac, u_interp, v_interp)
-        !! Perform bilinear interpolation of velocity components
-        real(wp), intent(in) :: u_field(:,:), v_field(:,:)
-        integer, intent(in) :: i, j, i_next, j_next
-        real(wp), intent(in) :: x_frac, y_frac
-        real(wp), intent(out) :: u_interp, v_interp
-        
-        real(wp) :: w00, w01, w10, w11
-        real(wp) :: u00, u01, u10, u11, v00, v01, v10, v11
-        
-        ! Bilinear interpolation weights
-        w00 = (1.0_wp - x_frac) * (1.0_wp - y_frac)
-        w01 = x_frac * (1.0_wp - y_frac)
-        w10 = (1.0_wp - x_frac) * y_frac
-        w11 = x_frac * y_frac
-        
-        ! Get velocity values at grid corners
-        u00 = u_field(i, j)
-        u01 = u_field(i_next, j)
-        u10 = u_field(i, j_next)
-        u11 = u_field(i_next, j_next)
-        
-        v00 = v_field(i, j)
-        v01 = v_field(i_next, j)
-        v10 = v_field(i, j_next)
-        v11 = v_field(i_next, j_next)
-        
-        ! Interpolate velocity components
-        u_interp = w00 * u00 + w01 * u01 + w10 * u10 + w11 * u11
-        v_interp = w00 * v00 + w01 * v01 + w10 * v10 + w11 * v11
-    end subroutine perform_bilinear_interpolation
 
 end module fortplot_streamplot_core
