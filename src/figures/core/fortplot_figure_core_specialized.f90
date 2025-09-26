@@ -1,5 +1,9 @@
 submodule (fortplot_figure_core) fortplot_figure_core_specialized
 
+    use fortplot_colors, only: parse_color, is_valid_color
+    use fortplot_format_parser, only: parse_format_string
+    use fortplot_logging, only: log_error, log_warning
+
     implicit none
 
 contains
@@ -114,8 +118,14 @@ contains
         character(len=*), intent(in), optional :: label, fmt
         character(len=*), intent(in), optional :: linestyle, marker, color
 
-        integer :: n, i
+        integer :: n, i, pos, color_len
         real(wp), allocatable :: x(:), y(:)
+        real(wp) :: color_rgb(3)
+        character(len=20) :: fmt_marker, fmt_linestyle
+        character(len=20) :: final_marker, final_linestyle
+        character(len=32) :: style_buffer
+        character(len=:), allocatable :: fmt_work, fmt_color
+        logical :: have_color, color_ok, have_style
 
         n = min(size(theta), size(r))
         if (n == 0) then
@@ -129,17 +139,88 @@ contains
             y(i) = r(i) * sin(theta(i))
         end do
 
+        final_marker = ''
+        final_linestyle = ''
+
         if (present(fmt)) then
-            call log_warning('polar: fmt ignored; use linestyle/marker arguments')
-        end if
-        if (present(marker)) then
-            call log_warning('polar: marker styling not yet supported')
-        end if
-        if (present(color)) then
-            call log_warning('polar: color strings not mapped to RGB yet')
+            fmt_work = trim(adjustl(fmt))
+            if (len_trim(fmt_work) > 0) then
+                color_len = 0
+                do pos = 1, len_trim(fmt_work)
+                    if (is_valid_color(fmt_work(1:pos))) then
+                        color_len = pos
+                    else
+                        if (color_len > 0) exit
+                    end if
+                end do
+                if (color_len > 0) then
+                    fmt_color = fmt_work(1:color_len)
+                    if (color_len + 1 <= len(fmt_work)) then
+                        fmt_work = fmt_work(color_len + 1:)
+                    else
+                        fmt_work = ''
+                    end if
+                end if
+                fmt_work = trim(adjustl(fmt_work))
+                call parse_format_string(fmt_work, fmt_marker, fmt_linestyle)
+                if (len_trim(fmt_marker) > 0) final_marker = trim(fmt_marker)
+                if (len_trim(fmt_linestyle) > 0) then
+                    final_linestyle = trim(fmt_linestyle)
+                end if
+            end if
         end if
 
-        call self%add_plot(x, y, label=label, linestyle=linestyle)
+        if (present(marker)) then
+            if (len_trim(marker) > 0) final_marker = trim(marker)
+        end if
+        if (present(linestyle)) then
+            if (len_trim(linestyle) > 0) final_linestyle = trim(linestyle)
+        end if
+
+        have_color = .false.
+        if (present(color)) then
+            call parse_color(color, color_rgb, color_ok)
+            if (color_ok) then
+                have_color = .true.
+            else
+                call log_warning('polar: unsupported color ' // trim(color) // &
+                                 '; using default palette color')
+            end if
+        else if (allocated(fmt_color)) then
+            call parse_color(fmt_color, color_rgb, color_ok)
+            if (color_ok) have_color = .true.
+        end if
+
+        style_buffer = ''
+        have_style = .false.
+        if (len_trim(final_marker) > 0) then
+            style_buffer = trim(final_marker)
+            have_style = .true.
+        end if
+        if (len_trim(final_linestyle) > 0) then
+            style_buffer = trim(style_buffer) // trim(final_linestyle)
+            have_style = .true.
+        end if
+
+        if (have_style) then
+            if (have_color) then
+                call self%add_plot(x, y, label=label, &
+                                   linestyle=style_buffer(1:len_trim(style_buffer)), &
+                                   color=color_rgb)
+            else
+                call self%add_plot(x, y, label=label, &
+                                   linestyle=style_buffer(1:len_trim(style_buffer)))
+            end if
+        else
+            if (have_color) then
+                call self%add_plot(x, y, label=label, color=color_rgb)
+            else
+                call self%add_plot(x, y, label=label)
+            end if
+        end if
+
+        if (allocated(fmt_work)) deallocate(fmt_work)
+        if (allocated(fmt_color)) deallocate(fmt_color)
         deallocate(x, y)
     end subroutine add_polar
 
@@ -290,14 +371,15 @@ contains
         character(len=*), intent(in), optional :: color
         real(wp), intent(in), optional :: alpha
 
-        if (present(color)) then
-            call log_warning('fill: color strings not yet supported; using default')
+        if (present(color) .and. present(alpha)) then
+            call self%add_fill_between(x, y1=y, color=color, alpha=alpha)
+        else if (present(color)) then
+            call self%add_fill_between(x, y1=y, color=color)
+        else if (present(alpha)) then
+            call self%add_fill_between(x, y1=y, alpha=alpha)
+        else
+            call self%add_fill_between(x, y1=y)
         end if
-        if (present(alpha)) then
-            call log_warning('fill: transparency not implemented for current backend')
-        end if
-
-        call self%add_fill_between(x, y1=y)
     end subroutine add_fill
 
     module subroutine add_fill_between(self, x, y1, y2, where, color, alpha, &

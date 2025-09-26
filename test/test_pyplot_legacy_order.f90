@@ -2,7 +2,9 @@ program test_pyplot_legacy_order
     !! Ensure stateful pyplot wrappers preserve legacy positional ordering
     use fortplot, only: figure, get_global_figure, step, stem, fill
     use fortplot, only: fill_between, polar, pie, imshow
-    use fortplot_figure_core, only: figure_t, plot_data_t
+    use fortplot_colors, only: parse_color
+    use fortplot_figure_core, only: figure_t, plot_data_t, PLOT_TYPE_FILL, &
+        PLOT_TYPE_LINE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -23,7 +25,14 @@ contains
         class(figure_t), pointer :: fig
         integer :: i
 
+        real(wp) :: expected_color(3)
+        logical :: color_ok
+
         call reset_global(fig)
+        call parse_color('orange', expected_color, color_ok)
+        if (.not. color_ok) then
+            error stop 'test_fill: expected color parse to succeed'
+        end if
         do i = 1, size(x)
             x(i) = real(i, wp)
             y(i) = sin(real(i, wp))
@@ -51,15 +60,22 @@ contains
     subroutine test_fill()
         real(wp) :: x(6), y(6)
         class(figure_t), pointer :: fig
+        real(wp) :: expected_color(3)
+        logical :: color_ok
         integer :: i
 
         call reset_global(fig)
+        call parse_color('orange', expected_color, color_ok)
+        if (.not. color_ok) then
+            error stop 'test_fill: expected color parse to succeed'
+        end if
         do i = 1, size(x)
             x(i) = real(i - 1, wp)
             y(i) = 0.1_wp * real(i * i, wp)
         end do
 
         call fill(x, y, 'orange', 0.4_wp)
+        call assert_fill_visuals(fig, expected_color, 0.4_wp)
         call assert_no_labels(fig)
     end subroutine test_fill
 
@@ -86,6 +102,8 @@ contains
         class(figure_t), pointer :: fig
         integer :: i
         real(wp), parameter :: PI = acos(-1.0_wp)
+        real(wp) :: expected_color(3)
+        logical :: color_ok
 
         call reset_global(fig)
         do i = 1, size(theta)
@@ -93,8 +111,14 @@ contains
             r(i) = 1.0_wp + 0.2_wp * real(i, wp)
         end do
 
+        call parse_color('red', expected_color, color_ok)
+        if (.not. color_ok) then
+            error stop 'test_polar: expected color parse to succeed'
+        end if
+
         call polar(theta, r, 'r-', 'legacy-polar', '--', 'o', 'red')
         call assert_label_anywhere(fig, 'legacy-polar')
+        call assert_polar_style(fig, expected_color, '--', 'o')
     end subroutine test_polar
 
     subroutine test_pie()
@@ -198,5 +222,97 @@ contains
             error stop 'assert_plot_count: not enough plots'
         end if
     end subroutine assert_plot_count
+
+    subroutine assert_fill_visuals(fig, expected_color, expected_alpha)
+        class(figure_t), pointer, intent(in) :: fig
+        real(wp), intent(in) :: expected_color(3)
+        real(wp), intent(in) :: expected_alpha
+
+        type(plot_data_t), pointer :: plots(:)
+        integer :: count, i, idx
+        real(wp), parameter :: tol = 1.0e-6_wp
+
+        count = fig%get_plot_count()
+        if (count <= 0) then
+            error stop 'assert_fill_visuals: expected plots to exist'
+        end if
+
+        plots => fig%get_plots()
+        if (.not. associated(plots)) then
+            error stop 'assert_fill_visuals: plots pointer not associated'
+        end if
+
+        idx = 0
+        do i = 1, count
+            if (plots(i)%plot_type == PLOT_TYPE_FILL) then
+                idx = i
+            end if
+        end do
+        if (idx == 0) then
+            error stop 'assert_fill_visuals: fill plot not found'
+        end if
+
+        do i = 1, 3
+            if (abs(plots(idx)%color(i) - expected_color(i)) > tol) then
+                error stop 'assert_fill_visuals: fill color mismatch'
+            end if
+        end do
+
+        if (abs(plots(idx)%fill_alpha - expected_alpha) > tol) then
+            error stop 'assert_fill_visuals: fill alpha mismatch'
+        end if
+    end subroutine assert_fill_visuals
+
+    subroutine assert_polar_style(fig, expected_color, expected_linestyle, &
+                                  expected_marker)
+        class(figure_t), pointer, intent(in) :: fig
+        real(wp), intent(in) :: expected_color(3)
+        character(len=*), intent(in) :: expected_linestyle
+        character(len=*), intent(in) :: expected_marker
+
+        type(plot_data_t), pointer :: plots(:)
+        integer :: count, i, idx
+        real(wp), parameter :: tol = 1.0e-6_wp
+
+        count = fig%get_plot_count()
+        if (count <= 0) then
+            error stop 'assert_polar_style: expected plots to exist'
+        end if
+
+        plots => fig%get_plots()
+        if (.not. associated(plots)) then
+            error stop 'assert_polar_style: plots pointer not associated'
+        end if
+
+        idx = 0
+        do i = 1, count
+            if (plots(i)%plot_type == PLOT_TYPE_LINE) idx = i
+        end do
+        if (idx == 0) then
+            error stop 'assert_polar_style: line plot not found'
+        end if
+
+        do i = 1, 3
+            if (abs(plots(idx)%color(i) - expected_color(i)) > tol) then
+                error stop 'assert_polar_style: color mismatch'
+            end if
+        end do
+
+        if (.not. allocated(plots(idx)%linestyle)) then
+            error stop 'assert_polar_style: linestyle not stored'
+        end if
+        if (trim(plots(idx)%linestyle) /= trim(expected_linestyle)) then
+            error stop 'assert_polar_style: linestyle mismatch'
+        end if
+
+        if (len_trim(expected_marker) > 0) then
+            if (.not. allocated(plots(idx)%marker)) then
+                error stop 'assert_polar_style: marker not stored'
+            end if
+            if (trim(plots(idx)%marker) /= trim(expected_marker)) then
+                error stop 'assert_polar_style: marker mismatch'
+            end if
+        end if
+    end subroutine assert_polar_style
 
 end program test_pyplot_legacy_order
