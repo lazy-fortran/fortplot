@@ -1,14 +1,14 @@
 program test_unicode_superscript
-    use fortplot
-    use, intrinsic :: iso_fortran_env, only: wp => real64
+    use fortplot, only: figure, plot, title, xlabel, ylabel, savefig
+    use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
-    
-    real(wp) :: x(10), y(10)
+
+    real(dp) :: x(10), y(10)
     integer :: i
     
     ! Generate simple data
     do i = 1, 10
-        x(i) = real(i, wp)
+        x(i) = real(i, dp)
         y(i) = x(i)**2
     end do
     

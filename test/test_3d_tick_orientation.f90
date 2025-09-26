@@ -1,10 +1,10 @@
 program test_3d_tick_orientation
     !! Test to verify 3D axis tick orientations
-    use iso_fortran_env, only: wp => real64
-    use fortplot
+    use, intrinsic :: iso_fortran_env, only: dp => real64
+    use fortplot, only: figure, add_3d_plot, title, savefig
     implicit none
-    
-    real(wp), allocatable :: x(:), y(:), z(:)
+
+    real(dp), allocatable :: x(:), y(:), z(:)
     integer :: i, n
     
     print *, "Testing 3D tick orientations..."
@@ -14,13 +14,13 @@ program test_3d_tick_orientation
     allocate(x(n), y(n), z(n))
     
     do i = 1, n
-        x(i) = cos(real(i-1, wp) * 0.2_wp)
-        y(i) = sin(real(i-1, wp) * 0.2_wp)
-        z(i) = real(i-1, wp) * 0.1_wp
+        x(i) = cos(real(i - 1, dp) * 0.2_dp)
+        y(i) = sin(real(i - 1, dp) * 0.2_dp)
+        z(i) = real(i - 1, dp) * 0.1_dp
     end do
     
     ! Create 3D plot with clear axis ranges to test tick orientation
-    call figure(figsize=[8.0_wp, 6.0_wp])
+    call figure(figsize=[8.0_dp, 6.0_dp])
     call add_3d_plot(x, y, z, label="Test Helix")
     call title("3D Tick Orientation Test")
     
