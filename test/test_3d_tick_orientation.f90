@@ -1,13 +1,17 @@
 program test_3d_tick_orientation
     !! Test to verify 3D axis tick orientations
-    use, intrinsic :: iso_fortran_env, only: dp => real64
     use fortplot, only: figure, add_3d_plot, title, savefig
+    use test_output_helpers, only: ensure_test_output_dir
+    use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 
     real(dp), allocatable :: x(:), y(:), z(:)
+    character(len=:), allocatable :: output_dir
     integer :: i, n
 
     print *, "Testing 3D tick orientations..."
+
+    call ensure_test_output_dir('3d_tick_orientation', output_dir)
 
     ! Create simple 3D helix data
     n = 50
@@ -25,10 +29,10 @@ program test_3d_tick_orientation
     call title("3D Tick Orientation Test")
 
     ! Save to verify tick directions
-    call savefig('test_3d_ticks.png')
-    call savefig('test_3d_ticks.pdf')
+    call savefig(output_dir//'test_3d_ticks.png')
+    call savefig(output_dir//'test_3d_ticks.pdf')
 
-    print *, "Created test_3d_ticks.png and test_3d_ticks.pdf"
+    print *, 'Created 3D tick artifacts at '//output_dir
     print *, "✓ Z-axis ticks should point horizontally (leftward)"
     print *, "✓ Y-axis ticks should point horizontally (leftward)"
     print *, "✓ X-axis ticks should point vertically (downward)"
