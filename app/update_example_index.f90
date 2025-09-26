@@ -1,5 +1,6 @@
 program update_example_index
     use, intrinsic :: iso_fortran_env, only: error_unit
+    use fortplot_directory_listing, only: list_directory_entries
     use fortplot_doc_utils, only: file_exists, title_case
     implicit none
 
@@ -15,20 +16,16 @@ program update_example_index
         '<!-- AUTO_EXAMPLES_START -->'
     character(len=*), parameter :: marker_end = &
         '<!-- AUTO_EXAMPLES_END -->'
-    character(len=*), parameter :: temp_dir = 'build/autogen'
-    character(len=*), parameter :: list_file = &
-        'build/autogen/example_fortran_dirs.txt'
+    character(len=*), parameter :: examples_root = 'example/fortran'
     character(len=*), parameter :: source_prefix = &
         'https://github.com/lazy-fortran/fortplot/tree/main/example/' &
         // 'fortran/'
 
     type(example_entry_t), allocatable :: entries(:)
 
-    call ensure_directory(temp_dir)
     entries = collect_entries()
     call update_page('doc/index.md', entries, 'index')
     call update_page('doc/examples/index.md', entries, 'examples')
-    call cleanup_temp_file(list_file)
 
 contains
 
@@ -51,14 +48,102 @@ contains
 
     subroutine list_examples(names)
         character(len=:), allocatable, intent(out) :: names(:)
+        integer, parameter :: max_entries = 512
+        integer, parameter :: entry_len = 256
+        character(len=entry_len) :: entries(max_entries)
+        character(len=entry_len) :: filtered(max_entries)
+        character(len=entry_len) :: candidate
+        character(len=512) :: full_path
+        integer :: entry_count
+        integer :: status
+        integer :: valid_count
+        integer :: max_len
+        integer :: i
 
-        call run_command('mkdir -p ' // temp_dir, 'create temp directory')
-        call run_command( &
-            'find example/fortran -mindepth 1 -maxdepth 1 -type d ' // &
-            '! -name output -exec basename {} \; | sort > ' // list_file, &
-            'enumerate example directories')
-        call read_string_list(list_file, names)
+        entries = ''
+        filtered = ''
+        call list_directory_entries(examples_root, entries, entry_count, status)
+        if (status /= 0) then
+            call fatal('Unable to enumerate examples (status=' // &
+                to_string(status) // ')')
+        end if
+
+        valid_count = 0
+        do i = 1, entry_count
+            candidate = trim(entries(i))
+            if (len_trim(candidate) == 0) cycle
+            if (candidate(1:1) == '.') cycle
+            if (trim(candidate) == 'output') cycle
+
+            full_path = trim(examples_root) // '/' // trim(candidate)
+            if (.not. path_is_directory(trim(full_path))) cycle
+
+            valid_count = valid_count + 1
+            if (valid_count > max_entries) then
+                call fatal('Too many example directories discovered')
+            end if
+            filtered(valid_count) = trim(candidate)
+        end do
+
+        if (valid_count == 0) then
+            allocate(character(len=1) :: names(0))
+            return
+        end if
+
+        call sort_names(filtered, valid_count)
+
+        max_len = 0
+        do i = 1, valid_count
+            max_len = max(max_len, len_trim(filtered(i)))
+        end do
+        if (max_len <= 0) max_len = 1
+
+        allocate(character(len=max_len) :: names(valid_count))
+        do i = 1, valid_count
+            names(i) = trim(filtered(i))
+        end do
     end subroutine list_examples
+
+    subroutine sort_names(values, count)
+        character(len=*), intent(inout) :: values(:)
+        integer, intent(in) :: count
+        integer :: i
+        integer :: j
+        character(len=len(values(1))) :: key
+
+        if (count <= 1) return
+
+        do i = 2, count
+            key = values(i)
+            j = i - 1
+            do
+                if (j < 1) exit
+                if (.not. (values(j) > key)) exit
+                values(j + 1) = values(j)
+                j = j - 1
+            end do
+            values(j + 1) = key
+        end do
+    end subroutine sort_names
+
+    logical function path_is_directory(path)
+        character(len=*), intent(in) :: path
+        character(len=1) :: probe(1)
+        integer :: probe_count
+        integer :: status
+
+        probe = ''
+        call list_directory_entries(trim(path), probe, probe_count, status)
+
+        select case (status)
+        case (0)
+            path_is_directory = .true.
+        case (-6)
+            path_is_directory = .true.
+        case default
+            path_is_directory = .false.
+        end select
+    end function path_is_directory
 
     subroutine build_entry(entry, raw_name)
         type(example_entry_t), intent(out) :: entry
@@ -166,43 +251,6 @@ contains
         call write_file_lines(path, updated, position)
     end subroutine update_page
 
-    subroutine read_string_list(path, values)
-        character(len=*), intent(in) :: path
-        character(len=:), allocatable, intent(out) :: values(:)
-        character(len=512) :: buffer
-        character(len=:), allocatable :: trimmed
-        integer :: unit, ios, count, idx, max_len
-
-        call open_file(path, unit)
-        count = 0
-        max_len = 0
-        do
-            read(unit, '(A)', iostat=ios) buffer
-            if (ios /= 0) exit
-            trimmed = trim(buffer)
-            if (len_trim(trimmed) == 0) cycle
-            count = count + 1
-            max_len = max(max_len, len_trim(trimmed))
-        end do
-        rewind(unit)
-        if (count == 0) then
-            allocate(character(len=1) :: values(0))
-            close(unit)
-            return
-        end if
-        if (max_len <= 0) max_len = 1
-        allocate(character(len=max_len) :: values(count))
-        idx = 0
-        do
-            read(unit, '(A)', iostat=ios) buffer
-            if (ios /= 0) exit
-            trimmed = trim(buffer)
-            if (len_trim(trimmed) == 0) cycle
-            idx = idx + 1
-            values(idx) = trimmed
-        end do
-        close(unit)
-    end subroutine read_string_list
 
     subroutine read_file_lines(path, lines, count)
         character(len=*), intent(in) :: path
@@ -331,17 +379,6 @@ contains
         end if
     end function truncate_desc
 
-    subroutine run_command(command, action_desc)
-        character(len=*), intent(in) :: command
-        character(len=*), intent(in) :: action_desc
-        integer :: stat
-
-        call execute_command_line(command, wait=.true., exitstat=stat)
-        if (stat /= 0) then
-            call fatal('Unable to ' // trim(action_desc) // ' (exit=' // &
-                to_string(stat) // ')')
-        end if
-    end subroutine run_command
 
     subroutine open_file(path, unit)
         character(len=*), intent(in) :: path
@@ -355,23 +392,7 @@ contains
         end if
     end subroutine open_file
 
-    subroutine ensure_directory(dir)
-        character(len=*), intent(in) :: dir
-        call run_command('mkdir -p ' // trim(dir), 'ensure directory ' // &
-            trim(dir))
-    end subroutine ensure_directory
 
-    subroutine cleanup_temp_file(path)
-        character(len=*), intent(in) :: path
-        integer :: stat
-
-        call execute_command_line('rm -f ' // trim(path), wait=.true., &
-            exitstat=stat)
-        if (stat /= 0) then
-            write(error_unit, '(A)') 'update_example_index: warning: unable ' &
-                // 'to remove temporary file ' // trim(path)
-        end if
-    end subroutine cleanup_temp_file
 
     subroutine fatal(message)
         character(len=*), intent(in) :: message
