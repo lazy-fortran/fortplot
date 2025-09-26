@@ -177,6 +177,21 @@ contains
             if (len_trim(linestyle) > 0) final_linestyle = trim(linestyle)
         end if
 
+        if (len_trim(final_linestyle) > 0) then
+            select case (trim(final_linestyle))
+            case ('solid', 'Solid', 'SOLID')
+                final_linestyle = '-'
+            case ('dashed', 'Dashed', 'DASHED')
+                final_linestyle = '--'
+            case ('dotted', 'Dotted', 'DOTTED')
+                final_linestyle = ':'
+            case ('dashdot', 'Dashdot', 'DASHDOT')
+                final_linestyle = '-.'
+            case ('none', 'None', 'NONE')
+                final_linestyle = 'None'
+            end select
+        end if
+
         have_color = .false.
         if (present(color)) then
             call parse_color(color, color_rgb, color_ok)
@@ -188,7 +203,12 @@ contains
             end if
         else if (allocated(fmt_color)) then
             call parse_color(fmt_color, color_rgb, color_ok)
-            if (color_ok) have_color = .true.
+            if (color_ok) then
+                have_color = .true.
+            else
+                call log_warning('polar: unsupported color ' // trim(fmt_color) // &
+                                 '; using default palette color')
+            end if
         end if
 
         style_buffer = ''

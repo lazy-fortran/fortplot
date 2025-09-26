@@ -119,6 +119,25 @@ contains
         call polar(theta, r, 'r-', 'legacy-polar', '--', 'o', 'red')
         call assert_label_anywhere(fig, 'legacy-polar')
         call assert_polar_style(fig, expected_color, '--', 'o')
+
+        call reset_global(fig)
+        call parse_color('green', expected_color, color_ok)
+        if (.not. color_ok) then
+            error stop 'test_polar: expected named style color parse to succeed'
+        end if
+        call polar(theta, r, label='named-style', linestyle='solid', marker='x', &
+                   color='green')
+        call assert_label_anywhere(fig, 'named-style')
+        call assert_polar_style(fig, expected_color, '-', 'x')
+
+        call reset_global(fig)
+        call parse_color('m', expected_color, color_ok)
+        if (.not. color_ok) then
+            error stop 'test_polar: expected fmt color parse to succeed'
+        end if
+        call polar(theta, r, fmt='m:', label='fmt-color-only')
+        call assert_label_anywhere(fig, 'fmt-color-only')
+        call assert_polar_style(fig, expected_color, ':', '')
     end subroutine test_polar
 
     subroutine test_pie()
