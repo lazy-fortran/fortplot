@@ -61,7 +61,10 @@ contains
         
         ! Generate streamlines using matplotlib algorithm
         call generate_streamlines(x, y, u, v, plot_density, trajectories, n_trajectories, trajectory_lengths)
-        
+
+        ! Always clear queued arrows before recalculating
+        call self%clear_backend_arrows()
+
         ! Generate arrows if requested
         if (arrow_size_val > 0.0_wp .and. n_trajectories > 0) then
             call generate_streamplot_arrows(self, trajectories, n_trajectories, trajectory_lengths, &
@@ -144,11 +147,14 @@ contains
         real(wp) :: total_length, half_length, segment_start_length, segment_length
         real(wp) :: position_t, arrow_x, arrow_y, segment_dx, segment_dy, direction_norm
         type(arrow_data_t), allocatable :: arrow_buffer(:), trimmed(:)
+        logical :: had_existing
 
         arrow_count = 0
 
-        if (allocated(fig%arrow_data)) then
-            deallocate(fig%arrow_data)
+        had_existing = .false.
+        if (allocated(fig%state%stream_arrows)) then
+            had_existing = size(fig%state%stream_arrows) > 0
+            deallocate(fig%state%stream_arrows)
         end if
 
         if (n_trajectories <= 0) return
@@ -202,9 +208,10 @@ contains
         if (arrow_count > 0) then
             allocate(trimmed(arrow_count))
             trimmed = arrow_buffer(1:arrow_count)
-            call move_alloc(trimmed, fig%arrow_data)
+            call move_alloc(trimmed, fig%state%stream_arrows)
+            fig%state%rendered = .false.
         else
-            if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
+            if (had_existing) fig%state%rendered = .false.
         end if
 
         if (allocated(arrow_buffer)) deallocate(arrow_buffer)
