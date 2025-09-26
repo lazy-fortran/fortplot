@@ -36,9 +36,19 @@ contains
         
         print *, "  Creating streamplot..."
         call fig%streamplot(x, y, u, v)
-        
+
         if (fig%plot_count == 0) then
             print *, "ERROR: No plots generated from streamplot"
+            stop 1
+        end if
+
+        if (.not. allocated(fig%state%stream_arrows)) then
+            print *, "ERROR: Expected streamplot arrows to be generated"
+            stop 1
+        end if
+
+        if (size(fig%state%stream_arrows) == 0) then
+            print *, "ERROR: Streamplot arrows array is empty"
             stop 1
         end if
         ! For now, just check that streamlines were allocated
