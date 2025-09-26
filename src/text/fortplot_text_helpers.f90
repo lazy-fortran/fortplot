@@ -15,6 +15,8 @@ contains
         integer, intent(out) :: out_len
         character(len=:), allocatable :: trimmed
         integer :: n
+        integer :: capacity
+        integer :: copy_len
 
         trimmed = trim(input_text)
         n = len_trim(trimmed)
@@ -25,17 +27,17 @@ contains
             return
         end if
 
+        capacity = len(output_text)
         output_text = ''
 
-        if (len(output_text) >= n) then
-            output_text = trimmed
-            out_len = n
-        else
-            out_len = len(output_text)
-            if (out_len > 0) then
-                output_text(1:out_len) = trimmed(1:out_len)
-            end if
+        if (capacity <= 0) then
+            out_len = 0
+            return
         end if
+
+        copy_len = min(n, capacity)
+        output_text(1:copy_len) = trimmed(1:copy_len)
+        out_len = copy_len
     end subroutine prepare_mathtext_if_needed
 
 end module fortplot_text_helpers
