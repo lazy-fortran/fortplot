@@ -10,6 +10,7 @@ module fortplot_rendering
     use fortplot_contour_rendering
     use fortplot_mesh_rendering
     use fortplot_boxplot_rendering
+    use fortplot_bar_rendering, only: render_bar_plot
     use fortplot_errorbar_rendering, only: render_errorbar_plot
     use fortplot_pie_rendering, only: render_pie_plot
     implicit none
@@ -22,6 +23,7 @@ module fortplot_rendering
     public :: render_boxplot_plot
     public :: render_markers
     public :: render_errorbar_plot
+    public :: render_bar_plot
     public :: render_pie_plot
     public :: render_solid_line
     public :: draw_filled_quad

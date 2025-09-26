@@ -11,6 +11,7 @@ module fortplot_plot_bars
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BAR
+    use fortplot_figure_core_ranges, only: update_data_ranges_figure
     implicit none
     
     private
@@ -51,7 +52,10 @@ contains
         real(wp), intent(in), optional :: color(3)
         logical, intent(in) :: horizontal
         
-        integer :: plot_idx, color_idx
+        integer :: plot_idx, color_idx, i
+        real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
+        real(wp), parameter :: HUGE_SPACING = huge(1.0_wp)
+        real(wp) :: min_spacing
         
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
@@ -72,16 +76,27 @@ contains
         self%plots(plot_idx)%bar_heights = values
         
         if (present(bar_size)) then
-            self%plots(plot_idx)%bar_width = bar_size
+            self%plots(plot_idx)%bar_width = abs(bar_size)
+            if (self%plots(plot_idx)%bar_width <= 0.0_wp) then
+                self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
+            end if
         else
             ! Default bar width calculation
             if (size(positions) > 1) then
-                self%plots(plot_idx)%bar_width = 0.8_wp * minval(positions(2:) - positions(:size(positions)-1))
+                min_spacing = HUGE_SPACING
+                do i = 1, size(positions) - 1
+                    min_spacing = min(min_spacing, abs(positions(i + 1) - positions(i)))
+                end do
+                if (min_spacing <= 0.0_wp .or. min_spacing == HUGE_SPACING) then
+                    self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
+                else
+                    self%plots(plot_idx)%bar_width = 0.8_wp * min_spacing
+                end if
             else
-                self%plots(plot_idx)%bar_width = 0.8_wp
+                self%plots(plot_idx)%bar_width = DEFAULT_BAR_WIDTH
             end if
         end if
-        
+
         self%plots(plot_idx)%bar_horizontal = horizontal
         
         if (present(color)) then
@@ -97,6 +112,7 @@ contains
         end if
 
         self%state%plot_count = self%plot_count
+        call update_data_ranges_figure(self%plots, self%state, self%plot_count)
     end subroutine add_bar_plot_data
 
 end module fortplot_plot_bars
