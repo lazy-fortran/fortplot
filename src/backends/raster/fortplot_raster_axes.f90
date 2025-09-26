@@ -6,6 +6,7 @@ module fortplot_raster_axes
     use fortplot_raster_core, only: raster_image_t
     use fortplot_raster_ticks
     use fortplot_raster_labels, only: raster_draw_axis_labels, raster_render_ylabel, &
+                                       raster_render_ylabel_right, raster_draw_top_xlabel, &
                                        render_title_centered, compute_title_position, &
                                        compute_ylabel_x_pos_impl => compute_ylabel_x_pos, &
                                        y_tick_label_right_edge_at_axis_impl => y_tick_label_right_edge_at_axis
@@ -38,6 +39,8 @@ module fortplot_raster_axes
     public :: raster_draw_y_axis_tick_marks_only
     public :: raster_draw_x_axis_tick_labels_only
     public :: raster_draw_y_axis_tick_labels_only
+    public :: raster_draw_secondary_y_axis
+    public :: raster_draw_secondary_x_axis_top
 
 contains
 
@@ -406,6 +409,100 @@ contains
         
         call raster_draw_axis_labels(raster, width, height, plot_area, title_str, xlabel_str, ylabel_str)
     end subroutine raster_draw_axis_labels_wrapper
+
+    subroutine raster_draw_secondary_y_axis(raster, width, height, plot_area, yscale, symlog_threshold, &
+                                            y_min, y_max, ylabel)
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: y_min, y_max
+        character(len=:), allocatable, intent(in), optional :: ylabel
+        character(len=:), allocatable :: ylabel_local
+        real(wp) :: y_tick_positions(MAX_TICKS)
+        character(len=50) :: tick_labels(MAX_TICKS)
+        integer :: tick_colors(3, MAX_TICKS)
+        integer :: num_y_ticks, decimals, i
+
+        ylabel_local = ""
+        if (present(ylabel)) then
+            if (allocated(ylabel)) ylabel_local = ylabel
+        end if
+
+        call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, y_tick_positions, num_y_ticks)
+
+        if (num_y_ticks > 0) then
+            decimals = 0
+            if (trim(yscale) == 'linear' .and. num_y_ticks >= 2) then
+                decimals = determine_decimals_from_ticks(y_tick_positions, num_y_ticks)
+            end if
+
+            do i = 1, num_y_ticks
+                if (trim(yscale) == 'linear') then
+                    tick_labels(i) = format_tick_value_consistent(y_tick_positions(i), decimals)
+                else
+                    tick_labels(i) = format_tick_label(y_tick_positions(i), yscale)
+                end if
+                tick_colors(:, i) = (/0, 0, 0/)
+            end do
+
+            call raster_draw_y_axis_ticks_right(raster, width, height, plot_area, yscale, symlog_threshold, &
+                                                y_tick_positions(1:num_y_ticks), tick_labels(1:num_y_ticks), &
+                                                tick_colors(:,1:num_y_ticks), y_min, y_max)
+        end if
+
+        if (len_trim(ylabel_local) > 0) then
+            call raster_render_ylabel_right(raster, width, height, plot_area, ylabel_local)
+        end if
+    end subroutine raster_draw_secondary_y_axis
+
+    subroutine raster_draw_secondary_x_axis_top(raster, width, height, plot_area, xscale, symlog_threshold, &
+                                               x_min, x_max, xlabel)
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max
+        character(len=:), allocatable, intent(in), optional :: xlabel
+        real(wp) :: x_tick_positions(MAX_TICKS)
+        character(len=50) :: tick_labels(MAX_TICKS)
+        integer :: tick_colors(3, MAX_TICKS)
+        integer :: num_x_ticks, decimals, i
+
+        character(len=:), allocatable :: xlabel_local
+
+        xlabel_local = ""
+        if (present(xlabel)) then
+            if (allocated(xlabel)) xlabel_local = xlabel
+        end if
+
+        call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, x_tick_positions, num_x_ticks)
+
+        if (num_x_ticks > 0) then
+            decimals = 0
+            if (trim(xscale) == 'linear' .and. num_x_ticks >= 2) then
+                decimals = determine_decimals_from_ticks(x_tick_positions, num_x_ticks)
+            end if
+
+            do i = 1, num_x_ticks
+                if (trim(xscale) == 'linear') then
+                    tick_labels(i) = format_tick_value_consistent(x_tick_positions(i), decimals)
+                else
+                    tick_labels(i) = format_tick_label(x_tick_positions(i), xscale)
+                end if
+                tick_colors(:, i) = (/0, 0, 0/)
+            end do
+
+            call raster_draw_x_axis_ticks_top(raster, width, height, plot_area, xscale, symlog_threshold, &
+                                              x_tick_positions(1:num_x_ticks), tick_labels(1:num_x_ticks), &
+                                              tick_colors(:,1:num_x_ticks), x_min, x_max)
+        end if
+        if (len_trim(xlabel_local) > 0) then
+            call raster_draw_top_xlabel(raster, width, height, plot_area, xlabel_local)
+        end if
+    end subroutine raster_draw_secondary_x_axis_top
 
 
     ! Simple wrapper for test compatibility

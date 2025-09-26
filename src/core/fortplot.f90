@@ -93,7 +93,7 @@ module fortplot
                                    add_plot, add_contour, add_contour_filled, add_pcolormesh, add_errorbar, &
                                    add_3d_plot, add_surface, add_scatter, &
                                    set_xscale, set_yscale, xlim, ylim, &
-                                   set_line_width, set_ydata, &
+                                   set_line_width, set_ydata, use_axis, get_active_axis, &
                                    show, show_viewer, &
                                    ensure_global_figure_initialized, get_global_figure
 
@@ -127,7 +127,7 @@ module fortplot
     public :: figure, subplot, subplots, subplots_grid
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
-    public :: set_line_width, set_ydata
+    public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: savefig, savefig_with_status
     
     ! Extended plotting functions

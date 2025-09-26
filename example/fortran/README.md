@@ -41,6 +41,7 @@ make example ARGS="example_name"
 - [legend_demo](./legend_demo/) - Legend placement options
 - [unicode_demo](./unicode_demo/) - Mathematical symbols
 - [grid_demo](./grid_demo/) - Grid lines and formatting
+- [twin_axes_demo](./twin_axes_demo/) - Dual axes with independent scales
 
 ### Annotations and Layout
 - [annotation_demo](./annotation_demo/) - Text and arrow annotations

@@ -284,7 +284,8 @@ contains
                                        subplots_array(i,j)%xlabel, &
                                        subplots_array(i,j)%ylabel, &
                                        subplots_array(i,j)%plots, &
-                                       subplots_array(i,j)%plot_count)
+                                       subplots_array(i,j)%plot_count, &
+                                       has_twinx=.false., has_twiny=.false.)
 
                 if (subplots_array(i,j)%plot_count > 0) then
                     call render_all_plots(state%backend, subplots_array(i,j)%plots, subplots_array(i,j)%plot_count, &
@@ -301,7 +302,8 @@ contains
                                                    subplots_array(i,j)%xlabel, &
                                                    subplots_array(i,j)%ylabel, &
                                                    subplots_array(i,j)%plots, &
-                                                   subplots_array(i,j)%plot_count)
+                                                   subplots_array(i,j)%plot_count, &
+                                                   has_twinx=.false., has_twiny=.false.)
             end do
         end do
     end subroutine render_subplots_impl
@@ -338,7 +340,12 @@ contains
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                state%symlog_threshold, state%x_min, state%x_max, &
                                state%y_min, state%y_max, state%title, &
-                               state%xlabel, state%ylabel, plots, plot_count)
+                               state%xlabel, state%ylabel, plots, plot_count, &
+                               has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                               twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                               twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                               twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                               twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
 
         if (plot_count > 0) then
             call render_all_plots(state%backend, plots, plot_count, &
@@ -347,13 +354,18 @@ contains
                                  state%xscale, state%yscale, state%symlog_threshold, &
                                  state%width, state%height, &
                                  state%margin_left, state%margin_right, &
-                                 state%margin_bottom, state%margin_top)
+                                 state%margin_bottom, state%margin_top, state=state)
         end if
 
         call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
                                            state%symlog_threshold, state%x_min, state%x_max, &
                                            state%y_min, state%y_max, state%title, &
-                                           state%xlabel, state%ylabel, plots, plot_count)
+                                           state%xlabel, state%ylabel, plots, plot_count, &
+                                           has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                                           twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                                           twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                                           twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                                           twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
 
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
             call state%legend_data%render(state%backend)

@@ -104,13 +104,13 @@ contains
     end subroutine fill_between
 
     subroutine twinx()
-        !! Create a twin x-axis (placeholder - not fully implemented)
+        !! Activate a secondary y-axis that shares the x-axis but renders on the right
         call ensure_fig_init()
         call fig%twinx()
     end subroutine twinx
 
     subroutine twiny()
-        !! Create a twin y-axis (placeholder - not fully implemented)
+        !! Activate a secondary x-axis that shares the y-axis but renders on the top
         call ensure_fig_init()
         call fig%twiny()
     end subroutine twiny
