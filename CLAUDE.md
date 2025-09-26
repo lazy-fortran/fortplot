@@ -264,12 +264,12 @@ The FORD documentation configuration is split between two locations:
 
 ❌ **Don't do this in doc.md**:
 ```markdown
-# project: fortplotlib
+# project: fortplot
 ```
 
 ✅ **Do this in doc.md**:
 ```
-project: fortplotlib
+project: fortplot
 ```
 
 The project name is already defined in `fpm.toml` as `project = "fortplot"`, so it doesn't need to be duplicated in `doc.md`. Having it in both places can cause redundant headers on the GitHub Pages site.

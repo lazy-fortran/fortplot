@@ -1,9 +1,9 @@
 title: Examples Gallery
 ---
 
-# fortplotlib Examples Gallery
+# fortplot Examples Gallery
 
-This gallery showcases the capabilities of fortplotlib through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
+This gallery showcases the capabilities of fortplot through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
 
 The sections below are generated automatically from the example
 directories tracked in `example/fortran`. Any new example folder will be
