@@ -8,7 +8,7 @@ module fortplot_figure_aspect
     implicit none
 
     private
-    public :: contains_pie_plot, enforce_pie_axis_equal
+    public :: contains_pie_plot, enforce_pie_axis_equal, only_pie_plots
 
 contains
 
@@ -27,6 +27,26 @@ contains
             end if
         end do
     end function contains_pie_plot
+
+    logical function only_pie_plots(plots, plot_count) result(all_pie)
+        !! Check if every plot in the collection is a pie chart
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer :: i, upper
+
+        all_pie = .false.
+        if (plot_count <= 0) return
+        upper = min(plot_count, size(plots))
+        if (upper <= 0) return
+
+        all_pie = .true.
+        do i = 1, upper
+            if (plots(i)%plot_type /= PLOT_TYPE_PIE) then
+                all_pie = .false.
+                return
+            end if
+        end do
+    end function only_pie_plots
 
     subroutine enforce_pie_axis_equal(state)
         !! Adjust the figure axis limits so pie charts render with equal scaling
