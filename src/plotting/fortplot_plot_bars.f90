@@ -11,6 +11,7 @@ module fortplot_plot_bars
     use fortplot_figure_core, only: figure_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_BAR
+    use fortplot_figure_core_ranges, only: update_data_ranges_figure
     implicit none
     
     private
@@ -97,6 +98,7 @@ contains
         end if
 
         self%state%plot_count = self%plot_count
+        call update_data_ranges_figure(self%plots, self%state, self%plot_count)
     end subroutine add_bar_plot_data
 
 end module fortplot_plot_bars

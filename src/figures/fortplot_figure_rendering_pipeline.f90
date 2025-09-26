@@ -11,12 +11,13 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
-                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE
+                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
+                                  PLOT_TYPE_BAR
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
                                  render_markers, render_boxplot_plot, render_errorbar_plot, &
-                                 render_pie_plot
+                                 render_pie_plot, render_bar_plot
     use fortplot_legend, only: legend_t
     implicit none
     
@@ -72,6 +73,11 @@ contains
 
             case (PLOT_TYPE_ERRORBAR)
                 call process_errorbar_ranges(plots(i), first_plot, has_valid_data, &
+                                             x_min_data, x_max_data, &
+                                             y_min_data, y_max_data)
+
+            case (PLOT_TYPE_BAR)
+                call process_bar_plot_ranges(plots(i), first_plot, has_valid_data, &
                                              x_min_data, x_max_data, &
                                              y_min_data, y_max_data)
 
@@ -426,7 +432,71 @@ contains
         end if
         has_valid_data = .true.
     end subroutine process_errorbar_ranges
-    
+
+    subroutine process_bar_plot_ranges(plot, first_plot, has_valid_data, &
+                                       x_min_data, x_max_data, &
+                                       y_min_data, y_max_data)
+        !! Process bar plot data to calculate axis ranges
+        type(plot_data_t), intent(in) :: plot
+        logical, intent(inout) :: first_plot, has_valid_data
+        real(wp), intent(inout) :: x_min_data, x_max_data
+        real(wp), intent(inout) :: y_min_data, y_max_data
+
+        integer :: n, i
+        real(wp) :: half_width
+        real(wp) :: x_min_bar, x_max_bar
+        real(wp) :: y_min_bar, y_max_bar
+        real(wp) :: left_edge, right_edge
+        real(wp) :: lower_edge, upper_edge
+
+        if (.not. allocated(plot%bar_x)) return
+        if (.not. allocated(plot%bar_heights)) return
+
+        n = min(size(plot%bar_x), size(plot%bar_heights))
+        if (n <= 0) return
+
+        half_width = 0.5_wp * abs(plot%bar_width)
+
+        x_min_bar = huge(0.0_wp)
+        x_max_bar = -huge(0.0_wp)
+        y_min_bar = huge(0.0_wp)
+        y_max_bar = -huge(0.0_wp)
+
+        do i = 1, n
+            if (plot%bar_horizontal) then
+                left_edge = min(0.0_wp, plot%bar_heights(i))
+                right_edge = max(0.0_wp, plot%bar_heights(i))
+                lower_edge = plot%bar_x(i) - half_width
+                upper_edge = plot%bar_x(i) + half_width
+            else
+                left_edge = plot%bar_x(i) - half_width
+                right_edge = plot%bar_x(i) + half_width
+                lower_edge = min(0.0_wp, plot%bar_heights(i))
+                upper_edge = max(0.0_wp, plot%bar_heights(i))
+            end if
+
+            x_min_bar = min(x_min_bar, left_edge)
+            x_max_bar = max(x_max_bar, right_edge)
+            y_min_bar = min(y_min_bar, lower_edge)
+            y_max_bar = max(y_max_bar, upper_edge)
+        end do
+
+        if (first_plot) then
+            x_min_data = x_min_bar
+            x_max_data = x_max_bar
+            y_min_data = y_min_bar
+            y_max_data = y_max_bar
+            first_plot = .false.
+        else
+            x_min_data = min(x_min_data, x_min_bar)
+            x_max_data = max(x_max_data, x_max_bar)
+            y_min_data = min(y_min_data, y_min_bar)
+            y_max_data = max(y_max_data, y_max_bar)
+        end if
+
+        has_valid_data = .true.
+    end subroutine process_bar_plot_ranges
+
     subroutine apply_single_point_margins(has_valid_data, x_min_data, x_max_data, &
                                          y_min_data, y_max_data)
         !! Apply margins for single point case and machine precision ranges (Issue #435)
@@ -939,6 +1009,10 @@ contains
             case (PLOT_TYPE_FILL)
                 call render_fill_between_plot(backend, plots(i), xscale, yscale, &
                                               symlog_threshold)
+
+            case (PLOT_TYPE_BAR)
+                call render_bar_plot(backend, plots(i), xscale, yscale, &
+                                     symlog_threshold)
 
             case (PLOT_TYPE_PIE)
                 call render_pie_plot(backend, plots(i), xscale, yscale, symlog_threshold)

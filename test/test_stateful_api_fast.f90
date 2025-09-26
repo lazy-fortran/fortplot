@@ -160,6 +160,8 @@ contains
     
     subroutine test_bar_api()
         real(8) :: x(5), height(5)
+        real(8) :: width_used, expected_left, expected_right
+        real(8) :: expected_low, expected_high
         type(figure_t), pointer :: fig
         integer :: previous_count
         
@@ -170,8 +172,21 @@ contains
         call bar(x, height)
         call check_result("bar basic call", .true.)
         fig => get_global_figure()
+        width_used = fig%plots(fig%plot_count)%bar_width
+        expected_left = minval(x) - 0.5d0 * width_used
+        expected_right = maxval(x) + 0.5d0 * width_used
+        expected_low = min(0.0d0, minval(height))
+        expected_high = max(0.0d0, maxval(height))
         call check_result("bar syncs state count after first call", &
                           fig%state%plot_count == fig%plot_count)
+        call check_result("bar updates x-range minimum", &
+                          fig%state%x_min <= expected_left + 1.0d-12)
+        call check_result("bar updates x-range maximum", &
+                          fig%state%x_max >= expected_right - 1.0d-12)
+        call check_result("bar updates y-range minimum", &
+                          fig%state%y_min <= expected_low + 1.0d-12)
+        call check_result("bar updates y-range maximum", &
+                          fig%state%y_max >= expected_high - 1.0d-12)
 
         call bar(x, height, width=0.5d0)
         call check_result("bar with width", .true.)
@@ -192,8 +207,10 @@ contains
 
     subroutine test_barh_api()
         real(8) :: y(5), width(5)
+        real(8) :: width_used, expected_bottom, expected_top
+        real(8) :: expected_left, expected_right
         type(figure_t), pointer :: fig
-        
+
         y = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0]
         width = [3.0d0, 7.0d0, 2.0d0, 5.0d0, 8.0d0]
 
@@ -201,8 +218,21 @@ contains
         call barh(y, width)
         call check_result("barh basic call", .true.)
         fig => get_global_figure()
+        width_used = fig%plots(fig%plot_count)%bar_width
+        expected_bottom = minval(y) - 0.5d0 * width_used
+        expected_top = maxval(y) + 0.5d0 * width_used
+        expected_left = min(0.0d0, minval(width))
+        expected_right = max(0.0d0, maxval(width))
         call check_result("barh syncs state count after first call", &
                           fig%state%plot_count == fig%plot_count)
+        call check_result("barh updates y-range minimum", &
+                          fig%state%y_min <= expected_bottom + 1.0d-12)
+        call check_result("barh updates y-range maximum", &
+                          fig%state%y_max >= expected_top - 1.0d-12)
+        call check_result("barh updates x-range minimum", &
+                          fig%state%x_min <= expected_left + 1.0d-12)
+        call check_result("barh updates x-range maximum", &
+                          fig%state%x_max >= expected_right - 1.0d-12)
 
         call barh(y, width, height=0.5d0)
         call check_result("barh with height", .true.)

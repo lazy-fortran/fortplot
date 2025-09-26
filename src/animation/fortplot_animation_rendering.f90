@@ -174,12 +174,54 @@ contains
     subroutine render_bar_plot(fig, plot_data)
         type(figure_t), intent(inout) :: fig
         type(plot_data_t), intent(in) :: plot_data
-        
-        ! Simplified bar plot rendering for animation - draw as vertical lines
-        if (.not. is_valid_line_data(plot_data)) return
-        
+        integer :: i, j, n
+        real(wp) :: effective_width, half_width
+        real(wp) :: x_data(4), y_data(4)
+        real(wp) :: x_screen(4), y_screen(4)
+
+        if (.not. allocated(plot_data%bar_x)) return
+        if (.not. allocated(plot_data%bar_heights)) return
+
+        n = min(size(plot_data%bar_x), size(plot_data%bar_heights))
+        if (n <= 0) return
+
+        effective_width = plot_data%bar_width
+        if (effective_width <= 0.0_wp) effective_width = 0.8_wp
+        half_width = 0.5_wp * abs(effective_width)
+
         call set_plot_color(fig, plot_data)
-        call draw_vertical_bars(fig, plot_data)
+
+        do i = 1, n
+            if (plot_data%bar_horizontal) then
+                x_data = [min(0.0_wp, plot_data%bar_heights(i)), &
+                          max(0.0_wp, plot_data%bar_heights(i)), &
+                          max(0.0_wp, plot_data%bar_heights(i)), &
+                          min(0.0_wp, plot_data%bar_heights(i))]
+                y_data = [plot_data%bar_x(i) - half_width, &
+                          plot_data%bar_x(i) - half_width, &
+                          plot_data%bar_x(i) + half_width, &
+                          plot_data%bar_x(i) + half_width]
+            else
+                x_data = [plot_data%bar_x(i) - half_width, &
+                          plot_data%bar_x(i) + half_width, &
+                          plot_data%bar_x(i) + half_width, &
+                          plot_data%bar_x(i) - half_width]
+                y_data = [min(0.0_wp, plot_data%bar_heights(i)), &
+                          min(0.0_wp, plot_data%bar_heights(i)), &
+                          max(0.0_wp, plot_data%bar_heights(i)), &
+                          max(0.0_wp, plot_data%bar_heights(i))]
+            end if
+
+            do j = 1, 4
+                call data_to_screen_coords(fig, x_data(j), y_data(j), &
+                                           x_screen(j), y_screen(j))
+            end do
+
+            call fig%backend_line(x_screen(1), y_screen(1), x_screen(2), y_screen(2))
+            call fig%backend_line(x_screen(2), y_screen(2), x_screen(3), y_screen(3))
+            call fig%backend_line(x_screen(3), y_screen(3), x_screen(4), y_screen(4))
+            call fig%backend_line(x_screen(4), y_screen(4), x_screen(1), y_screen(1))
+        end do
     end subroutine render_bar_plot
 
     subroutine render_histogram_plot(fig, plot_data)
@@ -250,19 +292,6 @@ contains
         ! For animation, mesh grid is same as wireframe for simplicity
         call draw_2d_wireframe(fig, plot_data)
     end subroutine draw_mesh_grid
-
-    subroutine draw_vertical_bars(fig, plot_data)
-        type(figure_t), intent(inout) :: fig
-        type(plot_data_t), intent(in) :: plot_data
-        integer :: i
-        real(wp) :: x_screen, y_base, y_top
-        
-        do i = 1, size(plot_data%x)
-            call data_to_screen_coords(fig, plot_data%x(i), 0.0_wp, x_screen, y_base)
-            call data_to_screen_coords(fig, plot_data%x(i), plot_data%y(i), x_screen, y_top)
-            call fig%backend_line(x_screen, y_base, x_screen, y_top)
-        end do
-    end subroutine draw_vertical_bars
 
     subroutine draw_histogram_bars(fig, plot_data)
         type(figure_t), intent(inout) :: fig
