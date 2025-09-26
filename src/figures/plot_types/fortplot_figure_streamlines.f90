@@ -5,8 +5,10 @@ module fortplot_figure_streamlines
     !! Extracted from fortplot_figure_core to improve modularity
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
+    use fortplot_streamplot_arrow_utils, only: compute_streamplot_arrows, &
+        map_grid_index_to_coord
     implicit none
     
     private
@@ -43,7 +45,7 @@ contains
     end subroutine clear_streamline_data
 
     subroutine streamplot_figure(plots, state, plot_count, x, y, u, v, &
-                                density, color)
+        density, color)
         !! Add streamline plot to figure - direct streamline generation
         use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
         use fortplot_plot_data, only: PLOT_TYPE_LINE
@@ -60,6 +62,10 @@ contains
         integer :: n_trajectories, i, j, plot_idx
         integer, allocatable :: trajectory_lengths(:)
         real(wp), allocatable :: traj_x(:), traj_y(:)
+        type(arrow_data_t), allocatable :: computed_arrows(:)
+        logical :: had_arrows
+        real(wp), parameter :: default_arrow_size = 1.0_wp
+        character(len=2), parameter :: default_arrow_style = '->'
         
         ! Basic validation
         if (.not. streamplot_basic_validation(x, y, u, v)) then
@@ -85,7 +91,25 @@ contains
         end if
         
         ! Generate streamlines using matplotlib algorithm
-        call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, n_trajectories, trajectory_lengths)
+        call streamplot_matplotlib(x, y, u, v, plot_density, trajectories, &
+            n_trajectories, trajectory_lengths)
+
+        had_arrows = .false.
+        if (allocated(state%stream_arrows)) then
+            had_arrows = size(state%stream_arrows) > 0
+            deallocate(state%stream_arrows)
+        end if
+
+        call compute_streamplot_arrows(trajectories, n_trajectories, &
+            trajectory_lengths, x, y, default_arrow_size, &
+            default_arrow_style, computed_arrows)
+
+        if (allocated(computed_arrows)) then
+            call move_alloc(computed_arrows, state%stream_arrows)
+            state%rendered = .false.
+        else
+            if (had_arrows) state%rendered = .false.
+        end if
         
         ! Add each trajectory as a line plot
         do i = 1, n_trajectories
@@ -100,11 +124,8 @@ contains
             allocate(traj_x(trajectory_lengths(i)), traj_y(trajectory_lengths(i)))
             
             do j = 1, trajectory_lengths(i)
-                ! Convert grid coords to data coords
-                traj_x(j) = real(trajectories(i, j, 1), wp) * (x(size(x)) - x(1)) / &
-                           real(size(x) - 1, wp) + x(1)
-                traj_y(j) = real(trajectories(i, j, 2), wp) * (y(size(y)) - y(1)) / &
-                           real(size(y) - 1, wp) + y(1)
+                traj_x(j) = map_grid_index_to_coord(real(trajectories(i, j, 1), wp), x)
+                traj_y(j) = map_grid_index_to_coord(real(trajectories(i, j, 2), wp), y)
             end do
             
             ! Set plot type and data
