@@ -1,5 +1,5 @@
 program scatter_demo
-    !! Demonstrates 2D scatter plots with fortplotlib
+    !! Demonstrates 2D scatter plots with fortplot
     !! Shows the clean scatter API for 2D data
     
     use iso_fortran_env, only: wp => real64
