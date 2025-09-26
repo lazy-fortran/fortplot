@@ -14,7 +14,7 @@ module fortplot_figure_operations
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_PIE
+    use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
@@ -38,7 +38,7 @@ module fortplot_figure_operations
                                                     render_figure_axes_labels_only
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
-    use fortplot_scales, only: apply_scale_transform
+    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal
     implicit none
 
     private
@@ -403,66 +403,5 @@ contains
         
         state%rendered = .true.
     end subroutine figure_render
-
-    logical function contains_pie_plot(plots, plot_count) result(has_pie)
-        !! Detect whether any plot in the current figure is a pie chart
-        type(plot_data_t), intent(in) :: plots(:)
-        integer, intent(in) :: plot_count
-        integer :: i
-
-        has_pie = .false.
-        do i = 1, plot_count
-            if (plots(i)%plot_type == PLOT_TYPE_PIE) then
-                has_pie = .true.
-                exit
-            end if
-        end do
-    end function contains_pie_plot
-
-    subroutine enforce_pie_axis_equal(state)
-        !! Enforce equal data scaling when rendering pie charts
-        type(figure_state_t), intent(inout) :: state
-
-        real(wp) :: plot_width_px, plot_height_px
-        real(wp) :: data_range_x, data_range_y
-        real(wp) :: aspect_pixels, range_ratio
-        real(wp) :: center_x, center_y
-        real(wp) :: adjusted_range
-        real(wp), parameter :: EPS = 1.0e-12_wp
-
-        if (state%xlim_set .or. state%ylim_set) return
-
-        plot_width_px = real(state%width, wp) * &
-                        max(0.0_wp, 1.0_wp - state%margin_left - state%margin_right)
-        plot_height_px = real(state%height, wp) * &
-                         max(0.0_wp, 1.0_wp - state%margin_bottom - state%margin_top)
-        if (plot_width_px <= EPS .or. plot_height_px <= EPS) return
-
-        data_range_x = state%x_max - state%x_min
-        data_range_y = state%y_max - state%y_min
-        if (data_range_x <= EPS .or. data_range_y <= EPS) return
-
-        aspect_pixels = plot_width_px / plot_height_px
-        range_ratio = data_range_x / data_range_y
-
-        if (abs(range_ratio - aspect_pixels) <= 1.0e-9_wp) then
-            return
-        else if (range_ratio > aspect_pixels) then
-            adjusted_range = data_range_x / aspect_pixels
-            center_y = 0.5_wp * (state%y_max + state%y_min)
-            state%y_min = center_y - 0.5_wp * adjusted_range
-            state%y_max = center_y + 0.5_wp * adjusted_range
-        else
-            adjusted_range = data_range_y * aspect_pixels
-            center_x = 0.5_wp * (state%x_max + state%x_min)
-            state%x_min = center_x - 0.5_wp * adjusted_range
-            state%x_max = center_x + 0.5_wp * adjusted_range
-        end if
-
-        state%x_min_transformed = apply_scale_transform(state%x_min, state%xscale, state%symlog_threshold)
-        state%x_max_transformed = apply_scale_transform(state%x_max, state%xscale, state%symlog_threshold)
-        state%y_min_transformed = apply_scale_transform(state%y_min, state%yscale, state%symlog_threshold)
-        state%y_max_transformed = apply_scale_transform(state%y_max, state%yscale, state%symlog_threshold)
-    end subroutine enforce_pie_axis_equal
 
 end module fortplot_figure_operations
