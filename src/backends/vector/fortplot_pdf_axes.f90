@@ -536,7 +536,8 @@ contains
         ! For PDF, we need to handle Unicode superscripts properly
         ! The mathtext system will render them as superscripts
         call process_latex_in_text(text, processed, plen)
-        ! Mirror raster backend behavior: if '^'/'_' present but no $...$, wrap to enable mathtext
+        ! Mirror raster backend behavior: pass trimmed text through as-is
+        ! Mathtext engages only when callers supply explicit $...$ delimiters
         call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
 
         ! Route through mathtext renderer only when math segments are present
