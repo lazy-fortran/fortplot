@@ -280,6 +280,7 @@ contains
         real(wp) :: arrow_length, arrow_width, norm_dx, norm_dy
         real(wp) :: perp_x, perp_y  ! Perpendicular vector for arrow width
         real(wp) :: x1, y1, x2, y2, x3, y3  ! Triangle vertices
+        real(wp) :: shaft_base_x, shaft_base_y
         real(wp) :: magnitude
         integer(1) :: r, g, b
         real(wp) :: px, py, ddx, ddy
@@ -316,13 +317,21 @@ contains
         ! Base vertices of arrow head
         x2 = px - arrow_length * norm_dx + arrow_width * perp_x
         y2 = py - arrow_length * norm_dy + arrow_width * perp_y
-        
+
         x3 = px - arrow_length * norm_dx - arrow_width * perp_x
         y3 = py - arrow_length * norm_dy - arrow_width * perp_y
-        
+
+        shaft_base_x = px - arrow_length * norm_dx
+        shaft_base_y = py - arrow_length * norm_dy
+
         ! Get current color for filling
         call this%raster%get_color_bytes(r, g, b)
-        
+
+        call draw_line_distance_aa(this%raster%image_data, this%width, this%height, &
+                                   shaft_base_x, shaft_base_y, px, py, &
+                                   real(r, wp) / 255.0_wp, real(g, wp) / 255.0_wp, &
+                                   real(b, wp) / 255.0_wp, 1.0_wp)
+
         ! Draw filled triangle arrow head
         call fill_triangle(this%raster%image_data, this%width, this%height, &
                           x1, y1, x2, y2, x3, y3, r, g, b)

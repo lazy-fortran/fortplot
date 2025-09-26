@@ -36,7 +36,6 @@ module fortplot_figure_core
         
         type(plot_data_t), allocatable :: plots(:)
         type(plot_data_t), allocatable :: streamlines(:)
-        type(arrow_data_t), allocatable :: arrow_data(:)
         type(text_annotation_t), allocatable :: annotations(:)
         integer :: annotation_count = 0
         integer :: max_annotations = 1000
@@ -110,6 +109,7 @@ module fortplot_figure_core
         procedure :: backend_color
         procedure :: backend_line
         procedure :: backend_arrow
+        procedure :: clear_backend_arrows
         procedure :: backend_associated
         procedure :: get_x_min
         procedure :: get_x_max
@@ -508,6 +508,19 @@ contains
         character(len=*), intent(in) :: style
         call core_backend_arrow(self%state, x, y, dx, dy, size, style)
     end subroutine backend_arrow
+
+    subroutine clear_backend_arrows(self)
+        class(figure_t), intent(inout) :: self
+        logical :: had_arrows
+
+        had_arrows = .false.
+        if (allocated(self%state%stream_arrows)) then
+            had_arrows = size(self%state%stream_arrows) > 0
+            deallocate(self%state%stream_arrows)
+        end if
+
+        if (had_arrows) self%state%rendered = .false.
+    end subroutine clear_backend_arrows
     function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self
         real(wp) :: x_min

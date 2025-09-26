@@ -8,7 +8,7 @@ module fortplot_figure_initialization
     use fortplot_context
     use fortplot_utils, only: initialize_backend
     use fortplot_legend, only: legend_t
-    use fortplot_plot_data, only: plot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     implicit none
     
     private
@@ -93,6 +93,9 @@ module fortplot_figure_initialization
         character(len=1) :: grid_axis = 'b'
         real(wp) :: grid_alpha = 0.3_wp
         character(len=10) :: grid_linestyle = '-'
+
+        ! Streamplot arrow storage (rendered after plots)
+        type(arrow_data_t), allocatable :: stream_arrows(:)
     end type figure_state_t
     
 contains
@@ -238,6 +241,8 @@ contains
         if (allocated(state%twiny_xlabel)) deallocate(state%twiny_xlabel)
         
         state%has_error = .false.
+
+        if (allocated(state%stream_arrows)) deallocate(state%stream_arrows)
     end subroutine reset_figure_state
     
     subroutine setup_figure_backend(state, backend_name)

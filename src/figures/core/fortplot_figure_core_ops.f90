@@ -15,7 +15,7 @@ module fortplot_figure_core_ranges
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization, only: figure_state_t
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges
     use fortplot_figure_boxplot, only: update_boxplot_ranges
     implicit none
@@ -344,7 +344,7 @@ module fortplot_figure_core_accessors
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_annotations, only: text_annotation_t
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_properties_new
     use fortplot_figure_management
@@ -438,11 +438,42 @@ contains
         call figure_backend_line(state, x1, y1, x2, y2)
     end subroutine core_backend_line
 
-    subroutine core_backend_arrow(state, x, y, dx, dy, size, style)
+    subroutine core_backend_arrow(state, x, y, dx, dy, arrow_size, style)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x, y, dx, dy, size
+        real(wp), intent(in) :: x, y, dx, dy, arrow_size
         character(len=*), intent(in) :: style
-        call figure_backend_arrow(state, x, y, dx, dy, size, style)
+        integer :: new_index
+        type(arrow_data_t), allocatable :: tmp(:)
+        character(len=10) :: style_local
+
+        style_local = '->'
+        if (len_trim(style) > 0) then
+            select case (trim(style))
+            case ('->', '-', '<-', '<->')
+                style_local = trim(style)
+            case default
+                style_local = '->'
+            end select
+        end if
+
+        if (.not. allocated(state%stream_arrows)) then
+            allocate(state%stream_arrows(1))
+            new_index = 1
+        else
+            new_index = size(state%stream_arrows) + 1
+            allocate(tmp(new_index))
+            if (new_index > 1) tmp(1:new_index - 1) = state%stream_arrows
+            call move_alloc(tmp, state%stream_arrows)
+        end if
+
+        state%stream_arrows(new_index)%x = x
+        state%stream_arrows(new_index)%y = y
+        state%stream_arrows(new_index)%dx = dx
+        state%stream_arrows(new_index)%dy = dy
+        state%stream_arrows(new_index)%size = max(0.0_wp, arrow_size)
+        state%stream_arrows(new_index)%style = style_local
+
+        state%rendered = .false.
     end subroutine core_backend_arrow
 
     ! Animation support - delegate to animation module

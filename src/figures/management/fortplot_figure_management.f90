@@ -109,6 +109,9 @@ contains
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
+        if (allocated(state%stream_arrows)) then
+            deallocate(state%stream_arrows)
+        end if
         ! Clean up backward compatibility members via assignment
         title_target = ''
         xlabel_target = ''
@@ -211,7 +214,10 @@ contains
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
-        
+        if (allocated(state%stream_arrows)) then
+            deallocate(state%stream_arrows)
+        end if
+
         ! Clear annotation count
         annotation_count = 0
         

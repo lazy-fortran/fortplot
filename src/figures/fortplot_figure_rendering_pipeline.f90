@@ -7,7 +7,7 @@ module fortplot_figure_rendering_pipeline
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_figure_data_ranges, only: calculate_figure_data_ranges
-    use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, &
+    use fortplot_plot_data, only: plot_data_t, arrow_data_t, PLOT_TYPE_LINE, &
                                   PLOT_TYPE_CONTOUR, PLOT_TYPE_PCOLORMESH, &
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
@@ -28,6 +28,7 @@ module fortplot_figure_rendering_pipeline
     private
     public :: calculate_figure_data_ranges, setup_coordinate_system
     public :: render_figure_background, render_figure_axes, render_all_plots
+    public :: render_streamplot_arrows
     public :: render_figure_axes_labels_only, render_title_only
     
 contains
@@ -665,5 +666,19 @@ contains
             call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, primary_y_max)
         end if
     end subroutine render_all_plots
+
+    subroutine render_streamplot_arrows(backend, arrows)
+        !! Render queued streamplot arrows after plot lines are drawn
+        class(plot_context), intent(inout) :: backend
+        type(arrow_data_t), intent(in) :: arrows(:)
+        integer :: i
+
+        if (size(arrows) <= 0) return
+
+        do i = 1, size(arrows)
+            call backend%draw_arrow(arrows(i)%x, arrows(i)%y, arrows(i)%dx, arrows(i)%dy, &
+                                    arrows(i)%size, arrows(i)%style)
+        end do
+    end subroutine render_streamplot_arrows
 
 end module fortplot_figure_rendering_pipeline
