@@ -28,7 +28,7 @@ module fortplot_figure_rendering_pipeline
     private
     public :: calculate_figure_data_ranges, setup_coordinate_system
     public :: render_figure_background, render_figure_axes, render_all_plots
-    public :: render_figure_axes_labels_only
+    public :: render_figure_axes_labels_only, render_title_only
     
 contains
     
@@ -240,6 +240,24 @@ contains
             end if
         end select
     end subroutine render_figure_axes_labels_only
+
+    subroutine render_title_only(backend, title, x_min, x_max, y_min, y_max)
+        !! Render only the figure title without drawing axes
+        class(plot_context), intent(inout) :: backend
+        character(len=:), allocatable, intent(in) :: title
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        real(wp) :: y_span, y_pos, x_pos
+
+        if (.not. allocated(title)) return
+        if (len_trim(title) == 0) return
+
+        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
+
+        y_span = max(1.0e-6_wp, y_max - y_min)
+        x_pos = 0.5_wp * (x_min + x_max)
+        y_pos = y_max + 0.08_wp * y_span
+        call backend%text(x_pos, y_pos, title)
+    end subroutine render_title_only
 
     subroutine detect_3d_extent(plots, plot_count, has_3d, zmin, zmax)
         !! Detect if any plot is 3D and compute z-range
