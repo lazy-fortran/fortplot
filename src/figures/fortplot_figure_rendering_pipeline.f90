@@ -443,7 +443,8 @@ contains
         real(wp), intent(inout) :: y_min_data, y_max_data
 
         integer :: n, i
-        real(wp) :: half_width
+        real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
+        real(wp) :: half_width, effective_width
         real(wp) :: x_min_bar, x_max_bar
         real(wp) :: y_min_bar, y_max_bar
         real(wp) :: left_edge, right_edge
@@ -455,7 +456,9 @@ contains
         n = min(size(plot%bar_x), size(plot%bar_heights))
         if (n <= 0) return
 
-        half_width = 0.5_wp * abs(plot%bar_width)
+        effective_width = abs(plot%bar_width)
+        if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
+        half_width = 0.5_wp * effective_width
 
         x_min_bar = huge(0.0_wp)
         x_max_bar = -huge(0.0_wp)

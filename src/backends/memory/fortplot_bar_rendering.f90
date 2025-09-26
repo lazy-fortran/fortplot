@@ -23,6 +23,7 @@ contains
         real(wp), intent(in) :: symlog_threshold
 
         integer :: i, j, n
+        real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
         real(wp) :: half_width
         real(wp) :: x_data(4), y_data(4)
         real(wp) :: x_screen(4), y_screen(4)
@@ -34,9 +35,9 @@ contains
         n = min(size(plot_data%bar_x), size(plot_data%bar_heights))
         if (n <= 0) return
 
-        effective_width = plot_data%bar_width
-        if (effective_width <= 0.0_wp) effective_width = 0.8_wp
-        half_width = 0.5_wp * abs(effective_width)
+        effective_width = abs(plot_data%bar_width)
+        if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
+        half_width = 0.5_wp * effective_width
 
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
 

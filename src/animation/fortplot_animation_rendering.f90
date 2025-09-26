@@ -175,6 +175,7 @@ contains
         type(figure_t), intent(inout) :: fig
         type(plot_data_t), intent(in) :: plot_data
         integer :: i, j, n
+        real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
         real(wp) :: effective_width, half_width
         real(wp) :: x_data(4), y_data(4)
         real(wp) :: x_screen(4), y_screen(4)
@@ -185,9 +186,9 @@ contains
         n = min(size(plot_data%bar_x), size(plot_data%bar_heights))
         if (n <= 0) return
 
-        effective_width = plot_data%bar_width
-        if (effective_width <= 0.0_wp) effective_width = 0.8_wp
-        half_width = 0.5_wp * abs(effective_width)
+        effective_width = abs(plot_data%bar_width)
+        if (effective_width <= 0.0_wp) effective_width = DEFAULT_BAR_WIDTH
+        half_width = 0.5_wp * effective_width
 
         call set_plot_color(fig, plot_data)
 
