@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Demonstrates 2D scatter plots with matplotlib
-Equivalent to fortplotlib's scatter_demo.f90
+Equivalent to fortplot's scatter_demo.f90
 
-This shows the matplotlib approach for comparison with fortplotlib's cleaner API.
+This shows the matplotlib approach for comparison with fortplot's cleaner API.
 """
 
 from pathlib import Path

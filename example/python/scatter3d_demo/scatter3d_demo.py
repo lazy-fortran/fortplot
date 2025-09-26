@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Demonstrates 3D scatter plots with matplotlib
-Equivalent to fortplotlib's scatter3d_demo.f90
+Equivalent to fortplot's scatter3d_demo.f90
 
-This shows the matplotlib approach for comparison with fortplotlib's cleaner API.
+This shows the matplotlib approach for comparison with fortplot's cleaner API.
 """
 
 from pathlib import Path
@@ -23,7 +23,7 @@ _OUTDIR = _default_outdir()
 def out(name: str) -> str:
     return str(_OUTDIR / name)
 
-# Generate the same data as fortplotlib example
+# Generate the same data as the fortplot example
 n = 100
 theta = 2.0 * np.pi * np.arange(n) / (n - 1)
 phi = np.pi * (np.arange(n) / (n - 1) - 0.5)
