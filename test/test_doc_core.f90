@@ -8,12 +8,20 @@ program test_doc_core
     character(len=PATH_MAX_LEN) :: url
 
     ! title_case
-    call assert_eq('title_case basic_plots', title_case('basic_plots'), 'Basic Plots')
-    call assert_eq('title_case single', title_case('animation'), 'Animation')
+    call assert_eq('title_case basic_plots', &
+        title_case('basic_plots'), 'Basic Plots')
+    call assert_eq('title_case single', &
+        title_case('animation'), 'Animation')
+    call assert_eq('title_case hyphen', &
+        title_case('multi-axis_plot'), 'Multi Axis Plot')
+    call assert_eq('title_case digits', &
+        title_case('3d_rotation'), '3D Rotation')
 
     ! get_output_title
-    call assert_eq('get_output_title png', get_output_title('simple_plot.png'), 'Simple Plot')
-    call assert_eq('get_output_title noext', get_output_title('multi_line'), 'Multi Line')
+    call assert_eq('get_output_title png', &
+        get_output_title('simple_plot.png'), 'Simple Plot')
+    call assert_eq('get_output_title noext', &
+        get_output_title('multi_line'), 'Multi Line')
 
     ! build_python_path
     call build_python_path('basic_plots', got)
@@ -22,7 +30,8 @@ program test_doc_core
 
     ! extension helpers
     call assert_eq('get_file_extension', get_file_extension('file.mp4'), 'mp4')
-    call assert_eq('replace_extension', replace_extension('image.png','pdf'), 'image.pdf')
+    call assert_eq('replace_extension', &
+        replace_extension('image.png','pdf'), 'image.pdf')
 
     ! build_fortran_url suffix check
     call build_fortran_url('marker_demo', url)
@@ -46,4 +55,3 @@ contains
     end subroutine assert_eq
 
 end program test_doc_core
-
