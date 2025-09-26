@@ -7,10 +7,8 @@ module fortplot_streamplot_core
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_constants, only: EPSILON_COMPARE
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: figure_state_t
     use fortplot_plot_data, only: arrow_data_t
     use fortplot_streamplot_matplotlib
-    use fortplot_logging, only: log_warning
 
     implicit none
 
@@ -143,8 +141,8 @@ contains
         integer :: traj_idx, n_points, target_index, arrow_count
         real(wp), allocatable :: traj_x(:), traj_y(:)
         real(wp), allocatable :: arc_lengths(:)
-        real(wp) :: total_length, half_length, arrow_tail_x, arrow_tail_y
-        real(wp) :: arrow_head_x, arrow_head_y, dx, dy, direction_norm
+        real(wp) :: total_length, half_length, segment_start_length, segment_length
+        real(wp) :: position_t, arrow_x, arrow_y, segment_dx, segment_dy, direction_norm
         type(arrow_data_t), allocatable :: arrow_buffer(:), trimmed(:)
 
         arrow_count = 0
@@ -171,21 +169,32 @@ contains
             target_index = locate_half_length(arc_lengths, half_length)
             if (target_index < 1 .or. target_index >= n_points) cycle
 
-            arrow_tail_x = traj_x(target_index)
-            arrow_tail_y = traj_y(target_index)
-            arrow_head_x = 0.5_wp * (arrow_tail_x + traj_x(target_index + 1))
-            arrow_head_y = 0.5_wp * (arrow_tail_y + traj_y(target_index + 1))
+            if (target_index == 1) then
+                segment_start_length = 0.0_wp
+            else
+                segment_start_length = arc_lengths(target_index - 1)
+            end if
 
-            dx = arrow_head_x - arrow_tail_x
-            dy = arrow_head_y - arrow_tail_y
-            direction_norm = sqrt(dx*dx + dy*dy)
+            segment_length = arc_lengths(target_index) - segment_start_length
+            if (segment_length <= EPSILON_COMPARE) cycle
+
+            position_t = (half_length - segment_start_length) / segment_length
+            position_t = max(0.0_wp, min(1.0_wp, position_t))
+
+            segment_dx = traj_x(target_index + 1) - traj_x(target_index)
+            segment_dy = traj_y(target_index + 1) - traj_y(target_index)
+
+            direction_norm = sqrt(segment_dx*segment_dx + segment_dy*segment_dy)
             if (direction_norm <= EPSILON_COMPARE) cycle
 
+            arrow_x = traj_x(target_index) + position_t * segment_dx
+            arrow_y = traj_y(target_index) + position_t * segment_dy
+
             arrow_count = arrow_count + 1
-            arrow_buffer(arrow_count)%x = arrow_tail_x
-            arrow_buffer(arrow_count)%y = arrow_tail_y
-            arrow_buffer(arrow_count)%dx = dx / direction_norm
-            arrow_buffer(arrow_count)%dy = dy / direction_norm
+            arrow_buffer(arrow_count)%x = arrow_x
+            arrow_buffer(arrow_count)%y = arrow_y
+            arrow_buffer(arrow_count)%dx = segment_dx / direction_norm
+            arrow_buffer(arrow_count)%dy = segment_dy / direction_norm
             arrow_buffer(arrow_count)%size = arrow_size
             arrow_buffer(arrow_count)%style = arrow_style
         end do
