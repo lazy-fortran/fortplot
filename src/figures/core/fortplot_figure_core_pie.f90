@@ -139,6 +139,8 @@ contains
         real(wp) :: percent
         logical :: ok, plus_flag, space_flag, left_flag, zero_flag
         character(len=:), allocatable :: chunk
+        character(len=:), allocatable :: trimmed_fmt
+        integer :: auto_precision
 
         text = ''
         if (total_value <= 0.0_wp) return
@@ -146,6 +148,20 @@ contains
 
         fmt_len = len(fmt)
         percent = 100.0_wp * value / max(total_value, tiny(1.0_wp))
+
+        trimmed_fmt = trim(fmt)
+        if (trimmed_fmt == 'auto' .or. trimmed_fmt == 'Auto' .or. &
+            trimmed_fmt == 'AUTO') then
+            if (abs(percent - nint(percent)) < 0.05_wp) then
+                auto_precision = 0
+            else
+                auto_precision = 1
+            end if
+            call build_autopct_chunk(percent, 0, auto_precision, .false., .false., &
+                                     .false., .false., chunk)
+            text = chunk // '%'
+            return
+        end if
 
         idx = 1
         do while (idx <= fmt_len)
@@ -307,6 +323,17 @@ contains
         write(buffer, fmt_spec) percent
         base = trim(adjustl(buffer))
         if (len(base) == 0) base = '0'
+        if (precision == 0) then
+            if (len(base) > 0) then
+                if (base(len(base):len(base)) == '.') then
+                    if (len(base) > 1) then
+                        base = base(1:len(base) - 1)
+                    else
+                        base = '0'
+                    end if
+                end if
+            end if
+        end if
 
         negative = (base(1:1) == '-')
         if (.not. negative) then

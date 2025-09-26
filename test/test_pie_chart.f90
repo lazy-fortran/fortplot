@@ -7,6 +7,7 @@ program test_pie_chart
     implicit none
 
     call run_pie_data_checks()
+    call run_auto_autopct_checks()
 
 contains
 
@@ -78,6 +79,39 @@ contains
                          'label annotations placed')
 
     end subroutine run_pie_data_checks
+
+    subroutine run_auto_autopct_checks()
+        type(figure_t) :: fig
+        real(wp) :: values(3)
+        integer :: i
+        logical :: has_integer_label, has_fractional_label
+
+        call fig%initialize()
+
+        values = [3.0_wp, 2.0_wp, 1.0_wp]
+        call fig%add_pie(values, autopct='auto')
+
+        call assert_true(fig%annotation_count == 3, &
+                         'auto autopct creates one label per slice')
+
+        has_integer_label = .false.
+        has_fractional_label = .false.
+        do i = 1, fig%annotation_count
+            call assert_true(trim(fig%annotations(i)%text) /= 'auto', &
+                             'auto autopct must render formatted percentages')
+            select case (trim(fig%annotations(i)%text))
+            case ('50%')
+                has_integer_label = .true.
+            case ('33.3%')
+                has_fractional_label = .true.
+            case ('16.7%')
+                has_fractional_label = .true.
+            end select
+        end do
+
+        call assert_true(has_integer_label, 'auto autopct formats integer percentages')
+        call assert_true(has_fractional_label, 'auto autopct keeps one decimal for fractions')
+    end subroutine run_auto_autopct_checks
 
     subroutine assert_true(condition, description)
         logical, intent(in) :: condition
