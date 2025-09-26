@@ -36,10 +36,6 @@ int fortplot_list_directory(const char *path, char *buffer, size_t buffer_len) {
         const char *name = data.cFileName;
         size_t name_len = strlen(name);
 
-        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
-            continue;
-        }
-
         if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
             continue;
         }
@@ -76,24 +72,11 @@ int fortplot_list_directory(const char *path, char *buffer, size_t buffer_len) {
 #define PATH_MAX 4096
 #endif
 
-static int is_regular_file(const char *dir, const char *name) {
-    char full_path[PATH_MAX];
-    struct stat st;
-
-    if (snprintf(full_path, sizeof(full_path), "%s/%s", dir, name) >= (int)sizeof(full_path)) {
-        return 0;
-    }
-
-    if (stat(full_path, &st) != 0) {
-        return 0;
-    }
-
-    return S_ISREG(st.st_mode);
-}
-
 int fortplot_list_directory(const char *path, char *buffer, size_t buffer_len) {
     DIR *dir;
     struct dirent *entry;
+    char full_path[PATH_MAX];
+    struct stat st;
     size_t used = 0;
 
     if (buffer_len == 0) {
@@ -108,35 +91,19 @@ int fortplot_list_directory(const char *path, char *buffer, size_t buffer_len) {
     while ((entry = readdir(dir)) != NULL) {
         const char *name = entry->d_name;
         size_t name_len = strlen(name);
-        int is_dir = 0;
-
         if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0) {
             continue;
         }
 
-#ifdef DT_DIR
-        if (entry->d_type == DT_DIR) {
-            is_dir = 1;
-        }
-#endif
-
-#ifdef DT_REG
-        if (entry->d_type == DT_REG) {
-            is_dir = 0;
-        }
-#endif
-
-#ifdef DT_UNKNOWN
-        if (entry->d_type == DT_UNKNOWN) {
-            is_dir = !is_regular_file(path, name);
-        }
-#endif
-
-        if (is_dir) {
+        if (snprintf(full_path, sizeof(full_path), "%s/%s", path, name) >= (int)sizeof(full_path)) {
             continue;
         }
 
-        if (!is_regular_file(path, name)) {
+        if (stat(full_path, &st) != 0) {
+            continue;
+        }
+
+        if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode)) {
             continue;
         }
 
@@ -160,4 +127,3 @@ int fortplot_list_directory(const char *path, char *buffer, size_t buffer_len) {
 }
 
 #endif
-

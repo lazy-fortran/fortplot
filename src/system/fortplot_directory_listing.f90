@@ -24,7 +24,7 @@ module fortplot_directory_listing
 contains
 
     subroutine list_directory_entries(path, entries, count, status)
-        !! List files in a directory without descending into subdirectories
+        !! List files and direct child directories without recursion
         character(len=*), intent(in) :: path
         character(len=*), intent(out) :: entries(:)
         integer, intent(out) :: count
