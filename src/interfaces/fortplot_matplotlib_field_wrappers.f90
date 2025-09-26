@@ -128,6 +128,7 @@ contains
         integer :: nx, ny
         real(wp) :: asize
         character(len=16) :: astyle
+        integer :: arrow_total
 
         call ensure_fig_init()
 
@@ -171,8 +172,12 @@ contains
             else if (present(arrow_scale)) then
                 asize = arrow_scale
             end if
-            astyle = 'filled'
-            if (present(arrowstyle)) astyle = arrowstyle
+            astyle = '->'
+            if (present(arrowstyle)) then
+                astyle = trim(adjustl(arrowstyle))
+            end if
+            if (astyle == 'filled') astyle = '->'
+            call fig%clear_backend_arrows()
             do i = 1, n_traj
                 if (traj_lengths(i) < 5) cycle
                 ! Place ~3 arrows per trajectory, similar to core

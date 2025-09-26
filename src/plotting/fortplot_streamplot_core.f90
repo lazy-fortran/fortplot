@@ -147,8 +147,8 @@ contains
 
         arrow_count = 0
 
-        if (allocated(fig%arrow_data)) then
-            deallocate(fig%arrow_data)
+        if (allocated(fig%state%stream_arrows)) then
+            deallocate(fig%state%stream_arrows)
         end if
 
         if (n_trajectories <= 0) return
@@ -202,9 +202,9 @@ contains
         if (arrow_count > 0) then
             allocate(trimmed(arrow_count))
             trimmed = arrow_buffer(1:arrow_count)
-            call move_alloc(trimmed, fig%arrow_data)
+            call move_alloc(trimmed, fig%state%stream_arrows)
         else
-            if (allocated(fig%arrow_data)) deallocate(fig%arrow_data)
+            if (allocated(fig%state%stream_arrows)) deallocate(fig%state%stream_arrows)
         end if
 
         if (allocated(arrow_buffer)) deallocate(arrow_buffer)

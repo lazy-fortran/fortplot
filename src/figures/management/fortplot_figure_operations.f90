@@ -35,6 +35,7 @@ module fortplot_figure_operations
                                                     render_figure_background, &
                                                     render_figure_axes, &
                                                     render_all_plots, &
+                                                    render_streamplot_arrows, &
                                                     render_figure_axes_labels_only, &
                                                     render_title_only
     use fortplot_figure_grid, only: render_grid_lines
@@ -478,6 +479,12 @@ contains
                                  state%width, state%height, &
                                  state%margin_left, state%margin_right, &
                                  state%margin_bottom, state%margin_top, state=state)
+        end if
+
+        if (allocated(state%stream_arrows)) then
+            if (size(state%stream_arrows) > 0) then
+                call render_streamplot_arrows(state%backend, state%stream_arrows)
+            end if
         end if
         
         ! Render axis labels AFTER plots (for raster backends only to prevent overlap)
