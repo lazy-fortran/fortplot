@@ -48,25 +48,47 @@ contains
 
     subroutine list_examples(names)
         character(len=:), allocatable, intent(out) :: names(:)
-        integer, parameter :: max_entries = 512
         integer, parameter :: entry_len = 256
-        character(len=entry_len) :: entries(max_entries)
-        character(len=entry_len) :: filtered(max_entries)
+        integer, parameter :: initial_capacity = 64
+        integer, parameter :: max_capacity = 4096
+        character(len=entry_len), allocatable :: entries(:)
+        character(len=entry_len), allocatable :: filtered(:)
         character(len=entry_len) :: candidate
         character(len=512) :: full_path
+        integer :: capacity
         integer :: entry_count
         integer :: status
         integer :: valid_count
         integer :: max_len
         integer :: i
 
-        entries = ''
-        filtered = ''
-        call list_directory_entries(examples_root, entries, entry_count, status)
+        capacity = initial_capacity
+        call ensure_entry_capacity(entries, entry_len, capacity)
+        do
+            entries = ''
+            call list_directory_entries(examples_root, entries, entry_count, status)
+            if (status /= -6) exit
+            if (capacity >= max_capacity) then
+                call fatal('Too many example directories discovered (capacity=' &
+                    // to_string(capacity) // ')')
+                return
+            end if
+            capacity = min(max_capacity, capacity * 2)
+            call ensure_entry_capacity(entries, entry_len, capacity)
+        end do
+
         if (status /= 0) then
             call fatal('Unable to enumerate examples (status=' // &
                 to_string(status) // ')')
         end if
+
+        if (entry_count <= 0) then
+            allocate(character(len=1) :: names(0))
+            return
+        end if
+
+        allocate(character(len=entry_len) :: filtered(entry_count))
+        filtered = ''
 
         valid_count = 0
         do i = 1, entry_count
@@ -79,8 +101,9 @@ contains
             if (.not. path_is_directory(trim(full_path))) cycle
 
             valid_count = valid_count + 1
-            if (valid_count > max_entries) then
-                call fatal('Too many example directories discovered')
+            if (valid_count > size(filtered)) then
+                call fatal('Example filtering exceeded buffer capacity')
+                return
             end if
             filtered(valid_count) = trim(candidate)
         end do
@@ -144,6 +167,21 @@ contains
             path_is_directory = .false.
         end select
     end function path_is_directory
+
+    subroutine ensure_entry_capacity(buffer, string_len, new_capacity)
+        integer, intent(in) :: string_len
+        integer, intent(in) :: new_capacity
+        character(len=string_len), allocatable, intent(inout) :: buffer(:)
+        character(len=string_len), allocatable :: tmp(:)
+
+        if (new_capacity <= 0) then
+            allocate(character(len=string_len) :: tmp(1))
+        else
+            allocate(character(len=string_len) :: tmp(new_capacity))
+        end if
+        tmp = ''
+        call move_alloc(tmp, buffer)
+    end subroutine ensure_entry_capacity
 
     subroutine build_entry(entry, raw_name)
         type(example_entry_t), intent(out) :: entry
