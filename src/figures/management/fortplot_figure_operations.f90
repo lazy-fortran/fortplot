@@ -14,7 +14,7 @@ module fortplot_figure_operations
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
-    use fortplot_plot_data, only: plot_data_t
+    use fortplot_plot_data, only: plot_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_legend, only: legend_t
     use fortplot_figure_plots, only: figure_add_plot, figure_add_contour, &
@@ -54,6 +54,21 @@ module fortplot_figure_operations
 
 contains
 
+    subroutine set_axis_for_latest_plot(state, plots)
+        !! Assign the current active axis to the newest plot entry
+        type(figure_state_t), intent(in) :: state
+        type(plot_data_t), intent(inout) :: plots(:)
+        integer :: idx
+
+        if (state%plot_count <= 0) return
+        if (size(plots) == 0) return
+
+        idx = state%plot_count
+        if (idx > size(plots)) return
+
+        plots(idx)%axis = state%active_axis
+    end subroutine set_axis_for_latest_plot
+
     subroutine figure_add_plot_operation(plots, state, x, y, label, linestyle, color)
         !! Add a line plot to the figure
         type(plot_data_t), intent(inout) :: plots(:)
@@ -63,6 +78,7 @@ contains
         real(wp), intent(in), optional :: color(3)
         
         call figure_add_plot(plots, state, x, y, label, linestyle, color)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_plot_operation
 
     subroutine figure_add_contour_operation(plots, state, x_grid, y_grid, z_grid, levels, label)
@@ -74,6 +90,7 @@ contains
         character(len=*), intent(in), optional :: label
         
         call figure_add_contour(plots, state, x_grid, y_grid, z_grid, levels, label)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_contour_operation
 
     subroutine figure_add_contour_filled_operation(plots, state, x_grid, y_grid, z_grid, &
@@ -88,6 +105,7 @@ contains
 
         call figure_add_contour_filled(plots, state, x_grid, y_grid, z_grid, &
                                       levels, colormap, show_colorbar, label)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_contour_filled_operation
 
     subroutine figure_add_surface_operation(plots, state, x_grid, y_grid, z_grid, label, &
@@ -103,6 +121,7 @@ contains
 
         call figure_add_surface(plots, state, x_grid, y_grid, z_grid, label, colormap, &
                                 show_colorbar, alpha, edgecolor, linewidth)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_surface_operation
 
     subroutine figure_add_pcolormesh_operation(plots, state, x, y, c, colormap, &
@@ -118,6 +137,7 @@ contains
         
         call figure_add_pcolormesh(plots, state, x, y, c, colormap, &
                                   vmin, vmax, edgecolors, linewidths)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_pcolormesh_operation
 
     subroutine figure_add_fill_between_operation(plots, state, x, upper, lower, mask, &
@@ -133,6 +153,7 @@ contains
         real(wp), intent(in), optional :: alpha
 
         call figure_add_fill_between(plots, state, x, upper, lower, mask, color_string, alpha)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_fill_between_operation
 
     subroutine figure_add_pie_operation(plots, state, values, labels, startangle, color_strings, explode, autopct)
@@ -147,6 +168,7 @@ contains
         character(len=*), intent(in), optional :: autopct
 
         call figure_add_pie(plots, state, values, labels, startangle, color_strings, explode, autopct)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_add_pie_operation
 
     subroutine figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
@@ -161,6 +183,7 @@ contains
         
         call streamplot_figure(plots, state, plot_count, x, y, u, v, &
                                density, color)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_streamplot_operation
 
     subroutine figure_hist_operation(plots, state, plot_count, data, bins, density, label, color)
@@ -175,11 +198,13 @@ contains
         real(wp), intent(in), optional :: color(3)
         
         call hist_figure(plots, state, plot_count, data, bins, density, label, color)
+        call set_axis_for_latest_plot(state, plots)
     end subroutine figure_hist_operation
 
-    subroutine figure_boxplot_operation(plots, plot_count, data, position, width, label, &
+    subroutine figure_boxplot_operation(state, plots, plot_count, data, position, width, label, &
                                        show_outliers, horizontal, color, max_plots)
         !! Create a box plot
+        type(figure_state_t), intent(in) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: data(:)
@@ -190,15 +215,19 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         integer, intent(in) :: max_plots
-        
+
         call add_boxplot(plots, plot_count, data, position, width, label, &
                          show_outliers, horizontal, color, max_plots)
+        if (plot_count > 0 .and. size(plots) >= plot_count) then
+            plots(plot_count)%axis = state%active_axis
+        end if
     end subroutine figure_boxplot_operation
 
-    subroutine figure_scatter_operation(plots, plot_count, x, y, s, c, marker, &
+    subroutine figure_scatter_operation(state, plots, plot_count, x, y, s, c, marker, &
                                        markersize, color, colormap, vmin, vmax, &
                                        label, show_colorbar, default_color)
         !! Add an efficient scatter plot using a single plot object
+        type(figure_state_t), intent(in) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
         real(wp), intent(in) :: x(:), y(:)
@@ -208,10 +237,13 @@ contains
         real(wp), intent(in), optional :: color(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in) :: default_color(3)
-        
+
         call add_scatter_plot(plots, plot_count, x, y, s, c, marker, markersize, &
                              color, colormap, vmin, vmax, label, show_colorbar, &
                              default_color)
+        if (plot_count > 0 .and. size(plots) >= plot_count) then
+            plots(plot_count)%axis = state%active_axis
+        end if
     end subroutine figure_scatter_operation
 
     subroutine figure_set_xlabel_operation(state, xlabel_target, label)
@@ -321,7 +353,13 @@ contains
         integer, intent(in) :: plot_count
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
-        
+        real(wp) :: x_min_dummy, x_max_dummy
+        real(wp) :: y_min_dummy, y_max_dummy
+        real(wp) :: twinx_y_min, twinx_y_max
+        real(wp) :: twinx_y_min_trans, twinx_y_max_trans
+        real(wp) :: twiny_x_min, twiny_x_max
+        real(wp) :: twiny_x_min_trans, twiny_x_max_trans
+
         ! Calculate final data ranges
         call calculate_figure_data_ranges(plots, plot_count, &
                                         state%xlim_set, state%ylim_set, &
@@ -332,7 +370,55 @@ contains
                                         state%y_min_transformed, &
                                         state%y_max_transformed, &
                                         state%xscale, state%yscale, &
-                                        state%symlog_threshold)
+                                        state%symlog_threshold, axis_filter=AXIS_PRIMARY)
+
+        if (state%has_twinx) then
+            x_min_dummy = state%x_min
+            x_max_dummy = state%x_max
+            twinx_y_min = state%twinx_y_min
+            twinx_y_max = state%twinx_y_max
+            call calculate_figure_data_ranges(plots, plot_count, &
+                                            xlim_set=.true., &
+                                            ylim_set=state%twinx_ylim_set, &
+                                            x_min=x_min_dummy, x_max=x_max_dummy, &
+                                            y_min=twinx_y_min, y_max=twinx_y_max, &
+                                            x_min_transformed=x_min_dummy, &
+                                            x_max_transformed=x_max_dummy, &
+                                            y_min_transformed=twinx_y_min_trans, &
+                                            y_max_transformed=twinx_y_max_trans, &
+                                            xscale=state%xscale, &
+                                            yscale=state%twinx_yscale, &
+                                            symlog_threshold=state%symlog_threshold, &
+                                            axis_filter=AXIS_TWINX)
+            state%twinx_y_min = twinx_y_min
+            state%twinx_y_max = twinx_y_max
+            state%twinx_y_min_transformed = twinx_y_min_trans
+            state%twinx_y_max_transformed = twinx_y_max_trans
+        end if
+
+        if (state%has_twiny) then
+            twiny_x_min = state%twiny_x_min
+            twiny_x_max = state%twiny_x_max
+            y_min_dummy = state%y_min
+            y_max_dummy = state%y_max
+            call calculate_figure_data_ranges(plots, plot_count, &
+                                            xlim_set=state%twiny_xlim_set, &
+                                            ylim_set=.true., &
+                                            x_min=twiny_x_min, x_max=twiny_x_max, &
+                                            y_min=y_min_dummy, y_max=y_max_dummy, &
+                                            x_min_transformed=twiny_x_min_trans, &
+                                            x_max_transformed=twiny_x_max_trans, &
+                                            y_min_transformed=y_min_dummy, &
+                                            y_max_transformed=y_max_dummy, &
+                                            xscale=state%twiny_xscale, &
+                                            yscale=state%yscale, &
+                                            symlog_threshold=state%symlog_threshold, &
+                                            axis_filter=AXIS_TWINY)
+            state%twiny_x_min = twiny_x_min
+            state%twiny_x_max = twiny_x_max
+            state%twiny_x_min_transformed = twiny_x_min_trans
+            state%twiny_x_max_transformed = twiny_x_max_trans
+        end if
 
         if (contains_pie_plot(plots, plot_count)) then
             call enforce_pie_axis_equal(state)
@@ -365,7 +451,12 @@ contains
         call render_figure_axes(state%backend, state%xscale, state%yscale, &
                                state%symlog_threshold, state%x_min, state%x_max, &
                                state%y_min, state%y_max, state%title, &
-                               state%xlabel, state%ylabel, plots, plot_count)
+                               state%xlabel, state%ylabel, plots, plot_count, &
+                               has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                               twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                               twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                               twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                               twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
         
         ! Render all plots (only if there are plots to render)
         if (plot_count > 0) then
@@ -375,14 +466,19 @@ contains
                                  state%xscale, state%yscale, state%symlog_threshold, &
                                  state%width, state%height, &
                                  state%margin_left, state%margin_right, &
-                                 state%margin_bottom, state%margin_top)
+                                 state%margin_bottom, state%margin_top, state=state)
         end if
         
         ! Render axis labels AFTER plots (for raster backends only to prevent overlap)
         call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
                                            state%symlog_threshold, state%x_min, state%x_max, &
                                            state%y_min, state%y_max, state%title, &
-                                           state%xlabel, state%ylabel, plots, plot_count)
+                                           state%xlabel, state%ylabel, plots, plot_count, &
+                                           has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                                           twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                                           twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                                           twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                                           twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
         
         ! Render legend if requested
         if (state%show_legend .and. state%legend_data%num_entries > 0) then

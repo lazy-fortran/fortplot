@@ -17,7 +17,7 @@ module fortplot_matplotlib
         add_contour, add_contour_filled, add_pcolormesh, add_surface, &
         xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata, &
+        set_line_width, set_ydata, use_axis, get_active_axis, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
     
@@ -42,7 +42,7 @@ module fortplot_matplotlib
     ! Axis and annotation functions
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
-    public :: set_line_width, set_ydata
+    public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: text, annotate
     
     ! Figure management functions
