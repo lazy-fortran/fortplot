@@ -27,7 +27,7 @@ contains
         labels = ['North', 'Zero ', 'East ', 'West ']
 
         call fig%add_pie(values, labels=labels, &
-                          autopct='Share %%=%.1f%%%% of total', explode=explode_vals)
+                          autopct='Share %.1f%% of total', explode=explode_vals)
 
         call assert_true(fig%plot_count == 1, 'pie adds a single plot')
         call assert_true(fig%plots(1)%plot_type == PLOT_TYPE_PIE, &
@@ -53,9 +53,9 @@ contains
             if (index(trim(fig%annotations(i)%text), '%') > 0) then
                 autopct_count = autopct_count + 1
                 select case (trim(fig%annotations(i)%text))
-                case ('Share %=50.0%% of total')
+                case ('Share 50.0% of total')
                     found_share_50 = .true.
-                case ('Share %=25.0%% of total')
+                case ('Share 25.0% of total')
                     found_share_25 = .true.
                 end select
             end if
