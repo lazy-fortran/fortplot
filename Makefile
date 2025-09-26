@@ -23,6 +23,20 @@ FPM_FLAGS_LIB = --flag -fPIC
 FPM_FLAGS_TEST =
 FPM_FLAGS_DEFAULT = $(FPM_FLAGS_LIB)
 
+CI_FPM_TEST_TARGETS := test_public_api
+CI_FPM_TEST_TARGETS += test_simple_validation
+CI_FPM_TEST_TARGETS += test_backend_switching
+CI_FPM_TEST_TARGETS += test_matplotlib_stubs
+CI_FPM_TEST_TARGETS += test_format_parser
+CI_FPM_TEST_TARGETS += test_figure_state_isolation
+CI_FPM_TEST_TARGETS += test_scaling
+CI_FPM_TEST_TARGETS += test_scatter_enhanced_core
+CI_FPM_TEST_TARGETS += test_histogram_functionality
+CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
+CI_FPM_TEST_TARGETS += test_pdf_flate_content
+CI_FPM_TEST_TARGETS += test_pdf_coordinate_mapping_985
+CI_FPM_TEST_TARGETS += test_quad_fill_edges
+
 .PHONY: all build example debug test clean help matplotlib example_python example_matplotlib example_python_dual doc create_build_dirs create_test_dirs validate-output test-docs verify-functionality verify-setup verify-with-evidence verify-size-compliance verify-complexity issue-branch issue-open-pr pr-merge pr-cleanup issue-loop issue-loop-dry test-python-bridge-example git-prune verify-warnings
 
 # Default target
@@ -63,16 +77,22 @@ test-ci:
 	@echo "Running CI-optimized test suite (essential tests only)$(if $(TIMEOUT_PREFIX), with timeout $(TEST_TIMEOUT),)..."
 	@# Guard: ensure no Python bytecode is tracked
 	@$(TIMEOUT_PREFIX) bash scripts/test_no_tracked_python_bytecode.sh || exit 1
-	@echo "Testing core functionality, axes, backend basics"
+	@# Guard: curated fpm tests must exist before running them
+	@FPM_FLAGS_TEST="$(FPM_FLAGS_TEST)" $(TIMEOUT_PREFIX) scripts/verify_ci_fpm_targets.sh $(CI_FPM_TEST_TARGETS) || exit 1
+	@echo "Testing core API and backend smoke coverage"
+	@# Core API and backend smoke coverage for CI confidence
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_public_api || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_simple_validation || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_backend_switching || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_matplotlib_stubs || exit 1
-	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_show_fallback_mechanisms || exit 1
+	@echo "Testing parsing, state isolation, and scaling regressions"
+	@# Parsing, state isolation, and scaling regression guards
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_format_parser || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_figure_state_isolation || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
-	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced || exit 1
+	@echo "Testing statistical plot coverage and scatter regressions"
+	@# Statistical plot coverage and scatter regression guard
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter_enhanced_core || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_histogram_functionality || exit 1
 	@# Regression: colormap interpolation must not be flat near min (pcolormesh negative mapping)
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_colormap_interpolation_regression || exit 1
