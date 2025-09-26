@@ -34,6 +34,7 @@ module fortplot_figure_core_io
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
+    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal
     implicit none
 
     private
@@ -213,6 +214,10 @@ contains
                                         state%y_max_transformed, &
                                         state%xscale, state%yscale, &
                                         state%symlog_threshold)
+
+        if (contains_pie_plot(plots, plot_count)) then
+            call enforce_pie_axis_equal(state)
+        end if
         
         call render_single_axes_impl(state, plots, plot_count, annotations, annotation_count)
         state%rendered = .true.
