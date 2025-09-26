@@ -109,6 +109,7 @@ module fortplot_plot_data
         real(wp), allocatable :: yerr_lower(:), yerr_upper(:)
         real(wp) :: capsize = 5.0_wp
         real(wp) :: elinewidth = 1.0_wp
+        real(wp) :: capthick = 1.0_wp
         logical :: has_xerr = .false., has_yerr = .false.
         logical :: asymmetric_xerr = .false., asymmetric_yerr = .false.
         ! Scatter plot data

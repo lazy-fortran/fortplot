@@ -16,12 +16,14 @@ module fortplot_errorbar_rendering
 
 contains
 
-    subroutine render_errorbar_plot(backend, plot_data, xscale, yscale, symlog_threshold)
+    subroutine render_errorbar_plot(backend, plot_data, xscale, yscale, symlog_threshold, &
+                                    default_line_width)
         !! Render error bars for a plot
         class(plot_context), intent(inout) :: backend
         type(plot_data_t), intent(in) :: plot_data
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in), optional :: default_line_width
 
         integer :: i, n
         real(wp) :: x_val, y_val
@@ -29,6 +31,7 @@ contains
         real(wp) :: y_low, y_high, x_low, x_high
         real(wp) :: y_low_t, y_high_t, x_low_t, x_high_t
         real(wp) :: cap_half
+        real(wp) :: base_line_width, cap_line_width, restore_width
 
         if (.not. allocated(plot_data%x) .or. .not. allocated(plot_data%y)) return
         if (size(plot_data%x) == 0 .or. size(plot_data%y) == 0) return
@@ -38,6 +41,18 @@ contains
 
         ! Set color from plot_data to match markers/lines
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
+
+        base_line_width = max(plot_data%elinewidth, 1.0e-6_wp)
+        cap_line_width = base_line_width
+        if (plot_data%capthick > 0.0_wp) cap_line_width = plot_data%capthick
+
+        if (present(default_line_width)) then
+            restore_width = max(default_line_width, 1.0e-6_wp)
+        else
+            restore_width = 1.0_wp
+        end if
+
+        call backend%set_line_width(base_line_width)
 
         ! Capsize: interpret in data (transformed) coordinates as a small fraction
         ! of the current view width for robustness across scales.
@@ -70,10 +85,16 @@ contains
                 y_high_t = apply_scale_transform(y_high, yscale, symlog_threshold)
                 call backend%line(x_scaled, y_low_t, x_scaled, y_high_t)
                 if (cap_half > 0.0_wp) then
+                    if (cap_line_width /= base_line_width) then
+                        call backend%set_line_width(cap_line_width)
+                    end if
                     call backend%line(x_scaled - cap_half, y_low_t,  &
                                        x_scaled + cap_half, y_low_t)
                     call backend%line(x_scaled - cap_half, y_high_t, &
                                        x_scaled + cap_half, y_high_t)
+                    if (cap_line_width /= base_line_width) then
+                        call backend%set_line_width(base_line_width)
+                    end if
                 end if
             end if
 
@@ -95,13 +116,21 @@ contains
                 x_high_t = apply_scale_transform(x_high, xscale, symlog_threshold)
                 call backend%line(x_low_t, y_scaled, x_high_t, y_scaled)
                 if (cap_half > 0.0_wp) then
+                    if (cap_line_width /= base_line_width) then
+                        call backend%set_line_width(cap_line_width)
+                    end if
                     call backend%line(x_low_t,  y_scaled - cap_half, &
                                        x_low_t,  y_scaled + cap_half)
                     call backend%line(x_high_t, y_scaled - cap_half, &
                                        x_high_t, y_scaled + cap_half)
+                    if (cap_line_width /= base_line_width) then
+                        call backend%set_line_width(base_line_width)
+                    end if
                 end if
             end if
         end do
+
+        call backend%set_line_width(restore_width)
     end subroutine render_errorbar_plot
 
 end module fortplot_errorbar_rendering

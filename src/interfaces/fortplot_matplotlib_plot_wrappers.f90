@@ -54,17 +54,20 @@ contains
         end if
     end subroutine plot
 
-    subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, color)
+    subroutine errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, marker, &
+                        color, elinewidth, capthick)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(wp), intent(in), optional :: capsize
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: elinewidth, capthick
 
         call ensure_fig_init()
         ! Route to the actual errorbar implementation so error bars are visible
         call errorbar_impl(fig, x, y, xerr=xerr, yerr=yerr, label=label, &
-                           capsize=capsize, marker=marker, color=color)
+                           capsize=capsize, marker=marker, color=color, &
+                           elinewidth=elinewidth, capthick=capthick)
     end subroutine errorbar
 
     subroutine bar(x, height, width, bottom, label, color, edgecolor, align)
@@ -239,16 +242,18 @@ contains
     end subroutine add_plot
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, &
-                               marker, color)
+                               marker, color, elinewidth, capthick)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in), optional :: xerr(:), yerr(:)
         character(len=*), intent(in), optional :: fmt, label, linestyle, marker
         real(wp), intent(in), optional :: capsize
         real(wp), intent(in), optional :: color(3)
+        real(wp), intent(in), optional :: elinewidth, capthick
 
         call ensure_fig_init()
         call errorbar_impl(fig, x, y, xerr=xerr, yerr=yerr, label=label, &
-                           capsize=capsize, marker=marker, color=color)
+                           capsize=capsize, marker=marker, color=color, &
+                           elinewidth=elinewidth, capthick=capthick)
     end subroutine add_errorbar
 
     subroutine add_3d_plot(x, y, z, label, linestyle, color, linewidth, marker, &

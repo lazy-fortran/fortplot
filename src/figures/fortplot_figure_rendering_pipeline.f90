@@ -473,6 +473,7 @@ contains
         real(wp) :: x_min_curr, x_max_curr, y_min_curr, y_max_curr
         character(len=10) :: xscale_curr, yscale_curr
         real(wp) :: primary_x_min, primary_x_max, primary_y_min, primary_y_max
+        real(wp) :: default_line_width
 
         has_state = present(state)
         if (has_state) then
@@ -480,6 +481,9 @@ contains
             primary_x_max = state%x_max_transformed
             primary_y_min = state%y_min_transformed
             primary_y_max = state%y_max_transformed
+            default_line_width = state%current_line_width
+        else
+            default_line_width = 1.0_wp
         end if
 
         do i = 1, plot_count
@@ -583,7 +587,7 @@ contains
 
             case (PLOT_TYPE_ERRORBAR)
                 call render_errorbar_plot(backend, plots(i), xscale_curr, yscale_curr, &
-                                          symlog_threshold)
+                                          symlog_threshold, default_line_width)
                 ! Always attempt to render markers for errorbar plots; 
                 ! render_markers internally validates presence/emptiness.
                 call render_markers(backend, plots(i), &
