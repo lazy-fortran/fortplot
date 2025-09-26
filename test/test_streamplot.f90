@@ -1,5 +1,6 @@
 program test_streamplot
     use fortplot
+    use fortplot_streamplot_core, only: setup_streamplot_parameters
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
     
@@ -8,6 +9,7 @@ program test_streamplot
     call test_basic_streamplot()
     call test_streamplot_parameters()
     call test_streamplot_grid_validation()
+    call test_streamplot_arrow_clearing()
     
     print *, "All streamplot tests passed!"
     
@@ -88,5 +90,33 @@ contains
             stop 1
         end if
     end subroutine
-    
+
+    subroutine test_streamplot_arrow_clearing()
+        type(figure_t) :: fig
+        real(real64), dimension(5) :: x = [0.0, 1.0, 2.0, 3.0, 4.0]
+        real(real64), dimension(4) :: y = [0.0, 1.0, 2.0, 3.0]
+        real(real64), dimension(5,4) :: u, v
+        integer :: i, j
+
+        do j = 1, 4
+            do i = 1, 5
+                u(i,j) = 1.0_real64
+                v(i,j) = 0.0_real64
+            end do
+        end do
+
+        call fig%initialize(400, 300)
+        call setup_streamplot_parameters(fig, x, y, u, v)
+        if (.not. allocated(fig%state%stream_arrows)) then
+            print *, "ERROR: Expected stream arrows after default streamplot"
+            stop 1
+        end if
+
+        call setup_streamplot_parameters(fig, x, y, u, v, arrowsize=0.0_real64)
+        if (allocated(fig%state%stream_arrows)) then
+            print *, "ERROR: Stream arrows not cleared when arrowsize=0"
+            stop 1
+        end if
+    end subroutine test_streamplot_arrow_clearing
+
 end program test_streamplot

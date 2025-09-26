@@ -511,10 +511,15 @@ contains
 
     subroutine clear_backend_arrows(self)
         class(figure_t), intent(inout) :: self
+        logical :: had_arrows
 
+        had_arrows = .false.
         if (allocated(self%state%stream_arrows)) then
+            had_arrows = size(self%state%stream_arrows) > 0
             deallocate(self%state%stream_arrows)
         end if
+
+        if (had_arrows) self%state%rendered = .false.
     end subroutine clear_backend_arrows
     function get_x_min(self) result(x_min)
         class(figure_t), intent(in) :: self

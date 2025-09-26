@@ -128,7 +128,6 @@ contains
         integer :: nx, ny
         real(wp) :: asize
         character(len=16) :: astyle
-        integer :: arrow_total
 
         call ensure_fig_init()
 
@@ -164,6 +163,8 @@ contains
             deallocate(traj_x, traj_y)
         end do
 
+        call fig%clear_backend_arrows()
+
         ! Optional: draw arrows along streamlines when requested
         if (present(arrow_scale) .or. present(arrowsize) .or. present(arrowstyle)) then
             asize = 1.0_wp
@@ -177,7 +178,6 @@ contains
                 astyle = trim(adjustl(arrowstyle))
             end if
             if (astyle == 'filled') astyle = '->'
-            call fig%clear_backend_arrows()
             do i = 1, n_traj
                 if (traj_lengths(i) < 5) cycle
                 ! Place ~3 arrows per trajectory, similar to core
