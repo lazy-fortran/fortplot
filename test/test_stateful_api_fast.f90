@@ -154,6 +154,14 @@ contains
                           abs(fig%plots(plot_idx)%elinewidth - 3.0d0) < 1.0d-12)
         call check_result("errorbar stores capthick override", &
                           abs(fig%plots(plot_idx)%capthick - 2.0d0) < 1.0d-12)
+
+        call add_errorbar(x, y, yerr=yerr, elinewidth=4.0d0, capthick=1.5d0)
+        fig => get_global_figure()
+        plot_idx = fig%plot_count
+        call check_result("add_errorbar stores elinewidth override", &
+                          abs(fig%plots(plot_idx)%elinewidth - 4.0d0) < 1.0d-12)
+        call check_result("add_errorbar stores capthick override", &
+                          abs(fig%plots(plot_idx)%capthick - 1.5d0) < 1.0d-12)
     end subroutine test_errorbar_api
     
     subroutine test_boxplot_api()
