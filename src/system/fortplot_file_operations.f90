@@ -34,11 +34,11 @@ contains
         logical, intent(out) :: success
         logical :: debug_enabled
         logical :: is_allowed_path
-        character(len=512) :: normalized_path
+        character(len=:), allocatable :: normalized_path
         
         success = .false.
         debug_enabled = is_debug_enabled()
-        normalized_path = path
+        normalized_path = trim(path)
         
         ! SECURITY LAYER 1: Basic path safety validation
         if (.not. is_basic_safe_path(normalized_path)) then
@@ -60,7 +60,7 @@ contains
         end if
         
         ! Try recursive directory creation approach
-        call create_directory_recursive(path, success)
+        call create_directory_recursive(trim(normalized_path), success)
         
         if (.not. success .and. debug_enabled) then
             call log_warning('Directory creation failed (check permissions and parent existence)')
@@ -105,7 +105,8 @@ contains
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
         logical :: dir_exists, parent_exists
-        character(len=512) :: parent_path, test_file
+        character(len=:), allocatable :: parent_path
+        character(len=:), allocatable :: test_file
         integer :: i, last_sep, unit, iostat
         
         success = .false.
@@ -128,7 +129,7 @@ contains
         
         if (last_sep > 0) then
             parent_path = path(1:last_sep)
-            call check_directory_exists(parent_path, parent_exists)
+            call check_directory_exists(trim(parent_path), parent_exists)
             if (.not. parent_exists) then
                 ! Parent doesn't exist, can't create subdirectory
                 success = .false.
@@ -146,7 +147,7 @@ contains
             if (is_windows()) then
                 test_file = trim(test_file) // "\test_dir_creation.tmp"
             else
-                test_file = trim(test_file) // "/test_dir_creation.tmp"
+                test_file = trim(test_file) // '/test_dir_creation.tmp'
             end if
             
             ! Try to open a file to test if we can create in this directory
@@ -166,7 +167,7 @@ contains
         use, intrinsic :: iso_c_binding, only: c_null_char, c_char
         character(len=*), intent(in) :: path
         logical, intent(out) :: success
-        character(len=512) :: parent_path
+        character(len=:), allocatable :: parent_path
         integer :: i, last_sep
         logical :: parent_exists, dir_exists
         
@@ -192,9 +193,9 @@ contains
             parent_path = path(1:last_sep)
             
             ! Recursively create parent
-            call check_directory_exists(parent_path, parent_exists)
+            call check_directory_exists(trim(parent_path), parent_exists)
             if (.not. parent_exists) then
-                call create_directory_recursive(parent_path, parent_exists)
+                call create_directory_recursive(trim(parent_path), parent_exists)
                 if (.not. parent_exists) then
                     success = .false.
                     return
@@ -216,7 +217,7 @@ contains
             path_c(n+1) = c_null_char
             success = (create_directory_windows_c(path_c) == 1)
         end block
-        
+
         ! Final check
         call check_directory_exists(path, success)
     end subroutine create_directory_recursive
@@ -226,7 +227,7 @@ contains
         !! Issue #903: Intelligent path whitelist for user experience
         character(len=*), intent(in) :: path
         logical, intent(out) :: is_allowed
-        character(len=512) :: normalized_path
+        character(len=:), allocatable :: normalized_path
         
         normalized_path = trim(path)
         is_allowed = .false.
@@ -293,7 +294,7 @@ contains
         !! Issue #903: Support matplotlib-like directory auto-creation
         character(len=*), intent(in) :: path
         logical, intent(out) :: is_allowed
-        character(len=512) :: first_component
+        character(len=:), allocatable :: first_component
         integer :: first_slash
         
         is_allowed = .false.

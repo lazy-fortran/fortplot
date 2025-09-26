@@ -98,22 +98,24 @@ contains
         !! the runtime file operations with path validation.
         use fortplot_file_operations, only: create_directory_runtime, check_directory_exists
         character(len=*), intent(in) :: filepath
-        character(len=512) :: dir
-        integer :: i
+        character(len=:), allocatable :: dir
+        integer :: i, last_sep
         logical :: success, exists
 
-        dir = ''
+        last_sep = 0
 
         ! Find last path separator (both '/' and '\\' supported)
         do i = len_trim(filepath), 1, -1
             if (filepath(i:i) == '/' .or. filepath(i:i) == '\\') then
-                if (i > 1) dir = filepath(1:i-1)
+                if (i > 1) last_sep = i - 1
                 exit
             end if
         end do
 
         ! If no directory component, nothing to do
-        if (len_trim(dir) == 0) return
+        if (last_sep <= 0) return
+
+        dir = filepath(1:last_sep)
 
         ! If already exists, we're done
         call check_directory_exists(trim(dir), exists)
