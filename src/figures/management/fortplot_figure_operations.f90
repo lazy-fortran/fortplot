@@ -38,6 +38,7 @@ module fortplot_figure_operations
                                                     render_figure_axes_labels_only
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
+    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal
     implicit none
 
     private
@@ -332,6 +333,10 @@ contains
                                         state%y_max_transformed, &
                                         state%xscale, state%yscale, &
                                         state%symlog_threshold)
+
+        if (contains_pie_plot(plots, plot_count)) then
+            call enforce_pie_axis_equal(state)
+        end if
         
         ! Setup coordinate system
         call setup_coordinate_system(state%backend, &
