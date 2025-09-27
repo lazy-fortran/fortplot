@@ -7,10 +7,13 @@ module fortplot_matplotlib_session
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_core, only: figure_t
-    use fortplot_figure_initialization, only: configure_figure_dimensions
+    use fortplot_figure_initialization, only: configure_figure_dimensions, setup_figure_backend
     use fortplot_global, only: fig => global_figure
     use fortplot_logging, only: log_error, log_warning, log_info
     use fortplot_security, only: safe_launch_viewer, safe_remove_file
+    use fortplot_png, only: png_context
+    use fortplot_pdf, only: pdf_context
+    use fortplot_ascii, only: ascii_context
 
     implicit none
     private
@@ -99,6 +102,19 @@ contains
         allocate(figure_t :: fig)
         call fig%initialize()
         call configure_figure_dimensions(fig%state, width=width_px, height=height_px)
+
+        if (allocated(fig%state%backend)) then
+            select type (bk => fig%state%backend)
+            type is (png_context)
+                call setup_figure_backend(fig%state, 'png')
+            type is (pdf_context)
+                call setup_figure_backend(fig%state, 'pdf')
+            type is (ascii_context)
+                call setup_figure_backend(fig%state, 'ascii')
+            class default
+                call setup_figure_backend(fig%state, 'png')
+            end select
+        end if
     end subroutine figure
 
     subroutine subplot(nrows, ncols, index)

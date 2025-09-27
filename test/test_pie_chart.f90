@@ -4,6 +4,9 @@ program test_pie_chart
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t
     use fortplot_plot_data, only: PLOT_TYPE_PIE
+    use fortplot_png, only: png_context
+    use fortplot_pdf, only: pdf_context
+    use fortplot_ascii, only: ascii_context
     implicit none
 
     call run_pie_data_checks()
@@ -209,12 +212,10 @@ contains
         call assert_true(range_x > 0.0_wp .and. range_y > 0.0_wp, &
                          'pie legend keeps finite axis ranges')
 
-        plot_width_px = real(fig%state%width, wp) * &
-                        max(0.0_wp, 1.0_wp - fig%state%margin_left - &
-                                      fig%state%margin_right)
-        plot_height_px = real(fig%state%height, wp) * &
-                         max(0.0_wp, 1.0_wp - fig%state%margin_bottom - &
-                                       fig%state%margin_top)
+        call get_backend_plot_extent(fig%state%backend, &
+            real(fig%state%width, wp), real(fig%state%height, wp), &
+            fig%state%margin_left, fig%state%margin_right, fig%state%margin_top, &
+            fig%state%margin_bottom, plot_width_px, plot_height_px)
         call assert_true(plot_width_px > 0.0_wp .and. plot_height_px > 0.0_wp, &
                          'pie legend keeps positive plot area')
 
@@ -243,5 +244,28 @@ contains
             stop 1
         end if
     end subroutine assert_close
+
+    subroutine get_backend_plot_extent(backend, fig_width, fig_height, margin_left, &
+        margin_right, margin_top, margin_bottom, width_px, height_px)
+        class(*), intent(in) :: backend
+        real(wp), intent(in) :: fig_width, fig_height
+        real(wp), intent(in) :: margin_left, margin_right, margin_top, margin_bottom
+        real(wp), intent(out) :: width_px, height_px
+
+        select type (backend)
+        type is (png_context)
+            width_px = real(max(1, backend%plot_area%width), wp)
+            height_px = real(max(1, backend%plot_area%height), wp)
+        type is (pdf_context)
+            width_px = real(max(1, backend%plot_area%width), wp)
+            height_px = real(max(1, backend%plot_area%height), wp)
+        type is (ascii_context)
+            width_px = real(max(1, backend%plot_width - 3), wp)
+            height_px = real(max(1, backend%plot_height - 3), wp)
+        class default
+            width_px = fig_width * max(0.0_wp, 1.0_wp - margin_left - margin_right)
+            height_px = fig_height * max(0.0_wp, 1.0_wp - margin_top - margin_bottom)
+        end select
+    end subroutine get_backend_plot_extent
 
 end program test_pie_chart

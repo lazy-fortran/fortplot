@@ -48,13 +48,14 @@ contains
         end do
     end function only_pie_plots
 
-    subroutine enforce_pie_axis_equal(state)
+    subroutine enforce_pie_axis_equal(state, plot_width_px, plot_height_px)
         !! Adjust the figure axis limits so pie charts render with equal scaling
         type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in), optional :: plot_width_px, plot_height_px
 
         real(wp), parameter :: EPS = 1.0e-12_wp
         real(wp), parameter :: ASPECT_TOL = 1.0e-9_wp
-        real(wp) :: plot_width_px, plot_height_px
+        real(wp) :: plot_width_local, plot_height_local
         real(wp) :: data_range_x, data_range_y
         real(wp) :: aspect_pixels, range_ratio
         real(wp) :: center_x, center_y
@@ -62,17 +63,23 @@ contains
 
         if (state%xlim_set .or. state%ylim_set) return
 
-        plot_width_px = real(state%width, wp) * &
-                        max(0.0_wp, 1.0_wp - state%margin_left - state%margin_right)
-        plot_height_px = real(state%height, wp) * &
-                         max(0.0_wp, 1.0_wp - state%margin_bottom - state%margin_top)
-        if (plot_width_px <= EPS .or. plot_height_px <= EPS) return
+        if (present(plot_width_px) .and. present(plot_height_px)) then
+            plot_width_local = plot_width_px
+            plot_height_local = plot_height_px
+        else
+            plot_width_local = real(state%width, wp) * &
+                               max(0.0_wp, 1.0_wp - state%margin_left - state%margin_right)
+            plot_height_local = real(state%height, wp) * &
+                                max(0.0_wp, 1.0_wp - state%margin_bottom - state%margin_top)
+        end if
+
+        if (plot_width_local <= EPS .or. plot_height_local <= EPS) return
 
         data_range_x = state%x_max - state%x_min
         data_range_y = state%y_max - state%y_min
         if (data_range_x <= EPS .or. data_range_y <= EPS) return
 
-        aspect_pixels = plot_width_px / plot_height_px
+        aspect_pixels = plot_width_local / plot_height_local
         range_ratio = data_range_x / data_range_y
 
         if (abs(range_ratio - aspect_pixels) <= ASPECT_TOL) return
