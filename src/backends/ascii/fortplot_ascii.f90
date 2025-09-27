@@ -28,6 +28,8 @@ module fortplot_ascii
     private
     public :: ascii_context, create_ascii_canvas
 
+    real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
+
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
@@ -52,6 +54,9 @@ module fortplot_ascii
         integer :: legend_entry_count = 0
         integer :: legend_autopct_cursor = 1
         character(len=64), allocatable :: legend_entry_labels(:)
+        real(wp) :: stored_y_min = 0.0_wp
+        real(wp) :: stored_y_max = 0.0_wp
+        logical :: has_stored_y_range = .false.
     contains
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
@@ -582,8 +587,13 @@ contains
         
         x_min = this%x_min
         x_max = this%x_max
-        y_min = this%y_min
-        y_max = this%y_max
+        if (this%has_stored_y_range) then
+            y_min = this%stored_y_min
+            y_max = this%stored_y_max
+        else
+            y_min = this%y_min
+            y_max = this%y_max
+        end if
     end subroutine ascii_save_coordinates
 
     subroutine ascii_set_coordinates(this, x_min, x_max, y_min, y_max)
@@ -593,8 +603,11 @@ contains
         
         this%x_min = x_min
         this%x_max = x_max
-        this%y_min = y_min
-        this%y_max = y_max
+        this%stored_y_min = y_min
+        this%stored_y_max = y_max
+        this%has_stored_y_range = .true.
+        this%y_min = y_min * ASCII_CHAR_ASPECT
+        this%y_max = y_max * ASCII_CHAR_ASPECT
     end subroutine ascii_set_coordinates
 
     subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
