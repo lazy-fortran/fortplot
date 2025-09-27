@@ -69,6 +69,12 @@ contains
                 end if
             end if
             
+            ! Skip pie chart label/autopct annotations for ASCII backend to prevent duplicates
+            ! ASCII backend uses legend-only approach for cleaner output
+            if (should_skip_annotation_for_ascii(backend, annotations(i))) then
+                cycle
+            end if
+            
             ! Transform coordinates to rendering coordinates
             call transform_annotation_to_rendering_coords(annotations(i), &
                                                          x_min, x_max, y_min, y_max, &
@@ -222,6 +228,52 @@ contains
         ! Draw simple arrow line using existing line method
         call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
     end subroutine render_annotation_arrow
+
+    logical function should_skip_annotation_for_ascii(backend, annotation) result(should_skip)
+        !! Check if annotation should be skipped for ASCII backend
+        !! ASCII backend uses legend-only approach for pie charts to prevent duplicates
+        use fortplot_ascii, only: ascii_context
+        class(plot_context), intent(in) :: backend
+        type(text_annotation_t), intent(in) :: annotation
+        
+        should_skip = .false.
+        
+        ! Skip pie chart annotations for ASCII backend
+        select type (backend)
+        type is (ascii_context)
+            ! Skip any annotation that looks like pie chart labels
+            ! These would be pie slice labels or percentage values
+            if (is_pie_chart_annotation(annotation)) then
+                should_skip = .true.
+            end if
+        end select
+    end function should_skip_annotation_for_ascii
+    
+    logical function is_pie_chart_annotation(annotation) result(is_pie_annotation)
+        !! Detect if annotation is likely a pie chart label or autopct
+        type(text_annotation_t), intent(in) :: annotation
+        character(len=:), allocatable :: text
+        
+        is_pie_annotation = .false.
+        text = trim(annotation%text)
+        
+        ! Heuristic: pie annotations are typically short labels or percentage values
+        ! and are positioned using COORD_DATA coordinates around the pie circumference
+        if (annotation%coord_type == COORD_DATA .and. len_trim(text) > 0 .and. len_trim(text) <= 20) then
+            ! Check for percentage patterns (autopct)
+            if (index(text, '%') > 0) then
+                is_pie_annotation = .true.
+                return
+            end if
+            
+            ! Check for common pie chart label patterns
+            ! (This is a heuristic - could be refined based on position or other criteria)
+            if (len_trim(text) <= 12 .and. index(text, ' ') == 0) then
+                ! Single word, short text - likely a pie slice label
+                is_pie_annotation = .true.
+            end if
+        end if
+    end function is_pie_chart_annotation
 
     pure function int_to_char(num) result(str)
         !! Simple integer to character conversion
