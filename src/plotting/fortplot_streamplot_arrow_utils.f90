@@ -63,11 +63,14 @@ contains
         integer :: arrow_count
         real(wp), allocatable :: traj_x(:), traj_y(:)
         real(wp), allocatable :: arc_lengths(:)
-        real(wp) :: total_length, half_length
+        real(wp) :: total_length
+        real(wp) :: target_length
         real(wp) :: segment_start_length, segment_length
         real(wp) :: position_t, arrow_x, arrow_y
         real(wp) :: segment_dx, segment_dy, direction_norm
         type(arrow_data_t), allocatable :: buffer(:)
+        integer :: n_targets, target_iter
+        real(wp) :: arrow_spacing
 
         if (allocated(arrows)) deallocate(arrows)
 
@@ -86,37 +89,42 @@ contains
             call compute_segment_lengths(traj_x, traj_y, arc_lengths, total_length)
             if (total_length <= EPSILON_COMPARE) cycle
 
-            half_length = 0.5_wp * total_length
-            target_index = locate_half_length(arc_lengths, half_length)
-            if (target_index < 1 .or. target_index >= n_points) cycle
+            arrow_spacing = max(arrow_size * 6.0_wp, total_length / 4.0_wp)
+            n_targets = max(1, min(5, int(total_length / arrow_spacing)))
 
-            if (target_index == 1) then
-                segment_start_length = 0.0_wp
-            else
-                segment_start_length = arc_lengths(target_index - 1)
-            end if
+            do target_iter = 1, n_targets
+                target_length = real(target_iter, wp) * total_length / real(n_targets + 1, wp)
+                target_index = locate_arc_length(arc_lengths, target_length)
+                if (target_index < 1 .or. target_index >= n_points) cycle
 
-            segment_length = arc_lengths(target_index) - segment_start_length
-            if (segment_length <= EPSILON_COMPARE) cycle
+                if (target_index == 1) then
+                    segment_start_length = 0.0_wp
+                else
+                    segment_start_length = arc_lengths(target_index - 1)
+                end if
 
-            position_t = (half_length - segment_start_length) / segment_length
-            position_t = max(0.0_wp, min(1.0_wp, position_t))
+                segment_length = arc_lengths(target_index) - segment_start_length
+                if (segment_length <= EPSILON_COMPARE) cycle
 
-            segment_dx = traj_x(target_index + 1) - traj_x(target_index)
-            segment_dy = traj_y(target_index + 1) - traj_y(target_index)
-            direction_norm = sqrt(segment_dx*segment_dx + segment_dy*segment_dy)
-            if (direction_norm <= EPSILON_COMPARE) cycle
+                position_t = (target_length - segment_start_length) / segment_length
+                position_t = max(0.0_wp, min(1.0_wp, position_t))
 
-            arrow_x = traj_x(target_index) + position_t * segment_dx
-            arrow_y = traj_y(target_index) + position_t * segment_dy
+                segment_dx = traj_x(target_index + 1) - traj_x(target_index)
+                segment_dy = traj_y(target_index + 1) - traj_y(target_index)
+                direction_norm = sqrt(segment_dx*segment_dx + segment_dy*segment_dy)
+                if (direction_norm <= EPSILON_COMPARE) cycle
 
-            arrow_count = arrow_count + 1
-            buffer(arrow_count)%x = arrow_x
-            buffer(arrow_count)%y = arrow_y
-            buffer(arrow_count)%dx = segment_dx / direction_norm
-            buffer(arrow_count)%dy = segment_dy / direction_norm
-            buffer(arrow_count)%size = arrow_size
-            buffer(arrow_count)%style = arrow_style
+                arrow_x = traj_x(target_index) + position_t * segment_dx
+                arrow_y = traj_y(target_index) + position_t * segment_dy
+
+                arrow_count = arrow_count + 1
+                buffer(arrow_count)%x = arrow_x
+                buffer(arrow_count)%y = arrow_y
+                buffer(arrow_count)%dx = segment_dx / direction_norm
+                buffer(arrow_count)%dy = segment_dy / direction_norm
+                buffer(arrow_count)%size = arrow_size
+                buffer(arrow_count)%style = trim(arrow_style)
+            end do
         end do
 
         if (arrow_count > 0) then
@@ -216,19 +224,19 @@ contains
         end do
     end subroutine compute_segment_lengths
 
-    integer function locate_half_length(arc_lengths, half_length) result(target_index)
-        !! Locate the index of the point just before the halfway distance
-        real(wp), intent(in) :: arc_lengths(:), half_length
+    integer function locate_arc_length(arc_lengths, target_length) result(target_index)
+        !! Locate the index of the point just before the desired arc length
+        real(wp), intent(in) :: arc_lengths(:), target_length
         integer :: i
 
         target_index = size(arc_lengths)
 
         do i = 1, size(arc_lengths)
-            if (arc_lengths(i) >= half_length) then
+            if (arc_lengths(i) >= target_length) then
                 target_index = i
                 exit
             end if
         end do
-    end function locate_half_length
+    end function locate_arc_length
 
 end module fortplot_streamplot_arrow_utils
