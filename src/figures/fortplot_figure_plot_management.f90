@@ -6,7 +6,8 @@ module fortplot_figure_plot_management
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, PLOT_TYPE_SURFACE
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_SURFACE, PLOT_TYPE_PIE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_logging,  only: log_warning, log_info
     use fortplot_legend, only: legend_t
@@ -548,7 +549,11 @@ contains
         
         ! Add legend entries from plots
         do i = 1, plot_count
-            ! Only add legend entry if label is allocated and not empty
+            if (plots(i)%plot_type == PLOT_TYPE_PIE) then
+                call add_pie_legend_entries(legend_data, plots(i))
+                cycle
+            end if
+
             if (allocated(plots(i)%label)) then
                 if (len_trim(plots(i)%label) > 0) then
                     if (allocated(plots(i)%linestyle)) then
@@ -570,6 +575,62 @@ contains
             end if
         end do
     end subroutine setup_figure_legend
+
+    subroutine add_pie_legend_entries(legend_data, plot)
+        !! Add one legend entry per pie slice using wedge colors
+        type(legend_t), intent(inout) :: legend_data
+        type(plot_data_t), intent(in) :: plot
+
+        integer :: slice_count, i
+        real(wp) :: color(3)
+        real(wp) :: total, percent
+        logical :: has_labels, has_values
+        character(len=64) :: label_buf
+
+        slice_count = plot%pie_slice_count
+        if (slice_count <= 0) return
+
+        has_labels = allocated(plot%pie_labels)
+        if (has_labels) then
+            if (size(plot%pie_labels) < slice_count) has_labels = .false.
+        end if
+
+        has_values = allocated(plot%pie_values)
+        if (has_values) then
+            if (size(plot%pie_values) < slice_count) has_values = .false.
+        end if
+
+        total = 0.0_wp
+        if (has_values) total = sum(plot%pie_values(1:slice_count))
+
+        do i = 1, slice_count
+            if (allocated(plot%pie_colors)) then
+                if (size(plot%pie_colors, 2) >= i) then
+                    color = plot%pie_colors(:, i)
+                else
+                    color = plot%color
+                end if
+            else
+                color = plot%color
+            end if
+
+            label_buf = ''
+            if (has_labels) label_buf = trim(plot%pie_labels(i))
+
+            if (len_trim(label_buf) == 0) then
+                if (has_values .and. total > 0.0_wp) then
+                    percent = 100.0_wp * plot%pie_values(i) / &
+                              max(total, tiny(1.0_wp))
+                    write(label_buf, '("Slice ",I0," (",F6.1,"%)")') i, percent
+                else
+                    write(label_buf, '("Slice ",I0)') i
+                end if
+            end if
+
+            call legend_data%add_entry(trim(label_buf), color, &
+                                      linestyle='None', marker='s')
+        end do
+    end subroutine add_pie_legend_entries
     
     subroutine update_plot_ydata(plots, plot_count, plot_index, y_new)
         !! Update y data for an existing plot
