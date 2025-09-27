@@ -6,6 +6,7 @@ module fortplot_figure_grid
     
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
+    use fortplot_ascii, only: ascii_context
     use fortplot_axes, only: compute_scale_ticks
     use fortplot_scales, only: apply_scale_transform
     implicit none
@@ -95,6 +96,14 @@ contains
         real(wp) :: xmin_t, xmax_t, ymin_t, ymax_t
         
         if (.not. grid_enabled) return
+
+        ! ASCII backend renders text plots where grid lines turn into noisy
+        ! backgrounds, so skip grid rendering entirely for ASCII output.
+        select type (backend)
+        type is (ascii_context)
+            return
+        class default
+        end select
         
         ! Set grid color (gray) and alpha (alpha currently backend-specific; kept for API parity)
         grid_color = [0.7_wp, 0.7_wp, 0.7_wp]
