@@ -26,7 +26,9 @@ module fortplot_ascii
     implicit none
     
     private
-    public :: ascii_context, create_ascii_canvas
+    public :: ascii_context, create_ascii_canvas, ASCII_CHAR_ASPECT
+
+    real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
 
     real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
 
