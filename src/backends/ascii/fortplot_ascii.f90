@@ -40,6 +40,7 @@ module fortplot_ascii
         real(wp) :: current_r, current_g, current_b
         integer :: plot_width = 80
         integer :: plot_height = 24
+        logical :: allow_text_override = .false.
     contains
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
@@ -177,6 +178,8 @@ contains
             this%text_elements(this%num_text_elements)%color_r = this%current_r
             this%text_elements(this%num_text_elements)%color_g = this%current_g
             this%text_elements(this%num_text_elements)%color_b = this%current_b
+            this%text_elements(this%num_text_elements)%override_existing = this%allow_text_override
+            this%text_elements(this%num_text_elements)%clear_width = 0
         end if
     end subroutine ascii_draw_text
     
@@ -312,8 +315,18 @@ contains
         class(ascii_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
-        
+        logical :: previous_override
+        integer :: start_idx, idx
+
+        previous_override = this%allow_text_override
+        start_idx = this%num_text_elements
+        this%allow_text_override = .true.
         call render_ascii_legend_specialized(legend, this, legend_x, legend_y)
+        do idx = start_idx + 1, this%num_text_elements
+            this%text_elements(idx)%override_existing = .true.
+            this%text_elements(idx)%clear_width = max(0, this%width - this%text_elements(idx)%x + 1)
+        end do
+        this%allow_text_override = previous_override
     end subroutine ascii_render_legend_specialized
 
     subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, legend_height)
