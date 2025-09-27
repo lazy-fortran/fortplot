@@ -165,14 +165,15 @@ contains
 
         call fig%clear_backend_arrows()
 
-        ! Optional: draw arrows along streamlines when requested
-        if (present(arrow_scale) .or. present(arrowsize) .or. present(arrowstyle)) then
-            asize = 1.0_wp
-            if (present(arrowsize)) then
-                asize = arrowsize
-            else if (present(arrow_scale)) then
-                asize = arrow_scale
-            end if
+        asize = 1.0_wp
+        if (present(arrowsize)) then
+            asize = arrowsize
+        else if (present(arrow_scale)) then
+            asize = arrow_scale
+        end if
+
+        if (asize > 0.0_wp) then
+            ! Always enqueue arrows unless explicitly disabled via zero size
             astyle = '->'
             if (present(arrowstyle)) then
                 astyle = trim(adjustl(arrowstyle))
@@ -187,9 +188,9 @@ contains
                     xp = x(1) + real(trajectories(i, j, 1), wp) * (x(nx) - x(1)) / real(nx - 1, wp)
                     yp = y(1) + real(trajectories(i, j, 2), wp) * (y(ny) - y(1)) / real(ny - 1, wp)
                     ! Direction using next step when available
-                    if (j+1 <= traj_lengths(i)) then
-                        x2 = x(1) + real(trajectories(i, j+1, 1), wp) * (x(nx) - x(1)) / real(nx - 1, wp)
-                        y2 = y(1) + real(trajectories(i, j+1, 2), wp) * (y(ny) - y(1)) / real(ny - 1, wp)
+                    if (j + 1 <= traj_lengths(i)) then
+                        x2 = x(1) + real(trajectories(i, j + 1, 1), wp) * (x(nx) - x(1)) / real(nx - 1, wp)
+                        y2 = y(1) + real(trajectories(i, j + 1, 2), wp) * (y(ny) - y(1)) / real(ny - 1, wp)
                         call fig%backend_arrow(xp, yp, x2 - xp, y2 - yp, asize, astyle)
                     end if
                     j = j + max(1, traj_lengths(i) / 3)
