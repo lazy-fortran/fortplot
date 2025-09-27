@@ -78,6 +78,8 @@ contains
         real(wp) :: twinx_y_min_trans, twinx_y_max_trans
         real(wp) :: twiny_x_min, twiny_x_max
         real(wp) :: twiny_x_min_trans, twiny_x_max_trans
+        real(wp) :: pie_plot_width_px, pie_plot_height_px
+        logical :: have_pie_pixels
         logical :: has_pie_plots
         logical :: pie_only
 
@@ -143,7 +145,28 @@ contains
         has_pie_plots = contains_pie_plot(plots, plot_count)
         pie_only = .false.
         if (has_pie_plots) then
-            call enforce_pie_axis_equal(state)
+            have_pie_pixels = .false.
+            select type (bk => state%backend)
+            class is (png_context)
+                pie_plot_width_px = real(max(1, bk%plot_area%width), wp)
+                pie_plot_height_px = real(max(1, bk%plot_area%height), wp)
+                have_pie_pixels = .true.
+            class is (pdf_context)
+                pie_plot_width_px = real(max(1, bk%plot_area%width), wp)
+                pie_plot_height_px = real(max(1, bk%plot_area%height), wp)
+                have_pie_pixels = .true.
+            class is (ascii_context)
+                pie_plot_width_px = real(max(1, bk%plot_width - 3), wp)
+                pie_plot_height_px = real(max(1, bk%plot_height - 3), wp)
+                have_pie_pixels = .true.
+            class default
+            end select
+
+            if (have_pie_pixels) then
+                call enforce_pie_axis_equal(state, pie_plot_width_px, pie_plot_height_px)
+            else
+                call enforce_pie_axis_equal(state)
+            end if
             pie_only = only_pie_plots(plots, plot_count)
         end if
 
