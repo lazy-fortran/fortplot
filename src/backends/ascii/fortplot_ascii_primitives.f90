@@ -105,6 +105,8 @@ contains
         real(wp), intent(in) :: current_r, current_g, current_b
         
         integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
+        logical :: inside_first, inside_second
+        real(wp) :: x_center, y_center
         character(len=1) :: fill_char
         real(wp) :: color_intensity
         integer :: char_index
@@ -139,8 +141,19 @@ contains
         max_y = max(2, min(maxval(py), plot_height - 1))
         
         do j = min_y, max_y
+            y_center = real(j, wp)
             do i = min_x, max_x
-                ! Use density-aware character selection
+                x_center = real(i, wp)
+                inside_first = point_in_triangle(x_center, y_center, &
+                                    real(px(1), wp), real(py(1), wp), &
+                                    real(px(2), wp), real(py(2), wp), &
+                                    real(px(3), wp), real(py(3), wp))
+                inside_second = point_in_triangle(x_center, y_center, &
+                                     real(px(1), wp), real(py(1), wp), &
+                                     real(px(3), wp), real(py(3), wp), &
+                                     real(px(4), wp), real(py(4), wp))
+                if (.not. (inside_first .or. inside_second)) cycle
+
                 if (canvas(j, i) == ' ' .or. &
                     get_char_density(fill_char) > get_char_density(canvas(j, i))) then
                     canvas(j, i) = fill_char
@@ -148,6 +161,38 @@ contains
             end do
         end do
     end subroutine ascii_fill_quad_primitive
+
+    pure logical function point_in_triangle(px, py, ax, ay, bx, by, cx, cy)
+        real(wp), intent(in) :: px, py, ax, ay, bx, by, cx, cy
+        real(wp) :: v0x, v0y, v1x, v1y, v2x, v2y
+        real(wp) :: dot00, dot01, dot02, dot11, dot12, inv_denom
+
+        v0x = cx - ax
+        v0y = cy - ay
+        v1x = bx - ax
+        v1y = by - ay
+        v2x = px - ax
+        v2y = py - ay
+
+        dot00 = v0x * v0x + v0y * v0y
+        dot01 = v0x * v1x + v0y * v1y
+        dot02 = v0x * v2x + v0y * v2y
+        dot11 = v1x * v1x + v1y * v1y
+        dot12 = v1x * v2x + v1y * v2y
+
+        inv_denom = dot00 * dot11 - dot01 * dot01
+        if (abs(inv_denom) < 1.0e-12_wp) then
+            point_in_triangle = .false.
+            return
+        end if
+        inv_denom = 1.0_wp / inv_denom
+
+        v0x = (dot11 * dot02 - dot01 * dot12) * inv_denom
+        v0y = (dot00 * dot12 - dot01 * dot02) * inv_denom
+
+        point_in_triangle = (v0x >= -1.0e-9_wp) .and. (v0y >= -1.0e-9_wp) .and. &
+                            (v0x + v0y <= 1.0_wp + 1.0e-9_wp)
+    end function point_in_triangle
 
     subroutine ascii_draw_text_primitive(text_x, text_y, text, &
                                         x, y, text_input, &
