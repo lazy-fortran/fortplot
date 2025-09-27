@@ -349,11 +349,11 @@ contains
         ! Suppress unused parameters (legend positions are handled outside canvas)
         associate(unused_x => legend_x, unused_y => legend_y); end associate
 
-        call reset_ascii_legend_lines(this)
+        call reset_ascii_legend_lines_helper(this%legend_lines, this%num_legend_lines)
 
         if (legend%num_entries <= 0) return
 
-        call append_ascii_legend_line(this, 'Legend:')
+        call append_ascii_legend_line_helper(this%legend_lines, this%num_legend_lines, 'Legend:')
 
         do i = 1, legend%num_entries
             if (allocated(legend%entries(i)%label)) then
@@ -372,13 +372,13 @@ contains
                     len_trim(legend%entries(i)%marker) > 0) then
                     marker_char = ascii_marker_char(legend%entries(i)%marker)
                     line_buffer = '  ' // marker_char // ' ' // label_text
-                    call append_ascii_legend_line(this, trim(line_buffer))
+                    call append_ascii_legend_line_helper(this%legend_lines, this%num_legend_lines, trim(line_buffer))
                     cycle
                 end if
             end if
 
             line_buffer = '  - ' // label_text
-            call append_ascii_legend_line(this, trim(line_buffer))
+            call append_ascii_legend_line_helper(this%legend_lines, this%num_legend_lines, trim(line_buffer))
         end do
     end subroutine ascii_render_legend_specialized
 
@@ -558,7 +558,7 @@ contains
         ! This is a stub to satisfy the interface
     end subroutine ascii_render_axes
 
-    subroutine ascii_render_axes(this, title_text, xlabel_text, ylabel_text)
+    subroutine ascii_register_pie_legend_entry(this, label, value_text)
         class(ascii_context), intent(inout) :: this
         character(len=*), intent(in) :: label
         character(len=*), intent(in), optional :: value_text
