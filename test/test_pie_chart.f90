@@ -9,6 +9,7 @@ program test_pie_chart
     call run_pie_data_checks()
     call run_auto_autopct_checks()
     call run_autopct_literal_preservation_checks()
+    call run_pie_legend_checks()
 
 contains
 
@@ -144,6 +145,85 @@ contains
         call assert_true(found_second, &
                          'autopct retains literal prefix/suffix for second slice')
     end subroutine run_autopct_literal_preservation_checks
+
+    subroutine run_pie_legend_checks()
+        type(figure_t) :: fig
+        real(wp) :: values(4)
+        character(len=16) :: labels(4)
+        real(wp) :: plot_width_px, plot_height_px
+        real(wp) :: range_x, range_y
+        real(wp) :: scale_x, scale_y, aspect_diff
+        integer :: i
+        logical :: found_north, found_east, found_west, found_online
+
+        call fig%initialize()
+
+        values = [30.0_wp, 40.0_wp, 20.0_wp, 10.0_wp]
+        labels(1) = 'North'
+        labels(2) = 'East'
+        labels(3) = 'West'
+        labels(4) = 'Online'
+
+        call fig%add_pie(values, labels=labels, autopct='%.1f%%')
+        call assert_true(fig%plots(1)%pie_slice_count == 4, &
+                         'legend test stores all pie slices')
+        call fig%legend(location='east')
+        call fig%savefig('build/test/output/test_pie_legend.png')
+
+        call assert_true(fig%state%legend_data%num_entries == 4, &
+                         'pie legend includes all slices')
+
+        found_north = .false.
+        found_east = .false.
+        found_west = .false.
+        found_online = .false.
+        do i = 1, fig%state%legend_data%num_entries
+            associate(entry => fig%state%legend_data%entries(i))
+                select case (trim(entry%label))
+                case ('North')
+                    found_north = .true.
+                case ('East')
+                    found_east = .true.
+                case ('West')
+                    found_west = .true.
+                case ('Online')
+                    found_online = .true.
+                end select
+
+                call assert_true(allocated(entry%linestyle), &
+                                 'pie legend stores linestyle')
+                call assert_true(trim(entry%linestyle) == 'None', &
+                                 'pie legend suppresses wedge lines')
+                call assert_true(allocated(entry%marker), &
+                                 'pie legend stores marker')
+                call assert_true(trim(entry%marker) == 's', &
+                                 'pie legend uses square markers')
+            end associate
+        end do
+
+        call assert_true(found_north .and. found_east .and. found_west .and. &
+                         found_online, 'pie legend retains labels')
+
+        range_x = fig%state%x_max - fig%state%x_min
+        range_y = fig%state%y_max - fig%state%y_min
+        call assert_true(range_x > 0.0_wp .and. range_y > 0.0_wp, &
+                         'pie legend keeps finite axis ranges')
+
+        plot_width_px = real(fig%state%width, wp) * &
+                        max(0.0_wp, 1.0_wp - fig%state%margin_left - &
+                                      fig%state%margin_right)
+        plot_height_px = real(fig%state%height, wp) * &
+                         max(0.0_wp, 1.0_wp - fig%state%margin_bottom - &
+                                       fig%state%margin_top)
+        call assert_true(plot_width_px > 0.0_wp .and. plot_height_px > 0.0_wp, &
+                         'pie legend keeps positive plot area')
+
+        scale_x = plot_width_px / range_x
+        scale_y = plot_height_px / range_y
+        aspect_diff = abs(scale_x - scale_y) / max(scale_x, scale_y)
+        call assert_true(aspect_diff <= 1.0e-6_wp, &
+                         'pie legend preserves equal axis scaling')
+    end subroutine run_pie_legend_checks
 
     subroutine assert_true(condition, description)
         logical, intent(in) :: condition
