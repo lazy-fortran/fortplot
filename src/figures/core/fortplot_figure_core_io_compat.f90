@@ -23,16 +23,18 @@ module fortplot_figure_core_io
     use fortplot_ascii, only: ascii_context
     use fortplot_margins, only: calculate_plot_area
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
-    use fortplot_figure_render_engine, only: figure_render
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
                                                     setup_coordinate_system, &
+                                                    render_figure_background, &
                                                     render_figure_axes, &
                                                     render_all_plots, &
                                                     render_figure_axes_labels_only
+    use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_io, only: save_backend_with_status
     use fortplot_figure_utilities, only: is_interactive_environment, wait_for_user_input
     use fortplot_plot_data, only: plot_data_t, subplot_data_t
+    use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal
     implicit none
 
     private
@@ -45,7 +47,7 @@ contains
         !! Save figure to file (backward compatibility version)
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
@@ -74,7 +76,7 @@ contains
         use fortplot_annotations, only: text_annotation_t
         use fortplot_parameter_validation, only: validate_file_path, parameter_validation_result_t
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
@@ -139,7 +141,7 @@ contains
         !! Display the figure
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         logical, intent(in), optional :: blocking
         type(text_annotation_t), intent(in), optional :: annotations(:)
@@ -177,7 +179,7 @@ contains
         !! Fixed Issue #844: ASCII annotation functionality
         use fortplot_annotations, only: text_annotation_t
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
@@ -200,8 +202,24 @@ contains
             return
         end if
         
-        ! Delegate single-axes rendering to the modern pipeline
-        call figure_render(state, plots, plot_count, annotations, annotation_count)
+        ! Single-axes rendering path (legacy)
+        ! Calculate final data ranges
+        call calculate_figure_data_ranges(plots, plot_count, &
+                                        state%xlim_set, state%ylim_set, &
+                                        state%x_min, state%x_max, &
+                                        state%y_min, state%y_max, &
+                                        state%x_min_transformed, &
+                                        state%x_max_transformed, &
+                                        state%y_min_transformed, &
+                                        state%y_max_transformed, &
+                                        state%xscale, state%yscale, &
+                                        state%symlog_threshold)
+
+        if (contains_pie_plot(plots, plot_count)) then
+            call enforce_pie_axis_equal(state)
+        end if
+        
+        call render_single_axes_impl(state, plots, plot_count, annotations, annotation_count)
         state%rendered = .true.
     end subroutine render_figure_impl
 
@@ -289,6 +307,81 @@ contains
             end do
         end do
     end subroutine render_subplots_impl
+
+    subroutine render_single_axes_impl(state, plots, plot_count, annotations, annotation_count)
+        !! Render the legacy single-axes path
+        use fortplot_annotations, only: text_annotation_t
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        type(text_annotation_t), intent(in), optional :: annotations(:)
+        integer, intent(in), optional :: annotation_count
+
+        call setup_coordinate_system(state%backend, &
+                                   state%x_min_transformed, state%x_max_transformed, &
+                                   state%y_min_transformed, state%y_max_transformed)
+
+        call render_figure_background(state%backend)
+
+        if (state%grid_enabled) then
+            call render_grid_lines(state%backend, state%grid_enabled, &
+                                  state%grid_which, state%grid_axis, &
+                                  state%grid_alpha, state%width, state%height, &
+                                  state%margin_left, state%margin_right, &
+                                  state%margin_bottom, state%margin_top, &
+                                  state%xscale, state%yscale, &
+                                  state%symlog_threshold, state%x_min, state%x_max, &
+                                  state%y_min, state%y_max, &
+                                  state%x_min_transformed, state%x_max_transformed, &
+                                  state%y_min_transformed, state%y_max_transformed, &
+                                  state%grid_linestyle)
+        end if
+
+        call render_figure_axes(state%backend, state%xscale, state%yscale, &
+                               state%symlog_threshold, state%x_min, state%x_max, &
+                               state%y_min, state%y_max, state%title, &
+                               state%xlabel, state%ylabel, plots, plot_count, &
+                               has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                               twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                               twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                               twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                               twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+
+        if (plot_count > 0) then
+            call render_all_plots(state%backend, plots, plot_count, &
+                                 state%x_min_transformed, state%x_max_transformed, &
+                                 state%y_min_transformed, state%y_max_transformed, &
+                                 state%xscale, state%yscale, state%symlog_threshold, &
+                                 state%width, state%height, &
+                                 state%margin_left, state%margin_right, &
+                                 state%margin_bottom, state%margin_top, state=state)
+        end if
+
+        call render_figure_axes_labels_only(state%backend, state%xscale, state%yscale, &
+                                           state%symlog_threshold, state%x_min, state%x_max, &
+                                           state%y_min, state%y_max, state%title, &
+                                           state%xlabel, state%ylabel, plots, plot_count, &
+                                           has_twinx=state%has_twinx, twinx_y_min=state%twinx_y_min, &
+                                           twinx_y_max=state%twinx_y_max, twinx_ylabel=state%twinx_ylabel, &
+                                           twinx_yscale=state%twinx_yscale, has_twiny=state%has_twiny, &
+                                           twiny_x_min=state%twiny_x_min, twiny_x_max=state%twiny_x_max, &
+                                           twiny_xlabel=state%twiny_xlabel, twiny_xscale=state%twiny_xscale)
+
+        if (state%show_legend .and. state%legend_data%num_entries > 0) then
+            call state%legend_data%render(state%backend)
+        end if
+
+        if (present(annotations) .and. present(annotation_count)) then
+            if (annotation_count > 0) then
+                call render_figure_annotations(state%backend, annotations, annotation_count, &
+                                              state%x_min, state%x_max, &
+                                              state%y_min, state%y_max, &
+                                              state%width, state%height, &
+                                              state%margin_left, state%margin_right, &
+                                              state%margin_bottom, state%margin_top)
+            end if
+        end if
+    end subroutine render_single_axes_impl
 
 end module fortplot_figure_core_io
 ! ==== End: src/figures/core/fortplot_figure_core_io.f90 ====
@@ -548,7 +641,7 @@ contains
     subroutine extract_rgb_data_for_animation_figure(state, plots, plot_count, rgb_data)
         !! Extract RGB data for animation
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         real(wp), intent(out) :: rgb_data(:,:,:)
         
@@ -563,7 +656,7 @@ contains
     subroutine extract_png_data_for_animation_figure(state, plots, plot_count, png_data, status)
         !! Extract PNG data for animation
         type(figure_state_t), intent(inout) :: state
-        type(plot_data_t), intent(inout) :: plots(:)
+        type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
