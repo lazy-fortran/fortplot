@@ -112,45 +112,82 @@ contains
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements, plot_width, plot_height
         integer :: i, j, text_len, char_idx
+        integer :: current_y, base_y, attempt, candidate_y
+        logical :: conflict
         character(len=1) :: text_char
         character(len=500) :: ascii_text  ! Buffer for converted text
+        integer, parameter :: MAX_ROW_SHIFT = 3
         
         ! Render each stored text element
         do i = 1, num_text_elements
             ! Convert Unicode text to ASCII-compatible form for Issue #853 fix
             call escape_unicode_for_ascii(text_elements(i)%text, ascii_text)
             text_len = len_trim(ascii_text)
-            
-            ! Draw each character of the text
+
+            base_y = max(1, min(text_elements(i)%y, plot_height))
+            current_y = base_y
+
+            do attempt = 0, MAX_ROW_SHIFT
+                candidate_y = base_y + attempt
+                if (candidate_y <= plot_height) then
+                    conflict = .false.
+                    do char_idx = 1, text_len
+                        j = text_elements(i)%x + char_idx - 1
+                        if (j < 1 .or. j > plot_width) cycle
+                        if (canvas(candidate_y, j) /= ' ' .and. &
+                            .not. is_graphics_character(canvas(candidate_y, j))) then
+                            conflict = .true.
+                            exit
+                        end if
+                    end do
+                    if (.not. conflict) then
+                        current_y = candidate_y
+                        exit
+                    end if
+                end if
+
+                if (attempt == 0) cycle
+
+                candidate_y = base_y - attempt
+                if (candidate_y >= 1) then
+                    conflict = .false.
+                    do char_idx = 1, text_len
+                        j = text_elements(i)%x + char_idx - 1
+                        if (j < 1 .or. j > plot_width) cycle
+                        if (canvas(candidate_y, j) /= ' ' .and. &
+                            .not. is_graphics_character(canvas(candidate_y, j))) then
+                            conflict = .true.
+                            exit
+                        end if
+                    end do
+                    if (.not. conflict) then
+                        current_y = candidate_y
+                        exit
+                    end if
+                end if
+            end do
+
+            ! Draw each character of the text at the chosen row
             do char_idx = 1, text_len
                 j = text_elements(i)%x + char_idx - 1
-                
-                ! Check bounds
+
                 if (j >= 1 .and. j <= plot_width .and. &
-                    text_elements(i)%y >= 1 .and. text_elements(i)%y <= plot_height) then
-                    
+                    current_y >= 1 .and. current_y <= plot_height) then
+
                     text_char = ascii_text(char_idx:char_idx)
-                    
-                    ! Choose character based on text color (simple color mapping)
-                    if (text_elements(i)%color_r > 0.7_wp) then
-                        text_char = text_char  ! Keep original for red text
-                    else if (text_elements(i)%color_g > 0.7_wp) then
-                        text_char = text_char  ! Keep original for green text
-                    else if (text_elements(i)%color_b > 0.7_wp) then
-                        text_char = text_char  ! Keep original for blue text
+
+                    if (text_elements(i)%color_r > 0.7_wp .or. &
+                        text_elements(i)%color_g > 0.7_wp .or. &
+                        text_elements(i)%color_b > 0.7_wp) then
+                        ! Placeholder: keep original character for color emphasis
+                        text_char = text_char
                     end if
-                    
-                    ! Fix for issue #852: Prevent text scrambling by implementing proper text layering
-                    ! Text elements should only overwrite empty spaces or plot graphics
-                    ! Never allow text to overwrite other text to prevent character mixing
-                    if (canvas(text_elements(i)%y, j) == ' ') then
-                        ! Always write text to empty spaces
-                        canvas(text_elements(i)%y, j) = text_char
-                    else if (is_graphics_character(canvas(text_elements(i)%y, j))) then
-                        ! Text has higher priority than plot graphics, can overwrite
-                        canvas(text_elements(i)%y, j) = text_char
+
+                    if (canvas(current_y, j) == ' ') then
+                        canvas(current_y, j) = text_char
+                    else if (is_graphics_character(canvas(current_y, j))) then
+                        canvas(current_y, j) = text_char
                     end if
-                    ! Existing text characters are never overwritten to prevent scrambling
                 end if
             end do
         end do

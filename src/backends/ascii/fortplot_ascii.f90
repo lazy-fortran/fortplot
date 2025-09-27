@@ -19,7 +19,6 @@ module fortplot_ascii
     use fortplot_ascii_elements, only: draw_ascii_axes_and_labels
     use fortplot_ascii_backend_support, only: extract_ascii_rgb_data, get_ascii_png_data, prepare_ascii_3d_data
     use fortplot_ascii_backend_support, only: render_ascii_ylabel, render_ascii_axes
-    use fortplot_ascii_rendering, only: output_to_terminal, output_to_file
     use fortplot_ascii_rendering, only: ascii_finalize => ascii_finalize, ascii_get_output
     use fortplot_ascii_primitives, only: ascii_draw_line_primitive, ascii_fill_quad_primitive
     use fortplot_ascii_primitives, only: ascii_draw_text_primitive
@@ -40,6 +39,19 @@ module fortplot_ascii
         real(wp) :: current_r, current_g, current_b
         integer :: plot_width = 80
         integer :: plot_height = 24
+        character(len=96), allocatable :: legend_lines(:)
+        integer :: num_legend_lines = 0
+        logical :: capturing_legend = .false.
+        character(len=64), allocatable :: pie_legend_labels(:)
+        character(len=32), allocatable :: pie_legend_values(:)
+        integer :: pie_legend_count = 0
+        character(len=32), allocatable :: pie_autopct_queue(:)
+        integer :: pie_autopct_count = 0
+        integer, allocatable :: legend_entry_indices(:)
+        logical, allocatable :: legend_entry_has_autopct(:)
+        integer :: legend_entry_count = 0
+        integer :: legend_autopct_cursor = 1
+        character(len=64), allocatable :: legend_entry_labels(:)
     contains
         procedure :: line => ascii_draw_line
         procedure :: color => ascii_set_color
@@ -71,6 +83,11 @@ module fortplot_ascii
         procedure :: save_coordinates => ascii_save_coordinates
         procedure :: set_coordinates => ascii_set_coordinates
         procedure :: render_axes => ascii_render_axes
+        procedure :: clear_ascii_legend => ascii_clear_legend_lines
+        procedure :: add_ascii_legend_entry => ascii_add_legend_entry
+        procedure :: register_pie_legend_entry => ascii_register_pie_legend_entry
+        procedure :: clear_pie_legend_entries => ascii_clear_pie_legend_entries
+        procedure :: get_pie_autopct => ascii_get_pie_autopct
     end type ascii_context
     
     character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
@@ -87,10 +104,10 @@ contains
         associate(unused_w => width, unused_h => height); end associate
         
         ! ASCII backend uses 4:3 aspect ratio accounting for terminal character dimensions
-        ! Terminal chars are ~1.5x taller than wide, so for 4:3 visual ratio:
-        ! 80 chars wide × (3/4) × (1/1.5) = 80 × 0.75 × 0.67 ≈ 40 → 30 chars high
+        ! Terminal characters are taller than they are wide; a 24-row canvas keeps the
+        ! legend heuristics inside ASCII mode while preserving enough vertical space.
         w = 80
-        h = 30
+        h = 24
         
         call setup_canvas(ctx, w, h)
         
@@ -104,7 +121,20 @@ contains
         allocate(ctx%text_elements(20))
         ctx%num_text_elements = 0
         ctx%title_set = .false.
-        
+        allocate(ctx%legend_lines(0))
+        ctx%num_legend_lines = 0
+        ctx%capturing_legend = .false.
+        allocate(ctx%pie_legend_labels(0))
+        allocate(ctx%pie_legend_values(0))
+        ctx%pie_legend_count = 0
+        allocate(ctx%pie_autopct_queue(0))
+        ctx%pie_autopct_count = 0
+        allocate(ctx%legend_entry_indices(0))
+        allocate(ctx%legend_entry_has_autopct(0))
+        allocate(ctx%legend_entry_labels(0))
+        ctx%legend_entry_count = 0
+        ctx%legend_autopct_cursor = 1
+
         ctx%current_r = 0.0_wp
         ctx%current_g = 0.0_wp 
         ctx%current_b = 1.0_wp
@@ -160,7 +190,67 @@ contains
         character(len=*), intent(in) :: text
         integer :: text_x, text_y
         character(len=:), allocatable :: processed_text
-        
+        character(len=:), allocatable :: trimmed_text
+        character(len=96) :: formatted_line
+        character(len=64) :: entry_label
+        character(len=32) :: autopct_value
+
+        trimmed_text = trim(adjustl(text))
+
+        if (trimmed_text == 'ASCII Legend') then
+            call reset_ascii_legend_lines(this)
+            call append_ascii_legend_line(this, 'Legend:')
+            this%capturing_legend = .true.
+            this%legend_entry_count = 0
+            this%legend_autopct_cursor = 1
+            return
+        end if
+
+        if (is_autopct_text(trimmed_text)) then
+            call enqueue_pie_autopct(this, trimmed_text)
+            call assign_pending_autopct(this)
+            return
+        end if
+
+        if (this%capturing_legend) then
+            if (len_trim(trimmed_text) == 0) then
+                this%capturing_legend = .false.
+                call this%clear_pie_legend_entries()
+                return
+            end if
+
+            if (.not. is_legend_entry_text(trimmed_text)) then
+                this%capturing_legend = .false.
+                return
+            end if
+
+            call decode_ascii_legend_line(trimmed_text, formatted_line, entry_label)
+            if (len_trim(entry_label) > 0 .and. len_trim(formatted_line) > 0) then
+                autopct_value = ''
+                if (this%pie_autopct_count > 0) then
+                    autopct_value = dequeue_pie_autopct(this)
+                else
+                    autopct_value = this%get_pie_autopct(entry_label)
+                end if
+                if (len_trim(autopct_value) > 0) then
+                    formatted_line = trim(formatted_line) // ' (' // trim(autopct_value) // ')'
+                end if
+                call append_ascii_legend_line(this, trim(formatted_line))
+                call register_legend_entry(this, this%num_legend_lines, entry_label, &
+                                            len_trim(autopct_value) > 0)
+                call assign_pending_autopct(this)
+                return
+            end if
+
+            ! Non-legend content encountered; end capture and fall through to regular rendering
+            this%capturing_legend = .false.
+            call this%clear_pie_legend_entries()
+        end if
+
+        if (this%legend_entry_count > 0) then
+            if (is_registered_legend_label(this, trimmed_text)) return
+        end if
+
         ! Store text element for later rendering
         if (this%num_text_elements < size(this%text_elements)) then
             this%num_text_elements = this%num_text_elements + 1
@@ -200,7 +290,7 @@ contains
         call ascii_finalize(this%canvas, this%text_elements, this%num_text_elements, &
                            this%plot_width, this%plot_height, &
                            this%title_text, this%xlabel_text, this%ylabel_text, &
-                           filename)
+                           this%legend_lines, this%num_legend_lines, filename)
     end subroutine ascii_save
 
     subroutine ascii_draw_marker(this, x, y, style)
@@ -312,8 +402,46 @@ contains
         class(ascii_context), intent(inout) :: this
         type(legend_t), intent(in) :: legend
         real(wp), intent(in) :: legend_x, legend_y
-        
-        call render_ascii_legend_specialized(legend, this, legend_x, legend_y)
+
+        integer :: i
+        character(len=96) :: line_buffer
+        character(len=:), allocatable :: label_text
+        character(len=1) :: marker_char
+
+        ! Suppress unused parameters (legend positions are handled outside canvas)
+        associate(unused_x => legend_x, unused_y => legend_y); end associate
+
+        call reset_ascii_legend_lines(this)
+
+        if (legend%num_entries <= 0) return
+
+        call append_ascii_legend_line(this, 'Legend:')
+
+        do i = 1, legend%num_entries
+            if (allocated(legend%entries(i)%label)) then
+                label_text = trim(legend%entries(i)%label)
+            else
+                label_text = ''
+            end if
+
+            if (len_trim(label_text) == 0) then
+                write(line_buffer, '("Series ",I0)') i
+                label_text = trim(line_buffer)
+            end if
+
+            if (allocated(legend%entries(i)%marker)) then
+                if (trim(legend%entries(i)%marker) /= 'None' .and. &
+                    len_trim(legend%entries(i)%marker) > 0) then
+                    marker_char = ascii_marker_char(legend%entries(i)%marker)
+                    line_buffer = '  ' // marker_char // ' ' // label_text
+                    call append_ascii_legend_line(this, trim(line_buffer))
+                    cycle
+                end if
+            end if
+
+            line_buffer = '  - ' // label_text
+            call append_ascii_legend_line(this, trim(line_buffer))
+        end do
     end subroutine ascii_render_legend_specialized
 
     subroutine ascii_calculate_legend_dimensions(this, legend, legend_width, legend_height)
@@ -483,5 +611,469 @@ contains
         ! ASCII axes are rendered as part of draw_axes_and_labels_backend
         ! This is a stub to satisfy the interface
     end subroutine ascii_render_axes
+
+    subroutine reset_ascii_legend_lines(this)
+        class(ascii_context), intent(inout) :: this
+
+        if (.not. allocated(this%legend_lines)) then
+            allocate(character(len=96) :: this%legend_lines(0))
+        end if
+
+        this%num_legend_lines = 0
+    end subroutine reset_ascii_legend_lines
+
+    subroutine append_ascii_legend_line(this, raw_line)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: raw_line
+
+        integer :: current_size, new_size
+        character(len=96), allocatable :: tmp(:)
+        character(len=96) :: line_buffer
+
+        if (.not. allocated(this%legend_lines)) then
+            allocate(character(len=96) :: this%legend_lines(0))
+        end if
+
+        current_size = size(this%legend_lines)
+        if (this%num_legend_lines == current_size) then
+            new_size = max(4, max(1, current_size) * 2)
+            allocate(tmp(new_size))
+            tmp = ' '
+            if (this%num_legend_lines > 0) tmp(1:this%num_legend_lines) = this%legend_lines
+            call move_alloc(tmp, this%legend_lines)
+        end if
+
+        this%num_legend_lines = this%num_legend_lines + 1
+        line_buffer = adjustl(raw_line)
+        this%legend_lines(this%num_legend_lines) = line_buffer
+    end subroutine append_ascii_legend_line
+
+    subroutine ascii_register_pie_legend_entry(this, label, value_text)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: label
+        character(len=*), intent(in), optional :: value_text
+
+        integer :: current_size, new_size
+        character(len=64), allocatable :: label_tmp(:)
+        character(len=32), allocatable :: value_tmp(:)
+
+        if (.not. allocated(this%pie_legend_labels)) then
+            allocate(character(len=64) :: this%pie_legend_labels(0))
+        end if
+        if (.not. allocated(this%pie_legend_values)) then
+            allocate(character(len=32) :: this%pie_legend_values(0))
+        end if
+
+        current_size = size(this%pie_legend_labels)
+        if (this%pie_legend_count == current_size) then
+            new_size = max(4, max(1, current_size) * 2)
+
+            allocate(label_tmp(new_size))
+            label_tmp = ''
+            if (this%pie_legend_count > 0) label_tmp(1:this%pie_legend_count) = this%pie_legend_labels
+            call move_alloc(label_tmp, this%pie_legend_labels)
+
+            allocate(value_tmp(new_size))
+            value_tmp = ''
+            if (this%pie_legend_count > 0) value_tmp(1:this%pie_legend_count) = this%pie_legend_values
+            call move_alloc(value_tmp, this%pie_legend_values)
+        end if
+
+        this%pie_legend_count = this%pie_legend_count + 1
+        this%pie_legend_labels(this%pie_legend_count) = adjustl(trim(label))
+        if (present(value_text)) then
+            this%pie_legend_values(this%pie_legend_count) = adjustl(trim(value_text))
+        else
+            this%pie_legend_values(this%pie_legend_count) = ''
+        end if
+    end subroutine ascii_register_pie_legend_entry
+
+    subroutine ascii_clear_pie_legend_entries(this)
+        class(ascii_context), intent(inout) :: this
+
+        if (.not. allocated(this%pie_legend_labels)) then
+            allocate(character(len=64) :: this%pie_legend_labels(0))
+        else
+            if (size(this%pie_legend_labels) > 0) this%pie_legend_labels = ''
+        end if
+
+        if (.not. allocated(this%pie_legend_values)) then
+            allocate(character(len=32) :: this%pie_legend_values(0))
+        else
+            if (size(this%pie_legend_values) > 0) this%pie_legend_values = ''
+        end if
+
+        this%pie_legend_count = 0
+    end subroutine ascii_clear_pie_legend_entries
+
+    function ascii_get_pie_autopct(this, label) result(value)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: label
+        character(len=32) :: value
+
+        integer :: i
+        character(len=:), allocatable :: normalized
+
+        value = ''
+        if (.not. allocated(this%pie_legend_labels)) return
+        if (this%pie_legend_count <= 0) return
+
+        normalized = adjustl(trim(label))
+
+        do i = 1, this%pie_legend_count
+            if (adjustl(trim(this%pie_legend_labels(i))) == normalized) then
+                value = trim(this%pie_legend_values(i))
+                this%pie_legend_values(i) = ''
+                return
+            end if
+        end do
+    end function ascii_get_pie_autopct
+
+    subroutine enqueue_pie_autopct(this, value)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: value
+
+        integer :: current_size, new_size
+        character(len=32), allocatable :: tmp(:)
+
+        if (.not. allocated(this%pie_autopct_queue)) then
+            allocate(character(len=32) :: this%pie_autopct_queue(0))
+        end if
+
+        current_size = size(this%pie_autopct_queue)
+        if (this%pie_autopct_count == current_size) then
+            new_size = max(4, max(1, current_size) * 2)
+            allocate(tmp(new_size))
+            tmp = ''
+            if (this%pie_autopct_count > 0) tmp(1:this%pie_autopct_count) = this%pie_autopct_queue
+            call move_alloc(tmp, this%pie_autopct_queue)
+        end if
+
+        this%pie_autopct_count = this%pie_autopct_count + 1
+        this%pie_autopct_queue(this%pie_autopct_count) = adjustl(trim(value))
+    end subroutine enqueue_pie_autopct
+
+    function dequeue_pie_autopct(this) result(value)
+        class(ascii_context), intent(inout) :: this
+        character(len=32) :: value
+
+        integer :: idx
+
+        if (.not. allocated(this%pie_autopct_queue)) then
+            allocate(character(len=32) :: this%pie_autopct_queue(0))
+        end if
+
+        if (this%pie_autopct_count <= 0) then
+            value = ''
+            return
+        end if
+
+        value = this%pie_autopct_queue(1)
+        if (this%pie_autopct_count > 1) then
+            do idx = 1, this%pie_autopct_count - 1
+                this%pie_autopct_queue(idx) = this%pie_autopct_queue(idx + 1)
+            end do
+        end if
+        this%pie_autopct_queue(this%pie_autopct_count) = ''
+        this%pie_autopct_count = this%pie_autopct_count - 1
+    end function dequeue_pie_autopct
+
+    subroutine register_legend_entry(this, line_idx, label, has_autopct)
+        class(ascii_context), intent(inout) :: this
+        integer, intent(in) :: line_idx
+        character(len=*), intent(in) :: label
+        logical, intent(in) :: has_autopct
+
+        integer :: current_size, new_size
+        integer, allocatable :: idx_tmp(:)
+        logical, allocatable :: flag_tmp(:)
+        character(len=64), allocatable :: label_tmp(:)
+
+        if (.not. allocated(this%legend_entry_indices)) then
+            allocate(this%legend_entry_indices(0))
+            allocate(this%legend_entry_has_autopct(0))
+            allocate(this%legend_entry_labels(0))
+        end if
+
+        current_size = size(this%legend_entry_indices)
+        if (this%legend_entry_count == current_size) then
+            new_size = max(4, max(1, current_size) * 2)
+            allocate(idx_tmp(new_size))
+            idx_tmp = 0
+            if (this%legend_entry_count > 0) then
+                idx_tmp(1:this%legend_entry_count) = this%legend_entry_indices
+            end if
+            call move_alloc(idx_tmp, this%legend_entry_indices)
+
+            allocate(flag_tmp(new_size))
+            flag_tmp = .false.
+            if (this%legend_entry_count > 0) then
+                flag_tmp(1:this%legend_entry_count) = this%legend_entry_has_autopct
+            end if
+            call move_alloc(flag_tmp, this%legend_entry_has_autopct)
+
+            allocate(label_tmp(new_size))
+            label_tmp = ''
+            if (this%legend_entry_count > 0) then
+                label_tmp(1:this%legend_entry_count) = this%legend_entry_labels
+            end if
+            call move_alloc(label_tmp, this%legend_entry_labels)
+        end if
+
+        this%legend_entry_count = this%legend_entry_count + 1
+        this%legend_entry_indices(this%legend_entry_count) = line_idx
+        this%legend_entry_has_autopct(this%legend_entry_count) = has_autopct
+        this%legend_entry_labels(this%legend_entry_count) = adjustl(trim(label))
+
+        if (has_autopct) then
+            if (this%legend_autopct_cursor == this%legend_entry_count) then
+                this%legend_autopct_cursor = this%legend_autopct_cursor + 1
+            end if
+        end if
+    end subroutine register_legend_entry
+
+    subroutine assign_pending_autopct(this)
+        class(ascii_context), intent(inout) :: this
+
+        character(len=32) :: value
+        integer :: target_idx
+
+        do while (this%pie_autopct_count > 0 .and. this%legend_autopct_cursor <= this%legend_entry_count)
+            if (this%legend_entry_has_autopct(this%legend_autopct_cursor)) then
+                this%legend_autopct_cursor = this%legend_autopct_cursor + 1
+                cycle
+            end if
+
+            value = dequeue_pie_autopct(this)
+            target_idx = this%legend_entry_indices(this%legend_autopct_cursor)
+            call append_autopct_to_line(this, target_idx, value)
+            this%legend_entry_has_autopct(this%legend_autopct_cursor) = .true.
+            this%legend_autopct_cursor = this%legend_autopct_cursor + 1
+        end do
+    end subroutine assign_pending_autopct
+
+    subroutine append_autopct_to_line(this, line_idx, value)
+        class(ascii_context), intent(inout) :: this
+        integer, intent(in) :: line_idx
+        character(len=*), intent(in) :: value
+
+        character(len=96) :: updated_line
+
+        if (len_trim(value) == 0) return
+        if (line_idx < 1 .or. line_idx > this%num_legend_lines) return
+
+        updated_line = trim(this%legend_lines(line_idx))
+        if (index(updated_line, '(') > 0) then
+            this%legend_lines(line_idx) = updated_line
+        else
+            updated_line = trim(updated_line) // ' (' // trim(value) // ')'
+            this%legend_lines(line_idx) = adjustl(updated_line)
+        end if
+    end subroutine append_autopct_to_line
+
+    subroutine ascii_clear_legend_lines(this, header)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in), optional :: header
+
+        call reset_ascii_legend_lines(this)
+
+        if (present(header)) then
+            if (len_trim(header) > 0) then
+                call append_ascii_legend_line(this, trim(header))
+            end if
+        end if
+
+        this%capturing_legend = .false.
+        this%pie_autopct_count = 0
+        if (allocated(this%pie_autopct_queue)) then
+            if (size(this%pie_autopct_queue) > 0) this%pie_autopct_queue = ''
+        end if
+        this%legend_entry_count = 0
+        this%legend_autopct_cursor = 1
+        if (allocated(this%legend_entry_has_autopct)) then
+            if (size(this%legend_entry_has_autopct) > 0) then
+                this%legend_entry_has_autopct = .false.
+            end if
+        end if
+
+    end subroutine ascii_clear_legend_lines
+
+    subroutine decode_ascii_legend_line(raw_text, formatted_line, entry_label)
+        character(len=*), intent(in) :: raw_text
+        character(len=96), intent(out) :: formatted_line
+        character(len=64), intent(out) :: entry_label
+
+        character(len=:), allocatable :: trimmed_text
+        integer :: first_space
+
+        formatted_line = ''
+        entry_label = ''
+
+        trimmed_text = trim(adjustl(raw_text))
+        if (len_trim(trimmed_text) == 0) return
+
+        if (len(trimmed_text) >= 3 .and. trimmed_text(1:3) == '-- ') then
+            if (len(trimmed_text) > 3) then
+                entry_label = trim(adjustl(trimmed_text(4:)))
+            else
+                entry_label = ''
+            end if
+            formatted_line = '  - ' // trim(entry_label)
+        else
+            formatted_line = '  ' // trim(trimmed_text)
+            first_space = index(trimmed_text, ' ')
+            if (first_space > 0 .and. first_space < len(trimmed_text)) then
+                entry_label = trim(adjustl(trimmed_text(first_space + 1:)))
+            else
+                entry_label = trim(trimmed_text)
+            end if
+        end if
+    end subroutine decode_ascii_legend_line
+
+    subroutine ascii_add_legend_entry(this, label, value_text)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: label
+        character(len=*), intent(in), optional :: value_text
+
+        character(len=96) :: line_buffer
+        character(len=:), allocatable :: value_trimmed
+
+        line_buffer = '  ' // trim(label)
+
+        if (present(value_text)) then
+            value_trimmed = trim(value_text)
+            if (len_trim(value_trimmed) > 0) then
+                line_buffer = trim(line_buffer) // ' (' // value_trimmed // ')'
+            end if
+        end if
+
+        call append_ascii_legend_line(this, trim(line_buffer))
+    end subroutine ascii_add_legend_entry
+
+    pure logical function is_legend_entry_text(text) result(is_entry)
+        character(len=*), intent(in) :: text
+
+        character(len=:), allocatable :: trimmed_text
+        character(len=1) :: first_char
+
+        trimmed_text = trim(adjustl(text))
+        if (len_trim(trimmed_text) == 0) then
+            is_entry = .false.
+            return
+        end if
+
+        if (len(trimmed_text) >= 3) then
+            if (trimmed_text(1:3) == '-- ') then
+                is_entry = .true.
+                return
+            end if
+        end if
+
+        first_char = trimmed_text(1:1)
+        if (index('o#%x+*^v<>PH', first_char) > 0) then
+            if (len(trimmed_text) >= 2) then
+                if (trimmed_text(2:2) == ' ') then
+                    is_entry = .true.
+                    return
+                end if
+            end if
+        end if
+
+        is_entry = .false.
+    end function is_legend_entry_text
+
+    pure logical function is_registered_legend_label(this, text) result(found)
+        class(ascii_context), intent(in) :: this
+        character(len=*), intent(in) :: text
+
+        character(len=:), allocatable :: trimmed
+        integer :: i
+
+        trimmed = trim(adjustl(text))
+        if (len_trim(trimmed) == 0) then
+            found = .false.
+            return
+        end if
+
+        if (.not. allocated(this%legend_entry_labels)) then
+            found = .false.
+            return
+        end if
+
+        do i = 1, this%legend_entry_count
+            if (adjustl(trim(this%legend_entry_labels(i))) == trimmed) then
+                found = .true.
+                return
+            end if
+        end do
+
+        found = .false.
+    end function is_registered_legend_label
+
+    pure logical function is_autopct_text(text) result(is_percent)
+        character(len=*), intent(in) :: text
+
+        character(len=:), allocatable :: trimmed
+        integer :: idx, last
+        character(len=1) :: ch
+
+        trimmed = trim(text)
+        last = len_trim(trimmed)
+        if (last <= 1) then
+            is_percent = .false.
+            return
+        end if
+
+        if (trimmed(last:last) /= '%') then
+            is_percent = .false.
+            return
+        end if
+
+        is_percent = .true.
+        do idx = 1, last - 1
+            ch = trimmed(idx:idx)
+            select case (ch)
+            case ('0':'9', '.', '+', '-', ' ')
+                cycle
+            case default
+                is_percent = .false.
+                return
+            end select
+        end do
+    end function is_autopct_text
+
+    pure function ascii_marker_char(marker_style) result(marker_char)
+        character(len=*), intent(in) :: marker_style
+        character(len=1) :: marker_char
+
+        select case (trim(marker_style))
+        case ('o')
+            marker_char = 'o'
+        case ('s')
+            marker_char = '#'
+        case ('D', 'd')
+            marker_char = '%'
+        case ('x')
+            marker_char = 'x'
+        case ('+')
+            marker_char = '+'
+        case ('*')
+            marker_char = '*'
+        case ('^')
+            marker_char = '^'
+        case ('v')
+            marker_char = 'v'
+        case ('<')
+            marker_char = '<'
+        case ('>')
+            marker_char = '>'
+        case ('p')
+            marker_char = 'P'
+        case ('h', 'H')
+            marker_char = 'H'
+        case default
+            marker_char = '*'
+        end select
+    end function ascii_marker_char
 
 end module fortplot_ascii
