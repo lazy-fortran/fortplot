@@ -128,6 +128,7 @@ contains
         class(legend_t), intent(in) :: this
         class(plot_context), intent(inout) :: backend
         real(wp) :: legend_x, legend_y
+        logical :: ascii_mode
         
         if (this%num_entries == 0) return
         
@@ -136,7 +137,8 @@ contains
         
         ! Render legend based on backend type  
         ! ASCII backends use compact layout, others use standard
-        if (backend%width <= 80 .and. backend%height <= 24) then
+        ascii_mode = backend_is_ascii(backend)
+        if (ascii_mode) then
             ! ASCII-like dimensions, use compact layout
             call render_ascii_legend(this, backend, legend_x, legend_y)
         else
@@ -152,20 +154,16 @@ contains
         real(wp), intent(in) :: legend_x, legend_y
         integer :: i
         real(wp) :: text_x, text_y
-
-        ! Optional header for better readability in ASCII output
-        text_x = legend_x
-        text_y = max(1.0_wp, min(legend_y - 1.0_wp, real(28, wp)))
-        call backend%color(0.0_wp, 0.0_wp, 0.0_wp)
-        call backend%text(text_x, text_y, 'ASCII Legend')
+        character(len=:), allocatable :: legend_line
+        integer :: available_width
 
         do i = 1, legend%num_entries
             ! For ASCII, arrange entries vertically going downward
             text_x = legend_x
-            text_y = legend_y + real(i-1, wp)  ! Go downward: y+0, y+1, y+2, etc.
+            text_y = legend_y + real(i-1, wp)
             
             ! Ensure text fits within canvas bounds  
-            text_y = max(1.0_wp, min(text_y, real(28, wp)))  ! Leave space for bottom border
+            text_y = max(1.0_wp, min(text_y, real(max(2, backend%height - 2), wp)))
             
             ! Set color for this entry
             call backend%color(legend%entries(i)%color(1), &
@@ -177,12 +175,20 @@ contains
                 trim(legend%entries(i)%marker) /= '' .and. &
                 trim(legend%entries(i)%marker) /= 'None') then
                 ! Show marker character
-                call backend%text(text_x, text_y, &
-                    get_ascii_marker_char(legend%entries(i)%marker) // ' ' // trim(legend%entries(i)%label))
+                legend_line = get_ascii_marker_char(legend%entries(i)%marker) // ' ' // &
+                    trim(legend%entries(i)%label)
             else
                 ! Show line symbol for line-only plots
-                call backend%text(text_x, text_y, '-- ' // trim(legend%entries(i)%label))
+                legend_line = '-- ' // trim(legend%entries(i)%label)
             end if
+
+            available_width = max(1, backend%width - int(text_x) + 1)
+
+            if (len_trim(legend_line) > available_width) then
+                legend_line = legend_line(1:available_width)
+            end if
+
+            call backend%text(text_x, text_y, legend_line)
         end do
     end subroutine render_ascii_legend
     
@@ -395,19 +401,76 @@ contains
         type(plot_margins_t) :: margins
         type(plot_area_t) :: plot_area
         integer :: px_w, px_h
-        
+        logical :: ascii_mode
+        integer :: screen_width, screen_height
+        integer :: margin_x, margin_y
+        integer :: longest_entry, entry_len, prefix_len
+        integer :: ascii_x, ascii_y, total_lines
+
         ! Get data coordinate ranges
         data_width = backend%x_max - backend%x_min
         data_height = backend%y_max - backend%y_min
-        
+
         ! Calculate position based on backend dimensions
         ! ASCII backends have different positioning logic
-        if (backend%width <= 80 .and. backend%height <= 24) then
-            ! ASCII-like dimensions, position at top-right corner in data coords
-            ! Use proportional positioning in data space
-            x = backend%x_min + 0.8_wp * data_width
-            y = backend%y_min + 0.95_wp * data_height
-            ! Note: labels not used in ASCII path, but must be declared due to Fortran scoping
+        ascii_mode = backend_is_ascii(backend)
+        if (ascii_mode) then
+            screen_width = max(1, backend%width)
+            screen_height = max(1, backend%height)
+            margin_x = 3
+            margin_y = 0
+            longest_entry = 0
+
+            do i = 1, legend%num_entries
+                entry_len = len_trim(legend%entries(i)%label)
+                prefix_len = 3
+                if (allocated(legend%entries(i)%marker)) then
+                    if (len_trim(legend%entries(i)%marker) > 0 .and. &
+                        trim(legend%entries(i)%marker) /= 'None') then
+                        prefix_len = 2
+                    end if
+                end if
+                longest_entry = max(longest_entry, prefix_len + entry_len)
+            end do
+
+            if (longest_entry == 0) longest_entry = 1
+            longest_entry = min(longest_entry, max(1, screen_width - margin_x))
+            total_lines = max(legend%num_entries, 1)
+
+            select case (legend%position)
+            case (LEGEND_UPPER_LEFT)
+                ascii_x = margin_x
+                ascii_y = margin_y + 1
+            case (LEGEND_UPPER_RIGHT)
+                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
+                ascii_y = margin_y + 1
+            case (LEGEND_LOWER_LEFT)
+                ascii_x = margin_x
+                ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
+            case (LEGEND_LOWER_RIGHT)
+                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
+                ascii_y = max(margin_y + 1, screen_height - total_lines - margin_y + 2)
+            case default
+                ascii_x = max(margin_x, screen_width - longest_entry - margin_x + 1)
+                ascii_y = margin_y + 1
+            end select
+
+            if (legend%position == LEGEND_UPPER_LEFT .or. &
+                legend%position == LEGEND_UPPER_RIGHT) then
+                ascii_y = max(ascii_y, margin_y + 4)
+            end if
+
+            if (legend%num_entries > 0) then
+                if (ascii_y + legend%num_entries - 1 > screen_height - margin_y) then
+                    ascii_y = max(2, screen_height - legend%num_entries - margin_y)
+                end if
+            end if
+
+            ascii_x = max(2, min(ascii_x, max(2, screen_width - 1)))
+            ascii_y = max(1, min(ascii_y, max(2, screen_height - 1)))
+
+            x = real(ascii_x, wp)
+            y = real(ascii_y, wp)
         else
             ! Standard backends with margin support
             allocate(character(len=256) :: labels(legend%num_entries))
@@ -510,5 +573,12 @@ contains
             marker_char = '*'  ! Default fallback
         end select
     end function get_ascii_marker_char
+
+    pure logical function backend_is_ascii(backend)
+        !! Detect whether backend is operating in ASCII mode based on canvas size
+        class(plot_context), intent(in) :: backend
+
+        backend_is_ascii = backend%width <= 120 .and. backend%height <= 60
+    end function backend_is_ascii
 
 end module fortplot_legend

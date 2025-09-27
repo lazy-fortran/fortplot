@@ -23,6 +23,8 @@ module fortplot_ascii_utils
         character(len=:), allocatable :: text
         integer :: x, y
         real(wp) :: color_r, color_g, color_b
+        logical :: override_existing = .false.
+        integer :: clear_width = 0
     end type text_element_t
     
 contains
@@ -111,12 +113,15 @@ contains
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements, plot_width, plot_height
-        integer :: i, j, text_len, char_idx
+        integer :: i, j, text_len, char_idx, fill_end, pass
         character(len=1) :: text_char
         character(len=500) :: ascii_text  ! Buffer for converted text
         
-        ! Render each stored text element
-        do i = 1, num_text_elements
+        ! Render stored text elements, processing lower-priority text first
+        do pass = 1, 2
+            do i = 1, num_text_elements
+                if (pass == 1 .and. text_elements(i)%override_existing) cycle
+                if (pass == 2 .and. .not. text_elements(i)%override_existing) cycle
             ! Convert Unicode text to ASCII-compatible form for Issue #853 fix
             call escape_unicode_for_ascii(text_elements(i)%text, ascii_text)
             text_len = len_trim(ascii_text)
@@ -143,15 +148,32 @@ contains
                     ! Fix for issue #852: Prevent text scrambling by implementing proper text layering
                     ! Text elements should only overwrite empty spaces or plot graphics
                     ! Never allow text to overwrite other text to prevent character mixing
-                    if (canvas(text_elements(i)%y, j) == ' ') then
+                    if (text_elements(i)%override_existing) then
+                        ! Legend or high-priority text can replace existing characters
+                        canvas(text_elements(i)%y, j) = text_char
+                    else if (canvas(text_elements(i)%y, j) == ' ') then
                         ! Always write text to empty spaces
                         canvas(text_elements(i)%y, j) = text_char
                     else if (is_graphics_character(canvas(text_elements(i)%y, j))) then
                         ! Text has higher priority than plot graphics, can overwrite
                         canvas(text_elements(i)%y, j) = text_char
                     end if
-                    ! Existing text characters are never overwritten to prevent scrambling
+                    ! Existing text characters are preserved unless override is requested
                 end if
+            end do
+
+            if (text_elements(i)%override_existing) then
+                fill_end = max(text_len, text_elements(i)%clear_width)
+                if (fill_end > text_len) then
+                    do char_idx = text_len + 1, fill_end
+                        j = text_elements(i)%x + char_idx - 1
+                        if (j >= 1 .and. j <= plot_width .and. &
+                            text_elements(i)%y >= 1 .and. text_elements(i)%y <= plot_height) then
+                            canvas(text_elements(i)%y, j) = ' '
+                        end if
+                    end do
+                end if
+            end if
             end do
         end do
     end subroutine render_text_elements_to_canvas
