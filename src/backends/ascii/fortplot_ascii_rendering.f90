@@ -21,12 +21,14 @@ contains
 
     subroutine ascii_finalize(canvas, text_elements, num_text_elements, &
                              plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
-                             filename)
+                             legend_lines, num_legend_lines, filename)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(inout) :: text_elements(:)
         integer, intent(in) :: num_text_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
         character(len=*), intent(in) :: filename
         
         integer :: unit, ios
@@ -34,7 +36,8 @@ contains
         
         if (len_trim(filename) == 0 .or. trim(filename) == "terminal") then
             call output_to_terminal(canvas, text_elements, num_text_elements, &
-                                  plot_width, plot_height, title_text, xlabel_text, ylabel_text)
+                                  plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                                  legend_lines, num_legend_lines)
         else
             open(newunit=unit, file=filename, status='replace', iostat=ios, iomsg=error_msg)
             
@@ -43,25 +46,30 @@ contains
                 ! Fall back to terminal output
                 call log_info("Falling back to terminal output due to file error")
                 call output_to_terminal(canvas, text_elements, num_text_elements, &
-                                      plot_width, plot_height, title_text, xlabel_text, ylabel_text)
+                                      plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                                      legend_lines, num_legend_lines)
                 return
             end if
             
             call output_to_file(canvas, text_elements, num_text_elements, &
-                              plot_width, plot_height, title_text, xlabel_text, ylabel_text, unit)
+                              plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                              legend_lines, num_legend_lines, unit)
             close(unit)
             call log_info("Unicode plot saved to '" // trim(filename) // "'")
         end if
     end subroutine ascii_finalize
     
     subroutine output_to_terminal(canvas, text_elements, num_text_elements, &
-                                 plot_width, plot_height, title_text, xlabel_text, ylabel_text)
+                                 plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                                 legend_lines, num_legend_lines)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
-        integer :: i, j
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
+        integer :: i, j, legend_idx
         
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
@@ -97,17 +105,27 @@ contains
                 print '(A)', trim(ascii_ylabel)
             end block
         end if
+
+        if (num_legend_lines > 0) then
+            print '(A)', ''
+            do legend_idx = 1, min(num_legend_lines, size(legend_lines))
+                print '(A)', trim(legend_lines(legend_idx))
+            end do
+        end if
     end subroutine output_to_terminal
-    
+
     subroutine output_to_file(canvas, text_elements, num_text_elements, &
-                            plot_width, plot_height, title_text, xlabel_text, ylabel_text, unit)
+                            plot_width, plot_height, title_text, xlabel_text, ylabel_text, &
+                            legend_lines, num_legend_lines, unit)
         character(len=1), intent(inout) :: canvas(:,:)
         type(text_element_t), intent(in) :: text_elements(:)
         integer, intent(in) :: num_text_elements
         integer, intent(in) :: plot_width, plot_height
         character(len=:), allocatable, intent(in) :: title_text, xlabel_text, ylabel_text
+        character(len=*), intent(in) :: legend_lines(:)
+        integer, intent(in) :: num_legend_lines
         integer, intent(in) :: unit
-        integer :: i, j
+        integer :: i, j, legend_idx
         
         ! Render text elements to canvas before output
         call render_text_elements_to_canvas(canvas, text_elements, &
@@ -142,6 +160,13 @@ contains
                 call escape_unicode_for_ascii(ylabel_text, ascii_ylabel)
                 write(unit, '(A)') trim(ascii_ylabel)
             end block
+        end if
+
+        if (num_legend_lines > 0) then
+            write(unit, '(A)') ''
+            do legend_idx = 1, min(num_legend_lines, size(legend_lines))
+                write(unit, '(A)') trim(legend_lines(legend_idx))
+            end do
         end if
     end subroutine output_to_file
 

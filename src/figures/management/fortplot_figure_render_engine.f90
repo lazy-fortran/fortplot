@@ -24,7 +24,7 @@ module fortplot_figure_render_engine
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
-    use fortplot_ascii, only: ascii_context
+    use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
     implicit none
 
     private
@@ -82,6 +82,7 @@ contains
         logical :: have_pie_pixels
         logical :: has_pie_plots
         logical :: pie_only
+        logical :: ascii_backend
 
         call calculate_figure_data_ranges(plots, plot_count, &
                                           state%xlim_set, state%ylim_set, &
@@ -93,6 +94,13 @@ contains
                                           state%y_max_transformed, &
                                           state%xscale, state%yscale, &
                                           state%symlog_threshold, axis_filter=AXIS_PRIMARY)
+
+        ascii_backend = .false.
+        select type (backend_ptr => state%backend)
+        class is (ascii_context)
+            ascii_backend = .true.
+        class default
+        end select
 
         if (state%has_twinx) then
             x_min_dummy = state%x_min
@@ -144,6 +152,7 @@ contains
 
         has_pie_plots = contains_pie_plot(plots, plot_count)
         pie_only = .false.
+        ascii_backend = .false.
         if (has_pie_plots) then
             have_pie_pixels = .false.
             select type (bk => state%backend)
@@ -157,8 +166,9 @@ contains
                 have_pie_pixels = .true.
             class is (ascii_context)
                 pie_plot_width_px = real(max(1, bk%plot_width - 3), wp)
-                pie_plot_height_px = real(max(1, bk%plot_height - 3), wp)
+                pie_plot_height_px = real(max(1, bk%plot_height - 3), wp) * ASCII_CHAR_ASPECT
                 have_pie_pixels = .true.
+                ascii_backend = .true.
             class default
             end select
 
@@ -177,7 +187,8 @@ contains
         call render_figure_background(state%backend)
 
         if (state%grid_enabled) then
-            call render_grid_lines(state%backend, state%grid_enabled, &
+            if (.not. ascii_backend) then
+                call render_grid_lines(state%backend, state%grid_enabled, &
                                    state%grid_which, state%grid_axis, &
                                    state%grid_alpha, state%width, state%height, &
                                    state%margin_left, state%margin_right, &
@@ -188,6 +199,7 @@ contains
                                    state%x_min_transformed, state%x_max_transformed, &
                                    state%y_min_transformed, state%y_max_transformed, &
                                    state%grid_linestyle)
+            end if
         end if
 
         if (.not. pie_only) then
