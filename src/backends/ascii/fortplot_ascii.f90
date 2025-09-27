@@ -30,8 +30,6 @@ module fortplot_ascii
 
     real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
 
-    real(wp), parameter :: ASCII_CHAR_ASPECT = 2.0_wp
-
     type, extends(plot_context) :: ascii_context
         character(len=1), allocatable :: canvas(:,:)
         character(len=:), allocatable :: title_text
