@@ -6,7 +6,7 @@ module fortplot_figure_render_engine
 
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t, subplot_data_t, AXIS_PRIMARY, &
-                                  AXIS_TWINX, AXIS_TWINY
+                                  AXIS_TWINX, AXIS_TWINY, PLOT_TYPE_PIE
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_rendering_pipeline, only: calculate_figure_data_ranges, &
                                                     setup_coordinate_system, &
@@ -246,6 +246,8 @@ contains
         end if
 
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
+            ! Regenerate legend for pie charts to ensure correct backend-specific markers
+            call regenerate_pie_legend_for_backend(state, plots, plot_count)
             call state%legend_data%render(state%backend)
         end if
 
@@ -343,5 +345,33 @@ contains
             end do
         end do
     end subroutine render_subplots
+
+    subroutine regenerate_pie_legend_for_backend(state, plots, plot_count)
+        !! Regenerate legend data for pie charts to ensure correct backend-specific markers
+        use fortplot_figure_plot_management, only: setup_figure_legend
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+
+        integer :: i
+        logical :: has_pie_charts
+
+        ! Check if there are any pie charts
+        has_pie_charts = .false.
+        do i = 1, plot_count
+            if (plots(i)%plot_type == PLOT_TYPE_PIE) then
+                has_pie_charts = .true.
+                exit
+            end if
+        end do
+
+        ! Only regenerate if there are pie charts
+        if (has_pie_charts) then
+            ! Clear and regenerate legend data with current backend
+            call state%legend_data%clear()
+            call setup_figure_legend(state%legend_data, state%show_legend, &
+                                    plots, plot_count, 'east', state%backend_name)
+        end if
+    end subroutine regenerate_pie_legend_for_backend
 
 end module fortplot_figure_render_engine
