@@ -637,13 +637,19 @@ contains
                 end if
             end if
 
-            ! Use square markers for PNG/PDF, ASCII characters for ASCII backend
-            if (present(backend_name) .and. trim(backend_name) == 'ascii') then
+            ! Use ASCII characters for ASCII backend, square markers for PNG/PDF
+            if (present(backend_name)) then
+                if (trim(backend_name) == 'ascii') then
+                    call legend_data%add_entry(trim(label_buf), color, &
+                                              linestyle='None', marker=get_pie_slice_marker_for_index(i))
+                else
+                    call legend_data%add_entry(trim(label_buf), color, &
+                                              linestyle='None', marker='s')
+                end if
+            else
+                ! Default to ASCII characters if backend_name not provided
                 call legend_data%add_entry(trim(label_buf), color, &
                                           linestyle='None', marker=get_pie_slice_marker_for_index(i))
-            else
-                call legend_data%add_entry(trim(label_buf), color, &
-                                          linestyle='None', marker='s')
             end if
         end do
     end subroutine add_pie_legend_entries
