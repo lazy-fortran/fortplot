@@ -40,25 +40,38 @@ contains
         ! Using standard luminance formula
         luminance = 0.299_wp * current_r + 0.587_wp * current_g + 0.114_wp * current_b
         
-        ! Select character based on color dominance and luminance
-        ! Don't skip any colors - render everything
-        if (luminance > 0.9_wp) then
-            ! Very bright colors still get rendered with lighter characters
-            line_char = ':'
-        else if (current_g > 0.7_wp) then
-            line_char = '@'
-        else if (current_g > 0.3_wp) then
-            line_char = '#'
-        else if (current_b > 0.7_wp) then
-            line_char = '*'
-        else if (current_b > 0.3_wp) then
-            line_char = 'o'
-        else if (current_r > 0.7_wp) then
-            line_char = '%'
-        else if (current_r > 0.3_wp) then
-            line_char = '+'
-        else
-            line_char = '.'
+        ! Skip drawing if this is the dark gray edge color used for pie chart borders
+        if (abs(current_r - 0.1_wp) < 0.05_wp .and. &
+            abs(current_g - 0.1_wp) < 0.05_wp .and. &
+            abs(current_b - 0.1_wp) < 0.05_wp) then
+            return  ! Skip drawing edge lines entirely
+        end if
+
+        ! Try pie chart character mapping first for consistent slice boundaries
+        call select_pie_chart_character(current_r, current_g, current_b, line_char)
+
+        ! Fallback to color-based selection if not a pie chart color
+        if (line_char == ' ') then
+            ! Select character based on color dominance and luminance
+            ! Don't skip any colors - render everything
+            if (luminance > 0.9_wp) then
+                ! Very bright colors still get rendered with lighter characters
+                line_char = ':'
+            else if (current_g > 0.7_wp) then
+                line_char = '@'
+            else if (current_g > 0.3_wp) then
+                line_char = '#'
+            else if (current_b > 0.7_wp) then
+                line_char = '*'
+            else if (current_b > 0.3_wp) then
+                line_char = 'o'
+            else if (current_r > 0.7_wp) then
+                line_char = '%'
+            else if (current_r > 0.3_wp) then
+                line_char = '+'
+            else
+                line_char = '.'
+            end if
         end if
         
         dx = x2 - x1
@@ -259,7 +272,7 @@ contains
         character(len=1), intent(out) :: pie_char
 
         ! Standard color palette used by fortplot (approximated)
-        real(wp), parameter :: TOLERANCE = 0.1_wp
+        real(wp), parameter :: TOLERANCE = 0.15_wp
         character(len=*), parameter :: PIE_CHARS = '-=%#@+*.:&'
 
         ! Seaborn colorblind palette used by fortplot (exact RGB values)
@@ -276,6 +289,8 @@ contains
             pie_char = '@'  ! Yellow -> at
         else if (color_matches(r, g, b, 0.337_wp, 0.702_wp, 0.914_wp, TOLERANCE)) then
             pie_char = '+'  ! Cyan -> plus
+        else if (color_matches(r, g, b, 0.1_wp, 0.1_wp, 0.1_wp, TOLERANCE)) then
+            pie_char = ' '  ! Dark gray edge color -> space (invisible edges)
         else
             ! Not a recognized pie chart color - return space to trigger fallback
             pie_char = ' '
