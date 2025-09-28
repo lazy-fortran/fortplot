@@ -322,7 +322,7 @@ contains
         character(len=*), intent(in), optional :: location
         character(len=*), intent(in) :: backend_name
         
-        call setup_figure_legend(legend_data, show_legend, plots, plot_count, location)
+        call setup_figure_legend(legend_data, show_legend, plots, plot_count, location, backend_name)
     end subroutine figure_legend_operation
 
     subroutine figure_grid_operation(state, enabled, which, axis, alpha, linestyle)
