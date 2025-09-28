@@ -69,9 +69,10 @@ contains
                 end if
             end if
             
-            ! Skip pie chart label/autopct annotations for ASCII backend to prevent duplicates
+            ! Skip pie chart label/autopct annotations for ASCII and PDF backends
             ! ASCII backend uses legend-only approach for cleaner output
-            if (should_skip_annotation_for_ascii(backend, annotations(i))) then
+            ! PDF backend has coordinate transformation issues with pie annotations
+            if (should_skip_pie_annotation(backend, annotations(i))) then
                 cycle
             end if
             
@@ -229,25 +230,31 @@ contains
         call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
     end subroutine render_annotation_arrow
 
-    logical function should_skip_annotation_for_ascii(backend, annotation) result(should_skip)
-        !! Check if annotation should be skipped for ASCII backend
+    logical function should_skip_pie_annotation(backend, annotation) result(should_skip)
+        !! Check if pie chart annotation should be skipped for certain backends
         !! ASCII backend uses legend-only approach for pie charts to prevent duplicates
+        !! PDF backend has coordinate transformation issues with pie annotations
         use fortplot_ascii, only: ascii_context
+        use fortplot_pdf, only: pdf_context
         class(plot_context), intent(in) :: backend
         type(text_annotation_t), intent(in) :: annotation
-        
+
         should_skip = .false.
-        
-        ! Skip pie chart annotations for ASCII backend
+
+        ! Skip pie chart annotations for ASCII and PDF backends
         select type (backend)
         type is (ascii_context)
             ! Skip any annotation that looks like pie chart labels
-            ! These would be pie slice labels or percentage values
+            if (is_pie_chart_annotation(annotation)) then
+                should_skip = .true.
+            end if
+        type is (pdf_context)
+            ! Skip pie annotations in PDF due to coordinate issues
             if (is_pie_chart_annotation(annotation)) then
                 should_skip = .true.
             end if
         end select
-    end function should_skip_annotation_for_ascii
+    end function should_skip_pie_annotation
     
     logical function is_pie_chart_annotation(annotation) result(is_pie_annotation)
         !! Detect if annotation is likely a pie chart label or autopct
