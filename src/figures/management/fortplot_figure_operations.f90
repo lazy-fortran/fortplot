@@ -313,13 +313,14 @@ contains
         call update_plot_ydata(plots, plot_count, plot_index, y_new)
     end subroutine figure_set_ydata_operation
 
-    subroutine figure_legend_operation(legend_data, show_legend, plots, plot_count, location)
+    subroutine figure_legend_operation(legend_data, show_legend, plots, plot_count, location, backend_name)
         !! Add legend to figure
         type(legend_t), intent(inout) :: legend_data
         logical, intent(inout) :: show_legend
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in), optional :: location
+        character(len=*), intent(in) :: backend_name
         
         call setup_figure_legend(legend_data, show_legend, plots, plot_count, location)
     end subroutine figure_legend_operation

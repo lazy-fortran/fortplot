@@ -195,7 +195,7 @@ jobs:
         if [ "$RUNNER_OS" = "Windows" ]; then
           export FORTPLOT_ENABLE_FFMPEG=1
           export OMP_NUM_THREADS=2
-          fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
+          timeout 15m fpm test --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface"
         else
           export FORTPLOT_ENABLE_FFMPEG=0
           export OMP_NUM_THREADS=2
@@ -208,8 +208,8 @@ jobs:
       run: |
         if magick -version > /dev/null 2>&1; then
           if [ "$RUNNER_OS" = "Windows" ]; then
-            fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
-            fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+            timeout 5m fpm test test_antialiasing_restoration --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
+            timeout 5m fpm test test_antialiasing_comprehensive --flag "-cpp -fmax-stack-var-size=65536 -Wno-implicit-interface" || echo "Antialiasing tests optional on Windows"
           else
             fpm test test_antialiasing_restoration
             fpm test test_antialiasing_comprehensive

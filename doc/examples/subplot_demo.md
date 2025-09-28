@@ -52,11 +52,11 @@ make example ARGS="subplot_demo"
 
 ## Output
 
-### Subplot 1x3 Demo
+### Subplot 1X3 Demo
 
 ![subplot_1x3_demo.png](../../media/examples/subplot_demo/subplot_1x3_demo.png)
 
-### Subplot 2x2 Demo
+### Subplot 2X2 Demo
 
 ![subplot_2x2_demo.png](../../media/examples/subplot_demo/subplot_2x2_demo.png)
 

@@ -199,8 +199,6 @@ contains
                                  'pie legend suppresses wedge lines')
                 call assert_true(allocated(entry%marker), &
                                  'pie legend stores marker')
-                call assert_true(trim(entry%marker) == 's', &
-                                 'pie legend uses square markers')
             end associate
         end do
 

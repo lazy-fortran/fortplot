@@ -40,25 +40,38 @@ contains
         ! Using standard luminance formula
         luminance = 0.299_wp * current_r + 0.587_wp * current_g + 0.114_wp * current_b
         
-        ! Select character based on color dominance and luminance
-        ! Don't skip any colors - render everything
-        if (luminance > 0.9_wp) then
-            ! Very bright colors still get rendered with lighter characters
-            line_char = ':'
-        else if (current_g > 0.7_wp) then
-            line_char = '@'
-        else if (current_g > 0.3_wp) then
-            line_char = '#'
-        else if (current_b > 0.7_wp) then
-            line_char = '*'
-        else if (current_b > 0.3_wp) then
-            line_char = 'o'
-        else if (current_r > 0.7_wp) then
-            line_char = '%'
-        else if (current_r > 0.3_wp) then
-            line_char = '+'
-        else
-            line_char = '.'
+        ! Skip drawing if this is the dark gray edge color used for pie chart borders
+        if (abs(current_r - 0.1_wp) < 0.05_wp .and. &
+            abs(current_g - 0.1_wp) < 0.05_wp .and. &
+            abs(current_b - 0.1_wp) < 0.05_wp) then
+            return  ! Skip drawing edge lines entirely
+        end if
+
+        ! Try pie chart character mapping first for consistent slice boundaries
+        call select_pie_chart_character(current_r, current_g, current_b, line_char)
+
+        ! Fallback to color-based selection if not a pie chart color
+        if (line_char == ' ') then
+            ! Select character based on color dominance and luminance
+            ! Don't skip any colors - render everything
+            if (luminance > 0.9_wp) then
+                ! Very bright colors still get rendered with lighter characters
+                line_char = ':'
+            else if (current_g > 0.7_wp) then
+                line_char = '@'
+            else if (current_g > 0.3_wp) then
+                line_char = '#'
+            else if (current_b > 0.7_wp) then
+                line_char = '*'
+            else if (current_b > 0.3_wp) then
+                line_char = 'o'
+            else if (current_r > 0.7_wp) then
+                line_char = '%'
+            else if (current_r > 0.3_wp) then
+                line_char = '+'
+            else
+                line_char = '.'
+            end if
         end if
         
         dx = x2 - x1
@@ -103,14 +116,17 @@ contains
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         integer, intent(in) :: plot_width, plot_height
         real(wp), intent(in) :: current_r, current_g, current_b
-        
+
         integer :: px(4), py(4), i, j, min_x, max_x, min_y, max_y
         logical :: inside_first, inside_second
         real(wp) :: x_center, y_center
         character(len=1) :: fill_char
         real(wp) :: color_intensity
         integer :: char_index
-        
+
+        ! Character sequence for pie charts - matches legend order
+        character(len=*), parameter :: PIE_CHARS = '-=+%#@*.:&'
+
         ! Convert coordinates to ASCII canvas coordinates (matching line drawing algorithm)
         do i = 1, 4
             ! Map to usable plot area (excluding 1-char border on each side)
@@ -119,20 +135,27 @@ contains
             py(i) = (plot_height - 1) - int((y_quad(i) - y_min) / &
                 (y_max - y_min) * real(plot_height - 3, wp))
         end do
-        
-        ! Calculate color intensity from RGB values (luminance formula)
-        color_intensity = 0.299_wp * current_r + 0.587_wp * current_g + &
-            0.114_wp * current_b
-        
-        ! Map color intensity to ASCII character index with proper low-intensity handling
-        if (color_intensity <= 0.001_wp) then
-            char_index = 1  ! Space for zero intensity
-        else
-            ! Map 0.0-1.0 intensity to full character range 1-len(ASCII_CHARS)
-            char_index = min(len(ASCII_CHARS), max(1, int(color_intensity * len(ASCII_CHARS)) + 1))
+
+        ! Determine if this is likely a pie chart based on color patterns
+        ! Use heuristic: if colors are from default palette sequence, use pie characters
+        call select_pie_chart_character(current_r, current_g, current_b, fill_char)
+
+        ! Fallback to intensity-based mapping if not a pie chart
+        if (fill_char == ' ') then
+            ! Calculate color intensity from RGB values (luminance formula)
+            color_intensity = 0.299_wp * current_r + 0.587_wp * current_g + &
+                0.114_wp * current_b
+
+            ! Map color intensity to ASCII character index with proper low-intensity handling
+            if (color_intensity <= 0.001_wp) then
+                char_index = 1  ! Space for zero intensity
+            else
+                ! Map 0.0-1.0 intensity to full character range 1-len(ASCII_CHARS)
+                char_index = min(len(ASCII_CHARS), max(1, int(color_intensity * len(ASCII_CHARS)) + 1))
+            end if
+
+            fill_char = ASCII_CHARS(char_index:char_index)
         end if
-        
-        fill_char = ASCII_CHARS(char_index:char_index)
         
         ! Fill bounding rectangle with bounds checking
         min_x = max(2, min(minval(px), plot_width - 1))
@@ -154,8 +177,7 @@ contains
                                      real(px(4), wp), real(py(4), wp))
                 if (.not. (inside_first .or. inside_second)) cycle
 
-                if (canvas(j, i) == ' ' .or. &
-                    get_char_density(fill_char) > get_char_density(canvas(j, i))) then
+                if (canvas(j, i) == ' ') then
                     canvas(j, i) = fill_char
                 end if
             end do
@@ -243,5 +265,44 @@ contains
         ! They should be stored by the calling routine if needed
         associate(unused_sum => current_r + current_g + current_b); end associate
     end subroutine ascii_draw_text_primitive
+
+    subroutine select_pie_chart_character(r, g, b, pie_char)
+        !! Select distinct character for pie chart slices based on color matching
+        real(wp), intent(in) :: r, g, b
+        character(len=1), intent(out) :: pie_char
+
+        ! Standard color palette used by fortplot (approximated)
+        real(wp), parameter :: TOLERANCE = 0.15_wp
+        character(len=*), parameter :: PIE_CHARS = '-=%#@+*.:&'
+
+        ! Seaborn colorblind palette used by fortplot (exact RGB values)
+        ! Blue, Green, Orange, Purple, Yellow, Cyan
+        if (color_matches(r, g, b, 0.0_wp, 0.447_wp, 0.698_wp, TOLERANCE)) then
+            pie_char = '-'  ! Blue -> dash
+        else if (color_matches(r, g, b, 0.0_wp, 0.619_wp, 0.451_wp, TOLERANCE)) then
+            pie_char = '='  ! Green -> equals
+        else if (color_matches(r, g, b, 0.835_wp, 0.369_wp, 0.0_wp, TOLERANCE)) then
+            pie_char = '%'  ! Orange -> percent
+        else if (color_matches(r, g, b, 0.8_wp, 0.475_wp, 0.655_wp, TOLERANCE)) then
+            pie_char = '#'  ! Purple -> hash
+        else if (color_matches(r, g, b, 0.941_wp, 0.894_wp, 0.259_wp, TOLERANCE)) then
+            pie_char = '@'  ! Yellow -> at
+        else if (color_matches(r, g, b, 0.337_wp, 0.702_wp, 0.914_wp, TOLERANCE)) then
+            pie_char = '+'  ! Cyan -> plus
+        else if (color_matches(r, g, b, 0.1_wp, 0.1_wp, 0.1_wp, TOLERANCE)) then
+            pie_char = ' '  ! Dark gray edge color -> space (invisible edges)
+        else
+            ! Not a recognized pie chart color - return space to trigger fallback
+            pie_char = ' '
+        end if
+    end subroutine select_pie_chart_character
+
+    pure logical function color_matches(r1, g1, b1, r2, g2, b2, tolerance)
+        !! Check if two RGB colors match within tolerance
+        real(wp), intent(in) :: r1, g1, b1, r2, g2, b2, tolerance
+        color_matches = abs(r1 - r2) <= tolerance .and. &
+                       abs(g1 - g2) <= tolerance .and. &
+                       abs(b1 - b2) <= tolerance
+    end function color_matches
 
 end module fortplot_ascii_primitives

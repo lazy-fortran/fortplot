@@ -5,35 +5,29 @@ title: Bar Chart Demo
 
 Source: [bar_chart_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/bar_chart_demo/bar_chart_demo.f90)
 
-Grouped bar charts for categorical comparisons using both the pyplot-style
-stateful helpers and the `figure_t` object API.
+Demonstrates grouped vertical and horizontal bar charts using both the stateful
+(pyplot-style) and object-oriented (`figure_t`) fortplot APIs.
 
-- **Stateful grouped bars**: `call bar(...)` renders side-by-side series for
-  quarterly revenue comparisons.
-- **Horizontal bars**: `call barh(...)` presents ranked completion percentages
-  for training modules.
-- **Object-oriented workflow**: `call bar_impl(fig, ...)` builds the same
-  grouped view without relying on the global figure state.
-- **Multi-format outputs**: Every scenario writes PNG, PDF, and ASCII artefacts
-  under `output/example/fortran/bar_chart_demo/`.
+- `bar_chart_demo.f90` - Source demonstrating grouped and horizontal bars
+- Generated outputs in `output/example/fortran/bar_chart_demo/`
 
-## Stateful API Example
+- **Grouped bars**: Compare multiple series per category
+- **Horizontal bars**: Present ranked metrics across categories
+- **OO workflow**: Call `bar_impl` with an explicit `figure_t` instance to avoid globals
+- **Multiple formats**: Save PNG, PDF, and ASCII outputs for each scenario
 
-```fortran
-call figure(figsize=[7.5d0, 5.0d0])
-call bar(positions_a, product_a, width=0.4d0, label='Product A')
-call bar(positions_b, product_b, width=0.4d0, label='Product B')
-call legend()
-```
+Running the demo generates:
+- `stateful_grouped.(png|pdf|txt)` - Vertical grouped comparison
+- `stateful_horizontal.(png|pdf|txt)` - Horizontal completion chart
+- `oo_grouped.(png|pdf|txt)` - Object API grouped budget comparison
 
-## Object API Example
+Perfect for showcasing categorical comparisons and verifying bar chart support
+in fortplot.
 
-```fortran
-call fig%initialize()
-call bar_impl(fig, positions_baseline, baseline, width=0.32d0, label='Baseline')
-call bar_impl(fig, positions_projected, projected, width=0.32d0, label='Projected')
-call fig%legend()
-```
+## Files
+
+- `bar_chart_demo.f90` - Source code
+- Generated media in `output/example/fortran/bar_chart_demo/`
 
 ## Running
 
@@ -41,11 +35,44 @@ call fig%legend()
 make example ARGS="bar_chart_demo"
 ```
 
-## Output Artefacts
+## Output
 
-- `stateful_grouped.(png|pdf|txt)` – Vertical grouped bars comparing two series
-- `stateful_horizontal.(png|pdf|txt)` – Horizontal ranking chart
-- `oo_grouped.(png|pdf|txt)` – Object-oriented grouped comparison
+### Oo Grouped
 
-These outputs provide quick evidence that bar charts render correctly across
-fortplot's interfaces and export formats.
+![oo_grouped.png](../../media/examples/bar_chart_demo/oo_grouped.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/bar_chart_demo/oo_grouped.txt)
+
+[Download PDF](../../media/examples/bar_chart_demo/oo_grouped.pdf)
+
+### Stateful Grouped
+
+![stateful_grouped.png](../../media/examples/bar_chart_demo/stateful_grouped.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/bar_chart_demo/stateful_grouped.txt)
+
+[Download PDF](../../media/examples/bar_chart_demo/stateful_grouped.pdf)
+
+### Stateful Horizontal
+
+![stateful_horizontal.png](../../media/examples/bar_chart_demo/stateful_horizontal.png)
+
+ASCII output:
+```
+(Content embedded here)
+```
+
+[Download ASCII](../../media/examples/bar_chart_demo/stateful_horizontal.txt)
+
+[Download PDF](../../media/examples/bar_chart_demo/stateful_horizontal.pdf)
+

@@ -33,60 +33,12 @@ contains
 
         if (pie_plot%pie_slice_count <= 0) return
 
-        select type (backend => self%state%backend)
-        type is (ascii_context)
-            call add_ascii_pie_entries(backend, pie_plot)
-            return
-        class default
-        end select
-
+        ! Always create annotations for testing and data integrity
+        ! Rendering behavior is handled by the backend itself
         call add_autopct_annotations(self, pie_plot)
         call add_label_annotations(self, pie_plot)
     end subroutine add_pie_annotations
     
-    module subroutine add_ascii_pie_entries(backend, pie_plot)
-        use fortplot_plot_data, only: plot_data_t
-        class(ascii_context), intent(inout) :: backend
-        type(plot_data_t), intent(in) :: pie_plot
-
-        integer :: i
-        real(wp) :: total
-        character(len=64) :: label_buffer
-        character(len=:), allocatable :: auto_text
-        logical :: warned
-
-        if (pie_plot%pie_slice_count <= 0) return
-
-        call backend%clear_pie_legend_entries()
-
-        total = sum(pie_plot%pie_values(1:pie_plot%pie_slice_count))
-        warned = .false.
-
-        do i = 1, pie_plot%pie_slice_count
-            label_buffer = ''
-            if (allocated(pie_plot%pie_labels)) then
-                if (i <= size(pie_plot%pie_labels)) then
-                    label_buffer = trim(pie_plot%pie_labels(i))
-                end if
-            end if
-            if (len_trim(label_buffer) == 0) then
-                write(label_buffer, '("Slice ",I0)') i
-            end if
-
-            auto_text = ''
-            if (total > 0.0_wp .and. allocated(pie_plot%pie_autopct)) then
-                if (len_trim(pie_plot%pie_autopct) > 0) then
-                    call format_autopct_value(pie_plot%pie_values(i), total, &
-                                              pie_plot%pie_autopct, auto_text, warned)
-                    if (len_trim(auto_text) > 0) then
-                        auto_text = trim(adjustl(auto_text))
-                    end if
-                end if
-            end if
-
-            call backend%register_pie_legend_entry(label_buffer, auto_text)
-        end do
-    end subroutine add_ascii_pie_entries
 
     module subroutine add_autopct_annotations(self, pie_plot)
         class(figure_t), intent(inout) :: self
