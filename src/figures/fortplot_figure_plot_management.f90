@@ -551,7 +551,7 @@ contains
         ! Add legend entries from plots
         do i = 1, plot_count
             if (plots(i)%plot_type == PLOT_TYPE_PIE) then
-                call add_pie_legend_entries(legend_data, plots(i))
+                call add_pie_legend_entries(legend_data, plots(i), backend_name)
                 cycle
             end if
 
@@ -585,10 +585,11 @@ contains
         end do
     end subroutine setup_figure_legend
 
-    subroutine add_pie_legend_entries(legend_data, plot)
+    subroutine add_pie_legend_entries(legend_data, plot, backend_name)
         !! Add one legend entry per pie slice using wedge colors
         type(legend_t), intent(inout) :: legend_data
         type(plot_data_t), intent(in) :: plot
+        character(len=*), intent(in), optional :: backend_name
 
         integer :: slice_count, i
         real(wp) :: color(3)
@@ -636,8 +637,14 @@ contains
                 end if
             end if
 
-            call legend_data%add_entry(trim(label_buf), color, &
-                                      linestyle='None', marker=get_pie_slice_marker_for_index(i))
+            ! Use square markers for PNG/PDF, ASCII characters for ASCII backend
+            if (present(backend_name) .and. trim(backend_name) == 'ascii') then
+                call legend_data%add_entry(trim(label_buf), color, &
+                                          linestyle='None', marker=get_pie_slice_marker_for_index(i))
+            else
+                call legend_data%add_entry(trim(label_buf), color, &
+                                          linestyle='None', marker='s')
+            end if
         end do
     end subroutine add_pie_legend_entries
 
