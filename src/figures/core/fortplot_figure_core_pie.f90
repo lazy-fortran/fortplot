@@ -28,6 +28,7 @@ contains
     end subroutine add_pie
 
     module subroutine add_pie_annotations(self, pie_plot)
+        use fortplot_pdf, only: pdf_context
         class(figure_t), intent(inout) :: self
         type(plot_data_t), intent(in) :: pie_plot
 
@@ -38,10 +39,15 @@ contains
         type is (ascii_context)
             call add_ascii_pie_entries(backend, pie_plot)
             return
+        type is (pdf_context)
+            ! Skip autopct for PDF backend temporarily due to coordinate issues
+            ! PDF pie charts will show labels but not percentages until fixed
+            call add_label_annotations(self, pie_plot)
+            return
         class default
         end select
 
-        ! Standard annotation creation for PNG/PDF backends
+        ! Standard annotation creation for PNG backend
         call add_autopct_annotations(self, pie_plot)
         call add_label_annotations(self, pie_plot)
     end subroutine add_pie_annotations

@@ -103,11 +103,11 @@ contains
             edge_x(seg_count + 1) = apply_scale_transform(x_b, xscale, symlog_threshold)
             edge_y(seg_count + 1) = apply_scale_transform(y_b, yscale, symlog_threshold)
 
+            ! Draw only the outer arc edge, not the radial lines
             call backend%color(edge_color(1), edge_color(2), edge_color(3))
             call backend%set_line_width(1.0_wp)
-            call backend%line(center_x_t, center_y_t, edge_x(1), edge_y(1))
-            call backend%line(center_x_t, center_y_t, edge_x(seg_count + 1), &
-                              edge_y(seg_count + 1))
+            ! Skip radial lines to prevent hairline artifacts in PDF
+            ! Only draw the arc outline
             do j = 1, seg_count
                 call backend%line(edge_x(j), edge_y(j), edge_x(j + 1), edge_y(j + 1))
             end do
