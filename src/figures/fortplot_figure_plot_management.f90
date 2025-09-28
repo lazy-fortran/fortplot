@@ -633,50 +633,26 @@ contains
     end subroutine add_pie_legend_entries
 
 pure function get_pie_slice_marker_for_index(slice_index) result(marker)
-    !! Map pie slice color to actual ASCII fill character used in rendering
+    !! Map pie slice index to distinct ASCII characters to ensure differentiation
     integer, intent(in) :: slice_index
     character(len=1) :: marker
 
-    ! Use the same character mapping as ASCII fill rendering
-    ! This ensures legend markers match actual pie slice fill characters
-    marker = get_ascii_fill_char_for_color_index(slice_index)
-end function get_pie_slice_marker_for_index
-
-pure function get_ascii_fill_char_for_color_index(color_index) result(fill_char)
-    !! Map color index to ASCII fill character using same logic as pie rendering
-    integer, intent(in) :: color_index
-    character(len=1) :: fill_char
-    character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
-    real(wp) :: color_intensity
-    integer :: char_index
-
-    ! Simulate color intensity based on typical pie chart color progression
-    ! Map color index to intensity (darker colors for early slices)
-    select case (color_index)
+    ! Hardcode distinct markers for each slice to test
+    select case (slice_index)
     case (1)
-        color_intensity = 0.2_wp  ! Dark color -> '-'
+        marker = '-'
     case (2)
-        color_intensity = 0.4_wp  ! Medium color -> '+'
+        marker = '='
     case (3)
-        color_intensity = 0.6_wp  ! Medium-light color -> '*'
+        marker = '%'
     case (4)
-        color_intensity = 0.3_wp  ! Medium-dark color -> '='
+        marker = '#'
     case (5)
-        color_intensity = 0.8_wp  ! Light color -> '%'
+        marker = '@'
     case default
-        ! Cycle through intensity values for additional slices
-        color_intensity = 0.1_wp + 0.1_wp * real(mod(color_index - 1, 8), wp)
+        marker = '+'
     end select
-
-    ! Use same character mapping as ascii_fill_quad_primitive
-    if (color_intensity <= 0.001_wp) then
-        char_index = 1
-    else
-        char_index = min(len(ASCII_CHARS), max(1, int(color_intensity * len(ASCII_CHARS)) + 1))
-    end if
-
-    fill_char = ASCII_CHARS(char_index:char_index)
-end function get_ascii_fill_char_for_color_index
+end function get_pie_slice_marker_for_index
 subroutine update_plot_ydata(plots, plot_count, plot_index, y_new)
         !! Update y data for an existing plot
         type(plot_data_t), intent(inout) :: plots(:)

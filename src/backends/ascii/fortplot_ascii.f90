@@ -350,7 +350,8 @@ contains
             if (allocated(legend%entries(i)%marker)) then
                 if (trim(legend%entries(i)%marker) /= 'None' .and. &
                     len_trim(legend%entries(i)%marker) > 0) then
-                    marker_char = ascii_marker_char(trim(legend%entries(i)%marker))
+                    ! Use direct character for pie chart markers
+                    marker_char = trim(legend%entries(i)%marker)
                 end if
             end if
 

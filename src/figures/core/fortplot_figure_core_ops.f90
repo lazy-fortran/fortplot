@@ -631,7 +631,7 @@ contains
         integer, intent(in) :: plot_count
         character(len=*), intent(in), optional :: location
         call figure_legend_operation(state%legend_data, state%show_legend, &
-                                    plots, plot_count, location)
+                                    plots, plot_count, location, state%backend_name)
     end subroutine core_figure_legend
 
 end module fortplot_figure_core_utils

@@ -1,7 +1,7 @@
-title: 3d Plotting
+title: 3D Plotting
 ---
 
-# 3d Plotting
+# 3D Plotting
 
 Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/3d_plotting/3d_plotting.f90)
 
@@ -47,7 +47,7 @@ make example ARGS="3d_plotting"
 
 ## Output
 
-### 3d Helix
+### 3D Helix
 
 ![3d_helix.png](../../media/examples/3d_plotting/3d_helix.png)
 
