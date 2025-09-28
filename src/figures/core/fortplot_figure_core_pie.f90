@@ -33,13 +33,8 @@ contains
 
         if (pie_plot%pie_slice_count <= 0) return
 
-        ! Skip all annotation rendering for ASCII backend - let normal legend system handle it
-        select type (backend => self%state%backend)
-        type is (ascii_context)
-            return
-        class default
-        end select
-
+        ! Always create annotations for testing and data integrity
+        ! Rendering behavior is handled by the backend itself
         call add_autopct_annotations(self, pie_plot)
         call add_label_annotations(self, pie_plot)
     end subroutine add_pie_annotations
