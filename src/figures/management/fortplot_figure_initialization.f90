@@ -20,6 +20,7 @@ module fortplot_figure_initialization
         !! Figure state and configuration data
         !! Encapsulates all configuration and state management
         class(plot_context), allocatable :: backend
+        character(len=10) :: backend_name = 'png'
         integer :: plot_count = 0
         logical :: rendered = .false.
         
@@ -146,17 +147,21 @@ contains
             if (len_trim(backend) == 0) then
                 call validation_warning("Empty backend name provided, using default 'png'", &
                                       "figure_initialization")
+                state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, state%height)
             else if (backend /= 'png' .and. backend /= 'pdf' .and. backend /= 'ascii') then
                 call validation_warning("Unknown backend '" // trim(backend) // &
                                       "', using default 'png'", "figure_initialization")
+                state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, state%height)
             else
+                state%backend_name = backend
                 call initialize_backend(state%backend, backend, state%width, state%height)
             end if
         else
             ! Default to PNG backend to prevent uninitialized backend
             if (.not. allocated(state%backend)) then
+                state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, state%height)
             end if
         end if

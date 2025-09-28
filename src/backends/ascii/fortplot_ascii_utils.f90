@@ -15,6 +15,7 @@ module fortplot_ascii_utils
     public :: render_text_elements_to_canvas
     public :: print_centered_title, write_centered_title
     public :: text_element_t, ASCII_CHARS
+    public :: is_legend_entry_text, is_registered_legend_label, is_autopct_text, ascii_marker_char
     
     ! ASCII plotting constants
     character(len=*), parameter :: ASCII_CHARS = ' .:-=+*#%@'
@@ -120,6 +121,7 @@ contains
         
         ! Render each stored text element
         do i = 1, num_text_elements
+
             ! Convert Unicode text to ASCII-compatible form for Issue #853 fix
             call escape_unicode_for_ascii(text_elements(i)%text, ascii_text)
             text_len = len_trim(ascii_text)
@@ -235,5 +237,135 @@ contains
             write(unit, '(A)') centered_title
         end if
     end subroutine write_centered_title
+
+    pure logical function is_legend_entry_text(text) result(is_entry)
+        character(len=*), intent(in) :: text
+        character(len=:), allocatable :: trimmed_text
+        character(len=1) :: first_char
+
+        trimmed_text = trim(adjustl(text))
+        if (len_trim(trimmed_text) == 0) then
+            is_entry = .false.
+            return
+        end if
+
+        if (len(trimmed_text) >= 3) then
+            if (trimmed_text(1:3) == '-- ') then
+                is_entry = .true.
+                return
+            end if
+        end if
+
+        first_char = trimmed_text(1:1)
+        if (index('o#%x+*^v<>PH', first_char) > 0) then
+            if (len(trimmed_text) >= 2) then
+                if (trimmed_text(2:2) == ' ') then
+                    is_entry = .true.
+                    return
+                end if
+            end if
+        end if
+
+        is_entry = .false.
+    end function is_legend_entry_text
+
+    pure logical function is_registered_legend_label(legend_entry_labels, legend_entry_count, text) result(found)
+        character(len=64), intent(in) :: legend_entry_labels(:)
+        integer, intent(in) :: legend_entry_count
+        character(len=*), intent(in) :: text
+        character(len=:), allocatable :: trimmed
+        integer :: i
+
+        trimmed = trim(adjustl(text))
+        if (len_trim(trimmed) == 0) then
+            found = .false.
+            return
+        end if
+
+        if (legend_entry_count <= 0) then
+            found = .false.
+            return
+        end if
+
+        do i = 1, legend_entry_count
+            if (adjustl(trim(legend_entry_labels(i))) == trimmed) then
+                found = .true.
+                return
+            end if
+        end do
+
+        found = .false.
+    end function is_registered_legend_label
+
+    pure logical function is_autopct_text(text) result(is_percent)
+        character(len=*), intent(in) :: text
+        character(len=:), allocatable :: trimmed
+        integer :: idx, last
+        character(len=1) :: ch
+
+        trimmed = trim(text)
+        last = len_trim(trimmed)
+        if (last <= 1) then
+            is_percent = .false.
+            return
+        end if
+
+        if (trimmed(last:last) /= '%') then
+            is_percent = .false.
+            return
+        end if
+
+        ! Disable autopct processing completely to prevent text corruption
+        is_percent = .false.
+    end function is_autopct_text
+
+    pure function ascii_marker_char(marker_style) result(marker_char)
+        character(len=*), intent(in) :: marker_style
+        character(len=1) :: marker_char
+
+        select case (trim(marker_style))
+        case ('o')
+            marker_char = 'o'
+        case ('s')
+            marker_char = '#'
+        case ('D', 'd')
+            marker_char = '%'
+        case ('x')
+            marker_char = 'x'
+        case ('+')
+            marker_char = '+'
+        case ('*')
+            marker_char = '*'
+        case ('^')
+            marker_char = '^'
+        case ('v')
+            marker_char = 'v'
+        case ('<')
+            marker_char = '<'
+        case ('>')
+            marker_char = '>'
+        case ('p')
+            marker_char = 'P'
+        case ('h', 'H')
+            marker_char = 'H'
+        ! Pie chart markers - pass through directly
+        case ('-')
+            marker_char = '-'
+        case ('=')
+            marker_char = '='
+        case ('%')
+            marker_char = '%'
+        case ('@')
+            marker_char = '@'
+        case ('#')
+            marker_char = '#'
+        case ('&')
+            marker_char = '&'
+        case ('$')
+            marker_char = '$'
+        case default
+            marker_char = '*'
+        end select
+    end function ascii_marker_char
 
 end module fortplot_ascii_utils

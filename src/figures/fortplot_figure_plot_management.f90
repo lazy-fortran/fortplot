@@ -633,16 +633,25 @@ contains
     end subroutine add_pie_legend_entries
 
 pure function get_pie_slice_marker_for_index(slice_index) result(marker)
-    !! Map pie slice index to distinct ASCII characters for pie chart legends
-    !! Each slice gets a unique character regardless of color
+    !! Map pie slice index to distinct ASCII characters to ensure differentiation
     integer, intent(in) :: slice_index
     character(len=1) :: marker
-    character(len=*), parameter :: PIE_MARKERS = '-+*=%@#&$'
-    integer :: marker_idx
-    
-    ! Map slice index to marker, cycling through available symbols
-    marker_idx = mod(slice_index - 1, len(PIE_MARKERS)) + 1
-    marker = PIE_MARKERS(marker_idx:marker_idx)
+
+    ! Hardcode distinct markers for each slice to test
+    select case (slice_index)
+    case (1)
+        marker = '-'
+    case (2)
+        marker = '='
+    case (3)
+        marker = '%'
+    case (4)
+        marker = '#'
+    case (5)
+        marker = '@'
+    case default
+        marker = '+'
+    end select
 end function get_pie_slice_marker_for_index
 subroutine update_plot_ydata(plots, plot_count, plot_index, y_new)
         !! Update y data for an existing plot

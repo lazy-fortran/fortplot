@@ -569,6 +569,17 @@ contains
             marker_char = 'P'  ! Pentagon
         case ('h', 'H')
             marker_char = 'H'  ! Hexagon
+        ! Pie chart markers - pass through directly
+        case ('-')
+            marker_char = '-'
+        case ('=')
+            marker_char = '='
+        case ('%')
+            marker_char = '%'
+        case ('@')
+            marker_char = '@'
+        case ('#')
+            marker_char = '#'
         case default
             marker_char = '*'  ! Default fallback
         end select
