@@ -121,6 +121,7 @@ contains
         
         ! Render each stored text element
         do i = 1, num_text_elements
+
             ! Convert Unicode text to ASCII-compatible form for Issue #853 fix
             call escape_unicode_for_ascii(text_elements(i)%text, ascii_text)
             text_len = len_trim(ascii_text)
@@ -314,17 +315,8 @@ contains
             return
         end if
 
-        is_percent = .true.
-        do idx = 1, last - 1
-            ch = trimmed(idx:idx)
-            select case (ch)
-            case ('0':'9', '.', '+', '-', ' ')
-                cycle
-            case default
-                is_percent = .false.
-                return
-            end select
-        end do
+        ! Disable autopct processing completely to prevent text corruption
+        is_percent = .false.
     end function is_autopct_text
 
     pure function ascii_marker_char(marker_style) result(marker_char)
@@ -356,6 +348,21 @@ contains
             marker_char = 'P'
         case ('h', 'H')
             marker_char = 'H'
+        ! Pie chart markers - pass through directly
+        case ('-')
+            marker_char = '-'
+        case ('=')
+            marker_char = '='
+        case ('%')
+            marker_char = '%'
+        case ('@')
+            marker_char = '@'
+        case ('#')
+            marker_char = '#'
+        case ('&')
+            marker_char = '&'
+        case ('$')
+            marker_char = '$'
         case default
             marker_char = '*'
         end select
