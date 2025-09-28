@@ -525,13 +525,14 @@ contains
         end do
     end subroutine generate_default_contour_levels
     
-    subroutine setup_figure_legend(legend_data, show_legend, plots, plot_count, location)
+    subroutine setup_figure_legend(legend_data, show_legend, plots, plot_count, location, backend_name)
         !! Setup figure legend
         type(legend_t), intent(inout) :: legend_data
         logical, intent(inout) :: show_legend
         type(plot_data_t), intent(in) :: plots(:)
         integer, intent(in) :: plot_count
         character(len=*), intent(in), optional :: location
+        character(len=*), intent(in), optional :: backend_name
         
         character(len=:), allocatable :: loc
         integer :: i
@@ -568,8 +569,16 @@ contains
                                                       plots(i)%linestyle)
                         end if
                     else
-                        call legend_data%add_entry(plots(i)%label, &
-                                                  plots(i)%color)
+                        ! For PNG/PDF backends, add square markers for legend visibility
+                        ! ASCII backend doesn't need markers as it uses text-based legends
+                        if (present(backend_name) .and. trim(backend_name) /= 'ascii') then
+                            call legend_data%add_entry(plots(i)%label, &
+                                                      plots(i)%color, &
+                                                      marker='s')
+                        else
+                            call legend_data%add_entry(plots(i)%label, &
+                                                      plots(i)%color)
+                        end if
                     end if
                 end if
             end if
