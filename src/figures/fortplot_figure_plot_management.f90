@@ -571,13 +571,13 @@ contains
                     else
                         ! For PNG/PDF backends, add square markers for legend visibility
                         ! ASCII backend doesn't need markers as it uses text-based legends
-                        if (present(backend_name) .and. trim(backend_name) /= 'ascii') then
+                        if (present(backend_name) .and. trim(backend_name) == 'ascii') then
+                            call legend_data%add_entry(plots(i)%label, &
+                                                      plots(i)%color)
+                        else
                             call legend_data%add_entry(plots(i)%label, &
                                                       plots(i)%color, &
                                                       marker='s')
-                        else
-                            call legend_data%add_entry(plots(i)%label, &
-                                                      plots(i)%color)
                         end if
                     end if
                 end if
