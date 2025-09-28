@@ -254,10 +254,13 @@ contains
         !! Setup or change the figure backend
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: backend_name
-        
+
         ! Reinitialize backend; initialize_backend has intent(out) and will handle deallocation
         call initialize_backend(state%backend, backend_name, state%width, state%height)
-        
+
+        ! Update the backend_name field to match the current backend
+        state%backend_name = backend_name
+
         ! Force re-rendering with new backend
         state%rendered = .false.
     end subroutine setup_figure_backend
