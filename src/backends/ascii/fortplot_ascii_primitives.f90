@@ -154,8 +154,7 @@ contains
                                      real(px(4), wp), real(py(4), wp))
                 if (.not. (inside_first .or. inside_second)) cycle
 
-                if (canvas(j, i) == ' ' .or. &
-                    get_char_density(fill_char) > get_char_density(canvas(j, i))) then
+                if (canvas(j, i) == ' ') then
                     canvas(j, i) = fill_char
                 end if
             end do
