@@ -3,6 +3,7 @@
 # Reports actual file sizes vs. documented limits to prevent size fraud
 
 echo "=== FILE SIZE FRAUD PREVENTION REPORT ==="
+# Trigger CI retry for Windows build
 echo "Hard Limit: 1000 lines | Target: 500 lines"
 echo "========================================="
 
