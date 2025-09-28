@@ -83,6 +83,8 @@ module fortplot_ascii
         procedure :: render_axes => ascii_render_axes
         procedure :: clear_ascii_legend => ascii_clear_legend_lines
         procedure :: add_ascii_legend_entry => ascii_add_legend_entry
+        procedure :: clear_pie_legend_entries => ascii_clear_pie_legend_entries
+        procedure :: register_pie_legend_entry => ascii_register_pie_legend_entry
     end type ascii_context
     
     character(len=*), parameter :: DENSITY_CHARS = ' ░▒▓█'
@@ -604,5 +606,23 @@ contains
 
         call append_ascii_legend_line_helper(this%legend_lines, this%num_legend_lines, trim(line_buffer))
     end subroutine ascii_add_legend_entry
+
+    subroutine ascii_clear_pie_legend_entries(this)
+        class(ascii_context), intent(inout) :: this
+
+        ! For ASCII backend, pie legends are managed by the text module
+        ! Clear the standard legend lines instead
+        call this%clear_ascii_legend()
+    end subroutine ascii_clear_pie_legend_entries
+
+    subroutine ascii_register_pie_legend_entry(this, label, value_text)
+        class(ascii_context), intent(inout) :: this
+        character(len=*), intent(in) :: label
+        character(len=*), intent(in) :: value_text
+
+        ! For ASCII backend, pie legends are handled by the text module
+        ! This is a placeholder that delegates to the standard legend system
+        call this%add_ascii_legend_entry(label, value_text)
+    end subroutine ascii_register_pie_legend_entry
 
 end module fortplot_ascii
