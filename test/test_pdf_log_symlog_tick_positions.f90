@@ -35,10 +35,10 @@ program test_pdf_log_symlog_tick_positions
         if (abs(log10(yexp) - nint(log10(yexp))) < 1.0e-12_wp) then
             idx = -1
             do i = 1, ny
-                if (trim(yl(i)) == '10^0' .and. yexp == 1.0_wp) idx = i
-                if (trim(yl(i)) == '10^1' .and. yexp == 10.0_wp) idx = i
-                if (trim(yl(i)) == '10^2' .and. yexp == 100.0_wp) idx = i
-                if (trim(yl(i)) == '10^3' .and. yexp == 1000.0_wp) idx = i
+                if (trim(yl(i)) == '$10^{0}$' .and. yexp == 1.0_wp) idx = i
+                if (trim(yl(i)) == '$10^{1}$' .and. yexp == 10.0_wp) idx = i
+                if (trim(yl(i)) == '$10^{2}$' .and. yexp == 100.0_wp) idx = i
+                if (trim(yl(i)) == '$10^{3}$' .and. yexp == 1000.0_wp) idx = i
             end do
             if (idx > 0) then
                 ymin = 1.0_wp; ymax = 1000.0_wp
@@ -79,4 +79,3 @@ program test_pdf_log_symlog_tick_positions
 
     print *, 'PASS: PDF log/symlog tick positions verified'
 end program test_pdf_log_symlog_tick_positions
-
