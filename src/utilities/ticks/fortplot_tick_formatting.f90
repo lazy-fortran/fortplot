@@ -167,9 +167,9 @@ contains
 
         ! Always emit mathtext-style powers of ten to mirror matplotlib output
         if (value < 0.0_wp) then
-            write(formatted, '(A, I0, A)') '-10^{', exponent, '}'
+            write(formatted, '(A, I0, A)') '$-10^{', exponent, '}$'
         else
-            write(formatted, '(A, I0, A)') '10^{', exponent, '}'
+            write(formatted, '(A, I0, A)') '$10^{', exponent, '}$'
         end if
         formatted = adjustl(formatted)
     end function format_power_of_ten_label
