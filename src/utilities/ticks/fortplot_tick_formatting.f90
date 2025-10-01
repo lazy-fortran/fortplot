@@ -26,7 +26,7 @@ contains
         
         abs_value = abs(value)
         
-        if (abs_value < 1.0e-10_wp) then
+        if (abs_value <= epsilon(1.0_wp)) then
             formatted = '0'
         else if (range >= 100.0_wp .or. abs_value >= SCIENTIFIC_THRESHOLD_HIGH) then
             ! Use integer format for large ranges
@@ -60,7 +60,7 @@ contains
         abs_value = abs(value)
         
         ! Handle zero
-        if (abs_value < 1.0e-10_wp) then
+        if (abs_value <= epsilon(1.0_wp)) then
             formatted = '0'
             return
         end if
