@@ -156,14 +156,18 @@ contains
         character(len=*), intent(in) :: scale_type
         character(len=20) :: label
         real(wp) :: abs_value
-        
+        logical :: is_log_scale
+
         abs_value = abs(value)
-        
-        if (abs_value < 1.0e-10_wp) then
+        is_log_scale = trim(scale_type) == 'log' .or. trim(scale_type) == 'symlog'
+
+        if (abs_value <= epsilon(1.0_wp)) then
             label = '0'
-        else if ((trim(scale_type) == 'log' .or. trim(scale_type) == 'symlog') .and. is_power_of_ten(value)) then
+        else if (is_log_scale .and. is_power_of_ten(value)) then
             ! Unify log and symlog formatting: show powers of ten with superscript
             label = format_power_of_ten_label(value)
+        else if (.not. is_log_scale .and. abs_value < TICK_EPS) then
+            label = '0'
         else if (abs_value >= SCIENTIFIC_THRESHOLD_HIGH .or. abs_value < SCIENTIFIC_THRESHOLD_LOW) then
             ! Use scientific notation for very large or very small values
             write(label, '(ES10.2)') value

@@ -58,18 +58,18 @@ contains
             stop 1
         end if
 
-        if (trim(format_tick_label(ticks(1), 'log')) /= '10^{0}') then
-            print *, 'FAIL: log tick at 1 should be formatted as 10^{0}'
+        if (trim(format_tick_label(ticks(1), 'log')) /= '$10^{0}$') then
+            print *, 'FAIL: log tick at 1 should be formatted as $10^{0}$'
             stop 1
         end if
 
-        if (trim(format_tick_label(ticks(2), 'log')) /= '10^{1}') then
-            print *, 'FAIL: log tick at 10 should be formatted as 10^{1}'
+        if (trim(format_tick_label(ticks(2), 'log')) /= '$10^{1}$') then
+            print *, 'FAIL: log tick at 10 should be formatted as $10^{1}$'
             stop 1
         end if
 
-        if (trim(format_tick_label(ticks(3), 'log')) /= '10^{2}') then
-            print *, 'FAIL: log tick at 100 should be formatted as 10^{2}'
+        if (trim(format_tick_label(ticks(3), 'log')) /= '$10^{2}$') then
+            print *, 'FAIL: log tick at 100 should be formatted as $10^{2}$'
             stop 1
         end if
     end subroutine test_should_format_log_ticks_as_powers_of_ten
@@ -114,8 +114,8 @@ contains
         do i = 1, num_ticks
             if (abs(ticks(i) + 10.0_wp) <= 1.0e-9_wp) then
                 label = trim(format_tick_label(ticks(i), 'symlog'))
-                if (label /= '-10^{1}') then
-                    print *, 'FAIL: symlog negative threshold should be -10^{1}, got', label
+                if (label /= '$-10^{1}$') then
+                    print *, 'FAIL: symlog negative threshold should be $-10^{1}$, got', label
                     stop 1
                 end if
                 if (found_negative_threshold) then
@@ -125,8 +125,8 @@ contains
                 found_negative_threshold = .true.
             else if (abs(ticks(i) - 10.0_wp) <= 1.0e-9_wp) then
                 label = trim(format_tick_label(ticks(i), 'symlog'))
-                if (label /= '10^{1}') then
-                    print *, 'FAIL: symlog positive threshold should be 10^{1}, got', label
+                if (label /= '$10^{1}$') then
+                    print *, 'FAIL: symlog positive threshold should be $10^{1}$, got', label
                     stop 1
                 end if
                 if (found_positive_threshold) then
