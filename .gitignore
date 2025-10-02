@@ -23,7 +23,6 @@ test/output/*
 example/*/*.png
 example/*/*.pdf
 example/*/*.txt
-!example/python_bridge/commands_basic.txt
 .aider*
 terminal
 *.pyc
@@ -66,8 +65,6 @@ coverage.*
 *.exe
 *.out
 test/test_*
-!test/test_*.f90
-!test/test_*.py
 
 # Binary executables (comprehensive patterns)
 fortplot_bridge
@@ -143,5 +140,3 @@ test/output/**/*.ppm
 test/output/**/*.exe
 test/output/**/*.out
 
-# Force CI rebuild
-!
