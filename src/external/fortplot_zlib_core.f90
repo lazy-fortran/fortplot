@@ -3,6 +3,7 @@ module fortplot_zlib_core
     !! Ported from STB image libraries for self-contained PNG support
     use, intrinsic :: iso_fortran_env, only: int8, int32
     use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
+    use fortplot_debug_utils, only: is_debug_enabled, log_debug_message
     implicit none
     
     private
@@ -42,8 +43,6 @@ module fortplot_zlib_core
         7, 7, 8, 8, 9, 9, 10, 10, &
         11, 11, 12, 12, 13, 13 ]
 
-    logical, save :: zlib_debug_initialized = .false.
-    logical, save :: zlib_debug_enabled_state = .false.
 
     ! CRC32 lookup table (standard polynomial 0xEDB88320)
     integer(int32), parameter :: crc_table(0:255) = [ &
@@ -146,11 +145,11 @@ contains
         logical :: debug_active
         character(len=160) :: debug_message
 
-        debug_active = is_zlib_debug_enabled()
+        debug_active = is_debug_enabled('FORTPLOT_ZLIB_DEBUG')
         if (debug_active) then
             write(debug_message, '(a,i0)') 'zlib_compress_into begin, input_len=', &
                 input_len
-            call log_zlib_debug(debug_message)
+            call log_debug_message('fortplot:zlib', debug_message)
         end if
 
         call deflate_compress(input_data, input_len, compressed_block, compressed_block_len)
@@ -158,7 +157,7 @@ contains
         if (debug_active) then
             write(debug_message, '(a,i0)') 'deflate returned compressed_block_len=', &
                 compressed_block_len
-            call log_zlib_debug(debug_message)
+            call log_debug_message('fortplot:zlib', debug_message)
         end if
 
         output_len = 2 + compressed_block_len + 4
@@ -186,7 +185,7 @@ contains
 
         if (debug_active) then
             write(debug_message, '(a,i0)') 'zlib total output_len=', output_len
-            call log_zlib_debug(debug_message)
+            call log_debug_message('fortplot:zlib', debug_message)
         end if
     end subroutine zlib_compress_into
 
@@ -983,72 +982,5 @@ contains
         end do
     end function bit_reverse
 
-    pure function to_lower_char(ch) result(lower)
-        !! Lower-case conversion for ASCII characters
-        character(len=1), intent(in) :: ch
-        character(len=1) :: lower
-        integer :: code
-
-        lower = ch
-        code = iachar(ch)
-        if (code >= iachar('A') .and. code <= iachar('Z')) then
-            lower = achar(code + 32)
-        end if
-    end function to_lower_char
-
-    logical function parse_debug_env(value)
-        !! Interpret an environment variable as boolean
-        character(len=*), intent(in) :: value
-        character(len=:), allocatable :: trimmed
-        integer :: i
-
-        trimmed = trim(adjustl(value))
-
-        if (len(trimmed) == 0) then
-            parse_debug_env = .true.
-            return
-        end if
-
-        do i = 1, len(trimmed)
-            trimmed(i:i) = to_lower_char(trimmed(i:i))
-        end do
-
-        select case (trimmed)
-        case ('0', 'false', 'off', 'no')
-            parse_debug_env = .false.
-        case default
-            parse_debug_env = .true.
-        end select
-    end function parse_debug_env
-
-    subroutine ensure_zlib_debug()
-        !! Lazy initialization for instrumentation flag
-        character(len=32) :: env_value
-        integer :: status
-
-        if (zlib_debug_initialized) return
-
-        call get_environment_variable('FORTPLOT_ZLIB_DEBUG', env_value, status=status)
-        if (status == 0) then
-            zlib_debug_enabled_state = parse_debug_env(env_value)
-        else
-            zlib_debug_enabled_state = .false.
-        end if
-        zlib_debug_initialized = .true.
-    end subroutine ensure_zlib_debug
-
-    logical function is_zlib_debug_enabled()
-        !! Query instrumentation flag
-        call ensure_zlib_debug()
-        is_zlib_debug_enabled = zlib_debug_enabled_state
-    end function is_zlib_debug_enabled
-
-    subroutine log_zlib_debug(message)
-        !! Emit debug message when instrumentation enabled
-        character(len=*), intent(in) :: message
-        if (is_zlib_debug_enabled()) then
-            print '(a)', '[fortplot:zlib] '//trim(message)
-        end if
-    end subroutine log_zlib_debug
 
 end module fortplot_zlib_core
