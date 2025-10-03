@@ -6,8 +6,8 @@ module fortplot_zlib_core
     implicit none
     
     private
-    public :: zlib_compress, zlib_decompress, crc32_calculate
-    
+    public :: zlib_compress, zlib_compress_into, zlib_decompress, crc32_calculate
+
     private :: bit_reverse
 
     ! Deflate compression constants
@@ -41,6 +41,9 @@ module fortplot_zlib_core
         3, 3, 4, 4, 5, 5, 6, 6, &
         7, 7, 8, 8, 9, 9, 10, 10, &
         11, 11, 12, 12, 13, 13 ]
+
+    logical, save :: zlib_debug_initialized = .false.
+    logical, save :: zlib_debug_enabled_state = .false.
 
     ! CRC32 lookup table (standard polynomial 0xEDB88320)
     integer(int32), parameter :: crc_table(0:255) = [ &
@@ -129,41 +132,48 @@ contains
         crc = not(crc)  ! Final XOR with 0xFFFFFFFF
     end function crc32_calculate
 
-    function zlib_compress(input_data, input_len, output_len) result(output_data)
-        !! Full deflate compression with LZ77 and Huffman coding
+    subroutine zlib_compress_into(input_data, input_len, output_data, output_len)
+        !! Compress data into a newly allocated buffer
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
+        integer(int8), allocatable, intent(out) :: output_data(:)
         integer, intent(out) :: output_len
-        integer(int8), allocatable :: output_data(:)
-        
+
         integer(int8), allocatable :: compressed_block(:)
         integer :: compressed_block_len
         integer(int32) :: adler32_checksum
         integer :: pos
-        
-        ! Compress using deflate algorithm
+        logical :: debug_active
+        character(len=160) :: debug_message
+
+        debug_active = is_zlib_debug_enabled()
+        if (debug_active) then
+            write(debug_message, '(a,i0)') 'zlib_compress_into begin, input_len=', &
+                input_len
+            call log_zlib_debug(debug_message)
+        end if
+
         call deflate_compress(input_data, input_len, compressed_block, compressed_block_len)
-        
-        ! Calculate total output size: zlib header (2) + compressed data + adler32 (4)
+
+        if (debug_active) then
+            write(debug_message, '(a,i0)') 'deflate returned compressed_block_len=', &
+                compressed_block_len
+            call log_zlib_debug(debug_message)
+        end if
+
         output_len = 2 + compressed_block_len + 4
         allocate(output_data(output_len))
-        
+
         pos = 1
-        
-        ! Write zlib header
-        output_data(pos) = int(z'78', int8)  ! CMF: 32K window, deflate
+        output_data(pos) = int(z'78', int8)
         pos = pos + 1
-        output_data(pos) = int(z'5E', int8)  ! FLG: no preset dict, level 1 compression
+        output_data(pos) = int(z'5E', int8)
         pos = pos + 1
-        
-        ! Copy compressed block
-        output_data(pos:pos+compressed_block_len-1) = compressed_block(1:compressed_block_len)
+        output_data(pos:pos + compressed_block_len - 1) = &
+            compressed_block(1:compressed_block_len)
         pos = pos + compressed_block_len
-        
-        ! Calculate and write Adler-32 checksum
+
         adler32_checksum = calculate_adler32(input_data, input_len)
-        
-        ! Write Adler-32 in big-endian format
         output_data(pos) = int(iand(ishft(adler32_checksum, -24), 255), int8)
         pos = pos + 1
         output_data(pos) = int(iand(ishft(adler32_checksum, -16), 255), int8)
@@ -171,8 +181,23 @@ contains
         output_data(pos) = int(iand(ishft(adler32_checksum, -8), 255), int8)
         pos = pos + 1
         output_data(pos) = int(iand(adler32_checksum, 255), int8)
-        
+
         deallocate(compressed_block)
+
+        if (debug_active) then
+            write(debug_message, '(a,i0)') 'zlib total output_len=', output_len
+            call log_zlib_debug(debug_message)
+        end if
+    end subroutine zlib_compress_into
+
+    function zlib_compress(input_data, input_len, output_len) result(output_data)
+        !! Backwards-compatible wrapper returning an allocatable result
+        integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
+        integer, intent(out) :: output_len
+        integer(int8), allocatable :: output_data(:)
+
+        call zlib_compress_into(input_data, input_len, output_data, output_len)
     end function zlib_compress
        
     function zlib_decompress(input_data, input_len, status, verify_checksum) result(output_data)
@@ -949,7 +974,7 @@ contains
         integer, intent(in) :: value, num_bits
         integer :: reversed_value
         integer :: i
-        
+
         reversed_value = 0
         do i = 0, num_bits - 1
             if (iand(ishft(value, -i), 1) == 1) then
@@ -957,5 +982,73 @@ contains
             end if
         end do
     end function bit_reverse
+
+    pure function to_lower_char(ch) result(lower)
+        !! Lower-case conversion for ASCII characters
+        character(len=1), intent(in) :: ch
+        character(len=1) :: lower
+        integer :: code
+
+        lower = ch
+        code = iachar(ch)
+        if (code >= iachar('A') .and. code <= iachar('Z')) then
+            lower = achar(code + 32)
+        end if
+    end function to_lower_char
+
+    logical function parse_debug_env(value)
+        !! Interpret an environment variable as boolean
+        character(len=*), intent(in) :: value
+        character(len=:), allocatable :: trimmed
+        integer :: i
+
+        trimmed = trim(adjustl(value))
+
+        if (len(trimmed) == 0) then
+            parse_debug_env = .true.
+            return
+        end if
+
+        do i = 1, len(trimmed)
+            trimmed(i:i) = to_lower_char(trimmed(i:i))
+        end do
+
+        select case (trimmed)
+        case ('0', 'false', 'off', 'no')
+            parse_debug_env = .false.
+        case default
+            parse_debug_env = .true.
+        end select
+    end function parse_debug_env
+
+    subroutine ensure_zlib_debug()
+        !! Lazy initialization for instrumentation flag
+        character(len=32) :: env_value
+        integer :: status
+
+        if (zlib_debug_initialized) return
+
+        call get_environment_variable('FORTPLOT_ZLIB_DEBUG', env_value, status=status)
+        if (status == 0) then
+            zlib_debug_enabled_state = parse_debug_env(env_value)
+        else
+            zlib_debug_enabled_state = .false.
+        end if
+        zlib_debug_initialized = .true.
+    end subroutine ensure_zlib_debug
+
+    logical function is_zlib_debug_enabled()
+        !! Query instrumentation flag
+        call ensure_zlib_debug()
+        is_zlib_debug_enabled = zlib_debug_enabled_state
+    end function is_zlib_debug_enabled
+
+    subroutine log_zlib_debug(message)
+        !! Emit debug message when instrumentation enabled
+        character(len=*), intent(in) :: message
+        if (is_zlib_debug_enabled()) then
+            print '(a)', '[fortplot:zlib] '//trim(message)
+        end if
+    end subroutine log_zlib_debug
 
 end module fortplot_zlib_core

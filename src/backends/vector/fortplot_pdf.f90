@@ -4,7 +4,7 @@ module fortplot_pdf
     use fortplot_pdf_core
     use fortplot_pdf_text
     use fortplot_pdf_drawing
-    use fortplot_zlib_core, only: zlib_compress
+    use fortplot_zlib_core, only: zlib_compress_into
     use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text
     use fortplot_pdf_io
     use fortplot_pdf_coordinate
@@ -396,7 +396,7 @@ contains
             do k = 1, n
                 in_bytes(k) = int(iand(rgb_u8(k),255))
             end do
-            out_bytes = zlib_compress(in_bytes, n, out_len)
+            call zlib_compress_into(in_bytes, n, out_bytes, out_len)
             img_data = repeat(' ', out_len)
             do k = 1, out_len
                 img_data(k:k) = achar(iand(int(out_bytes(k), kind=4), 255))
