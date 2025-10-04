@@ -3,12 +3,17 @@ module fortplot_zlib_core
     !! Ported from STB image libraries for self-contained PNG support
     use, intrinsic :: iso_fortran_env, only: int8, int32
     use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
+    use fortplot_logging, only: log_debug, set_log_level, LOG_LEVEL_DEBUG
+    use fortplot_string_utils, only: parse_boolean_env
     implicit none
     
     private
-    public :: zlib_compress, zlib_decompress, crc32_calculate
-    
+    public :: zlib_compress, zlib_compress_into, zlib_decompress, crc32_calculate
+    public :: initialize_zlib_debug
+
     private :: bit_reverse
+
+    logical, save :: zlib_debug_initialized = .false.
 
     ! Deflate compression constants
     integer, parameter :: MAX_MATCH = 258
@@ -41,6 +46,7 @@ module fortplot_zlib_core
         3, 3, 4, 4, 5, 5, 6, 6, &
         7, 7, 8, 8, 9, 9, 10, 10, &
         11, 11, 12, 12, 13, 13 ]
+
 
     ! CRC32 lookup table (standard polynomial 0xEDB88320)
     integer(int32), parameter :: crc_table(0:255) = [ &
@@ -129,41 +135,59 @@ contains
         crc = not(crc)  ! Final XOR with 0xFFFFFFFF
     end function crc32_calculate
 
-    function zlib_compress(input_data, input_len, output_len) result(output_data)
-        !! Full deflate compression with LZ77 and Huffman coding
+    subroutine initialize_zlib_debug()
+        !! Initialize debug logging based on FORTPLOT_ZLIB_DEBUG environment variable
+        character(len=32) :: env_value
+        integer :: status
+
+        if (zlib_debug_initialized) return
+
+        call get_environment_variable('FORTPLOT_ZLIB_DEBUG', env_value, status=status)
+        if (status == 0 .and. len_trim(env_value) > 0) then
+            if (parse_boolean_env(env_value)) then
+                call set_log_level(LOG_LEVEL_DEBUG)
+            end if
+        end if
+        zlib_debug_initialized = .true.
+    end subroutine initialize_zlib_debug
+
+    subroutine zlib_compress_into(input_data, input_len, output_data, output_len)
+        !! Compress data into a newly allocated buffer
         integer(int8), intent(in) :: input_data(*)
         integer, intent(in) :: input_len
+        integer(int8), allocatable, intent(out) :: output_data(:)
         integer, intent(out) :: output_len
-        integer(int8), allocatable :: output_data(:)
-        
+
         integer(int8), allocatable :: compressed_block(:)
         integer :: compressed_block_len
         integer(int32) :: adler32_checksum
         integer :: pos
-        
-        ! Compress using deflate algorithm
+        character(len=160) :: debug_message
+
+        call initialize_zlib_debug()
+
+        write(debug_message, '(a,i0)') '[fortplot:zlib] compress_into begin, input_len=', input_len
+        call log_debug(debug_message)
+
         call deflate_compress(input_data, input_len, compressed_block, compressed_block_len)
-        
-        ! Calculate total output size: zlib header (2) + compressed data + adler32 (4)
+
+        write(debug_message, '(a,i0)') '[fortplot:zlib] deflate returned compressed_block_len=', &
+            compressed_block_len
+        call log_debug(debug_message)
+
         output_len = 2 + compressed_block_len + 4
         allocate(output_data(output_len))
-        
+
         pos = 1
-        
-        ! Write zlib header
-        output_data(pos) = int(z'78', int8)  ! CMF: 32K window, deflate
+        output_data(pos) = int(z'78', int8)
         pos = pos + 1
-        output_data(pos) = int(z'5E', int8)  ! FLG: no preset dict, level 1 compression
+        output_data(pos) = int(z'5E', int8)
         pos = pos + 1
-        
-        ! Copy compressed block
-        output_data(pos:pos+compressed_block_len-1) = compressed_block(1:compressed_block_len)
+        output_data(pos:pos + compressed_block_len - 1) = &
+            compressed_block(1:compressed_block_len)
         pos = pos + compressed_block_len
-        
-        ! Calculate and write Adler-32 checksum
+
         adler32_checksum = calculate_adler32(input_data, input_len)
-        
-        ! Write Adler-32 in big-endian format
         output_data(pos) = int(iand(ishft(adler32_checksum, -24), 255), int8)
         pos = pos + 1
         output_data(pos) = int(iand(ishft(adler32_checksum, -16), 255), int8)
@@ -171,8 +195,21 @@ contains
         output_data(pos) = int(iand(ishft(adler32_checksum, -8), 255), int8)
         pos = pos + 1
         output_data(pos) = int(iand(adler32_checksum, 255), int8)
-        
+
         deallocate(compressed_block)
+
+        write(debug_message, '(a,i0)') '[fortplot:zlib] total output_len=', output_len
+        call log_debug(debug_message)
+    end subroutine zlib_compress_into
+
+    function zlib_compress(input_data, input_len, output_len) result(output_data)
+        !! Backwards-compatible wrapper returning an allocatable result
+        integer(int8), intent(in) :: input_data(*)
+        integer, intent(in) :: input_len
+        integer, intent(out) :: output_len
+        integer(int8), allocatable :: output_data(:)
+
+        call zlib_compress_into(input_data, input_len, output_data, output_len)
     end function zlib_compress
        
     function zlib_decompress(input_data, input_len, status, verify_checksum) result(output_data)
@@ -949,7 +986,7 @@ contains
         integer, intent(in) :: value, num_bits
         integer :: reversed_value
         integer :: i
-        
+
         reversed_value = 0
         do i = 0, num_bits - 1
             if (iand(ishft(value, -i), 1) == 1) then
@@ -957,5 +994,6 @@ contains
             end if
         end do
     end function bit_reverse
+
 
 end module fortplot_zlib_core

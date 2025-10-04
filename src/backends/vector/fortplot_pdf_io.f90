@@ -5,7 +5,7 @@ module fortplot_pdf_io
     use iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
     use, intrinsic :: iso_fortran_env, only: int8
-    use fortplot_zlib_core, only: zlib_compress
+    use fortplot_zlib_core, only: zlib_compress_into
     use fortplot_logging, only: log_error
     implicit none
     private
@@ -263,7 +263,7 @@ contains
             do i = 1, stream_len
                 in_bytes(i) = int(iachar(ctx%stream_data(i:i)), int8)
             end do
-            out_bytes = zlib_compress(in_bytes, stream_len, out_len)
+            call zlib_compress_into(in_bytes, stream_len, out_bytes, out_len)
             ! Build a character buffer from compressed bytes
             n = out_len
             compressed_str = repeat(' ', n)
