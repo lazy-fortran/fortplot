@@ -3,13 +3,17 @@ module fortplot_zlib_core
     !! Ported from STB image libraries for self-contained PNG support
     use, intrinsic :: iso_fortran_env, only: int8, int32
     use iso_c_binding, only: c_ptr, c_loc, c_f_pointer, c_associated
-    use fortplot_debug_utils, only: is_debug_enabled, log_debug_message
+    use fortplot_logging, only: log_debug, set_log_level, LOG_LEVEL_DEBUG
+    use fortplot_string_utils, only: parse_boolean_env
     implicit none
     
     private
     public :: zlib_compress, zlib_compress_into, zlib_decompress, crc32_calculate
+    public :: initialize_zlib_debug
 
     private :: bit_reverse
+
+    logical, save :: zlib_debug_initialized = .false.
 
     ! Deflate compression constants
     integer, parameter :: MAX_MATCH = 258
@@ -131,6 +135,22 @@ contains
         crc = not(crc)  ! Final XOR with 0xFFFFFFFF
     end function crc32_calculate
 
+    subroutine initialize_zlib_debug()
+        !! Initialize debug logging based on FORTPLOT_ZLIB_DEBUG environment variable
+        character(len=32) :: env_value
+        integer :: status
+
+        if (zlib_debug_initialized) return
+
+        call get_environment_variable('FORTPLOT_ZLIB_DEBUG', env_value, status=status)
+        if (status == 0 .and. len_trim(env_value) > 0) then
+            if (parse_boolean_env(env_value)) then
+                call set_log_level(LOG_LEVEL_DEBUG)
+            end if
+        end if
+        zlib_debug_initialized = .true.
+    end subroutine initialize_zlib_debug
+
     subroutine zlib_compress_into(input_data, input_len, output_data, output_len)
         !! Compress data into a newly allocated buffer
         integer(int8), intent(in) :: input_data(*)
@@ -142,23 +162,18 @@ contains
         integer :: compressed_block_len
         integer(int32) :: adler32_checksum
         integer :: pos
-        logical :: debug_active
         character(len=160) :: debug_message
 
-        debug_active = is_debug_enabled('FORTPLOT_ZLIB_DEBUG')
-        if (debug_active) then
-            write(debug_message, '(a,i0)') 'zlib_compress_into begin, input_len=', &
-                input_len
-            call log_debug_message('fortplot:zlib', debug_message)
-        end if
+        call initialize_zlib_debug()
+
+        write(debug_message, '(a,i0)') '[fortplot:zlib] compress_into begin, input_len=', input_len
+        call log_debug(debug_message)
 
         call deflate_compress(input_data, input_len, compressed_block, compressed_block_len)
 
-        if (debug_active) then
-            write(debug_message, '(a,i0)') 'deflate returned compressed_block_len=', &
-                compressed_block_len
-            call log_debug_message('fortplot:zlib', debug_message)
-        end if
+        write(debug_message, '(a,i0)') '[fortplot:zlib] deflate returned compressed_block_len=', &
+            compressed_block_len
+        call log_debug(debug_message)
 
         output_len = 2 + compressed_block_len + 4
         allocate(output_data(output_len))
@@ -183,10 +198,8 @@ contains
 
         deallocate(compressed_block)
 
-        if (debug_active) then
-            write(debug_message, '(a,i0)') 'zlib total output_len=', output_len
-            call log_debug_message('fortplot:zlib', debug_message)
-        end if
+        write(debug_message, '(a,i0)') '[fortplot:zlib] total output_len=', output_len
+        call log_debug(debug_message)
     end subroutine zlib_compress_into
 
     function zlib_compress(input_data, input_len, output_len) result(output_data)
