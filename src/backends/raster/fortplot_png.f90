@@ -73,11 +73,46 @@ contains
     ! All drawing methods are inherited from raster_context
 
     subroutine png_finalize(this, filename)
+        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session
         class(png_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
+        character(len=1024) :: temp_file
+        logical :: viewer_success
+        integer :: pid
 
-        call write_png_file(filename, this%width, this%height, this%raster%image_data)
+        if (trim(filename) == 'terminal') then
+            if (has_graphical_session()) then
+                call get_environment_variable('USER', temp_file)
+                if (len_trim(temp_file) == 0) temp_file = 'user'
+                call get_environment_variable('PID', temp_file)
+                if (len_trim(temp_file) == 0) then
+                    pid = 0
+                else
+                    read(temp_file, *) pid
+                end if
+                write(temp_file, '(A,I0,A)') '/tmp/fortplot_show_', pid, '.png'
+
+                call write_png_file(temp_file, this%width, this%height, this%raster%image_data)
+                call launch_system_viewer(temp_file, viewer_success)
+                if (.not. viewer_success) then
+                    call log_error("Failed to launch PNG viewer")
+                end if
+            else
+                call log_info("No graphical session detected, falling back to ASCII")
+                call fallback_to_ascii(this)
+            end if
+        else
+            call write_png_file(filename, this%width, this%height, this%raster%image_data)
+        end if
     end subroutine png_finalize
+
+    subroutine fallback_to_ascii(this)
+        !! Fallback to ASCII rendering when no graphical session
+        class(png_context), intent(inout) :: this
+        associate(dw=>this%width); end associate
+
+        call log_info("PNG backend cannot display without graphics - ASCII fallback not yet implemented")
+    end subroutine fallback_to_ascii
 
     subroutine png_get_png_data(this, width, height, png_data, status)
         !! Get PNG data from PNG context's raster data

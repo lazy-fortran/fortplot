@@ -18,6 +18,7 @@ module fortplot_pdf
     use fortplot_constants, only: EPSILON_COMPARE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_logging, only: log_error, log_info
     implicit none
 
     private
@@ -171,9 +172,33 @@ contains
     end subroutine draw_pdf_text_wrapper
 
     subroutine write_pdf_file_facade(this, filename)
+        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         logical :: file_success
+        character(len=1024) :: temp_file, actual_filename
+        logical :: viewer_success
+        integer :: pid
+
+        ! Handle terminal display
+        if (trim(filename) == 'terminal') then
+            if (has_graphical_session()) then
+                call get_environment_variable('USER', temp_file)
+                if (len_trim(temp_file) == 0) temp_file = 'user'
+                call get_environment_variable('PID', temp_file)
+                if (len_trim(temp_file) == 0) then
+                    pid = 0
+                else
+                    read(temp_file, *) pid
+                end if
+                write(actual_filename, '(A,I0,A)') '/tmp/fortplot_show_', pid, '.pdf'
+            else
+                call log_info("No graphical session detected, cannot display PDF")
+                return
+            end if
+        else
+            actual_filename = filename
+        end if
 
         ! Do not re-render axes here. The main rendering pipeline has already
         ! produced the complete `core_ctx%stream_data`, including axes, tick labels,
@@ -197,8 +222,16 @@ contains
         ! different dash pattern; the presence of this operator guarantees the
         ! PDF stream contains an explicit solid dash command.
         this%core_ctx%stream_data = '[] 0 d' // new_line('a') // trim(this%core_ctx%stream_data)
-        call write_pdf_file(this%core_ctx, filename, file_success)
+        call write_pdf_file(this%core_ctx, actual_filename, file_success)
         if (.not. file_success) return
+
+        ! Launch viewer if displaying to terminal
+        if (trim(filename) == 'terminal' .and. has_graphical_session()) then
+            call launch_system_viewer(actual_filename, viewer_success)
+            if (.not. viewer_success) then
+                call log_error("Failed to launch PDF viewer")
+            end if
+        end if
     end subroutine write_pdf_file_facade
 
     subroutine update_coord_context(this)
