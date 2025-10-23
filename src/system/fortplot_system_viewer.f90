@@ -77,14 +77,14 @@ contains
             return
         end if
 
-        call log_info("Launching viewer: " // trim(command))
+        call log_info("Launching viewer: "//trim(command))
         call execute_command_line(trim(command), exitstat=stat)
 
         if (stat == 0) then
             success = .true.
         else
-            call log_error("Failed to launch viewer (exit status " // &
-                          trim(int_to_str(stat)) // ")")
+            call log_error("Failed to launch viewer (exit status "// &
+                           trim(int_to_str(stat))//")")
         end if
     end subroutine launch_system_viewer
 
@@ -99,11 +99,11 @@ contains
 
         select case (trim(os_type))
         case ('linux')
-            command = 'xdg-open "' // trim(filename) // '" >/dev/null 2>&1 &'
+            command = 'xdg-open "'//trim(filename)//'" >/dev/null 2>&1 &'
         case ('darwin')
-            command = 'open "' // trim(filename) // '"'
+            command = 'open "'//trim(filename)//'"'
         case ('windows')
-            command = 'start "" "' // trim(filename) // '"'
+            command = 'start "" "'//trim(filename)//'"'
         case default
             command = ''
         end select
@@ -123,10 +123,11 @@ contains
 
         call execute_command_line('uname -s > /tmp/fortplot_uname.txt', exitstat=stat)
         if (stat == 0) then
-            open(newunit=uname_unit, file='/tmp/fortplot_uname.txt', status='old', iostat=ios)
+            open (newunit=uname_unit, file='/tmp/fortplot_uname.txt', status='old', &
+                  iostat=ios)
             if (ios == 0) then
-                read(uname_unit, '(A)', iostat=ios) uname_s
-                close(uname_unit, status='delete')
+                read (uname_unit, '(A)', iostat=ios) uname_s
+                close (uname_unit, status='delete')
                 if (index(uname_s, 'Darwin') > 0) then
                     os_type = 'darwin'
                     return
@@ -140,7 +141,8 @@ contains
         call get_environment_variable('OSTYPE', ostype_var)
         if (index(ostype_var, 'darwin') > 0 .or. index(ostype_var, 'Darwin') > 0) then
             os_type = 'darwin'
-        else if (index(ostype_var, 'linux') > 0 .or. index(ostype_var, 'Linux') > 0) then
+        else if (index(ostype_var, 'linux') > 0 .or. index(ostype_var, &
+                                                           'Linux') > 0) then
             os_type = 'linux'
         else if (index(ostype_var, 'win') > 0 .or. index(ostype_var, 'msys') > 0) then
             os_type = 'windows'
@@ -195,8 +197,8 @@ contains
             sep = '/'
         end if
 
-        write(filename, '(A,A,A,I0,A,I0,A)') trim(tempdir), sep, 'fortplot_show_', &
-              int(pid), '_', clk_count, trim(extension)
+        write (filename, '(A,A,A,I0,A,I0,A)') trim(tempdir), sep, 'fortplot_show_', &
+            int(pid), '_', clk_count, trim(extension)
     end subroutine get_temp_filename
 
     subroutine cleanup_temp_file(filename)
@@ -205,11 +207,11 @@ contains
         integer :: stat
         logical :: exists
 
-        inquire(file=trim(filename), exist=exists)
+        inquire (file=trim(filename), exist=exists)
         if (exists) then
-            open(newunit=stat, file=trim(filename), status='old', iostat=stat)
+            open (newunit=stat, file=trim(filename), status='old', iostat=stat)
             if (stat == 0) then
-                close(stat, status='delete', iostat=stat)
+                close (stat, status='delete', iostat=stat)
             end if
         end if
     end subroutine cleanup_temp_file
@@ -218,7 +220,7 @@ contains
         !! Convert integer to string
         integer, intent(in) :: i
         character(len=32) :: str
-        write(str, '(I0)') i
+        write (str, '(I0)') i
     end function int_to_str
 
 end module fortplot_system_viewer
