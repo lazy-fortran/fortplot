@@ -73,33 +73,26 @@ contains
     ! All drawing methods are inherited from raster_context
 
     subroutine png_finalize(this, filename)
-        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session
+        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session, &
+                                          get_temp_filename
         class(png_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         character(len=1024) :: temp_file
         logical :: viewer_success
-        integer :: pid
 
         if (trim(filename) == 'terminal') then
             if (has_graphical_session()) then
-                call get_environment_variable('USER', temp_file)
-                if (len_trim(temp_file) == 0) temp_file = 'user'
-                call get_environment_variable('PID', temp_file)
-                if (len_trim(temp_file) == 0) then
-                    pid = 0
-                else
-                    read(temp_file, *) pid
-                end if
-                write(temp_file, '(A,I0,A)') '/tmp/fortplot_show_', pid, '.png'
-
+                call get_temp_filename('.png', temp_file)
                 call write_png_file(temp_file, this%width, this%height, this%raster%image_data)
                 call launch_system_viewer(temp_file, viewer_success)
                 if (.not. viewer_success) then
-                    call log_error("Failed to launch PNG viewer")
+                    call log_error("Failed to launch PNG viewer for: " // trim(temp_file))
+                    call log_info("You can manually open: " // trim(temp_file))
                 end if
             else
-                call log_info("No graphical session detected, falling back to ASCII")
-                call fallback_to_ascii(this)
+                call log_info("No graphical session detected, cannot display PNG")
+                call log_info("Use savefig('filename.png') to save to file or")
+                call log_info("Use savefig('filename.txt') for ASCII rendering")
             end if
         else
             call write_png_file(filename, this%width, this%height, this%raster%image_data)

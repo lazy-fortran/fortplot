@@ -172,28 +172,22 @@ contains
     end subroutine draw_pdf_text_wrapper
 
     subroutine write_pdf_file_facade(this, filename)
-        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session
+        use fortplot_system_viewer, only: launch_system_viewer, has_graphical_session, &
+                                          get_temp_filename
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         logical :: file_success
-        character(len=1024) :: temp_file, actual_filename
+        character(len=1024) :: actual_filename
         logical :: viewer_success
-        integer :: pid
 
         ! Handle terminal display
         if (trim(filename) == 'terminal') then
             if (has_graphical_session()) then
-                call get_environment_variable('USER', temp_file)
-                if (len_trim(temp_file) == 0) temp_file = 'user'
-                call get_environment_variable('PID', temp_file)
-                if (len_trim(temp_file) == 0) then
-                    pid = 0
-                else
-                    read(temp_file, *) pid
-                end if
-                write(actual_filename, '(A,I0,A)') '/tmp/fortplot_show_', pid, '.pdf'
+                call get_temp_filename('.pdf', actual_filename)
             else
                 call log_info("No graphical session detected, cannot display PDF")
+                call log_info("Use savefig('filename.pdf') to save to file or")
+                call log_info("Use savefig('filename.txt') for ASCII rendering")
                 return
             end if
         else
@@ -229,7 +223,8 @@ contains
         if (trim(filename) == 'terminal' .and. has_graphical_session()) then
             call launch_system_viewer(actual_filename, viewer_success)
             if (.not. viewer_success) then
-                call log_error("Failed to launch PDF viewer")
+                call log_error("Failed to launch PDF viewer for: " // trim(actual_filename))
+                call log_info("You can manually open: " // trim(actual_filename))
             end if
         end if
     end subroutine write_pdf_file_facade
