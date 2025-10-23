@@ -4,7 +4,6 @@ module fortplot_imagemagick
     
     use, intrinsic :: iso_fortran_env, only: wp => real64, int32
     use fortplot_system_runtime, only: check_command_available_runtime
-    use fortplot_security, only: is_imagemagick_environment_enabled
     implicit none
     private
     
@@ -19,14 +18,8 @@ contains
     function check_imagemagick_available() result(available)
         !! Check if ImageMagick is available on the system
         logical :: available
-        
-        ! First check if ImageMagick is enabled in secure environment
-        if (is_imagemagick_environment_enabled()) then
-            available = .true.
-            return
-        end if
-        
-        ! Otherwise check if commands are available (legacy path)
+
+        ! Check if ImageMagick commands are available
         call check_command_available_runtime("magick", available)
         
         if (.not. available) then
@@ -59,17 +52,7 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick comparison requires external tool execution
-            ! This functionality is disabled for security compliance
-            rmse = -1.0_wp
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
+        ! ImageMagick not available - return error
         rmse = -1.0_wp
         return
         
@@ -128,17 +111,7 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick comparison requires external tool execution
-            ! This functionality is disabled for security compliance
-            psnr = -1.0_wp
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
+        ! ImageMagick not available - return error
         psnr = -1.0_wp
         return
         
@@ -201,18 +174,8 @@ contains
             trim(adjustl(int_to_str(height-10))) // '" ' // &
             '-blur 0x0.5 "' // trim(filename) // '"'
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick image generation requires external tool execution
-            ! This functionality is disabled for security compliance
-            print *, "WARNING: ImageMagick image generation disabled for security"
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
-        print *, "WARNING: ImageMagick image generation blocked for security"
+        ! ImageMagick not available
+        print *, "WARNING: ImageMagick not available"
         return
         
         if (.false.) then
@@ -232,11 +195,7 @@ contains
         logical :: file_exists
         real(wp) :: mean_edge
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick edge analysis requires external tool execution
-            ! This functionality is disabled for security compliance
-            ! Return error code to indicate disabled functionality
+        ! ImageMagick not available - return error
             smoothness_score = -1.0_wp
             return
         end if
@@ -249,11 +208,6 @@ contains
             'magick "' // trim(image_file) // '" -edge 1 -format "%[fx:mean*100]" info: > "' // &
             trim(output_file) // '"'
         
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode  
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
-        smoothness_score = -1.0_wp
-        return
         
         if (.false.) then
             ! Read the result from file
