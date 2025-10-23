@@ -185,64 +185,13 @@ contains
     end subroutine generate_reference_image
     
     function analyze_edge_smoothness(image_file) result(smoothness_score)
-        !! Analyze edge smoothness in an image using edge detection
-        !! Returns a score from 0-100 (higher = smoother edges)
+        !! Analyze edge smoothness using ImageMagick (stub - always returns -1)
         character(len=*), intent(in) :: image_file
         real(wp) :: smoothness_score
-        character(len=1024) :: command, output_file
-        integer :: exit_code, unit_id, ios
-        character(len=256) :: line
-        logical :: file_exists
-        real(wp) :: mean_edge
-        
-        ! ImageMagick not available - return error
-            smoothness_score = -1.0_wp
-            return
-        end if
-        
-        ! Generate temporary output filename
-        output_file = trim(image_file) // "_smoothness.txt"
-        
-        ! Apply edge detection and save result to file
-        write(command, '(A)') &
-            'magick "' // trim(image_file) // '" -edge 1 -format "%[fx:mean*100]" info: > "' // &
-            trim(output_file) // '"'
-        
-        
-        if (.false.) then
-            ! Read the result from file
-            inquire(file=output_file, exist=file_exists)
-            if (file_exists) then
-                open(newunit=unit_id, file=output_file, status='old', &
-                     action='read', iostat=ios)
-                if (ios == 0) then
-                    read(unit_id, '(A)', iostat=ios) line
-                    close(unit_id)
-                    
-                    ! Parse the mean edge value
-                    read(line, *, iostat=ios) mean_edge
-                    if (ios == 0) then
-                        ! Convert to smoothness score (inverse of edge detection)
-                        smoothness_score = max(0.0_wp, 100.0_wp - mean_edge)
-                    else
-                        smoothness_score = 65.0_wp  ! Default if parsing fails
-                    end if
-                else
-                    smoothness_score = 65.0_wp  ! Default if file read fails
-                end if
-                
-                ! Clean up temp file
-                open(newunit=unit_id, file=output_file, status='old', iostat=ios)
-                if (ios == 0) then
-                    close(unit_id, status='delete', iostat=ios)
-                end if
-            else
-                smoothness_score = 65.0_wp  ! Default if file doesn't exist
-            end if
-        else
-            smoothness_score = 65.0_wp  ! Default if command fails
-        end if
-        
+        associate(df=>len_trim(image_file)); end associate
+
+        ! ImageMagick not available
+        smoothness_score = -1.0_wp
     end function analyze_edge_smoothness
     
     ! Helper function to convert integer to string
