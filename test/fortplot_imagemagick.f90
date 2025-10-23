@@ -4,7 +4,6 @@ module fortplot_imagemagick
     
     use, intrinsic :: iso_fortran_env, only: wp => real64, int32
     use fortplot_system_runtime, only: check_command_available_runtime
-    use fortplot_security, only: is_imagemagick_environment_enabled
     implicit none
     private
     
@@ -19,14 +18,8 @@ contains
     function check_imagemagick_available() result(available)
         !! Check if ImageMagick is available on the system
         logical :: available
-        
-        ! First check if ImageMagick is enabled in secure environment
-        if (is_imagemagick_environment_enabled()) then
-            available = .true.
-            return
-        end if
-        
-        ! Otherwise check if commands are available (legacy path)
+
+        ! Check if ImageMagick commands are available
         call check_command_available_runtime("magick", available)
         
         if (.not. available) then
@@ -59,17 +52,7 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick comparison requires external tool execution
-            ! This functionality is disabled for security compliance
-            rmse = -1.0_wp
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
+        ! ImageMagick not available - return error
         rmse = -1.0_wp
         return
         
@@ -128,17 +111,7 @@ contains
                              '" /dev/null 2> "' // trim(output_file) // '"'
 #endif
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick comparison requires external tool execution
-            ! This functionality is disabled for security compliance
-            psnr = -1.0_wp
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
+        ! ImageMagick not available - return error
         psnr = -1.0_wp
         return
         
@@ -201,18 +174,8 @@ contains
             trim(adjustl(int_to_str(height-10))) // '" ' // &
             '-blur 0x0.5 "' // trim(filename) // '"'
         
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick image generation requires external tool execution
-            ! This functionality is disabled for security compliance
-            print *, "WARNING: ImageMagick image generation disabled for security"
-            return
-        end if
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
-        print *, "WARNING: ImageMagick image generation blocked for security"
+        ! ImageMagick not available
+        print *, "WARNING: ImageMagick not available"
         return
         
         if (.false.) then
@@ -222,73 +185,13 @@ contains
     end subroutine generate_reference_image
     
     function analyze_edge_smoothness(image_file) result(smoothness_score)
-        !! Analyze edge smoothness in an image using edge detection
-        !! Returns a score from 0-100 (higher = smoother edges)
+        !! Analyze edge smoothness using ImageMagick (stub - always returns -1)
         character(len=*), intent(in) :: image_file
         real(wp) :: smoothness_score
-        character(len=1024) :: command, output_file
-        integer :: exit_code, unit_id, ios
-        character(len=256) :: line
-        logical :: file_exists
-        real(wp) :: mean_edge
-        
-        ! Check if ImageMagick is enabled in secure environment
-        if (.not. is_imagemagick_environment_enabled()) then
-            ! SECURITY: ImageMagick edge analysis requires external tool execution
-            ! This functionality is disabled for security compliance
-            ! Return error code to indicate disabled functionality
-            smoothness_score = -1.0_wp
-            return
-        end if
-        
-        ! Generate temporary output filename
-        output_file = trim(image_file) // "_smoothness.txt"
-        
-        ! Apply edge detection and save result to file
-        write(command, '(A)') &
-            'magick "' // trim(image_file) // '" -edge 1 -format "%[fx:mean*100]" info: > "' // &
-            trim(output_file) // '"'
-        
-        ! SECURITY FIX: ImageMagick operations are blocked in secure mode  
-        ! The is_imagemagick_environment_enabled check above prevents execution
-        ! This code path should never be reached, but we'll fail safely
+        associate(df=>len_trim(image_file)); end associate
+
+        ! ImageMagick not available
         smoothness_score = -1.0_wp
-        return
-        
-        if (.false.) then
-            ! Read the result from file
-            inquire(file=output_file, exist=file_exists)
-            if (file_exists) then
-                open(newunit=unit_id, file=output_file, status='old', &
-                     action='read', iostat=ios)
-                if (ios == 0) then
-                    read(unit_id, '(A)', iostat=ios) line
-                    close(unit_id)
-                    
-                    ! Parse the mean edge value
-                    read(line, *, iostat=ios) mean_edge
-                    if (ios == 0) then
-                        ! Convert to smoothness score (inverse of edge detection)
-                        smoothness_score = max(0.0_wp, 100.0_wp - mean_edge)
-                    else
-                        smoothness_score = 65.0_wp  ! Default if parsing fails
-                    end if
-                else
-                    smoothness_score = 65.0_wp  ! Default if file read fails
-                end if
-                
-                ! Clean up temp file
-                open(newunit=unit_id, file=output_file, status='old', iostat=ios)
-                if (ios == 0) then
-                    close(unit_id, status='delete', iostat=ios)
-                end if
-            else
-                smoothness_score = 65.0_wp  ! Default if file doesn't exist
-            end if
-        else
-            smoothness_score = 65.0_wp  ! Default if command fails
-        end if
-        
     end function analyze_edge_smoothness
     
     ! Helper function to convert integer to string

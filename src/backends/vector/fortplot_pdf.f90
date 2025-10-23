@@ -18,6 +18,7 @@ module fortplot_pdf
     use fortplot_constants, only: EPSILON_COMPARE
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_colormap, only: colormap_value_to_color
+    use fortplot_logging, only: log_error, log_info
     implicit none
 
     private
@@ -44,7 +45,8 @@ module fortplot_pdf
         procedure :: set_line_style => set_pdf_line_style
         procedure :: draw_marker => draw_pdf_marker_wrapper
         procedure :: set_marker_colors => set_marker_colors_wrapper
-        procedure :: set_marker_colors_with_alpha => set_marker_colors_with_alpha_wrapper
+        procedure :: set_marker_colors_with_alpha => &
+            set_marker_colors_with_alpha_wrapper
         procedure :: draw_arrow => draw_pdf_arrow_wrapper
         procedure :: get_ascii_output => pdf_get_ascii_output
 
@@ -55,12 +57,14 @@ module fortplot_pdf
         procedure :: render_legend_specialized => render_legend_specialized_wrapper
         procedure :: calculate_legend_dimensions => calculate_legend_dimensions_wrapper
         procedure :: set_legend_border_width => set_legend_border_width_wrapper
-        procedure :: calculate_legend_position_backend => calculate_legend_position_wrapper
+        procedure :: calculate_legend_position_backend => &
+            calculate_legend_position_wrapper
         procedure :: extract_rgb_data => extract_rgb_data_wrapper
         procedure :: get_png_data_backend => get_png_data_wrapper
         procedure :: prepare_3d_data => prepare_3d_data_wrapper
         procedure :: render_ylabel => render_ylabel_wrapper
-        procedure :: draw_axes_and_labels_backend => draw_axes_and_labels_backend_wrapper
+        procedure :: draw_axes_and_labels_backend => &
+            draw_axes_and_labels_backend_wrapper
         procedure :: save_coordinates => pdf_save_coordinates
         procedure :: set_coordinates => pdf_set_coordinates
         procedure :: render_axes => render_pdf_axes_wrapper
@@ -83,13 +87,14 @@ contains
 
         call setup_canvas(ctx, width, height)
 
-        width_pts  = real(width,  wp) * 72.0_wp / 100.0_wp
-        height_pts = real(height, wp) * 72.0_wp / 100.0_wp
+        width_pts = real(width, wp)*72.0_wp/100.0_wp
+        height_pts = real(height, wp)*72.0_wp/100.0_wp
         ! Use integer canvas for downstream plot-area computations
-        width_pts_i  = max(1, nint(width_pts))
+        width_pts_i = max(1, nint(width_pts))
         height_pts_i = max(1, nint(height_pts))
 
-        ctx%core_ctx = create_pdf_canvas_core(real(width_pts_i, wp), real(height_pts_i, wp))
+        ctx%core_ctx = create_pdf_canvas_core(real(width_pts_i, wp), &
+                                              real(height_pts_i, wp))
 
         call ctx%stream_writer%initialize_stream()
         call ctx%stream_writer%add_to_stream("q")
@@ -100,7 +105,8 @@ contains
         call ctx%stream_writer%add_to_stream("0 0 0 rg")
 
         ctx%margins = plot_margins_t()
-        call calculate_pdf_plot_area(width_pts_i, height_pts_i, ctx%margins, ctx%plot_area)
+        call calculate_pdf_plot_area(width_pts_i, height_pts_i, ctx%margins, &
+                                     ctx%plot_area)
 
         call ctx%update_coord_context()
     end function create_pdf_canvas
@@ -164,16 +170,35 @@ contains
         ! Keep context in sync for text coordinate normalization
         call this%update_coord_context()
         call normalize_to_pdf_coords(this%coord_ctx, x, y, pdf_x, pdf_y)
-        
+
         ! Use render_mixed_text which handles LaTeX processing and mathtext
         ! (superscripts/subscripts) properly, just like titles do
         call render_mixed_text(this%core_ctx, pdf_x, pdf_y, text)
     end subroutine draw_pdf_text_wrapper
 
     subroutine write_pdf_file_facade(this, filename)
+        use fortplot_system_viewer, only: launch_system_viewer, &
+                                          has_graphical_session, &
+                                          get_temp_filename
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: filename
         logical :: file_success
+        character(len=1024) :: actual_filename
+        logical :: viewer_success
+
+        ! Handle terminal display
+        if (trim(filename) == 'terminal') then
+            if (has_graphical_session()) then
+                call get_temp_filename('.pdf', actual_filename)
+            else
+                call log_info("No graphical session detected, cannot display PDF")
+                call log_info("Use savefig('filename.pdf') to save to file or")
+                call log_info("Use savefig('filename.txt') for ASCII rendering")
+                return
+            end if
+        else
+            actual_filename = filename
+        end if
 
         ! Do not re-render axes here. The main rendering pipeline has already
         ! produced the complete `core_ctx%stream_data`, including axes, tick labels,
@@ -196,9 +221,19 @@ contains
         ! of prior plot linestyle state. This is harmless if plots later set a
         ! different dash pattern; the presence of this operator guarantees the
         ! PDF stream contains an explicit solid dash command.
-        this%core_ctx%stream_data = '[] 0 d' // new_line('a') // trim(this%core_ctx%stream_data)
-        call write_pdf_file(this%core_ctx, filename, file_success)
+        this%core_ctx%stream_data = &
+            '[] 0 d'//new_line('a')//trim(this%core_ctx%stream_data)
+        call write_pdf_file(this%core_ctx, actual_filename, file_success)
         if (.not. file_success) return
+
+        ! Launch viewer if displaying to terminal
+        if (trim(filename) == 'terminal' .and. has_graphical_session()) then
+            call launch_system_viewer(actual_filename, viewer_success)
+            if (.not. viewer_success) then
+              call log_error("Failed to launch PDF viewer for: "//trim(actual_filename))
+                call log_info("You can manually open: "//trim(actual_filename))
+            end if
+        end if
     end subroutine write_pdf_file_facade
 
     subroutine update_coord_context(this)
@@ -240,21 +275,25 @@ contains
         call draw_pdf_marker_at_coords(this%coord_ctx, this%stream_writer, x, y, style)
     end subroutine draw_pdf_marker_wrapper
 
-    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+    subroutine set_marker_colors_wrapper(this, edge_r, edge_g, edge_b, face_r, &
+                                         face_g, face_b)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, face_r, face_g, face_b
 
-        call pdf_set_marker_colors(this%core_ctx, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        call pdf_set_marker_colors(this%core_ctx, edge_r, edge_g, edge_b, face_r, &
+                                   face_g, face_b)
     end subroutine set_marker_colors_wrapper
 
-    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, edge_alpha, &
-                                                   face_r, face_g, face_b, face_alpha)
+    subroutine set_marker_colors_with_alpha_wrapper(this, edge_r, edge_g, edge_b, &
+                                                    edge_alpha, &
+                                                    face_r, face_g, face_b, face_alpha)
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
         real(wp), intent(in) :: face_r, face_g, face_b, face_alpha
 
-        call pdf_set_marker_colors_with_alpha(this%core_ctx, edge_r, edge_g, edge_b, edge_alpha, &
-                                             face_r, face_g, face_b, face_alpha)
+        call pdf_set_marker_colors_with_alpha(this%core_ctx, edge_r, edge_g, edge_b, &
+                                              edge_alpha, &
+                                              face_r, face_g, face_b, face_alpha)
     end subroutine set_marker_colors_with_alpha_wrapper
 
     subroutine draw_pdf_arrow_wrapper(this, x, y, dx, dy, size, style)
@@ -263,7 +302,8 @@ contains
         character(len=*), intent(in) :: style
 
         call this%update_coord_context()
-        call draw_pdf_arrow_at_coords(this%coord_ctx, this%stream_writer, x, y, dx, dy, size, style)
+        call draw_pdf_arrow_at_coords(this%coord_ctx, this%stream_writer, x, y, dx, &
+                                      dy, size, style)
     end subroutine draw_pdf_arrow_wrapper
 
     function pdf_get_ascii_output(this) result(output)
@@ -295,31 +335,34 @@ contains
 
         ! Convert to PDF coordinates
         do i = 1, 4
-            call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), px(i), py(i))
+            call normalize_to_pdf_coords(this%coord_ctx, x_quad(i), y_quad(i), &
+                                         px(i), py(i))
         end do
 
         ! Slightly expand axis-aligned quads to overlap neighbors and avoid hairline seams
-        minx = min(min(px(1),px(2)), min(px(3),px(4)))
-        maxx = max(max(px(1),px(2)), max(px(3),px(4)))
-        miny = min(min(py(1),py(2)), min(py(3),py(4)))
-        maxy = max(max(py(1),py(2)), max(py(3),py(4)))
+        minx = min(min(px(1), px(2)), min(px(3), px(4)))
+        maxx = max(max(px(1), px(2)), max(px(3), px(4)))
+        miny = min(min(py(1), py(2)), min(py(3), py(4)))
+        maxy = max(max(py(1), py(2)), max(py(3), py(4)))
         eps = 0.05_wp  ! expand by small amount in PDF points
 
         ! If the quad is axis-aligned (common for pcolormesh), use expanded bbox
-        if ( (abs(py(1)-py(2)) < 1.0e-6_wp .and. abs(px(2)-px(3)) < 1.0e-6_wp .and. &
-              abs(py(3)-py(4)) < 1.0e-6_wp .and. abs(px(4)-px(1)) < 1.0e-6_wp) ) then
-            write(cmd, '(F0.3,1X,F0.3)') minx-eps, miny-eps; call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write(cmd, '(F0.3,1X,F0.3)') maxx+eps, miny-eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write(cmd, '(F0.3,1X,F0.3)') maxx+eps, maxy+eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write(cmd, '(F0.3,1X,F0.3)') minx-eps, maxy+eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+        if ((abs(py(1) - py(2)) < 1.0e-6_wp .and. abs(px(2) - px(3)) < &
+             1.0e-6_wp .and. &
+             abs(py(3) - py(4)) < 1.0e-6_wp .and. abs(px(4) - px(1)) < &
+             1.0e-6_wp)) then
+            write (cmd, '(F0.3,1X,F0.3)') minx - eps, miny - eps; call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, miny - eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
             call this%stream_writer%add_to_stream('f')
         else
             ! Fallback: draw original quad
-            write(cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
-            write(cmd, '(F0.3,1X,F0.3)') px(2), py(2); call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write(cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
-            write(cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
+            write (cmd, '(F0.3,1X,F0.3)') px(2), py(2); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
+            write (cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
             call this%stream_writer%add_to_stream('f')
         end if
@@ -327,7 +370,7 @@ contains
 
     subroutine fill_heatmap_wrapper(this, x_grid, y_grid, z_grid, z_min, z_max)
         class(pdf_context), intent(inout) :: this
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in) :: z_min, z_max
 
         integer :: i, j, nx, ny, W, H
@@ -357,25 +400,25 @@ contains
         ! sampling outside the image at arbitrary zoom levels.
         block
             integer :: WP, HP
-            integer, allocatable :: img(:,:,:)
+            integer, allocatable :: img(:, :, :)
             integer :: ii, jj, src_i, src_j
             WP = W + 2; HP = H + 2
-            allocate(img(3, WP, HP))
+            allocate (img(3, WP, HP))
             do jj = 1, HP
                 do ii = 1, WP
-                    src_i = max(1, min(W, ii-1))
-                    src_j = max(1, min(H, jj-1))
+                    src_i = max(1, min(W, ii - 1))
+                    src_j = max(1, min(H, jj - 1))
                     value = z_grid(src_j, src_i)
                     call colormap_value_to_color(value, z_min, z_max, 'viridis', color)
                     v1 = max(0.0d0, min(1.0d0, color(1)))
                     v2 = max(0.0d0, min(1.0d0, color(2)))
                     v3 = max(0.0d0, min(1.0d0, color(3)))
-                    img(1, ii, jj) = int(nint(v1 * 255.0d0), kind=4)
-                    img(2, ii, jj) = int(nint(v2 * 255.0d0), kind=4)
-                    img(3, ii, jj) = int(nint(v3 * 255.0d0), kind=4)
+                    img(1, ii, jj) = int(nint(v1*255.0d0), kind=4)
+                    img(2, ii, jj) = int(nint(v2*255.0d0), kind=4)
+                    img(3, ii, jj) = int(nint(v3*255.0d0), kind=4)
                 end do
             end do
-            allocate(rgb_u8(WP*HP*3))
+            allocate (rgb_u8(WP*HP*3))
             idx = 1
             do j = 1, HP
                 do i = 1, WP
@@ -392,9 +435,9 @@ contains
             integer(int8), allocatable :: in_bytes(:), out_bytes(:)
             integer :: k, n
             n = size(rgb_u8)
-            allocate(in_bytes(n))
+            allocate (in_bytes(n))
             do k = 1, n
-                in_bytes(k) = int(iand(rgb_u8(k),255))
+                in_bytes(k) = int(iand(rgb_u8(k), 255))
             end do
             call zlib_compress_into(in_bytes, n, out_bytes, out_len)
             img_data = repeat(' ', out_len)
@@ -404,27 +447,28 @@ contains
         end block
 
         ! Align placement to the exact PDF plot area (consistent with PNG backend)
-        pdf_x0   = real(this%coord_ctx%plot_area%left,   wp)
-        pdf_y0   = real(this%coord_ctx%plot_area%bottom, wp)
-        width_pt = real(this%coord_ctx%plot_area%width,  wp)
-        height_pt= real(this%coord_ctx%plot_area%height, wp)
+        pdf_x0 = real(this%coord_ctx%plot_area%left, wp)
+        pdf_y0 = real(this%coord_ctx%plot_area%bottom, wp)
+        width_pt = real(this%coord_ctx%plot_area%width, wp)
+        height_pt = real(this%coord_ctx%plot_area%height, wp)
 
         ! Compute a half-pixel bleed in user-space and clip to the exact plot area
-        px_w = width_pt / real(W, wp)
-        px_h = height_pt / real(H, wp)
-        bleed_x = 0.5_wp * px_w
-        bleed_y = 0.5_wp * px_h
+        px_w = width_pt/real(W, wp)
+        px_h = height_pt/real(H, wp)
+        bleed_x = 0.5_wp*px_w
+        bleed_y = 0.5_wp*px_h
 
         call this%stream_writer%add_to_stream('q')
         ! Clip to the exact target rectangle to keep padded borders inside
-        write(cmd,'(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') pdf_x0, pdf_y0, width_pt, height_pt, ' re W n'
+        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') pdf_x0, pdf_y0, &
+            width_pt, height_pt, ' re W n'
         call this%stream_writer%add_to_stream(trim(cmd))
         ! Compute pixel scale and place padded image so that the extra 1px ring
         ! lies just outside the clip region
-        px_w = width_pt / real(W-2, wp)
-        px_h = height_pt / real(H-2, wp)
-        write(cmd,'(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
-            px_w*real(W,wp), 0.0_wp, 0.0_wp, -(px_h*real(H,wp)), &
+        px_w = width_pt/real(W - 2, wp)
+        px_h = height_pt/real(H - 2, wp)
+        write (cmd, '(F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,F0.12,1X,A)') &
+            px_w*real(W, wp), 0.0_wp, 0.0_wp, -(px_h*real(H, wp)), &
             pdf_x0 - px_w, (pdf_y0 + height_pt) + px_h, ' cm'
         call this%stream_writer%add_to_stream(trim(cmd))
         ! Place image XObject instead of inline image
@@ -438,7 +482,8 @@ contains
         real(wp), intent(in) :: x, y, width, height
 
         call this%update_coord_context()
-        call pdf_render_legend_specialized(this%coord_ctx, entries, x, y, width, height)
+        call pdf_render_legend_specialized(this%coord_ctx, entries, x, y, &
+                                           width, height)
     end subroutine render_legend_specialized_wrapper
 
     subroutine calculate_legend_dimensions_wrapper(this, entries, width, height)
@@ -506,10 +551,11 @@ contains
         call pdf_render_ylabel(this%coord_ctx, ylabel)
     end subroutine render_ylabel_wrapper
 
-    subroutine draw_axes_and_labels_backend_wrapper(this, xscale, yscale, symlog_threshold, &
-                                                   x_min, x_max, y_min, y_max, &
-                                                   title, xlabel, ylabel, &
-                                                   z_min, z_max, has_3d_plots)
+    subroutine draw_axes_and_labels_backend_wrapper(this, xscale, yscale, &
+                                                    symlog_threshold, &
+                                                    x_min, x_max, y_min, y_max, &
+                                                    title, xlabel, ylabel, &
+                                                    z_min, z_max, has_3d_plots)
         use fortplot_3d_axes, only: draw_3d_axes
         use fortplot_pdf_axes, only: draw_pdf_title_and_labels
         class(pdf_context), intent(inout) :: this
@@ -521,10 +567,10 @@ contains
         logical, intent(in) :: has_3d_plots
 
         character(len=256) :: title_str, xlabel_str, ylabel_str
-        associate(dzmin => z_min, dzmax => z_max, dh3d => has_3d_plots); end associate
+        associate (dzmin => z_min, dzmax => z_max, dh3d => has_3d_plots); end associate
 
         title_str = ""; xlabel_str = ""; ylabel_str = ""
-        if (present(title))  title_str  = title
+        if (present(title)) title_str = title
         if (present(xlabel)) xlabel_str = xlabel
         if (present(ylabel)) ylabel_str = ylabel
 
@@ -533,20 +579,22 @@ contains
                               merge(z_min, 0.0_wp, present(z_min)), &
                               merge(z_max, 1.0_wp, present(z_max)))
             ! Draw only title/xlabel/ylabel using PDF helpers (avoid 2D axes duplication)
-            call draw_pdf_title_and_labels(this%core_ctx, title_str, xlabel_str, ylabel_str, &
+            call draw_pdf_title_and_labels(this%core_ctx, title_str, xlabel_str, &
+                                           ylabel_str, &
                                            real(this%plot_area%left, wp), &
                                            real(this%plot_area%bottom, wp), &
                                            real(this%plot_area%width, wp), &
                                            real(this%plot_area%height, wp))
         else
-            call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, symlog_threshold, &
-                                         x_min, x_max, y_min, y_max, &
-                                         title_str, xlabel_str, ylabel_str, &
-                                         real(this%plot_area%left, wp), &
-                                         real(this%plot_area%bottom, wp), &
-                                         real(this%plot_area%width, wp), &
-                                         real(this%plot_area%height, wp), &
-                                         real(this%height, wp))
+            call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, &
+                                          symlog_threshold, &
+                                          x_min, x_max, y_min, y_max, &
+                                          title_str, xlabel_str, ylabel_str, &
+                                          real(this%plot_area%left, wp), &
+                                          real(this%plot_area%bottom, wp), &
+                                          real(this%plot_area%width, wp), &
+                                          real(this%plot_area%height, wp), &
+                                          real(this%height, wp))
         end if
     end subroutine draw_axes_and_labels_backend_wrapper
 
@@ -607,13 +655,13 @@ contains
 
         ! Draw axes and labels with current coordinate system
         call draw_pdf_axes_and_labels(this%core_ctx, "linear", "linear", 1.0_wp, &
-                                     this%x_min, this%x_max, this%y_min, this%y_max, &
-                                     title_str, xlabel_str, ylabel_str, &
-                                     real(this%plot_area%left, wp), &
-                                     real(this%plot_area%bottom, wp), &
-                                     real(this%plot_area%width, wp), &
-                                     real(this%plot_area%height, wp), &
-                                     real(this%height, wp))
+                                      this%x_min, this%x_max, this%y_min, this%y_max, &
+                                      title_str, xlabel_str, ylabel_str, &
+                                      real(this%plot_area%left, wp), &
+                                      real(this%plot_area%bottom, wp), &
+                                      real(this%plot_area%width, wp), &
+                                      real(this%plot_area%height, wp), &
+                                      real(this%height, wp))
 
         ! Add axes content to the stream
         call this%stream_writer%add_to_stream(this%core_ctx%stream_data)
@@ -621,6 +669,5 @@ contains
         ! Mark axes as rendered
         this%axes_rendered = .true.
     end subroutine render_pdf_axes_wrapper
-
 
 end module fortplot_pdf
