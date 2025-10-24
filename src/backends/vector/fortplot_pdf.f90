@@ -112,11 +112,18 @@ contains
     end function create_pdf_canvas
 
     subroutine draw_pdf_line(this, x1, y1, x2, y2)
+        use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
         class(pdf_context), intent(inout) :: this
         real(wp), intent(in) :: x1, y1, x2, y2
         real(wp) :: pdf_x1, pdf_y1, pdf_x2, pdf_y2
         ! Ensure coordinate context reflects latest figure ranges and plot area
         call this%update_coord_context()
+
+        ! Skip drawing if any coordinate is NaN (disconnected line segments)
+        if (ieee_is_nan(x1) .or. ieee_is_nan(y1) .or. &
+            ieee_is_nan(x2) .or. ieee_is_nan(y2)) then
+            return
+        end if
 
         call normalize_to_pdf_coords(this%coord_ctx, x1, y1, pdf_x1, pdf_y1)
         call normalize_to_pdf_coords(this%coord_ctx, x2, y2, pdf_x2, pdf_y2)
