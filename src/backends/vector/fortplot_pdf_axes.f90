@@ -588,21 +588,22 @@ contains
 
     subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
         !! Draw rotated mathtext for ylabel
-        !! Uses existing mathtext renderer with rotation matrix and proper subscript/superscript handling
-        use fortplot_pdf_text_segments, only: render_mixed_font_at_position
+        !! Uses rotation matrix with manual text positioning for subscripts/superscripts
+        use fortplot_pdf_text_segments, only: process_text_segments
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
-        character(len=1024) :: matrix_cmd
+        character(len=1024) :: matrix_cmd, td_cmd
         character(len=2048) :: preprocessed_text
         integer :: processed_len
         character(len=4096) :: math_ready
         integer :: mlen
         type(mathtext_element_t), allocatable :: elements(:)
         integer :: i
-        real(wp) :: x_offset, elem_font_size, elem_y_offset
+        real(wp) :: elem_font_size, elem_y_offset
         real(wp) :: char_width
         integer :: j, codepoint, char_len, text_len
+        logical :: in_symbol_font
 
         ! Process text for mathtext
         call process_latex_in_text(text, preprocessed_text, processed_len)
@@ -619,18 +620,35 @@ contains
         ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
 
         ! Render each mathtext element with proper font size and vertical offset
-        x_offset = 0.0_wp
+        in_symbol_font = .false.
         do i = 1, size(elements)
             if (len_trim(elements(i)%text) > 0) then
                 ! Calculate element font size and vertical offset
                 elem_font_size = PDF_LABEL_SIZE * elements(i)%font_size_ratio
                 elem_y_offset = elements(i)%vertical_offset * PDF_LABEL_SIZE
 
-                ! Render element at current position with proper sizing
-                call render_mixed_font_at_position(ctx, x_offset, elem_y_offset, &
-                    elements(i)%text, elem_font_size)
+                ! Move to position for this element using Td (relative positioning)
+                ! The rotation matrix transforms these: x->forward along text, y->perpendicular
+                if (i > 1) then
+                    ! Move horizontally by previous element width, vertically by offset difference
+                    write(td_cmd, '(F0.3, 1X, F0.3, " Td")') char_width, &
+                        elem_y_offset - (elements(i-1)%vertical_offset * PDF_LABEL_SIZE)
+                    ctx%stream_data = ctx%stream_data // trim(adjustl(td_cmd)) // new_line('a')
+                else if (abs(elem_y_offset) > 0.01_wp) then
+                    ! First element with non-zero offset
+                    write(td_cmd, '("0 ", F0.3, " Td")') elem_y_offset
+                    ctx%stream_data = ctx%stream_data // trim(adjustl(td_cmd)) // new_line('a')
+                end if
 
-                ! Calculate width to advance x position
+                ! Set font size for this element
+                write(matrix_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+                    ctx%fonts%get_helvetica_obj(), elem_font_size
+                ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
+
+                ! Render text segments
+                call process_text_segments(ctx, elements(i)%text, in_symbol_font, elem_font_size)
+
+                ! Calculate width for next element positioning
                 char_width = 0.0_wp
                 j = 1
                 text_len = len_trim(elements(i)%text)
@@ -665,8 +683,6 @@ contains
 
                     j = j + char_len
                 end do
-
-                x_offset = x_offset + char_width
             end if
         end do
 
