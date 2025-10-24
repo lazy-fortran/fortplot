@@ -50,7 +50,7 @@ contains
 
         real(wp) :: elem_font_size, elem_y
         real(wp) :: char_width
-        integer :: i, codepoint, char_len
+        integer :: i, codepoint, char_len, text_len
         real(wp) :: sym_w, rad_width, top_y
 
         elem_font_size = base_font_size * element%font_size_ratio
@@ -100,7 +100,17 @@ contains
 
         char_width = 0.0_wp
         i = 1
-        do while (i <= len_trim(element%text))
+        ! Calculate width including trailing spaces by scanning beyond len_trim
+        text_len = len_trim(element%text)
+        do while (text_len < len(element%text))
+            if (element%text(text_len+1:text_len+1) == ' ') then
+                text_len = text_len + 1
+            else
+                exit
+            end if
+        end do
+
+        do while (i <= text_len)
             char_len = utf8_char_length(element%text(i:i))
             if (char_len == 0) then
                 codepoint = iachar(element%text(i:i))

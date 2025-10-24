@@ -392,13 +392,15 @@ contains
         call this%write_stroke()
         
         ! Draw arrow head based on style
-        if (style == 'filled' .or. style == 'open') then
+        ! Handle both matplotlib-style ('->', '<-', etc.) and legacy ('filled', 'open')
+        if (index(style, '>') > 0 .or. index(style, '<') > 0 .or. &
+            style == 'filled' .or. style == 'open') then
             call this%write_move(tip_x, tip_y)
             call this%write_line(left_x, left_y)
             call this%write_line(right_x, right_y)
             call this%write_command("h")  ! Close path
-            
-            if (style == 'filled') then
+
+            if (style == 'filled' .or. style == '->') then
                 call this%write_command("B")  ! Fill and stroke
             else
                 call this%write_stroke()     ! Just stroke

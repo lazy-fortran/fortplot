@@ -26,7 +26,7 @@ contains
         character(len=*), intent(in) :: text
         logical, intent(inout) :: in_symbol_font
         real(wp), intent(in) :: font_size
-        integer :: i, codepoint, char_len
+        integer :: i, n, codepoint, char_len
         character(len=8) :: symbol_char
         logical :: is_valid
         character(len=2048) :: buffer
@@ -38,7 +38,17 @@ contains
         buf_is_symbol = in_symbol_font
 
         i = 1
-        do while (i <= len_trim(text))
+        n = len_trim(text)
+        ! Scan forward from len_trim to include trailing spaces (but not padding)
+        do while (n < len(text))
+            if (ichar(text(n+1:n+1)) == 32) then
+                n = n + 1  ! Include trailing space
+            else
+                exit  ! Stop at first non-space padding character
+            end if
+        end do
+
+        do while (i <= n)
             char_len = utf8_char_length(text(i:i))
 
             if (char_len <= 1) then
@@ -82,7 +92,7 @@ contains
                 i = i + 1
             else
                 call check_utf8_sequence(text, i, is_valid, char_len)
-                if (is_valid .and. i + char_len - 1 <= len_trim(text)) then
+                if (is_valid .and. i + char_len - 1 <= n) then
                     codepoint = utf8_to_codepoint(text, i)
                 else
                     codepoint = 0

@@ -12,8 +12,11 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                 draw_pdf_mathtext, estimate_pdf_text_width
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
-    use fortplot_text_layout, only: has_mathtext
+    use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use fortplot_pdf_mathtext_render, only: render_mathtext_element_pdf
+    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
@@ -558,17 +561,133 @@ contains
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
         !! Helper: process LaTeX and render rotated mixed-font ylabel
-        !! Uses same logic as PNG: process LaTeX ONLY, no Unicode conversion
+        !! Now supports mathtext rendering for ylabel with $...$ delimiters
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=512) :: processed
         integer :: plen
+        character(len=600) :: math_ready
+        integer :: mlen
 
-        ! Process LaTeX commands ONLY (same as PNG does)
+        ! Process LaTeX commands
         call process_latex_in_text(text, processed, plen)
-        call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
+
+        ! Check if mathtext is present ($...$ delimiters)
+        call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
+
+        if (has_mathtext(math_ready(1:mlen))) then
+            ! For mathtext, we need to use a rotated mathtext renderer
+            ! Since draw_pdf_mathtext doesn't support rotation, we'll use
+            ! the text matrix approach with mathtext rendering
+            call draw_rotated_pdf_mathtext(ctx, x, y, math_ready(1:mlen))
+        else
+            call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
+        end if
     end subroutine render_rotated_mixed_text
+
+    subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
+        !! Draw rotated mathtext for ylabel
+        !! Uses rotation matrix with manual text positioning for subscripts/superscripts
+        use fortplot_pdf_text_segments, only: process_text_segments
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=1024) :: matrix_cmd, td_cmd
+        character(len=2048) :: preprocessed_text
+        integer :: processed_len
+        character(len=4096) :: math_ready
+        integer :: mlen
+        type(mathtext_element_t), allocatable :: elements(:)
+        integer :: i
+        real(wp) :: elem_font_size, elem_y_offset
+        real(wp) :: char_width
+        integer :: j, codepoint, char_len, text_len
+        logical :: in_symbol_font
+
+        ! Process text for mathtext
+        call process_latex_in_text(text, preprocessed_text, processed_len)
+        call preprocess_math_text(preprocessed_text(1:processed_len), math_ready, mlen)
+
+        ! Parse mathtext elements
+        elements = parse_mathtext(math_ready(1:mlen))
+
+        ! Begin text object with rotation matrix (90 degrees counterclockwise)
+        ctx%stream_data = ctx%stream_data // 'BT' // new_line('a')
+
+        ! Set rotation matrix: [0 1 -1 0 x y] for 90-degree rotation
+        write(matrix_cmd, '("0 1 -1 0 ", F0.3, 1X, F0.3, " Tm")') x, y
+        ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
+
+        ! Render each mathtext element with proper font size and vertical offset
+        in_symbol_font = .false.
+        do i = 1, size(elements)
+            if (len_trim(elements(i)%text) > 0) then
+                ! Calculate element font size and vertical offset
+                elem_font_size = PDF_LABEL_SIZE * elements(i)%font_size_ratio
+                elem_y_offset = elements(i)%vertical_offset * PDF_LABEL_SIZE
+
+                ! Move to position for this element using Td (relative positioning)
+                ! The rotation matrix transforms these: x->forward along text, y->perpendicular
+                if (i > 1) then
+                    ! Move horizontally by previous element width, vertically by offset difference
+                    write(td_cmd, '(F0.3, 1X, F0.3, " Td")') char_width, &
+                        elem_y_offset - (elements(i-1)%vertical_offset * PDF_LABEL_SIZE)
+                    ctx%stream_data = ctx%stream_data // trim(adjustl(td_cmd)) // new_line('a')
+                else if (abs(elem_y_offset) > 0.01_wp) then
+                    ! First element with non-zero offset
+                    write(td_cmd, '("0 ", F0.3, " Td")') elem_y_offset
+                    ctx%stream_data = ctx%stream_data // trim(adjustl(td_cmd)) // new_line('a')
+                end if
+
+                ! Set font size for this element
+                write(matrix_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+                    ctx%fonts%get_helvetica_obj(), elem_font_size
+                ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
+
+                ! Render text segments
+                call process_text_segments(ctx, elements(i)%text, in_symbol_font, elem_font_size)
+
+                ! Calculate width for next element positioning
+                char_width = 0.0_wp
+                j = 1
+                text_len = len_trim(elements(i)%text)
+                do while (text_len < len(elements(i)%text))
+                    if (elements(i)%text(text_len+1:text_len+1) == ' ') then
+                        text_len = text_len + 1
+                    else
+                        exit
+                    end if
+                end do
+
+                do while (j <= text_len)
+                    char_len = utf8_char_length(elements(i)%text(j:j))
+                    if (char_len == 0) then
+                        codepoint = iachar(elements(i)%text(j:j))
+                        char_len = 1
+                    else
+                        codepoint = utf8_to_codepoint(elements(i)%text, j)
+                    end if
+
+                    if (codepoint >= 48 .and. codepoint <= 57) then
+                        char_width = char_width + elem_font_size * 0.55_wp
+                    else if (codepoint >= 65 .and. codepoint <= 90) then
+                        char_width = char_width + elem_font_size * 0.65_wp
+                    else if (codepoint >= 97 .and. codepoint <= 122) then
+                        char_width = char_width + elem_font_size * 0.5_wp
+                    else if (codepoint == 32) then
+                        char_width = char_width + elem_font_size * 0.3_wp
+                    else
+                        char_width = char_width + elem_font_size * 0.5_wp
+                    end if
+
+                    j = j + char_len
+                end do
+            end if
+        end do
+
+        ctx%stream_data = ctx%stream_data // 'ET' // new_line('a')
+    end subroutine draw_rotated_pdf_mathtext
 
     subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left, canvas_height)
         !! Draw Y-axis labels with overlap detection to prevent clustering
