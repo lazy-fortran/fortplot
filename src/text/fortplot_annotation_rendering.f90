@@ -27,29 +27,39 @@ contains
                                         margin_left, margin_right, &
                                         margin_bottom, margin_top)
         !! Render all annotations for the current figure
-        !! 
+        !!
         !! This is the main entry point called from figure_render() that processes
         !! all stored annotations and dispatches them to the appropriate backend.
         !! Uses existing backend text rendering infrastructure.
-        
+
+        use fortplot_pdf, only: pdf_context
+
         class(plot_context), intent(inout) :: backend
         type(text_annotation_t), intent(in) :: annotations(:)
         integer, intent(in) :: annotation_count
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         integer, intent(in) :: width, height
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
-        
+
         integer :: i
         real(wp) :: render_x, render_y
-        logical :: valid_annotation
+        logical :: valid_annotation, is_pdf_backend
         character(len=256) :: error_message
-        
+
         ! Early exit if no annotations
         if (annotation_count == 0) return
-        
+
+        ! Check if backend is PDF (PDF expects data coordinates, not pixels)
+        select type (backend)
+        type is (pdf_context)
+            is_pdf_backend = .true.
+        class default
+            is_pdf_backend = .false.
+        end select
+
         call log_info("Rendering annotations: processing " // &
                      trim(adjustl(int_to_char(annotation_count))) // " annotations")
-        
+
         ! Process each annotation
         do i = 1, annotation_count
             ! Skip re-validation if already validated at creation time (Issue #870: prevent duplicate warnings)
@@ -68,30 +78,54 @@ contains
                     cycle
                 end if
             end if
-            
+
             ! Skip pie chart label/autopct annotations for ASCII and PDF backends
             ! ASCII backend uses legend-only approach for cleaner output
             ! PDF backend has coordinate transformation issues with pie annotations
             if (should_skip_pie_annotation(backend, annotations(i))) then
                 cycle
             end if
-            
-            ! Transform coordinates to rendering coordinates
-            call transform_annotation_to_rendering_coords(annotations(i), &
-                                                         x_min, x_max, y_min, y_max, &
-                                                         width, height, &
-                                                         margin_left, margin_right, &
-                                                         margin_bottom, margin_top, &
-                                                         render_x, render_y)
-            
+
+            ! PDF backend text() expects DATA coordinates and applies normalize_to_pdf_coords
+            ! But annotations can be in FIGURE or AXIS coordinates, so we need special handling
+            if (is_pdf_backend .and. annotations(i)%coord_type /= COORD_DATA) then
+                ! For PDF with FIGURE/AXIS coordinates: convert to DATA coordinates first
+                ! Then PDF's text() will apply normalize_to_pdf_coords
+                select case (annotations(i)%coord_type)
+                case (COORD_FIGURE)
+                    ! Figure coordinates (0-1): map to data space
+                    render_x = x_min + annotations(i)%x * (x_max - x_min)
+                    render_y = y_min + annotations(i)%y * (y_max - y_min)
+                case (COORD_AXIS)
+                    ! Axis coordinates (0-1 in plot area): map to data space
+                    render_x = x_min + annotations(i)%x * (x_max - x_min)
+                    render_y = y_min + annotations(i)%y * (y_max - y_min)
+                case default
+                    render_x = annotations(i)%x
+                    render_y = annotations(i)%y
+                end select
+            else if (is_pdf_backend) then
+                ! PDF with DATA coordinates: pass directly (text() will transform)
+                render_x = annotations(i)%x
+                render_y = annotations(i)%y
+            else
+                ! For raster/ASCII: transform to pixel coordinates
+                call transform_annotation_to_rendering_coords(annotations(i), &
+                                                             x_min, x_max, y_min, y_max, &
+                                                             width, height, &
+                                                             margin_left, margin_right, &
+                                                             margin_bottom, margin_top, &
+                                                             render_x, render_y)
+            end if
+
             ! Set annotation color
             call backend%color(annotations(i)%color(1), &
                               annotations(i)%color(2), &
                               annotations(i)%color(3))
-            
+
             ! Render the annotation text using existing backend method
             call backend%text(render_x, render_y, trim(annotations(i)%text))
-            
+
             ! Render arrow if present (simplified implementation)
             if (annotations(i)%has_arrow) then
                 call render_annotation_arrow(backend, annotations(i), &
@@ -101,7 +135,7 @@ contains
                                            margin_bottom, margin_top)
             end if
         end do
-        
+
         call log_info("Annotation rendering completed successfully")
     end subroutine render_figure_annotations
 
