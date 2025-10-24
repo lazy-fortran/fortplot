@@ -12,8 +12,10 @@ module fortplot_pdf_axes
                                 draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                 draw_pdf_mathtext, estimate_pdf_text_width
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
-    use fortplot_text_layout, only: has_mathtext
+    use fortplot_text_layout, only: has_mathtext, preprocess_math_text
     use fortplot_latex_parser, only: process_latex_in_text
+    use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
+    use fortplot_pdf_mathtext_render, only: render_mathtext_element_pdf
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
@@ -558,17 +560,73 @@ contains
 
     subroutine render_rotated_mixed_text(ctx, x, y, text)
         !! Helper: process LaTeX and render rotated mixed-font ylabel
-        !! Uses same logic as PNG: process LaTeX ONLY, no Unicode conversion
+        !! Now supports mathtext rendering for ylabel with $...$ delimiters
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
         character(len=512) :: processed
         integer :: plen
+        character(len=600) :: math_ready
+        integer :: mlen
 
-        ! Process LaTeX commands ONLY (same as PNG does)
+        ! Process LaTeX commands
         call process_latex_in_text(text, processed, plen)
-        call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
+
+        ! Check if mathtext is present ($...$ delimiters)
+        call prepare_mathtext_if_needed(processed(1:plen), math_ready, mlen)
+
+        if (has_mathtext(math_ready(1:mlen))) then
+            ! For mathtext, we need to use a rotated mathtext renderer
+            ! Since draw_pdf_mathtext doesn't support rotation, we'll use
+            ! the text matrix approach with mathtext rendering
+            call draw_rotated_pdf_mathtext(ctx, x, y, math_ready(1:mlen))
+        else
+            call draw_rotated_mixed_font_text(ctx, x, y, processed(1:plen))
+        end if
     end subroutine render_rotated_mixed_text
+
+    subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
+        !! Draw rotated mathtext for ylabel
+        !! Uses text matrix rotation with mathtext rendering
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x, y
+        character(len=*), intent(in) :: text
+        character(len=1024) :: matrix_cmd
+        character(len=2048) :: preprocessed_text
+        integer :: processed_len
+        character(len=4096) :: math_ready
+        integer :: mlen
+        type(mathtext_element_t), allocatable :: elements(:)
+        real(wp) :: x_pos
+        integer :: i
+
+        ! Process text for mathtext
+        call process_latex_in_text(text, preprocessed_text, processed_len)
+        call preprocess_math_text(preprocessed_text(1:processed_len), math_ready, mlen)
+
+        ! Parse mathtext elements
+        elements = parse_mathtext(math_ready(1:mlen))
+
+        ! Begin text object with rotation matrix (90 degrees counterclockwise)
+        ctx%stream_data = ctx%stream_data // 'BT' // new_line('a')
+
+        ! Set font
+        write(matrix_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
+            ctx%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
+        ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
+
+        ! Set rotation matrix: [0 1 -1 0 x y] for 90-degree rotation
+        write(matrix_cmd, '("0 1 -1 0 ", F0.3, 1X, F0.3, " Tm")') x, y
+        ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
+
+        ! Render mathtext elements in rotated context
+        x_pos = 0.0_wp
+        do i = 1, size(elements)
+            call render_mathtext_element_pdf(ctx, elements(i), x_pos, 0.0_wp, PDF_LABEL_SIZE)
+        end do
+
+        ctx%stream_data = ctx%stream_data // 'ET' // new_line('a')
+    end subroutine draw_rotated_pdf_mathtext
 
     subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, num_y, plot_left, canvas_height)
         !! Draw Y-axis labels with overlap detection to prevent clustering
