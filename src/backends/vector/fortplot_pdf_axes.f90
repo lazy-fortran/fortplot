@@ -587,7 +587,8 @@ contains
 
     subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
         !! Draw rotated mathtext for ylabel
-        !! Uses text matrix rotation with mathtext rendering
+        !! Uses existing mathtext renderer with rotation matrix
+        use fortplot_pdf_text_segments, only: process_text_segments
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -597,8 +598,8 @@ contains
         character(len=4096) :: math_ready
         integer :: mlen
         type(mathtext_element_t), allocatable :: elements(:)
-        real(wp) :: x_pos
         integer :: i
+        logical :: in_symbol_font
 
         ! Process text for mathtext
         call process_latex_in_text(text, preprocessed_text, processed_len)
@@ -619,10 +620,14 @@ contains
         write(matrix_cmd, '("0 1 -1 0 ", F0.3, 1X, F0.3, " Tm")') x, y
         ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
 
-        ! Render mathtext elements in rotated context
-        x_pos = 0.0_wp
+        ! Render mathtext elements using text segments processor
+        in_symbol_font = .false.
         do i = 1, size(elements)
-            call render_mathtext_element_pdf(ctx, elements(i), x_pos, 0.0_wp, PDF_LABEL_SIZE)
+            ! For rotated text, just render the text content directly
+            ! without position adjustments (rotation handles positioning)
+            if (len_trim(elements(i)%text) > 0) then
+                call process_text_segments(ctx, elements(i)%text, in_symbol_font, PDF_LABEL_SIZE)
+            end if
         end do
 
         ctx%stream_data = ctx%stream_data // 'ET' // new_line('a')
