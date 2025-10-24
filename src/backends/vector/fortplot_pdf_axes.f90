@@ -16,6 +16,7 @@ module fortplot_pdf_axes
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_mathtext, only: mathtext_element_t, parse_mathtext
     use fortplot_pdf_mathtext_render, only: render_mathtext_element_pdf
+    use fortplot_unicode, only: utf8_char_length, utf8_to_codepoint
     use fortplot_axes, only: compute_scale_ticks, format_tick_label, MAX_TICKS
     use fortplot_tick_calculation, only: determine_decimals_from_ticks, &
         format_tick_value_consistent
@@ -587,8 +588,8 @@ contains
 
     subroutine draw_rotated_pdf_mathtext(ctx, x, y, text)
         !! Draw rotated mathtext for ylabel
-        !! Uses existing mathtext renderer with rotation matrix
-        use fortplot_pdf_text_segments, only: process_text_segments
+        !! Uses existing mathtext renderer with rotation matrix and proper subscript/superscript handling
+        use fortplot_pdf_text_segments, only: render_mixed_font_at_position
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x, y
         character(len=*), intent(in) :: text
@@ -599,7 +600,9 @@ contains
         integer :: mlen
         type(mathtext_element_t), allocatable :: elements(:)
         integer :: i
-        logical :: in_symbol_font
+        real(wp) :: x_offset, elem_font_size, elem_y_offset
+        real(wp) :: char_width
+        integer :: j, codepoint, char_len, text_len
 
         ! Process text for mathtext
         call process_latex_in_text(text, preprocessed_text, processed_len)
@@ -611,22 +614,59 @@ contains
         ! Begin text object with rotation matrix (90 degrees counterclockwise)
         ctx%stream_data = ctx%stream_data // 'BT' // new_line('a')
 
-        ! Set font
-        write(matrix_cmd, '("/F", I0, 1X, F0.1, " Tf")') &
-            ctx%fonts%get_helvetica_obj(), PDF_LABEL_SIZE
-        ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
-
         ! Set rotation matrix: [0 1 -1 0 x y] for 90-degree rotation
         write(matrix_cmd, '("0 1 -1 0 ", F0.3, 1X, F0.3, " Tm")') x, y
         ctx%stream_data = ctx%stream_data // trim(adjustl(matrix_cmd)) // new_line('a')
 
-        ! Render mathtext elements using text segments processor
-        in_symbol_font = .false.
+        ! Render each mathtext element with proper font size and vertical offset
+        x_offset = 0.0_wp
         do i = 1, size(elements)
-            ! For rotated text, just render the text content directly
-            ! without position adjustments (rotation handles positioning)
             if (len_trim(elements(i)%text) > 0) then
-                call process_text_segments(ctx, elements(i)%text, in_symbol_font, PDF_LABEL_SIZE)
+                ! Calculate element font size and vertical offset
+                elem_font_size = PDF_LABEL_SIZE * elements(i)%font_size_ratio
+                elem_y_offset = elements(i)%vertical_offset * PDF_LABEL_SIZE
+
+                ! Render element at current position with proper sizing
+                call render_mixed_font_at_position(ctx, x_offset, elem_y_offset, &
+                    elements(i)%text, elem_font_size)
+
+                ! Calculate width to advance x position
+                char_width = 0.0_wp
+                j = 1
+                text_len = len_trim(elements(i)%text)
+                do while (text_len < len(elements(i)%text))
+                    if (elements(i)%text(text_len+1:text_len+1) == ' ') then
+                        text_len = text_len + 1
+                    else
+                        exit
+                    end if
+                end do
+
+                do while (j <= text_len)
+                    char_len = utf8_char_length(elements(i)%text(j:j))
+                    if (char_len == 0) then
+                        codepoint = iachar(elements(i)%text(j:j))
+                        char_len = 1
+                    else
+                        codepoint = utf8_to_codepoint(elements(i)%text, j)
+                    end if
+
+                    if (codepoint >= 48 .and. codepoint <= 57) then
+                        char_width = char_width + elem_font_size * 0.55_wp
+                    else if (codepoint >= 65 .and. codepoint <= 90) then
+                        char_width = char_width + elem_font_size * 0.65_wp
+                    else if (codepoint >= 97 .and. codepoint <= 122) then
+                        char_width = char_width + elem_font_size * 0.5_wp
+                    else if (codepoint == 32) then
+                        char_width = char_width + elem_font_size * 0.3_wp
+                    else
+                        char_width = char_width + elem_font_size * 0.5_wp
+                    end if
+
+                    j = j + char_len
+                end do
+
+                x_offset = x_offset + char_width
             end if
         end do
 
