@@ -76,18 +76,39 @@ contains
         type(pdf_stream_writer), intent(inout) :: stream_writer
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
-        real(wp) :: pdf_x, pdf_y, pdf_x_end, pdf_y_end, pdf_dx, pdf_dy
+        real(wp) :: pdf_x, pdf_y, pdf_dx, pdf_dy, pdf_size
+        real(wp) :: x_range, y_range, left, right, bottom, top, scale_factor
         real(wp), parameter :: EPSILON = 1.0e-10_wp
 
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
-        call normalize_to_pdf_coords(ctx_handle, x + dx, y + dy, pdf_x_end, pdf_y_end)
 
-        pdf_dx = pdf_x_end - pdf_x
-        pdf_dy = pdf_y_end - pdf_y
+        x_range = ctx_handle%x_max - ctx_handle%x_min
+        y_range = ctx_handle%y_max - ctx_handle%y_min
+
+        left = real(ctx_handle%plot_area%left, wp)
+        right = real(ctx_handle%plot_area%left + ctx_handle%plot_area%width, wp)
+        bottom = real(ctx_handle%plot_area%bottom, wp)
+        top = real(ctx_handle%plot_area%bottom + ctx_handle%plot_area%height, wp)
+
+        scale_factor = sqrt((right - left)**2 + (top - bottom)**2) / sqrt(2.0_wp)
+
+        if (abs(x_range) > EPSILON) then
+            pdf_dx = dx * (right - left) / x_range
+        else
+            pdf_dx = 0.0_wp
+        end if
+
+        if (abs(y_range) > EPSILON) then
+            pdf_dy = dy * (top - bottom) / y_range
+        else
+            pdf_dy = 0.0_wp
+        end if
 
         if (abs(pdf_dx) < EPSILON .and. abs(pdf_dy) < EPSILON) return
 
-        call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, size, style)
+        pdf_size = size * scale_factor / 100.0_wp
+
+        call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, pdf_size, style)
     end subroutine draw_pdf_arrow_at_coords
     
 end module fortplot_pdf_markers
