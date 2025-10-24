@@ -76,10 +76,18 @@ contains
         type(pdf_stream_writer), intent(inout) :: stream_writer
         real(wp), intent(in) :: x, y, dx, dy, size
         character(len=*), intent(in) :: style
-        real(wp) :: pdf_x, pdf_y
-        
+        real(wp) :: pdf_x, pdf_y, pdf_x_end, pdf_y_end, pdf_dx, pdf_dy
+        real(wp), parameter :: EPSILON = 1.0e-10_wp
+
         call normalize_to_pdf_coords(ctx_handle, x, y, pdf_x, pdf_y)
-        call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, dx, dy, size, style)
+        call normalize_to_pdf_coords(ctx_handle, x + dx, y + dy, pdf_x_end, pdf_y_end)
+
+        pdf_dx = pdf_x_end - pdf_x
+        pdf_dy = pdf_y_end - pdf_y
+
+        if (abs(pdf_dx) < EPSILON .and. abs(pdf_dy) < EPSILON) return
+
+        call draw_pdf_arrow(stream_writer, pdf_x, pdf_y, pdf_dx, pdf_dy, size, style)
     end subroutine draw_pdf_arrow_at_coords
     
 end module fortplot_pdf_markers

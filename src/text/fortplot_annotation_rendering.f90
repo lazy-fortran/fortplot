@@ -14,6 +14,8 @@ module fortplot_annotation_rendering
     use fortplot_context, only: plot_context
     use fortplot_annotations, only: text_annotation_t, COORD_DATA, COORD_FIGURE, COORD_AXIS
     use fortplot_logging, only: log_info, log_warning
+    use fortplot_pdf, only: pdf_context
+    use fortplot_ascii, only: ascii_context
     implicit none
     
     private
@@ -76,19 +78,39 @@ contains
                 cycle
             end if
             
-            ! Transform coordinates to rendering coordinates
-            call transform_annotation_to_rendering_coords(annotations(i), &
-                                                         x_min, x_max, y_min, y_max, &
-                                                         width, height, &
-                                                         margin_left, margin_right, &
-                                                         margin_bottom, margin_top, &
-                                                         render_x, render_y)
-            
+            ! Transform coordinates based on backend requirements
+            ! PDF backend expects data coordinates and does its own transformation
+            ! PNG/ASCII backends expect pixel coordinates
+            select type (backend)
+            type is (pdf_context)
+                ! PDF backend: pass data coordinates directly for COORD_DATA
+                select case (annotations(i)%coord_type)
+                case (COORD_DATA)
+                    render_x = annotations(i)%x
+                    render_y = annotations(i)%y
+                case default
+                    call transform_annotation_to_rendering_coords(annotations(i), &
+                                                                 x_min, x_max, y_min, y_max, &
+                                                                 width, height, &
+                                                                 margin_left, margin_right, &
+                                                                 margin_bottom, margin_top, &
+                                                                 render_x, render_y)
+                end select
+            class default
+                ! Other backends: use pixel coordinate transformation
+                call transform_annotation_to_rendering_coords(annotations(i), &
+                                                             x_min, x_max, y_min, y_max, &
+                                                             width, height, &
+                                                             margin_left, margin_right, &
+                                                             margin_bottom, margin_top, &
+                                                             render_x, render_y)
+            end select
+
             ! Set annotation color
             call backend%color(annotations(i)%color(1), &
                               annotations(i)%color(2), &
                               annotations(i)%color(3))
-            
+
             ! Render the annotation text using existing backend method
             call backend%text(render_x, render_y, trim(annotations(i)%text))
             
