@@ -355,14 +355,16 @@ contains
             write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            call this%stream_writer%add_to_stream('f*')
+            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            call this%stream_writer%add_to_stream('B')
         else
             write (cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
             write (cmd, '(F0.3,1X,F0.3)') px(2), py(2); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            call this%stream_writer%add_to_stream('f*')
+            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            call this%stream_writer%add_to_stream('B')
         end if
     end subroutine fill_quad_wrapper
 
