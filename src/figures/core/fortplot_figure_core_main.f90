@@ -115,6 +115,8 @@ module fortplot_figure_core
         procedure :: get_x_max
         procedure :: get_y_min
         procedure :: get_y_max
+        procedure :: get_dpi
+        procedure :: set_dpi
         final :: destroy
     end type figure_t
 
@@ -190,16 +192,20 @@ contains
 
     !! CORE OPERATIONS - Delegated to specialized modules
 
-    subroutine initialize(self, width, height, backend)
+    subroutine initialize(self, width, height, backend, dpi)
+        !! Initialize figure with optional DPI support
+        !! Added DPI parameter for consistency with matplotlib interface
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
-        
+        real(wp), intent(in), optional :: dpi
+
         call core_initialize(self%state, self%plots, self%streamlines, &
                             self%subplots_array, self%subplot_rows, &
                             self%subplot_cols, self%current_subplot, &
                             self%title, self%xlabel, self%ylabel, &
-                            self%plot_count, width, height, backend)
+                            self%plot_count, width, height, backend, dpi)
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -541,6 +547,32 @@ contains
         real(wp) :: y_max
         y_max = core_get_y_max(self%state)
     end function get_y_max
+
+    !! DPI PROPERTY ACCESSORS
+    function get_dpi(self) result(dpi)
+        !! Get the current DPI setting
+        class(figure_t), intent(in) :: self
+        real(wp) :: dpi
+        dpi = self%state%dpi
+    end function get_dpi
+
+    subroutine set_dpi(self, dpi)
+        !! Set the DPI and update backend if needed
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: dpi
+
+        ! Validate DPI value
+        if (dpi <= 0.0_wp) then
+            call log_error('set_dpi: DPI must be positive')
+            return
+        end if
+
+        ! Update DPI in state
+        self%state%dpi = dpi
+
+        ! Mark as needing re-rendering for consistent output
+        self%state%rendered = .false.
+    end subroutine set_dpi
 
     !! ADVANCED PLOTTING - Delegated to core advanced module
     

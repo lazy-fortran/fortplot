@@ -27,6 +27,7 @@ module fortplot_figure_initialization
         ! Figure dimensions
         integer :: width = 640
         integer :: height = 480
+        real(wp) :: dpi = 100.0_wp  ! Default DPI for consistency with matplotlib interface
         
         ! Plot area settings
         real(wp) :: margin_left = 0.15_wp
@@ -101,18 +102,32 @@ module fortplot_figure_initialization
     
 contains
     
-    subroutine initialize_figure_state(state, width, height, backend)
+    subroutine initialize_figure_state(state, width, height, backend, dpi)
         !! Initialize figure state with specified parameters
         !! Added Issue #854: Parameter validation for user input safety
+        !! Added DPI support for OO interface consistency with matplotlib interface
         use fortplot_parameter_validation, only: validate_plot_dimensions, validate_file_path, &
                                                parameter_validation_result_t, validation_warning
         type(figure_state_t), intent(inout) :: state
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
+        real(wp), intent(in), optional :: dpi
         
         type(parameter_validation_result_t) :: validation
         real(wp) :: width_real, height_real
-        
+
+        ! Set DPI with validation
+        if (present(dpi)) then
+            if (dpi <= 0.0_wp) then
+                call validation_warning("Invalid DPI value, using default 100.0", "figure_initialization")
+                state%dpi = 100.0_wp
+            else
+                state%dpi = dpi
+            end if
+        else
+            state%dpi = 100.0_wp  ! Default DPI
+        end if
+
         ! Set dimensions with validation
         if (present(width)) then
             width_real = real(width, wp)
