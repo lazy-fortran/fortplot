@@ -177,6 +177,7 @@ contains
             integer :: a, b
             real(wp) :: z1, z2, t
             real(wp) :: x1, y1, x2, y2
+            logical :: edge_in_band
 
             select case (edge)
             case (1); a = 1; b = 2
@@ -189,6 +190,11 @@ contains
             x1 = x(a); y1 = y(a)
             x2 = x(b); y2 = y(b)
 
+            ! CRITICAL FIX: Detect edges completely within the band
+            edge_in_band = (z1 >= level_min .and. z1 <= level_max .and. &
+                           z2 >= level_min .and. z2 <= level_max)
+
+            ! Edge crosses below level_min - entry point
             if ((z1 < level_min .and. z2 >= level_min) .or. (z2 < level_min .and. z1 >= level_min)) then
                 if (abs(z2 - z1) > EPSILON_GEOMETRY) then
                     t = (level_min - z1) / (z2 - z1)
@@ -198,12 +204,26 @@ contains
                 end if
             end if
 
+            ! Edge crosses above level_max - exit point
             if ((z1 < level_max .and. z2 >= level_max) .or. (z2 < level_max .and. z1 >= level_max)) then
                 if (abs(z2 - z1) > EPSILON_GEOMETRY) then
                     t = (level_max - z1) / (z2 - z1)
                     pcount = pcount + 1
                     px(pcount) = x1 + t * (x2 - x1)
                     py(pcount) = y1 + t * (y2 - y1)
+                end if
+            end if
+
+            ! CRITICAL FIX: Edge completely within band - add both vertices
+            if (edge_in_band) then
+                ! Add both endpoints of edges completely within the band
+                ! This ensures regions are properly bounded
+                if (pcount + 2 <= 8) then
+                    px(pcount + 1) = x1
+                    py(pcount + 1) = y1
+                    px(pcount + 2) = x2
+                    py(pcount + 2) = y2
+                    pcount = pcount + 2
                 end if
             end if
         end subroutine add_edge_band_intersections
