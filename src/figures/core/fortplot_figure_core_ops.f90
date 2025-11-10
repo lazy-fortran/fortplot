@@ -147,7 +147,7 @@ contains
 
     subroutine core_initialize(state, plots, streamlines, subplots_array, subplot_rows, &
                                subplot_cols, current_subplot, title, xlabel, ylabel, &
-                               plot_count, width, height, backend)
+                               plot_count, width, height, backend, dpi)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
@@ -156,10 +156,11 @@ contains
         character(len=:), allocatable, intent(inout) :: title, xlabel, ylabel
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
-        
+        real(wp), intent(in), optional :: dpi
+
         call figure_initialize(state, plots, streamlines, subplots_array, subplot_rows, &
                               subplot_cols, current_subplot, title, xlabel, ylabel, &
-                              plot_count, width, height, backend)
+                              plot_count, width, height, backend, dpi)
     end subroutine core_initialize
 
     subroutine core_add_plot(plots, state, x, y, label, linestyle, color, plot_count)
