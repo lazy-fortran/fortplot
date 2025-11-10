@@ -43,8 +43,10 @@ contains
     subroutine figure_initialize(state, plots, streamlines, subplots_array, &
                                 subplot_rows, subplot_cols, current_subplot, &
                                 title_target, xlabel_target, ylabel_target, &
-                                plot_count, width, height, backend)
+                                plot_count, width, height, backend, dpi)
         !! Initialize the figure with specified dimensions and backend
+        !! Added DPI support for OO interface consistency with matplotlib interface
+        use, intrinsic :: iso_fortran_env, only: wp => real64
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
@@ -54,8 +56,9 @@ contains
         integer, intent(inout) :: plot_count
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
-        
-        call initialize_figure_state(state, width, height, backend)
+        real(wp), intent(in), optional :: dpi
+
+        call initialize_figure_state(state, width, height, backend, dpi)
         
         ! Allocate/resize plots array using move_alloc to avoid manual deallocate()
         block
