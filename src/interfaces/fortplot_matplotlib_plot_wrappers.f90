@@ -233,12 +233,13 @@ contains
         deallocate(wx, wy, wz)
     end subroutine add_scatter_3d_wrapper
 
-    subroutine add_plot(x, y, label, linestyle)
+    subroutine add_plot(x, y, label, linestyle, color)
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: color(3)
 
         call ensure_fig_init()
-        call fig%add_plot(x, y, label=label, linestyle=linestyle)
+        call fig%add_plot(x, y, label=label, linestyle=linestyle, color=color)
     end subroutine add_plot
 
     subroutine add_errorbar(x, y, xerr, yerr, fmt, label, capsize, linestyle, &
