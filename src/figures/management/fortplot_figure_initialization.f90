@@ -7,7 +7,7 @@ module fortplot_figure_initialization
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_utils, only: initialize_backend
-    use fortplot_legend, only: legend_t
+    use fortplot_legend, only: legend_t, legend_entry_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     implicit none
     
@@ -193,7 +193,6 @@ contains
         ! Proper legend initialization without manual deallocate
         state%legend_data%num_entries = 0
         block
-            use fortplot_legend, only: legend_entry_t
             type(legend_entry_t), allocatable :: new_entries(:)
             allocate(new_entries(0))
             call move_alloc(new_entries, state%legend_data%entries)

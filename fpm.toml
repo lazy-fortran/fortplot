@@ -6,9 +6,9 @@ maintainer = "albert@alumni.tugraz.at"
 copyright = "Copyright 2025, Christopher Albert"
 
 [build]
-auto-executables = true
-auto-tests = true
-auto-examples = true
+auto-executables = false
+auto-tests = false
+auto-examples = false
 module-naming = false
 
 [install]

@@ -125,8 +125,8 @@ contains
     end subroutine bytes_to_string
 
     integer function find_subsequence(arr, n, pat, start_idx) result(pos)
-        character(len=1), intent(in) :: arr(n)
         integer(int64), intent(in) :: n
+        character(len=1), intent(in) :: arr(n)
         character(len=*), intent(in) :: pat
         integer, intent(in) :: start_idx
         integer :: i, j, pat_len

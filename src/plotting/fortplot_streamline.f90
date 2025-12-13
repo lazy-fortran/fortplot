@@ -11,19 +11,19 @@ module fortplot_streamline
               calculate_arrow_positions, check_termination, bilinear_interpolate, integration_params_t, &
               velocity_function_context_t
 
-    !! Context type to hold velocity function pointers (eliminates trampoline need)
-    type :: velocity_function_context_t
-        procedure(velocity_function_interface), pointer, nopass :: u_func => null()
-        procedure(velocity_function_interface), pointer, nopass :: v_func => null()
-        logical :: negate_functions = .false.  !! For backward integration
-    end type velocity_function_context_t
-
     !! Abstract interface for velocity functions
     abstract interface
         real function velocity_function_interface(x, y)
             real, intent(in) :: x, y
         end function velocity_function_interface
     end interface
+
+    !! Context type to hold velocity function pointers (eliminates trampoline need)
+    type :: velocity_function_context_t
+        procedure(velocity_function_interface), pointer, nopass :: u_func => null()
+        procedure(velocity_function_interface), pointer, nopass :: v_func => null()
+        logical :: negate_functions = .false.  !! For backward integration
+    end type velocity_function_context_t
 
     !! Module-level context for current velocity functions (thread-unsafe but trampoline-free)
     type(velocity_function_context_t) :: current_velocity_context
