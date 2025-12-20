@@ -1,7 +1,6 @@
 program test_simple_edge_cases
     !! Simple test using matplotlib interface for Issue #432
-    use fortplot
-    use iso_fortran_env, only: wp => real64
+    use fortplot, only: figure, plot, savefig, wp
     implicit none
     
     real(wp), allocatable :: x_empty(:), y_empty(:)
