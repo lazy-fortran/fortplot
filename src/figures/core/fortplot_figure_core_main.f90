@@ -6,16 +6,17 @@ module fortplot_figure_core
     use fortplot_logging, only: log_error, log_warning
     ! Import refactored modules
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, subplot_data_t, &
-                                    PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
-                                    PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
-                                    PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
-                                    PLOT_TYPE_SURFACE, AXIS_PRIMARY, &
-                                    AXIS_TWINX, AXIS_TWINY
+                                  PLOT_TYPE_LINE, PLOT_TYPE_CONTOUR, &
+                                  PLOT_TYPE_PCOLORMESH, PLOT_TYPE_BOXPLOT, &
+                                  PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
+                                  PLOT_TYPE_SURFACE, AXIS_PRIMARY, &
+                                  AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_plot_management, only: next_plot_color
     use fortplot_figure_comprehensive_operations
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, &
-        figure_backend_associated, figure_backend_line
+                                                        figure_backend_associated, &
+                                                        figure_backend_line
     use fortplot_string_utils, only: to_lowercase
     implicit none
 
@@ -30,10 +31,10 @@ module fortplot_figure_core
         !! Main figure class implementing Facade Pattern for plotting operations
         !!
         !! This type provides a unified interface for all figure operations while
-        !! delegating implementation details to specialized modules. The design 
+        !! delegating implementation details to specialized modules. The design
         !! follows object-oriented principles with clear separation of concerns.
         type(figure_state_t) :: state
-        
+
         type(plot_data_t), allocatable :: plots(:)
         type(plot_data_t), allocatable :: streamlines(:)
         type(text_annotation_t), allocatable :: annotations(:)
@@ -42,12 +43,12 @@ module fortplot_figure_core
         integer :: subplot_rows = 0
         integer :: subplot_cols = 0
         integer :: current_subplot = 1
-        type(subplot_data_t), allocatable :: subplots_array(:,:)
+        type(subplot_data_t), allocatable :: subplots_array(:, :)
         character(len=:), allocatable :: title
         character(len=:), allocatable :: xlabel
         character(len=:), allocatable :: ylabel
         integer :: plot_count = 0
-        
+
     contains
         procedure :: initialize
         procedure :: add_plot
@@ -70,6 +71,7 @@ module fortplot_figure_core
         procedure :: set_line_width
         procedure :: set_ydata
         procedure :: legend => figure_legend
+        procedure :: colorbar
         procedure :: show
         procedure :: clear
         procedure :: clear_streamlines
@@ -124,7 +126,7 @@ module fortplot_figure_core
         module subroutine add_imshow(self, z, xlim, ylim, cmap, alpha, vmin, vmax, &
                                      origin, extent, interpolation, aspect)
             class(figure_t), intent(inout) :: self
-            real(wp), intent(in) :: z(:,:)
+            real(wp), intent(in) :: z(:, :)
             real(wp), intent(in), optional :: xlim(2), ylim(2)
             character(len=*), intent(in), optional :: cmap, origin
             character(len=*), intent(in), optional :: interpolation, aspect
@@ -170,7 +172,7 @@ module fortplot_figure_core
             class(figure_t), intent(inout) :: self
             real(wp), intent(in) :: x(:)
             real(wp), intent(in), optional :: y1(:), y2(:)
-            logical, intent(in), optional :: where(:)
+            logical, intent(in), optional :: where (:)
             character(len=*), intent(in), optional :: color
             real(wp), intent(in), optional :: alpha
             logical, intent(in), optional :: interpolate
@@ -202,10 +204,10 @@ contains
         real(wp), intent(in), optional :: dpi
 
         call core_initialize(self%state, self%plots, self%streamlines, &
-                            self%subplots_array, self%subplot_rows, &
-                            self%subplot_cols, self%current_subplot, &
-                            self%title, self%xlabel, self%ylabel, &
-                            self%plot_count, width, height, backend, dpi)
+                             self%subplots_array, self%subplot_rows, &
+                             self%subplot_cols, self%current_subplot, &
+                             self%title, self%xlabel, self%ylabel, &
+                             self%plot_count, width, height, backend, dpi)
     end subroutine initialize
 
     subroutine add_plot(self, x, y, label, linestyle, color)
@@ -213,17 +215,34 @@ contains
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
-        
+
         call core_add_plot(self%plots, self%state, x, y, label, linestyle, color, &
                            self%plot_count)
     end subroutine add_plot
 
+    subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink)
+        class(figure_t), intent(inout) :: self
+        integer, intent(in), optional :: plot_index
+        character(len=*), intent(in), optional :: label, location
+        real(wp), intent(in), optional :: fraction, pad, shrink
+
+        if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
+            call log_error("colorbar: Subplot grids are not supported yet")
+            return
+        end if
+
+        call core_colorbar(self%state, self%plots, self%plot_count, &
+                           plot_index=plot_index, &
+                           label=label, location=location, fraction=fraction, pad=pad, &
+                           shrink=shrink)
+    end subroutine colorbar
+
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
-        
+
         call core_add_contour(self%plots, self%state, x_grid, y_grid, z_grid, &
                               levels, label, self%plot_count)
     end subroutine add_contour
@@ -231,7 +250,7 @@ contains
     subroutine add_contour_filled(self, x_grid, y_grid, z_grid, levels, colormap, &
                                   show_colorbar, label)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
@@ -244,7 +263,7 @@ contains
     subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, &
                            show_colorbar, alpha, edgecolor, linewidth)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, colormap
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha, linewidth
@@ -255,14 +274,15 @@ contains
                               linewidth, self%plot_count)
     end subroutine add_surface
 
-    subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, linewidths)
+    subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, &
+                              linewidths)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        real(wp), intent(in) :: x(:), y(:), c(:, :)
         character(len=*), intent(in), optional :: colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
-        
+
         call core_add_pcolormesh(self%plots, self%state, x, y, c, colormap, &
                                  vmin, vmax, edgecolors, linewidths, &
                                  self%plot_count)
@@ -271,7 +291,7 @@ contains
     subroutine streamplot(self, x, y, u, v, density, color, linewidth, rtol, &
                           atol, max_time)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
         real(wp), intent(in), optional :: linewidth
@@ -281,32 +301,32 @@ contains
         if (present(rtol)) rt_dummy1 = rtol
         if (present(atol)) at_dummy1 = atol
         if (present(max_time)) mt_dummy1 = max_time
-        
+
         call core_streamplot(self%plots, self%state, self%plot_count, x, y, u, v, &
-                            density, color)
+                             density, color)
     end subroutine streamplot
 
     !! I/O OPERATIONS - Delegated to core I/O module
-    
+
     subroutine savefig(self, filename, blocking)
         !! Save figure to file (backward compatibility version)
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
-        
+
         call core_savefig(self%state, self%plots, self%plot_count, filename, &
                           blocking, self%annotations, self%annotation_count, &
                           self%subplots_array, self%subplot_rows, &
                           self%subplot_cols)
     end subroutine savefig
-    
+
     subroutine savefig_with_status(self, filename, status, blocking)
         !! Save figure to file with error status reporting
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: filename
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
-        
+
         call core_savefig_with_status(self%state, self%plots, self%plot_count, &
                                       filename, status, blocking, &
                                       self%annotations, self%annotation_count, &
@@ -318,7 +338,7 @@ contains
         !! Display the figure
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
-        
+
         call core_show(self%state, self%plots, self%plot_count, blocking, &
                        self%annotations, self%annotation_count, &
                        self%subplots_array, self%subplot_rows, &
@@ -326,14 +346,14 @@ contains
     end subroutine show
 
     !! CONFIGURATION METHODS - Delegated to core config module
-    
+
     subroutine grid(self, enabled, which, axis, alpha, linestyle)
         !! Enable/disable and configure grid lines
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: enabled
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
-        
+
         call core_grid(self%state, enabled, which, axis, alpha, linestyle)
     end subroutine grid
 
@@ -361,8 +381,9 @@ contains
         logical, intent(in), optional :: show_outliers
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
-        
-        call core_boxplot(self%plots, self%state, self%plot_count, data, position, width, &
+
+        call core_boxplot(self%plots, self%state, self%plot_count, data, &
+                          position, width, &
                           label, show_outliers, horizontal, color, &
                           self%state%max_plots)
     end subroutine boxplot
@@ -425,9 +446,9 @@ contains
         !! Clear the figure for reuse, preserving backend settings
         class(figure_t), intent(inout) :: self
         call core_clear(self%state, self%streamlines, &
-                       self%subplots_array, self%subplot_rows, self%subplot_cols, &
-                       self%current_subplot, self%title, self%xlabel, self%ylabel, &
-                       self%plot_count, self%annotation_count)
+                        self%subplots_array, self%subplot_rows, self%subplot_cols, &
+                        self%current_subplot, self%title, self%xlabel, self%ylabel, &
+                        self%plot_count, self%annotation_count)
     end subroutine clear
     subroutine clear_streamlines(self)
         class(figure_t), intent(inout) :: self
@@ -436,11 +457,11 @@ contains
     subroutine destroy(self)
         type(figure_t), intent(inout) :: self
         call core_destroy(self%state, self%plots, self%streamlines, &
-                         self%title, self%xlabel, self%ylabel)
+                          self%title, self%xlabel, self%ylabel)
     end subroutine destroy
 
     !! PROPERTY ACCESSORS - Delegated to core accessors module
-    
+
     function get_width(self) result(width)
         class(figure_t), intent(in) :: self
         integer :: width
@@ -471,7 +492,7 @@ contains
         type(plot_data_t), pointer :: plots_ptr(:)
         plots_ptr => core_get_plots(self%plots)
     end function get_plots
-    
+
     ! Animation support - delegate to animation module
     subroutine setup_png_backend_for_animation(self)
         class(figure_t), intent(inout) :: self
@@ -479,18 +500,22 @@ contains
     end subroutine setup_png_backend_for_animation
     subroutine extract_rgb_data_for_animation(self, rgb_data)
         class(figure_t), intent(inout) :: self
-        real(wp), intent(out) :: rgb_data(:,:,:)
+        real(wp), intent(out) :: rgb_data(:, :, :)
         call core_extract_rgb_data_for_animation(self%state, rgb_data, &
-            self%plots, self%state%plot_count, self%annotations, &
-            self%annotation_count, self%state%rendered)
+                                                 self%plots, self%state%plot_count, &
+                                                 self%annotations, &
+                                                 self%annotation_count, &
+                                                 self%state%rendered)
     end subroutine extract_rgb_data_for_animation
     subroutine extract_png_data_for_animation(self, png_data, status)
         class(figure_t), intent(inout) :: self
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
         call core_extract_png_data_for_animation(self%state, png_data, status, &
-            self%plots, self%state%plot_count, self%annotations, &
-            self%annotation_count, self%state%rendered)
+                                                 self%plots, self%state%plot_count, &
+                                                 self%annotations, &
+                                                 self%annotation_count, &
+                                                 self%state%rendered)
     end subroutine extract_png_data_for_animation
     ! Backend interface and coordinate accessors - delegate to properties module
     subroutine backend_color(self, r, g, b)
@@ -522,7 +547,7 @@ contains
         had_arrows = .false.
         if (allocated(self%state%stream_arrows)) then
             had_arrows = size(self%state%stream_arrows) > 0
-            deallocate(self%state%stream_arrows)
+            deallocate (self%state%stream_arrows)
         end if
 
         if (had_arrows) self%state%rendered = .false.
@@ -575,10 +600,10 @@ contains
     end subroutine set_dpi
 
     !! ADVANCED PLOTTING - Delegated to core advanced module
-    
+
     subroutine scatter(self, x, y, s, c, marker, markersize, color, &
-                      colormap, alpha, edgecolor, facecolor, linewidth, &
-                      vmin, vmax, label, show_colorbar)
+                       colormap, alpha, edgecolor, facecolor, linewidth, &
+                       vmin, vmax, label, show_colorbar)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         class(figure_t), intent(inout) :: self
@@ -588,20 +613,20 @@ contains
         real(wp), intent(in), optional :: markersize, alpha, linewidth, vmin, vmax
         real(wp), intent(in), optional :: color(3), edgecolor(3), facecolor(3)
         logical, intent(in), optional :: show_colorbar
-        
+
         real(wp) :: default_color(3)
         real(wp) :: al_dummy1, ec_dummy1, fc_dummy1, lw_dummy2
-        
+
         ! Get default color from state using shared cycling logic
         default_color = next_plot_color(self%state)
         if (present(alpha)) al_dummy1 = alpha
         if (present(edgecolor)) ec_dummy1 = edgecolor(1)
         if (present(facecolor)) fc_dummy1 = facecolor(1)
         if (present(linewidth)) lw_dummy2 = linewidth
-        
+
         call core_scatter(self%plots, self%state, self%plot_count, x, y, s, c, &
-                         marker, markersize, color, colormap, vmin, vmax, label, &
-                         show_colorbar, default_color)
+                          marker, markersize, color, colormap, vmin, vmax, label, &
+                          show_colorbar, default_color)
     end subroutine scatter
 
     !! Placeholder twin-axis helpers (currently unimplemented)
@@ -667,7 +692,8 @@ contains
         case ('bottom', 'x')
             self%state%active_axis = AXIS_PRIMARY
         case default
-            call log_warning('use_axis: unknown axis "' // trim(axis_name) // '"; using primary axis')
+            call log_warning( &
+                'use_axis: unknown axis "'//trim(axis_name)//'"; using primary axis')
             self%state%active_axis = AXIS_PRIMARY
         end select
     end subroutine use_axis
@@ -687,7 +713,7 @@ contains
     end function get_active_axis
 
     !! SUBPLOT OPERATIONS - Delegated to management module
-    
+
     subroutine subplots(self, nrows, ncols)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: nrows, ncols
@@ -695,7 +721,7 @@ contains
                              self%subplot_cols, self%current_subplot, nrows, &
                              ncols)
     end subroutine subplots
-    
+
     subroutine subplot_plot(self, row, col, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
@@ -706,7 +732,7 @@ contains
                                  self%subplot_cols, row, col, x, y, label, &
                                  linestyle, color, self%state%colors, 6)
     end subroutine subplot_plot
-    
+
     function subplot_plot_count(self, row, col) result(count)
         class(figure_t), intent(in) :: self
         integer, intent(in) :: row, col
@@ -714,31 +740,31 @@ contains
         count = figure_subplot_plot_count(self%subplots_array, self%subplot_rows, &
                                           self%subplot_cols, row, col)
     end function subplot_plot_count
-    
+
     subroutine subplot_set_title(self, row, col, title)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: title
         call figure_subplot_set_title(self%subplots_array, self%subplot_rows, &
-                                     self%subplot_cols, row, col, title)
+                                      self%subplot_cols, row, col, title)
     end subroutine subplot_set_title
-    
+
     subroutine subplot_set_xlabel(self, row, col, xlabel)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: xlabel
         call figure_subplot_set_xlabel(self%subplots_array, self%subplot_rows, &
-                                      self%subplot_cols, row, col, xlabel)
+                                       self%subplot_cols, row, col, xlabel)
     end subroutine subplot_set_xlabel
-    
+
     subroutine subplot_set_ylabel(self, row, col, ylabel)
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: row, col
         character(len=*), intent(in) :: ylabel
         call figure_subplot_set_ylabel(self%subplots_array, self%subplot_rows, &
-                                      self%subplot_cols, row, col, ylabel)
+                                       self%subplot_cols, row, col, ylabel)
     end subroutine subplot_set_ylabel
-    
+
     function subplot_title(self, row, col) result(title)
         class(figure_t), intent(in) :: self
         integer, intent(in) :: row, col

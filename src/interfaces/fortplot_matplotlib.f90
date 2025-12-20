@@ -6,7 +6,7 @@ module fortplot_matplotlib
     !! by re-exporting the consolidated implementation from
     !! `fortplot_matplotlib_advanced`. Public API remains stable while
     !! internal modules are simplified.
-    
+
     use fortplot_matplotlib_advanced, only: &
         plot, scatter, errorbar, boxplot, &
         bar, barh, hist, histogram, &
@@ -15,18 +15,19 @@ module fortplot_matplotlib
         fill, fill_between, twinx, twiny, &
         contour, contour_filled, pcolormesh, streamplot, &
         add_contour, add_contour_filled, add_pcolormesh, add_surface, &
+        colorbar, &
         xlabel, ylabel, title, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata, use_axis, get_active_axis, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
-    
+
     use fortplot_text_stub, only: &
         text, annotate
-    
+
     implicit none
     private
-    
+
     ! Re-export all matplotlib-style functions from submodules
     ! Plotting functions
     public :: plot, scatter, errorbar, boxplot
@@ -34,23 +35,24 @@ module fortplot_matplotlib
     public :: add_plot, add_errorbar, add_scatter, add_3d_plot
     public :: imshow, pie, polar, step, stem
     public :: fill, fill_between, twinx, twiny
-    
+
     ! Contour and field functions
     public :: contour, contour_filled, pcolormesh, streamplot
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
-    
+    public :: colorbar
+
     ! Axis and annotation functions
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: text, annotate
-    
+
     ! Figure management functions
     public :: figure, subplot, subplots, subplots_grid
     public :: savefig, savefig_with_status
     public :: show, show_viewer
-    
+
     ! Testing support
     public :: get_global_figure, ensure_global_figure_initialized
-    
+
 end module fortplot_matplotlib

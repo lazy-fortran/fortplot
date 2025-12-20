@@ -14,6 +14,7 @@ module fortplot_matplotlib_advanced
         ensure_global_figure_initialized, get_global_figure, figure, subplot, &
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
         show_figure, show_viewer
+    use fortplot_matplotlib_colorbar, only: colorbar
     use fortplot_matplotlib_plots_new, only: &
         imshow, pie, polar, step, stem, fill, fill_between, twinx, twiny
 
@@ -32,6 +33,7 @@ module fortplot_matplotlib_advanced
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
+    public :: colorbar
 
     public :: figure, subplot, subplots, subplots_grid
     public :: savefig, savefig_with_status

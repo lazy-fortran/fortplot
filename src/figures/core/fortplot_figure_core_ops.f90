@@ -4,7 +4,7 @@
 
 module fortplot_figure_core_ranges
     !! Figure data range management module
-    !! 
+    !!
     !! This module contains data range calculation methods
     !! extracted from fortplot_figure_core for architectural compliance
     !!
@@ -31,17 +31,17 @@ contains
         type(plot_data_t), intent(in) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(in) :: plot_count
-        
+
         call calculate_figure_data_ranges(plots, plot_count, &
-                                        state%xlim_set, state%ylim_set, &
-                                        state%x_min, state%x_max, &
-                                        state%y_min, state%y_max, &
-                                        state%x_min_transformed, &
-                                        state%x_max_transformed, &
-                                        state%y_min_transformed, &
-                                        state%y_max_transformed, &
-                                        state%xscale, state%yscale, &
-                                        state%symlog_threshold)
+                                          state%xlim_set, state%ylim_set, &
+                                          state%x_min, state%x_max, &
+                                          state%y_min, state%y_max, &
+                                          state%x_min_transformed, &
+                                          state%x_max_transformed, &
+                                          state%y_min_transformed, &
+                                          state%y_max_transformed, &
+                                          state%xscale, state%yscale, &
+                                          state%symlog_threshold)
     end subroutine update_data_ranges_figure
 
     subroutine update_data_ranges_pcolormesh_figure(plots, state, plot_count)
@@ -49,9 +49,9 @@ contains
         type(plot_data_t), intent(in) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(in) :: plot_count
-        
+
         real(wp) :: x_min_new, x_max_new, y_min_new, y_max_new
-        
+
         ! Safety check: ensure pcolormesh arrays are allocated before accessing
         if (.not. allocated(plots(plot_count)%pcolormesh_data%x_vertices) .or. &
             .not. allocated(plots(plot_count)%pcolormesh_data%y_vertices)) then
@@ -59,19 +59,19 @@ contains
             ! Skip data range update to prevent segfault
             return
         end if
-        
+
         ! Additional safety: check arrays have valid size
         if (size(plots(plot_count)%pcolormesh_data%x_vertices) == 0 .or. &
             size(plots(plot_count)%pcolormesh_data%y_vertices) == 0) then
             ! Zero-size arrays - skip data range update
             return
         end if
-        
+
         x_min_new = minval(plots(plot_count)%pcolormesh_data%x_vertices)
         x_max_new = maxval(plots(plot_count)%pcolormesh_data%x_vertices)
         y_min_new = minval(plots(plot_count)%pcolormesh_data%y_vertices)
         y_max_new = maxval(plots(plot_count)%pcolormesh_data%y_vertices)
-        
+
         if (.not. state%xlim_set) then
             if (plot_count == 1) then
                 state%x_min = x_min_new
@@ -81,7 +81,7 @@ contains
                 state%x_max = max(state%x_max, x_max_new)
             end if
         end if
-        
+
         if (.not. state%ylim_set) then
             if (plot_count == 1) then
                 state%y_min = y_min_new
@@ -98,7 +98,7 @@ contains
         real(wp), intent(in) :: data(:)
         real(wp), intent(in), optional :: position
         type(figure_state_t), intent(inout) :: state
-        
+
         ! Delegate to module implementation
         call update_boxplot_ranges(data, position, &
                                    state%x_min, state%x_max, &
@@ -113,13 +113,13 @@ end module fortplot_figure_core_ranges
 
 module fortplot_figure_core_operations
     !! Core operations implementations extracted from fortplot_figure_core
-    !! 
+    !!
     !! This module contains the actual implementations of core figure operations
     !! that were previously inline procedures in the main core module.
-    !! 
+    !!
     !! EXTRACTED OPERATIONS:
     !! - initialize: Figure initialization with backend setup
-    !! - add_plot: Basic line plotting functionality  
+    !! - add_plot: Basic line plotting functionality
     !! - add_contour: Contour plot creation
     !! - add_contour_filled: Filled contour plots
     !! - add_pcolormesh: Pseudocolor mesh plotting
@@ -134,7 +134,8 @@ module fortplot_figure_core_operations
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_figure_operations
     use fortplot_figure_management
-    use fortplot_figure_core_ranges, only: update_data_ranges_figure, update_data_ranges_pcolormesh_figure
+    use fortplot_figure_core_ranges, only: update_data_ranges_figure, &
+                                           update_data_ranges_pcolormesh_figure
     implicit none
 
     private
@@ -145,22 +146,25 @@ module fortplot_figure_core_operations
 
 contains
 
-    subroutine core_initialize(state, plots, streamlines, subplots_array, subplot_rows, &
+    subroutine core_initialize(state, plots, streamlines, subplots_array, &
+                               subplot_rows, &
                                subplot_cols, current_subplot, title, xlabel, ylabel, &
                                plot_count, width, height, backend, dpi)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(plot_data_t), allocatable, intent(inout) :: streamlines(:)
-        type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:,:)
-        integer, intent(inout) :: subplot_rows, subplot_cols, current_subplot, plot_count
+        type(subplot_data_t), allocatable, intent(inout) :: subplots_array(:, :)
+        integer, intent(inout) :: subplot_rows, subplot_cols, &
+                                  current_subplot, plot_count
         character(len=:), allocatable, intent(inout) :: title, xlabel, ylabel
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
         real(wp), intent(in), optional :: dpi
 
-        call figure_initialize(state, plots, streamlines, subplots_array, subplot_rows, &
-                              subplot_cols, current_subplot, title, xlabel, ylabel, &
-                              plot_count, width, height, backend, dpi)
+        call figure_initialize(state, plots, streamlines, subplots_array, &
+                               subplot_rows, &
+                               subplot_cols, current_subplot, title, xlabel, ylabel, &
+                               plot_count, width, height, backend, dpi)
     end subroutine core_initialize
 
     subroutine core_add_plot(plots, state, x, y, label, linestyle, color, plot_count)
@@ -170,21 +174,23 @@ contains
         character(len=*), intent(in), optional :: label, linestyle
         real(wp), intent(in), optional :: color(3)
         integer, intent(inout) :: plot_count
-        
+
         call figure_add_plot_operation(plots, state, x, y, label, linestyle, color)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_plot
 
-    subroutine core_add_contour(plots, state, x_grid, y_grid, z_grid, levels, label, plot_count)
+    subroutine core_add_contour(plots, state, x_grid, y_grid, z_grid, levels, label, &
+                                plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: label
         integer, intent(inout) :: plot_count
-        
-        call figure_add_contour_operation(plots, state, x_grid, y_grid, z_grid, levels, label)
+
+        call figure_add_contour_operation(plots, state, x_grid, y_grid, z_grid, &
+                                          levels, label)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_contour
@@ -193,7 +199,7 @@ contains
                                        colormap, show_colorbar, label, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         real(wp), intent(in), optional :: levels(:)
         character(len=*), intent(in), optional :: colormap, label
         logical, intent(in), optional :: show_colorbar
@@ -209,7 +215,7 @@ contains
                                 show_colorbar, alpha, edgecolor, linewidth, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+        real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, colormap
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in), optional :: alpha, linewidth
@@ -217,7 +223,8 @@ contains
         integer, intent(inout) :: plot_count
 
         call figure_add_surface_operation(plots, state, x_grid, y_grid, z_grid, label, &
-                                          colormap, show_colorbar, alpha, edgecolor, linewidth)
+                                          colormap, show_colorbar, alpha, &
+                                          edgecolor, linewidth)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_surface
@@ -226,20 +233,21 @@ contains
                                    edgecolors, linewidths, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(in) :: x(:), y(:), c(:,:)
+        real(wp), intent(in) :: x(:), y(:), c(:, :)
         character(len=*), intent(in), optional :: colormap
         real(wp), intent(in), optional :: vmin, vmax
         real(wp), intent(in), optional :: edgecolors(3)
         real(wp), intent(in), optional :: linewidths
         integer, intent(inout) :: plot_count
-        
+
         call figure_add_pcolormesh_operation(plots, state, x, y, c, colormap, &
-                                            vmin, vmax, edgecolors, linewidths)
+                                             vmin, vmax, edgecolors, linewidths)
         plot_count = state%plot_count
         call update_data_ranges_pcolormesh_figure(plots, state, state%plot_count)
     end subroutine core_add_pcolormesh
 
-    subroutine core_add_fill_between(plots, state, x, upper, lower, mask, color_string, alpha, &
+    subroutine core_add_fill_between(plots, state, x, upper, lower, mask, &
+                                     color_string, alpha, &
                                      plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
@@ -251,12 +259,14 @@ contains
         real(wp), intent(in), optional :: alpha
         integer, intent(inout) :: plot_count
 
-        call figure_add_fill_between_operation(plots, state, x, upper, lower, mask, color_string, alpha)
+        call figure_add_fill_between_operation(plots, state, x, upper, lower, mask, &
+                                               color_string, alpha)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_fill_between
 
-    subroutine core_add_pie(plots, state, values, labels, autopct, startangle, colors, explode, plot_count)
+    subroutine core_add_pie(plots, state, values, labels, autopct, startangle, colors, &
+                            explode, plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: values(:)
@@ -267,7 +277,8 @@ contains
         real(wp), intent(in), optional :: explode(:)
         integer, intent(inout) :: plot_count
 
-        call figure_add_pie_operation(plots, state, values, labels, startangle, colors, explode, autopct)
+        call figure_add_pie_operation(plots, state, values, labels, startangle, &
+                                      colors, explode, autopct)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_pie
@@ -276,16 +287,17 @@ contains
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         integer, intent(inout) :: plot_count
-        real(wp), intent(in) :: x(:), y(:), u(:,:), v(:,:)
+        real(wp), intent(in) :: x(:), y(:), u(:, :), v(:, :)
         real(wp), intent(in), optional :: density
         real(wp), intent(in), optional :: color(3)
-        
+
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                          density, color)
     end subroutine core_streamplot
 
     subroutine core_savefig(state, plots, plot_count, filename, blocking, &
-                            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+                            annotations, annotation_count, subplots_array, &
+                            subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -293,15 +305,18 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
+
         call figure_savefig(state, plots, plot_count, filename, blocking, &
-                            annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+                            annotations, annotation_count, subplots_array, &
+                            subplot_rows, subplot_cols)
     end subroutine core_savefig
-    
-    subroutine core_savefig_with_status(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+
+    subroutine core_savefig_with_status(state, plots, plot_count, filename, status, &
+                                        blocking, &
+                                        annotations, annotation_count, subplots_array, &
+                                        subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -310,14 +325,17 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
-        call figure_savefig_with_status(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+
+        call figure_savefig_with_status(state, plots, plot_count, filename, status, &
+                                        blocking, &
+                                        annotations, annotation_count, subplots_array, &
+                                        subplot_rows, subplot_cols)
     end subroutine core_savefig_with_status
 
-    subroutine core_show(state, plots, plot_count, blocking, annotations, annotation_count, &
+    subroutine core_show(state, plots, plot_count, blocking, annotations, &
+                         annotation_count, &
                          subplots_array, subplot_rows, subplot_cols)
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
@@ -325,10 +343,11 @@ contains
         logical, intent(in), optional :: blocking
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         integer, intent(in) :: annotation_count
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
-        call figure_show(state, plots, plot_count, blocking, annotations, annotation_count, &
+
+        call figure_show(state, plots, plot_count, blocking, annotations, &
+                         annotation_count, &
                          subplots_array, subplot_rows, subplot_cols)
     end subroutine core_show
 
@@ -339,10 +358,10 @@ end module fortplot_figure_core_operations
 
 module fortplot_figure_core_accessors
     !! Property accessor methods extracted from fortplot_figure_core
-    !! 
+    !!
     !! This module contains property accessor methods for the core figure
     !! to maintain architectural compliance with size limits.
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_annotations, only: text_annotation_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t
@@ -355,8 +374,10 @@ module fortplot_figure_core_accessors
     private
     public :: core_get_width, core_get_height, core_get_rendered, core_set_rendered
     public :: core_get_plot_count, core_get_plots, core_get_x_min, core_get_x_max
-    public :: core_get_y_min, core_get_y_max, core_backend_color, core_backend_associated
-    public :: core_backend_line, core_setup_png_backend_for_animation, core_backend_arrow
+    public :: core_get_y_min, core_get_y_max, core_backend_color, &
+              core_backend_associated
+    public :: core_backend_line, core_setup_png_backend_for_animation, &
+              core_backend_arrow
     public :: core_extract_rgb_data_for_animation, core_extract_png_data_for_animation
 
 contains
@@ -458,11 +479,11 @@ contains
         end if
 
         if (.not. allocated(state%stream_arrows)) then
-            allocate(state%stream_arrows(1))
+            allocate (state%stream_arrows(1))
             new_index = 1
         else
             new_index = size(state%stream_arrows) + 1
-            allocate(tmp(new_index))
+            allocate (tmp(new_index))
             if (new_index > 1) tmp(1:new_index - 1) = state%stream_arrows
             call move_alloc(tmp, state%stream_arrows)
         end if
@@ -484,21 +505,24 @@ contains
     end subroutine core_setup_png_backend_for_animation
 
     subroutine core_extract_rgb_data_for_animation(state, rgb_data, plots, plot_count, &
-                                                   annotations, annotation_count, rendered)
+                                                   annotations, &
+                                                   annotation_count, rendered)
         type(figure_state_t), intent(inout) :: state
-        real(wp), intent(out) :: rgb_data(:,:,:)
+        real(wp), intent(out) :: rgb_data(:, :, :)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         integer, intent(in) :: plot_count, annotation_count
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         logical, intent(in) :: rendered
-        
+
         if (.not. rendered) call figure_render(state, plots, plot_count, &
-            annotations, annotation_count)
+                                               annotations, annotation_count)
         call figure_extract_rgb_data_for_animation(state, rgb_data, rendered)
     end subroutine core_extract_rgb_data_for_animation
 
-    subroutine core_extract_png_data_for_animation(state, png_data, status, plots, plot_count, &
-                                                   annotations, annotation_count, rendered)
+    subroutine core_extract_png_data_for_animation(state, png_data, status, plots, &
+                                                   plot_count, &
+                                                   annotations, &
+                                                   annotation_count, rendered)
         type(figure_state_t), intent(inout) :: state
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
@@ -506,9 +530,9 @@ contains
         integer, intent(in) :: plot_count, annotation_count
         type(text_annotation_t), allocatable, intent(inout) :: annotations(:)
         logical, intent(in) :: rendered
-        
+
         if (.not. rendered) call figure_render(state, plots, plot_count, &
-            annotations, annotation_count)
+                                               annotations, annotation_count)
         call figure_extract_png_data_for_animation(state, png_data, status, rendered)
     end subroutine core_extract_png_data_for_animation
 
@@ -519,11 +543,11 @@ end module fortplot_figure_core_accessors
 
 module fortplot_figure_core_advanced
     !! Advanced plotting operations extracted from fortplot_figure_core
-    !! 
+    !!
     !! This module contains advanced plotting functionality like scatter plots,
     !! histograms, and statistical plots that were moved from the core module
     !! to maintain architectural compliance with size limits.
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
@@ -532,12 +556,13 @@ module fortplot_figure_core_advanced
     implicit none
 
     private
-    public :: core_scatter, core_hist, core_boxplot
+    public :: core_scatter, core_hist, core_boxplot, core_colorbar
 
 contains
 
     subroutine core_scatter(plots, state, plot_count, x, y, s, c, marker, markersize, &
-                           color, colormap, vmin, vmax, label, show_colorbar, default_color)
+                            color, colormap, vmin, vmax, label, show_colorbar, &
+                            default_color)
         !! Add an efficient scatter plot using a single plot object
         !! Properly handles thousands of points without O(n) overhead
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
@@ -550,16 +575,16 @@ contains
         real(wp), intent(in), optional :: color(3)
         logical, intent(in), optional :: show_colorbar
         real(wp), intent(in) :: default_color(3)
-        
+
         ! Delegate to efficient scatter implementation
         call figure_scatter_operation(state, plots, state%plot_count, &
-                                     x, y, s, c, marker, markersize, color, &
-                                     colormap, vmin, vmax, label, show_colorbar, &
-                                     default_color)
-        
+                                      x, y, s, c, marker, markersize, color, &
+                                      colormap, vmin, vmax, label, show_colorbar, &
+                                      default_color)
+
         ! Update figure state
         plot_count = state%plot_count
-        
+
         ! Update data ranges
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_scatter
@@ -574,12 +599,13 @@ contains
         logical, intent(in), optional :: density
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
-        call figure_hist_operation(plots, state, plot_count, data, bins, density, label, color)
+
+        call figure_hist_operation(plots, state, plot_count, data, bins, density, &
+                                   label, color)
     end subroutine core_hist
 
     subroutine core_boxplot(plots, state, plot_count, data, position, width, label, &
-                           show_outliers, horizontal, color, max_plots)
+                            show_outliers, horizontal, color, max_plots)
         !! Create a box plot
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(in) :: state
@@ -592,10 +618,74 @@ contains
         logical, intent(in), optional :: horizontal
         character(len=*), intent(in), optional :: color
         integer, intent(in) :: max_plots
-        
-        call figure_boxplot_operation(state, plots, plot_count, data, position, width, label, &
-                                     show_outliers, horizontal, color, max_plots)
+
+        call figure_boxplot_operation(state, plots, plot_count, data, position, &
+                                      width, label, &
+                                      show_outliers, horizontal, color, max_plots)
     end subroutine core_boxplot
+
+    subroutine core_colorbar(state, plots, plot_count, plot_index, label, location, &
+                             fraction, pad, shrink)
+        !! Enable a stateful colorbar for the current figure.
+        !!
+        !! This mirrors matplotlib's pyplot behavior: the colorbar is configured
+        !! independently from plot creation and is rendered during save/show.
+        type(figure_state_t), intent(inout) :: state
+        type(plot_data_t), intent(in) :: plots(:)
+        integer, intent(in) :: plot_count
+        integer, intent(in), optional :: plot_index
+        character(len=*), intent(in), optional :: label, location
+        real(wp), intent(in), optional :: fraction, pad, shrink
+
+        integer :: idx
+
+        associate (dummy => size(plots)); end associate
+
+        if (plot_count <= 0) then
+            state%colorbar_enabled = .false.
+            state%colorbar_plot_index = 0
+            return
+        end if
+
+        idx = 0
+        if (present(plot_index)) then
+            if (plot_index >= 1 .and. plot_index <= plot_count) then
+                idx = plot_index
+            end if
+        end if
+
+        if (idx == 0) then
+            idx = plot_count
+        end if
+
+        state%colorbar_enabled = .true.
+        state%colorbar_plot_index = idx
+
+        if (present(location)) then
+            if (len_trim(location) > 0) state%colorbar_location = trim(location)
+        end if
+
+        if (present(fraction)) then
+            state%colorbar_fraction = max(0.01_wp, min(0.45_wp, fraction))
+        end if
+
+        if (present(pad)) then
+            state%colorbar_pad = max(0.0_wp, min(0.30_wp, pad))
+        end if
+
+        if (present(shrink)) then
+            state%colorbar_shrink = max(0.05_wp, min(1.0_wp, shrink))
+        end if
+
+        state%colorbar_label_set = .false.
+        if (allocated(state%colorbar_label)) deallocate (state%colorbar_label)
+        if (present(label)) then
+            if (len_trim(label) > 0) then
+                state%colorbar_label = trim(label)
+                state%colorbar_label_set = .true.
+            end if
+        end if
+    end subroutine core_colorbar
 
 end module fortplot_figure_core_advanced
 ! ==== End: src/figures/core/fortplot_figure_core_advanced.f90 ====
@@ -604,10 +694,10 @@ end module fortplot_figure_core_advanced
 
 module fortplot_figure_core_utils
     !! Utility operations extracted from fortplot_figure_core
-    !! 
+    !!
     !! This module contains utility operations like set_ydata and legend
     !! to maintain architectural compliance with size limits.
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t
     use fortplot_figure_initialization, only: figure_state_t
@@ -632,7 +722,7 @@ contains
         integer, intent(in) :: plot_count
         character(len=*), intent(in), optional :: location
         call figure_legend_operation(state%legend_data, state%show_legend, &
-                                    plots, plot_count, location, state%backend_name)
+                                     plots, plot_count, location, state%backend_name)
     end subroutine core_figure_legend
 
 end module fortplot_figure_core_utils
