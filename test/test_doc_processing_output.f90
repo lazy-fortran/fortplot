@@ -37,6 +37,7 @@ program test_doc_processing_output
     call assert_file_contains(out_file, '../../media/examples/basic_plots/simple_plot.png')
     call assert_file_contains(out_file, '[Download PDF](../../media/examples/basic_plots/simple_plot.pdf)')
     call assert_file_contains(out_file, 'ASCII output:')
+    call assert_file_contains(out_file, 'simple ascii content')
 
     print *, 'Doc processing/output tests passed'
 

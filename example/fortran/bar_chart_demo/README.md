@@ -3,8 +3,7 @@ title: Bar Chart Demo
 
 # Bar Chart Demo
 
-Demonstrates grouped vertical and horizontal bar charts using both the stateful
-(pyplot-style) and object-oriented (`figure_t`) fortplot APIs.
+Demonstrates grouped bar charts (vertical and horizontal) via both the stateful API and `figure_t`.
 
 ## Files
 

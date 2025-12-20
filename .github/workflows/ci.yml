@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   tests:
-    name: Tests (${{ matrix.os }})
+    name: ${{ matrix.os == 'ubuntu-latest' && 'test' || 'test (windows)' }}
     strategy:
       fail-fast: true
       matrix:

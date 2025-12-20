@@ -59,6 +59,7 @@ coverage.*
 *.temp
 *.bak
 *.backup
+*.backup.*
 *~
 .#*
 # Executable files and test binaries
@@ -139,4 +140,3 @@ test/output/**/*.txt
 test/output/**/*.ppm
 test/output/**/*.exe
 test/output/**/*.out
-

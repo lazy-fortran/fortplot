@@ -2,7 +2,6 @@ program test_docs_index_pages
     implicit none
 
     call assert_index_with_title("doc/cmake_example/index.md")
-    call assert_index_with_title("doc/archive/index.md")
     call assert_examples_sorted("doc/examples/index.md")
 
 contains

@@ -32,10 +32,10 @@ cd example/user_compilation_examples
 
 ### 📁 `basic_user_program.f90`
 **Purpose**: Simple standalone program demonstrating basic fortplot usage
-- ✅ Basic line plots with multiple series
-- ✅ Legend, grid, axis labels
-- ✅ Multiple output formats (PNG, PDF, ASCII)
-- ✅ Error checking and user feedback
+- Basic line plots with multiple series
+- Legend, grid, axis labels
+- Multiple output formats (PNG, PDF, ASCII)
+- Error checking and user feedback
 
 **How to use**:
 ```bash
@@ -45,10 +45,10 @@ cd example/user_compilation_examples
 
 ### 📁 `fpm_project_template/`
 **Purpose**: Complete FPM project template for fortplot users
-- ✅ Modern `fpm.toml` configuration with fortplot dependency
-- ✅ Professional project structure (`app/`, `src/`, etc.)
-- ✅ Comprehensive plotting demonstrations
-- ✅ Detailed documentation and customization guide
+- Modern `fpm.toml` configuration with fortplot dependency
+- Professional project structure (`app/`, `src/`, etc.)
+- Plotting demonstrations
+- Documentation and customization notes
 
 **How to use**:
 ```bash
@@ -59,10 +59,10 @@ fpm build && fpm run
 
 ### 📁 `cmake_project_template/`  
 **Purpose**: Complete CMake project template with modern practices
-- ✅ `FetchContent` integration for automatic dependency management
-- ✅ Cross-platform build configuration
-- ✅ Debug/Release build modes
-- ✅ Advanced plotting examples with scientific visualizations
+- `FetchContent` integration for automatic dependency management
+- Cross-platform build configuration
+- Debug/Release build modes
+- Plotting examples for scientific visualizations
 
 **How to use**:
 ```bash
@@ -74,11 +74,11 @@ cmake -B build && cmake --build build
 
 ### 🛠️ `scripts/user_compilation_helper.sh`
 **Purpose**: Enhanced compilation script with detailed error messages
-- ✅ Automatic fortplot detection and path resolution
-- ✅ Comprehensive dependency checking
-- ✅ Debug mode compilation with extra checking
-- ✅ Verbose output for troubleshooting
-- ✅ Built-in compilation testing
+- Automatic fortplot detection and path resolution
+- Dependency checking
+- Debug mode compilation with extra checking
+- Verbose output for troubleshooting
+- Built-in compilation testing
 
 **How to use**:
 ```bash
@@ -204,38 +204,38 @@ end program math_education
 ### Common Compilation Issues
 
 **❌ Error**: `Can't open module file 'fortplot.mod'`
-**✅ Solution**: Use the compilation helper script or ensure `-I` flag points to correct module directory
+**Solution:** Use the compilation helper script or ensure `-I` points to the correct module directory
 
 **❌ Error**: `undefined reference to 'figure_'`
-**✅ Solution**: Ensure library is linked with `-lfortplot -lm` or use helper script
+**Solution:** Ensure the library is linked with `-lfortplot -lm` or use the helper script
 
 **❌ Error**: `Segmentation fault`
-**✅ Solution**: Check array bounds, use debug compilation: `./scripts/user_compilation_helper.sh -d yourfile.f90`
+**Solution:** Check array bounds; use debug compilation: `./scripts/user_compilation_helper.sh -d yourfile.f90`
 
 ### System Setup Issues
 
 **❌ Issue**: No Fortran compiler
-**✅ Solution**: Install gfortran:
+**Solution:** Install `gfortran`:
 - Ubuntu/Debian: `sudo apt install gfortran`
 - macOS: `brew install gcc` 
 - Windows: Install MinGW-w64 or MSYS2
 
 **❌ Issue**: FPM not found
-**✅ Solution**: Install FPM: `pip install fpm` or download from GitHub
+**Solution:** Install `fpm`: `pip install fpm` or download from GitHub
 
 **❌ Issue**: Git access problems
-**✅ Solution**: Check internet connection and git configuration
+**Solution:** Check internet connection and git configuration
 
 ### Runtime Issues
 
 **❌ Issue**: No output files generated
-**✅ Solution**: Check write permissions and disk space
+**Solution:** Check write permissions and disk space
 
 **❌ Issue**: Poor plot quality
-**✅ Solution**: Use appropriate output format (PDF for vector graphics, PNG for raster)
+**Solution:** Use an appropriate output format (PDF for vector graphics, PNG for raster)
 
 **❌ Issue**: Large dataset performance
-**✅ Solution**: Use transparency (`alpha=0.5`) and appropriate data sampling
+**Solution:** Use transparency (`alpha=0.5`) and appropriate data sampling
 
 ## Integration Examples
 
