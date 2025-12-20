@@ -353,25 +353,42 @@ contains
 
         integer :: nr, nc, i, j
         real(wp) :: base_left, base_right, base_bottom, base_top
-        real(wp) :: cell_w, cell_h, left_f, right_f, bottom_f, top_f
+        real(wp) :: wspace, hspace
+        real(wp) :: total_w, total_h
+        real(wp) :: ax_w, ax_h
+        real(wp) :: gap_w, gap_h
+        real(wp) :: left_f, right_f, bottom_f, top_f
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
 
-        base_left = 0.10_wp
-        base_right = 0.95_wp
-        base_bottom = 0.10_wp
-        base_top = 0.90_wp
         nr = subplot_rows
         nc = subplot_cols
-        cell_w = (base_right - base_left)/real(nc, wp)
-        cell_h = (base_top - base_bottom)/real(nr, wp)
+
+        ! Matplotlib-style subplot params defaults.
+        base_left = 0.125_wp
+        base_right = 0.90_wp
+        base_bottom = 0.11_wp
+        base_top = 0.88_wp
+        wspace = 0.20_wp
+        hspace = 0.20_wp
+
+        total_w = base_right - base_left
+        total_h = base_top - base_bottom
+
+        ax_w = total_w/ &
+               (real(nc, wp) + wspace*real(max(0, nc - 1), wp))
+        gap_w = wspace*ax_w
+
+        ax_h = total_h/ &
+               (real(nr, wp) + hspace*real(max(0, nr - 1), wp))
+        gap_h = hspace*ax_h
 
         do i = 1, nr
             do j = 1, nc
-                left_f = base_left + real(j - 1, wp)*cell_w
-                right_f = base_left + real(j, wp)*cell_w
-                bottom_f = base_bottom + real(nr - i, wp)*cell_h
-                top_f = base_bottom + real(nr - i + 1, wp)*cell_h
+                left_f = base_left + real(j - 1, wp)*(ax_w + gap_w)
+                right_f = left_f + ax_w
+                top_f = base_top - real(i - 1, wp)*(ax_h + gap_h)
+                bottom_f = top_f - ax_h
 
                 select type (bk => state%backend)
                 class is (png_context)
@@ -445,7 +462,7 @@ contains
     end subroutine render_subplots
 
     subroutine regenerate_pie_legend_for_backend(state, plots, plot_count)
-     !! Regenerate legend data for pie charts to ensure correct backend-specific markers
+        !! Regenerate legend data for pie charts with backend-specific markers.
         use fortplot_figure_plot_management, only: setup_figure_legend
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
