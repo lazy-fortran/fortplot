@@ -66,6 +66,7 @@ coverage.*
 *.exe
 *.out
 test/test_*
+!test/test_*.f90
 
 # Binary executables (comprehensive patterns)
 fortplot_bridge
