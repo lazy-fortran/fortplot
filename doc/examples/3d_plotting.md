@@ -5,13 +5,13 @@ title: 3D Plotting
 
 Source: [3d_plotting.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/3d_plotting/3d_plotting.f90)
 
-This comprehensive example demonstrates all 3D plotting capabilities in fortplot, consolidating features from multiple examples.
+3D plotting (lines and surfaces) with axes, ticks, and labels.
 
-- **3D Line Plots**: Helices and parametric curves
-- **3D Scatter Plots**: Multiple patterns and marker types
-- **3D Surface Plots**: Mathematical functions and meshes
-- **Mixed Plots**: Combining 2D and 3D in single figures
-- **Plot Combinations**: Multiple 3D plot types together
+- 3D line plots: helices and parametric curves
+- 3D scatter plots: multiple patterns and marker types
+- 3D surface plots: mathematical functions and meshes
+- Mixed plots: combining 2D and 3D in one figure
+- Plot combinations: multiple 3D plot types together
 
 - `3d_helix.png` - Basic 3D helix line plot
 - `parametric_curve.png` - Parametric spiral curve

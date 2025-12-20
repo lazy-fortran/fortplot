@@ -1,7 +1,8 @@
 # twin_axes_demo
 
-Demonstrates the `twinx` and `twiny` helpers introduced in issue #1358. The
-demo plots three synthetic time series and assigns each to a different axis:
+Demonstrates `twinx` and `twiny` for multiple axes on one figure.
+
+The demo plots three synthetic time series and assigns each to a different axis:
 
 - Left y-axis: primary signal (temperature-like)
 - Right y-axis: secondary signal with log scaling

@@ -3,7 +3,8 @@ title: Examples Gallery
 
 # fortplot Examples Gallery
 
-This gallery showcases the capabilities of fortplot through various examples. Each example includes the source code, rendered outputs in different formats (PNG, ASCII, PDF), and explanations.
+This gallery lists the example pages generated from `example/fortran`. Each page
+links to the source and shows the generated outputs.
 
 The sections below are generated automatically from the example
 directories tracked in `example/fortran`. Any new example folder will be
@@ -11,36 +12,37 @@ listed here the next time the documentation is rebuilt.
 
 <!-- AUTO_EXAMPLES_START -->
 
-- [3D Plotting](./3d_plotting.html) - This comprehensive example demonstrates all 3D plotting capabilities in fortplot, consolidating features from...
-- [Animation](./animation.html) - Documentation for this example is auto-generated.
-- [Annotation Demo](./annotation_demo.html) - Documentation for this example is auto-generated.
-- [Ascii Heatmap](./ascii_heatmap.html) - Documentation for this example is auto-generated.
-- [Bar Chart Demo](./bar_chart_demo.html) - Grouped bar charts for categorical comparisons using both the pyplot-style
-- [Basic Plots](./basic_plots.html) - Documentation for this example is auto-generated.
+- [3D Plotting](./3d_plotting.html) - 3D plotting (lines and surfaces) with axes, ticks, and labels.
+- [Animation](./animation.html) - Generate an MP4 animation from a sequence of frames.
+- [Annotation Demo](./annotation_demo.html) - Add text annotations in data coordinates.
+- [Ascii Heatmap](./ascii_heatmap.html) - Render a heatmap to terminal-friendly ASCII output.
+- [Bar Chart Demo](./bar_chart_demo.html) - Demonstrates grouped bar charts (vertical and horizontal) via both the stateful API and `figure_t`.
+- [Basic Plots](./basic_plots.html) - Basic line plots and saving outputs (PNG, PDF, ASCII).
 - [Boxplot Demo](./boxplot_demo.html) - Demonstrates box-and-whisker plots for statistical data visualization.
-- [Colored Contours](./colored_contours.html) - Documentation for this example is auto-generated.
-- [Contour Demo](./contour_demo.html) - Documentation for this example is auto-generated.
-- [Contour Filled Demo](./contour_filled_demo.html) - Documentation for this example is auto-generated.
-- [Disconnected Lines](./disconnected_lines.html) - This example demonstrates how to create plots with disconnected line segments by using NaN (Not-a-Number) values as...
+- [Colored Contours](./colored_contours.html) - Contour plots with filled regions and colormaps.
+- [Contour Demo](./contour_demo.html) - Contour line plots from gridded data.
+- [Contour Filled Demo](./contour_filled_demo.html) - Filled contour plots, including colormaps and labeled contour levels.
+- [Disconnected Lines](./disconnected_lines.html) - Line plots with gaps created by NaN separators.
+- [Dpi Demo](./dpi_demo.html) - Control output DPI when saving figures for consistent sizing across formats.
 - [Errorbar Demo](./errorbar_demo.html) - Demonstrates error bar plotting with both symmetric and asymmetric errors for scientific data visualization.
-- [Fill Between Demo](./fill_between_demo.html) - Demonstrates how to create filled regions using both the stateful and object
-- [Format String Demo](./format_string_demo.html) - Documentation for this example is auto-generated.
+- [Fill Between Demo](./fill_between_demo.html) - Create filled regions using both the stateful API and `figure_t`.
+- [Format String Demo](./format_string_demo.html) - Matplotlib-style format strings for color, marker, and line style.
 - [Grid Demo](./grid_demo.html) - Demonstrates grid functionality for enhanced plot readability.
-- [Legend Demo](./legend_demo.html) - Documentation for this example is auto-generated.
-- [Line Styles](./line_styles.html) - Documentation for this example is auto-generated.
-- [Marker Demo](./marker_demo.html) - Documentation for this example is auto-generated.
-- [Mathtext Demo](./mathtext_demo.html) - Documentation for this example is auto-generated.
-- [Pcolormesh Demo](./pcolormesh_demo.html) - Documentation for this example is auto-generated.
-- [Pcolormesh Negative](./pcolormesh_negative.html) - Documentation for this example is auto-generated.
-- [Pie Chart Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/pie_chart_demo) - Documentation pending; browse the source tree.
-- [Polar Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/polar_demo) - Documentation pending; browse the source tree.
-- [Scale Examples](./scale_examples.html) - Documentation for this example is auto-generated.
+- [Legend Demo](./legend_demo.html) - Legends, labels, and legend placement.
+- [Line Styles](./line_styles.html) - Line styles, dash patterns, and markers.
+- [Marker Demo](./marker_demo.html) - Marker styles and marker sizing.
+- [Mathtext Demo](./mathtext_demo.html) - Render math text and symbols in labels and titles.
+- [Pcolormesh Demo](./pcolormesh_demo.html) - Pcolormesh heatmaps with colormaps and shading.
+- [Pcolormesh Negative](./pcolormesh_negative.html) - Pcolormesh with negative-valued data, including colormap handling across zero.
+- [Pie Chart Demo](./pie_chart_demo.html) - Build pie charts using both the stateful API and `figure_t` (exploded wedges, `autopct`, and start angles).
+- [Polar Demo](./polar_demo.html) - Demonstrates fortplot's polar plotting API with custom colors, linestyles, and markers.
+- [Scale Examples](./scale_examples.html) - Linear, log, and symlog axis scales.
 - [Scatter Demo](./scatter_demo.html) - Demonstrates enhanced scatter plotting with color mapping, variable marker sizes, and bubble charts.
-- [Show Viewer Demo](./show_viewer_demo.html) - Documentation for this example is auto-generated.
-- [Smart Show Demo](./smart_show_demo.html) - Documentation for this example is auto-generated.
-- [Streamplot Demo](./streamplot_demo.html) - Documentation for this example is auto-generated.
+- [Show Viewer Demo](./show_viewer_demo.html) - Open saved plots with a system viewer.
+- [Smart Show Demo](./smart_show_demo.html) - Choose a suitable backend/viewer based on the environment.
+- [Streamplot Demo](./streamplot_demo.html) - Streamplots for 2D vector fields.
 - [Subplot Demo](./subplot_demo.html) - Demonstration of subplot functionality using the stateful API.
-- [Twin Axes Demo](https://github.com/lazy-fortran/fortplot/tree/main/example/fortran/twin_axes_demo) - Documentation pending; browse the source tree.
-- [Unicode Demo](./unicode_demo.html) - Documentation for this example is auto-generated.
+- [Twin Axes Demo](./twin_axes_demo.html) - Demonstrates `twinx` and `twiny` for multiple axes on one figure.
+- [Unicode Demo](./unicode_demo.html) - Unicode symbols in labels and titles.
 
 <!-- AUTO_EXAMPLES_END -->

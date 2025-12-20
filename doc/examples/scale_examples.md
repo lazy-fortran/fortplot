@@ -5,8 +5,7 @@ title: Scale Examples
 
 Source: [scale_examples.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/scale_examples/scale_examples.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Linear, log, and symlog axis scales.
 
 ## Files
 
@@ -27,7 +26,36 @@ make example ARGS="scale_examples"
 
 ASCII output:
 ```
-(Content embedded here)
+
+                               Log Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+|                                                                                |
+| *                                                                        ----- |
+| *                                                                    -----     |
+| *                                                                 ----         |
+| *                                                             -----            |
+| *                                                         -----                |
+| *                                                      ----                    |
+| *                                                  -----                       |
+| *                                              -----                           |
+| *                                           ----                               |
+| *                                       ----                                   |
+| $10^4$                              -----                                      |
+| *                               -----                                          |
+| *                            ----                                              |
+| *                        -----                                                 |
+| *                    -----                                                     |
+| *                 ----                                                         |
+| *             -----                                                            |
+| *          ----                                                                |
+| *      ----                                                                    |
+| *  -----                                                                       |
+| $10^3$************************************************************************ |
+|              10              20              30               40            50 |
++--------------------------------------------------------------------------------+
+                                       x
+exp(0.2x)
 ```
 
 [Download ASCII](../../media/examples/scale_examples/log_scale.txt)
@@ -40,7 +68,36 @@ ASCII output:
 
 ASCII output:
 ```
-(Content embedded here)
+
+                              Symlog Scale Example
++--------------------------------------------------------------------------------+
+|                                                                                |
+| *                                                                              |
+| *                              ----------------------------------------------- |
+| $10^5$        -----------------                                                |
+| *         ----                                                                 |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *         -                                                                    |
+| *        --                                                                    |
+| *        -                                                                     |
+| *        -                                                                     |
+| *        -                                                                     |
+| *        -                                                                     |
+| *        -                                                                     |
+| *       --                                                                     |
+| $10^4$  -                                                                      |
+| ****************************************************************************** |
+|              10              20              30               40            50 |
++--------------------------------------------------------------------------------+
+                                       x
+xU+00B3 - 50x
 ```
 
 [Download ASCII](../../media/examples/scale_examples/symlog_scale.txt)

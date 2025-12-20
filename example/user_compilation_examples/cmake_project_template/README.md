@@ -131,10 +131,10 @@ cmake --build build
 ## Testing Your Setup
 
 The template includes comprehensive tests that verify:
-- ✅ **Compilation** - CMake finds and links fortplot correctly
-- ✅ **Basic plotting** - Simple line plots with styling
-- ✅ **Advanced features** - Error bars, subplots, multiple formats
-- ✅ **Output generation** - PNG, PDF, and ASCII file creation
+- **Compilation** - CMake finds and links fortplot correctly
+- **Basic plotting** - Simple line plots with styling
+- **Advanced features** - Error bars, subplots, multiple formats
+- **Output generation** - PNG, PDF, and ASCII file creation
 
 If the template builds and runs without errors, your CMake + fortplot setup is working perfectly.
 

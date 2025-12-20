@@ -5,8 +5,7 @@ title: Ascii Heatmap
 
 Source: [ascii_heatmap.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/ascii_heatmap/ascii_heatmap.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Render a heatmap to terminal-friendly ASCII output.
 
 ## Files
 

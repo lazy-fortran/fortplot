@@ -1,9 +1,8 @@
 # fill_between_demo
 
-Demonstrates how to create filled regions using both the stateful and object
-APIs. The program first applies `fill_between` with a mask to highlight part of
-an oscillatory curve, then uses `figure_t%add_fill_between` to shade a baseline
-response computed from an exponential envelope.
+Create filled regions using both the stateful API and `figure_t`.
+
+The demo highlights part of an oscillatory curve and shades a baseline response.
 
 ## Run It
 

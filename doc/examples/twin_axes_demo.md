@@ -5,8 +5,9 @@ title: Twin Axes Demo
 
 Source: [twin_axes_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/twin_axes_demo/twin_axes_demo.f90)
 
-Demonstrates the `twinx` and `twiny` helpers introduced in issue #1358. The
-demo plots three synthetic time series and assigns each to a different axis:
+Demonstrates `twinx` and `twiny` for multiple axes on one figure.
+
+The demo plots three synthetic time series and assigns each to a different axis:
 
 - Left y-axis: primary signal (temperature-like)
 - Right y-axis: secondary signal with log scaling
@@ -36,7 +37,36 @@ make example ARGS="twin_axes_demo"
 
 ASCII output:
 ```
-(Content embedded here)
+
+                                 Twin axis demo
++--------------------------------------------------------------------------------+
+|                                                                                |
+| 22             -                                                               |
+| *          ---------                                                     ----- |
+| *        ---        --                                     -- Primary axis     |
+| 20      --            -                                    -- Secondary axis   |
+| *  5  --10   15   20   25                                  -- Top axis         |
+| *    --                 --                                         --          |
+| 18  --                   --                                       --           |
+| *  --                     --                                     --            |
+| * --                       --                                   --             |
+| 16-                         --                                 --              |
+| *-                           --                               --               |
+| *                             --                             --                |
+| 14                             --                           --                 |
+| *                               --                         --                  |
+| *                                --                       --                   |
+| 12                                --                     --                    |
+| *                                  --                   %%%%%%%%%%          %% |
+| *                                   --              %%%%-        %%         %  |
+| 10                                   --       %%%%%%  --          %%       %%  |
+| *                                    %%%-%%%%%       --            %%      %   |
+| *                    %  %  % % % %% %   ---        --               %      %   |
+| 8****************************************************************************  |
+|0                                                                               |
++--------------------------------------------------------------------------------+
+                                  Time (hours)
+Temperature (relative)
 ```
 
 [Download ASCII](../../media/examples/twin_axes_demo/twin_axes_demo.txt)

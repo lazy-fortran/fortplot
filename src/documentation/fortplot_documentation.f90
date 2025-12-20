@@ -507,8 +507,7 @@ contains
         integer :: i
 
         if (summary_count == 0) then
-            write(unit_out, '(A)') 'Documentation for this example is auto-generated.'
-            write(unit_out, '(A)') 'Update README.md in the example directory to provide a custom overview.'
+            write(unit_out, '(A)') 'See source and outputs below.'
             write(unit_out, '(A)') ''
         else
             do i = 1, summary_count
@@ -607,6 +606,13 @@ contains
         character(len=*), intent(in) :: other_links
         logical, intent(in) :: has_image, has_pdf, has_txt, has_video, has_other
         character(len=:), allocatable :: heading
+        character(len=PATH_MAX_LEN) :: txt_path
+        character(len=LINE_MAX_LEN) :: line
+        logical :: txt_exists
+        integer :: unit_txt
+        integer :: ios
+        integer :: line_count
+        integer, parameter :: MAX_ASCII_LINES = 60
 
         heading = title_case(group_name)
 
@@ -622,7 +628,29 @@ contains
         if (has_txt) then
             write(unit_out, '(A)') 'ASCII output:'
             write(unit_out, '(A)') '```'
-            write(unit_out, '(A)') '(Content embedded here)'
+            txt_path = OUTPUT_BASE_DIR // trim(example_name) // '/' // trim(txt_file)
+            inquire(file=txt_path, exist=txt_exists)
+            if (txt_exists) then
+                open(newunit=unit_txt, file=txt_path, status='old', action='read', iostat=ios)
+                if (ios == 0) then
+                    line_count = 0
+                    do
+                        read(unit_txt, '(A)', iostat=ios) line
+                        if (ios /= 0) exit
+                        line_count = line_count + 1
+                        if (line_count > MAX_ASCII_LINES) exit
+                        write(unit_out, '(A)') trim(line)
+                    end do
+                    if (line_count > MAX_ASCII_LINES) then
+                        write(unit_out, '(A)') '... (truncated)'
+                    end if
+                    close(unit_txt)
+                else
+                    write(unit_out, '(A)') 'See download link.'
+                end if
+            else
+                write(unit_out, '(A)') 'See download link.'
+            end if
             write(unit_out, '(A)') '```'
             write(unit_out, '(A)') ''
             write(unit_out, '(A,A,A)') '[Download ASCII](../../media/examples/' // &

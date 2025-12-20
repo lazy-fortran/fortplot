@@ -5,10 +5,9 @@ title: Pie Chart Demo
 
 Source: [pie_chart_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/pie_chart_demo/pie_chart_demo.f90)
 
-This example shows how to build pie charts with fortplot using both the stateful
-API and the `figure_t` object API. It demonstrates exploded wedges, automatic
-percentage labels via `autopct`, custom start angles, and multiple output formats
-(PNG, PDF, ASCII).
+Build pie charts using both the stateful API and `figure_t` (exploded wedges, `autopct`, and start angles).
+
+Outputs are written in PNG, PDF, and ASCII formats.
 
 Run it with:
 
@@ -33,6 +32,7 @@ make example ARGS="pie_chart_demo"
 
 ASCII output:
 ```
+
                            Clean energy capacity mix
 +--------------------------------------------------------------------------------+
 |                                                                                |
@@ -72,6 +72,7 @@ ASCII output:
 
 ASCII output:
 ```
+
                              Regional revenue share
 +--------------------------------------------------------------------------------+
 |                                                                                |

@@ -1,14 +1,14 @@
 # 3D Plotting Examples
 
-This comprehensive example demonstrates all 3D plotting capabilities in fortplot, consolidating features from multiple examples.
+3D plotting (lines and surfaces) with axes, ticks, and labels.
 
 ## Features Demonstrated
 
-- **3D Line Plots**: Helices and parametric curves
-- **3D Scatter Plots**: Multiple patterns and marker types
-- **3D Surface Plots**: Mathematical functions and meshes
-- **Mixed Plots**: Combining 2D and 3D in single figures
-- **Plot Combinations**: Multiple 3D plot types together
+- 3D line plots: helices and parametric curves
+- 3D scatter plots: multiple patterns and marker types
+- 3D surface plots: mathematical functions and meshes
+- Mixed plots: combining 2D and 3D in one figure
+- Plot combinations: multiple 3D plot types together
 
 ## Running
 
