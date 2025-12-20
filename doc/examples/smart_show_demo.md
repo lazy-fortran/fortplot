@@ -5,8 +5,7 @@ title: Smart Show Demo
 
 Source: [smart_show_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/smart_show_demo/smart_show_demo.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Choose a suitable backend/viewer based on the environment.
 
 ## Files
 

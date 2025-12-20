@@ -5,8 +5,7 @@ title: Annotation Demo
 
 Source: [annotation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/annotation_demo/annotation_demo.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Add text annotations in data coordinates.
 
 ## Files
 
@@ -27,7 +26,36 @@ make example ARGS="annotation_demo"
 
 ASCII output:
 ```
-(Content embedded here)
+
+                     Scientific Data with Text Annotations
++--------------------------------------------------------------------------------+
+|                                                                                |
+| 0.6              -                                                             |
+|             ----------                                                         |
+| %         --          ---                   -- Damped sine: $sin(x)e^{-x/4}$ % |
+| %%       --             ---                 -- Exponential: $e^{-x} - 0.5$ %%  |
+| 0.4    --                  -                -- Quadratic: $0.1(x-3)^2 - 0.3$   |
+| *  %  -                     --                                           %     |
+|  =  %%                        --                                       %%      |
+|   = - %                        -                                      %        |
+| 0.2=   %%                       --                                  %%         |
+| *  ==    %%                       --                              %%           |
+|   -  =    %%                       --                            %%            |
+|  -    =     %%                       --                        %%              |
+| 0.0    =     %%%                      --                     %%%               |
+| *       ==      %%                      --                 %%                  |
+|           ==      %%%                     -             %%%                --- |
+|             ==       %%                    ---        %%                ---    |
+| -0.2         ===       %%%%                  ---  %%%%               ---       |
+| *               ===        %%%%%             %%%%%-             -----          |
+|                    ===         %%%%%%%%%%%%%%%     -------------               |
+|                       ======                                                   |
+| -0.4                       =========                                           |
+| *  *  *  *  *  *  *  *  *  *  *  *  *===*==*==*==*==*==*==*==*==*==*==*==*===* |
+|0           1             2            3            4             5           6 |
++--------------------------------------------------------------------------------+
+                            Independent Variable (x)
+Dependent Variable (y)
 ```
 
 [Download ASCII](../../media/examples/annotation_demo/annotation_demo.txt)

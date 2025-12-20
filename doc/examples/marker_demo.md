@@ -5,8 +5,7 @@ title: Marker Demo
 
 Source: [marker_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/marker_demo/marker_demo.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Marker styles and marker sizing.
 
 ## Files
 
@@ -27,7 +26,36 @@ make example ARGS="marker_demo"
 
 ASCII output:
 ```
-(Content embedded here)
+
+                                All Marker Types
++--------------------------------------------------------------------------------+
+|                                                                                |
+| *                o                                                             |
+|         o                o                                                     |
+| *                                 o                                o Circle    |
+| 3                                                                  # Square    |
+| *                                         o                        % Diamond   |
+| #                                                                  x Cross     |
+| *                                                  o                           |
+| *       #                                                                      |
+| 2                                                          o                 # |
+| *       %        #                                         %        o        o |
+| %                                                  %                #          |
+| *                        #                                          %          |
+| 1                                 #                        #                   |
+| *                %                        #        #       x                   |
+| x                                         %                         x          |
+| *                                                  x                         % |
+| *                        %                                                   x |
+| 0       x                         %                                            |
+| *                                         x                                    |
+| *                                                                              |
+| *                x                                                             |
+| *   *   *   *   *   *   *x  *   * x *   *   *   *   *   *   *   *   *   *   *  |
+|        1                 2                3                 4                5 |
++--------------------------------------------------------------------------------+
+                                    X Values
+Y Values
 ```
 
 [Download ASCII](../../media/examples/marker_demo/all_marker_types.txt)
@@ -40,7 +68,36 @@ ASCII output:
 
 ASCII output:
 ```
-(Content embedded here)
+
+                            Marker Colors and Styles
++--------------------------------------------------------------------------------+
+|                                                                                |
+| 3.0                                                                            |
+|                                                                                |
+| *                                                          o Blue circles      |
+|                                                            # Green squares     |
+| 2.5        o                                               % Orange diamonds   |
+|                                                                              o |
+| *                    o                                            o            |
+| *          #                                          o                        |
+| 2.0                  #          o           o                                  |
+| #                               #                                              |
+|                                                                                |
+| *                                                                              |
+| 1.5                                         #                                  |
+| *                                                                              |
+| *                                                     #                        |
+| %          %                                                      #          # |
+| 1.0                                                                            |
+|                                                                                |
+| *                    %                                                         |
+|                                                                   %          % |
+| 0.5                                                                            |
+| *   *    *   *    *   *    *   *%   *   *   %*   *    %   *    *   *    *    * |
+|       1                  2                  3                  4               |
++--------------------------------------------------------------------------------+
+                                   X Position
+Y Position
 ```
 
 [Download ASCII](../../media/examples/marker_demo/marker_colors.txt)
@@ -53,7 +110,36 @@ ASCII output:
 
 ASCII output:
 ```
-(Content embedded here)
+
+                     Scatter Plot with Antialiased Markers
++--------------------------------------------------------------------------------+
+|                                                                                |
+| *               =                                                              |
+|             = = o = o =                                                        |
+|           = o           o                                o Data Points         |
+| *       o                 =                              -- Sin(x) Reference   |
+| 0.5   =                     o                                                  |
+|     =                         =                                                |
+| * = o                                                                          |
+|                                 o                                              |
+| *                                 =                                            |
+| o                                                                              |
+| 0.0                                 o                                          |
+| *                                     =                                        |
+|                                                                                |
+|                                         o                                    o |
+| *                                         =                                  = |
+|                                             o                             =    |
+| -0.5                                        =                           o      |
+|                                               =                         =      |
+|                                                 o                   o =        |
+| *                                                 =                 =          |
+|                                                     o           o =            |
+| *  *  *   *  *  *   *  *  *   *  *  *   *  *  *   *  *= o = o =*= *   *  *   * |
+|         1             2             3             4             5            6 |
++--------------------------------------------------------------------------------+
+                                    X Values
+Y Values
 ```
 
 [Download ASCII](../../media/examples/marker_demo/scatter_plot.txt)

@@ -5,8 +5,7 @@ title: Mathtext Demo
 
 Source: [mathtext_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/mathtext_demo/mathtext_demo.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Render math text and symbols in labels and titles.
 
 ## Files
 

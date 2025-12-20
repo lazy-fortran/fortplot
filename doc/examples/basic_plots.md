@@ -5,8 +5,7 @@ title: Basic Plots
 
 Source: [basic_plots.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/basic_plots/basic_plots.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Basic line plots and saving outputs (PNG, PDF, ASCII).
 
 ## Files
 
@@ -27,7 +26,36 @@ make example ARGS="basic_plots"
 
 ASCII output:
 ```
-(Content embedded here)
+
+                           Sine and Cosine Functions
++--------------------------------------------------------------------------------+
+| 1.0                                                                            |
+| *                                                                              |
+| ==  ----               ===   ---               ====  ----               ===    |
+|   =-                  =   = -   -             =     -   -          -- sin(x) - |
+| *  -    -            =     =-    -           =     =-    -         -- cos(x)=  |
+| 0.5=     -           =     -                 =      =     -           =     =  |
+|   -=     -          =     - =     -          =     -=     -          =     - = |
+| *-  =     -         =     - =     -         =     - =      -         =     -   |
+|  -  =     -        =      -  =     -        =     -  =     -        =     -    |
+| *-   =             =     -   =     -       =      -  =     -        =     -    |
+| -    =     -       =     -   =     -       =     -    =     -       =    -     |
+| 0.0  =     -      =     -     =     -      =     -    =     -      =     -     |
+| *     =     -     =     -     =     -     =      -    =      -     =           |
+|       =     -    =      -           -     =     -      =     -    =      -     |
+|        =    -    =     -       =     -    =     -      =     -    =     -      |
+| *      =     -   =     -       =     -   =     -        =     -   =     -      |
+|        =     -  =     -        =      -  =     -        =     -  =     -       |
+| -0.5    =     - =     -         =     - =      -        =     -- =     -       |
+|         =     -=      -          =    - =     -          =     -=     -        |
+|                =     -           =     ==    -                 -=              |
+| *        =    =-     -                                    =    =-     -        |
+|           =   = -   -             =   = -    -             =  =  -   -         |
+| *****************************************************************************  |
+|0                  5                   10                   15                  |
++--------------------------------------------------------------------------------+
+                                       x
+y
 ```
 
 [Download ASCII](../../media/examples/basic_plots/multi_line.txt)
@@ -40,7 +68,36 @@ ASCII output:
 
 ASCII output:
 ```
-(Content embedded here)
+
+                                Simple Sine Wave
++--------------------------------------------------------------------------------+
+|                                                                                |
+| *        -                                                                     |
+|        -- --                                 ------                            |
+|       -     --                              -      -                           |
+| *    -        -                             -       -                          |
+| 0.5 -         -                            -         -                         |
+|    -           -                          -           -                        |
+| *  -            -                        -             -                       |
+|   -                                     -                                      |
+| *-               -                      -              -                       |
+|                   -                                     -                      |
+| 0.0               -                    -                 -                     |
+| *                                     -                                      - |
+|                    -                 -                    -                 -  |
+|                     -                                     -                    |
+| *                    -              -                      -               -   |
+|                                     -                                     -    |
+| -0.5                  -            -                        -            -     |
+|                       -           -                          -           -     |
+|                        -         -                            -         -      |
+| *                       -        -                            -        -       |
+|                          -      -                              --     -        |
+| ** ** ** ** ** ** ** ** **-**-** ** ** ** ** ** ** ** ** ** ** **-**-** ** **  |
+|0           2           4            6            8            10          12   |
++--------------------------------------------------------------------------------+
+                                       x
+sin(x)
 ```
 
 [Download ASCII](../../media/examples/basic_plots/simple_plot.txt)

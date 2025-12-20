@@ -188,6 +188,7 @@ contains
         character(len=*), intent(in) :: raw_name
         character(len=:), allocatable :: desc
         character(len=512) :: doc_path
+        character(len=512) :: readme_path
         integer :: name_len, desc_len, link_len
 
         name_len = len_trim(raw_name)
@@ -199,7 +200,10 @@ contains
         doc_path = 'doc/examples/' // entry%name // '.md'
         entry%has_doc = file_exists(doc_path)
 
-        if (entry%has_doc) then
+        readme_path = 'example/fortran/' // entry%name // '/README.md'
+        if (file_exists(readme_path)) then
+            desc = extract_description(readme_path)
+        else if (entry%has_doc) then
             desc = extract_description(doc_path)
         else
             desc = 'Documentation pending; browse the source tree.'

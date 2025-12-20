@@ -5,8 +5,7 @@ title: Animation
 
 Source: [save_animation_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/animation/save_animation_demo.f90)
 
-Documentation for this example is auto-generated.
-Update README.md in the example directory to provide a custom overview.
+Generate an MP4 animation from a sequence of frames.
 
 ## Files
 
