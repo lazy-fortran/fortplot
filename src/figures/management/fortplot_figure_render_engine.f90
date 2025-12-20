@@ -25,6 +25,7 @@ module fortplot_figure_render_engine
     use fortplot_figure_colorbar, only: prepare_colorbar_layout, &
                                         resolve_colorbar_mappable, &
                                         render_colorbar
+    use fortplot_subplot_rendering, only: render_subplots
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
@@ -344,122 +345,6 @@ contains
             end if
         end if
     end subroutine render_single_axis
-
-    subroutine render_subplots(state, subplots_array, subplot_rows, subplot_cols)
-        !! Render a multi-subplot figure layout.
-        type(figure_state_t), intent(inout) :: state
-        type(subplot_data_t), intent(in) :: subplots_array(:, :)
-        integer, intent(in) :: subplot_rows, subplot_cols
-
-        integer :: nr, nc, i, j
-        real(wp) :: base_left, base_right, base_bottom, base_top
-        real(wp) :: wspace, hspace
-        real(wp) :: total_w, total_h
-        real(wp) :: ax_w, ax_h
-        real(wp) :: gap_w, gap_h
-        real(wp) :: left_f, right_f, bottom_f, top_f
-        real(wp) :: lxmin, lxmax, lymin, lymax
-        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
-
-        nr = subplot_rows
-        nc = subplot_cols
-
-        ! Matplotlib-style subplot params defaults.
-        base_left = 0.125_wp
-        base_right = 0.90_wp
-        base_bottom = 0.11_wp
-        base_top = 0.88_wp
-        wspace = 0.20_wp
-        hspace = 0.20_wp
-
-        total_w = base_right - base_left
-        total_h = base_top - base_bottom
-
-        ax_w = total_w/ &
-               (real(nc, wp) + wspace*real(max(0, nc - 1), wp))
-        gap_w = wspace*ax_w
-
-        ax_h = total_h/ &
-               (real(nr, wp) + hspace*real(max(0, nr - 1), wp))
-        gap_h = hspace*ax_h
-
-        do i = 1, nr
-            do j = 1, nc
-                left_f = base_left + real(j - 1, wp)*(ax_w + gap_w)
-                right_f = left_f + ax_w
-                top_f = base_top - real(i - 1, wp)*(ax_h + gap_h)
-                bottom_f = top_f - ax_h
-
-                select type (bk => state%backend)
-                class is (png_context)
-                    bk%margins%left = left_f
-                    bk%margins%right = right_f
-                    bk%margins%bottom = bottom_f
-                    bk%margins%top = top_f
-                    call calculate_plot_area(bk%width, bk%height, bk%margins, &
-                                             bk%plot_area)
-                class is (pdf_context)
-                    bk%margins%left = left_f
-                    bk%margins%right = right_f
-                    bk%margins%bottom = bottom_f
-                    bk%margins%top = top_f
-                    call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, &
-                                                 bk%plot_area)
-                class is (ascii_context)
-                    ! ASCII backend keeps default layout.
-                class default
-                    ! Unknown backend; leave margins untouched.
-                end select
-
-                call calculate_figure_data_ranges(subplots_array(i, j)%plots, &
-                                                  subplots_array(i, j)%plot_count, &
-                                                  subplots_array(i, j)%xlim_set, &
-                                                  subplots_array(i, j)%ylim_set, &
-                                                  lxmin, lxmax, lymin, lymax, &
-                                                  lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                                  state%xscale, state%yscale, &
-                                                  state%symlog_threshold)
-
-                call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
-                                             lymin_t, lymax_t)
-
-                call render_figure_axes(state%backend, state%xscale, state%yscale, &
-                                        state%symlog_threshold, lxmin, lxmax, &
-                                        lymin, lymax, &
-                                        subplots_array(i, j)%title, &
-                                        subplots_array(i, j)%xlabel, &
-                                        subplots_array(i, j)%ylabel, &
-                                        subplots_array(i, j)%plots, &
-                                        subplots_array(i, j)%plot_count, &
-                                        has_twinx=.false., &
-                                        has_twiny=.false.)
-
-                if (subplots_array(i, j)%plot_count > 0) then
-                    call render_all_plots(state%backend, subplots_array(i, j)%plots, &
-                                          subplots_array(i, j)%plot_count, &
-                                          lxmin_t, lxmax_t, &
-                                          lymin_t, lymax_t, state%xscale, &
-                                          state%yscale, &
-                                          state%symlog_threshold, state%width, &
-                                          state%height, &
-                                          state%margin_left, state%margin_right, &
-                                          state%margin_bottom, state%margin_top)
-                end if
-
-                call render_figure_axes_labels_only(state%backend, state%xscale, &
-                                                    state%yscale, &
-                                                    state%symlog_threshold, lxmin, &
-                                                    lxmax, lymin, lymax, &
-                                                    subplots_array(i, j)%title, &
-                                                    subplots_array(i, j)%xlabel, &
-                                                    subplots_array(i, j)%ylabel, &
-                                                    subplots_array(i, j)%plots, &
-                                                    subplots_array(i, j)%plot_count, &
-                                                    has_twinx=.false., &
-                                                    has_twiny=.false.)
-            end do
-        end do
-    end subroutine render_subplots
 
     subroutine regenerate_pie_legend_for_backend(state, plots, plot_count)
         !! Regenerate legend data for pie charts with backend-specific markers.

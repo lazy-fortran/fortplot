@@ -1,18 +1,24 @@
 module fortplot_raster_labels
     !! Raster axis labels (title, xlabel, ylabel) rendering functionality
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
-    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TITLE_VERTICAL_OFFSET, TICK_MARK_LENGTH
-    use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, calculate_text_height, &
-                                        calculate_text_descent, calculate_text_width_with_size, &
-                                        render_text_with_size, TITLE_FONT_SIZE
+    use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TITLE_VERTICAL_OFFSET, &
+                                  TICK_MARK_LENGTH, YLABEL_EXTRA_GAP
+    use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
+                                       calculate_text_height, &
+                                       calculate_text_descent, &
+                                       calculate_text_width_with_size, &
+                                       render_text_with_size, TITLE_FONT_SIZE
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot_unicode, only: escape_unicode_for_raster
     use fortplot_text_helpers, only: prepare_mathtext_if_needed
     use fortplot_margins, only: plot_area_t
     use fortplot_raster_core, only: raster_image_t
-    use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, rotate_bitmap_90_cw, composite_bitmap_to_raster
-    use fortplot_raster_ticks, only: last_y_tick_max_width, last_y_tick_max_width_right, &
-                                     last_x_tick_max_height_top, Y_TICK_LABEL_RIGHT_PAD, &
+    use fortplot_bitmap, only: render_text_to_bitmap, rotate_bitmap_90_ccw, &
+                               rotate_bitmap_90_cw, composite_bitmap_to_raster
+    use fortplot_raster_ticks, only: last_y_tick_max_width, &
+                                     last_y_tick_max_width_right, &
+                                     last_x_tick_max_height_top, &
+                                     Y_TICK_LABEL_RIGHT_PAD, &
                                      Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
@@ -27,12 +33,10 @@ module fortplot_raster_labels
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
 
-    ! Gap to better match matplotlib's labelpad and avoid overlap
-    integer, parameter :: YLABEL_EXTRA_GAP = 25
-
 contains
 
-    subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, xlabel, ylabel)
+    subroutine raster_draw_axis_labels(raster, width, height, plot_area, title, &
+                                       xlabel, ylabel)
         !! Draw all axis labels (title, xlabel, ylabel)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -52,15 +56,18 @@ contains
         ! X label at bottom
         if (len_trim(xlabel) > 0) then
             call process_latex_in_text(trim(xlabel), processed_text, processed_len)
-            call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+            call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                            math_ready, math_len)
             call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
             label_width = calculate_text_width(trim(escaped_text))
             label_height = calculate_text_height(trim(escaped_text))
             label_x = plot_area%left + plot_area%width/2 - label_width/2
             ! Move xlabel 5 pixels down (increase Y in PNG coordinates)
-            label_y = min(height - label_height - 5, plot_area%bottom + plot_area%height + XLABEL_VERTICAL_OFFSET + 5)
-            call render_text_to_image(raster%image_data, width, height, label_x, label_y, &
-                trim(escaped_text), 0_1, 0_1, 0_1)
+            label_y = min(height - label_height - 5, plot_area%bottom + &
+                          plot_area%height + XLABEL_VERTICAL_OFFSET + 5)
+            call render_text_to_image(raster%image_data, width, height, &
+                                      label_x, label_y, &
+                                      trim(escaped_text), 0_1, 0_1, 0_1)
         end if
 
         ! Y label at left
@@ -79,7 +86,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        integer(1), allocatable :: text_bitmap(:, :, :), rotated_bitmap(:, :, :)
         integer :: text_width, text_height, text_descent
         integer :: rotated_width, rotated_height
         integer :: target_x, target_y
@@ -89,7 +96,8 @@ contains
 
         ! Process LaTeX
         call process_latex_in_text(trim(ylabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                        math_ready, math_len)
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         ! Calculate text dimensions
@@ -98,21 +106,24 @@ contains
         text_descent = calculate_text_descent(trim(escaped_text))
 
         ! Allocate text bitmap
-        allocate(text_bitmap(text_width, text_height, 3))
+        allocate (text_bitmap(text_width, text_height, 3))
         text_bitmap = -1_1  ! Initialize to white
 
-        ! Render text to bitmap (upright). Position baseline to leave room for descenders
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, text_height - text_descent, &
-            trim(escaped_text))
+        ! Render text to bitmap (upright).
+        ! Position baseline to leave room for descenders.
+        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, &
+                                   text_height - text_descent, &
+                                   trim(escaped_text))
 
         ! Rotate 90 degrees counter-clockwise
         rotated_width = text_height
         rotated_height = text_width
-        allocate(rotated_bitmap(rotated_width, rotated_height, 3))
+        allocate (rotated_bitmap(rotated_width, rotated_height, 3))
         call rotate_bitmap_90_ccw(text_bitmap, rotated_bitmap, text_width, text_height)
 
         ! Compute the rightmost edge of y-tick labels
-        y_tick_label_edge = y_tick_label_right_edge_at_axis(plot_area, last_y_tick_max_width)
+        y_tick_label_edge = y_tick_label_right_edge_at_axis(plot_area, &
+                                                            last_y_tick_max_width)
 
         ! Compute ylabel position with dynamic gap
         target_x = compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area)
@@ -121,10 +132,12 @@ contains
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
 
         ! Composite to raster
-        call composite_bitmap_to_raster(raster%image_data, width, height, rotated_bitmap, &
-            rotated_width, rotated_height, target_x, target_y)
+        call composite_bitmap_to_raster(raster%image_data, width, height, &
+                                        rotated_bitmap, &
+                                        rotated_width, rotated_height, &
+                                        target_x, target_y)
 
-        deallocate(text_bitmap, rotated_bitmap)
+        deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel
 
     integer function y_tick_label_left_edge_at_axis(plot_area, max_width_measured)
@@ -132,10 +145,12 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: max_width_measured
 
-        y_tick_label_left_edge_at_axis = plot_area%left + plot_area%width + TICK_MARK_LENGTH + Y_TICK_LABEL_LEFT_PAD
+        y_tick_label_left_edge_at_axis = plot_area%left + plot_area%width + &
+                                         TICK_MARK_LENGTH + Y_TICK_LABEL_LEFT_PAD
     end function y_tick_label_left_edge_at_axis
 
-    integer function compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, plot_area, canvas_width)
+    integer function compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
+                                                plot_area, canvas_width)
         !! Compute x-position for right-side ylabel avoiding overlap with tick labels
         integer, intent(in) :: y_tick_label_edge
         integer, intent(in) :: rotated_width
@@ -144,7 +159,8 @@ contains
 
         compute_ylabel_right_x_pos = y_tick_label_edge + YLABEL_EXTRA_GAP
         if (compute_ylabel_right_x_pos + rotated_width > canvas_width - 15) then
-            compute_ylabel_right_x_pos = max(plot_area%left + plot_area%width + 5, canvas_width - rotated_width - 15)
+            compute_ylabel_right_x_pos = max(plot_area%left + plot_area%width + 5, &
+                                             canvas_width - rotated_width - 15)
         end if
     end function compute_ylabel_right_x_pos
 
@@ -158,7 +174,7 @@ contains
         character(len=600) :: math_ready
         character(len=600) :: escaped_text
         integer :: processed_len, math_len
-        integer(1), allocatable :: text_bitmap(:,:,:), rotated_bitmap(:,:,:)
+        integer(1), allocatable :: text_bitmap(:, :, :), rotated_bitmap(:, :, :)
         integer :: text_width, text_height, text_descent
         integer :: rotated_width, rotated_height
         integer :: target_x, target_y
@@ -167,32 +183,38 @@ contains
         if (len_trim(ylabel) == 0) return
 
         call process_latex_in_text(trim(ylabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                        math_ready, math_len)
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         text_width = calculate_text_width(trim(escaped_text))
         text_height = calculate_text_height(trim(escaped_text))
         text_descent = calculate_text_descent(trim(escaped_text))
 
-        allocate(text_bitmap(text_width, text_height, 3))
+        allocate (text_bitmap(text_width, text_height, 3))
         text_bitmap = -1_1
 
-        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, text_height - text_descent, &
-            trim(escaped_text))
+        call render_text_to_bitmap(text_bitmap, text_width, text_height, 0, &
+                                   text_height - text_descent, &
+                                   trim(escaped_text))
 
         rotated_width = text_height
         rotated_height = text_width
-        allocate(rotated_bitmap(rotated_width, rotated_height, 3))
+        allocate (rotated_bitmap(rotated_width, rotated_height, 3))
         call rotate_bitmap_90_cw(text_bitmap, rotated_bitmap, text_width, text_height)
 
-        y_tick_label_edge = y_tick_label_left_edge_at_axis(plot_area, last_y_tick_max_width_right)
-        target_x = compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, plot_area, width)
+        y_tick_label_edge = y_tick_label_left_edge_at_axis(plot_area, &
+                                                           last_y_tick_max_width_right)
+        target_x = compute_ylabel_right_x_pos(y_tick_label_edge, rotated_width, &
+                                              plot_area, width)
         target_y = plot_area%bottom + plot_area%height/2 - rotated_height/2
 
-        call composite_bitmap_to_raster(raster%image_data, width, height, rotated_bitmap, &
-            rotated_width, rotated_height, target_x, target_y)
+        call composite_bitmap_to_raster(raster%image_data, width, height, &
+                                        rotated_bitmap, &
+                                        rotated_width, rotated_height, &
+                                        target_x, target_y)
 
-        deallocate(text_bitmap, rotated_bitmap)
+        deallocate (text_bitmap, rotated_bitmap)
     end subroutine raster_render_ylabel_right
 
     integer function y_tick_label_right_edge_at_axis(plot_area, max_width_measured)
@@ -200,9 +222,11 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: max_width_measured
 
-        ! Y-tick labels are right-aligned with gap Y_TICK_LABEL_RIGHT_PAD from axis
-        ! Their rightmost edge is at: axis_left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
-        y_tick_label_right_edge_at_axis = plot_area%left - TICK_MARK_LENGTH - Y_TICK_LABEL_RIGHT_PAD
+        ! Return an edge that accounts for the maximum tick label width so ylabel
+        ! placement can reliably clear tick labels (matplotlib-like clearance).
+        y_tick_label_right_edge_at_axis = plot_area%left - TICK_MARK_LENGTH - &
+                                          Y_TICK_LABEL_RIGHT_PAD - &
+                                          max(0, max_width_measured)
     end function y_tick_label_right_edge_at_axis
 
     integer function compute_ylabel_x_pos(y_tick_label_edge, rotated_width, plot_area)
@@ -221,7 +245,7 @@ contains
         ! with text size to avoid visual crowding for very tall glyphs.
         block
             integer :: min_left_margin
-            min_left_margin = max(15, rotated_width / 4)
+            min_left_margin = max(15, rotated_width/4)
             if (compute_ylabel_x_pos < min_left_margin) then
                 compute_ylabel_x_pos = min_left_margin
             end if
@@ -233,7 +257,8 @@ contains
         type(plot_area_t), intent(in) :: plot_area
         integer, intent(in) :: label_height
 
-        compute_top_xlabel_y_pos = max(1, plot_area%bottom - X_TICK_LABEL_TOP_PAD - last_x_tick_max_height_top - label_height - 5)
+        compute_top_xlabel_y_pos = max(1, plot_area%bottom - X_TICK_LABEL_TOP_PAD - &
+                                       last_x_tick_max_height_top - label_height - 5)
     end function compute_top_xlabel_y_pos
 
     subroutine raster_draw_top_xlabel(raster, width, height, plot_area, xlabel)
@@ -252,7 +277,8 @@ contains
         if (len_trim(xlabel) == 0) return
 
         call process_latex_in_text(trim(xlabel), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                        math_ready, math_len)
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         label_width = calculate_text_width(trim(escaped_text))
@@ -263,7 +289,7 @@ contains
         label_y = compute_top_xlabel_y_pos(plot_area, label_height)
 
         call render_text_to_image(raster%image_data, width, height, label_x, label_y, &
-            trim(escaped_text), 0_1, 0_1, 0_1)
+                                  trim(escaped_text), 0_1, 0_1, 0_1)
     end subroutine raster_draw_top_xlabel
 
     subroutine render_title_centered(raster, width, height, plot_area, title_text)
@@ -281,18 +307,22 @@ contains
 
         if (len_trim(title_text) == 0) return
 
-        call compute_title_position(plot_area, title_text, processed_text, processed_len, &
-            escaped_text, title_px_real, title_py_real)
+        call compute_title_position(plot_area, title_text, processed_text, &
+                                    processed_len, &
+                                    escaped_text, title_px_real, title_py_real)
 
         title_px = int(title_px_real)
         title_py = int(title_py_real)
 
         ! Render title with larger font size
-        call render_text_with_size(raster%image_data, width, height, title_px, title_py, &
-            trim(escaped_text), 0_1, 0_1, 0_1, real(TITLE_FONT_SIZE, wp))
+        call render_text_with_size(raster%image_data, width, height, title_px, &
+                                   title_py, &
+                                   trim(escaped_text), 0_1, 0_1, 0_1, &
+                                   real(TITLE_FONT_SIZE, wp))
     end subroutine render_title_centered
 
-    subroutine compute_title_position(plot_area, title_text, processed_text, processed_len, escaped_text, title_px, title_py)
+    subroutine compute_title_position(plot_area, title_text, processed_text, &
+                                      processed_len, escaped_text, title_px, title_py)
         !! Compute the position for centered title above plot area
         type(plot_area_t), intent(in) :: plot_area
         character(len=*), intent(in) :: title_text
@@ -304,11 +334,13 @@ contains
         integer :: math_len
 
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
-        call prepare_mathtext_if_needed(processed_text(1:processed_len), math_ready, math_len)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                        math_ready, math_len)
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         ! Calculate text width using the larger title font size
-        title_width = calculate_text_width_with_size(trim(escaped_text), real(TITLE_FONT_SIZE, wp))
+        title_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                     real(TITLE_FONT_SIZE, wp))
 
         ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
