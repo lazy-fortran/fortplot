@@ -17,27 +17,27 @@ contains
         integer :: i
 
         status = 0
-        allocate(character(len=0) :: stream_text)
+        allocate (character(len=0) :: stream_text)
 
-        open(newunit=unit, file=filename, access='stream', form='unformatted', &
-             status='old', iostat=ios)
+        open (newunit=unit, file=filename, access='stream', form='unformatted', &
+              status='old', iostat=ios)
         if (ios /= 0) then
             status = -1
             return
         end if
 
-        inquire(unit=unit, size=fsize)
+        inquire (unit=unit, size=fsize)
         if (fsize <= 0_int64) then
-            close(unit)
+            close (unit)
             return
         end if
 
-        allocate(character(len=1) :: data(int(fsize)))
-        read(unit, iostat=ios) data
-        close(unit)
+        allocate (character(len=1) :: data(int(fsize)))
+        read (unit, iostat=ios) data
+        close (unit)
         if (ios /= 0) then
             status = -2
-            deallocate(data)
+            deallocate (data)
             return
         end if
 
@@ -46,7 +46,7 @@ contains
             stream_start = find_subsequence(data, fsize, 'stream', pos)
             if (stream_start < 0) exit
             stream_end = find_subsequence(data, fsize, 'endstream', &
-                stream_start + len('stream'))
+                                          stream_start + len('stream'))
             if (stream_end < 0) exit
 
             content_begin = stream_start + len('stream')
@@ -71,18 +71,18 @@ contains
                     integer :: j
                     integer :: status_decomp
 
-                    allocate(compressed(content_len))
+                    allocate (compressed(content_len))
                     do j = 1, content_len
                         compressed(j) = int(iachar(data(content_begin + j - 1)), int8)
                     end do
                     decompressed_raw = zlib_decompress(compressed, content_len, &
-                        status_decomp, .false.)
+                                                       status_decomp, .false.)
 
                     if (status_decomp == 0 .and. size(decompressed_raw) > 0) then
-                        allocate(character(len=size(decompressed_raw)) :: chunk_text)
+                        allocate (character(len=size(decompressed_raw)) :: chunk_text)
                         call bytes_to_string(decompressed_raw, chunk_text)
                     else
-                        allocate(character(len=content_len) :: chunk_text)
+                        allocate (character(len=content_len) :: chunk_text)
                         do j = 1, content_len
                             chunk_text(j:j) = data(content_begin + j - 1)
                         end do
@@ -95,7 +95,7 @@ contains
             pos = stream_end + len('endstream')
         end do
 
-        deallocate(data)
+        deallocate (data)
     end subroutine extract_pdf_stream_text
 
     subroutine append_string(target, chunk)
@@ -108,9 +108,9 @@ contains
         old_len = len(target)
         new_len = old_len + len(chunk)
 
-        allocate(character(len=new_len) :: combined)
+        allocate (character(len=new_len) :: combined)
         if (old_len > 0) combined(1:old_len) = target
-        if (len(chunk) > 0) combined(old_len+1:new_len) = chunk
+        if (len(chunk) > 0) combined(old_len + 1:new_len) = chunk
         call move_alloc(combined, target)
     end subroutine append_string
 
@@ -125,8 +125,8 @@ contains
     end subroutine bytes_to_string
 
     integer function find_subsequence(arr, n, pat, start_idx) result(pos)
-        character(len=1), intent(in) :: arr(n)
         integer(int64), intent(in) :: n
+        character(len=1), intent(in) :: arr(n)
         character(len=*), intent(in) :: pat
         integer, intent(in) :: start_idx
         integer :: i, j, pat_len
