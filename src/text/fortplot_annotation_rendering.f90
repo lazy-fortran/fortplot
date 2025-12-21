@@ -325,6 +325,7 @@ contains
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
 
         real(wp) :: arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y
+        character(len=64) :: arrow_style
 
         associate (dw => width, dh => height, &
                    dml => margin_left, dmr => margin_right, &
@@ -341,11 +342,17 @@ contains
         call backend%color(annotation%color(1), annotation%color(2), &
                            annotation%color(3))
 
+        arrow_style = trim(annotation%arrowstyle)
+        if (len_trim(arrow_style) == 0) arrow_style = '->'
+
         ! Draw arrow shaft and head (Matplotlib-style)
+        ! Ensure annotation arrows default to solid stroke rather than inheriting
+        ! the linestyle of the most recently drawn plot.
+        call backend%set_line_style('-')
         call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
         call backend%draw_arrow(arrow_end_x, arrow_end_y, arrow_end_x - arrow_start_x, &
                                 arrow_end_y - arrow_start_y, 1.0_wp, &
-                                trim(annotation%arrowstyle))
+                                trim(arrow_style))
     end subroutine render_annotation_arrow
 
     pure subroutine map_xy_to_data_coords(coord_type, x_in, y_in, x_min, x_max, y_min, &
