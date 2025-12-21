@@ -66,12 +66,12 @@ contains
         is_raster_backend = .false.
         is_ascii_backend = .false.
         select type (backend)
-        type is (pdf_context)
+        class is (pdf_context)
             is_pdf_backend = .true.
-        type is (raster_context)
+        class is (raster_context)
             is_pdf_backend = .false.
             is_raster_backend = .true.
-        type is (ascii_context)
+        class is (ascii_context)
             is_pdf_backend = .false.
             is_ascii_backend = .true.
         class default
