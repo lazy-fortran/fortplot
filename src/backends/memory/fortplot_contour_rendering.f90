@@ -94,11 +94,18 @@ contains
         integer :: i
 
         ! Determine contour levels: use provided, else generate default levels for proper fill
-        if (allocated(plot_data%contour_levels) .and. size(plot_data%contour_levels) > 0) then
-            allocate(levels(size(plot_data%contour_levels)))
-            levels = plot_data%contour_levels
+        if (allocated(plot_data%contour_levels)) then
+            if (size(plot_data%contour_levels) > 0) then
+                allocate(levels(size(plot_data%contour_levels)))
+                levels = plot_data%contour_levels
+            else
+                num_levels = 20
+                allocate(levels(num_levels))
+                do i = 1, num_levels
+                    levels(i) = z_min + (i-1) * (z_max - z_min) / (num_levels - 1)
+                end do
+            end if
         else
-            ! Generate more levels for better fill quality (match generate_default_contour_levels)
             num_levels = 20
             allocate(levels(num_levels))
             do i = 1, num_levels
@@ -120,7 +127,6 @@ contains
             end if
         end do
 
-        if (allocated(levels)) deallocate(levels)
     end subroutine render_filled_contour_regions
     
     subroutine get_level_color(value, levels, z_min, z_max, cmap, color)
@@ -388,7 +394,6 @@ contains
                                    x_min_t, x_max_t, y_min_t, y_max_t)
         end do
 
-        if (allocated(level_values)) deallocate(level_values)
     end subroutine render_default_contour_levels
     
     subroutine trace_contour_level(backend, plot_data, level, xscale, yscale, &

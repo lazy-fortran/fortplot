@@ -289,9 +289,13 @@ contains
         plots(plot_count)%y_grid = y_grid
         plots(plot_count)%z_grid = z_grid
 
-        if (present(levels) .and. size(levels) > 0) then
-            allocate(plots(plot_count)%contour_levels(size(levels)))
-            plots(plot_count)%contour_levels = levels
+        if (present(levels)) then
+            if (size(levels) > 0) then
+                allocate(plots(plot_count)%contour_levels(size(levels)))
+                plots(plot_count)%contour_levels = levels
+            else
+                call generate_default_contour_levels(plots(plot_count))
+            end if
         else
             call generate_default_contour_levels(plots(plot_count))
         end if
@@ -333,9 +337,13 @@ contains
         plots(plot_count)%y_grid = y_grid
         plots(plot_count)%z_grid = z_grid
 
-        if (present(levels) .and. size(levels) > 0) then
-            allocate(plots(plot_count)%contour_levels(size(levels)))
-            plots(plot_count)%contour_levels = levels
+        if (present(levels)) then
+            if (size(levels) > 0) then
+                allocate(plots(plot_count)%contour_levels(size(levels)))
+                plots(plot_count)%contour_levels = levels
+            else
+                call generate_default_contour_levels(plots(plot_count))
+            end if
         else
             call generate_default_contour_levels(plots(plot_count))
         end if
