@@ -118,27 +118,28 @@ module fortplot_figure_initialization
         type(arrow_data_t), allocatable :: stream_arrows(:)
     end type figure_state_t
 
-contains
+    contains
 
     subroutine initialize_figure_state(state, width, height, backend, dpi)
         !! Initialize figure state with specified parameters
         !! Added Issue #854: Parameter validation for user input safety
         !! Added DPI support for OO interface consistency with matplotlib interface
-        use fortplot_parameter_validation, only: validate_plot_dimensions, &
-                                                 validate_file_path, &
-                                                 parameter_validation_result_t, &
-                                                 validation_warning
         type(figure_state_t), intent(inout) :: state
         integer, intent(in), optional :: width, height
         character(len=*), intent(in), optional :: backend
         real(wp), intent(in), optional :: dpi
 
-        type(parameter_validation_result_t) :: validation
-        real(wp) :: width_real, height_real
-        type(legend_entry_t), allocatable :: new_entries(:)
-        character(len=:), allocatable :: scratch
+        call set_state_dpi(state, dpi)
+        call set_state_dimensions(state, width, height)
+        call set_state_backend(state, backend)
+        call reset_state_for_initialization(state)
+    end subroutine initialize_figure_state
 
-        ! Set DPI with validation
+    subroutine set_state_dpi(state, dpi)
+        use fortplot_parameter_validation, only: validation_warning
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in), optional :: dpi
+
         if (present(dpi)) then
             if (dpi <= 0.0_wp) then
                 call validation_warning("Invalid DPI value, using default 100.0", &
@@ -148,10 +149,19 @@ contains
                 state%dpi = dpi
             end if
         else
-            state%dpi = 100.0_wp  ! Default DPI
+            state%dpi = 100.0_wp
         end if
+    end subroutine set_state_dpi
 
-        ! Set dimensions with validation
+    subroutine set_state_dimensions(state, width, height)
+        use fortplot_parameter_validation, only: validate_plot_dimensions, &
+                                                 parameter_validation_result_t
+        type(figure_state_t), intent(inout) :: state
+        integer, intent(in), optional :: width, height
+
+        type(parameter_validation_result_t) :: validation
+        real(wp) :: width_real, height_real
+
         if (present(width)) then
             width_real = real(width, wp)
             height_real = real(state%height, wp)
@@ -162,7 +172,6 @@ contains
             if (validation%is_valid) then
                 state%width = width
             else
-                ! Use default width on validation failure
                 state%width = 640
             end if
         end if
@@ -176,14 +185,17 @@ contains
             if (validation%is_valid) then
                 state%height = height
             else
-                ! Use default height on validation failure
                 state%height = 480
             end if
         end if
+    end subroutine set_state_dimensions
 
-        ! Initialize backend - default to PNG if not specified
+    subroutine set_state_backend(state, backend)
+        use fortplot_parameter_validation, only: validation_warning
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in), optional :: backend
+
         if (present(backend)) then
-            ! Validate backend name (basic check for supported backends)
             if (len_trim(backend) == 0) then
                 call validation_warning( &
                     "Empty backend name provided, using default 'png'", &
@@ -203,15 +215,19 @@ contains
                                         state%height)
             end if
         else
-            ! Default to PNG backend to prevent uninitialized backend
             if (.not. allocated(state%backend)) then
                 state%backend_name = 'png'
                 call initialize_backend(state%backend, 'png', state%width, state%height)
             end if
         end if
+    end subroutine set_state_backend
 
-        ! Reset state
-        ! Reset state manually to avoid legend issues
+    subroutine reset_state_for_initialization(state)
+        type(figure_state_t), intent(inout) :: state
+        type(legend_entry_t), allocatable :: new_entries(:)
+        character(len=:), allocatable :: scratch
+        type(arrow_data_t), allocatable :: scratch_arrows(:)
+
         state%plot_count = 0
         state%rendered = .false.
         state%show_legend = .false.
@@ -219,7 +235,6 @@ contains
         state%ylim_set = .false.
         state%has_error = .false.
 
-        ! Proper legend initialization without manual deallocate
         state%legend_data%num_entries = 0
         allocate (new_entries(0))
         call move_alloc(new_entries, state%legend_data%entries)
@@ -251,7 +266,10 @@ contains
         state%colorbar_label_set = .false.
         if (allocated(state%colorbar_label)) &
             call move_alloc(state%colorbar_label, scratch)
-    end subroutine initialize_figure_state
+
+        if (allocated(state%stream_arrows)) &
+            call move_alloc(state%stream_arrows, scratch_arrows)
+    end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
         !! Reset figure state to initial values
