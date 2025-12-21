@@ -7,7 +7,7 @@ module fortplot_figure_initialization
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_context
     use fortplot_utils, only: initialize_backend
-    use fortplot_legend, only: legend_t
+    use fortplot_legend, only: legend_t, legend_entry_t
     use fortplot_plot_data, only: plot_data_t, arrow_data_t, AXIS_PRIMARY, &
                                   AXIS_TWINX, AXIS_TWINY
     implicit none
@@ -135,6 +135,8 @@ contains
 
         type(parameter_validation_result_t) :: validation
         real(wp) :: width_real, height_real
+        type(legend_entry_t), allocatable :: new_entries(:)
+        character(len=:), allocatable :: scratch
 
         ! Set DPI with validation
         if (present(dpi)) then
@@ -219,12 +221,8 @@ contains
 
         ! Proper legend initialization without manual deallocate
         state%legend_data%num_entries = 0
-        block
-            use fortplot_legend, only: legend_entry_t
-            type(legend_entry_t), allocatable :: new_entries(:)
-            allocate (new_entries(0))
-            call move_alloc(new_entries, state%legend_data%entries)
-        end block
+        allocate (new_entries(0))
+        call move_alloc(new_entries, state%legend_data%entries)
 
         state%active_axis = AXIS_PRIMARY
         state%has_twinx = .false.
@@ -241,8 +239,8 @@ contains
         state%twinx_y_max_transformed = 1.0_wp
         state%twiny_x_min_transformed = 0.0_wp
         state%twiny_x_max_transformed = 1.0_wp
-        if (allocated(state%twinx_ylabel)) deallocate (state%twinx_ylabel)
-        if (allocated(state%twiny_xlabel)) deallocate (state%twiny_xlabel)
+        if (allocated(state%twinx_ylabel)) call move_alloc(state%twinx_ylabel, scratch)
+        if (allocated(state%twiny_xlabel)) call move_alloc(state%twiny_xlabel, scratch)
 
         state%colorbar_enabled = .false.
         state%colorbar_plot_index = 0
@@ -251,12 +249,16 @@ contains
         state%colorbar_pad = 0.05_wp
         state%colorbar_shrink = 1.0_wp
         state%colorbar_label_set = .false.
-        if (allocated(state%colorbar_label)) deallocate (state%colorbar_label)
+        if (allocated(state%colorbar_label)) &
+            call move_alloc(state%colorbar_label, scratch)
     end subroutine initialize_figure_state
 
     subroutine reset_figure_state(state)
         !! Reset figure state to initial values
         type(figure_state_t), intent(inout) :: state
+        type(legend_entry_t), allocatable :: new_entries(:)
+        character(len=:), allocatable :: scratch
+        type(arrow_data_t), allocatable :: scratch_arrows(:)
 
         state%plot_count = 0
         state%rendered = .false.
@@ -264,12 +266,8 @@ contains
 
         ! Initialize legend data (safe initialization without manual deallocate)
         state%legend_data%num_entries = 0
-        block
-            use fortplot_legend, only: legend_entry_t
-            type(legend_entry_t), allocatable :: new_entries(:)
-            allocate (new_entries(0))
-            call move_alloc(new_entries, state%legend_data%entries)
-        end block
+        allocate (new_entries(0))
+        call move_alloc(new_entries, state%legend_data%entries)
 
         ! Reset axis limits and labels
         state%xlim_set = .false.
@@ -293,8 +291,8 @@ contains
         state%twinx_y_max_transformed = 1.0_wp
         state%twiny_x_min_transformed = 0.0_wp
         state%twiny_x_max_transformed = 1.0_wp
-        if (allocated(state%twinx_ylabel)) deallocate (state%twinx_ylabel)
-        if (allocated(state%twiny_xlabel)) deallocate (state%twiny_xlabel)
+        if (allocated(state%twinx_ylabel)) call move_alloc(state%twinx_ylabel, scratch)
+        if (allocated(state%twiny_xlabel)) call move_alloc(state%twiny_xlabel, scratch)
 
         state%colorbar_enabled = .false.
         state%colorbar_plot_index = 0
@@ -303,11 +301,13 @@ contains
         state%colorbar_pad = 0.05_wp
         state%colorbar_shrink = 1.0_wp
         state%colorbar_label_set = .false.
-        if (allocated(state%colorbar_label)) deallocate (state%colorbar_label)
+        if (allocated(state%colorbar_label)) &
+            call move_alloc(state%colorbar_label, scratch)
 
         state%has_error = .false.
 
-        if (allocated(state%stream_arrows)) deallocate (state%stream_arrows)
+        if (allocated(state%stream_arrows)) &
+            call move_alloc(state%stream_arrows, scratch_arrows)
     end subroutine reset_figure_state
 
     subroutine setup_figure_backend(state, backend_name)
