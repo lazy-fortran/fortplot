@@ -90,16 +90,27 @@ contains
         real(wp), allocatable :: levels(:)
         real(wp) :: color(3)
         integer :: r
+        integer :: num_levels
+        integer :: i
 
-        ! Determine contour levels: use provided, else default 3 evenly spaced
-        if (allocated(plot_data%contour_levels) .and. size(plot_data%contour_levels) > 0) then
-            allocate(levels(size(plot_data%contour_levels)))
-            levels = plot_data%contour_levels
+        ! Determine contour levels: use provided, else generate default levels for proper fill
+        if (allocated(plot_data%contour_levels)) then
+            if (size(plot_data%contour_levels) > 0) then
+                allocate(levels(size(plot_data%contour_levels)))
+                levels = plot_data%contour_levels
+            else
+                num_levels = 20
+                allocate(levels(num_levels))
+                do i = 1, num_levels
+                    levels(i) = z_min + (i-1) * (z_max - z_min) / (num_levels - 1)
+                end do
+            end if
         else
-            allocate(levels(3))
-            levels = [ z_min + 0.2_wp * (z_max - z_min), &
-                       z_min + 0.5_wp * (z_max - z_min), &
-                       z_min + 0.8_wp * (z_max - z_min) ]
+            num_levels = 20
+            allocate(levels(num_levels))
+            do i = 1, num_levels
+                levels(i) = z_min + (i-1) * (z_max - z_min) / (num_levels - 1)
+            end do
         end if
         call sort_levels_inplace(levels)
 
@@ -116,7 +127,6 @@ contains
             end if
         end do
 
-        if (allocated(levels)) deallocate(levels)
     end subroutine render_filled_contour_regions
     
     subroutine get_level_color(value, levels, z_min, z_max, cmap, color)
@@ -364,14 +374,15 @@ contains
         real(wp), intent(in) :: x_min_t, x_max_t, y_min_t, y_max_t
         
         real(wp), dimension(3) :: level_color
-        real(wp) :: level_values(3)
-        integer :: i
+        real(wp), allocatable :: level_values(:)
+        integer :: i, num_levels
+        num_levels = 20
+        allocate(level_values(num_levels))
+        do i = 1, num_levels
+            level_values(i) = z_min + (i-1) * (z_max - z_min) / (num_levels - 1)
+        end do
         
-        level_values = [z_min + 0.2_wp * (z_max - z_min), &
-                       z_min + 0.5_wp * (z_max - z_min), &
-                       z_min + 0.8_wp * (z_max - z_min)]
-        
-        do i = 1, 3
+        do i = 1, num_levels
             if (plot_data%use_color_levels) then
                 call colormap_value_to_color(level_values(i), z_min, z_max, &
                                            plot_data%colormap, level_color)
@@ -382,6 +393,7 @@ contains
                                    xscale, yscale, symlog_threshold, &
                                    x_min_t, x_max_t, y_min_t, y_max_t)
         end do
+
     end subroutine render_default_contour_levels
     
     subroutine trace_contour_level(backend, plot_data, level, xscale, yscale, &
