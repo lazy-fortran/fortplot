@@ -164,9 +164,13 @@ clean:
 	echo y | fpm clean
 	rm -rf build/example
 	rm -rf build/test/output
-	find . \( -name "*.png" -o -name "*.pdf" -o -name "*.txt" \
-	       -o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \) \
-	       -not -name "CMakeLists.txt" -type f -exec rm -f {} \;
+	# Remove generated media artifacts without touching tracked source/docs files.
+	# Generated outputs live under output/ and build/.
+	@if [ -d output ]; then \
+		find output \( -name "*.png" -o -name "*.pdf" -o -name "*.txt" \
+			-o -name "*.mp4" -o -name "*.avi" -o -name "*.mkv" \) \
+			-type f -exec rm -f {} \; ; \
+	fi
 
 # Build with release optimizations
 release:
