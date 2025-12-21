@@ -13,13 +13,14 @@ program update_example_index
     end type example_entry_t
 
     character(len=*), parameter :: marker_start = &
-        '<!-- AUTO_EXAMPLES_START -->'
+                                   '<!-- AUTO_EXAMPLES_START -->'
     character(len=*), parameter :: marker_end = &
-        '<!-- AUTO_EXAMPLES_END -->'
+                                   '<!-- AUTO_EXAMPLES_END -->'
     character(len=*), parameter :: examples_root = 'example/fortran'
-    character(len=*), parameter :: source_prefix = &
-        'https://github.com/lazy-fortran/fortplot/tree/main/example/' &
-        // 'fortran/'
+    character(len=*), parameter :: &
+        source_prefix = &
+        'https://github.com/lazy-fortran/fortplot/tree/main/' &
+        //'example/fortran/'
 
     type(example_entry_t), allocatable :: entries(:)
 
@@ -36,11 +37,11 @@ contains
 
         call list_examples(names)
         if (size(names) == 0) then
-            allocate(result_entries(0))
+            allocate (result_entries(0))
             return
         end if
 
-        allocate(result_entries(size(names)))
+        allocate (result_entries(size(names)))
         do i = 1, size(names)
             call build_entry(result_entries(i), names(i))
         end do
@@ -70,24 +71,24 @@ contains
             if (status /= -6) exit
             if (capacity >= max_capacity) then
                 call fatal('Too many example directories discovered (capacity=' &
-                    // to_string(capacity) // ')')
+                           //to_string(capacity)//')')
                 return
             end if
-            capacity = min(max_capacity, capacity * 2)
+            capacity = min(max_capacity, capacity*2)
             call ensure_entry_capacity(entries, entry_len, capacity)
         end do
 
         if (status /= 0) then
-            call fatal('Unable to enumerate examples (status=' // &
-                to_string(status) // ')')
+            call fatal('Unable to enumerate examples (status='// &
+                       to_string(status)//')')
         end if
 
         if (entry_count <= 0) then
-            allocate(character(len=1) :: names(0))
+            allocate (character(len=1) :: names(0))
             return
         end if
 
-        allocate(character(len=entry_len) :: filtered(entry_count))
+        allocate (character(len=entry_len) :: filtered(entry_count))
         filtered = ''
 
         valid_count = 0
@@ -97,7 +98,7 @@ contains
             if (candidate(1:1) == '.') cycle
             if (trim(candidate) == 'output') cycle
 
-            full_path = trim(examples_root) // '/' // trim(candidate)
+            full_path = trim(examples_root)//'/'//trim(candidate)
             if (.not. path_is_directory(trim(full_path))) cycle
 
             valid_count = valid_count + 1
@@ -109,7 +110,7 @@ contains
         end do
 
         if (valid_count == 0) then
-            allocate(character(len=1) :: names(0))
+            allocate (character(len=1) :: names(0))
             return
         end if
 
@@ -121,7 +122,7 @@ contains
         end do
         if (max_len <= 0) max_len = 1
 
-        allocate(character(len=max_len) :: names(valid_count))
+        allocate (character(len=max_len) :: names(valid_count))
         do i = 1, valid_count
             names(i) = trim(filtered(i))
         end do
@@ -172,15 +173,11 @@ contains
         integer, intent(in) :: string_len
         integer, intent(in) :: new_capacity
         character(len=string_len), allocatable, intent(inout) :: buffer(:)
-        character(len=string_len), allocatable :: tmp(:)
+        integer :: capacity_to_allocate
+        integer :: i
 
-        if (new_capacity <= 0) then
-            allocate(character(len=string_len) :: tmp(1))
-        else
-            allocate(character(len=string_len) :: tmp(new_capacity))
-        end if
-        tmp = ''
-        call move_alloc(tmp, buffer)
+        capacity_to_allocate = max(1, new_capacity)
+        buffer = [character(len=string_len) ::('', i=1, capacity_to_allocate)]
     end subroutine ensure_entry_capacity
 
     subroutine build_entry(entry, raw_name)
@@ -192,15 +189,15 @@ contains
         integer :: name_len, desc_len, link_len
 
         name_len = len_trim(raw_name)
-        allocate(character(len=name_len) :: entry%name)
+        allocate (character(len=name_len) :: entry%name)
         entry%name = trim(raw_name)
 
         entry%title = title_case(entry%name)
 
-        doc_path = 'doc/examples/' // entry%name // '.md'
+        doc_path = 'doc/examples/'//entry%name//'.md'
         entry%has_doc = file_exists(doc_path)
 
-        readme_path = 'example/fortran/' // entry%name // '/README.md'
+        readme_path = 'example/fortran/'//entry%name//'/README.md'
         if (file_exists(readme_path)) then
             desc = extract_description(readme_path)
         else if (entry%has_doc) then
@@ -210,7 +207,7 @@ contains
         end if
 
         desc_len = max(1, len_trim(desc))
-        allocate(character(len=desc_len) :: entry%description)
+        allocate (character(len=desc_len) :: entry%description)
         if (len_trim(desc) == 0) then
             entry%description = ''
         else
@@ -218,8 +215,8 @@ contains
         end if
 
         link_len = len(source_prefix) + len_trim(entry%name)
-        allocate(character(len=link_len) :: entry%source_link)
-        entry%source_link = source_prefix // entry%name
+        allocate (character(len=link_len) :: entry%source_link)
+        entry%source_link = source_prefix//entry%name
     end subroutine build_entry
 
     subroutine update_page(path, entries, context)
@@ -244,18 +241,18 @@ contains
 
         n_entries = size(entries)
         if (n_entries == 0) then
-            allocate(content(3))
+            allocate (content(3))
             content = ''
             content(2) = '- _No examples discovered._'
         else
-            allocate(content(n_entries + 2))
+            allocate (content(n_entries + 2))
             content = ''
             do i = 1, n_entries
                 if (entries(i)%has_doc) then
                     if (context == 'index') then
-                        link = './examples/' // entries(i)%name // '.html'
+                        link = './examples/'//entries(i)%name//'.html'
                     else
-                        link = './' // entries(i)%name // '.html'
+                        link = './'//entries(i)%name//'.html'
                     end if
                     desc = truncate_desc(entries(i)%description, 120)
                     if (len_trim(desc) == 0) then
@@ -265,14 +262,14 @@ contains
                     link = entries(i)%source_link
                     desc = 'Documentation pending; browse the source tree.'
                 end if
-                bullet = '- [' // trim(entries(i)%title) // '](' // &
-                    trim(link) // ') - ' // trim(desc)
+                bullet = '- ['//trim(entries(i)%title)//']('// &
+                         trim(link)//') - '//trim(desc)
                 content(i + 1) = bullet
             end do
         end if
 
         new_size = count - (idx_end - idx_start - 1) + size(content)
-        allocate(updated(new_size))
+        allocate (updated(new_size))
 
         position = 0
         do i = 1, idx_start
@@ -293,7 +290,6 @@ contains
         call write_file_lines(path, updated, position)
     end subroutine update_page
 
-
     subroutine read_file_lines(path, lines, count)
         character(len=*), intent(in) :: path
         character(len=1024), allocatable, intent(out) :: lines(:)
@@ -304,20 +300,20 @@ contains
         call open_file(path, unit)
         count = 0
         do
-            read(unit, '(A)', iostat=ios) buffer
+            read (unit, '(A)', iostat=ios) buffer
             if (ios /= 0) exit
             count = count + 1
         end do
-        rewind(unit)
-        allocate(lines(count))
+        rewind (unit)
+        allocate (lines(count))
         idx = 0
         do
-            read(unit, '(A)', iostat=ios) buffer
+            read (unit, '(A)', iostat=ios) buffer
             if (ios /= 0) exit
             idx = idx + 1
             lines(idx) = buffer
         end do
-        close(unit)
+        close (unit)
     end subroutine read_file_lines
 
     subroutine write_file_lines(path, lines, count)
@@ -326,16 +322,16 @@ contains
         integer, intent(in) :: count
         integer :: unit, i
 
-        open(newunit=unit, file=path, status='replace', action='write', &
-            encoding='UTF-8')
+        open (newunit=unit, file=path, status='replace', action='write', &
+              encoding='UTF-8')
         do i = 1, count
             if (len_trim(lines(i)) == 0) then
-                write(unit, '(A)') ''
+                write (unit, '(A)') ''
             else
-                write(unit, '(A)') trim(lines(i))
+                write (unit, '(A)') trim(lines(i))
             end if
         end do
-        close(unit)
+        close (unit)
     end subroutine write_file_lines
 
     integer function find_marker(lines, count, marker)
@@ -365,7 +361,7 @@ contains
 
         call open_file(path, unit)
         do
-            read(unit, '(A)', iostat=ios) line
+            read (unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
             normalized = trim(adjustl(line))
             if (len_trim(normalized) == 0) cycle
@@ -382,7 +378,7 @@ contains
             description = normalized
             exit
         end do
-        close(unit)
+        close (unit)
     end function extract_description
 
     pure function truncate_desc(text, max_len) result(out)
@@ -417,28 +413,25 @@ contains
             end if
             if (idx <= 0) idx = target
             out(1:idx) = trimmed(1:idx)
-            out(idx+1:idx+3) = '...'
+            out(idx + 1:idx + 3) = '...'
         end if
     end function truncate_desc
-
 
     subroutine open_file(path, unit)
         character(len=*), intent(in) :: path
         integer, intent(out) :: unit
         integer :: ios
 
-        open(newunit=unit, file=path, status='old', action='read', &
-            encoding='UTF-8', iostat=ios)
+        open (newunit=unit, file=path, status='old', action='read', &
+              encoding='UTF-8', iostat=ios)
         if (ios /= 0) then
-            call fatal('Unable to open file: ' // trim(path))
+            call fatal('Unable to open file: '//trim(path))
         end if
     end subroutine open_file
 
-
-
     subroutine fatal(message)
         character(len=*), intent(in) :: message
-        write(error_unit, '(A)') 'update_example_index: ' // trim(message)
+        write (error_unit, '(A)') 'update_example_index: '//trim(message)
         stop 1
     end subroutine fatal
 
@@ -468,7 +461,7 @@ contains
         character(len=:), allocatable :: str
         character(len=32) :: buffer
 
-        write(buffer, '(I0)') val
+        write (buffer, '(I0)') val
         str = trim(buffer)
     end function to_string
 
