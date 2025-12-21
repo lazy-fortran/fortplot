@@ -279,9 +279,11 @@ contains
                                                  baseline_y, trim(text), r, g, b, &
                                                  pixel_height)
 
-            ! Raster coordinates have Y increasing downward, so invert rotation to
-            ! match Matplotlib's CCW-positive convention.
-            call rotate_bitmap_about_anchor(text_bitmap, text_w, text_h, -rotation, &
+            ! `rotate_bitmap_about_anchor` uses the bitmap's pixel index coordinates
+            ! (x right, y down). Passing `rotation` directly matches the 90-degree
+            ! rotation behavior used for axis labels and aligns with Matplotlib's
+            ! CCW-positive convention for `rotation`.
+            call rotate_bitmap_about_anchor(text_bitmap, text_w, text_h, rotation, &
                                             ax_src, ay_src, rotated_bitmap, rot_w, &
                                             rot_h, ax_dst, ay_dst)
 
