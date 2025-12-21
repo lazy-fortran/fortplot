@@ -134,7 +134,8 @@ build/test/*.png
 build/test/*.pdf
 build/test/*.txt
 
-# Test output organization - keep test artifacts in test/output/
+# Test output organization - generated artifacts belong in build/test/output/ (Issue #820).
+build/test/output/
 test/output/**/*.png
 test/output/**/*.pdf
 test/output/**/*.txt
