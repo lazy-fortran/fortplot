@@ -85,13 +85,15 @@ contains
         real(wp) :: width_pts, height_pts
         integer :: width_pts_i, height_pts_i
 
-        call setup_canvas(ctx, width, height)
-
         width_pts = real(width, wp)*72.0_wp/100.0_wp
         height_pts = real(height, wp)*72.0_wp/100.0_wp
         ! Use integer canvas for downstream plot-area computations
         width_pts_i = max(1, nint(width_pts))
         height_pts_i = max(1, nint(height_pts))
+
+        ! For the PDF backend, treat the logical canvas size as PDF points so
+        ! downstream plot-area calculations remain consistent with the PDF page.
+        call setup_canvas(ctx, width_pts_i, height_pts_i)
 
         ctx%core_ctx = create_pdf_canvas_core(real(width_pts_i, wp), &
                                               real(height_pts_i, wp))
@@ -217,7 +219,9 @@ contains
         ! and legend text that were rendered earlier in the pipeline.
         if (len_trim(this%stream_writer%content_stream) > 0) then
             if (len_trim(this%core_ctx%stream_data) > 0) then
-                this%core_ctx%stream_data = trim(this%stream_writer%content_stream)//new_line('a')//trim(this%core_ctx%stream_data)
+                this%core_ctx%stream_data = trim(this%stream_writer%content_stream)// &
+                                            new_line('a')// &
+                                            trim(this%core_ctx%stream_data)
             else
                 this%core_ctx%stream_data = this%stream_writer%content_stream
             end if
@@ -237,7 +241,8 @@ contains
         if (trim(filename) == 'terminal' .and. has_graphical_session()) then
             call launch_system_viewer(actual_filename, viewer_success)
             if (.not. viewer_success) then
-              call log_error("Failed to launch PDF viewer for: "//trim(actual_filename))
+                call log_error("Failed to launch PDF viewer for: "// &
+                               trim(actual_filename))
                 call log_info("You can manually open: "//trim(actual_filename))
             end if
         end if
@@ -585,7 +590,8 @@ contains
             call draw_3d_axes(this, x_min, x_max, y_min, y_max, &
                               merge(z_min, 0.0_wp, present(z_min)), &
                               merge(z_max, 1.0_wp, present(z_max)))
-            ! Draw only title/xlabel/ylabel using PDF helpers (avoid 2D axes duplication)
+            ! Draw only title/xlabel/ylabel using PDF helpers.
+            ! Avoid 2D axes duplication.
             call draw_pdf_title_and_labels(this%core_ctx, title_str, xlabel_str, &
                                            ylabel_str, &
                                            real(this%plot_area%left, wp), &
