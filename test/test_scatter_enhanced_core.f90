@@ -175,7 +175,7 @@ contains
     subroutine test_default_marker_behavior()
         !! Given: Scatter plot without explicit marker parameter
         !! When: I create scatter plot without specifying marker
-        !! Then: Default marker 'o' should be used and points should be visible
+        !! Then: Default marker o should be used and points should be visible
         
         type(figure_t) :: fig
         real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
@@ -184,7 +184,7 @@ contains
         write(error_unit, '(A)') 'Testing default marker behavior (Issue #1109)...'
         call fig%initialize(400, 300)
         
-        ! Test scatter without marker parameter - should use default 'o' marker
+        ! Test scatter without marker parameter - should use default o marker
         call fig%scatter(x, y, label='Default Marker')
         write(error_unit, '(A)') '  PASS: Default marker applied when not specified'
         

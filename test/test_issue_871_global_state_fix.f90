@@ -55,7 +55,7 @@ program test_issue_871_global_state_fix
     write(output_unit, '(A)') "Test 3: Thread safety simulation"
     write(output_unit, '(A)') "  Context A (silent) and Context B (verbose) operate independently:"
     
-    ! Simulate two different "threads" with different contexts
+    ! Simulate two different threads with different contexts
     silent_context%context_name = "thread_A"
     verbose_context%context_name = "thread_B"
     

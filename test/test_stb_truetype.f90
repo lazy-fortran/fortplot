@@ -112,7 +112,7 @@ contains
             return
         end if
         
-        ! Test character metrics for 'A'
+        ! Test character metrics for A
         call stb_get_codepoint_hmetrics(test_font, iachar('A'), advance_width, left_side_bearing)
         print *, "PASS: 'A' metrics: advance=", advance_width, " bearing=", left_side_bearing
         

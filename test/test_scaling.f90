@@ -134,7 +134,7 @@ contains
 
     subroutine transform_test_data(fig, x_data, y_data, x_scaled, y_scaled)
         !! Transform data coordinates to scaled plot coordinates
-        !! This is the core functionality we're testing - extracted from drawing backends
+        !! This is the core functionality we are testing - extracted from drawing backends
         type(figure_t), intent(in) :: fig
         real(wp), dimension(:), intent(in) :: x_data, y_data
         real(wp), dimension(:), intent(out) :: x_scaled, y_scaled

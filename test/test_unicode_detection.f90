@@ -114,7 +114,7 @@ contains
         character(len=4) :: utf8_char
         integer :: codepoint
         
-        ! ASCII 'A' = U+0041
+        ! ASCII A = U+0041
         utf8_char = 'A'
         codepoint = utf8_to_codepoint(utf8_char, 1)
         if (codepoint /= 65) then

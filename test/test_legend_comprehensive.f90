@@ -349,7 +349,7 @@ contains
     end subroutine windows_safe_delay
 
     subroutine pdf_stream_to_plain(stream_text, plain_text)
-        !! Collapse PDF "(text) Tj" sequences into plain text for assertions
+        !! Collapse PDF (text) Tj sequences into plain text for assertions
         character(len=*), intent(in) :: stream_text
         character(len=:), allocatable, intent(out) :: plain_text
         character(len=:), allocatable :: buffer
