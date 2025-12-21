@@ -24,7 +24,7 @@ contains
 
     subroutine render_figure_annotations(backend, annotations, annotation_count, &
                                          x_min, x_max, y_min, y_max, &
-                                         width, height, &
+                                         width, height, dpi, &
                                          margin_left, margin_right, &
                                          margin_bottom, margin_top)
         !! Render all annotations for the current figure
@@ -42,11 +42,11 @@ contains
         integer, intent(in) :: annotation_count
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         integer, intent(in) :: width, height
+        real(wp), intent(in) :: dpi
         real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
 
         integer :: i
-        real(wp) :: render_x, render_y
-        logical :: valid_annotation, is_pdf_backend, is_raster_backend, is_ascii_backend
+        logical :: valid_annotation
         character(len=256) :: error_message
         integer :: canvas_width, canvas_height
 
@@ -57,26 +57,6 @@ contains
         canvas_height = backend%height
         associate (dw => width, dh => height)
         end associate
-
-        ! Check backend types for coordinate conventions.
-        !
-        ! - PDF/raster expect data coordinates for backend%text and backend%line.
-        ! - ASCII expects character-cell coordinates for backend%text, but still
-        !   expects data coordinates for backend%line.
-        is_raster_backend = .false.
-        is_ascii_backend = .false.
-        select type (backend)
-        class is (pdf_context)
-            is_pdf_backend = .true.
-        class is (raster_context)
-            is_pdf_backend = .false.
-            is_raster_backend = .true.
-        class is (ascii_context)
-            is_pdf_backend = .false.
-            is_ascii_backend = .true.
-        class default
-            is_pdf_backend = .false.
-        end select
 
         call log_info("Rendering annotations: processing "// &
                       trim(adjustl(int_to_char(annotation_count)))//" annotations")
@@ -104,40 +84,24 @@ contains
                 end if
             end if
 
-            ! Skip pie chart label/autopct annotations for ASCII and PDF backends
-            ! ASCII backend uses legend-only approach for cleaner output
-            ! PDF backend has coordinate transformation issues with pie annotations
-            if (should_skip_pie_annotation(backend, annotations(i))) then
-                cycle
-            end if
-
-            if (is_pdf_backend .or. is_raster_backend) then
-                call map_annotation_to_data_coords(annotations(i), x_min, x_max, &
-                                                   y_min, y_max, &
-                                                   render_x, render_y)
-            else if (is_ascii_backend) then
-                call transform_annotation_to_rendering_coords(annotations(i), &
-                                                              x_min, x_max, &
-                                                              y_min, y_max, &
-                                                              canvas_width, &
-                                                              canvas_height, &
-                                                              margin_left, &
-                                                              margin_right, &
-                                                              margin_bottom, &
-                                                              margin_top, &
-                                                              render_x, render_y)
-            else
-                render_x = annotations(i)%x
-                render_y = annotations(i)%y
-            end if
-
-            ! Set annotation color
-            call backend%color(annotations(i)%color(1), &
-                               annotations(i)%color(2), &
-                               annotations(i)%color(3))
-
-            ! Render the annotation text using existing backend method
-            call backend%text(render_x, render_y, trim(annotations(i)%text))
+            select type (bk => backend)
+            class is (raster_context)
+                call render_annotation_text_raster(bk, annotations(i), dpi)
+            class is (pdf_context)
+                call render_annotation_text_pdf(bk, annotations(i))
+            class is (ascii_context)
+                call render_annotation_text_ascii(bk, annotations(i), x_min, x_max, &
+                                                  y_min, y_max, canvas_width, &
+                                                  canvas_height, margin_left, &
+                                                  margin_right, margin_bottom, &
+                                                  margin_top)
+            class default
+                call backend%color(annotations(i)%color(1), &
+                                   annotations(i)%color(2), &
+                                   annotations(i)%color(3))
+                call backend%text(annotations(i)%x, annotations(i)%y, &
+                                  trim(annotations(i)%text))
+            end select
 
             ! Render arrow if present (simplified implementation)
             if (annotations(i)%has_arrow) then
@@ -151,6 +115,115 @@ contains
 
         call log_info("Annotation rendering completed successfully")
     end subroutine render_figure_annotations
+
+    subroutine render_annotation_text_raster(backend, annotation, dpi)
+        use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
+        use fortplot_raster, only: raster_context
+        class(raster_context), intent(inout) :: backend
+        type(text_annotation_t), intent(in) :: annotation
+        real(wp), intent(in) :: dpi
+
+        real(wp) :: x_px, y_px
+        real(wp) :: x_data, y_data
+        real(wp) :: pixel_height
+        character(len=16) :: ha, va
+
+        ha = trim(annotation%ha)
+        if (len_trim(ha) == 0) ha = 'left'
+        va = trim(annotation%va)
+        if (len_trim(va) == 0) va = 'bottom'
+
+        pixel_height = max(1.0_wp, annotation%font_size*dpi/72.0_wp)
+
+        select case (annotation%coord_type)
+        case (COORD_DATA)
+            x_data = annotation%x
+            y_data = annotation%y
+            x_px = (x_data - backend%x_min)/(backend%x_max - backend%x_min)* &
+                   real(backend%plot_area%width, wp) + real(backend%plot_area%left, wp)
+            y_px = real(backend%plot_area%bottom + backend%plot_area%height, wp) - &
+                   (y_data - backend%y_min)/(backend%y_max - backend%y_min)* &
+                   real(backend%plot_area%height, wp)
+        case (COORD_AXIS)
+            x_px = real(backend%plot_area%left, wp) + annotation%x* &
+                   real(backend%plot_area%width, wp)
+            y_px = real(backend%plot_area%bottom, wp) + (1.0_wp - annotation%y)* &
+                   real(backend%plot_area%height, wp)
+        case (COORD_FIGURE)
+            x_px = annotation%x*real(backend%width, wp)
+            y_px = (1.0_wp - annotation%y)*real(backend%height, wp)
+        case default
+            x_px = annotation%x
+            y_px = annotation%y
+        end select
+
+        call backend%draw_text_styled(x_px, y_px, trim(annotation%text), pixel_height, &
+                                      annotation%rotation, ha, va, &
+                                      annotation%has_bbox, annotation%color)
+    end subroutine render_annotation_text_raster
+
+    subroutine render_annotation_text_pdf(backend, annotation)
+        use fortplot_annotations, only: COORD_DATA, COORD_FIGURE, COORD_AXIS
+        use fortplot_pdf, only: pdf_context
+        class(pdf_context), intent(inout) :: backend
+        type(text_annotation_t), intent(in) :: annotation
+
+        real(wp) :: x_pt, y_pt
+        real(wp) :: x_data, y_data
+        character(len=16) :: ha, va
+
+        ha = trim(annotation%ha)
+        if (len_trim(ha) == 0) ha = 'left'
+        va = trim(annotation%va)
+        if (len_trim(va) == 0) va = 'bottom'
+
+        select case (annotation%coord_type)
+        case (COORD_DATA)
+            x_data = annotation%x
+            y_data = annotation%y
+            x_pt = real(backend%plot_area%left, wp) + &
+                   (x_data - backend%x_min)/(backend%x_max - backend%x_min)* &
+                   real(backend%plot_area%width, wp)
+            y_pt = real(backend%plot_area%bottom, wp) + &
+                   (y_data - backend%y_min)/(backend%y_max - backend%y_min)* &
+                   real(backend%plot_area%height, wp)
+        case (COORD_AXIS)
+            x_pt = real(backend%plot_area%left, wp) + annotation%x* &
+                   real(backend%plot_area%width, wp)
+            y_pt = real(backend%plot_area%bottom, wp) + annotation%y* &
+                   real(backend%plot_area%height, wp)
+        case (COORD_FIGURE)
+            x_pt = annotation%x*real(backend%width, wp)
+            y_pt = annotation%y*real(backend%height, wp)
+        case default
+            x_pt = annotation%x
+            y_pt = annotation%y
+        end select
+
+        call backend%draw_text_styled(x_pt, y_pt, trim(annotation%text), &
+                                      annotation%font_size, annotation%rotation, &
+                                      ha, va, annotation%has_bbox, annotation%color)
+    end subroutine render_annotation_text_pdf
+
+    subroutine render_annotation_text_ascii(backend, annotation, x_min, x_max, y_min, &
+                                            y_max, width, height, margin_left, &
+                                            margin_right, margin_bottom, margin_top)
+        use fortplot_ascii, only: ascii_context
+        class(ascii_context), intent(inout) :: backend
+        type(text_annotation_t), intent(in) :: annotation
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        integer, intent(in) :: width, height
+        real(wp), intent(in) :: margin_left, margin_right, margin_bottom, margin_top
+
+        real(wp) :: render_x, render_y
+
+        call transform_annotation_to_rendering_coords(annotation, x_min, x_max, &
+                                                      y_min, y_max, width, height, &
+                                                      margin_left, margin_right, &
+                                                      margin_bottom, margin_top, &
+                                                      render_x, render_y)
+        call backend%text(render_x, render_y, trim(annotation%text))
+    end subroutine render_annotation_text_ascii
 
     pure subroutine map_annotation_to_data_coords(annotation, x_min, x_max, y_min, &
                                                   y_max, x, y)
@@ -265,8 +338,14 @@ contains
                                    x_min, x_max, y_min, y_max, arrow_start_x, &
                                    arrow_start_y)
 
-        ! Draw simple arrow line using existing line method
+        call backend%color(annotation%color(1), annotation%color(2), &
+                           annotation%color(3))
+
+        ! Draw arrow shaft and head (Matplotlib-style)
         call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
+        call backend%draw_arrow(arrow_end_x, arrow_end_y, arrow_end_x - arrow_start_x, &
+                                arrow_end_y - arrow_start_y, 1.0_wp, &
+                                trim(annotation%arrowstyle))
     end subroutine render_annotation_arrow
 
     pure subroutine map_xy_to_data_coords(coord_type, x_in, y_in, x_min, x_max, y_min, &
@@ -288,59 +367,6 @@ contains
             y = y_in
         end select
     end subroutine map_xy_to_data_coords
-
-    logical function should_skip_pie_annotation(backend, annotation) result(should_skip)
-        !! Check if pie chart annotation should be skipped for certain backends
-        !! ASCII backend uses legend-only approach for pie charts to prevent duplicates
-        !! PDF backend has coordinate transformation issues with pie annotations
-        use fortplot_ascii, only: ascii_context
-        use fortplot_pdf, only: pdf_context
-        class(plot_context), intent(in) :: backend
-        type(text_annotation_t), intent(in) :: annotation
-
-        should_skip = .false.
-
-        ! Skip pie chart annotations for ASCII and PDF backends
-        select type (backend)
-        type is (ascii_context)
-            ! Skip any annotation that looks like pie chart labels
-            if (is_pie_chart_annotation(annotation)) then
-                should_skip = .true.
-            end if
-        type is (pdf_context)
-            ! Skip pie annotations in PDF due to coordinate issues
-            if (is_pie_chart_annotation(annotation)) then
-                should_skip = .true.
-            end if
-        end select
-    end function should_skip_pie_annotation
-
-    logical function is_pie_chart_annotation(annotation) result(is_pie_annotation)
-        !! Detect if annotation is likely a pie chart label or autopct
-        type(text_annotation_t), intent(in) :: annotation
-        character(len=:), allocatable :: text
-
-        is_pie_annotation = .false.
-        text = trim(annotation%text)
-
-        ! Heuristic: pie annotations are typically short labels or percentage values
-        ! and are positioned using COORD_DATA coordinates around the pie circumference
-        if (annotation%coord_type == COORD_DATA .and. len_trim(text) > 0 .and. &
-            len_trim(text) <= 20) then
-            ! Check for percentage patterns (autopct)
-            if (index(text, '%') > 0) then
-                is_pie_annotation = .true.
-                return
-            end if
-
-            ! Check for common pie chart label patterns.
-            ! This is a heuristic that can be refined.
-            if (len_trim(text) <= 12 .and. index(text, ' ') == 0) then
-                ! Single word, short text - likely a pie slice label
-                is_pie_annotation = .true.
-            end if
-        end if
-    end function is_pie_chart_annotation
 
     pure function int_to_char(num) result(str)
         !! Simple integer to character conversion

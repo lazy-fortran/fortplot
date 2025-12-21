@@ -40,6 +40,7 @@ module fortplot_pdf
         procedure :: line => draw_pdf_line
         procedure :: color => set_pdf_color
         procedure :: text => draw_pdf_text_wrapper
+        procedure :: draw_text_styled => draw_pdf_text_styled
         procedure :: save => write_pdf_file_facade
         procedure :: set_line_width => set_pdf_line_width
         procedure :: set_line_style => set_pdf_line_style
@@ -184,6 +185,64 @@ contains
         ! (superscripts/subscripts) properly, just like titles do
         call render_mixed_text(this%core_ctx, pdf_x, pdf_y, text)
     end subroutine draw_pdf_text_wrapper
+
+    subroutine draw_pdf_text_styled(this, x_pt, y_pt, text, font_size, rotation, &
+                                    ha, va, bbox, color)
+        use fortplot_pdf_text_metrics, only: estimate_pdf_text_width
+        class(pdf_context), intent(inout) :: this
+        real(wp), intent(in) :: x_pt, y_pt
+        character(len=*), intent(in) :: text
+        real(wp), intent(in) :: font_size
+        real(wp), intent(in) :: rotation
+        character(len=*), intent(in) :: ha, va
+        logical, intent(in) :: bbox
+        real(wp), intent(in) :: color(3)
+
+        real(wp) :: x0, y0
+        real(wp) :: w_pt, h_pt, pad
+        character(len=256) :: cmd
+
+        w_pt = estimate_pdf_text_width(trim(text), font_size)
+        h_pt = max(1.0_wp, 1.2_wp*font_size)
+
+        x0 = x_pt
+        select case (trim(ha))
+        case ('center')
+            x0 = x0 - 0.5_wp*w_pt
+        case ('right')
+            x0 = x0 - w_pt
+        case default
+        end select
+
+        y0 = y_pt
+        select case (trim(va))
+        case ('center')
+            y0 = y0 - 0.5_wp*h_pt
+        case ('top')
+            y0 = y0 - h_pt
+        case default
+        end select
+
+        if (bbox) then
+            pad = max(1.0_wp, 0.2_wp*font_size)
+            call this%stream_writer%add_to_stream('q')
+            call this%stream_writer%add_to_stream('1 1 1 rg')
+            call this%stream_writer%add_to_stream('0 0 0 RG')
+            call this%stream_writer%add_to_stream('0.5 w')
+            write (cmd, '(F0.3,1X,F0.3,1X,F0.3,1X,F0.3," re B")') &
+                x0 - pad, y0 - pad, w_pt + 2.0_wp*pad, h_pt + 2.0_wp*pad
+            call this%stream_writer%add_to_stream(trim(cmd))
+            call this%stream_writer%add_to_stream('Q')
+        end if
+
+        call this%core_ctx%set_color(color(1), color(2), color(3))
+        if (abs(rotation) > 1.0e-6_wp) then
+            call draw_rotated_mixed_font_text(this%core_ctx, x0, y0, trim(text), &
+                                              font_size, rotation)
+        else
+            call draw_mixed_font_text(this%core_ctx, x0, y0, trim(text), font_size)
+        end if
+    end subroutine draw_pdf_text_styled
 
     subroutine write_pdf_file_facade(this, filename)
         use fortplot_system_viewer, only: launch_system_viewer, &
