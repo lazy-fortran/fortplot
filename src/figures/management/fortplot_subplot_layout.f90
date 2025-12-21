@@ -299,7 +299,7 @@ contains
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
         real(wp), parameter :: Y_TICK_GAP = 19.0_wp
         real(wp), parameter :: TITLE_GAP = 20.0_wp
-        real(wp), parameter :: YLABEL_OFFSET = 45.0_wp
+        real(wp), parameter :: YLABEL_PAD = 10.0_wp
 
         max_y_w = 0.0_wp
         max_x_h = 0.0_wp
@@ -355,7 +355,10 @@ contains
         title_h = 0.0_wp
         if (len_trim(title) > 0) title_h = PDF_TITLE_SIZE*1.2_wp
 
-        dec_left = max(Y_TICK_GAP + max_y_w, YLABEL_OFFSET)
+        dec_left = Y_TICK_GAP + max_y_w
+        if (len_trim(ylabel) > 0) then
+            dec_left = dec_left + YLABEL_PAD + PDF_LABEL_SIZE
+        end if
         dec_right = 0.0_wp
 
         dec_bottom = X_TICK_GAP + max_x_h
