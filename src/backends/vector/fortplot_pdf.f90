@@ -201,7 +201,7 @@ contains
         real(wp) :: x0, y0
         real(wp) :: w_pt, h_pt, pad
         real(wp) :: ascent_pt, descent_pt
-        real(wp) :: baseline_pt, top_pt
+        real(wp) :: baseline_pt, box_bottom_pt
         character(len=256) :: cmd
 
         w_pt = estimate_pdf_text_width(trim(text), font_size)
@@ -218,18 +218,25 @@ contains
         case default
         end select
 
+        ! Matplotlib semantics: the (x_pt, y_pt) anchor is the aligned bounding-box
+        ! position, not the baseline.
         baseline_pt = y_pt
+        box_bottom_pt = y_pt
         select case (trim(va))
         case ('center')
-            baseline_pt = y_pt + 0.5_wp*(ascent_pt - descent_pt)
+            box_bottom_pt = y_pt - 0.5_wp*h_pt
+            baseline_pt = box_bottom_pt + descent_pt
         case ('top')
-            baseline_pt = y_pt + ascent_pt
+            box_bottom_pt = y_pt - h_pt
+            baseline_pt = y_pt - ascent_pt
         case ('bottom')
-            baseline_pt = y_pt - descent_pt
+            box_bottom_pt = y_pt
+            baseline_pt = y_pt + descent_pt
         case default
+            box_bottom_pt = y_pt
+            baseline_pt = y_pt
         end select
-        top_pt = baseline_pt - ascent_pt
-        y0 = top_pt
+        y0 = box_bottom_pt
 
         if (bbox) then
             pad = max(1.0_wp, 0.2_wp*font_size)
@@ -249,8 +256,8 @@ contains
                                               trim(text), &
                                               font_size, rotation)
         else
-            call draw_mixed_font_text(this%core_ctx, x0, baseline_pt, &
-                                      trim(text), font_size)
+            call render_mixed_text(this%core_ctx, x0, baseline_pt, trim(text), &
+                                   font_size)
         end if
     end subroutine draw_pdf_text_styled
 
