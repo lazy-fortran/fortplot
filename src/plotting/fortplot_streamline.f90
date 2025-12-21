@@ -15,10 +15,11 @@ module fortplot_streamline
               bilinear_interpolate, integration_params_t, &
               velocity_function_context_t
 
-    !! Abstract interface for velocity functions
+    !! Abstract interface for velocity functions using double precision
     abstract interface
-        real function velocity_function_interface(x, y)
-            real, intent(in) :: x, y
+        real(wp) function velocity_function_interface(x, y)
+            import wp
+            real(wp), intent(in) :: x, y
         end function velocity_function_interface
     end interface
 
@@ -38,9 +39,9 @@ module fortplot_streamline
 contains
 
     subroutine calculate_seed_points(x, y, density, seed_x, seed_y, n_seeds)
-        real, dimension(:), intent(in) :: x, y
-        real, intent(in) :: density
-        real, allocatable, intent(out) :: seed_x(:), seed_y(:)
+        real(wp), dimension(:), intent(in) :: x, y
+        real(wp), intent(in) :: density
+        real(wp), allocatable, intent(out) :: seed_x(:), seed_y(:)
         integer, intent(out) :: n_seeds
 
         integer :: nx, ny, i, j, idx
@@ -59,10 +60,10 @@ contains
                 idx = idx + 1
                 if (idx > n_seeds) exit
 
-                seed_x(idx) = x(1) + (x(nx) - x(1))*real(i - 1)/(int((nx - &
-                                                                      1)*density) - 1)
-                seed_y(idx) = y(1) + (y(ny) - y(1))*real(j - 1)/(int((ny - &
-                                                                      1)*density) - 1)
+                seed_x(idx) = x(1) + (x(nx) - x(1))*real(i - 1, wp)/ &
+                              real(int((nx - 1)*density) - 1, wp)
+                seed_y(idx) = y(1) + (y(ny) - y(1))*real(j - 1, wp)/ &
+                              real(int((ny - 1)*density) - 1, wp)
             end do
         end do
 
@@ -71,20 +72,22 @@ contains
 
     subroutine integrate_streamline(x0, y0, u_func, v_func, dt, max_steps, &
                                     path_x, path_y, n_points)
-        real, intent(in) :: x0, y0, dt
+        real(wp), intent(in) :: x0, y0, dt
         integer, intent(in) :: max_steps
         interface
-            real function u_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function u_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function u_func
-            real function v_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function v_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function v_func
         end interface
-        real, allocatable, intent(out) :: path_x(:), path_y(:)
+        real(wp), allocatable, intent(out) :: path_x(:), path_y(:)
         integer, intent(out) :: n_points
 
-        real :: x, y, x_new, y_new
+        real(wp) :: x, y, x_new, y_new
         integer :: i
 
         allocate (path_x(max_steps))
@@ -98,7 +101,7 @@ contains
         do i = 2, max_steps
             call rk4_step(x, y, u_func, v_func, dt, x_new, y_new)
 
-            if (sqrt((x_new - x)**2 + (y_new - y)**2) < 1e-6) exit
+            if (sqrt((x_new - x)**2 + (y_new - y)**2) < 1e-6_wp) exit
 
             x = x_new
             y = y_new
@@ -113,24 +116,26 @@ contains
                                            path_x, path_y, n_points)
         !! High-accuracy streamline integration using DOPRI5 method
         !! Provides adaptive step size control and superior accuracy
-        real, intent(in) :: x0, y0
+        real(wp), intent(in) :: x0, y0
         interface
-            real function u_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function u_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function u_func
-            real function v_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function v_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function v_func
         end interface
         type(integration_params_t), intent(in), optional :: params
-        real, intent(in), optional :: max_time
-        real, allocatable, intent(out) :: path_x(:), path_y(:)
+        real(wp), intent(in), optional :: max_time
+        real(wp), allocatable, intent(out) :: path_x(:), path_y(:)
         integer, intent(out) :: n_points
 
         ! Local variables
         type(integration_params_t) :: local_params
         real(wp) :: t_final
-        real(wp), allocatable :: times(:), path_x_wp(:), path_y_wp(:)
+        real(wp), allocatable :: times(:)
         integer :: n_accepted, n_rejected
         logical :: success
 
@@ -150,7 +155,7 @@ contains
 
         ! Set integration time limit
         if (present(max_time)) then
-            t_final = real(max_time, wp)
+            t_final = max_time
         else
             t_final = 10.0_wp  ! Default time limit
         end if
@@ -161,9 +166,9 @@ contains
         current_velocity_context%negate_functions = .false.
 
         ! Call DOPRI5 integrator with module-level wrapper functions (no trampolines)
-        call dopri5_integrate(real(x0, wp), real(y0, wp), 0.0_wp, t_final, &
+        call dopri5_integrate(x0, y0, 0.0_wp, t_final, &
                               module_u_func_wrapper, module_v_func_wrapper, &
-                              local_params, path_x_wp, path_y_wp, times, &
+                              local_params, path_x, path_y, times, &
                               n_points, n_accepted, n_rejected, success)
 
         if (.not. success) then
@@ -174,20 +179,15 @@ contains
             path_y(1) = y0
             return
         end if
-
-        ! Convert back to single precision
-        allocate (path_x(n_points), path_y(n_points))
-        path_x = real(path_x_wp)
-        path_y = real(path_y_wp)
     end subroutine integrate_streamline_dopri5
 
     subroutine calculate_seed_points_matplotlib(x, y, density, seed_x, seed_y, &
                                                 n_seeds, mask)
         !! Calculate seed points using matplotlib-compatible spiral algorithm
         !! with collision detection for proper streamline spacing
-        real, dimension(:), intent(in) :: x, y
+        real(wp), dimension(:), intent(in) :: x, y
         real(wp), intent(in) :: density
-        real, allocatable, intent(out) :: seed_x(:), seed_y(:)
+        real(wp), allocatable, intent(out) :: seed_x(:), seed_y(:)
         integer, intent(out) :: n_seeds
         type(stream_mask_t), intent(inout) :: mask
 
@@ -200,8 +200,8 @@ contains
         call mask%initialize(density)
 
         ! Initialize coordinate mapper
-        call mapper%initialize([real(x(1), wp), real(x(size(x)), wp)], &
-                               [real(y(1), wp), real(y(size(y)), wp)], &
+        call mapper%initialize([x(1), x(size(x))], &
+                               [y(1), y(size(y))], &
                                [size(x), size(y)], &
                                [mask%nx, mask%ny])
 
@@ -222,7 +222,7 @@ contains
 
             ! Check if mask position is free
             if (mask%is_free(xm, ym)) then
-                ! Convert mask → grid → data coordinates
+                ! Convert mask -> grid -> data coordinates
                 call mapper%mask2grid(xm, ym, xg, yg)
                 call mapper%grid2data(xg, yg, xd, yd)
 
@@ -231,8 +231,8 @@ contains
                     yd >= y(1) .and. yd <= y(size(y))) then
 
                     n_seeds = n_seeds + 1
-                    seed_x(n_seeds) = real(xd)
-                    seed_y(n_seeds) = real(yd)
+                    seed_x(n_seeds) = xd
+                    seed_y(n_seeds) = yd
 
                     ! Don't reserve position yet - will be done during integration
                 end if
@@ -252,29 +252,32 @@ contains
                                                   path_x, path_y, n_points)
         !! Bidirectional streamline integration like matplotlib
         !! Integrates both forward and backward from seed point for complete streamlines
-        real, intent(in) :: x0, y0
+        real(wp), intent(in) :: x0, y0
         interface
-            real function u_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function u_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function u_func
-            real function v_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function v_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function v_func
         end interface
         type(integration_params_t), intent(in), optional :: params
-        real, intent(in), optional :: max_time
-        real, allocatable, intent(out) :: path_x(:), path_y(:)
+        real(wp), intent(in), optional :: max_time
+        real(wp), allocatable, intent(out) :: path_x(:), path_y(:)
         integer, intent(out) :: n_points
 
-        real, allocatable :: forward_x(:), forward_y(:), backward_x(:), backward_y(:)
+        real(wp), allocatable :: forward_x(:), forward_y(:), backward_x(:), &
+                                 backward_y(:)
         integer :: n_forward, n_backward, i
-        real :: half_time
+        real(wp) :: half_time
 
         ! Use half the time for each direction
         if (present(max_time)) then
-            half_time = max_time*0.5
+            half_time = max_time*0.5_wp
         else
-            half_time = 5.0  ! Default half time
+            half_time = 5.0_wp  ! Default half time
         end if
 
         ! Set up velocity context for forward integration
@@ -313,43 +316,45 @@ contains
     end subroutine integrate_streamline_bidirectional
 
     subroutine rk4_step(x, y, u_func, v_func, dt, x_new, y_new)
-        real, intent(in) :: x, y, dt
+        real(wp), intent(in) :: x, y, dt
         interface
-            real function u_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function u_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function u_func
-            real function v_func(x, y)
-                real, intent(in) :: x, y
+            real(wp) function v_func(x, y)
+                import wp
+                real(wp), intent(in) :: x, y
             end function v_func
         end interface
-        real, intent(out) :: x_new, y_new
+        real(wp), intent(out) :: x_new, y_new
 
-        real :: k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y
+        real(wp) :: k1x, k1y, k2x, k2y, k3x, k3y, k4x, k4y
 
         k1x = u_func(x, y)
         k1y = v_func(x, y)
 
-        k2x = u_func(x + 0.5*dt*k1x, y + 0.5*dt*k1y)
-        k2y = v_func(x + 0.5*dt*k1x, y + 0.5*dt*k1y)
+        k2x = u_func(x + 0.5_wp*dt*k1x, y + 0.5_wp*dt*k1y)
+        k2y = v_func(x + 0.5_wp*dt*k1x, y + 0.5_wp*dt*k1y)
 
-        k3x = u_func(x + 0.5*dt*k2x, y + 0.5*dt*k2y)
-        k3y = v_func(x + 0.5*dt*k2x, y + 0.5*dt*k2y)
+        k3x = u_func(x + 0.5_wp*dt*k2x, y + 0.5_wp*dt*k2y)
+        k3y = v_func(x + 0.5_wp*dt*k2x, y + 0.5_wp*dt*k2y)
 
         k4x = u_func(x + dt*k3x, y + dt*k3y)
         k4y = v_func(x + dt*k3x, y + dt*k3y)
 
-        x_new = x + dt*(k1x + 2*k2x + 2*k3x + k4x)/6.0
-        y_new = y + dt*(k1y + 2*k2y + 2*k3y + k4y)/6.0
+        x_new = x + dt*(k1x + 2.0_wp*k2x + 2.0_wp*k3x + k4x)/6.0_wp
+        y_new = y + dt*(k1y + 2.0_wp*k2y + 2.0_wp*k3y + k4y)/6.0_wp
     end subroutine rk4_step
 
     subroutine calculate_arrow_positions(path_x, path_y, n_points, arrow_density, &
                                          arrow_mask)
-        real, dimension(:), intent(in) :: path_x, path_y
+        real(wp), dimension(:), intent(in) :: path_x, path_y
         integer, intent(in) :: n_points
-        real, intent(in) :: arrow_density
+        real(wp), intent(in) :: arrow_density
         logical, allocatable, intent(out) :: arrow_mask(:)
 
-        real :: total_length, target_spacing, current_distance
+        real(wp) :: total_length, target_spacing, current_distance
         integer :: i, last_arrow
 
         allocate (arrow_mask(n_points))
@@ -357,18 +362,18 @@ contains
 
         if (n_points < 2) return
 
-        total_length = 0.0
+        total_length = 0.0_wp
         do i = 2, n_points
             total_length = total_length + sqrt((path_x(i) - path_x(i - 1))**2 + &
                                                (path_y(i) - path_y(i - 1))**2)
         end do
 
-        target_spacing = total_length/(arrow_density*10.0)
+        target_spacing = total_length/(arrow_density*10.0_wp)
 
         arrow_mask(max(1, n_points/2)) = .true.
 
         last_arrow = max(1, n_points/2)
-        current_distance = 0.0
+        current_distance = 0.0_wp
 
         do i = last_arrow + 1, n_points
             current_distance = current_distance + sqrt((path_x(i) - path_x(i &
@@ -376,13 +381,13 @@ contains
                                                        (path_y(i) - path_y(i - 1))**2)
             if (current_distance >= target_spacing) then
                 arrow_mask(i) = .true.
-                current_distance = 0.0
+                current_distance = 0.0_wp
                 last_arrow = i
             end if
         end do
 
         last_arrow = max(1, n_points/2)
-        current_distance = 0.0
+        current_distance = 0.0_wp
 
         do i = last_arrow - 1, 1, -1
             current_distance = current_distance + sqrt((path_x(i + 1) - &
@@ -390,15 +395,15 @@ contains
                                                        (path_y(i + 1) - path_y(i))**2)
             if (current_distance >= target_spacing) then
                 arrow_mask(i) = .true.
-                current_distance = 0.0
+                current_distance = 0.0_wp
                 last_arrow = i
             end if
         end do
     end subroutine calculate_arrow_positions
 
     subroutine check_termination(x, y, x_bounds, y_bounds, terminate)
-        real, intent(in) :: x, y
-        real, dimension(2), intent(in) :: x_bounds, y_bounds
+        real(wp), intent(in) :: x, y
+        real(wp), dimension(2), intent(in) :: x_bounds, y_bounds
         logical, intent(out) :: terminate
 
         terminate = (x < x_bounds(1) .or. x > x_bounds(2) .or. &
@@ -406,13 +411,13 @@ contains
     end subroutine check_termination
 
     subroutine bilinear_interpolate(x_grid, y_grid, values, x, y, result)
-        real, dimension(:), intent(in) :: x_grid, y_grid
-        real, dimension(:, :), intent(in) :: values
-        real, intent(in) :: x, y
-        real, intent(out) :: result
+        real(wp), dimension(:), intent(in) :: x_grid, y_grid
+        real(wp), dimension(:, :), intent(in) :: values
+        real(wp), intent(in) :: x, y
+        real(wp), intent(out) :: result
 
         integer :: i, j, i1, i2, j1, j2
-        real :: fx, fy
+        real(wp) :: fx, fy
 
         ! Find grid indices
         i1 = 1
@@ -450,9 +455,9 @@ contains
         fy = (y - y_grid(j1))/(y_grid(j2) - y_grid(j1))
 
         ! Bilinear interpolation
-        result = values(i1, j1)*(1 - fx)*(1 - fy) + &
-                 values(i2, j1)*fx*(1 - fy) + &
-                 values(i1, j2)*(1 - fx)*fy + &
+        result = values(i1, j1)*(1.0_wp - fx)*(1.0_wp - fy) + &
+                 values(i2, j1)*fx*(1.0_wp - fy) + &
+                 values(i1, j2)*(1.0_wp - fx)*fy + &
                  values(i2, j2)*fx*fy
     end subroutine bilinear_interpolate
 
@@ -467,7 +472,7 @@ contains
             return
         end if
 
-        u_vel = real(current_velocity_context%u_func(real(x), real(y)), wp)
+        u_vel = current_velocity_context%u_func(x, y)
 
         if (current_velocity_context%negate_functions) then
             u_vel = -u_vel
@@ -484,7 +489,7 @@ contains
             return
         end if
 
-        v_vel = real(current_velocity_context%v_func(real(x), real(y)), wp)
+        v_vel = current_velocity_context%v_func(x, y)
 
         if (current_velocity_context%negate_functions) then
             v_vel = -v_vel
