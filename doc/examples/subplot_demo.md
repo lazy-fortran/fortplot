@@ -56,7 +56,11 @@ make example ARGS="subplot_demo"
 
 ![subplot_1x3_demo.png](../../media/examples/subplot_demo/subplot_1x3_demo.png)
 
+[Download PDF](../../media/examples/subplot_demo/subplot_1x3_demo.pdf)
+
 ### Subplot 2X2 Demo
 
 ![subplot_2x2_demo.png](../../media/examples/subplot_demo/subplot_2x2_demo.png)
+
+[Download PDF](../../media/examples/subplot_demo/subplot_2x2_demo.pdf)
 
