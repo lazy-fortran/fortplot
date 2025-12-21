@@ -342,6 +342,9 @@ contains
                            annotation%color(3))
 
         ! Draw arrow shaft and head (Matplotlib-style)
+        ! Ensure annotation arrows default to solid stroke rather than inheriting
+        ! the linestyle of the most recently drawn plot.
+        call backend%set_line_style('-')
         call backend%line(arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y)
         call backend%draw_arrow(arrow_end_x, arrow_end_y, arrow_end_x - arrow_start_x, &
                                 arrow_end_y - arrow_start_y, 1.0_wp, &
