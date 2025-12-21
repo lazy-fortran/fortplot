@@ -32,7 +32,7 @@ program test_matplotlib_new_functions
     call imshow(z)
     call title("imshow() test - 2D heatmap")
     call savefig(trim(output_dir)//'test_imshow.png')
-    print *, "✓ imshow() function works"
+    print *, "PASS: imshow() function works"
     
     ! Test pie chart
     allocate(values(5))
@@ -42,7 +42,7 @@ program test_matplotlib_new_functions
     call pie(values)
     call title("pie() test - Pie chart")
     call savefig(trim(output_dir)//'test_pie.png')
-    print *, "✓ pie() function works"
+    print *, "PASS: pie() function works"
     
     ! Test polar plot
     allocate(theta(100), r(100))
@@ -55,7 +55,7 @@ program test_matplotlib_new_functions
     call polar(theta, r)
     call title("polar() test - Polar plot")
     call savefig(trim(output_dir)//'test_polar.png')
-    print *, "✓ polar() function works"
+    print *, "PASS: polar() function works"
     
     ! Test step plot
     allocate(x(20), y(20))
@@ -70,7 +70,7 @@ program test_matplotlib_new_functions
     call xlabel("x")
     call ylabel("y")
     call savefig(trim(output_dir)//'test_step.png')
-    print *, "✓ step() function works"
+    print *, "PASS: step() function works"
     
     ! Test stem plot
     call figure()
@@ -79,7 +79,7 @@ program test_matplotlib_new_functions
     call xlabel("x")
     call ylabel("y")
     call savefig(trim(output_dir)//'test_stem.png')
-    print *, "✓ stem() function works"
+    print *, "PASS: stem() function works"
     
     ! Test fill
     call figure()
@@ -89,7 +89,7 @@ program test_matplotlib_new_functions
     call xlabel("x")
     call ylabel("y")
     call savefig(trim(output_dir)//'test_fill.png')
-    print *, "✓ fill() function works"
+    print *, "PASS: fill() function works"
     
     ! Test fill_between
     deallocate(x, y)
@@ -105,7 +105,7 @@ program test_matplotlib_new_functions
     call xlabel("x")
     call ylabel("y")
     call savefig(trim(output_dir)//'test_fill_between.png')
-    print *, "✓ fill_between() function works"
+    print *, "PASS: fill_between() function works"
 
     allocate(mask(size(x)))
     mask = .false.
@@ -116,7 +116,7 @@ program test_matplotlib_new_functions
     call fill_between(x, y1=y, y2=y*0.2_real64, where=mask)
     call title("fill_between() mask test - Partial area fill")
     call savefig(trim(output_dir)//'test_fill_between_masked.png')
-    print *, "✓ fill_between() accepts where masks"
+    print *, "PASS: fill_between() accepts where masks"
 
     deallocate(mask)
     
@@ -196,7 +196,7 @@ program test_matplotlib_new_functions
         print *, "ERROR: twiny xlabel not stored"
         stop 1
     end if
-    print *, "✓ twinx() and twiny() render independent axes"
+    print *, "PASS: twinx() and twiny() render independent axes"
     
     print *, ""
     print *, "All new matplotlib-compatible functions are accessible!"

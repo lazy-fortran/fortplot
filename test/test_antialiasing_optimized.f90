@@ -81,19 +81,19 @@ contains
                 close(99)
                 
                 if (file_size > 5000) then  ! Reasonable minimum for PNG with content
-                    print '(A,I0,A)', "  ✓ Comprehensive rendering test passed (", file_size, " bytes)"
+                    print '(A,I0,A)', "  PASS: Comprehensive rendering test passed (", file_size, " bytes)"
                     print *, "    - All antialiasing scenarios covered in single test"
                     print *, "    - File size indicates proper content rendering"
                     passed = passed + 1
                 else
-                    print *, "  ✗ File too small - rendering may have failed"
+                    print *, "  FAIL: File too small - rendering may have failed"
                 end if
             end block
         else
-            print *, "  ✗ Failed to create rendering test file"
+            print *, "  FAIL: Failed to create rendering test file"
         end if
         
-        print *, "  ✓ Optimized from 5 separate tests to 1 comprehensive test"
+        print *, "  PASS: Optimized from 5 separate tests to 1 comprehensive test"
         
     end subroutine test_rendering_quality
     

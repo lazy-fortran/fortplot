@@ -43,7 +43,7 @@ def test_help_argument_exits_quickly():
     assert "fortplot_python_bridge" in combined and "Usage:" in combined, (
         "Help output missing expected markers. Output was:\n" + combined
     )
-    print('✓ --help prints usage and exits')
+    print("PASS: --help prints usage and exits")
 
 
 def test_long_command_rejected():
@@ -60,7 +60,7 @@ def test_long_command_rejected():
         assert 'Input line exceeds maximum allowed length' in combined, (
             'Expected length limit error not found. Output was:\n' + combined
         )
-        print('✓ Long command correctly rejected')
+        print("PASS: Long command correctly rejected")
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -85,7 +85,7 @@ def test_plot_excessive_array_size_rejected():
         assert 'Invalid or excessive array size for PLOT' in combined, (
             'Expected excessive array size error not found. Output was:\n' + combined
         )
-        print('✓ Excessive array size correctly rejected')
+        print("PASS: Excessive array size correctly rejected")
     finally:
         if proc.poll() is None:
             proc.terminate()
@@ -108,7 +108,7 @@ def test_savefig_empty_path_rejected():
         assert 'Invalid file path in SAVEFIG' in combined, (
             'Expected invalid SAVEFIG path error not found. Output was:\n' + combined
         )
-        print('✓ Empty SAVEFIG path correctly rejected')
+        print("PASS: Empty SAVEFIG path correctly rejected")
     finally:
         if proc.poll() is None:
             proc.terminate()

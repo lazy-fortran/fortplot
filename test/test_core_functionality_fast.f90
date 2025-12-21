@@ -32,7 +32,7 @@ program test_core_functionality_fast
     
     if (passed_tests == total_tests) then
         print *, "=== ALL FAST TESTS PASSED ==="
-        print *, "✓ Core functionality verified with optimal performance"
+        print *, "PASS: Core functionality verified with optimal performance"
     else
         print *, "=== SOME TESTS FAILED ==="
         error stop 1
@@ -83,12 +83,12 @@ contains
         end if
         
         if (test_ok) then
-            print *, "  ✓ All basic plotting functions verified in single test"
-            print *, "  ✓ plot(), scatter(), add_plot(), styling, legend working"
-            print *, "  ✓ Replaces 6+ individual basic plotting tests"
+            print *, "  PASS: All basic plotting functions verified in single test"
+            print *, "  PASS: plot(), scatter(), add_plot(), styling, legend working"
+            print *, "  PASS: Replaces 6+ individual basic plotting tests"
             passed = passed + 1
         else
-            print *, "  ✗ Basic plotting comprehensive test failed"
+            print *, "  FAIL: Basic plotting comprehensive test failed"
         end if
         
     end subroutine test_basic_plotting_comprehensive
@@ -143,12 +143,12 @@ contains
         end if
         
         if (test_ok) then
-            print *, "  ✓ All axis and labeling functions verified"
-            print *, "  ✓ Linear/log scales, labels, subplots, formatting working"
-            print *, "  ✓ Replaces 8+ individual axis/label tests"  
+            print *, "  PASS: All axis and labeling functions verified"
+            print *, "  PASS: Linear/log scales, labels, subplots, formatting working"
+            print *, "  PASS: Replaces 8+ individual axis/label tests"  
             passed = passed + 1
         else
-            print *, "  ✗ Axis and labeling comprehensive test failed"
+            print *, "  FAIL: Axis and labeling comprehensive test failed"
         end if
         
     end subroutine test_axis_labeling_comprehensive
@@ -219,13 +219,13 @@ contains
         end if
         
         if (png_ok .and. ascii_ok) then
-            print *, "  ✓ All backends verified in comprehensive test"
-            print *, "  ✓ PNG, PDF, ASCII backends working correctly"
-            print *, "  ✓ Content verification confirms proper rendering"
-            print *, "  ✓ Replaces 10+ individual backend tests"
+            print *, "  PASS: All backends verified in comprehensive test"
+            print *, "  PASS: PNG, PDF, ASCII backends working correctly"
+            print *, "  PASS: Content verification confirms proper rendering"
+            print *, "  PASS: Replaces 10+ individual backend tests"
             passed = passed + 1
         else
-            print *, "  ✗ Backend comprehensive test failed"
+            print *, "  FAIL: Backend comprehensive test failed"
             if (.not. png_ok) print *, "    - PNG backend failed"
             if (.not. ascii_ok) print *, "    - ASCII backend or content failed"
         end if

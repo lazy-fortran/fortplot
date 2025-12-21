@@ -60,17 +60,17 @@ program test_issue_885_reproduction
     inquire(file=output_file, exist=file_exists)
     
     if (file_exists) then
-        print *, "✓ SUCCESS: PNG file created successfully (26KB expected)"
-        print *, "✓ FUNCTIONALITY WORKS: pcolormesh generates correct output"
-        print *, "✓ FIXED: No error messages shown for valid operation"
+        print *, "PASS: SUCCESS: PNG file created successfully (26KB expected)"
+        print *, "PASS: FUNCTIONALITY WORKS: pcolormesh generates correct output"
+        print *, "PASS: FIXED: No error messages shown for valid operation"
         print *, ""
         print *, "ISSUE #885 STATUS: FIXED"
         print *, "- Function works correctly (creates valid 26KB PNG)"
         print *, "- No confusing error messages for valid input"
         print *, "- User experience improved - no false error reports"
     else
-        print *, "✗ UNEXPECTED: PNG file not created"
-        print *, "✗ This test setup may be incorrect"
+        print *, "FAIL: UNEXPECTED: PNG file not created"
+        print *, "FAIL: This test setup may be incorrect"
     end if
     
     print *, ""

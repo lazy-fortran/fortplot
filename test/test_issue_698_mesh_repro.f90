@@ -30,11 +30,11 @@ program test_pcolormesh_issue_698_repro
     ok2 = .not. error%is_error()
 
     if (ok1 .and. ok2) then
-        print *, "✓ PASS: Issue #698 reproduction and positive control"
+        print *, "PASS: Issue #698 reproduction and positive control"
         stop 0
     else
-        if (.not. ok1) print *, "✗ FAIL: Expected dimension mismatch not detected"
-        if (.not. ok2) print *, "✗ FAIL: Correct dimensions should succeed"
+        if (.not. ok1) print *, "FAIL: Expected dimension mismatch not detected"
+        if (.not. ok2) print *, "FAIL: Correct dimensions should succeed"
         stop 1
     end if
 end program test_pcolormesh_issue_698_repro

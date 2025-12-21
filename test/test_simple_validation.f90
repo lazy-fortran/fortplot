@@ -25,10 +25,10 @@ program test_simple_validation
     ! Final result
     write(*, '(A)') '============================================'
     if (all_tests_passed) then
-        write(*, '(A)') '✅ ALL REFACTORING TESTS PASSED!'
+        write(*, '(A)') 'PASS: ALL REFACTORING TESTS PASSED!'
         write(*, '(A)') 'Refactored modules are working correctly.'
     else
-        write(*, '(A)') '❌ SOME TESTS FAILED!'
+        write(*, '(A)') 'FAIL: SOME TESTS FAILED!'
         stop 1
     end if
     
@@ -41,9 +41,9 @@ contains
             real(wp) :: result
             result = apply_scale_transform(10.0_wp, 'log', 1.0_wp)
             if (result > 0.0_wp) then
-                write(*, '(A)') '  ✅ Scale module working'
+                write(*, '(A)') '  PASS: Scale module working'
             else
-                write(*, '(A)') '  ❌ Scale module failed'
+                write(*, '(A)') '  FAIL: Scale module failed'
                 all_tests_passed = .false.
             end if
         end block
@@ -68,9 +68,9 @@ contains
             call fig%add_plot(x, y, label="test")
             
             if (fig%plot_count == 1) then
-                write(*, '(A)') '  ✅ Figure creation working'
+                write(*, '(A)') '  PASS: Figure creation working'
             else
-                write(*, '(A)') '  ❌ Figure creation failed'
+                write(*, '(A)') '  FAIL: Figure creation failed'
                 all_tests_passed = .false.
             end if
         end block
@@ -88,9 +88,9 @@ contains
             log_result = apply_scale_transform(10.0_wp, 'log', 1.0_wp)
             
             if (abs(linear_result - 5.0_wp) < EPSILON_COMPARE .and. abs(log_result - 1.0_wp) < EPSILON_COMPARE) then
-                write(*, '(A)') '  ✅ Scale transformations working'
+                write(*, '(A)') '  PASS: Scale transformations working'
             else
-                write(*, '(A)') '  ❌ Scale transformations failed'
+                write(*, '(A)') '  FAIL: Scale transformations failed'
                 all_tests_passed = .false.
             end if
         end block

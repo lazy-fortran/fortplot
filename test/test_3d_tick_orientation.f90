@@ -33,10 +33,10 @@ program test_3d_tick_orientation
     call savefig(output_dir//'test_3d_ticks.pdf')
 
     print *, 'Created 3D tick artifacts at '//output_dir
-    print *, "✓ Z-axis ticks should point horizontally (leftward)"
-    print *, "✓ Y-axis ticks should point horizontally (leftward)"
-    print *, "✓ X-axis ticks should point vertically (downward)"
-    print *, "✓ Labels should be properly spaced away from ticks"
+    print *, "PASS: Z-axis ticks should point horizontally (leftward)"
+    print *, "PASS: Y-axis ticks should point horizontally (leftward)"
+    print *, "PASS: X-axis ticks should point vertically (downward)"
+    print *, "PASS: Labels should be properly spaced away from ticks"
 
     deallocate(x, y, z)
 end program test_3d_tick_orientation

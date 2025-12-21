@@ -79,16 +79,16 @@ contains
         
         val = validate_file_exists('test/output/test_legend_basic.png')
         if (val%passed) then
-            print *, "  ✓ Basic legend PNG created"
+            print *, "  PASS: Basic legend PNG created"
             val = validate_file_size('test/output/test_legend_basic.png', min_size=5000)
             if (val%passed) then
-                print *, "  ✓ PNG file size indicates content present"
+                print *, "  PASS: PNG file size indicates content present"
             else
-                print *, "  ✗ PNG file too small - legend may be missing"
+                print *, "  FAIL: PNG file too small - legend may be missing"
                 failures = failures + 1
             end if
         else
-            print *, "  ✗ Failed to create basic legend PNG"
+            print *, "  FAIL: Failed to create basic legend PNG"
             failures = failures + 1
         end if
         
@@ -125,10 +125,10 @@ contains
             
             val = validate_file_exists(trim(filenames(i)))
             if (val%passed) then
-                print '(A,A,A)', "  ✓ Legend position '", trim(positions(i)), &
+                print '(A,A,A)', "  PASS: Legend position '", trim(positions(i)), &
                     "' created"
             else
-                print '(A,A,A)', "  ✗ Failed position '", trim(positions(i)), "'"
+                print '(A,A,A)', "  FAIL: Failed position '", trim(positions(i)), "'"
                 failures = failures + 1
             end if
         end do
@@ -163,17 +163,17 @@ contains
         
         val = validate_file_exists('test/output/test_legend_markers.png')
         if (val%passed) then
-            print *, "  ✓ Legend with markers created"
+            print *, "  PASS: Legend with markers created"
             val = validate_file_size('test/output/test_legend_markers.png', &
                 min_size=5000)
             if (val%passed) then
-                print *, "  ✓ Marker legend has sufficient content"
+                print *, "  PASS: Marker legend has sufficient content"
             else
-                print *, "  ✗ Marker legend file too small"
+                print *, "  FAIL: Marker legend file too small"
                 failures = failures + 1
             end if
         else
-            print *, "  ✗ Failed to create marker legend"
+            print *, "  FAIL: Failed to create marker legend"
             failures = failures + 1
         end if
         
@@ -209,12 +209,12 @@ contains
         
         val = validate_file_exists('test/output/test_legend.pdf')
         if (val%passed) then
-            print *, "  ✓ PDF with legend created"
+            print *, "  PASS: PDF with legend created"
 
             call extract_pdf_stream_text('test/output/test_legend.pdf', stream_text, &
                 status_stream)
             if (status_stream /= 0) then
-                print *, "  ✗ Unable to read PDF legend stream"
+                print *, "  FAIL: Unable to read PDF legend stream"
                 failures = failures + 1
                 return
             end if
@@ -225,13 +225,13 @@ contains
             has_half_sin = index(plain_text, '0.5*sin(x)') > 0
 
             if (has_cos .and. has_half_sin) then
-                print *, "  ✓ PDF legend entries present in stream"
+                print *, "  PASS: PDF legend entries present in stream"
             else
-                print *, "  ✗ Legend labels not found in PDF stream"
+                print *, "  FAIL: Legend labels not found in PDF stream"
                 failures = failures + 1
             end if
         else
-            print *, "  ✗ Failed to create PDF with legend"
+            print *, "  FAIL: Failed to create PDF with legend"
             failures = failures + 1
         end if
         
@@ -264,7 +264,7 @@ contains
         
         val = validate_file_exists('test/output/test_legend.txt')
         if (val%passed) then
-            print *, "  ✓ ASCII with legend created"
+            print *, "  PASS: ASCII with legend created"
             
             ! Check if legend text appears in file
             found_legend = .false.
@@ -281,13 +281,13 @@ contains
             close(unit)
             
             if (found_legend) then
-                print *, "  ✓ Legend header/labels found in ASCII output"
+                print *, "  PASS: Legend header/labels found in ASCII output"
             else
-                print *, "  ✗ Legend labels not found in ASCII"
+                print *, "  FAIL: Legend labels not found in ASCII"
                 failures = failures + 1
             end if
         else
-            print *, "  ✗ Failed to create ASCII with legend"
+            print *, "  FAIL: Failed to create ASCII with legend"
             failures = failures + 1
         end if
 
@@ -315,13 +315,13 @@ contains
             end do
             close(unit)
             if (found_long_label) then
-                print *, "  ✓ Long legend label fully present (no truncation)"
+                print *, "  PASS: Long legend label fully present (no truncation)"
             else
-                print *, "  ✗ Long legend label appears truncated"
+                print *, "  FAIL: Long legend label appears truncated"
                 failures = failures + 1
             end if
         else
-            print *, "  ✗ Failed to create ASCII long-label output"
+            print *, "  FAIL: Failed to create ASCII long-label output"
             failures = failures + 1
         end if
         
@@ -349,7 +349,7 @@ contains
     end subroutine windows_safe_delay
 
     subroutine pdf_stream_to_plain(stream_text, plain_text)
-        !! Collapse PDF "(text) Tj" sequences into plain text for assertions
+        !! Collapse PDF (text) Tj sequences into plain text for assertions
         character(len=*), intent(in) :: stream_text
         character(len=:), allocatable, intent(out) :: plain_text
         character(len=:), allocatable :: buffer
@@ -430,9 +430,9 @@ contains
         
         val = validate_file_exists('test/output/test_empty_label_consolidated.png')
         if (val%passed) then
-            print *, "  ✓ Empty label handling verified"
+            print *, "  PASS: Empty label handling verified"
         else
-            print *, "  ✗ Empty label test failed"
+            print *, "  FAIL: Empty label test failed"
             failures = failures + 1
         end if
     end subroutine test_empty_label_handling
@@ -460,9 +460,9 @@ contains
         val = validate_file_exists( &
             'test/output/test_legend_optimization_consolidated.png')
         if (val%passed) then
-            print *, "  ✓ Legend optimization verified"
+            print *, "  PASS: Legend optimization verified"
         else
-            print *, "  ✗ Legend optimization test failed"
+            print *, "  FAIL: Legend optimization test failed"
             failures = failures + 1
         end if
     end subroutine test_legend_optimizations

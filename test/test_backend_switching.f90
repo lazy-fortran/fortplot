@@ -32,9 +32,9 @@ program test_backend_switching
     
     validation = validate_pdf_format('test/output/test_png_to_pdf.pdf')
     if (validation%passed) then
-        print *, "  ✅ Passed: Auto-switched from PNG to PDF backend"
+        print *, "  PASS: Passed: Auto-switched from PNG to PDF backend"
     else
-        print *, "  ❌ Failed:", trim(validation%message)
+        print *, "  FAIL: Failed:", trim(validation%message)
         all_passed = .false.
     end if
     
@@ -47,9 +47,9 @@ program test_backend_switching
     
     validation = validate_png_format('test/output/test_pdf_to_png.png')
     if (validation%passed) then
-        print *, "  ✅ Passed: Auto-switched from PDF to PNG backend"
+        print *, "  PASS: Passed: Auto-switched from PDF to PNG backend"
     else
-        print *, "  ❌ Failed:", trim(validation%message)
+        print *, "  FAIL: Failed:", trim(validation%message)
         all_passed = .false.
     end if
     
@@ -62,9 +62,9 @@ program test_backend_switching
     
     validation = validate_pdf_format('test/output/test_ascii_to_pdf.pdf')
     if (validation%passed) then
-        print *, "  ✅ Passed: Auto-switched from ASCII to PDF backend"
+        print *, "  PASS: Passed: Auto-switched from ASCII to PDF backend"
     else
-        print *, "  ❌ Failed:", trim(validation%message)
+        print *, "  FAIL: Failed:", trim(validation%message)
         all_passed = .false.
     end if
     
@@ -78,7 +78,7 @@ program test_backend_switching
     call fig%savefig("test/output/test_multi.pdf")
     validation = validate_pdf_format('test/output/test_multi.pdf')
     if (.not. validation%passed) then
-        print *, "  ❌ Failed PDF:", trim(validation%message)
+        print *, "  FAIL: Failed PDF:", trim(validation%message)
         all_passed = .false.
     end if
     
@@ -86,20 +86,20 @@ program test_backend_switching
     call fig%savefig("test/output/test_multi.png")
     validation = validate_png_format('test/output/test_multi.png')
     if (.not. validation%passed) then
-        print *, "  ❌ Failed PNG:", trim(validation%message)
+        print *, "  FAIL: Failed PNG:", trim(validation%message)
         all_passed = .false.
     else
-        print *, "  ✅ Passed: Same figure saved in multiple formats"
+        print *, "  PASS: Passed: Same figure saved in multiple formats"
     end if
     
     ! Summary
     print *, ""
     print *, "========================================"
     if (all_passed) then
-        print *, "✅ ALL BACKEND SWITCHING TESTS PASSED!"
+        print *, "PASS: ALL BACKEND SWITCHING TESTS PASSED!"
         print *, "savefig correctly auto-switches backends"
     else
-        print *, "❌ SOME TESTS FAILED"
+        print *, "FAIL: SOME TESTS FAILED"
         stop 1
     end if
     

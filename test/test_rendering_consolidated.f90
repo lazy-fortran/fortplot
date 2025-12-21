@@ -32,7 +32,7 @@ program test_rendering_consolidated
     
     if (passed_tests == total_tests) then
         print *, "=== ALL CONSOLIDATED TESTS PASSED ==="
-        print *, "✓ Full rendering coverage achieved with minimal file I/O"
+        print *, "PASS: Full rendering coverage achieved with minimal file I/O"
     else
         print *, "=== SOME TESTS FAILED ==="
         error stop 1
@@ -91,12 +91,12 @@ contains
         ascii_ok = val%passed
         
         if (png_ok .and. ascii_ok) then
-            print *, "  ✓ All pcolormesh backends working (PNG + ASCII)"
-            print *, "  ✓ Enhanced patterns, dimension consistency verified"
-            print *, "  ✓ Replaces 9 separate test files with 2 files"
+            print *, "  PASS: All pcolormesh backends working (PNG + ASCII)"
+            print *, "  PASS: Enhanced patterns, dimension consistency verified"
+            print *, "  PASS: Replaces 9 separate test files with 2 files"
             passed = passed + 1
         else
-            print *, "  ✗ Pcolormesh rendering failed"
+            print *, "  FAIL: Pcolormesh rendering failed"
             if (.not. png_ok) print *, "    - PNG backend failed"
             if (.not. ascii_ok) print *, "    - ASCII backend failed"
         end if
@@ -146,12 +146,12 @@ contains
         end if
         
         if (file_ok) then
-            print *, "  ✓ All scientific patterns verified in single plot"
-            print *, "  ✓ Measurement, simulation, comparative analysis covered"
-            print *, "  ✓ Replaces 5 separate workflow files with 1 file"
+            print *, "  PASS: All scientific patterns verified in single plot"
+            print *, "  PASS: Measurement, simulation, comparative analysis covered"
+            print *, "  PASS: Replaces 5 separate workflow files with 1 file"
             passed = passed + 1
         else
-            print *, "  ✗ Scientific patterns test failed"
+            print *, "  FAIL: Scientific patterns test failed"
         end if
         
     end subroutine test_scientific_patterns_consolidated
@@ -207,12 +207,12 @@ contains
         end if
         
         if (file_ok) then
-            print *, "  ✓ All edge cases handled correctly"
-            print *, "  ✓ Single point visibility, empty data, normal data verified"
-            print *, "  ✓ Replaces 5+ edge case files with 1 comprehensive file"
+            print *, "  PASS: All edge cases handled correctly"
+            print *, "  PASS: Single point visibility, empty data, normal data verified"
+            print *, "  PASS: Replaces 5+ edge case files with 1 comprehensive file"
             passed = passed + 1
         else
-            print *, "  ✗ Edge cases test failed"
+            print *, "  FAIL: Edge cases test failed"
         end if
         
     end subroutine test_edge_cases_consolidated

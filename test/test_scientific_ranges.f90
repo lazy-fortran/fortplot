@@ -75,7 +75,7 @@ program test_scientific_ranges
     print *, "- test_engineering_range.png (18 orders of magnitude)"
     print *, "- test_edge_clamp_range.png (48 orders - should not clamp)"
     print *, ""
-    print *, "✓ No clamping messages should appear above"
+    print *, "PASS: No clamping messages should appear above"
     print *, "============================================="
     
 end program test_scientific_ranges

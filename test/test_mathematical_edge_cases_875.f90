@@ -153,20 +153,20 @@ contains
         data_min = ieee_value(0.0_wp, ieee_quiet_nan)
         data_max = 10.0_wp
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled NaN data_min in tick calculation"
+        write(output_unit, '(A)') "  PASS: Handled NaN data_min in tick calculation"
         
         ! Test NaN as data_max
         data_min = 1.0_wp
         data_max = ieee_value(0.0_wp, ieee_quiet_nan)
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled NaN data_max in tick calculation"
+        write(output_unit, '(A)') "  PASS: Handled NaN data_max in tick calculation"
         
         ! Test both NaN
         data_min = ieee_value(0.0_wp, ieee_quiet_nan)
         data_max = ieee_value(0.0_wp, ieee_quiet_nan)
         call find_nice_tick_locations(data_min, data_max, 5, nice_min, nice_max, &
                                      nice_step, tick_locations, actual_num_ticks)
-        write(output_unit, '(A)') "  ✓ Handled both NaN values in nice tick locations"
+        write(output_unit, '(A)') "  PASS: Handled both NaN values in nice tick locations"
     end subroutine test_tick_calculation_with_nans
 
     subroutine test_tick_calculation_with_infinity()
@@ -176,13 +176,13 @@ contains
         data_min = 1.0_wp
         data_max = ieee_value(0.0_wp, ieee_positive_inf)
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled positive infinity in tick calculation"
+        write(output_unit, '(A)') "  PASS: Handled positive infinity in tick calculation"
         
         ! Test negative infinity as data_min
         data_min = ieee_value(0.0_wp, ieee_negative_inf)
         data_max = 10.0_wp
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled negative infinity in tick calculation"
+        write(output_unit, '(A)') "  PASS: Handled negative infinity in tick calculation"
     end subroutine test_tick_calculation_with_infinity
 
     subroutine test_tick_calculation_with_invalid_log_inputs()
@@ -192,13 +192,13 @@ contains
         data_min = 0.0_wp
         data_max = 10.0_wp
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled zero value in tick calculation (log context)"
+        write(output_unit, '(A)') "  PASS: Handled zero value in tick calculation (log context)"
         
         ! Test negative values that would cause log(negative)
         data_min = -10.0_wp
         data_max = -1.0_wp
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled negative values in tick calculation (log context)"
+        write(output_unit, '(A)') "  PASS: Handled negative values in tick calculation (log context)"
     end subroutine test_tick_calculation_with_invalid_log_inputs
 
     subroutine test_tick_calculation_division_by_zero()
@@ -208,13 +208,13 @@ contains
         data_min = 5.0_wp
         data_max = 5.0_wp
         call calculate_tick_labels(data_min, data_max, 5, tick_labels)
-        write(output_unit, '(A)') "  ✓ Handled identical min/max values (division by zero case)"
+        write(output_unit, '(A)') "  PASS: Handled identical min/max values (division by zero case)"
         
         ! Test very close values (potential precision issues)
         data_min = 1.0_wp
         data_max = 1.0_wp + epsilon(1.0_wp)
         call calculate_tick_labels(data_min, data_max, 5, tick_labels) 
-        write(output_unit, '(A)') "  ✓ Handled near-identical values (precision edge case)"
+        write(output_unit, '(A)') "  PASS: Handled near-identical values (precision edge case)"
     end subroutine test_tick_calculation_division_by_zero
 
     subroutine test_scale_transform_with_nans()
@@ -224,15 +224,15 @@ contains
         
         ! Test NaN in linear scale
         result = apply_scale_transform(nan_input, 'linear', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Linear scale with NaN: result is NaN: ", ieee_is_nan(result)
+        write(output_unit, '(A, L1)') "  PASS: Linear scale with NaN: result is NaN: ", ieee_is_nan(result)
         
         ! Test NaN in log scale
         result = apply_scale_transform(nan_input, 'log', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Log scale with NaN: result handled: ", .not. ieee_is_nan(result)
+        write(output_unit, '(A, L1)') "  PASS: Log scale with NaN: result handled: ", .not. ieee_is_nan(result)
         
         ! Test NaN in symlog scale
         result = apply_scale_transform(nan_input, 'symlog', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Symlog scale with NaN: result handled: ", .not. ieee_is_nan(result)
+        write(output_unit, '(A, L1)') "  PASS: Symlog scale with NaN: result handled: ", .not. ieee_is_nan(result)
     end subroutine test_scale_transform_with_nans
 
     subroutine test_scale_transform_with_infinity()
@@ -242,11 +242,11 @@ contains
         
         ! Test positive infinity in log scale
         result = apply_scale_transform(pos_inf_input, 'log', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Log scale with +infinity: result is finite: ", ieee_is_finite(result)
+        write(output_unit, '(A, L1)') "  PASS: Log scale with +infinity: result is finite: ", ieee_is_finite(result)
         
         ! Test negative infinity
         result = apply_scale_transform(ieee_value(0.0_wp, ieee_negative_inf), 'log', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Log scale with -infinity: result handled: ", ieee_is_finite(result)
+        write(output_unit, '(A, L1)') "  PASS: Log scale with -infinity: result handled: ", ieee_is_finite(result)
     end subroutine test_scale_transform_with_infinity
 
     subroutine test_coordinate_transform_division_by_zero()
@@ -254,11 +254,11 @@ contains
         
         ! Test division by zero in x-coordinate transform (x_max = x_min)
         x_result = transform_x_coordinate(5.0_wp, 10.0_wp, 10.0_wp, 640)
-        write(output_unit, '(A, F8.3)') "  ✓ X-transform with x_max=x_min: result=", x_result
+        write(output_unit, '(A, F8.3)') "  PASS: X-transform with x_max=x_min: result=", x_result
         
         ! Test division by zero in y-coordinate transform (y_max = y_min)
         y_result = transform_y_coordinate(3.0_wp, 7.0_wp, 7.0_wp, 480)
-        write(output_unit, '(A, F8.3)') "  ✓ Y-transform with y_max=y_min: result=", y_result
+        write(output_unit, '(A, F8.3)') "  PASS: Y-transform with y_max=y_min: result=", y_result
     end subroutine test_coordinate_transform_division_by_zero
 
     subroutine test_log_scale_with_invalid_inputs()
@@ -266,11 +266,11 @@ contains
         
         ! Test log scale with zero (should not crash)
         result = apply_scale_transform(0.0_wp, 'log', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Log scale with zero: result is finite: ", ieee_is_finite(result)
+        write(output_unit, '(A, L1)') "  PASS: Log scale with zero: result is finite: ", ieee_is_finite(result)
         
         ! Test log scale with negative value
         result = apply_scale_transform(-5.0_wp, 'log', 1.0_wp)
-        write(output_unit, '(A, L1)') "  ✓ Log scale with negative: result is finite: ", ieee_is_finite(result)
+        write(output_unit, '(A, L1)') "  PASS: Log scale with negative: result is finite: ", ieee_is_finite(result)
     end subroutine test_log_scale_with_invalid_inputs
 
     subroutine test_rgb_to_hsv_with_nans()
@@ -279,11 +279,11 @@ contains
         ! Test RGB with NaN values
         input_rgb = [ieee_value(0.0_wp, ieee_quiet_nan), 0.5_wp, 0.7_wp]
         call rgb_to_hsv(input_rgb, output_hsv)
-        write(output_unit, '(A, 3L1)') "  ✓ RGB->HSV with NaN R: HSV finite: ", ieee_is_finite(output_hsv)
+        write(output_unit, '(A, 3L1)') "  PASS: RGB->HSV with NaN R: HSV finite: ", ieee_is_finite(output_hsv)
         
         input_rgb = [0.3_wp, ieee_value(0.0_wp, ieee_quiet_nan), 0.7_wp]
         call rgb_to_hsv(input_rgb, output_hsv)
-        write(output_unit, '(A, 3L1)') "  ✓ RGB->HSV with NaN G: HSV handled: ", ieee_is_finite(output_hsv)
+        write(output_unit, '(A, 3L1)') "  PASS: RGB->HSV with NaN G: HSV handled: ", ieee_is_finite(output_hsv)
     end subroutine test_rgb_to_hsv_with_nans
 
     subroutine test_rgb_to_hsv_with_infinity()
@@ -292,7 +292,7 @@ contains
         ! Test RGB with infinity values
         input_rgb = [ieee_value(0.0_wp, ieee_positive_inf), 0.5_wp, 0.7_wp]
         call rgb_to_hsv(input_rgb, output_hsv)
-        write(output_unit, '(A, 3L1)') "  ✓ RGB->HSV with +inf R: HSV finite: ", ieee_is_finite(output_hsv)
+        write(output_unit, '(A, 3L1)') "  PASS: RGB->HSV with +inf R: HSV finite: ", ieee_is_finite(output_hsv)
     end subroutine test_rgb_to_hsv_with_infinity
 
     subroutine test_hsv_division_by_zero()
@@ -301,12 +301,12 @@ contains
         ! Test RGB values that cause max_val = 0 (division by zero in saturation)
         input_rgb = [0.0_wp, 0.0_wp, 0.0_wp]
         call rgb_to_hsv(input_rgb, output_hsv)
-        write(output_unit, '(A, 3F8.3)') "  ✓ RGB->HSV with all zeros: HSV=", output_hsv
+        write(output_unit, '(A, 3F8.3)') "  PASS: RGB->HSV with all zeros: HSV=", output_hsv
         
         ! Test RGB values that cause delta = 0 (division by zero in hue)
         input_rgb = [0.5_wp, 0.5_wp, 0.5_wp]  ! Equal RGB values
         call rgb_to_hsv(input_rgb, output_hsv)
-        write(output_unit, '(A, 3F8.3)') "  ✓ RGB->HSV with equal RGB: HSV=", output_hsv
+        write(output_unit, '(A, 3F8.3)') "  PASS: RGB->HSV with equal RGB: HSV=", output_hsv
     end subroutine test_hsv_division_by_zero
 
     subroutine test_gamma_correction_edge_cases()
@@ -315,11 +315,11 @@ contains
         ! Test gamma correction with extreme values (involves power operations)
         input_rgb = [1.0e-30_wp, 0.5_wp, 1.0_wp]  ! Very small value
         call rgb_to_lab(input_rgb, output_lab)
-        write(output_unit, '(A, 3L1)') "  ✓ RGB->LAB with tiny R: LAB finite: ", ieee_is_finite(output_lab)
+        write(output_unit, '(A, 3L1)') "  PASS: RGB->LAB with tiny R: LAB finite: ", ieee_is_finite(output_lab)
         
         input_rgb = [1.0_wp, 1.0_wp, 1.0_wp]  ! Maximum values
         call rgb_to_lab(input_rgb, output_lab)
-        write(output_unit, '(A, 3L1)') "  ✓ RGB->LAB with max RGB: LAB finite: ", ieee_is_finite(output_lab)
+        write(output_unit, '(A, 3L1)') "  PASS: RGB->LAB with max RGB: LAB finite: ", ieee_is_finite(output_lab)
     end subroutine test_gamma_correction_edge_cases
 
     subroutine test_coordinate_validation_with_nans()
@@ -331,7 +331,7 @@ contains
         
         ! This should detect NaN and handle appropriately
         test_result = has_machine_precision_issues(x_data, y_data)
-        write(output_unit, '(A, L1)') "  ✓ Precision check with NaN: handled gracefully: ", .true.
+        write(output_unit, '(A, L1)') "  PASS: Precision check with NaN: handled gracefully: ", .true.
     end subroutine test_coordinate_validation_with_nans
 
     subroutine test_coordinate_validation_with_infinity()
@@ -342,7 +342,7 @@ contains
         y_data = [1.0_wp, 2.0_wp, 3.0_wp]
         
         test_result = has_machine_precision_issues(x_data, y_data)
-        write(output_unit, '(A, L1)') "  ✓ Precision check with infinity: handled gracefully: ", .true.
+        write(output_unit, '(A, L1)') "  PASS: Precision check with infinity: handled gracefully: ", .true.
     end subroutine test_coordinate_validation_with_infinity
 
     subroutine test_minmax_with_nans()
@@ -354,7 +354,7 @@ contains
         min_result = minval(test_array)
         max_result = maxval(test_array)
         
-        write(output_unit, '(A, 2L1)') "  ✓ minval/maxval with NaN: results: ", &
+        write(output_unit, '(A, 2L1)') "  PASS: minval/maxval with NaN: results: ", &
             ieee_is_nan(min_result), ieee_is_nan(max_result)
     end subroutine test_minmax_with_nans
 
@@ -366,24 +366,24 @@ contains
         y_data = [1.0_wp, 2.0_wp, 3.0_wp]
         
         test_result = has_machine_precision_issues(x_data, y_data)
-        write(output_unit, '(A, L1)') "  ✓ Precision check with extreme range: result: ", test_result
+        write(output_unit, '(A, L1)') "  PASS: Precision check with extreme range: result: ", test_result
     end subroutine test_precision_calculations_edge_cases
 
     subroutine test_is_nan_safe_completeness()
         ! Test is_nan_safe function with comprehensive edge cases
-        write(output_unit, '(A, L1)') "  ✓ is_nan_safe(NaN): ", is_nan_safe(ieee_value(0.0_wp, ieee_quiet_nan))
-        write(output_unit, '(A, L1)') "  ✓ is_nan_safe(+inf): ", .not. is_nan_safe(ieee_value(0.0_wp, ieee_positive_inf))
-        write(output_unit, '(A, L1)') "  ✓ is_nan_safe(-inf): ", .not. is_nan_safe(ieee_value(0.0_wp, ieee_negative_inf))
-        write(output_unit, '(A, L1)') "  ✓ is_nan_safe(normal): ", .not. is_nan_safe(42.0_wp)
+        write(output_unit, '(A, L1)') "  PASS: is_nan_safe(NaN): ", is_nan_safe(ieee_value(0.0_wp, ieee_quiet_nan))
+        write(output_unit, '(A, L1)') "  PASS: is_nan_safe(+inf): ", .not. is_nan_safe(ieee_value(0.0_wp, ieee_positive_inf))
+        write(output_unit, '(A, L1)') "  PASS: is_nan_safe(-inf): ", .not. is_nan_safe(ieee_value(0.0_wp, ieee_negative_inf))
+        write(output_unit, '(A, L1)') "  PASS: is_nan_safe(normal): ", .not. is_nan_safe(42.0_wp)
     end subroutine test_is_nan_safe_completeness
 
     subroutine test_is_finite_safe_completeness()
         ! Test is_finite_safe function with comprehensive edge cases
-        write(output_unit, '(A, L1)') "  ✓ is_finite_safe(NaN): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_quiet_nan))
-        write(output_unit, '(A, L1)') "  ✓ is_finite_safe(+inf): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_positive_inf))
-        write(output_unit, '(A, L1)') "  ✓ is_finite_safe(-inf): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_negative_inf))
-        write(output_unit, '(A, L1)') "  ✓ is_finite_safe(huge): ", .not. is_finite_safe(1.1e100_wp) ! Above threshold
-        write(output_unit, '(A, L1)') "  ✓ is_finite_safe(normal): ", is_finite_safe(42.0_wp)
+        write(output_unit, '(A, L1)') "  PASS: is_finite_safe(NaN): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_quiet_nan))
+        write(output_unit, '(A, L1)') "  PASS: is_finite_safe(+inf): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_positive_inf))
+        write(output_unit, '(A, L1)') "  PASS: is_finite_safe(-inf): ", .not. is_finite_safe(ieee_value(0.0_wp, ieee_negative_inf))
+        write(output_unit, '(A, L1)') "  PASS: is_finite_safe(huge): ", .not. is_finite_safe(1.1e100_wp) ! Above threshold
+        write(output_unit, '(A, L1)') "  PASS: is_finite_safe(normal): ", is_finite_safe(42.0_wp)
     end subroutine test_is_finite_safe_completeness
 
     subroutine test_mathematical_operations_with_validation()
@@ -405,7 +405,7 @@ contains
                 write(output_unit, '(A, I1, A)') "    Value ", i, ": INVALID - rejected by validation"
             end if
         end do
-        write(output_unit, '(A)') "  ✓ Mathematical validation workflow complete"
+        write(output_unit, '(A)') "  PASS: Mathematical validation workflow complete"
     end subroutine test_mathematical_operations_with_validation
 
 end program test_mathematical_edge_cases_875

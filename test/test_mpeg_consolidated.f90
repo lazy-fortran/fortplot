@@ -88,10 +88,10 @@ contains
             print *, "WARNING: Invalid MPEG structure detected"
         end if
         
-        print *, "✓ MPEG generation: PASS"
-        print *, "✓ File existence: PASS"
-        print *, "✓ File size:", file_size, "bytes"
-        print *, "✓ Structure validation:", valid_structure
+        print *, "PASS: MPEG generation: PASS"
+        print *, "PASS: File existence: PASS"
+        print *, "PASS: File size:", file_size, "bytes"
+        print *, "PASS: Structure validation:", valid_structure
         
         ! Cleanup
         block
@@ -146,7 +146,7 @@ contains
             error stop "ERROR: Should reject invalid format"
         end if
         
-        print *, "✓ Invalid format rejection: PASS"
+        print *, "PASS: Invalid format rejection: PASS"
     end subroutine
 
     subroutine dummy_update(frame)

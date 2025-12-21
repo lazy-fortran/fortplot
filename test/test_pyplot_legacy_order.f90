@@ -16,7 +16,7 @@ program test_pyplot_legacy_order
     call test_pie()
     call test_imshow()
 
-    print *, '✓ Pyplot positional wrappers remain OO-compatible'
+    print *, 'PASS: Pyplot positional wrappers remain OO-compatible'
 
 contains
 

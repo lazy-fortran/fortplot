@@ -10,7 +10,7 @@ def list_items(path):
 
 
 def test_src_subfolder_item_limits():
-    # Project guideline: aim ≤20 items per folder (hard ≤50)
+    # Project guideline: aim <=20 items per folder (hard <=50)
     src_root = os.path.join(os.path.dirname(__file__), "..", "src")
     src_root = os.path.abspath(src_root)
 
@@ -52,7 +52,7 @@ def main() -> int:
     except AssertionError as e:
         print(str(e), file=sys.stderr)
         return 1
-    print("PASS: src/* subfolder item limits respected (≤20 soft, ≤50 hard)")
+    print("PASS: src/* subfolder item limits respected (<=20 soft, <=50 hard)")
     return 0
 
 

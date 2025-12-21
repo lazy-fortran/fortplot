@@ -28,8 +28,8 @@ program test_issue_433_final
     call set_xscale("log")  ! Log scale should handle huge range
     call savefig("test/output/numeric_limits_fixed.png")
     
-    print *, "✓ Plot generated: numeric_limits_fixed.png"
-    print *, "✓ Should show proper plot with clamping info above"
+    print *, "PASS: Plot generated: numeric_limits_fixed.png"
+    print *, "PASS: Should show proper plot with clamping info above"
     print *, ""
     print *, "Issue #433 Status: FIXED"
     print *, "- Extreme ranges are automatically clamped to usable ranges"

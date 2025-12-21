@@ -59,7 +59,7 @@ contains
                         show_colorbar=.true.)
         
         ! If we get here, API exists but may not be complete
-        write(error_unit, '(A)') '  ✓ Enhanced scatter API signature accepted'
+        write(error_unit, '(A)') '  PASS: Enhanced scatter API signature accepted'
         call fig%savefig('test/output/test_enhanced_api.png')
         
     end subroutine test_enhanced_scatter_api_signature
@@ -81,15 +81,15 @@ contains
         
         ! Test normal size range mapping (drives size scaling implementation)
         call fig%scatter(x, y, s=sizes_normal, label='Normal Sizes', marker='o')
-        write(error_unit, '(A)') '  ✓ Normal size range mapping'
+        write(error_unit, '(A)') '  PASS: Normal size range mapping'
         
         ! Test extreme size range handling (drives range validation)
         call fig%scatter(x+1.0_wp, y, s=sizes_extreme, label='Extreme Sizes', marker='s')
-        write(error_unit, '(A)') '  ✓ Extreme size range handling'
+        write(error_unit, '(A)') '  PASS: Extreme size range handling'
         
         ! Test identical size values (drives edge case handling)
         call fig%scatter(x+2.0_wp, y, s=sizes_identical, label='Identical Sizes', marker='^')
-        write(error_unit, '(A)') '  ✓ Identical size values'
+        write(error_unit, '(A)') '  PASS: Identical size values'
         
         call fig%legend()
         call fig%savefig('test/output/test_size_mapping.png')
@@ -113,22 +113,22 @@ contains
         ! Test viridis colormap (drives basic color mapping)
         call fig%scatter(x, y, c=colors_norm, colormap='viridis', &
                         marker='o', label='Viridis', show_colorbar=.true.)
-        write(error_unit, '(A)') '  ✓ Viridis colormap integration'
+        write(error_unit, '(A)') '  PASS: Viridis colormap integration'
         
         ! Test plasma colormap (drives colormap variety)
         call fig%scatter(x, y+1.0_wp, c=colors_norm, colormap='plasma', &
                         marker='s', label='Plasma')
-        write(error_unit, '(A)') '  ✓ Plasma colormap integration'
+        write(error_unit, '(A)') '  PASS: Plasma colormap integration'
         
         ! Test inferno colormap (drives colormap consistency)
         call fig%scatter(x, y+2.0_wp, c=colors_norm, colormap='inferno', &
                         marker='^', label='Inferno')
-        write(error_unit, '(A)') '  ✓ Inferno colormap integration'
+        write(error_unit, '(A)') '  PASS: Inferno colormap integration'
         
         ! Test custom color range with vmin/vmax (drives range control)
         call fig%scatter(x, y+3.0_wp, c=colors_custom, colormap='coolwarm', &
                         vmin=-5.0_wp, vmax=12.5_wp, marker='d', label='Custom Range')
-        write(error_unit, '(A)') '  ✓ Custom color range control'
+        write(error_unit, '(A)') '  PASS: Custom color range control'
         
         call fig%legend()
         call fig%savefig('test/output/test_colormap_integration.png')
@@ -161,7 +161,7 @@ contains
         do i = 1, 10
             call fig%scatter([x(i)], [y(i)], marker=markers(i), &
                            markersize=20.0_wp, label=trim(labels(i)))
-            write(error_unit, '(A,A,A)') '  ✓ Marker shape: ', markers(i), ' (', trim(labels(i)), ')'
+            write(error_unit, '(A,A,A)') '  PASS: Marker shape: ', markers(i), ' (', trim(labels(i)), ')'
         end do
         
         call fig%set_title('Comprehensive Marker Shape Test')
@@ -175,7 +175,7 @@ contains
     subroutine test_default_marker_behavior()
         !! Given: Scatter plot without explicit marker parameter
         !! When: I create scatter plot without specifying marker
-        !! Then: Default marker 'o' should be used and points should be visible
+        !! Then: Default marker o should be used and points should be visible
         
         type(figure_t) :: fig
         real(wp) :: x(5) = [1.0_wp, 2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp]
@@ -184,13 +184,13 @@ contains
         write(error_unit, '(A)') 'Testing default marker behavior (Issue #1109)...'
         call fig%initialize(400, 300)
         
-        ! Test scatter without marker parameter - should use default 'o' marker
+        ! Test scatter without marker parameter - should use default o marker
         call fig%scatter(x, y, label='Default Marker')
-        write(error_unit, '(A)') '  ✓ Default marker applied when not specified'
+        write(error_unit, '(A)') '  PASS: Default marker applied when not specified'
         
         ! Also test with markersize but no marker (ensures default marker with custom size)
         call fig%scatter(x, y+1.0_wp, markersize=15.0_wp, label='Default Marker with Size')
-        write(error_unit, '(A)') '  ✓ Default marker with custom size'
+        write(error_unit, '(A)') '  PASS: Default marker with custom size'
         
         call fig%legend()
         call fig%savefig('test/output/test_default_marker.png')
@@ -216,29 +216,29 @@ contains
         write(error_unit, '(A)') '  Testing mismatched array sizes...'
         ! This should generate warning/error but not crash
         call fig%scatter(x_short, y, s=sizes_wrong, label='Size Mismatch')
-        write(error_unit, '(A)') '  ✓ Array size mismatch handled'
+        write(error_unit, '(A)') '  PASS: Array size mismatch handled'
         
         ! Test empty arrays (drives empty data handling)
         write(error_unit, '(A)') '  Testing empty array handling...'
         call fig%scatter(x(1:0), y(1:0), label='Empty Arrays')
-        write(error_unit, '(A)') '  ✓ Empty arrays handled'
+        write(error_unit, '(A)') '  PASS: Empty arrays handled'
         
         ! Test single point (drives minimum data requirements)
         write(error_unit, '(A)') '  Testing single point scatter...'
         call fig%scatter([2.5_wp], [2.5_wp], s=[50.0_wp], c=[0.5_wp], &
                         colormap='viridis', marker='*', label='Single Point')
-        write(error_unit, '(A)') '  ✓ Single point handled'
+        write(error_unit, '(A)') '  PASS: Single point handled'
         
         ! Test invalid marker (drives marker validation)
         write(error_unit, '(A)') '  Testing invalid marker handling...'
         call fig%scatter(x(1:2), y(1:2), marker='invalid', label='Bad Marker')
-        write(error_unit, '(A)') '  ✓ Invalid marker handled'
+        write(error_unit, '(A)') '  PASS: Invalid marker handled'
         
         ! Test invalid colormap (drives colormap validation)
         write(error_unit, '(A)') '  Testing invalid colormap handling...'
         call fig%scatter(x(1:2), y(1:2), c=[0.1_wp, 0.9_wp], &
                         colormap='nonexistent', label='Bad Colormap')
-        write(error_unit, '(A)') '  ✓ Invalid colormap handled'
+        write(error_unit, '(A)') '  PASS: Invalid colormap handled'
         
         call fig%savefig('test/output/test_input_validation.png')
         
@@ -261,19 +261,19 @@ contains
         ! Test automatic color range detection (drives vmin/vmax auto-detection)
         call fig%scatter(x, y, c=colors_auto, colormap='viridis', &
                         label='Auto Range', show_colorbar=.true.)
-        write(error_unit, '(A)') '  ✓ Automatic color range detection'
+        write(error_unit, '(A)') '  PASS: Automatic color range detection'
         
         ! Test manual color range override (drives vmin/vmax manual setting)
         call fig%scatter(x, y+1.0_wp, c=colors_manual, colormap='plasma', &
                         vmin=-100.0_wp, vmax=150.0_wp, &
                         label='Manual Range', show_colorbar=.true.)
-        write(error_unit, '(A)') '  ✓ Manual color range override'
+        write(error_unit, '(A)') '  PASS: Manual color range override'
         
         ! Test clipped color range (drives range clipping behavior)
         call fig%scatter(x, y+2.0_wp, c=colors_manual, colormap='coolwarm', &
                         vmin=-50.0_wp, vmax=100.0_wp, &
                         label='Clipped Range', show_colorbar=.true.)
-        write(error_unit, '(A)') '  ✓ Color range clipping'
+        write(error_unit, '(A)') '  PASS: Color range clipping'
         
         call fig%legend()
         call fig%savefig('test/output/test_color_ranges.png')
@@ -300,7 +300,7 @@ contains
         call savefig('test/output/test_large_scatter.png')
         call cpu_time(end_time)
         
-        write(error_unit, '(A,F6.2,A)') '  ✓ Large dataset rendered in ', end_time - start_time, ' seconds'
+        write(error_unit, '(A,F6.2,A)') '  PASS: Large dataset rendered in ', end_time - start_time, ' seconds'
     end subroutine test_large_dataset_performance
     
     subroutine test_backend_consistency()
@@ -313,17 +313,17 @@ contains
         call figure()
         call scatter(x, y, marker='o', label='Circles')
         call savefig('test/output/test_scatter_png.png')
-        write(error_unit, '(A)') '  ✓ PNG backend consistency'
+        write(error_unit, '(A)') '  PASS: PNG backend consistency'
         
         call figure()
         call scatter(x, y, marker='s', label='Squares')
         call savefig('test/output/test_scatter_pdf.pdf')
-        write(error_unit, '(A)') '  ✓ PDF backend consistency'
+        write(error_unit, '(A)') '  PASS: PDF backend consistency'
         
         call figure()
         call scatter(x, y, marker='*', label='Stars')
         call savefig('test/output/test_scatter_ascii.txt')
-        write(error_unit, '(A)') '  ✓ ASCII backend representation'
+        write(error_unit, '(A)') '  PASS: ASCII backend representation'
     end subroutine test_backend_consistency
     
     subroutine test_scatter_plot_count_efficiency()
@@ -346,9 +346,9 @@ contains
         count_after = fig%get_plot_count()
         
         if (count_after - count_before == 1) then
-            write(error_unit, '(A)') '  ✓ Scatter creates single plot object (efficient)'
+            write(error_unit, '(A)') '  PASS: Scatter creates single plot object (efficient)'
         else
-            write(error_unit, '(A)') '  ✗ Scatter creates multiple plot objects (inefficient)'
+            write(error_unit, '(A)') '  FAIL: Scatter creates multiple plot objects (inefficient)'
         end if
     end subroutine test_scatter_plot_count_efficiency
 

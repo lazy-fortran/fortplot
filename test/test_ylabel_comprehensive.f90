@@ -27,10 +27,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     ! With the increased gap, ylabel should have more space from tick labels
     if (x_pos > 0) then
-        print *, '✓ Test 1 PASS: Y-label spacing increased as per fix'
+        print *, 'PASS: Test 1 PASS: Y-label spacing increased as per fix'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 1 FAIL: Y-label spacing issue'
+        print *, 'FAIL: Test 1 FAIL: Y-label spacing issue'
     end if
     
     ! Test 2: Standard canvas with typical labels
@@ -41,10 +41,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then  ! Minimum margin protection
-        print *, '✓ Test 2 PASS: Standard ylabel position maintains minimum margin (x=', x_pos, ')'
+        print *, 'PASS: Test 2 PASS: Standard ylabel position maintains minimum margin (x=', x_pos, ')'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 2 FAIL: Standard ylabel at x=', x_pos, 'violates minimum margin'
+        print *, 'FAIL: Test 2 FAIL: Standard ylabel at x=', x_pos, 'violates minimum margin'
     end if
     
     ! Test 3: Extreme case - very wide tick labels
@@ -54,10 +54,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
-        print *, '✓ Test 3 PASS: Wide tick labels - minimum margin enforced (x=', x_pos, ')'
+        print *, 'PASS: Test 3 PASS: Wide tick labels - minimum margin enforced (x=', x_pos, ')'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 3 FAIL: Wide tick labels cause cutoff at x=', x_pos
+        print *, 'FAIL: Test 3 FAIL: Wide tick labels cause cutoff at x=', x_pos
     end if
     
     ! Test 4: Small canvas stress test
@@ -68,10 +68,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
-        print *, '✓ Test 4 PASS: Small canvas maintains minimum margin (x=', x_pos, ')'
+        print *, 'PASS: Test 4 PASS: Small canvas maintains minimum margin (x=', x_pos, ')'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 4 FAIL: Small canvas causes cutoff at x=', x_pos
+        print *, 'FAIL: Test 4 FAIL: Small canvas causes cutoff at x=', x_pos
     end if
     
     ! Test 5: Very long ylabel text
@@ -82,10 +82,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos >= 15) then
-        print *, '✓ Test 5 PASS: Long ylabel protected by minimum margin (x=', x_pos, ')'
+        print *, 'PASS: Test 5 PASS: Long ylabel protected by minimum margin (x=', x_pos, ')'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 5 FAIL: Long ylabel cut off at x=', x_pos
+        print *, 'FAIL: Test 5 FAIL: Long ylabel cut off at x=', x_pos
     end if
     
     ! Test 6: Verify spacing calculation with margin protection
@@ -98,10 +98,10 @@ program test_ylabel_comprehensive
     ! With margin protection, position should be at least 15
     test_passed = (x_pos >= 15)
     if (test_passed) then
-        print *, '✓ Test 6 PASS: Spacing formula with margin protection working'
+        print *, 'PASS: Test 6 PASS: Spacing formula with margin protection working'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 6 FAIL: Spacing calculation error'
+        print *, 'FAIL: Test 6 FAIL: Spacing calculation error'
     end if
     
     ! Test 7: Edge case - zero width tick labels
@@ -111,10 +111,10 @@ program test_ylabel_comprehensive
     x_pos = compute_ylabel_x_pos_old(plot_area, ylabel_width, ytick_max_width)
     
     if (x_pos > 0) then
-        print *, '✓ Test 7 PASS: Zero-width tick labels handled correctly (x=', x_pos, ')'
+        print *, 'PASS: Test 7 PASS: Zero-width tick labels handled correctly (x=', x_pos, ')'
         pass_count = pass_count + 1
     else
-        print *, '✗ Test 7 FAIL: Zero-width tick labels cause error at x=', x_pos
+        print *, 'FAIL: Test 7 FAIL: Zero-width tick labels cause error at x=', x_pos
     end if
     
     ! Summary
@@ -124,14 +124,14 @@ program test_ylabel_comprehensive
     
     if (pass_count == test_count) then
         print *, ''
-        print *, '✓ ALL TESTS PASSED - Y-label positioning fix verified!'
+        print *, 'PASS: ALL TESTS PASSED - Y-label positioning fix verified!'
         print *, '  - YLABEL_EXTRA_GAP increased from 2 to 8 pixels'
         print *, '  - Minimum 15-pixel margin enforced to prevent cutoff'
         print *, '  - Proper spacing from tick labels maintained'
         stop 0
     else
         print *, ''
-        print *, '✗ SOME TESTS FAILED - Review implementation'
+        print *, 'FAIL: SOME TESTS FAILED - Review implementation'
         stop 1
     end if
     

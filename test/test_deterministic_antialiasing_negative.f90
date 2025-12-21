@@ -35,10 +35,10 @@ program test_deterministic_antialiasing_negative
 
     call assert_same_file(fn1, fn2, ok)
     if (.not. ok) then
-        print *, '✗ Antialiasing output differs between runs for negative coords'
+        print *, 'FAIL: Antialiasing output differs between runs for negative coords'
         error stop 1
     else
-        print *, '✓ Antialiasing output identical across runs for negative coords'
+        print *, 'PASS: Antialiasing output identical across runs for negative coords'
     end if
 
 contains
