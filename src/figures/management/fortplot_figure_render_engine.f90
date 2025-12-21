@@ -327,7 +327,7 @@ contains
                                                annotation_count, &
                                                state%x_min, state%x_max, &
                                                state%y_min, state%y_max, &
-                                               state%width, state%height, &
+                                               state%width, state%height, state%dpi, &
                                                state%margin_left, state%margin_right, &
                                                state%margin_bottom, state%margin_top)
             end if

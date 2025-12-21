@@ -314,10 +314,17 @@ contains
         character(len=*), intent(in) :: filename
         logical, intent(in), optional :: blocking
 
-        call core_savefig(self%state, self%plots, self%plot_count, filename, &
-                          blocking, self%annotations, self%annotation_count, &
-                          self%subplots_array, self%subplot_rows, &
-                          self%subplot_cols)
+        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
+            self%subplot_cols > 0) then
+            call core_savefig(self%state, self%plots, self%plot_count, filename, &
+                              blocking, self%annotations, self%annotation_count, &
+                              subplots_array=self%subplots_array, &
+                              subplot_rows=self%subplot_rows, &
+                              subplot_cols=self%subplot_cols)
+        else
+            call core_savefig(self%state, self%plots, self%plot_count, filename, &
+                              blocking, self%annotations, self%annotation_count)
+        end if
     end subroutine savefig
 
     subroutine savefig_with_status(self, filename, status, blocking)
@@ -327,11 +334,19 @@ contains
         integer, intent(out) :: status
         logical, intent(in), optional :: blocking
 
-        call core_savefig_with_status(self%state, self%plots, self%plot_count, &
-                                      filename, status, blocking, &
-                                      self%annotations, self%annotation_count, &
-                                      self%subplots_array, self%subplot_rows, &
-                                      self%subplot_cols)
+        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
+            self%subplot_cols > 0) then
+            call core_savefig_with_status(self%state, self%plots, self%plot_count, &
+                                          filename, status, blocking, &
+                                          self%annotations, self%annotation_count, &
+                                          subplots_array=self%subplots_array, &
+                                          subplot_rows=self%subplot_rows, &
+                                          subplot_cols=self%subplot_cols)
+        else
+            call core_savefig_with_status(self%state, self%plots, self%plot_count, &
+                                          filename, status, blocking, &
+                                          self%annotations, self%annotation_count)
+        end if
     end subroutine savefig_with_status
 
     subroutine show(self, blocking)
@@ -339,10 +354,17 @@ contains
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: blocking
 
-        call core_show(self%state, self%plots, self%plot_count, blocking, &
-                       self%annotations, self%annotation_count, &
-                       self%subplots_array, self%subplot_rows, &
-                       self%subplot_cols)
+        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
+            self%subplot_cols > 0) then
+            call core_show(self%state, self%plots, self%plot_count, blocking, &
+                           self%annotations, self%annotation_count, &
+                           subplots_array=self%subplots_array, &
+                           subplot_rows=self%subplot_rows, &
+                           subplot_cols=self%subplot_cols)
+        else
+            call core_show(self%state, self%plots, self%plot_count, blocking, &
+                           self%annotations, self%annotation_count)
+        end if
     end subroutine show
 
     !! CONFIGURATION METHODS - Delegated to core config module
