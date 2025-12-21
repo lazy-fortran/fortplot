@@ -1,3 +1,6 @@
+title: Subplots Function
+---
+
 # Subplots Function
 
 The `subplots()` function creates a grid of subplots on the current figure, similar to matplotlib's `plt.subplots()` function.
