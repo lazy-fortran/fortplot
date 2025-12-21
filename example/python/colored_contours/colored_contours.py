@@ -93,7 +93,7 @@ def plasma_saddle_example():
     plt.title("Saddle Function - Plasma Colormap")
     
     # Custom contour levels
-    plt.contourf(X, Y, Z, custom_levels)
+    plt.contourf(X, Y, Z, custom_levels, cmap="plasma")
     
     plt.savefig(out('saddle_plasma.png'))
     plt.savefig(out('saddle_plasma.pdf'))
@@ -124,7 +124,7 @@ def mixed_colormap_comparison():
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Ripple Function - Inferno Colormap")
-    plt.contourf(X, Y, Z)
+    plt.contourf(X, Y, Z, cmap="inferno")
     plt.savefig(out('ripple_inferno.png'))
     plt.savefig(out('ripple_inferno.pdf'))
     
@@ -140,7 +140,7 @@ def mixed_colormap_comparison():
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Ripple Function - Coolwarm Colormap")
-    plt.contourf(X, Y, Z)
+    plt.contourf(X, Y, Z, cmap="coolwarm")
     plt.savefig(out('ripple_coolwarm.png'))
     plt.savefig(out('ripple_coolwarm.pdf'))
     
@@ -156,7 +156,7 @@ def mixed_colormap_comparison():
     plt.xlabel("x")
     plt.ylabel("y")
     plt.title("Ripple Function - Jet Colormap")
-    plt.contourf(X, Y, Z)
+    plt.contourf(X, Y, Z, cmap="jet")
     plt.savefig(out('ripple_jet.png'))
     plt.savefig(out('ripple_jet.pdf'))
     
