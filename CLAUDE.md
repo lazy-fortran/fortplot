@@ -177,7 +177,7 @@ The user explicitly requested this visual showcase. Breaking it again will cause
 - **MERGE SIMILAR FUNCTIONALITY**: histogram tests, legend tests, axis tests
 
 **OUTPUT ARTIFACTS** (Currently 182, Target: 0 in repository root):
-- Move ALL test outputs to test/output/ directory
+- Move test outputs out of the repository root into `build/test/output/` (Issue #820).
 - Clean ALL PNG/PDF files from root directory
 - Establish .gitignore for build artifacts
 - Remove ALL debug output files
