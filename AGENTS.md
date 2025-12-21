@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 - `src/`: Fortran library sources (e.g., `backends/`, `figures/`, `utilities/`).
-- `test/`: FPM tests (`test_*.f90`) and artifacts under `test/output/`.
+- `test/`: FPM tests (`test_*.f90`). Generated test artifacts default to `build/test/output/` (Issue #820 via `src/testing/fortplot_test_helpers.f90`).
 - `example/`: Fortran and Python examples; generated media in `output/example/...`.
 - `python/fortplot/`: Python wrapper and helpers (`core.py`, `axes.py`, etc.).
 - `cmake/`, `Makefile`, `fpm.toml`: Build systems; docs in `doc/`, FORD config in `doc.md`.

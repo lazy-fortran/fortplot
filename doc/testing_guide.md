@@ -5,10 +5,12 @@ title: Testing Guide
 
 ## Test Artifacts
 
-All automated tests persist their generated plots under `test/output/<suite>/`.
-If images, PDFs, or text dumps appear in the repository root, remove them and
-rerun the tests so the artifacts land in their dedicated subdirectories. The
-`make clean` target also prunes stray files outside `test/output/`.
+Automated tests write generated plots under `build/test/output/` (Issue #820
+via `src/testing/fortplot_test_helpers.f90`). This directory is ephemeral and
+gitignored. If images, PDFs, or text dumps appear in the repository root,
+remove them and rerun the tests so the artifacts land in the proper directory.
+The `make clean` target also prunes stray files outside the expected output
+trees.
 
 ## MPEG Validation Testing
 
