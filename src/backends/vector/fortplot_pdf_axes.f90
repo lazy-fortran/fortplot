@@ -503,6 +503,8 @@ contains
         real(wp) :: label_x, label_y, bottom_y
         real(wp) :: y_label_w
         real(wp) :: max_y_w
+        real(wp) :: last_y_drawn
+        real(wp) :: min_spacing
         real(wp), parameter :: TICK_CHAR_W = 6.0_wp
         ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
@@ -523,13 +525,19 @@ contains
         end do
 
         max_y_w = 0.0_wp
+        last_y_drawn = -1.0e30_wp
+        min_spacing = max(10.0_wp, 1.15_wp*PDF_TICK_LABEL_SIZE)
         do i = 1, num_y
             label_y = y_positions(i) - 3.0_wp
             y_label_w = estimate_pdf_text_width(trim(y_labels(i)), &
                                                 PDF_TICK_LABEL_SIZE)
             max_y_w = max(max_y_w, y_label_w)
+
+            if (abs(label_y - last_y_drawn) < min_spacing) cycle
+
             label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
             call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
+            last_y_drawn = label_y
         end do
 
         if (present(max_y_tick_label_width)) then
@@ -558,6 +566,7 @@ contains
         real(wp), parameter :: TITLE_GAP = 20.0_wp
         real(wp), parameter :: Y_TICK_GAP_LOCAL = 19.0_wp
         real(wp), parameter :: YLABEL_PAD = 10.0_wp
+        real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 
         ! Draw title (centered at top)
         if (present(title)) then
@@ -603,7 +612,7 @@ contains
 
                 ! Place y-label left of the y-tick label block by a fixed padding.
                 ylabel_x = plot_area_left - Y_TICK_GAP_LOCAL - y_tick_w - YLABEL_PAD - &
-                           PDF_LABEL_SIZE
+                           LABEL_THICKNESS
 
                 ! Vertically center rotated label: its extent along Y equals the
                 ! unrotated text width in points.

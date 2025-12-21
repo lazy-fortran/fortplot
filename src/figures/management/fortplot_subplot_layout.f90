@@ -300,6 +300,7 @@ contains
         real(wp), parameter :: Y_TICK_GAP = 19.0_wp
         real(wp), parameter :: TITLE_GAP = 20.0_wp
         real(wp), parameter :: YLABEL_PAD = 10.0_wp
+        real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 
         max_y_w = 0.0_wp
         max_x_h = 0.0_wp
@@ -357,7 +358,7 @@ contains
 
         dec_left = Y_TICK_GAP + max_y_w
         if (len_trim(ylabel) > 0) then
-            dec_left = dec_left + YLABEL_PAD + PDF_LABEL_SIZE
+            dec_left = dec_left + YLABEL_PAD + LABEL_THICKNESS
         end if
         dec_right = 0.0_wp
 
