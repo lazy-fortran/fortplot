@@ -235,21 +235,39 @@ contains
         integer, intent(in) :: rotated_width
         type(plot_area_t), intent(in) :: plot_area
 
-        ! The ylabel should be positioned to the left of the y-tick label edge
-        ! with an additional gap for clarity. y_tick_label_edge already
-        ! accounts for the tick label width.
-        compute_ylabel_x_pos = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
+        integer :: min_left_margin
+        integer :: ideal_x
+        integer :: safe_x
 
-        ! Ensure a minimum left margin so the label never hugs the canvas edge.
-        ! Match legacy behavior used in tests: at least 15px, scaled slightly
-        ! with text size to avoid visual crowding for very tall glyphs.
-        block
-            integer :: min_left_margin
-            min_left_margin = max(15, rotated_width/4)
-            if (compute_ylabel_x_pos < min_left_margin) then
-                compute_ylabel_x_pos = min_left_margin
-            end if
-        end block
+        associate (unused_plot_area => plot_area); end associate
+
+        min_left_margin = max(15, rotated_width/4)
+
+        ! y_tick_label_edge represents the left boundary of the y-tick label
+        ! block (right edge minus maximum tick label width). Place the ylabel
+        ! entirely to the left of that boundary.
+        ideal_x = y_tick_label_edge - YLABEL_EXTRA_GAP - rotated_width
+
+        ! If tick labels are already off-canvas, favor keeping the label visible.
+        if (y_tick_label_edge <= 0) then
+            compute_ylabel_x_pos = max(min_left_margin, ideal_x)
+            return
+        end if
+
+        if (ideal_x >= min_left_margin) then
+            compute_ylabel_x_pos = ideal_x
+            return
+        end if
+
+        ! If there is not enough room to keep both a minimum margin and the
+        ! extra gap, drop the extra gap first; if still no room, allow the
+        ! ylabel to extend off-canvas to avoid overlapping tick labels.
+        safe_x = y_tick_label_edge - rotated_width - 1
+        if (safe_x >= min_left_margin) then
+            compute_ylabel_x_pos = min_left_margin
+        else
+            compute_ylabel_x_pos = safe_x
+        end if
     end function compute_ylabel_x_pos
 
     integer function compute_top_xlabel_y_pos(plot_area, label_height)
