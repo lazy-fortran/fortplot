@@ -25,6 +25,7 @@ module fortplot_figure_render_engine
     use fortplot_figure_colorbar, only: prepare_colorbar_layout, &
                                         resolve_colorbar_mappable, &
                                         render_colorbar
+    use fortplot_subplot_rendering, only: render_subplots
     use fortplot_png, only: png_context
     use fortplot_pdf, only: pdf_context
     use fortplot_ascii, only: ascii_context, ASCII_CHAR_ASPECT
@@ -345,107 +346,8 @@ contains
         end if
     end subroutine render_single_axis
 
-    subroutine render_subplots(state, subplots_array, subplot_rows, subplot_cols)
-        !! Render a multi-subplot figure layout.
-        type(figure_state_t), intent(inout) :: state
-        type(subplot_data_t), intent(in) :: subplots_array(:, :)
-        integer, intent(in) :: subplot_rows, subplot_cols
-
-        integer :: nr, nc, i, j
-        real(wp) :: base_left, base_right, base_bottom, base_top
-        real(wp) :: cell_w, cell_h, left_f, right_f, bottom_f, top_f
-        real(wp) :: lxmin, lxmax, lymin, lymax
-        real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
-
-        base_left = 0.10_wp
-        base_right = 0.95_wp
-        base_bottom = 0.10_wp
-        base_top = 0.90_wp
-        nr = subplot_rows
-        nc = subplot_cols
-        cell_w = (base_right - base_left)/real(nc, wp)
-        cell_h = (base_top - base_bottom)/real(nr, wp)
-
-        do i = 1, nr
-            do j = 1, nc
-                left_f = base_left + real(j - 1, wp)*cell_w
-                right_f = base_left + real(j, wp)*cell_w
-                bottom_f = base_bottom + real(nr - i, wp)*cell_h
-                top_f = base_bottom + real(nr - i + 1, wp)*cell_h
-
-                select type (bk => state%backend)
-                class is (png_context)
-                    bk%margins%left = left_f
-                    bk%margins%right = right_f
-                    bk%margins%bottom = bottom_f
-                    bk%margins%top = top_f
-                    call calculate_plot_area(bk%width, bk%height, bk%margins, &
-                                             bk%plot_area)
-                class is (pdf_context)
-                    bk%margins%left = left_f
-                    bk%margins%right = right_f
-                    bk%margins%bottom = bottom_f
-                    bk%margins%top = top_f
-                    call calculate_pdf_plot_area(bk%width, bk%height, bk%margins, &
-                                                 bk%plot_area)
-                class is (ascii_context)
-                    ! ASCII backend keeps default layout.
-                class default
-                    ! Unknown backend; leave margins untouched.
-                end select
-
-                call calculate_figure_data_ranges(subplots_array(i, j)%plots, &
-                                                  subplots_array(i, j)%plot_count, &
-                                                  subplots_array(i, j)%xlim_set, &
-                                                  subplots_array(i, j)%ylim_set, &
-                                                  lxmin, lxmax, lymin, lymax, &
-                                                  lxmin_t, lxmax_t, lymin_t, lymax_t, &
-                                                  state%xscale, state%yscale, &
-                                                  state%symlog_threshold)
-
-                call setup_coordinate_system(state%backend, lxmin_t, lxmax_t, &
-                                             lymin_t, lymax_t)
-
-                call render_figure_axes(state%backend, state%xscale, state%yscale, &
-                                        state%symlog_threshold, lxmin, lxmax, &
-                                        lymin, lymax, &
-                                        subplots_array(i, j)%title, &
-                                        subplots_array(i, j)%xlabel, &
-                                        subplots_array(i, j)%ylabel, &
-                                        subplots_array(i, j)%plots, &
-                                        subplots_array(i, j)%plot_count, &
-                                        has_twinx=.false., &
-                                        has_twiny=.false.)
-
-                if (subplots_array(i, j)%plot_count > 0) then
-                    call render_all_plots(state%backend, subplots_array(i, j)%plots, &
-                                          subplots_array(i, j)%plot_count, &
-                                          lxmin_t, lxmax_t, &
-                                          lymin_t, lymax_t, state%xscale, &
-                                          state%yscale, &
-                                          state%symlog_threshold, state%width, &
-                                          state%height, &
-                                          state%margin_left, state%margin_right, &
-                                          state%margin_bottom, state%margin_top)
-                end if
-
-                call render_figure_axes_labels_only(state%backend, state%xscale, &
-                                                    state%yscale, &
-                                                    state%symlog_threshold, lxmin, &
-                                                    lxmax, lymin, lymax, &
-                                                    subplots_array(i, j)%title, &
-                                                    subplots_array(i, j)%xlabel, &
-                                                    subplots_array(i, j)%ylabel, &
-                                                    subplots_array(i, j)%plots, &
-                                                    subplots_array(i, j)%plot_count, &
-                                                    has_twinx=.false., &
-                                                    has_twiny=.false.)
-            end do
-        end do
-    end subroutine render_subplots
-
     subroutine regenerate_pie_legend_for_backend(state, plots, plot_count)
-     !! Regenerate legend data for pie charts to ensure correct backend-specific markers
+        !! Regenerate legend data for pie charts with backend-specific markers.
         use fortplot_figure_plot_management, only: setup_figure_legend
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(in) :: plots(:)
