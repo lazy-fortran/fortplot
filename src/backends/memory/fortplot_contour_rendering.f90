@@ -103,8 +103,8 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
 
-        integer :: nx, ny
-        integer :: i, j, k, t
+        integer :: nx, ny, nx_z, ny_z, nx_cells, ny_cells
+        integer :: ix, iy, k, t
         integer :: nlev
         real(wp), allocatable :: levels(:)
         real(wp) :: lo, hi, mid
@@ -124,7 +124,12 @@ contains
 
         nx = size(plot_data%x_grid)
         ny = size(plot_data%y_grid)
-        if (nx < 2 .or. ny < 2) return
+        ny_z = size(plot_data%z_grid, 1)
+        nx_z = size(plot_data%z_grid, 2)
+
+        nx_cells = min(nx, nx_z) - 1
+        ny_cells = min(ny, ny_z) - 1
+        if (nx_cells <= 0 .or. ny_cells <= 0) return
 
         eps_z = 1.0e-12_wp*max(1.0_wp, abs(z_max - z_min))
 
@@ -142,23 +147,23 @@ contains
                                          color)
             call backend%color(color(1), color(2), color(3))
 
-            do i = 1, nx - 1
-                do j = 1, ny - 1
-                    x1 = plot_data%x_grid(i)
-                    y1 = plot_data%y_grid(j)
-                    z1 = plot_data%z_grid(i, j)
+            do iy = 1, ny_cells
+                do ix = 1, nx_cells
+                    x1 = plot_data%x_grid(ix)
+                    y1 = plot_data%y_grid(iy)
+                    z1 = plot_data%z_grid(iy, ix)
 
-                    x2 = plot_data%x_grid(i + 1)
-                    y2 = plot_data%y_grid(j)
-                    z2 = plot_data%z_grid(i + 1, j)
+                    x2 = plot_data%x_grid(ix + 1)
+                    y2 = plot_data%y_grid(iy)
+                    z2 = plot_data%z_grid(iy, ix + 1)
 
-                    x3 = plot_data%x_grid(i + 1)
-                    y3 = plot_data%y_grid(j + 1)
-                    z3 = plot_data%z_grid(i + 1, j + 1)
+                    x3 = plot_data%x_grid(ix + 1)
+                    y3 = plot_data%y_grid(iy + 1)
+                    z3 = plot_data%z_grid(iy + 1, ix + 1)
 
-                    x4 = plot_data%x_grid(i)
-                    y4 = plot_data%y_grid(j + 1)
-                    z4 = plot_data%z_grid(i, j + 1)
+                    x4 = plot_data%x_grid(ix)
+                    y4 = plot_data%y_grid(iy + 1)
+                    z4 = plot_data%z_grid(iy + 1, ix)
 
                     xin(1:4) = [x1, x2, x3, x4]
                     yin(1:4) = [y1, y2, y3, y4]
