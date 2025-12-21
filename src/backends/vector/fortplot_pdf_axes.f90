@@ -295,11 +295,9 @@ contains
 
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                         data_x_min, data_x_max, data_y_min, &
-                                        data_y_max, &
-                                        title, xlabel, ylabel, plot_area_left, &
-                                        plot_area_bottom, &
-                                        plot_area_width, plot_area_height, &
-                                        canvas_height)
+                                        data_y_max, title, xlabel, ylabel, &
+                                        plot_area_left, plot_area_bottom, &
+                                        plot_area_width, plot_area_height)
         !! Draw complete axes system with labels using actual plot area coordinates
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in), optional :: xscale, yscale
@@ -307,7 +305,7 @@ contains
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
-                                plot_area_height, canvas_height
+                                plot_area_height
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
         character(len=32), allocatable :: x_labels(:), y_labels(:)
@@ -327,8 +325,7 @@ contains
         call draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
                                 num_x_ticks, num_y_ticks, title, xlabel, ylabel, &
                                 plot_area_left, plot_area_bottom, plot_area_width, &
-                                plot_area_height, &
-                                canvas_height)
+                                plot_area_height)
     end subroutine draw_pdf_axes_and_labels
 
     subroutine prepare_axes_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
@@ -366,8 +363,7 @@ contains
     subroutine draw_axes_elements(ctx, x_positions, y_positions, x_labels, y_labels, &
                                   num_x_ticks, num_y_ticks, title, xlabel, ylabel, &
                                   plot_area_left, plot_area_bottom, plot_area_width, &
-                                  plot_area_height, &
-                                  canvas_height)
+                                  plot_area_height)
         !! Draw axes frame, ticks, and labels
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
@@ -375,7 +371,7 @@ contains
         integer, intent(in) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
-                                plot_area_height, canvas_height
+                                plot_area_height
         real(wp) :: max_y_tick_label_width
 
         ! Ensure axes are drawn in black independent of prior plot color state
@@ -383,19 +379,19 @@ contains
         call ctx%set_line_width(1.0_wp)
 
         call draw_pdf_frame_with_area(ctx, plot_area_left, plot_area_bottom, &
-                                      plot_area_width, plot_area_height, canvas_height)
+                                      plot_area_width, plot_area_height)
 
         call draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, num_x_ticks, &
                                            num_y_ticks, &
-                                           plot_area_left, plot_area_bottom, &
-                                           canvas_height)
+                                           plot_area_left, plot_area_bottom)
 
         max_y_tick_label_width = 0.0_wp
         call draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, &
                                             y_labels, &
                                             num_x_ticks, num_y_ticks, plot_area_left, &
                                             plot_area_bottom, &
-                                            canvas_height, max_y_tick_label_width)
+                                            plot_area_height, &
+                                            max_y_tick_label_width)
 
         if (present(title) .or. present(xlabel) .or. present(ylabel)) then
             call draw_pdf_title_and_labels(ctx, title, xlabel, ylabel, &
@@ -424,14 +420,12 @@ contains
     end subroutine draw_pdf_3d_axes_frame
 
     subroutine draw_pdf_frame_with_area(ctx, plot_left, plot_bottom, plot_width, &
-                                        plot_height, canvas_height)
+                                        plot_height)
         !! Draw the plot frame using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height, &
-                                canvas_height
+        real(wp), intent(in) :: plot_left, plot_bottom, plot_width, plot_height
         character(len=2048) :: frame_cmd
         real(wp) :: x1, y1
-        associate (dch => canvas_height); end associate
 
         ! PDF coordinates: Y=0 at bottom (same as our data coordinates)
         x1 = plot_left
@@ -447,18 +441,16 @@ contains
     end subroutine draw_pdf_frame_with_area
 
     subroutine draw_pdf_tick_marks_with_area(ctx, x_positions, y_positions, &
-                                             num_x, num_y, &
-                                             plot_left, plot_bottom, canvas_height)
+                                             num_x, num_y, plot_left, plot_bottom)
         !! Draw tick marks using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         integer, intent(in) :: num_x, num_y
-        real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
+        real(wp), intent(in) :: plot_left, plot_bottom
 
         integer :: i
         character(len=2048) :: tick_cmd
         real(wp) :: tick_length, bottom_y
-        associate (dch => canvas_height); end associate
 
         ! Ensure tick marks are stroked in black and solid regardless of prior
         ! drawing state.
@@ -487,32 +479,32 @@ contains
     end subroutine draw_pdf_tick_marks_with_area
 
     subroutine draw_pdf_tick_labels_with_area(ctx, x_positions, y_positions, x_labels, &
-                                              y_labels, &
-                                              num_x, num_y, plot_left, plot_bottom, &
-                                              canvas_height, &
+                                              y_labels, num_x, num_y, plot_left, &
+                                              plot_bottom, plot_height, &
                                               max_y_tick_label_width)
         !! Draw tick labels using actual plot area coordinates (FIXED version)
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
         character(len=*), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x, num_y
-        real(wp), intent(in) :: plot_left, plot_bottom, canvas_height
+        real(wp), intent(in) :: plot_left, plot_bottom, plot_height
         real(wp), intent(out), optional :: max_y_tick_label_width
 
-        integer :: i
+        integer :: i, prev_idx
         real(wp) :: label_x, label_y, bottom_y
         real(wp) :: y_label_w
         real(wp) :: max_y_w
-        real(wp) :: last_y_drawn
         real(wp) :: min_spacing
-        real(wp), parameter :: TICK_CHAR_W = 6.0_wp
+        real(wp) :: label_budget
+        integer :: max_labels
+        integer :: idx
+        integer :: k
         ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
         ! Distance below plot for X tick labels
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 19.0_wp
-        associate (dch => canvas_height); end associate
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = 4.0_wp
+        real(wp), parameter :: Y_TICK_BASELINE_NUDGE = 0.35_wp
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
-        associate (unused_tick_char_w => TICK_CHAR_W); end associate
 
         ! Draw X-axis labels (center-aligned under each tick)
         do i = 1, num_x
@@ -525,20 +517,35 @@ contains
         end do
 
         max_y_w = 0.0_wp
-        last_y_drawn = -1.0e30_wp
-        min_spacing = max(10.0_wp, 1.15_wp*PDF_TICK_LABEL_SIZE)
-        do i = 1, num_y
-            label_y = y_positions(i) - 3.0_wp
-            y_label_w = estimate_pdf_text_width(trim(y_labels(i)), &
-                                                PDF_TICK_LABEL_SIZE)
-            max_y_w = max(max_y_w, y_label_w)
+        min_spacing = max(9.0_wp, 1.15_wp*PDF_TICK_LABEL_SIZE)
+        label_budget = max(0.0_wp, plot_height - PDF_TICK_LABEL_SIZE)
+        max_labels = max(2, int(label_budget/min_spacing) + 1)
 
-            if (abs(label_y - last_y_drawn) < min_spacing) cycle
-
-            label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
-            call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
-            last_y_drawn = label_y
-        end do
+        if (num_y <= max_labels) then
+            do i = 1, num_y
+                label_y = y_positions(i) - Y_TICK_BASELINE_NUDGE*PDF_TICK_LABEL_SIZE
+                y_label_w = estimate_pdf_text_width(trim(y_labels(i)), &
+                                                    PDF_TICK_LABEL_SIZE)
+                max_y_w = max(max_y_w, y_label_w)
+                label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
+            end do
+        else
+            prev_idx = 0
+            do k = 1, max_labels
+                idx = 1 + int(nint(real(k - 1, wp)*real(num_y - 1, wp)/ &
+                                   real(max_labels - 1, wp)))
+                idx = max(idx, prev_idx + 1)
+                idx = min(idx, num_y - (max_labels - k))
+                prev_idx = idx
+                label_y = y_positions(idx) - Y_TICK_BASELINE_NUDGE*PDF_TICK_LABEL_SIZE
+                y_label_w = estimate_pdf_text_width(trim(y_labels(idx)), &
+                                                    PDF_TICK_LABEL_SIZE)
+                max_y_w = max(max_y_w, y_label_w)
+                label_x = plot_left - Y_TICK_GAP_LOCAL - y_label_w
+                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(idx)))
+            end do
+        end if
 
         if (present(max_y_tick_label_width)) then
             max_y_tick_label_width = max_y_w
@@ -564,8 +571,8 @@ contains
         character(len=512) :: processed_title, processed_xlabel, processed_ylabel
         integer :: processed_len
         real(wp), parameter :: TITLE_GAP = 20.0_wp
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 19.0_wp
-        real(wp), parameter :: YLABEL_PAD = 10.0_wp
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = 4.0_wp
+        real(wp), parameter :: YLABEL_PAD = 3.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 
         ! Draw title (centered at top)
@@ -794,42 +801,5 @@ contains
 
         ctx%stream_data = ctx%stream_data//'ET'//new_line('a')
     end subroutine draw_rotated_pdf_mathtext
-
-    subroutine draw_pdf_y_labels_with_overlap_detection(ctx, y_positions, y_labels, &
-                                                        num_y, plot_left, canvas_height)
-        !! Draw Y-axis labels with overlap detection to prevent clustering
-        type(pdf_context_core), intent(inout) :: ctx
-        real(wp), intent(in) :: y_positions(:)
-        character(len=*), intent(in) :: y_labels(:)
-        integer, intent(in) :: num_y
-        real(wp), intent(in) :: plot_left, canvas_height
-
-        real(wp) :: last_y_drawn
-        real(wp) :: min_spacing
-        integer :: i
-        real(wp) :: label_x, label_y
-        character(len=512) :: processed_label
-        integer :: processed_len
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 19.0_wp
-        associate (dch => canvas_height); end associate
-
-        min_spacing = 15.0_wp  ! Minimum vertical spacing between labels
-        last_y_drawn = -1000.0_wp  ! Initialize to ensure first label is drawn
-
-        do i = 1, num_y
-            label_y = y_positions(i) - 3.0_wp
-            ! PDF Y=0 is at bottom, no conversion needed
-
-            ! Only draw if sufficient spacing from last label
-            if (abs(label_y - last_y_drawn) >= min_spacing) then
-                ! Estimate label width for right-alignment next to the frame
-                label_x = plot_left - Y_TICK_GAP_LOCAL - &
-                          estimate_pdf_text_width(trim(y_labels(i)), &
-                                                  PDF_TICK_LABEL_SIZE)
-                call render_mixed_text(ctx, label_x, label_y, trim(y_labels(i)))
-                last_y_drawn = label_y
-            end if
-        end do
-    end subroutine draw_pdf_y_labels_with_overlap_detection
 
 end module fortplot_pdf_axes

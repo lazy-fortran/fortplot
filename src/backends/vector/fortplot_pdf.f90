@@ -600,14 +600,12 @@ contains
                                            real(this%plot_area%height, wp))
         else
             call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, &
-                                          symlog_threshold, &
-                                          x_min, x_max, y_min, y_max, &
-                                          title_str, xlabel_str, ylabel_str, &
+                                          symlog_threshold, x_min, x_max, y_min, &
+                                          y_max, title_str, xlabel_str, ylabel_str, &
                                           real(this%plot_area%left, wp), &
                                           real(this%plot_area%bottom, wp), &
                                           real(this%plot_area%width, wp), &
-                                          real(this%plot_area%height, wp), &
-                                          real(this%height, wp))
+                                          real(this%plot_area%height, wp))
         end if
     end subroutine draw_axes_and_labels_backend_wrapper
 
@@ -673,8 +671,7 @@ contains
                                       real(this%plot_area%left, wp), &
                                       real(this%plot_area%bottom, wp), &
                                       real(this%plot_area%width, wp), &
-                                      real(this%plot_area%height, wp), &
-                                      real(this%height, wp))
+                                      real(this%plot_area%height, wp))
 
         ! Add axes content to the stream
         call this%stream_writer%add_to_stream(this%core_ctx%stream_data)

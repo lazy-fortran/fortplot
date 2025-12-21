@@ -297,9 +297,9 @@ contains
         character(len=:), allocatable :: title, xlabel, ylabel
 
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
-        real(wp), parameter :: Y_TICK_GAP = 19.0_wp
+        real(wp), parameter :: Y_TICK_GAP = 4.0_wp
         real(wp), parameter :: TITLE_GAP = 20.0_wp
-        real(wp), parameter :: YLABEL_PAD = 10.0_wp
+        real(wp), parameter :: YLABEL_PAD = 3.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 
         max_y_w = 0.0_wp
