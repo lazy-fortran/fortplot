@@ -35,7 +35,7 @@ contains
         end do
 
         output_len = j
-        if (j < len(output)) output(j+1:) = ' '
+        if (j < len(output)) output(j + 1:) = ' '
     end subroutine escape_pdf_string
 
     subroutine unicode_to_symbol_char(unicode_codepoint, symbol_char)
@@ -56,6 +56,37 @@ contains
             return
         end if
 
+        ! U+221E (infinity) maps to octal \245 in Symbol encoding
+        if (unicode_codepoint == 8734) then
+            symbol_char = achar(92)//'245'
+            return
+        end if
+
+        ! U+2202 (partial differential) maps to octal \266 in Symbol encoding
+        if (unicode_codepoint == 8706) then
+            symbol_char = achar(92)//'266'
+            return
+        end if
+
+        ! Arrows in Symbol encoding
+        select case (unicode_codepoint)
+        case (8592)
+            symbol_char = achar(92)//'254'
+            return
+        case (8593)
+            symbol_char = achar(92)//'255'
+            return
+        case (8594)
+            symbol_char = achar(92)//'256'
+            return
+        case (8595)
+            symbol_char = achar(92)//'257'
+            return
+        case (8596)
+            symbol_char = achar(92)//'253'
+            return
+        end select
+
         call lookup_lowercase_greek(unicode_codepoint, esc, found)
         if (.not. found) call lookup_uppercase_greek(unicode_codepoint, esc, found)
 
@@ -71,32 +102,35 @@ contains
         escape_seq = ''
         found = .false.
 
-        select case(codepoint)
-        case(176)
+        select case (codepoint)
+        case (188)
+            escape_seq = achar(92)//'274'
+            found = .true.
+        case (176)
             escape_seq = achar(92)//'260'
             found = .true.
-        case(177)
+        case (177)
             escape_seq = achar(92)//'261'
             found = .true.
-        case(178)
+        case (178)
             escape_seq = achar(92)//'262'
             found = .true.
-        case(179)
+        case (179)
             escape_seq = achar(92)//'263'
             found = .true.
-        case(181)
+        case (181)
             escape_seq = achar(92)//'265'
             found = .true.
-        case(183)
+        case (183)
             escape_seq = achar(92)//'267'
             found = .true.
-        case(185)
+        case (185)
             escape_seq = achar(92)//'271'
             found = .true.
-        case(215)
+        case (215)
             escape_seq = achar(92)//'327'
             found = .true.
-        case(247)
+        case (247)
             escape_seq = achar(92)//'367'
             found = .true.
         end select
@@ -119,54 +153,54 @@ contains
 
         found = .true.
 
-        select case(codepoint)
-        case(945)
+        select case (codepoint)
+        case (945)
             escape_seq = achar(92)//'141'
-        case(946)
+        case (946)
             escape_seq = achar(92)//'142'
-        case(947)
+        case (947)
             escape_seq = achar(92)//'147'
-        case(948)
+        case (948)
             escape_seq = achar(92)//'144'
-        case(949)
+        case (949)
             escape_seq = achar(92)//'145'
-        case(950)
+        case (950)
             escape_seq = achar(92)//'172'
-        case(951)
+        case (951)
             escape_seq = achar(92)//'150'
-        case(952)
+        case (952)
             escape_seq = achar(92)//'161'
-        case(953)
+        case (953)
             escape_seq = achar(92)//'151'
-        case(954)
+        case (954)
             escape_seq = achar(92)//'153'
-        case(955)
+        case (955)
             escape_seq = achar(92)//'154'
-        case(956)
+        case (956)
             escape_seq = achar(92)//'155'
-        case(957)
+        case (957)
             escape_seq = achar(92)//'156'
-        case(958)
+        case (958)
             escape_seq = achar(92)//'170'
-        case(959)
+        case (959)
             escape_seq = achar(92)//'157'
-        case(960)
+        case (960)
             escape_seq = achar(92)//'160'
-        case(961)
+        case (961)
             escape_seq = achar(92)//'162'
-        case(963)
+        case (963)
             escape_seq = achar(92)//'163'
-        case(964)
+        case (964)
             escape_seq = achar(92)//'164'
-        case(965)
+        case (965)
             escape_seq = achar(92)//'165'
-        case(966)
+        case (966)
             escape_seq = achar(92)//'146'
-        case(967)
+        case (967)
             escape_seq = achar(92)//'143'
-        case(968)
+        case (968)
             escape_seq = achar(92)//'171'
-        case(969)
+        case (969)
             escape_seq = achar(92)//'167'
         case default
             found = .false.
@@ -180,54 +214,54 @@ contains
 
         found = .true.
 
-        select case(codepoint)
-        case(913)
+        select case (codepoint)
+        case (913)
             escape_seq = achar(92)//'101'
-        case(914)
+        case (914)
             escape_seq = achar(92)//'102'
-        case(915)
+        case (915)
             escape_seq = achar(92)//'107'
-        case(916)
+        case (916)
             escape_seq = achar(92)//'104'
-        case(917)
+        case (917)
             escape_seq = achar(92)//'105'
-        case(918)
+        case (918)
             escape_seq = achar(92)//'132'
-        case(919)
+        case (919)
             escape_seq = achar(92)//'110'
-        case(920)
+        case (920)
             escape_seq = achar(92)//'121'
-        case(921)
+        case (921)
             escape_seq = achar(92)//'111'
-        case(922)
+        case (922)
             escape_seq = achar(92)//'113'
-        case(923)
+        case (923)
             escape_seq = achar(92)//'114'
-        case(924)
+        case (924)
             escape_seq = achar(92)//'115'
-        case(925)
+        case (925)
             escape_seq = achar(92)//'116'
-        case(926)
+        case (926)
             escape_seq = achar(92)//'130'
-        case(927)
+        case (927)
             escape_seq = achar(92)//'117'
-        case(928)
+        case (928)
             escape_seq = achar(92)//'120'
-        case(929)
+        case (929)
             escape_seq = achar(92)//'122'
-        case(931)
+        case (931)
             escape_seq = achar(92)//'123'
-        case(932)
+        case (932)
             escape_seq = achar(92)//'124'
-        case(933)
+        case (933)
             escape_seq = achar(92)//'125'
-        case(934)
+        case (934)
             escape_seq = achar(92)//'106'
-        case(935)
+        case (935)
             escape_seq = achar(92)//'103'
-        case(936)
+        case (936)
             escape_seq = achar(92)//'131'
-        case(937)
+        case (937)
             escape_seq = achar(92)//'127'
         case default
             found = .false.
