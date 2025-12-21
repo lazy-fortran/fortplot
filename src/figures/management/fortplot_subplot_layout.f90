@@ -298,7 +298,7 @@ contains
 
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
         real(wp), parameter :: Y_TICK_GAP = 1.0_wp
-        real(wp), parameter :: TITLE_GAP = 20.0_wp
+        real(wp), parameter :: TITLE_GAP = 6.0_wp
         real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 

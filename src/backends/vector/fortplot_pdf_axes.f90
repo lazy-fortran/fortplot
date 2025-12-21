@@ -570,7 +570,7 @@ contains
         real(wp) :: y_tick_w
         character(len=512) :: processed_title, processed_xlabel, processed_ylabel
         integer :: processed_len
-        real(wp), parameter :: TITLE_GAP = 20.0_wp
+        real(wp), parameter :: TITLE_GAP = 6.0_wp
         real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
         real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
