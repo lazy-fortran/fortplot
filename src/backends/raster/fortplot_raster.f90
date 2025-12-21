@@ -321,57 +321,67 @@ contains
                                               this%height, rotated_bitmap, rot_w, &
                                               rot_h, x0, y0)
         else
-            x0 = int(nint(x_px))
-            y0 = int(nint(y_px))
+            block
+                real(wp) :: baseline_px, top_px
+                real(wp) :: descent_abs
+                real(wp) :: h_box
+                integer :: baseline_i
 
-            select case (trim(ha))
-            case ('center')
-                x0 = x0 - int(nint(w_px/2.0_wp))
-            case ('right')
-                x0 = x0 - int(nint(w_px))
-            case default
-            end select
+                x0 = int(nint(x_px - ax_src))
 
-            select case (trim(va))
-            case ('center')
-                y0 = y0 - int(nint(h_px/2.0_wp))
-            case ('bottom')
-                y0 = y0 - int(nint(h_px))
-            case default
-            end select
+                descent_abs = abs(descent_px)
+                h_box = max(1.0_wp, ascent_px + descent_abs)
 
-            if (bbox) then
-                x1 = real(x0, wp) - pad
-                y1 = real(y0, wp) - pad
-                x2 = real(x0, wp) + w_px + pad
-                y2 = y1
-                x3 = x2
-                y3 = real(y0, wp) + h_px + pad
-                x4 = x1
-                y4 = y3
+                baseline_px = y_px
+                select case (trim(va))
+                case ('center')
+                    baseline_px = y_px + 0.5_wp*(ascent_px - descent_abs)
+                case ('top')
+                    baseline_px = y_px + ascent_px
+                case ('bottom')
+                    baseline_px = y_px - descent_abs
+                case default
+                end select
 
-                call fill_triangle(this%raster%image_data, this%width, this%height, &
-                                   x1, y1, x2, y2, x3, y3, -1_1, -1_1, -1_1)
-                call fill_triangle(this%raster%image_data, this%width, this%height, &
-                                   x1, y1, x3, y3, x4, y4, -1_1, -1_1, -1_1)
+                top_px = baseline_px - ascent_px
+                y0 = int(nint(top_px))
+                baseline_i = int(nint(baseline_px))
 
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x1, y1, x2, y2, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x2, y2, x3, y3, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x3, y3, x4, y4, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-                call draw_line_distance_aa(this%raster%image_data, this%width, &
-                                           this%height, x4, y4, x1, y1, 0.0_wp, &
-                                           0.0_wp, 0.0_wp, 1.0_wp)
-            end if
+                if (bbox) then
+                    x1 = real(x0, wp) - pad
+                    y1 = real(y0, wp) - pad
+                    x2 = real(x0, wp) + w_px + pad
+                    y2 = y1
+                    x3 = x2
+                    y3 = real(y0, wp) + h_box + pad
+                    x4 = x1
+                    y4 = y3
 
-            call render_text_with_size(this%raster%image_data, this%width, &
-                                       this%height, x0, y0, trim(text), r, g, b, &
-                                       pixel_height)
+                    call fill_triangle(this%raster%image_data, this%width, &
+                                       this%height, x1, y1, x2, y2, x3, y3, -1_1, &
+                                       -1_1, -1_1)
+                    call fill_triangle(this%raster%image_data, this%width, &
+                                       this%height, x1, y1, x3, y3, x4, y4, -1_1, &
+                                       -1_1, -1_1)
+
+                    call draw_line_distance_aa(this%raster%image_data, this%width, &
+                                               this%height, x1, y1, x2, y2, 0.0_wp, &
+                                               0.0_wp, 0.0_wp, 1.0_wp)
+                    call draw_line_distance_aa(this%raster%image_data, this%width, &
+                                               this%height, x2, y2, x3, y3, 0.0_wp, &
+                                               0.0_wp, 0.0_wp, 1.0_wp)
+                    call draw_line_distance_aa(this%raster%image_data, this%width, &
+                                               this%height, x3, y3, x4, y4, 0.0_wp, &
+                                               0.0_wp, 0.0_wp, 1.0_wp)
+                    call draw_line_distance_aa(this%raster%image_data, this%width, &
+                                               this%height, x4, y4, x1, y1, 0.0_wp, &
+                                               0.0_wp, 0.0_wp, 1.0_wp)
+                end if
+
+                call render_text_with_size(this%raster%image_data, this%width, &
+                                           this%height, x0, baseline_i, trim(text), &
+                                           r, g, b, pixel_height)
+            end block
         end if
     end subroutine raster_draw_text_styled
 
