@@ -13,33 +13,33 @@ module fortplot_constants
     !!   if (abs(value1 - value2) < EPSILON_COMPARE) then
     !!       ! Values are considered equal
     !!   end if
-    
+
     use iso_fortran_env, only: wp => real64
     implicit none
     private
-    
+
     ! ========================================================================
     ! NUMERICAL COMPARISON CONSTANTS
     ! ========================================================================
-    
+
     !! Standard epsilon for numerical comparisons in plotting operations
-    !! 
+    !!
     !! This constant is used for:
     !! - Range validation (checking if z_max - z_min is significant)
     !! - Coordinate comparisons in interpolation
     !! - General floating-point equality testing
-    !! 
+    !!
     !! Value chosen to be appropriate for typical plotting data precision
     !! while avoiding false positives from numerical noise.
     real(wp), parameter, public :: EPSILON_COMPARE = 1e-10_wp
-    
+
     !! High-precision epsilon for geometric calculations
-    !! 
+    !!
     !! This constant is used for:
     !! - Contour region calculations requiring higher precision
     !! - Vector length calculations in drawing operations
     !! - Fine geometric operations where more stringent tolerances are needed
-    !! 
+    !!
     !! Smaller value provides better precision for critical geometric operations.
     real(wp), parameter, public :: EPSILON_GEOMETRY = 1e-12_wp
 
@@ -51,11 +51,11 @@ module fortplot_constants
     !!
     !! This constant defines the vertical distance between the bottom of the
     !! plot area and the baseline of the x-axis label text.
-    !! 
+    !!
     !! Used by raster backend for xlabel positioning to ensure consistent
     !! spacing below tick labels while avoiding overlap.
-    !! 
-    !! Balanced to: ensure tick label clearance (35px min) 
+    !!
+    !! Balanced to: ensure tick label clearance (35px min)
     !! while keeping text within canvas
     integer, parameter, public :: XLABEL_VERTICAL_OFFSET = 35
 
@@ -86,6 +86,15 @@ module fortplot_constants
     !! spacing above the plot area while maintaining readability.
     integer, parameter, public :: TITLE_VERTICAL_OFFSET = 30
 
+    ! Tick label padding (pixels) for raster backends.
+    integer, parameter, public :: X_TICK_LABEL_PAD = 20
+    integer, parameter, public :: X_TICK_LABEL_TOP_PAD = 20
+    integer, parameter, public :: Y_TICK_LABEL_RIGHT_PAD = 10
+    integer, parameter, public :: Y_TICK_LABEL_LEFT_PAD = 10
+
+    ! Extra gap between y tick labels and rotated y label (pixels).
+    integer, parameter, public :: YLABEL_EXTRA_GAP = 25
+
     ! ========================================================================
     ! DISPLAY AND RASTER CONSTANTS
     ! ========================================================================
@@ -94,7 +103,7 @@ module fortplot_constants
     !!
     !! This constant represents the default plot area width in pixels for
     !! a typical 640x480 figure, used for data-to-pixel conversions.
-    !! 
+    !!
     !! Used by legend layout calculations to convert between data coordinates
     !! and pixel measurements for consistent text sizing.
     real(wp), parameter, public :: STANDARD_WIDTH_PIXELS = 496.0_wp
@@ -103,7 +112,7 @@ module fortplot_constants
     !!
     !! This constant represents the default plot area height in pixels for
     !! a typical 640x480 figure, used for data-to-pixel conversions.
-    !! 
+    !!
     !! Used by legend layout calculations to convert between data coordinates
     !! and pixel measurements for consistent text sizing.
     real(wp), parameter, public :: STANDARD_HEIGHT_PIXELS = 369.6_wp
@@ -113,7 +122,7 @@ module fortplot_constants
     !! This constant provides a fallback ratio for estimating text width
     !! when the text measurement system is unavailable. Represents approximate
     !! character width as a fraction of data width.
-    !! 
+    !!
     !! Used by legend layout when text system measurements are not available.
     real(wp), parameter, public :: TEXT_WIDTH_RATIO = 0.012_wp
 
@@ -122,7 +131,7 @@ module fortplot_constants
     !! This constant defines the upper limit for width and height dimensions
     !! in raster-based backends to prevent memory issues and crashes.
     !! Matches typical matplotlib figure size limits.
-    !! 
+    !!
     !! Used by backend validation to ensure reasonable memory usage.
     integer, parameter, public :: MAX_SAFE_PIXELS = 10000
 
@@ -134,7 +143,7 @@ module fortplot_constants
     !!
     !! This constant provides the conversion factor from milliseconds to seconds
     !! for animation timing and delay calculations.
-    !! 
+    !!
     !! Used by animation pipeline for converting delay values between units.
     real(wp), parameter, public :: MILLISECONDS_PER_SECOND = 1000.0_wp
 
@@ -146,7 +155,7 @@ module fortplot_constants
     !!
     !! This constant defines the absolute value threshold above which
     !! numeric values are displayed in scientific notation for better readability.
-    !! 
+    !!
     !! Used by tick formatting and axis label generation.
     real(wp), parameter, public :: SCIENTIFIC_THRESHOLD_HIGH = 1000.0_wp
 
@@ -155,7 +164,7 @@ module fortplot_constants
     !! This constant defines a very long pattern length used to represent
     !! solid lines in line style calculations. Large value ensures the
     !! pattern doesn't repeat within typical plot ranges.
-    !! 
+    !!
     !! Used by line style pattern generation for solid line rendering.
     real(wp), parameter, public :: SOLID_LINE_PATTERN_LENGTH = 1000.0_wp
 
