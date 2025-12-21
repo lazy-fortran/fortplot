@@ -2,7 +2,7 @@ module fortplot_raster_labels
     !! Raster axis labels (title, xlabel, ylabel) rendering functionality
     !! Extracted from fortplot_raster_axes.f90 for single responsibility principle
     use fortplot_constants, only: XLABEL_VERTICAL_OFFSET, TICK_MARK_LENGTH, &
-                                  YLABEL_EXTRA_GAP
+                                  YLABEL_EXTRA_GAP, TITLE_VERTICAL_OFFSET
     use fortplot_text_rendering, only: render_text_to_image, calculate_text_width, &
                                        calculate_text_height, &
                                        calculate_text_descent, &
@@ -349,11 +349,8 @@ contains
         integer, intent(out) :: processed_len
         real(wp), intent(out) :: title_px, title_py
         integer :: title_width
-        real(wp) :: ascent_ratio
-        real(wp) :: title_ascent_px, title_descent_px
         character(len=600) :: math_ready
         integer :: math_len
-        integer, parameter :: TITLE_PAD_PIXELS = 8
 
         call process_latex_in_text(trim(title_text), processed_text, processed_len)
         call prepare_mathtext_if_needed(processed_text(1:processed_len), &
@@ -366,18 +363,8 @@ contains
 
         ! Center the title properly over the plot area
         title_px = real(plot_area%left + plot_area%width/2 - title_width/2, wp)
-        ascent_ratio = get_font_ascent_ratio()
-        title_ascent_px = ascent_ratio*real(TITLE_FONT_SIZE, wp)
-        title_descent_px = max(1.0_wp, real(TITLE_FONT_SIZE, wp) - title_ascent_px)
-
-        ! Place title close to axes top: keep a small gap between the axes top
-        ! and the title visual bottom (baseline + descent), similar to
-        ! Matplotlib default title padding.
-        title_py = real(plot_area%bottom, wp) - real(TITLE_PAD_PIXELS, wp) - &
-                   title_descent_px
-
-        ! Avoid rendering entirely off-canvas for small figures.
-        title_py = max(1.0_wp + title_ascent_px, title_py)
+        title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
+        title_py = max(1.0_wp, title_py)
     end subroutine compute_title_position
 
 end module fortplot_raster_labels
