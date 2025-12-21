@@ -88,11 +88,23 @@ def contourf(X, Y, Z, levels=None, *, data=None, **kwargs):
     # Transpose Z for Fortran column-major order
     z = Z.T.copy()
 
+    cmap = None
+    if "cmap" in kwargs:
+        cmap = kwargs.get("cmap")
+    elif "colormap" in kwargs:
+        cmap = kwargs.get("colormap")
+
     if levels is None:
-        _fortplot.fortplot.contour_filled(x, y, z)
+        if cmap is None:
+            _fortplot.fortplot.contour_filled(x, y, z)
+        else:
+            _fortplot.fortplot.contour_filled(x, y, z, colormap=str(cmap))
     else:
         levels = _ensure_array(levels)
-        _fortplot.fortplot.contour_filled(x, y, z, levels)
+        if cmap is None:
+            _fortplot.fortplot.contour_filled(x, y, z, levels)
+        else:
+            _fortplot.fortplot.contour_filled(x, y, z, levels, colormap=str(cmap))
 
 
 def streamplot(X, Y, U, V, density=1.0, *, data=None, **kwargs):

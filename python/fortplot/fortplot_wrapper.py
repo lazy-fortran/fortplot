@@ -290,7 +290,7 @@ class FortplotModule:
         else:
             self._send_command("0")
     
-    def contour_filled(self, x, y, z, levels=None):
+    def contour_filled(self, x, y, z, levels=None, colormap=None, show_colorbar=None, label=None):
         """Send filled contour command to bridge."""
         x = _to_array(x)
         y = _to_array(y)
@@ -307,13 +307,27 @@ class FortplotModule:
         for i in range(ny):
             for j in range(nx):
                 self._send_command(str(float(z[i, j])))
+
+        use_extended = colormap is not None or show_colorbar is not None or label is not None
+
         if levels is not None:
             levels_arr = _to_array(levels)
-            self._send_command(str(len(levels_arr)))
+            if use_extended:
+                self._send_command(str(-(len(levels_arr) + 1)))
+            else:
+                self._send_command(str(len(levels_arr)))
             for lv in levels_arr:
                 self._send_command(str(float(lv)))
         else:
-            self._send_command("0")
+            if use_extended:
+                self._send_command(str(-1))
+            else:
+                self._send_command("0")
+
+        if use_extended:
+            self._send_command("" if colormap is None else str(colormap))
+            self._send_command(_bool_to_flag(show_colorbar))
+            self._send_command("" if label is None else str(label))
     
     def pcolormesh(self, x, y, c, cmap='viridis', vmin=None, vmax=None, edgecolors='none', linewidths=None):
         """Send pcolormesh command to bridge (basic parameters only)."""
