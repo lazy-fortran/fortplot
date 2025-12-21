@@ -200,10 +200,14 @@ contains
 
         real(wp) :: x0, y0
         real(wp) :: w_pt, h_pt, pad
+        real(wp) :: ascent_pt, descent_pt
+        real(wp) :: baseline_pt, box_bottom_pt
         character(len=256) :: cmd
 
         w_pt = estimate_pdf_text_width(trim(text), font_size)
         h_pt = max(1.0_wp, 1.2_wp*font_size)
+        ascent_pt = 0.8_wp*h_pt
+        descent_pt = 0.2_wp*h_pt
 
         x0 = x_pt
         select case (trim(ha))
@@ -214,14 +218,25 @@ contains
         case default
         end select
 
-        y0 = y_pt
+        ! Matplotlib semantics: the (x_pt, y_pt) anchor is the aligned bounding-box
+        ! position, not the baseline.
+        baseline_pt = y_pt
+        box_bottom_pt = y_pt
         select case (trim(va))
         case ('center')
-            y0 = y0 - 0.5_wp*h_pt
+            box_bottom_pt = y_pt - 0.5_wp*h_pt
+            baseline_pt = box_bottom_pt + descent_pt
         case ('top')
-            y0 = y0 - h_pt
+            box_bottom_pt = y_pt - h_pt
+            baseline_pt = y_pt - ascent_pt
+        case ('bottom')
+            box_bottom_pt = y_pt
+            baseline_pt = y_pt + descent_pt
         case default
+            box_bottom_pt = y_pt
+            baseline_pt = y_pt
         end select
+        y0 = box_bottom_pt
 
         if (bbox) then
             pad = max(1.0_wp, 0.2_wp*font_size)
@@ -237,10 +252,12 @@ contains
 
         call this%core_ctx%set_color(color(1), color(2), color(3))
         if (abs(rotation) > 1.0e-6_wp) then
-            call draw_rotated_mixed_font_text(this%core_ctx, x0, y0, trim(text), &
+            call draw_rotated_mixed_font_text(this%core_ctx, x0, baseline_pt, &
+                                              trim(text), &
                                               font_size, rotation)
         else
-            call draw_mixed_font_text(this%core_ctx, x0, y0, trim(text), font_size)
+            call render_mixed_text(this%core_ctx, x0, baseline_pt, trim(text), &
+                                   font_size)
         end if
     end subroutine draw_pdf_text_styled
 
