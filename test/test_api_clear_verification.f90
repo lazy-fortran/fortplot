@@ -19,20 +19,20 @@ program test_api_clear_verification
     ! First plot
     call fig%plot(x, y1, "b-")
     call fig%set_title("First Plot")
-    print *, "✓ First plot created with title"
+    print *, "PASS: First plot created with title"
     
     ! Test clear method (this should work now)
     call fig%clear()
-    print *, "✓ fig%clear() method executed successfully"
+    print *, "PASS: fig%clear() method executed successfully"
     
     ! Second plot after clear
     call fig%plot(x, y2, "r-")  
     call fig%set_title("Second Plot")
-    print *, "✓ Second plot created after clear"
+    print *, "PASS: Second plot created after clear"
     
     ! Save the final plot to verify it shows only the second plot
     call fig%savefig("test/output/api_clear_test.png")
-    print *, "✓ Final plot saved as test/output/api_clear_test.png"
+    print *, "PASS: Final plot saved as test/output/api_clear_test.png"
     print *, "   (Should show only the second plot - linear relationship)"
     
     print *, ""

@@ -30,7 +30,7 @@ program test_contour_refactoring_final
     ! Test all parameter combinations for add_contour_filled
     call test_add_contour_filled_combinations()
     
-    print *, "✓ All contour refactoring tests passed (Issue #403 resolved)"
+    print *, "PASS: All contour refactoring tests passed (Issue #403 resolved)"
     
 contains
 
@@ -39,36 +39,36 @@ contains
         
         ! Test 1: No optional parameters
         call contour_filled(x_grid, y_grid, z_grid)
-        print *, "  ✓ contour_filled: no optional args"
+        print *, "  PASS: contour_filled: no optional args"
         
         ! Test 2: With levels only
         call contour_filled(x_grid, y_grid, z_grid, levels=levels)
-        print *, "  ✓ contour_filled: levels only"
+        print *, "  PASS: contour_filled: levels only"
         
         ! Test 3: With colormap only
         call contour_filled(x_grid, y_grid, z_grid, colormap="viridis")
-        print *, "  ✓ contour_filled: colormap only"
+        print *, "  PASS: contour_filled: colormap only"
         
         ! Test 4: With show_colorbar only
         call contour_filled(x_grid, y_grid, z_grid, show_colorbar=.true.)
-        print *, "  ✓ contour_filled: show_colorbar only"
+        print *, "  PASS: contour_filled: show_colorbar only"
         
         ! Test 5: With label only
         call contour_filled(x_grid, y_grid, z_grid, label="Test contour")
-        print *, "  ✓ contour_filled: label only"
+        print *, "  PASS: contour_filled: label only"
         
         ! Test 6: Levels + colormap
         call contour_filled(x_grid, y_grid, z_grid, levels=levels, colormap="plasma")
-        print *, "  ✓ contour_filled: levels + colormap"
+        print *, "  PASS: contour_filled: levels + colormap"
         
         ! Test 7: Colormap + show_colorbar
         call contour_filled(x_grid, y_grid, z_grid, colormap="hot", show_colorbar=.false.)
-        print *, "  ✓ contour_filled: colormap + show_colorbar"
+        print *, "  PASS: contour_filled: colormap + show_colorbar"
         
         ! Test 8: All parameters
         call contour_filled(x_grid, y_grid, z_grid, levels=levels, &
                           colormap="coolwarm", show_colorbar=.true., label="Full test")
-        print *, "  ✓ contour_filled: all parameters"
+        print *, "  PASS: contour_filled: all parameters"
         
     end subroutine test_contour_filled_combinations
     
@@ -77,37 +77,37 @@ contains
         
         ! Test 1: No optional parameters
         call add_contour_filled(x_grid, y_grid, z_grid)
-        print *, "  ✓ add_contour_filled: no optional args"
+        print *, "  PASS: add_contour_filled: no optional args"
         
         ! Test 2: With levels only
         call add_contour_filled(x_grid, y_grid, z_grid, levels=levels)
-        print *, "  ✓ add_contour_filled: levels only"
+        print *, "  PASS: add_contour_filled: levels only"
         
         ! Test 3: With colormap only
         call add_contour_filled(x_grid, y_grid, z_grid, colormap="RdBu")
-        print *, "  ✓ add_contour_filled: colormap only"
+        print *, "  PASS: add_contour_filled: colormap only"
         
         ! Test 4: With show_colorbar only
         call add_contour_filled(x_grid, y_grid, z_grid, show_colorbar=.false.)
-        print *, "  ✓ add_contour_filled: show_colorbar only"
+        print *, "  PASS: add_contour_filled: show_colorbar only"
         
         ! Test 5: With label only
         call add_contour_filled(x_grid, y_grid, z_grid, label="Add contour test")
-        print *, "  ✓ add_contour_filled: label only"
+        print *, "  PASS: add_contour_filled: label only"
         
         ! Test 6: Levels + colormap
         call add_contour_filled(x_grid, y_grid, z_grid, levels=levels, colormap="seismic")
-        print *, "  ✓ add_contour_filled: levels + colormap"
+        print *, "  PASS: add_contour_filled: levels + colormap"
         
         ! Test 7: Colormap + show_colorbar + label
         call add_contour_filled(x_grid, y_grid, z_grid, colormap="twilight", &
                               show_colorbar=.true., label="Complex test")
-        print *, "  ✓ add_contour_filled: colormap + show_colorbar + label"
+        print *, "  PASS: add_contour_filled: colormap + show_colorbar + label"
         
         ! Test 8: All parameters
         call add_contour_filled(x_grid, y_grid, z_grid, levels=levels, &
                               colormap="jet", show_colorbar=.true., label="Complete test")
-        print *, "  ✓ add_contour_filled: all parameters"
+        print *, "  PASS: add_contour_filled: all parameters"
         
     end subroutine test_add_contour_filled_combinations
     

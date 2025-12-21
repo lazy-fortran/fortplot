@@ -148,20 +148,20 @@ contains
         ! Lowercase Greek letters (U+03B1 to U+03C9)
         is_greek = is_greek_letter_codepoint(945)  ! α
         if (.not. is_greek) then
-            print *, "ERROR: α not detected as Greek letter"
+            print *, "ERROR: greek alpha not detected as Greek letter"
             stop 1
         end if
         
         is_greek = is_greek_letter_codepoint(969)  ! ω
         if (.not. is_greek) then
-            print *, "ERROR: ω not detected as Greek letter"
+            print *, "ERROR: greek omega not detected as Greek letter"
             stop 1
         end if
         
         ! Uppercase Greek letters (U+0391 to U+03A9)
         is_greek = is_greek_letter_codepoint(913)  ! Α
         if (.not. is_greek) then
-            print *, "ERROR: Α not detected as Greek letter"
+            print *, "ERROR: greek Alpha not detected as Greek letter"
             stop 1
         end if
         

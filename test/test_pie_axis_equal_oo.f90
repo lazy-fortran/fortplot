@@ -58,7 +58,7 @@ program test_pie_axis_equal_oo
         error stop 'OO pie axis scaling is not equal'
     end if
 
-    print *, '✓ OO pie chart uses equal axis scaling by default'
+    print *, 'PASS: OO pie chart uses equal axis scaling by default'
 
 contains
 

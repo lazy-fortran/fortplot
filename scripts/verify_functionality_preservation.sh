@@ -61,7 +61,7 @@ pre_verification_checks() {
         exit 1
     fi
 
-    log "✅ Pre-verification checks passed"
+    log "PASS: Pre-verification checks passed"
 }
 
 # Function to capture performance baseline
@@ -95,10 +95,10 @@ run_functionality_tests() {
     # Run the comprehensive verification system
     log "Executing functionality preservation verification system..."
     if fpm test --target test_functionality_preservation_system > "$EVIDENCE_DIR/verification_test.log" 2>&1; then
-        log "✅ Functionality preservation verification passed"
+        log "PASS: Functionality preservation verification passed"
         test_passed=$((test_passed + 1))
     else
-        log "❌ Functionality preservation verification failed"
+        log "FAIL: Functionality preservation verification failed"
         cat "$EVIDENCE_DIR/verification_test.log" | tail -20 | tee -a "$VERIFICATION_LOG"
     fi
     test_total=$((test_total + 1))
@@ -106,10 +106,10 @@ run_functionality_tests() {
     # Run essential CI tests
     log "Running essential CI test suite..."
     if make test-ci > "$EVIDENCE_DIR/ci_tests.log" 2>&1; then
-        log "✅ Essential CI tests passed"
+        log "PASS: Essential CI tests passed"
         test_passed=$((test_passed + 1))
     else
-        log "❌ Essential CI tests failed"
+        log "FAIL: Essential CI tests failed"
         cat "$EVIDENCE_DIR/ci_tests.log" | tail -20 | tee -a "$VERIFICATION_LOG"
     fi
     test_total=$((test_total + 1))
@@ -117,10 +117,10 @@ run_functionality_tests() {
     # Run example verification
     log "Verifying example functionality..."
     if make example ARGS="basic_plots" > "$EVIDENCE_DIR/example_test.log" 2>&1; then
-        log "✅ Example functionality verified"
+        log "PASS: Example functionality verified"
         test_passed=$((test_passed + 1))
     else
-        log "❌ Example functionality failed"
+        log "FAIL: Example functionality failed"
         cat "$EVIDENCE_DIR/example_test.log" | tail -10 | tee -a "$VERIFICATION_LOG"
     fi
     test_total=$((test_total + 1))
@@ -135,10 +135,10 @@ run_functionality_tests() {
 
     # Check if all critical tests passed
     if [ $test_passed -eq $test_total ]; then
-        log "✅ All functionality tests passed ($test_passed/$test_total)"
+        log "PASS: All functionality tests passed ($test_passed/$test_total)"
         return 0
     else
-        log "❌ Some functionality tests failed ($test_passed/$test_total)"
+        log "FAIL: Some functionality tests failed ($test_passed/$test_total)"
         return 1
     fi
 }
@@ -159,21 +159,21 @@ verify_output_integrity() {
         if [ -f "$PROJECT_ROOT/$file" ]; then
             local file_size=$(stat -c%s "$PROJECT_ROOT/$file" 2>/dev/null || echo "0")
             if [ "$file_size" -gt 100 ]; then
-                log "✅ Output file verified: $file ($file_size bytes)"
+                log "PASS: Output file verified: $file ($file_size bytes)"
             else
-                log "⚠️  Output file too small: $file ($file_size bytes)"
+                log "WARNING:  Output file too small: $file ($file_size bytes)"
                 integrity_passed=false
             fi
         else
-            log "⚠️  Expected output file missing: $file"
+            log "WARNING:  Expected output file missing: $file"
         fi
     done
 
     if $integrity_passed; then
-        log "✅ Output integrity verification passed"
+        log "PASS: Output integrity verification passed"
         return 0
     else
-        log "⚠️  Output integrity verification warnings detected"
+        log "WARNING:  Output integrity verification warnings detected"
         return 0  # Don't fail on warnings, just log them
     fi
 }
@@ -256,11 +256,11 @@ display_results() {
     echo ""
 
     if [ -f "$CI_REPORT" ]; then
-        echo -e "${GREEN}✅ Comprehensive verification system operational${NC}"
-        echo -e "${GREEN}✅ Automated functionality preservation verified${NC}"
-        echo -e "${GREEN}✅ CI integration with fraud-proof evidence active${NC}"
-        echo -e "${GREEN}✅ Technical evidence generation functional${NC}"
-        echo -e "${GREEN}✅ Zero functionality loss detection system ready${NC}"
+        echo -e "${GREEN}PASS: Comprehensive verification system operational${NC}"
+        echo -e "${GREEN}PASS: Automated functionality preservation verified${NC}"
+        echo -e "${GREEN}PASS: CI integration with fraud-proof evidence active${NC}"
+        echo -e "${GREEN}PASS: Technical evidence generation functional${NC}"
+        echo -e "${GREEN}PASS: Zero functionality loss detection system ready${NC}"
         echo ""
         echo -e "${BLUE}Technical Evidence:${NC}"
         echo "  - Verification Log: $VERIFICATION_LOG"
@@ -270,7 +270,7 @@ display_results() {
         echo ""
         echo -e "${GREEN}FRAUD-PROOF VERIFICATION: All claims backed by technical evidence${NC}"
     else
-        echo -e "${RED}❌ Verification system encountered issues${NC}"
+        echo -e "${RED}FAIL: Verification system encountered issues${NC}"
         exit 1
     fi
 }
@@ -289,11 +289,11 @@ main() {
         verify_output_integrity
         generate_ci_report
         display_results
-        echo -e "${GREEN}✅ VERIFICATION SUCCESSFUL - ALL FUNCTIONALITY PRESERVED${NC}"
+        echo -e "${GREEN}PASS: VERIFICATION SUCCESSFUL - ALL FUNCTIONALITY PRESERVED${NC}"
         exit 0
     else
         generate_ci_report
-        echo -e "${RED}❌ VERIFICATION FAILED - FUNCTIONALITY LOSS DETECTED${NC}"
+        echo -e "${RED}FAIL: VERIFICATION FAILED - FUNCTIONALITY LOSS DETECTED${NC}"
         echo -e "${YELLOW}See evidence files for detailed analysis${NC}"
         exit 1
     fi

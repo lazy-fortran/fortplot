@@ -35,7 +35,7 @@ contains
         call figure()
         call contour_filled(x_grid, y_grid, z_grid)  
         
-        print *, "✓ contour_filled with no optional args - PASSED"
+        print *, "PASS: contour_filled with no optional args - PASSED"
     end subroutine test_contour_filled_no_optional_args
 
     subroutine test_contour_filled_with_colormap_only()
@@ -59,7 +59,7 @@ contains
         call figure()
         call contour_filled(x_grid, y_grid, z_grid, colormap="plasma")
         
-        print *, "✓ contour_filled with colormap only - PASSED"
+        print *, "PASS: contour_filled with colormap only - PASSED"
     end subroutine test_contour_filled_with_colormap_only
 
     subroutine test_add_contour_filled_no_optional_args()
@@ -83,7 +83,7 @@ contains
         call figure()
         call add_contour_filled(x_grid, y_grid, z_grid)  
         
-        print *, "✓ add_contour_filled with no optional args - PASSED"
+        print *, "PASS: add_contour_filled with no optional args - PASSED"
     end subroutine test_add_contour_filled_no_optional_args
 
     subroutine test_add_contour_filled_with_colormap_only()
@@ -107,7 +107,7 @@ contains
         call figure()
         call add_contour_filled(x_grid, y_grid, z_grid, colormap="inferno")
         
-        print *, "✓ add_contour_filled with colormap only - PASSED"
+        print *, "PASS: add_contour_filled with colormap only - PASSED"
     end subroutine test_add_contour_filled_with_colormap_only
 
 end program test_contour_memory_safety_regression

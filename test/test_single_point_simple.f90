@@ -33,9 +33,9 @@ program test_single_point_simple
 
     inquire(file=trim(output_dir)//'single_point_test.png', exist=file_exists)
     if (file_exists) then
-        print *, "  ✓ PNG file created (but may be empty due to bug)"
+        print *, "  PASS: PNG file created (but may be empty due to bug)"
     else
-        print *, "  ✗ PNG file not created - CRITICAL FAILURE"
+        print *, "  FAIL: PNG file not created - CRITICAL FAILURE"
     end if
     
     ! Test 2: Single point PDF
@@ -46,9 +46,9 @@ program test_single_point_simple
 
     inquire(file=trim(output_dir)//'single_point_test.pdf', exist=file_exists)
     if (file_exists) then
-        print *, "  ✓ PDF file created (but may be empty due to bug)"
+        print *, "  PASS: PDF file created (but may be empty due to bug)"
     else
-        print *, "  ✗ PDF file not created - CRITICAL FAILURE"
+        print *, "  FAIL: PDF file not created - CRITICAL FAILURE"
     end if
     
     ! Test 3: Single point ASCII
@@ -59,9 +59,9 @@ program test_single_point_simple
 
     inquire(file=trim(output_dir)//'single_point_test.txt', exist=file_exists)
     if (file_exists) then
-        print *, "  ✓ ASCII file created (but likely shows no point due to bug)"
+        print *, "  PASS: ASCII file created (but likely shows no point due to bug)"
     else
-        print *, "  ✗ ASCII file not created - CRITICAL FAILURE"
+        print *, "  FAIL: ASCII file not created - CRITICAL FAILURE"
     end if
     
     ! Test 4: Comparison with multi-point (this should work)
@@ -72,9 +72,9 @@ program test_single_point_simple
 
     inquire(file=trim(output_dir)//'multi_point_test.png', exist=file_exists)
     if (file_exists) then
-        print *, "  ✓ Multi-point PNG created (this should work fine)"
+        print *, "  PASS: Multi-point PNG created (this should work fine)"
     else
-        print *, "  ✗ Multi-point PNG failed - UNEXPECTED"
+        print *, "  FAIL: Multi-point PNG failed - UNEXPECTED"
     end if
     
     print *, "============================================="

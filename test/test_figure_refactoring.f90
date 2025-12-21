@@ -16,39 +16,39 @@ program test_figure_refactoring
     
     ! Test initialization
     call fig%initialize(800, 600, 'png')
-    print *, "✓ Initialization"
+    print *, "PASS: Initialization"
     
     ! Test plotting
     call fig%add_plot(x, y, label='Test Plot')
-    print *, "✓ Line plot"
+    print *, "PASS: Line plot"
     
     ! Test histogram 
     call fig%add_hist(data, bins=5, label='Test Histogram')
-    print *, "✓ Histogram"
+    print *, "PASS: Histogram"
     
     ! Test grid
     call fig%grid(.true.)
-    print *, "✓ Grid"
+    print *, "PASS: Grid"
     
     ! Test labels and title
     call fig%set_xlabel('X Label')
     call fig%set_ylabel('Y Label') 
     call fig%set_title('Test Figure')
-    print *, "✓ Labels and title"
+    print *, "PASS: Labels and title"
     
     ! Test legend
     call fig%legend()
-    print *, "✓ Legend"
+    print *, "PASS: Legend"
     
     ! Test scales
     call fig%set_xscale('linear')
     call fig%set_yscale('log')
-    print *, "✓ Scales"
+    print *, "PASS: Scales"
     
     ! Test limits
     call fig%set_xlim(0.0_wp, 6.0_wp)
     call fig%set_ylim(0.1_wp, 30.0_wp)
-    print *, "✓ Limits"
+    print *, "PASS: Limits"
     
     print *, "All tests passed! Refactoring preserved functionality."
     

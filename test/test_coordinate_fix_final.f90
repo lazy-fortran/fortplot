@@ -18,10 +18,10 @@ program test_coordinate_fix_final
     if (.not. test_coordinate_workflow()) all_tests_passed = .false.
     
     if (all_tests_passed) then
-        print *, "✓ All coordinate separation tests passed!"
+        print *, "PASS: All coordinate separation tests passed!"
         print *, "  Backend now receives original coordinates for proper tick generation"
     else
-        print *, "✗ Some coordinate separation tests failed"
+        print *, "FAIL: Some coordinate separation tests failed"
     end if
 
 contains
@@ -49,10 +49,10 @@ contains
         
         ! Should have at least 3 valid labels for this range
         if (valid_labels < 3) then
-            print *, "  ✗ Too few tick labels generated:", valid_labels
+            print *, "  FAIL: Too few tick labels generated:", valid_labels
             passed = .false.
         else
-            print *, "  ✓ Generated", valid_labels, "tick labels"
+            print *, "  PASS: Generated", valid_labels, "tick labels"
         end if
         
         ! Test that it fails appropriately with transformed coordinates (0 to 3)
@@ -93,17 +93,17 @@ contains
         
         ! Should have zero tick for zero-crossing data
         if (.not. has_zero_tick) then
-            print *, "  ✗ Missing zero tick in symlog scale"
+            print *, "  FAIL: Missing zero tick in symlog scale"
             passed = .false.
         else
-            print *, "  ✓ Found zero tick in symlog labels"
+            print *, "  PASS: Found zero tick in symlog labels"
         end if
         
         if (valid_labels < 3) then
-            print *, "  ✗ Too few symlog tick labels:", valid_labels
+            print *, "  FAIL: Too few symlog tick labels:", valid_labels
             passed = .false.
         else
-            print *, "  ✓ Generated", valid_labels, "symlog tick labels"
+            print *, "  PASS: Generated", valid_labels, "symlog tick labels"
         end if
     end function
 
@@ -121,7 +121,7 @@ contains
         print *, "  4. Data positions transformed for rendering: [0, 1, 2, 3]"
         print *, "  5. Tick positions transformed for drawing"
         print *, "  6. Result: Correct labels at correct visual positions"
-        print *, "  ✓ Workflow correctly separates tick generation from rendering"
+        print *, "  PASS: Workflow correctly separates tick generation from rendering"
     end function
 
 end program test_coordinate_fix_final

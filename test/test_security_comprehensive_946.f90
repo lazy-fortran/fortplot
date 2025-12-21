@@ -39,7 +39,7 @@ program test_security_comprehensive_946
     write(*,'(A,I0,A,I0)') 'Tests passed: ', tests_passed, ' / ', test_count
     
     if (tests_passed == test_count) then
-        write(*,'(A)') '✓ ALL SECURITY TESTS PASSED - Issue #946 vulnerabilities eliminated'
+        write(*,'(A)') 'PASS: ALL SECURITY TESTS PASSED - Issue #946 vulnerabilities eliminated'
         write(*,'(A)') 'System is hardened against:'
         write(*,'(A)') '  - Shell command injection attacks'
         write(*,'(A)') '  - Path traversal attacks'
@@ -47,7 +47,7 @@ program test_security_comprehensive_946
         write(*,'(A)') '  - Memory exhaustion attacks'
         write(*,'(A)') '  - Windows-specific injection vectors'
     else
-        write(*,'(A)') '❌ SECURITY VULNERABILITIES REMAIN - Issue #946 NOT fully resolved'
+        write(*,'(A)') 'FAIL: SECURITY VULNERABILITIES REMAIN - Issue #946 NOT fully resolved'
         stop 1
     end if
 
@@ -80,7 +80,7 @@ contains
         call assert_dangerous_char('=', 'assignment operator')
         call assert_dangerous_char(':', 'command separator')
         
-        write(*,'(A)') '  ✓ All shell metacharacters properly detected as dangerous'
+        write(*,'(A)') '  PASS: All shell metacharacters properly detected as dangerous'
     end subroutine test_command_injection_detection
     
     subroutine test_filename_sanitization()
@@ -107,7 +107,7 @@ contains
         result = sanitize_filename('plot>file.png') ! Test just redirection, not traversal
         call assert_no_dangerous_chars(result, 'redirection character sanitization')
         
-        write(*,'(A)') '  ✓ Filename sanitization blocks all injection attempts'
+        write(*,'(A)') '  PASS: Filename sanitization blocks all injection attempts'
     end subroutine test_filename_sanitization
     
     subroutine test_path_safety()
@@ -134,7 +134,7 @@ contains
         call assert_path_safe('plots/figure_01.pdf', 'plots directory path')
         call assert_path_safe('my_plot.png', 'simple filename')
         
-        write(*,'(A)') '  ✓ Path validation correctly blocks attacks and allows legitimate paths'
+        write(*,'(A)') '  PASS: Path validation correctly blocks attacks and allows legitimate paths'
     end subroutine test_path_safety
     
     subroutine test_directory_creation_security()
@@ -162,7 +162,7 @@ contains
         call safe_create_directory('test_security_946', success)
         call assert_true(success, 'legitimate test directory creation')
         
-        write(*,'(A)') '  ✓ Directory creation security blocks malicious paths'
+        write(*,'(A)') '  PASS: Directory creation security blocks malicious paths'
     end subroutine test_directory_creation_security
     
     subroutine test_advanced_injection_patterns()
@@ -185,7 +185,7 @@ contains
         call assert_path_unsafe('plot^&whoami', 'Windows escape character attack')
         call assert_path_unsafe('plot%PATH%\\cmd.exe', 'Windows environment variable')
         
-        write(*,'(A)') '  ✓ Advanced injection patterns correctly detected and blocked'
+        write(*,'(A)') '  PASS: Advanced injection patterns correctly detected and blocked'
     end subroutine test_advanced_injection_patterns
     
     ! Helper assertion functions

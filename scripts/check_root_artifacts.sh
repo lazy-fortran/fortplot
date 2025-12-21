@@ -49,4 +49,4 @@ if (( ${#violations[@]} > 0 )); then
 fi
 
 echo "Root artifact hygiene check passed."
-echo "CMakeLists.txt present for downstream CMake integration ✓"
+echo "CMakeLists.txt present for downstream CMake integration: PASS"

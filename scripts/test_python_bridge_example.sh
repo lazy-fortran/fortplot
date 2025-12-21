@@ -57,4 +57,4 @@ if [ "${size:-0}" -lt 1000 ]; then
   exit 3
 fi
 
-echo "✓ Python bridge example produced $OUT_FILE (${size} bytes)"
+echo "PASS: Python bridge example produced $OUT_FILE (${size} bytes)"

@@ -41,19 +41,19 @@ program test_legend_line_styles
     ! Validate output
     val = validate_file_exists('test/output/test_legend_line_styles.png')
     if (val%passed) then
-        print *, "✓ Legend line styles PNG created successfully"
+        print *, "PASS: Legend line styles PNG created successfully"
         val = validate_file_size('test/output/test_legend_line_styles.png', min_size=5000)
         if (val%passed) then
-            print *, "✓ PNG file size indicates proper rendering"
+            print *, "PASS: PNG file size indicates proper rendering"
             print *, ""
             print *, "SUCCESS: Line styles properly rendered in legend"
             print *, "The fix correctly applies line styles to legend entries"
         else
-            print *, "✗ PNG file too small - legend may be incomplete"
+            print *, "FAIL: PNG file too small - legend may be incomplete"
             stop 1
         end if
     else
-        print *, "✗ Failed to create legend line styles PNG"
+        print *, "FAIL: Failed to create legend line styles PNG"
         stop 1
     end if
     

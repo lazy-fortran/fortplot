@@ -53,7 +53,7 @@ program test_bitmap_rotation_both
     ! Test full 180° rotation (CW then CW again, should equal CCW then CCW)
     allocate (full_rotation_bitmap(width, height, 3))
     call rotate_bitmap_90_cw(cw_bitmap, full_rotation_bitmap, height, width)
-    print *, "  180° rotation (CW+CW): ", width, "x", height
+    print *, "  180 deg rotation (CW+CW): ", width, "x", height
 
     ! Validate rotation properties
     call validate_rotation_properties(bitmap, cw_bitmap, ccw_bitmap, &
@@ -108,7 +108,7 @@ contains
             /= rot180_pixels) then
             print *, "ERROR: Pixel count not preserved across rotations"
             print *, "  Original:", orig_pixels, " CW:", cw_pixels, " CCW:", &
-                ccw_pixels, " 180°:", rot180_pixels
+                ccw_pixels, " 180 deg:", rot180_pixels
             stop 1
         end if
         print *, "PASS: Pixel count preserved in all rotations (", &
@@ -126,15 +126,15 @@ contains
             print *, "ERROR: CCW rotation dimensions incorrect"
             stop 1
         end if
-        print *, "PASS: 90° rotations swap dimensions correctly"
+        print *, "PASS: 90 deg rotations swap dimensions correctly"
 
         ! Test 3: 180° rotation should preserve original dimensions
         if (size(rotated_180, 1) /= orig_width .or. size(rotated_180, 2) /= &
             orig_height) then
-            print *, "ERROR: 180° rotation dimensions incorrect"
+            print *, "ERROR: 180 deg rotation dimensions incorrect"
             stop 1
         end if
-        print *, "PASS: 180° rotation preserves original dimensions"
+        print *, "PASS: 180 deg rotation preserves original dimensions"
 
         ! Test 4: Corner pixel transformation test for CW rotation
         ! (x,y) -> (y, width-x+1) for clockwise
@@ -159,11 +159,11 @@ contains
         if (orig_width >= 3 .and. orig_height >= 3) then
             if (.not. pixels_equal(original(orig_width, orig_height, :), &
                                    rotated_180(1, 1, :))) then
-                print *, "ERROR: 180° rotation corner transformation failed"
+                print *, "ERROR: 180 deg rotation corner transformation failed"
                 stop 1
             end if
         end if
-        print *, "PASS: 180° rotation transformation correct"
+        print *, "PASS: 180 deg rotation transformation correct"
 
     end subroutine validate_rotation_properties
 

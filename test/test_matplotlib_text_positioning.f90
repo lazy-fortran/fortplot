@@ -71,7 +71,7 @@ program test_matplotlib_text_positioning
     print *, "PNG text rendering:"
     print *, "  - render_text_to_image(x,y) - which corner is (x,y)?"
     print *, "  - Is it top-left, bottom-left, center?"
-    print *, "  - After 90° rotation, how do coordinates change?"
+    print *, "  - After 90 deg rotation, how do coordinates change?"
     print *, ""
     
     print *, "PDF text rendering:"

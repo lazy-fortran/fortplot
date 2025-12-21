@@ -96,7 +96,7 @@ program test_matplotlib_new_functions_oo
     call fig%set_title('OO twin axis placeholder test')
     call fig%savefig(trim(output_dir)//'test_twin_axes_oo.png')
 
-    print *, '✓ OO matplotlib-compatible functions executed without errors'
+    print *, 'PASS: OO matplotlib-compatible functions executed without errors'
 
     deallocate(x, y, z, theta, r, values)
 

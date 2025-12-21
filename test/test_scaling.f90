@@ -219,10 +219,10 @@ contains
         character(len=*), intent(in) :: description
         
         if (condition) then
-            write(*, '(A, A)') "  ✓ PASS: ", description
+            write(*, '(A, A)') "  PASS: ", description
             passed_count = passed_count + 1
         else
-            write(*, '(A, A)') "  ✗ FAIL: ", description
+            write(*, '(A, A)') "  FAIL: ", description
             all_tests_passed = .false.
         end if
     end subroutine
@@ -232,9 +232,9 @@ contains
         write(*, '(A, I0, A, I0)') "Passed: ", passed_count, " / ", test_count
         
         if (all_tests_passed) then
-            write(*, '(A)') "✓ All tests PASSED"
+            write(*, '(A)') "PASS: All tests PASSED"
         else
-            write(*, '(A)') "✗ Some tests FAILED"
+            write(*, '(A)') "FAIL: Some tests FAILED"
             error stop 1
         end if
     end subroutine
