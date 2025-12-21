@@ -502,7 +502,7 @@ contains
         ! Legacy fallback width (unused for mathtext)
         real(wp), parameter :: X_TICK_GAP = 15.0_wp
         ! Distance below plot for X tick labels
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 4.0_wp
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
         real(wp), parameter :: Y_TICK_BASELINE_NUDGE = 0.35_wp
         bottom_y = plot_bottom  ! PDF Y=0 is at bottom, no conversion needed
 
@@ -571,8 +571,8 @@ contains
         character(len=512) :: processed_title, processed_xlabel, processed_ylabel
         integer :: processed_len
         real(wp), parameter :: TITLE_GAP = 20.0_wp
-        real(wp), parameter :: Y_TICK_GAP_LOCAL = 4.0_wp
-        real(wp), parameter :: YLABEL_PAD = 3.0_wp
+        real(wp), parameter :: Y_TICK_GAP_LOCAL = 1.0_wp
+        real(wp), parameter :: YLABEL_PAD = 1.0_wp
         real(wp), parameter :: LABEL_THICKNESS = 1.2_wp*PDF_LABEL_SIZE
 
         ! Draw title (centered at top)
@@ -607,7 +607,8 @@ contains
             end if
         end if
 
-        ! Draw Y-axis label (rotated on left) - closer to frame inside left margin
+        ! Draw Y-axis label (rotated on left) - anchor point is the right edge of the
+        ! rotated glyphs (text extends to the left in device X).
         if (present(ylabel)) then
             if (len_trim(ylabel) > 0) then
                 ! Process LaTeX commands for accurate width calculation
@@ -617,9 +618,9 @@ contains
                 y_tick_w = 0.0_wp
                 if (present(y_tick_label_max_width)) y_tick_w = y_tick_label_max_width
 
-                ! Place y-label left of the y-tick label block by a fixed padding.
-                ylabel_x = plot_area_left - Y_TICK_GAP_LOCAL - y_tick_w - YLABEL_PAD - &
-                           LABEL_THICKNESS
+                ! Place y-label block left of the y-tick label block by a fixed padding.
+                ! Account for rotated text matrix: glyphs extend left of (ylabel_x).
+                ylabel_x = plot_area_left - Y_TICK_GAP_LOCAL - y_tick_w - YLABEL_PAD
 
                 ! Vertically center rotated label: its extent along Y equals the
                 ! unrotated text width in points.
