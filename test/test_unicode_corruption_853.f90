@@ -6,9 +6,8 @@ program test_unicode_corruption_853
     !! The test ensures that Unicode-to-ASCII conversion provides readable fallback
     !! instead of corrupted garbage bytes.
 
-    use fortplot_unicode, only: unicode_codepoint_to_ascii, utf8_to_codepoint, &
-                                utf8_char_length
-    use fortplot
+    use fortplot_unicode, only: unicode_codepoint_to_ascii
+    use fortplot, only: figure, title, xlabel, ylabel, add_plot, legend, savefig
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 
@@ -144,7 +143,7 @@ contains
         print *, "Testing ASCII backend Unicode handling..."
 
         ! Create a plot with Unicode characters in title and labels
-        call figure(figsize=[8.0_wp, 6.0_wp])
+        call figure(figsize=[8.0_dp, 6.0_dp])
         call title("Test: α β γ δ Greek Letters")
         call xlabel("Parameter ξ (xi)")
         call ylabel("Observable Ψ (psi)")

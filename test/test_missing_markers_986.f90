@@ -8,8 +8,10 @@ program test_missing_markers_986
     implicit none
 
     type(figure_t) :: fig
-    real(dp), parameter :: x_data(6) = [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
-    real(dp), parameter :: y_data(6) = [2.0_dp, 4.0_dp, 3.0_dp, 6.0_dp, 5.0_dp, 7.0_dp]
+    real(dp), parameter :: x_data(6) = &
+                           [1.0_dp, 2.0_dp, 3.0_dp, 4.0_dp, 5.0_dp, 6.0_dp]
+    real(dp), parameter :: y_data(6) = &
+                           [2.0_dp, 4.0_dp, 3.0_dp, 6.0_dp, 5.0_dp, 7.0_dp]
 
     ! Create figure
     call fig%initialize(800, 600)

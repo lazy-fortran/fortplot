@@ -1,7 +1,8 @@
 program test_scale_implementation
     !! Comprehensive test for scale system implementation
     !! Tests linear, log, and symlog scales with proper axis transformations
-    use fortplot
+    use fortplot, only: figure, set_xscale, set_yscale, plot, xlabel, ylabel, title, &
+                        legend, savefig
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
 
@@ -43,7 +44,7 @@ contains
         filename = 'test/output/test_linear_scale.png'
         call savefig(filename)
 
-        call test_result(.true., "Linear scale plot created successfully")
+        call test_result(file_written(filename), "Linear scale plot written")
     end subroutine
 
     subroutine test_log_scale()
@@ -71,7 +72,7 @@ contains
         filename = 'test/output/test_log_scale.png'
         call savefig(filename)
 
-        call test_result(.true., "Log scale plot created successfully")
+        call test_result(file_written(filename), "Log scale plot written")
     end subroutine
 
     subroutine test_symlog_scale()
@@ -100,7 +101,7 @@ contains
         filename = 'test/output/test_symlog_scale.png'
         call savefig(filename)
 
-        call test_result(.true., "Symlog scale plot created successfully")
+        call test_result(file_written(filename), "Symlog scale plot written")
     end subroutine
 
     subroutine test_scale_with_negative_values()
@@ -131,7 +132,7 @@ contains
         filename = 'test/output/test_mixed_scale.png'
         call savefig(filename)
 
-        call test_result(.true., "Mixed scale plot created successfully")
+        call test_result(file_written(filename), "Mixed scale plot written")
     end subroutine
 
     subroutine test_scale_edge_cases()
@@ -139,6 +140,12 @@ contains
         real(dp), dimension(10) :: x, y
         integer :: i
         logical :: test_passed
+        character(len=*), parameter :: invalid_scale_path = &
+                                       'test/output/test_invalid_scale.png'
+        character(len=*), parameter :: small_threshold_path = &
+                                       'test/output/test_small_threshold.png'
+        character(len=*), parameter :: scale_switch_path = &
+                                       'test/output/test_scale_switch.png'
 
         call test_start("Scale edge cases and error handling")
 
@@ -153,23 +160,26 @@ contains
         call set_xscale('invalid_scale')
         call set_yscale('invalid_scale')
         call plot(x, y)
-        call savefig("test/output/test_invalid_scale.png")
+        call savefig(invalid_scale_path)
+        test_passed = test_passed .and. file_written(invalid_scale_path)
 
         ! Test 2: Very small symlog threshold
         call figure(figsize=[4.0_dp, 3.0_dp])
         call set_xscale('symlog', 0.001_dp)
         call set_yscale('symlog', 0.001_dp)
         call plot(x, y)
-        call savefig("test/output/test_small_threshold.png")
+        call savefig(small_threshold_path)
+        test_passed = test_passed .and. file_written(small_threshold_path)
 
         ! Test 3: Switching scales after plotting
         call figure(figsize=[4.0_dp, 3.0_dp])
         call plot(x, y)
         call set_xscale('log')
         call set_yscale('log')
-        call savefig("test/output/test_scale_switch.png")
+        call savefig(scale_switch_path)
+        test_passed = test_passed .and. file_written(scale_switch_path)
 
-        call test_result(test_passed, "Edge cases handled gracefully")
+        call test_result(test_passed, "Edge case plots written")
     end subroutine
 
     ! Test framework utilities
@@ -184,10 +194,10 @@ contains
         character(len=*), intent(in) :: description
 
         if (condition) then
-            write (*, '(A, A)') "  ✓ PASS: ", description
+            write (*, '(A, A)') "  PASS: ", description
             passed_count = passed_count + 1
         else
-            write (*, '(A, A)') "  ✗ FAIL: ", description
+            write (*, '(A, A)') "  FAIL: ", description
             all_tests_passed = .false.
         end if
     end subroutine
@@ -197,11 +207,21 @@ contains
         write (*, '(A, I0, A, I0)') "Passed: ", passed_count, " / ", test_count
 
         if (all_tests_passed) then
-            write (*, '(A)') "✓ All tests PASSED"
+            write (*, '(A)') "All tests PASSED"
         else
-            write (*, '(A)') "✗ Some tests FAILED"
+            write (*, '(A)') "Some tests FAILED"
             error stop 1
         end if
     end subroutine
+
+    logical function file_written(path) result(ok)
+        character(len=*), intent(in) :: path
+        integer :: file_size
+        logical :: exists
+
+        ok = .false.
+        inquire (file=path, exist=exists, size=file_size)
+        if (exists) ok = (file_size > 0)
+    end function file_written
 
 end program test_scale_implementation

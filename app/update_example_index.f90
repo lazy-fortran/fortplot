@@ -173,13 +173,11 @@ contains
         integer, intent(in) :: string_len
         integer, intent(in) :: new_capacity
         character(len=string_len), allocatable, intent(inout) :: buffer(:)
-        character(len=string_len), allocatable :: tmp(:)
         integer :: capacity_to_allocate
+        integer :: i
 
         capacity_to_allocate = max(1, new_capacity)
-        allocate (character(len=string_len) :: tmp(capacity_to_allocate))
-        tmp = ''
-        buffer = tmp
+        buffer = [character(len=string_len) ::('', i=1, capacity_to_allocate)]
     end subroutine ensure_entry_capacity
 
     subroutine build_entry(entry, raw_name)
