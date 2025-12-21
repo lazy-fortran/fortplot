@@ -44,12 +44,10 @@ contains
         integer, intent(out) :: n_seeds
 
         integer :: nx, ny, i, j, idx
-        real :: dx, dy, spacing
 
         nx = size(x)
         ny = size(y)
 
-        spacing = 1.0/density
         n_seeds = int((nx - 1)*(ny - 1)*density*density)
 
         allocate (seed_x(n_seeds))
