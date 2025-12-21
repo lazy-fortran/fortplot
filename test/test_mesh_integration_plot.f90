@@ -23,10 +23,10 @@ program test_pcolormesh_integration
 
     inquire(file="test/output/test_pcolormesh_integration.png", exist=file_exists)
     if (file_exists) then
-        print *, "✓ PASS: Integration produced output image"
+        print *, "PASS: Integration produced output image"
         stop 0
     else
-        print *, "✗ FAIL: Integration did not create expected image"
+        print *, "FAIL: Integration did not create expected image"
         stop 1
     end if
 end program test_pcolormesh_integration

@@ -134,7 +134,7 @@ contains
 
     subroutine transform_test_data(fig, x_data, y_data, x_scaled, y_scaled)
         !! Transform data coordinates to scaled plot coordinates
-        !! This is the core functionality we're testing - extracted from drawing backends
+        !! This is the core functionality we are testing - extracted from drawing backends
         type(figure_t), intent(in) :: fig
         real(wp), dimension(:), intent(in) :: x_data, y_data
         real(wp), dimension(:), intent(out) :: x_scaled, y_scaled
@@ -219,10 +219,10 @@ contains
         character(len=*), intent(in) :: description
         
         if (condition) then
-            write(*, '(A, A)') "  ✓ PASS: ", description
+            write(*, '(A, A)') "  PASS: ", description
             passed_count = passed_count + 1
         else
-            write(*, '(A, A)') "  ✗ FAIL: ", description
+            write(*, '(A, A)') "  FAIL: ", description
             all_tests_passed = .false.
         end if
     end subroutine
@@ -232,9 +232,9 @@ contains
         write(*, '(A, I0, A, I0)') "Passed: ", passed_count, " / ", test_count
         
         if (all_tests_passed) then
-            write(*, '(A)') "✓ All tests PASSED"
+            write(*, '(A)') "PASS: All tests PASSED"
         else
-            write(*, '(A)') "✗ Some tests FAILED"
+            write(*, '(A)') "FAIL: Some tests FAILED"
             error stop 1
         end if
     end subroutine

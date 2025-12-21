@@ -85,10 +85,10 @@ program test_ylabel_boundary_protection_1136
     ! Inputs: 120px label width and 50px tick labels
     x_pos_long = compute_ylabel_x_pos_old(plot_area, 120, 50)
     if (x_pos_long >= 15 .and. x_pos_long + 120 <= 800) then
-        print *, '  ✓ PASS: Long ylabel positioned correctly (x=', x_pos_long, ')'
+        print *, '  PASS: Long ylabel positioned correctly (x=', x_pos_long, ')'
         pass_count = pass_count + 1
     else
-        print *, '  ✗ FAIL: Long ylabel boundary violation (x=', x_pos_long, ')'
+        print *, '  FAIL: Long ylabel boundary violation (x=', x_pos_long, ')'
         all_tests_passed = .false.
     end if
     
@@ -98,10 +98,10 @@ program test_ylabel_boundary_protection_1136
     x_pos_extreme = compute_ylabel_x_pos_old(plot_area, 200, 80)
     if (x_pos_extreme >= 50 .and. x_pos_extreme + 200 <= 800) then
         ! Adaptive margin lower bound 50
-        print *, '  ✓ PASS: Extreme ylabel uses adaptive margin (x=', x_pos_extreme, ')'
+        print *, '  PASS: Extreme ylabel uses adaptive margin (x=', x_pos_extreme, ')'
         pass_count = pass_count + 1
     else
-        print *, '  ✗ FAIL: Extreme ylabel margin inadequate (x=', x_pos_extreme, ')'
+        print *, '  FAIL: Extreme ylabel margin inadequate (x=', x_pos_extreme, ')'
         all_tests_passed = .false.
     end if
     
@@ -110,16 +110,16 @@ program test_ylabel_boundary_protection_1136
     print *, 'Manually inspect the generated PNG files:'
     print *, ''
     print *, '1. ', trim(output_dir)//'test_ylabel_extreme_length_1136.png'
-    print *, '   ✓ MUST SHOW: Complete long ylabel text visible'
-    print *, '   ✗ FAILURE: Any ylabel text cut off or covered by white blocks'
+    print *, '   PASS: MUST SHOW: Complete long ylabel text visible'
+    print *, '   FAIL: FAILURE: Any ylabel text cut off or covered by white blocks'
     print *, ''
     print *, '2. ', trim(output_dir)//'test_ylabel_wide_ticks_1136.png'
-    print *, '   ✓ MUST SHOW: Y-label visible with proper spacing from wide tick labels'
-    print *, '   ✗ FAILURE: Y-label overlapped or cut off due to wide ticks'
+    print *, '   PASS: MUST SHOW: Y-label visible with proper spacing from wide tick labels'
+    print *, '   FAIL: FAILURE: Y-label overlapped or cut off due to wide ticks'
     print *, ''
     print *, '3. ', trim(output_dir)//'test_ylabel_small_canvas_1136.png'
-    print *, '   ✓ MUST SHOW: Y-label fits within canvas boundaries'
-    print *, '   ✗ FAILURE: Y-label extends beyond canvas or is clipped'
+    print *, '   PASS: MUST SHOW: Y-label fits within canvas boundaries'
+    print *, '   FAIL: FAILURE: Y-label extends beyond canvas or is clipped'
     print *, ''
     
     ! Final result
@@ -129,18 +129,18 @@ program test_ylabel_boundary_protection_1136
     
     if (pass_count == test_count - 3) then  ! Visual checks excluded from count
         print *, ''
-        print *, '✓ BOUNDARY CALCULATIONS PASSED'
+        print *, 'PASS: BOUNDARY CALCULATIONS PASSED'
         print *, '  - Adaptive margin system working'
         print *, '  - Canvas boundary protection active'
         print *, '  - Position calculations within valid ranges'
         print *, ''
-        print *, '⚠  MANUAL VERIFICATION REQUIRED:'
+        print *, 'WARNING:  MANUAL VERIFICATION REQUIRED:'
         print *, '   Inspect the 3 generated PNG files to confirm ylabel visibility'
         print *, '   If all ylabels are completely visible, Issue #1136 is RESOLVED'
         stop 0
     else
         print *, ''
-        print *, '✗ BOUNDARY CALCULATION FAILURES DETECTED'
+        print *, 'FAIL: BOUNDARY CALCULATION FAILURES DETECTED'
         print *, '  Issue #1136 fix is INCOMPLETE - boundary math errors'
         print *, '  Generated images may still show ylabel cutoff problems'
         stop 1

@@ -44,9 +44,9 @@ done
 if (( ${#violations[@]} > 0 )); then
   echo "ERROR: Found forbidden artifacts in repository root (Issue #990):"
   printf '  %s\n' "${violations[@]}" | sort -u
-  echo "\nPlease move test outputs to test/output/ or build/ and ensure .gitignore covers these patterns."
+  printf '\nPlease move test outputs to test/output/ or build/ and ensure .gitignore covers these patterns.\n'
   exit 1
 fi
 
 echo "Root artifact hygiene check passed."
-echo "CMakeLists.txt present for downstream CMake integration ✓"
+echo "CMakeLists.txt present for downstream CMake integration: PASS"

@@ -13,7 +13,7 @@ program test_legacy_positional_order
     call test_pie()
     call test_imshow()
 
-    print *, '✓ Legacy positional ordering works for figure_t add_* helpers'
+    print *, 'PASS: Legacy positional ordering works for figure_t add_* helpers'
 
 contains
 

@@ -36,7 +36,7 @@ contains
         ! Perform secure, in-process PNG validation (no external commands)
         png_ok = validate_png_format(filename)
         if (png_ok%passed) then
-            print *, "✓ PNG validation passed: ", trim(filename)
+            print *, "PASS: PNG validation passed: ", trim(filename)
             return
         end if
 
@@ -44,11 +44,11 @@ contains
         pdf_ok = validate_pdf_format(filename)
         if (pdf_ok%passed) then
             print *, "WARNING: File ", trim(filename), " is PDF, not PNG (backend fallback)"
-            print *, "✓ PNG validation skipped for PDF fallback file"
+            print *, "PASS: PNG validation skipped for PDF fallback file"
             return
         end if
 
-        ! Neither valid PNG nor PDF – treat as fatal corruption
+        ! Neither valid PNG nor PDF - treat as fatal corruption
         print *, "FATAL: PNG file failed validation: ", trim(filename)
         print *, "TEST FAILED: ", trim(test_name)
         error stop "PNG validation failed - file is corrupted"

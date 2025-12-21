@@ -69,7 +69,7 @@ contains
             stop 1
         end if
 
-        print *, "  ✓ Unicode-to-ASCII conversion working"
+        print *, "  PASS: Unicode-to-ASCII conversion working"
     end subroutine test_unicode_to_ascii_conversion
 
     subroutine test_mathematical_symbols_conversion()
@@ -106,7 +106,7 @@ contains
             stop 1
         end if
 
-        print *, "  ✓ Mathematical symbols conversion working"
+        print *, "  PASS: Mathematical symbols conversion working"
     end subroutine test_mathematical_symbols_conversion
 
     subroutine test_greek_letters_conversion()
@@ -128,7 +128,7 @@ contains
             end if
         end do
 
-        print *, "  ✓ Greek letters conversion working"
+        print *, "  PASS: Greek letters conversion working"
     end subroutine test_greek_letters_conversion
 
     subroutine test_ascii_backend_unicode_handling()

@@ -88,7 +88,7 @@ contains
         result = validate_plot_dimensions(100.0_wp, 4.0_wp, "test")
         call run_test("Extreme aspect ratio", result%is_valid .and. result%has_warning)
         
-        write(output_unit, '(A)') "  ✓ Plot dimensions validation tests completed"
+        write(output_unit, '(A)') "  PASS: Plot dimensions validation tests completed"
     end subroutine test_plot_dimensions_validation
     
     subroutine test_color_values_validation()
@@ -116,7 +116,7 @@ contains
         result = validate_color_values(-10.0_wp, 50.0_wp, -2.0_wp, alpha=10.0_wp, context="test")
         call run_test("Extreme out of range values", result%is_valid .and. result%has_warning)
         
-        write(output_unit, '(A)') "  ✓ Color values validation tests completed"
+        write(output_unit, '(A)') "  PASS: Color values validation tests completed"
     end subroutine test_color_values_validation
     
     subroutine test_array_bounds_validation()
@@ -152,7 +152,7 @@ contains
         result = validate_array_bounds(100, max_index=50, min_size=10, context="test")
         call run_test("Valid bounds access", result%is_valid .and. .not. result%has_warning)
         
-        write(output_unit, '(A)') "  ✓ Array bounds validation tests completed"
+        write(output_unit, '(A)') "  PASS: Array bounds validation tests completed"
     end subroutine test_array_bounds_validation
     
     subroutine test_file_path_validation()
@@ -193,7 +193,7 @@ contains
         result = validate_file_path("/tmp/output.png", context="test")
         call run_test("Absolute path", result%is_valid)
         
-        write(output_unit, '(A)') "  ✓ File path validation tests completed"
+        write(output_unit, '(A)') "  PASS: File path validation tests completed"
     end subroutine test_file_path_validation
     
     subroutine test_numeric_parameters_validation()
@@ -272,8 +272,8 @@ contains
         result = validate_numeric_parameters([1.0_wp, pos_inf, 2.0_wp], "mixed_inf", "test")
         call run_test("Mixed infinity array should warn", result%is_valid .and. result%has_warning)
         
-        write(output_unit, '(A)') "  ✓ Numeric parameters validation tests completed"
-        write(output_unit, '(A)') "  ✓ NaN/infinity test coverage gap FIXED (Issue #875)"
+        write(output_unit, '(A)') "  PASS: Numeric parameters validation tests completed"
+        write(output_unit, '(A)') "  PASS: NaN/infinity test coverage gap FIXED (Issue #875)"
     end subroutine test_numeric_parameters_validation
     
     subroutine test_nan_infinity_helper_functions()
@@ -337,7 +337,7 @@ contains
         result = is_finite_safe(1.0e200_wp)
         call run_test("is_finite_safe accepts large finite (1e200)", result)
         
-        write(output_unit, '(A)') "  ✓ NaN/infinity helper function tests completed"
+        write(output_unit, '(A)') "  PASS: NaN/infinity helper function tests completed"
     end subroutine test_nan_infinity_helper_functions
     
     ! Note: set_warning_mode was deprecated and removed.
@@ -351,9 +351,9 @@ contains
         
         if (condition) then
             passed_tests = passed_tests + 1
-            write(output_unit, '(A,A,A)') "  ✓ PASS: ", test_name
+            write(output_unit, '(A,A,A)') "  PASS: ", test_name
         else
-            write(output_unit, '(A,A,A)') "  ✗ FAIL: ", test_name
+            write(output_unit, '(A,A,A)') "  FAIL: ", test_name
         end if
     end subroutine run_test
     

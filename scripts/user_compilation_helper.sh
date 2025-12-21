@@ -314,7 +314,7 @@ EOF
             # Check for output file
             if [ -f "compilation_test.png" ]; then
                 print_success "Plot file generated: compilation_test.png"
-                print_success "✅ Fortplot compilation and functionality test PASSED"
+                print_success "PASS: Fortplot compilation and functionality test PASSED"
             else
                 print_warning "Test compiled and ran, but no plot file found"
                 print_info "This may indicate a runtime issue with file generation"
@@ -330,7 +330,7 @@ EOF
         
         return 0
     else
-        print_error "❌ Fortplot compilation test FAILED"
+        print_error "FAIL: Fortplot compilation test FAILED"
         rm -f "$test_file"
         return 1
     fi
@@ -478,11 +478,11 @@ main() {
     
     # Compile the program
     if compile_program "$source_file" "$output_name" "$debug_mode" "$verbose"; then
-        print_success "🎉 Compilation completed successfully!"
+        print_success "Compilation completed successfully!"
         print_info "Run your program: ./$output_name"
         exit 0
     else
-        print_error "💥 Compilation failed"
+        print_error "Compilation failed"
         print_info "For help, run: $0 --help"
         exit 1
     fi

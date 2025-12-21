@@ -22,20 +22,20 @@ function test_result() {
     local message="$3"
     
     if [ "$result" = "PASS" ]; then
-        echo "✓ PASS: $test_name"
+        echo "PASS: $test_name"
         [ -n "$message" ] && echo "  $message"
         TESTS_PASSED=$((TESTS_PASSED + 1))
     elif [ "$result" = "FAIL" ]; then
-        echo "✗ FAIL: $test_name"
+        echo "FAIL: $test_name"
         [ -n "$message" ] && echo "  $message"
         TESTS_FAILED=$((TESTS_FAILED + 1))
     elif [ "$result" = "CRITICAL" ]; then
-        echo "❌ CRITICAL: $test_name"
+        echo "FAIL: CRITICAL: $test_name"
         [ -n "$message" ] && echo "  $message"
         CRITICAL_ISSUES=$((CRITICAL_ISSUES + 1))
         TESTS_FAILED=$((TESTS_FAILED + 1))
     else
-        echo "⚠ SKIP: $test_name"
+        echo "WARNING: SKIP: $test_name"
         [ -n "$message" ] && echo "  $message"
     fi
 }
@@ -131,7 +131,7 @@ echo "Critical issues: $CRITICAL_ISSUES"
 
 if [ $CRITICAL_ISSUES -gt 0 ]; then
     echo ""
-    echo "❌ CRITICAL ISSUES FOUND"
+    echo "FAIL: CRITICAL ISSUES FOUND"
     echo "GitHub Pages documentation will have broken media links!"
     echo ""
     echo "REQUIRED FIXES:"
@@ -142,10 +142,10 @@ if [ $CRITICAL_ISSUES -gt 0 ]; then
     exit 1
 elif [ $TESTS_FAILED -gt 0 ]; then
     echo ""
-    echo "⚠ Some tests failed - check configuration"
+    echo "WARNING: Some tests failed - check configuration"
     exit 1
 else
     echo ""
-    echo "✅ All tests passed - GitHub Pages images should work correctly"
+    echo "PASS: All tests passed - GitHub Pages images should work correctly"
     exit 0
 fi

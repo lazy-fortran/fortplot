@@ -31,9 +31,9 @@ program test_matplotlib_margins
     
     if (plot_area%left == 80 .and. (plot_area%left + plot_area%width) == 576 .and. &
         plot_area%bottom == 58 .and. (plot_area%bottom + plot_area%height) == 427) then
-        print *, "✓ MARGINS MATCH MATPLOTLIB"
+        print *, "PASS: MARGINS MATCH MATPLOTLIB"
     else
-        print *, "✗ MARGINS DO NOT MATCH MATPLOTLIB"
+        print *, "FAIL: MARGINS DO NOT MATCH MATPLOTLIB"
     end if
     
 end program test_matplotlib_margins

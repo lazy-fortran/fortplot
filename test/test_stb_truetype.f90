@@ -47,16 +47,16 @@ contains
         
         ! Use dynamic font discovery (tries multiple fonts)
         if (.not. find_any_available_font(font_path)) then
-            print *, "❌ Could not find any supported font"
+            print *, "FAIL: Could not find any supported font"
             return
         end if
         
         if (stb_init_font(test_font, trim(font_path))) then
-            print *, "✅ Successfully loaded font:", trim(font_path)
+            print *, "PASS: Successfully loaded font:", trim(font_path)
             passed = .true.
             call stb_cleanup_font(test_font)
         else
-            print *, "❌ Failed to load font:", trim(font_path)
+            print *, "FAIL: Failed to load font:", trim(font_path)
         end if
         
         if (.not. passed) then
@@ -83,41 +83,41 @@ contains
         
         ! Use dynamic font discovery (tries multiple fonts)
         if (.not. find_any_available_font(font_path)) then
-            print *, "❌ Cannot find any supported font for metrics test"
+            print *, "FAIL: Cannot find any supported font for metrics test"
             return
         end if
         
         if (.not. stb_init_font(test_font, trim(font_path))) then
-            print *, "❌ Cannot load font for metrics test"
+            print *, "FAIL: Cannot load font for metrics test"
             return
         end if
         
         ! Test scale calculation
         scale = stb_scale_for_pixel_height(test_font, 12.0_wp)
         if (scale > 0.0_wp) then
-            print *, "✅ Scale for 12px height:", scale
+            print *, "PASS: Scale for 12px height:", scale
         else
-            print *, "❌ Invalid scale factor:", scale
+            print *, "FAIL: Invalid scale factor:", scale
             call stb_cleanup_font(test_font)
             return
         end if
         
         ! Test vertical metrics
         call stb_get_font_vmetrics(test_font, ascent, descent, line_gap)
-        print *, "✅ Vertical metrics: ascent=", ascent, " descent=", descent, " line_gap=", line_gap
+        print *, "PASS: Vertical metrics: ascent=", ascent, " descent=", descent, " line_gap=", line_gap
         
         if (ascent <= 0 .or. descent >= 0) then
-            print *, "❌ Suspicious vertical metrics values"
+            print *, "FAIL: Suspicious vertical metrics values"
             call stb_cleanup_font(test_font)
             return
         end if
         
-        ! Test character metrics for 'A'
+        ! Test character metrics for A
         call stb_get_codepoint_hmetrics(test_font, iachar('A'), advance_width, left_side_bearing)
-        print *, "✅ 'A' metrics: advance=", advance_width, " bearing=", left_side_bearing
+        print *, "PASS: 'A' metrics: advance=", advance_width, " bearing=", left_side_bearing
         
         if (advance_width <= 0) then
-            print *, "❌ Invalid advance width for 'A'"
+            print *, "FAIL: Invalid advance width for 'A'"
             call stb_cleanup_font(test_font)
             return
         end if
@@ -147,33 +147,33 @@ contains
         
         ! Use dynamic font discovery (tries multiple fonts)
         if (.not. find_any_available_font(font_path)) then
-            print *, "❌ Cannot find any supported font for rendering test"
+            print *, "FAIL: Cannot find any supported font for rendering test"
             return
         end if
         
         if (.not. stb_init_font(test_font, trim(font_path))) then
-            print *, "❌ Cannot load font for rendering test"
+            print *, "FAIL: Cannot load font for rendering test"
             return
         end if
         
         ! Test glyph lookup
         glyph_index = stb_find_glyph_index(test_font, iachar('A'))
         if (glyph_index == 0) then
-            print *, "❌ Could not find glyph for 'A'"
+            print *, "FAIL: Could not find glyph for 'A'"
             call stb_cleanup_font(test_font)
             return
         end if
-        print *, "✅ Found glyph index for 'A':", glyph_index
+        print *, "PASS: Found glyph index for 'A':", glyph_index
         
         ! Calculate scale for 16px font
         scale = stb_scale_for_pixel_height(test_font, 16.0_wp)
         
         ! Test bounding box calculation
         call stb_get_codepoint_bitmap_box(test_font, iachar('A'), scale, scale, ix0, iy0, ix1, iy1)
-        print *, "✅ 'A' bitmap box: (", ix0, ",", iy0, ") to (", ix1, ",", iy1, ")"
+        print *, "PASS: 'A' bitmap box: (", ix0, ",", iy0, ") to (", ix1, ",", iy1, ")"
         
         if (ix1 <= ix0 .or. iy1 <= iy0) then
-            print *, "❌ Invalid bitmap bounding box"
+            print *, "FAIL: Invalid bitmap bounding box"
             call stb_cleanup_font(test_font)
             return
         end if
@@ -182,15 +182,15 @@ contains
         bitmap_ptr = stb_get_codepoint_bitmap(test_font, scale, scale, iachar('A'), width, height, xoff, yoff)
         
         if (.not. c_associated(bitmap_ptr)) then
-            print *, "❌ Failed to render 'A' bitmap"
+            print *, "FAIL: Failed to render 'A' bitmap"
             call stb_cleanup_font(test_font)
             return
         end if
         
-        print *, "✅ Rendered 'A' bitmap: ", width, "x", height, " offset=(", xoff, ",", yoff, ")"
+        print *, "PASS: Rendered 'A' bitmap: ", width, "x", height, " offset=(", xoff, ",", yoff, ")"
         
         if (width <= 0 .or. height <= 0) then
-            print *, "❌ Invalid bitmap dimensions"
+            print *, "FAIL: Invalid bitmap dimensions"
             call stb_free_bitmap(bitmap_ptr)
             call stb_cleanup_font(test_font)
             return
@@ -198,13 +198,13 @@ contains
         
         ! Test bitmap content (basic sanity check)
         if (.not. test_bitmap_content(bitmap_ptr, width, height)) then
-            print *, "❌ Bitmap content validation failed"
+            print *, "FAIL: Bitmap content validation failed"
             call stb_free_bitmap(bitmap_ptr)
             call stb_cleanup_font(test_font)
             return
         end if
         
-        print *, "✅ Bitmap content validation passed"
+        print *, "PASS: Bitmap content validation passed"
         
         ! Clean up
         call stb_free_bitmap(bitmap_ptr)

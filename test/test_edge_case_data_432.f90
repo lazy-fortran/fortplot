@@ -38,9 +38,9 @@ program test_edge_case_data_432
     
     ! Check that axes and labels are visible even with no data
     if (len_trim(fig%title) > 0 .and. len_trim(fig%xlabel) > 0) then
-        print *, "  ✓ PNG: Labels preserved with zero-size data"
+        print *, "  PASS: PNG: Labels preserved with zero-size data"
     else
-        print *, "  ✗ PNG: Labels missing with zero-size data"
+        print *, "  FAIL: PNG: Labels missing with zero-size data"
         test_passed = .false.
     end if
     
@@ -112,14 +112,14 @@ program test_edge_case_data_432
     !---------------------------------------------------------------------
     print *, "============================================="
     if (test_passed) then
-        print *, "✓ All edge case tests completed"
+        print *, "PASS: All edge case tests completed"
         print *, "Check generated files to verify visual output:"
         print *, "- test_zero_arrays.png/txt (should show axes/labels only)"
         print *, "- test_single_point.png/txt (should show visible point)"  
         print *, "- test_normal_data.png/txt (should show connected line)"
         print *, "- test_mixed_edge_cases.png (should show point + line)"
     else
-        print *, "✗ Some edge case tests failed"
+        print *, "FAIL: Some edge case tests failed"
     end if
     print *, "============================================="
     
