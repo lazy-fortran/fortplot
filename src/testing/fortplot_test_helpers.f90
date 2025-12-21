@@ -97,7 +97,7 @@ contains
     
     subroutine ensure_test_directory(unique_suffix)
         !! Ensure test directory exists with proper error handling
-        !! Modified to use test/output/ directory structure per issue #774
+        !! Uses build/test/output/ directory structure per issue #820
         character(len=*), intent(in), optional :: unique_suffix
         character(len=512) :: base_temp
         character(len=:), allocatable :: suffix
