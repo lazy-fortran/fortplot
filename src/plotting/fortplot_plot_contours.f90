@@ -85,14 +85,18 @@ contains
         self%plots(plot_idx)%x_grid = x_grid
         self%plots(plot_idx)%y_grid = y_grid
         self%plots(plot_idx)%z_grid = z_grid
-        
+
         if (present(levels)) then
-            allocate(self%plots(plot_idx)%contour_levels(size(levels)))
-            self%plots(plot_idx)%contour_levels = levels
+            if (size(levels) > 0) then
+                allocate(self%plots(plot_idx)%contour_levels(size(levels)))
+                self%plots(plot_idx)%contour_levels = levels
+            else
+                call generate_default_contour_levels(self%plots(plot_idx))
+            end if
         else
             call generate_default_contour_levels(self%plots(plot_idx))
         end if
-        
+
         if (present(label) .and. len_trim(label) > 0) then
             self%plots(plot_idx)%label = label
         end if
@@ -128,14 +132,18 @@ contains
         self%plots(plot_idx)%x_grid = x_grid
         self%plots(plot_idx)%y_grid = y_grid
         self%plots(plot_idx)%z_grid = z_grid
-        
+
         if (present(levels)) then
-            allocate(self%plots(plot_idx)%contour_levels(size(levels)))
-            self%plots(plot_idx)%contour_levels = levels
+            if (size(levels) > 0) then
+                allocate(self%plots(plot_idx)%contour_levels(size(levels)))
+                self%plots(plot_idx)%contour_levels = levels
+            else
+                call generate_default_contour_levels(self%plots(plot_idx))
+            end if
         else
             call generate_default_contour_levels(self%plots(plot_idx))
         end if
-        
+
         ! Color properties
         self%plots(plot_idx)%use_color_levels = .true.
         self%plots(plot_idx)%fill_contours = .true.
