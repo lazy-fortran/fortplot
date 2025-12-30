@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
+  test:
     name: ${{ matrix.os == 'ubuntu-latest' && 'test' || 'test (windows)' }}
     strategy:
       fail-fast: true

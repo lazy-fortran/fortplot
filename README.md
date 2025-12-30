@@ -2,6 +2,8 @@
 
 [![Documentation](https://img.shields.io/badge/docs-FORD-blue.svg)](https://lazy-fortran.github.io/fortplot/)
 
+> **Note**: This project is experimental and subject to major changes. APIs may change without notice.
+
 Fortran-native plotting inspired by Python's `matplotlib.pyplot` and https://github.com/jacobwilliams/pyplot-fortran. This library is under active development, and the API is still subject to change. There are no external dependencies for building the library itself. For verifying PDF/PNG outputs, optional tooling is recommended (see Artifact Verification).
 
 ## Usage
