@@ -5,9 +5,9 @@ module fortplot_pdf
     use fortplot_pdf_text
     use fortplot_pdf_drawing
     use fortplot_zlib_core, only: zlib_compress_into
-    use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text, &
-                                 draw_pdf_secondary_y_axis, &
-                                     draw_pdf_secondary_x_axis_top
+    use fortplot_pdf_axes, only: draw_pdf_axes_and_labels, render_mixed_text
+    use fortplot_pdf_secondary_axes, only: draw_pdf_secondary_y_axis, &
+                                           draw_pdf_secondary_x_axis_top
     use fortplot_pdf_io
     use fortplot_pdf_coordinate
     use fortplot_pdf_markers
