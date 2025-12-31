@@ -278,7 +278,6 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/marker_demo
 	@mkdir -p output/example/fortran/format_string_demo
 	@mkdir -p output/example/fortran/contour_demo
-	@mkdir -p output/example/fortran/colored_contours
 	@mkdir -p output/example/fortran/pcolormesh_demo
 	@mkdir -p output/example/fortran/streamplot_demo
 	@mkdir -p output/example/fortran/ascii_heatmap
