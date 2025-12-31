@@ -81,6 +81,7 @@ module fortplot_plot_data
         logical :: show_colorbar = .true.
         ! Surface plot properties
         logical :: surface_show_colorbar = .false.
+        logical :: surface_filled = .false.
         real(wp) :: surface_alpha = 1.0_wp
         real(wp) :: surface_linewidth = 1.0_wp
         logical :: surface_use_colormap = .false.

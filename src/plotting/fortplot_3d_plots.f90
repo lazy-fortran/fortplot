@@ -33,17 +33,19 @@ contains
                                   marker=marker, markersize=markersize, linewidth=linewidth)
     end subroutine add_3d_plot
 
-    subroutine add_surface(self, x, y, z, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
+    subroutine add_surface(self, x, y, z, label, colormap, show_colorbar, alpha, &
+                           edgecolor, linewidth, filled)
         !! Add surface plot to figure
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:), z(:,:)
         character(len=*), intent(in), optional :: label
         character(len=*), intent(in), optional :: colormap
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
-        call self%add_surface(x, y, z, label, colormap, show_colorbar, alpha, edgecolor, linewidth)
+        call self%add_surface(x, y, z, label, colormap, show_colorbar, alpha, &
+                             edgecolor, linewidth, filled)
     end subroutine add_surface
 
     subroutine add_3d_line_plot_data(self, x, y, z, label, linestyle, marker, markersize, linewidth)

@@ -36,6 +36,19 @@ program test_surface_plot_storage
         error stop 'edgecolor not preserved'
     if (abs(fig%plots(1)%surface_alpha - 0.6_wp) > 1.0e-12_wp) &
         error stop 'alpha not preserved'
+    if (fig%plots(1)%surface_filled) &
+        error stop 'surface_filled should be false by default'
+
+    call fig%initialize()
+    call fig%add_surface(x, y, z, colormap='viridis', filled=.true.)
+    if (.not. fig%plots(1)%surface_filled) &
+        error stop 'surface_filled not set to true'
+    if (.not. fig%plots(1)%surface_use_colormap) &
+        error stop 'surface_use_colormap not set'
+    if (.not. allocated(fig%plots(1)%surface_colormap)) &
+        error stop 'surface_colormap not allocated'
+    if (trim(fig%plots(1)%surface_colormap) /= 'viridis') &
+        error stop 'surface_colormap not viridis'
 
     print *, 'PASS: surface plot stored with 3D metadata'
 end program test_surface_plot_storage
