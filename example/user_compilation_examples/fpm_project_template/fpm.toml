@@ -4,11 +4,13 @@ license = "MIT"
 author = "Your Name"
 maintainer = "your.email@domain.com"
 
-[build]
-auto-executables = true
-
 [fortran]
 implicit-typing = false
 
 [dependencies]
 fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
+
+[[executable]]
+name = "fpm_template_demo"
+source-dir = "app"
+main = "fpm_template_demo.f90"
