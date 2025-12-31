@@ -98,11 +98,11 @@ contains
             default_arrow_style, computed_arrows)
 
         call replace_stream_arrows(state, computed_arrows)
-        
+
         ! Add each trajectory as a line plot
         do i = 1, n_trajectories
             if (trajectory_lengths(i) <= 1) cycle
-            
+
             plot_count = plot_count + 1
             plot_idx = plot_count
             
