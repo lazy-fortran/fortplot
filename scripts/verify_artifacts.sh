@@ -224,13 +224,11 @@ for f in \
   fi
 done
 
-# Colored contours should have many unique colors (not blank)
+# Contour demo should have many unique colors (not blank)
 for f in \
-  output/example/fortran/colored_contours/gaussian_default.png \
-  output/example/fortran/colored_contours/saddle_plasma.png \
-  output/example/fortran/colored_contours/ripple_inferno.png \
-  output/example/fortran/colored_contours/ripple_coolwarm.png \
-  output/example/fortran/colored_contours/ripple_jet.png
+  output/example/fortran/contour_demo/ripple_inferno.png \
+  output/example/fortran/contour_demo/ripple_coolwarm.png \
+  output/example/fortran/contour_demo/ripple_jet.png
   do
   if [[ -f "$f" ]]; then
     if command -v identify >/dev/null 2>&1; then

@@ -64,17 +64,16 @@ module fortplot_documentation
     character(len=*), parameter :: INDEX_START_MARKER = '<!-- AUTO_EXAMPLES_START -->'
     character(len=*), parameter :: INDEX_END_MARKER   = '<!-- AUTO_EXAMPLES_END -->'
 
-    integer, parameter :: FALLBACK_COUNT = 17
+    integer, parameter :: FALLBACK_COUNT = 16
     character(len=32), parameter :: FALLBACK_EXAMPLES(FALLBACK_COUNT) = [ &
         "basic_plots         ", "line_styles         ", &
         "marker_demo         ", "format_string_demo  ", &
-        "contour_demo        ", "colored_contours    ", &
-        "pcolormesh_demo     ", "streamplot_demo     ", &
-        "ascii_heatmap       ", "scale_examples      ", &
-        "legend_demo         ", "legend_box_demo     ", &
-        "unicode_demo        ", "show_viewer_demo    ", &
-        "raster_backend_demo ", "pdf_backend_demo    ", &
-        "text_backend_demo   " ]
+        "contour_demo        ", "pcolormesh_demo     ", &
+        "streamplot_demo     ", "ascii_heatmap       ", &
+        "scale_examples      ", "legend_demo         ", &
+        "legend_box_demo     ", "unicode_demo        ", &
+        "show_viewer_demo    ", "raster_backend_demo ", &
+        "pdf_backend_demo    ", "text_backend_demo   " ]
 
     logical :: manifest_loaded = .false.
     integer :: manifest_count = 0
