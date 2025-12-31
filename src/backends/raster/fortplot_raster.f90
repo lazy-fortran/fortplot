@@ -57,6 +57,9 @@ module fortplot_raster
         type(raster_image_t) :: raster
         type(plot_margins_t) :: margins  ! Common margin functionality
         type(plot_area_t) :: plot_area
+        character(len=16) :: last_xscale = 'linear'
+        character(len=16) :: last_yscale = 'linear'
+        real(wp) :: last_symlog_threshold = 1.0_wp
     contains
         procedure :: line => raster_draw_line
         procedure :: color => raster_set_color_context
@@ -706,6 +709,7 @@ contains
                                                    symlog_threshold, &
                                                    x_min, x_max, y_min, y_max, &
                                                    title, xlabel, ylabel, &
+                                                   x_date_format, y_date_format, &
                                                    z_min, z_max, has_3d_plots)
         !! Draw axes and labels - delegate to specialized axes module
         use fortplot_3d_axes, only: draw_3d_axes
@@ -714,9 +718,14 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         character(len=:), allocatable :: title_str, xlabel_str, ylabel_str
+
+        this%last_xscale = trim(xscale)
+        this%last_yscale = trim(yscale)
+        this%last_symlog_threshold = symlog_threshold
 
         ! Set color to black for axes and text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -752,7 +761,9 @@ contains
                                              this%plot_area, &
                                              xscale, yscale, symlog_threshold, &
                                              x_min, x_max, y_min, y_max, &
-                                             title, xlabel, ylabel)
+                                             title, xlabel, ylabel, &
+                                             x_date_format=x_date_format, &
+                                             y_date_format=y_date_format)
         end if
     end subroutine raster_draw_axes_and_labels_context
 
@@ -779,15 +790,24 @@ contains
     end subroutine raster_set_coordinates
 
     subroutine raster_render_axes(this, title_text, xlabel_text, ylabel_text)
-        !! Render axes for raster context - see issue #495 for implementation roadmap
+        !! Render axes for raster context using the most recently configured scales.
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
-        if (present(title_text)) then; associate (dt => len_trim(title_text)); end associate; end if
-        if (present(xlabel_text)) then; associate (dx => len_trim(xlabel_text)); end associate; end if
-        if (present(ylabel_text)) then; associate (dy => len_trim(ylabel_text)); end associate; end if
+        character(len=:), allocatable :: t, xl, yl
+        real(wp) :: x_min, x_max, y_min, y_max
 
-        ! Raster axes are rendered as part of draw_axes_and_labels_backend
-        ! Implementation needed - see issue #495
+        t = ''
+        xl = ''
+        yl = ''
+        if (present(title_text)) t = title_text
+        if (present(xlabel_text)) xl = xlabel_text
+        if (present(ylabel_text)) yl = ylabel_text
+
+        call this%save_coordinates(x_min, x_max, y_min, y_max)
+        call this%draw_axes_and_labels_backend(this%last_xscale, this%last_yscale, &
+                                               this%last_symlog_threshold, &
+                                               x_min, x_max, y_min, y_max, &
+                                               t, xl, yl, has_3d_plots=.false.)
     end subroutine raster_render_axes
 
     subroutine raster_draw_axes_lines_and_ticks_context(this, xscale, yscale, &
@@ -798,6 +818,10 @@ contains
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
+
+        this%last_xscale = trim(xscale)
+        this%last_yscale = trim(yscale)
+        this%last_symlog_threshold = symlog_threshold
 
         ! Set color to black for axes and ticks
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -813,8 +837,11 @@ contains
                                                     symlog_threshold, &
                                                     x_min, x_max, y_min, y_max, &
                                                     title, xlabel, ylabel, &
-                                                    custom_xticks, custom_xtick_labels, &
-                                                    custom_yticks, custom_ytick_labels)
+                                                    custom_xticks, &
+                                                    custom_xtick_labels, &
+                                                    custom_yticks, &
+                                                    custom_ytick_labels, &
+                                                    x_date_format, y_date_format)
         !! Draw ONLY axis labels and tick labels (for proper drawing order)
         class(raster_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
@@ -824,6 +851,11 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
+
+        this%last_xscale = trim(xscale)
+        this%last_yscale = trim(yscale)
+        this%last_symlog_threshold = symlog_threshold
 
         ! Set color to black for text
         call this%color(0.0_wp, 0.0_wp, 0.0_wp)
@@ -835,7 +867,9 @@ contains
                                           x_min, x_max, y_min, y_max, &
                                           title, xlabel, ylabel, &
                                           custom_xticks, custom_xtick_labels, &
-                                          custom_yticks, custom_ytick_labels)
+                                          custom_yticks, custom_ytick_labels, &
+                                          x_date_format=x_date_format, &
+                                          y_date_format=y_date_format)
     end subroutine raster_draw_axis_labels_only_context
 
 end module fortplot_raster

@@ -20,6 +20,7 @@ module fortplot_figure_core
     use fortplot_figure_reflines, only: core_axhline, core_axvline, &
                                         core_hlines, core_vlines
     use fortplot_string_utils, only: to_lowercase
+    use fortplot_datetime, only: datetime_t, datetime_to_unix_seconds
     implicit none
 
     private
@@ -53,8 +54,10 @@ module fortplot_figure_core
 
     contains
         procedure :: initialize
-        procedure :: add_plot
-        procedure :: plot => add_plot
+        procedure, private :: add_plot_real
+        procedure, private :: add_plot_datetime
+        generic :: add_plot => add_plot_real, add_plot_datetime
+        generic :: plot => add_plot_real, add_plot_datetime
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_surface
@@ -69,6 +72,8 @@ module fortplot_figure_core
         procedure :: set_title
         procedure :: set_xscale
         procedure :: set_yscale
+        procedure :: set_xaxis_date_format
+        procedure :: set_yaxis_date_format
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
@@ -253,7 +258,7 @@ contains
                              self%plot_count, width, height, backend, dpi)
     end subroutine initialize
 
-    subroutine add_plot(self, x, y, label, linestyle, color)
+    subroutine add_plot_real(self, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
@@ -261,7 +266,29 @@ contains
 
         call core_add_plot(self%plots, self%state, x, y, label, linestyle, color, &
                            self%plot_count)
-    end subroutine add_plot
+    end subroutine add_plot_real
+
+    subroutine add_plot_datetime(self, x, y, label, linestyle, color)
+        class(figure_t), intent(inout) :: self
+        type(datetime_t), intent(in) :: x(:)
+        real(wp), intent(in) :: y(:)
+        character(len=*), intent(in), optional :: label, linestyle
+        real(wp), intent(in), optional :: color(3)
+
+        real(wp), allocatable :: x_seconds(:)
+        integer :: i, n
+
+        call self%set_xscale('date')
+
+        n = size(x)
+        allocate (x_seconds(n))
+        do i = 1, n
+            x_seconds(i) = real(datetime_to_unix_seconds(x(i)), wp)
+        end do
+
+        call core_add_plot(self%plots, self%state, x_seconds, y, label, linestyle, &
+                           color, self%plot_count)
+    end subroutine add_plot_datetime
 
     subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink, &
                         ticks, ticklabels, label_fontsize)
@@ -499,6 +526,16 @@ contains
         real(wp), intent(in), optional :: threshold
         call core_set_yscale(self%state, scale, threshold)
     end subroutine set_yscale
+    subroutine set_xaxis_date_format(self, format)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: format
+        call core_set_xaxis_date_format(self%state, format)
+    end subroutine set_xaxis_date_format
+    subroutine set_yaxis_date_format(self, format)
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: format
+        call core_set_yaxis_date_format(self%state, format)
+    end subroutine set_yaxis_date_format
     subroutine set_xlim(self, x_min, x_max)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_min, x_max

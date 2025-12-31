@@ -31,6 +31,7 @@ CI_FPM_TEST_TARGETS += test_matplotlib_stubs
 CI_FPM_TEST_TARGETS += test_format_parser
 CI_FPM_TEST_TARGETS += test_figure_state_isolation
 CI_FPM_TEST_TARGETS += test_scaling
+CI_FPM_TEST_TARGETS += test_datetime_axis
 CI_FPM_TEST_TARGETS += test_scatter
 CI_FPM_TEST_TARGETS += test_histogram_functionality
 CI_FPM_TEST_TARGETS += test_colormap_interpolation_regression
@@ -106,6 +107,7 @@ test-ci:
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_format_parser || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_figure_state_isolation || exit 1
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scaling || exit 1
+	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_datetime_axis || exit 1
 	@echo "Testing statistical plot coverage and scatter regressions"
 	@# Statistical plot coverage and scatter regression guard
 	@$(TIMEOUT_PREFIX) fpm test $(FPM_FLAGS_TEST) --target test_scatter || exit 1
@@ -295,6 +297,7 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/disconnected_lines
 	@mkdir -p output/example/fortran/boxplot_demo
 	@mkdir -p output/example/fortran/grid_demo
+	@mkdir -p output/example/fortran/datetime_axis_demo
 
 # Create test directories for isolated test artifacts (Issue #820)
 create_test_dirs:

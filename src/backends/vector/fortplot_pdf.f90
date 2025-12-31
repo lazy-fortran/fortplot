@@ -647,6 +647,7 @@ contains
                                                     symlog_threshold, &
                                                     x_min, x_max, y_min, y_max, &
                                                     title, xlabel, ylabel, &
+                                                    x_date_format, y_date_format, &
                                                     z_min, z_max, has_3d_plots)
         use fortplot_3d_axes, only: draw_3d_axes
         use fortplot_pdf_axes, only: draw_pdf_title_and_labels
@@ -655,6 +656,7 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
 
@@ -682,10 +684,16 @@ contains
             call draw_pdf_axes_and_labels(this%core_ctx, xscale, yscale, &
                                           symlog_threshold, x_min, x_max, y_min, &
                                           y_max, title_str, xlabel_str, ylabel_str, &
-                                          real(this%plot_area%left, wp), &
-                                          real(this%plot_area%bottom, wp), &
-                                          real(this%plot_area%width, wp), &
-                                          real(this%plot_area%height, wp))
+                                          x_date_format=x_date_format, &
+                                          y_date_format=y_date_format, &
+                                          plot_area_left=real(this%plot_area%left, &
+                                                              wp), &
+                                          plot_area_bottom=real(this%plot_area%bottom, &
+                                                                wp), &
+                                          plot_area_width=real(this%plot_area%width, &
+                                                               wp), &
+                                          plot_area_height=real(this%plot_area%height, &
+                                                                wp))
         end if
     end subroutine draw_axes_and_labels_backend_wrapper
 
@@ -748,10 +756,11 @@ contains
         call draw_pdf_axes_and_labels(this%core_ctx, "linear", "linear", 1.0_wp, &
                                       this%x_min, this%x_max, this%y_min, this%y_max, &
                                       title_str, xlabel_str, ylabel_str, &
-                                      real(this%plot_area%left, wp), &
-                                      real(this%plot_area%bottom, wp), &
-                                      real(this%plot_area%width, wp), &
-                                      real(this%plot_area%height, wp))
+                                      plot_area_left=real(this%plot_area%left, wp), &
+                                      plot_area_bottom=real(this%plot_area%bottom, &
+                                                            wp), &
+                                      plot_area_width=real(this%plot_area%width, wp), &
+                                      plot_area_height=real(this%plot_area%height, wp))
 
         ! Add axes content to the stream
         call this%stream_writer%add_to_stream(this%core_ctx%stream_data)
@@ -761,13 +770,14 @@ contains
     end subroutine render_pdf_axes_wrapper
 
     subroutine pdf_draw_secondary_y_axis_wrapper(this, yscale, symlog_threshold, &
-                                                 y_min, y_max, ylabel)
+                                                 y_min, y_max, ylabel, date_format)
         !! Draw secondary Y axis on the right side for twin axes support
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: y_min, y_max
         character(len=:), allocatable, intent(in), optional :: ylabel
+        character(len=*), intent(in), optional :: date_format
 
         call draw_pdf_secondary_y_axis(this%core_ctx, yscale, symlog_threshold, &
                                        y_min, y_max, &
@@ -775,17 +785,18 @@ contains
                                        real(this%plot_area%bottom, wp), &
                                        real(this%plot_area%width, wp), &
                                        real(this%plot_area%height, wp), &
-                                       ylabel)
+                                       ylabel, date_format=date_format)
     end subroutine pdf_draw_secondary_y_axis_wrapper
 
     subroutine pdf_draw_secondary_x_axis_top_wrapper(this, xscale, symlog_threshold, &
-                                                     x_min, x_max, xlabel)
+                                                     x_min, x_max, xlabel, date_format)
         !! Draw secondary X axis at the top for twin axes support
         class(pdf_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max
         character(len=:), allocatable, intent(in), optional :: xlabel
+        character(len=*), intent(in), optional :: date_format
 
         call draw_pdf_secondary_x_axis_top(this%core_ctx, xscale, symlog_threshold, &
                                            x_min, x_max, &
@@ -793,7 +804,7 @@ contains
                                            real(this%plot_area%bottom, wp), &
                                            real(this%plot_area%width, wp), &
                                            real(this%plot_area%height, wp), &
-                                           xlabel)
+                                           xlabel, date_format=date_format)
     end subroutine pdf_draw_secondary_x_axis_top_wrapper
 
 end module fortplot_pdf

@@ -20,7 +20,8 @@ contains
 
     subroutine draw_pdf_secondary_y_axis(ctx, yscale, symlog_threshold, y_min, y_max, &
                                          plot_area_left, plot_area_bottom, &
-                                         plot_area_width, plot_area_height, ylabel)
+                                         plot_area_width, plot_area_height, ylabel, &
+                                         date_format)
         !! Draw secondary Y axis on the right side of the plot
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in) :: yscale
@@ -29,9 +30,10 @@ contains
         real(wp), intent(in) :: plot_area_left, plot_area_bottom
         real(wp), intent(in) :: plot_area_width, plot_area_height
         character(len=:), allocatable, intent(in), optional :: ylabel
+        character(len=*), intent(in), optional :: date_format
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
-        character(len=32), allocatable :: x_labels(:), y_labels(:)
+        character(len=50), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks, i
         real(wp) :: y_min_adj, y_max_adj
         real(wp) :: right_edge, label_x, label_y
@@ -48,6 +50,7 @@ contains
         call generate_tick_data(ctx, 0.0_wp, 1.0_wp, y_min, y_max, &
                                 x_positions, y_positions, x_labels, y_labels, &
                                 num_x_ticks, num_y_ticks, yscale=yscale, &
+                                y_date_format=date_format, &
                                 plot_area_left=plot_area_left, &
                                 plot_area_bottom=plot_area_bottom, &
                                 plot_area_width=plot_area_width, &
@@ -90,7 +93,9 @@ contains
     subroutine draw_pdf_secondary_x_axis_top(ctx, xscale, symlog_threshold, &
                                              x_min, x_max, &
                                              plot_area_left, plot_area_bottom, &
-                                             plot_area_width, plot_area_height, xlabel)
+                                             plot_area_width, &
+                                             plot_area_height, xlabel, &
+                                             date_format)
         !! Draw secondary X axis at the top of the plot
         type(pdf_context_core), intent(inout) :: ctx
         character(len=*), intent(in) :: xscale
@@ -99,9 +104,10 @@ contains
         real(wp), intent(in) :: plot_area_left, plot_area_bottom
         real(wp), intent(in) :: plot_area_width, plot_area_height
         character(len=:), allocatable, intent(in), optional :: xlabel
+        character(len=*), intent(in), optional :: date_format
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
-        character(len=32), allocatable :: x_labels(:), y_labels(:)
+        character(len=50), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks, i
         real(wp) :: x_min_adj, x_max_adj
         real(wp) :: top_edge, label_x, label_y
@@ -119,6 +125,7 @@ contains
         call generate_tick_data(ctx, x_min, x_max, 0.0_wp, 1.0_wp, &
                                 x_positions, y_positions, x_labels, y_labels, &
                                 num_x_ticks, num_y_ticks, xscale=xscale, &
+                                x_date_format=date_format, &
                                 plot_area_left=plot_area_left, &
                                 plot_area_bottom=plot_area_bottom, &
                                 plot_area_width=plot_area_width, &

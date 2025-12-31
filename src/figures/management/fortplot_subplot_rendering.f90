@@ -38,9 +38,15 @@ contains
         real(wp) :: subplot_bottom, subplot_top
         real(wp) :: lxmin, lxmax, lymin, lymax
         real(wp) :: lxmin_t, lxmax_t, lymin_t, lymax_t
+        character(len=64) :: x_date_format, y_date_format
 
         nr = subplot_rows
         nc = subplot_cols
+
+        x_date_format = ''
+        y_date_format = ''
+        if (allocated(state%xaxis_date_format)) x_date_format = state%xaxis_date_format
+        if (allocated(state%yaxis_date_format)) y_date_format = state%yaxis_date_format
 
         have_tight = .false.
         call compute_tight_subplot_margins(state%backend, subplots_array, nr, nc, &
@@ -130,7 +136,9 @@ contains
                                                     subplots_array(i, j)%plots, &
                                                     subplots_array(i, j)%plot_count, &
                                                     has_twinx=.false., &
-                                                    has_twiny=.false.)
+                                                    has_twiny=.false., &
+                                                    x_date_format=trim(x_date_format), &
+                                                    y_date_format=trim(y_date_format))
             end do
         end do
 
@@ -151,13 +159,13 @@ contains
         if (.not. allocated(state%suptitle)) return
         if (len_trim(state%suptitle) == 0) return
 
-        font_scale = state%suptitle_fontsize / 12.0_wp
+        font_scale = state%suptitle_fontsize/12.0_wp
 
         select type (bk => state%backend)
         class is (png_context)
             suptitle_y_frac = 0.96_wp
-            suptitle_y_px = int(real(bk%height, wp) * suptitle_y_frac)
-            center_x = real(bk%width, wp) / 2.0_wp
+            suptitle_y_px = int(real(bk%height, wp)*suptitle_y_frac)
+            center_x = real(bk%width, wp)/2.0_wp
             call render_title_centered_with_size(bk%raster, bk%width, bk%height, &
                                                  int(center_x), suptitle_y_px, &
                                                  trim(state%suptitle), font_scale)
@@ -167,11 +175,11 @@ contains
                 real(wp) :: scaled_font_size
                 real(wp) :: black_color(3)
 
-                scaled_font_size = PDF_TITLE_SIZE * font_scale
+                scaled_font_size = PDF_TITLE_SIZE*font_scale
                 title_width = estimate_pdf_text_width(trim(state%suptitle), &
                                                       scaled_font_size)
-                x_center = real(bk%width, wp) / 2.0_wp
-                y_pos = real(bk%height, wp) * 0.96_wp
+                x_center = real(bk%width, wp)/2.0_wp
+                y_pos = real(bk%height, wp)*0.96_wp
                 black_color = [0.0_wp, 0.0_wp, 0.0_wp]
                 call bk%draw_text_styled(x_center, y_pos, trim(state%suptitle), &
                                          scaled_font_size, 0.0_wp, 'center', 'bottom', &

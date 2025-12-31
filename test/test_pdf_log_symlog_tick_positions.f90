@@ -7,7 +7,7 @@ program test_pdf_log_symlog_tick_positions
 
     type(pdf_context_core) :: ctx
     real(wp), allocatable :: x_pos(:), y_pos(:)
-    character(len=32), allocatable :: xl(:), yl(:)
+    character(len=50), allocatable :: xl(:), yl(:)
     integer :: nx, ny
     real(wp) :: left, bottom, width, height
     real(wp) :: ymin, ymax, yexp, f, pos_expect, thr
@@ -22,14 +22,12 @@ program test_pdf_log_symlog_tick_positions
     ctx = create_pdf_canvas_core(640.0_wp, 480.0_wp)
 
     ! Test 1: Log scale positions should map via log10
-    call generate_tick_data(ctx, 0.0_wp, 1.0_wp, 1.0_wp, 1000.0_wp, &
-                            x_pos, y_pos, xl, yl, nx, ny, 'linear', 'log', &
-                            left, bottom, width, height)
+    call generate_tick_data( &
+        ctx, 0.0_wp, 1.0_wp, 1.0_wp, 1000.0_wp, x_pos, y_pos, xl, yl, nx, ny, &
+        xscale='linear', yscale='log', plot_area_left=left, plot_area_bottom=bottom, &
+        plot_area_width=width, plot_area_height=height)
 
     ok = .true.
-    do yexp = 1.0_wp, 1000.0_wp, 9.0e9_wp  ! dummy loop to satisfy syntax; will break inside
-        exit
-    end do
     ! Check a few expected labels if present
     do yexp = 1.0_wp, 1000.0_wp
         if (abs(log10(yexp) - nint(log10(yexp))) < 1.0e-12_wp) then
@@ -42,8 +40,8 @@ program test_pdf_log_symlog_tick_positions
             end do
             if (idx > 0) then
                 ymin = 1.0_wp; ymax = 1000.0_wp
-                f = (log10(yexp) - log10(ymin)) / (log10(ymax) - log10(ymin))
-                pos_expect = bottom + f * height
+                f = (log10(yexp) - log10(ymin))/(log10(ymax) - log10(ymin))
+                pos_expect = bottom + f*height
                 if (abs(y_pos(idx) - pos_expect) > 1.0e-6_wp) then
                     print *, 'FAIL: log tick position mismatch for ', trim(yl(idx))
                     stop 1
@@ -54,15 +52,17 @@ program test_pdf_log_symlog_tick_positions
 
     ! Test 2: Symlog scale positions should map via symlog transform
     thr = 10.0_wp
-    call generate_tick_data(ctx, 0.0_wp, 1.0_wp, -100.0_wp, 1000.0_wp, &
-                            x_pos, y_pos, xl, yl, nx, ny, 'linear', 'symlog', &
-                            left, bottom, width, height, thr)
+    call generate_tick_data( &
+        ctx, 0.0_wp, 1.0_wp, -100.0_wp, 1000.0_wp, x_pos, y_pos, xl, yl, nx, ny, &
+        xscale='linear', yscale='symlog', plot_area_left=left, &
+        plot_area_bottom=bottom, plot_area_width=width, plot_area_height=height, &
+        symlog_threshold=thr)
 
     ymin = -100.0_wp; ymax = 1000.0_wp
     pos_expect = bottom + (apply_scale_transform(0.0_wp, 'symlog', thr) - &
-                           apply_scale_transform(ymin, 'symlog', thr)) / &
-                          (apply_scale_transform(ymax, 'symlog', thr) - &
-                           apply_scale_transform(ymin, 'symlog', thr)) * height
+                           apply_scale_transform(ymin, 'symlog', thr))/ &
+                 (apply_scale_transform(ymax, 'symlog', thr) - &
+                  apply_scale_transform(ymin, 'symlog', thr))*height
     idx = -1
     do i = 1, ny
         if (trim(yl(i)) == '0') then
