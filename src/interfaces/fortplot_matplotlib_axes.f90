@@ -12,6 +12,7 @@ module fortplot_matplotlib_axes
     public :: xlabel
     public :: ylabel
     public :: title
+    public :: suptitle
     public :: legend
     public :: grid
     public :: xlim
@@ -72,6 +73,15 @@ contains
             call fig%set_title(title_text)
         end if
     end subroutine title
+
+    subroutine suptitle(title_text, fontsize)
+        !! Set a centered figure-level title above all subplots
+        character(len=*), intent(in) :: title_text
+        real(wp), intent(in), optional :: fontsize
+
+        call ensure_fig_init()
+        call fig%suptitle(title_text, fontsize)
+    end subroutine suptitle
 
     subroutine legend(position, box, fontsize)
         character(len=*), intent(in), optional :: position

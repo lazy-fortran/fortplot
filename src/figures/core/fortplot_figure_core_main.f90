@@ -96,6 +96,7 @@ module fortplot_figure_core
         procedure :: get_active_axis
         ! Subplot methods
         procedure :: subplots
+        procedure :: suptitle
         procedure :: subplot_plot
         procedure :: subplot_plot_count
         procedure :: subplot_set_title
@@ -764,6 +765,19 @@ contains
                              self%subplot_cols, self%current_subplot, nrows, &
                              ncols)
     end subroutine subplots
+
+    subroutine suptitle(self, title_text, fontsize)
+        !! Set a centered figure-level title above all subplots
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: title_text
+        real(wp), intent(in), optional :: fontsize
+
+        self%state%suptitle = trim(title_text)
+        if (present(fontsize)) then
+            self%state%suptitle_fontsize = fontsize
+        end if
+        self%state%rendered = .false.
+    end subroutine suptitle
 
     subroutine subplot_plot(self, row, col, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self

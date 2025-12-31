@@ -30,6 +30,7 @@ module fortplot_raster_labels
     public :: raster_render_ylabel_right
     public :: raster_draw_top_xlabel
     public :: render_title_centered
+    public :: render_title_centered_with_size
     public :: compute_title_position
     public :: compute_ylabel_x_pos
     public :: y_tick_label_right_edge_at_axis
@@ -366,5 +367,38 @@ contains
         title_py = real(plot_area%bottom - TITLE_VERTICAL_OFFSET, wp)
         title_py = max(1.0_wp, title_py)
     end subroutine compute_title_position
+
+    subroutine render_title_centered_with_size(raster, width, height, center_x, &
+                                               title_y, title_text, font_scale)
+        !! Render title centered at specified position with custom font scale
+        !! Used for suptitle rendering above subplots
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        integer, intent(in) :: center_x, title_y
+        character(len=*), intent(in) :: title_text
+        real(wp), intent(in) :: font_scale
+        character(len=500) :: processed_text
+        character(len=600) :: math_ready
+        character(len=600) :: escaped_text
+        integer :: processed_len, math_len
+        integer :: title_width, title_px
+        real(wp) :: scaled_font_size
+
+        if (len_trim(title_text) == 0) return
+
+        call process_latex_in_text(trim(title_text), processed_text, processed_len)
+        call prepare_mathtext_if_needed(processed_text(1:processed_len), &
+                                        math_ready, math_len)
+        call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
+
+        scaled_font_size = real(TITLE_FONT_SIZE, wp) * font_scale
+        title_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                     scaled_font_size)
+        title_px = center_x - title_width / 2
+
+        call render_text_with_size(raster%image_data, width, height, title_px, &
+                                   title_y, trim(escaped_text), 0_1, 0_1, 0_1, &
+                                   scaled_font_size)
+    end subroutine render_title_centered_with_size
 
 end module fortplot_raster_labels

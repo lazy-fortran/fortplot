@@ -8,8 +8,8 @@ module fortplot_matplotlib_advanced
         contour, contour_filled, pcolormesh, streamplot, quiver, add_quiver, &
         add_contour, add_contour_filled, add_pcolormesh, add_surface
     use fortplot_matplotlib_axes, only: &
-        xlabel, ylabel, title, legend, grid, xlim, ylim, set_xscale, set_yscale, &
-        set_line_width, set_ydata, use_axis, get_active_axis
+        xlabel, ylabel, title, suptitle, legend, grid, xlim, ylim, set_xscale, &
+        set_yscale, set_line_width, set_ydata, use_axis, get_active_axis
     use fortplot_matplotlib_session, only: &
         ensure_global_figure_initialized, get_global_figure, figure, subplot, &
         subplots, subplots_grid, savefig, savefig_with_status, show_data, &
@@ -31,7 +31,7 @@ module fortplot_matplotlib_advanced
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
     public :: add_quiver
 
-    public :: xlabel, ylabel, title, legend, grid
+    public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis
     public :: colorbar
