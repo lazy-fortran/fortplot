@@ -472,7 +472,8 @@ contains
                 call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                      colormap, state%colorbar_location, &
                                      state%colorbar_label, state%colorbar_ticks, &
-                                     state%colorbar_ticklabels)
+                                     state%colorbar_ticklabels, &
+                                     state%colorbar_label_fontsize)
             else
                 call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                      colormap, state%colorbar_location, &
@@ -483,7 +484,8 @@ contains
             if (state%colorbar_label_set) then
                 call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                      colormap, state%colorbar_location, &
-                                     state%colorbar_label, state%colorbar_ticks)
+                                     state%colorbar_label, state%colorbar_ticks, &
+                                     label_fontsize=state%colorbar_label_fontsize)
             else
                 call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                      colormap, state%colorbar_location, &
@@ -492,7 +494,8 @@ contains
         else if (state%colorbar_label_set) then
             call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                  colormap, state%colorbar_location, &
-                                 state%colorbar_label)
+                                 state%colorbar_label, &
+                                 label_fontsize=state%colorbar_label_fontsize)
         else
             call render_colorbar(state%backend, plot_area, vmin, vmax, &
                                  colormap, state%colorbar_location)
