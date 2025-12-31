@@ -384,7 +384,8 @@ contains
 
     subroutine add_surface_plot_data(plots, plot_count, max_plots, colors, &
                                      x_grid, y_grid, z_grid, label, colormap, &
-                                     show_colorbar, alpha, edgecolor, linewidth)
+                                     show_colorbar, alpha, edgecolor, linewidth, &
+                                     filled)
         !! Add 3D surface plot data using structured grid storage
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(inout) :: plot_count
@@ -392,7 +393,7 @@ contains
         real(wp), intent(in) :: colors(:, :)
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, colormap
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
@@ -454,6 +455,9 @@ contains
         plots(plot_count)%surface_show_colorbar = .false.
         if (present(show_colorbar)) plots(plot_count)%surface_show_colorbar = &
             show_colorbar
+
+        plots(plot_count)%surface_filled = .false.
+        if (present(filled)) plots(plot_count)%surface_filled = filled
     end subroutine add_surface_plot_data
 
     subroutine add_pcolormesh_plot_data(plots, plot_count, max_plots, &
