@@ -4,8 +4,7 @@ set -euo pipefail
 # Run key examples to generate artifacts
 fpm run --example scale_examples >/dev/null
 fpm run --example pcolormesh_demo >/dev/null
-fpm run --example marker_demo >/dev/null
-fpm run --example line_styles >/dev/null
+fpm run --example styling_demo >/dev/null
 fpm run --example errorbar_demo >/dev/null
 
 # Additional visual regression examples (ylabel spacing, PDF scale, subplots, unicode, show viewer)
@@ -15,7 +14,8 @@ fpm run --example ylabel_comparison >/dev/null
 fpm run --example test_pdf_scale_regression >/dev/null
 fpm run --example subplots_grid_demo >/dev/null
 fpm run --example unicode_demo >/dev/null
-fpm run --example show_viewer_demo >/dev/null || true
+# Note: show_viewer_demo was merged into display_demo which uses interactive show()
+# display_demo is not run in CI as it doesnt save artifacts
 fpm run --example grid_demo >/dev/null
 
 check_pdf_ok() {
@@ -186,9 +186,9 @@ if [[ -f output/example/fortran/grid_demo/grid_demo.txt ]]; then
   fi
 fi
 
-# A couple PNG size checks as non-empty proxy
-check_png_size output/example/fortran/marker_demo/all_marker_types.png 8000
-check_png_size output/example/fortran/line_styles/line_styles.png 10000
+# PNG size checks for consolidated styling_demo (previously marker_demo and line_styles)
+check_png_size output/example/fortran/styling_demo/marker_types.png 8000
+check_png_size output/example/fortran/styling_demo/line_styles.png 10000
 
 # Negative-coordinate pcolormesh: ensure non-trivial image and negative ticks present in PDF text
 check_png_size output/example/fortran/pcolormesh_demo/pcolormesh_negative.png 15000
@@ -294,7 +294,7 @@ if [[ -f test_pdf_scale_regression.pdf ]]; then
   fi
 fi
 
-# show_viewer_demo in headless CI should save fallback image
+# display_demo (formerly show_viewer_demo) in headless CI may save fallback image
 if [[ -f show_output.png ]]; then
   check_png_size show_output.png 2000
 fi
