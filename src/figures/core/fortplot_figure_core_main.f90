@@ -262,11 +262,15 @@ contains
                            self%plot_count)
     end subroutine add_plot
 
-    subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink)
+    subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink, &
+                        ticks, ticklabels, label_fontsize)
         class(figure_t), intent(inout) :: self
         integer, intent(in), optional :: plot_index
         character(len=*), intent(in), optional :: label, location
         real(wp), intent(in), optional :: fraction, pad, shrink
+        real(wp), intent(in), optional :: ticks(:)
+        character(len=*), intent(in), optional :: ticklabels(:)
+        real(wp), intent(in), optional :: label_fontsize
 
         if (self%subplot_rows > 0 .and. self%subplot_cols > 0) then
             call log_error("colorbar: Subplot grids are not supported yet")
@@ -276,7 +280,8 @@ contains
         call core_colorbar(self%state, self%plots, self%plot_count, &
                            plot_index=plot_index, &
                            label=label, location=location, fraction=fraction, pad=pad, &
-                           shrink=shrink)
+                           shrink=shrink, ticks=ticks, ticklabels=ticklabels, &
+                           label_fontsize=label_fontsize)
     end subroutine colorbar
 
     subroutine add_contour(self, x_grid, y_grid, z_grid, levels, label)

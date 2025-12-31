@@ -370,16 +370,8 @@ contains
         end if
 
         if (have_colorbar) then
-            if (state%colorbar_label_set) then
-                call render_colorbar(state%backend, colorbar_plot_area, cbar_vmin, &
-                                     cbar_vmax, &
-                                     cbar_colormap, state%colorbar_location, &
-                                     state%colorbar_label)
-            else
-                call render_colorbar(state%backend, colorbar_plot_area, cbar_vmin, &
-                                     cbar_vmax, &
-                                     cbar_colormap, state%colorbar_location)
-            end if
+            call render_colorbar_with_state(state, colorbar_plot_area, cbar_vmin, &
+                                            cbar_vmax, cbar_colormap)
         end if
 
         if (state%show_legend .and. state%legend_data%num_entries > 0) then
@@ -467,5 +459,44 @@ contains
 
         call enforce_aspect_ratio(state, plot_width_px, plot_height_px)
     end subroutine apply_aspect_ratio_if_needed
+
+    subroutine render_colorbar_with_state(state, plot_area, vmin, vmax, colormap)
+        !! Helper to call render_colorbar with state-based tick/label customization.
+        type(figure_state_t), intent(inout) :: state
+        type(plot_area_t), intent(in) :: plot_area
+        real(wp), intent(in) :: vmin, vmax
+        character(len=*), intent(in) :: colormap
+
+        if (state%colorbar_ticks_set .and. state%colorbar_ticklabels_set) then
+            if (state%colorbar_label_set) then
+                call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                     colormap, state%colorbar_location, &
+                                     state%colorbar_label, state%colorbar_ticks, &
+                                     state%colorbar_ticklabels)
+            else
+                call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                     colormap, state%colorbar_location, &
+                                     custom_ticks=state%colorbar_ticks, &
+                                     custom_ticklabels=state%colorbar_ticklabels)
+            end if
+        else if (state%colorbar_ticks_set) then
+            if (state%colorbar_label_set) then
+                call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                     colormap, state%colorbar_location, &
+                                     state%colorbar_label, state%colorbar_ticks)
+            else
+                call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                     colormap, state%colorbar_location, &
+                                     custom_ticks=state%colorbar_ticks)
+            end if
+        else if (state%colorbar_label_set) then
+            call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                 colormap, state%colorbar_location, &
+                                 state%colorbar_label)
+        else
+            call render_colorbar(state%backend, plot_area, vmin, vmax, &
+                                 colormap, state%colorbar_location)
+        end if
+    end subroutine render_colorbar_with_state
 
 end module fortplot_figure_render_engine

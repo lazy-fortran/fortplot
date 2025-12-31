@@ -115,6 +115,12 @@ module fortplot_figure_initialization
         real(wp) :: colorbar_shrink = 1.0_wp
         logical :: colorbar_label_set = .false.
         character(len=:), allocatable :: colorbar_label
+        ! Custom colorbar tick positions and labels
+        logical :: colorbar_ticks_set = .false.
+        logical :: colorbar_ticklabels_set = .false.
+        real(wp), allocatable :: colorbar_ticks(:)
+        character(len=50), allocatable :: colorbar_ticklabels(:)
+        real(wp) :: colorbar_label_fontsize = 10.0_wp
 
         ! Streamplot arrow storage (rendered after plots)
         type(arrow_data_t), allocatable :: stream_arrows(:)
@@ -285,6 +291,11 @@ module fortplot_figure_initialization
         state%colorbar_label_set = .false.
         if (allocated(state%colorbar_label)) &
             call move_alloc(state%colorbar_label, scratch)
+        state%colorbar_ticks_set = .false.
+        state%colorbar_ticklabels_set = .false.
+        if (allocated(state%colorbar_ticks)) deallocate(state%colorbar_ticks)
+        if (allocated(state%colorbar_ticklabels)) deallocate(state%colorbar_ticklabels)
+        state%colorbar_label_fontsize = 10.0_wp
 
         if (allocated(state%suptitle)) call move_alloc(state%suptitle, scratch)
         state%suptitle_fontsize = 14.0_wp
@@ -363,6 +374,11 @@ module fortplot_figure_initialization
         state%colorbar_label_set = .false.
         if (allocated(state%colorbar_label)) &
             call move_alloc(state%colorbar_label, scratch)
+        state%colorbar_ticks_set = .false.
+        state%colorbar_ticklabels_set = .false.
+        if (allocated(state%colorbar_ticks)) deallocate(state%colorbar_ticks)
+        if (allocated(state%colorbar_ticklabels)) deallocate(state%colorbar_ticklabels)
+        state%colorbar_label_fontsize = 10.0_wp
 
         state%has_error = .false.
 
