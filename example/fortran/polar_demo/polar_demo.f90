@@ -34,6 +34,9 @@ contains
                                  'polar_demo.png', status)
         if (status /= SUCCESS) ok = .false.
         call savefig_with_status('output/example/fortran/polar_demo/' // &
+                                 'polar_demo.pdf', status)
+        if (status /= SUCCESS) ok = .false.
+        call savefig_with_status('output/example/fortran/polar_demo/' // &
                                  'polar_demo.txt', status)
         if (status /= SUCCESS) ok = .false.
         if (.not. ok) then
