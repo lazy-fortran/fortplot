@@ -114,9 +114,6 @@ contains
 
     module subroutine add_polar(self, theta, r, label, fmt, linestyle, marker, color)
         !! Add polar plot data with true polar projection support
-        !!
-        !! When called, this enables polar projection mode on the figure,
-        !! rendering a circular plot area with radial gridlines and angular ticks.
         use fortplot_plot_data, only: plot_data_t, PLOT_TYPE_POLAR
         use fortplot_figure_plot_management, only: next_plot_color
         class(figure_t), intent(inout) :: self
@@ -124,13 +121,10 @@ contains
         character(len=*), intent(in), optional :: label, fmt
         character(len=*), intent(in), optional :: linestyle, marker, color
 
-        integer :: n, i, pos, color_len, idx
+        integer :: n, idx
         real(wp), allocatable :: x(:), y(:)
-        real(wp) :: color_rgb(3), r_max
-        character(len=20) :: fmt_marker, fmt_linestyle
+        real(wp) :: color_rgb(3)
         character(len=20) :: final_marker, final_linestyle
-        character(len=:), allocatable :: fmt_work, fmt_color
-        logical :: have_color, color_ok
 
         n = min(size(theta), size(r))
         if (n == 0) then
@@ -138,37 +132,95 @@ contains
             return
         end if
 
-        ! Enable polar projection mode
-        self%state%polar_projection = .true.
-        self%state%aspect_mode = 'equal'  ! Square plot for circular appearance
+        call setup_polar_projection(self%state, r(1:n), n)
+        call compute_cartesian_from_polar(theta(1:n), r(1:n), n, x, y)
+        call parse_polar_style(fmt, linestyle, marker, color, final_linestyle, &
+                               final_marker, color_rgb, self%state)
 
-        ! Calculate r_max for axis limits
+        if (self%state%plot_count >= self%state%max_plots) then
+            call log_warning('polar: maximum number of plots reached')
+            deallocate (x, y)
+            return
+        end if
+
+        self%state%plot_count = self%state%plot_count + 1
+        self%plot_count = self%state%plot_count
+        idx = self%state%plot_count
+
+        self%plots(idx)%plot_type = PLOT_TYPE_POLAR
+        self%plots(idx)%color = color_rgb
+        allocate (self%plots(idx)%x(n), source=x)
+        allocate (self%plots(idx)%y(n), source=y)
+        allocate (self%plots(idx)%polar_theta(n), source=theta(1:n))
+        allocate (self%plots(idx)%polar_r(n), source=r(1:n))
+
+        if (len_trim(final_linestyle) > 0) self%plots(idx)%linestyle = &
+            trim(final_linestyle)
+        if (len_trim(final_marker) > 0) self%plots(idx)%marker = trim(final_marker)
+        if (present(label)) self%plots(idx)%label = label
+
+        deallocate (x, y)
+    end subroutine add_polar
+
+    subroutine setup_polar_projection(state, r, n)
+        !! Configure figure state for polar projection
+        use fortplot_figure_initialization, only: figure_state_t
+        type(figure_state_t), intent(inout) :: state
+        real(wp), intent(in) :: r(:)
+        integer, intent(in) :: n
+
+        real(wp) :: r_max
+
+        state%polar_projection = .true.
+        state%aspect_mode = 'equal'
+
         r_max = maxval(abs(r(1:n)))
         if (r_max < 1.0e-10_wp) r_max = 1.0_wp
-        self%state%polar_r_max = r_max*1.1_wp  ! 10% padding
+        state%polar_r_max = r_max*1.1_wp
 
-        ! Set symmetric Cartesian limits for circular plot area
-        if (.not. self%state%xlim_set) then
-            self%state%x_min = -self%state%polar_r_max
-            self%state%x_max = self%state%polar_r_max
-            self%state%xlim_set = .true.
+        if (.not. state%xlim_set) then
+            state%x_min = -state%polar_r_max
+            state%x_max = state%polar_r_max
+            state%xlim_set = .true.
         end if
-        if (.not. self%state%ylim_set) then
-            self%state%y_min = -self%state%polar_r_max
-            self%state%y_max = self%state%polar_r_max
-            self%state%ylim_set = .true.
+        if (.not. state%ylim_set) then
+            state%y_min = -state%polar_r_max
+            state%y_max = state%polar_r_max
+            state%ylim_set = .true.
         end if
+    end subroutine setup_polar_projection
 
-        ! Also compute Cartesian coordinates for data range calculation
+    subroutine compute_cartesian_from_polar(theta, r, n, x, y)
+        !! Convert polar coordinates to Cartesian
+        real(wp), intent(in) :: theta(:), r(:)
+        integer, intent(in) :: n
+        real(wp), allocatable, intent(out) :: x(:), y(:)
+        integer :: i
+
         allocate (x(n), y(n))
         do i = 1, n
             x(i) = r(i)*cos(theta(i))
             y(i) = r(i)*sin(theta(i))
         end do
+    end subroutine compute_cartesian_from_polar
 
-        ! Parse format string for color, marker, linestyle
-        final_marker = ''
-        final_linestyle = '-'  ! Default solid line
+    subroutine parse_polar_style(fmt, linestyle, marker, color, final_ls, &
+                                 final_mk, color_rgb, state)
+        !! Parse format string and style arguments for polar plot
+        use fortplot_figure_initialization, only: figure_state_t
+        use fortplot_figure_plot_management, only: next_plot_color
+        character(len=*), intent(in), optional :: fmt, linestyle, marker, color
+        character(len=20), intent(out) :: final_ls, final_mk
+        real(wp), intent(out) :: color_rgb(3)
+        type(figure_state_t), intent(inout) :: state
+
+        integer :: pos, color_len
+        character(len=20) :: fmt_marker, fmt_linestyle
+        character(len=:), allocatable :: fmt_work, fmt_color
+        logical :: have_color, color_ok
+
+        final_mk = ''
+        final_ls = '-'
 
         if (present(fmt)) then
             fmt_work = trim(adjustl(fmt))
@@ -191,82 +243,47 @@ contains
                 end if
                 fmt_work = trim(adjustl(fmt_work))
                 call parse_format_string(fmt_work, fmt_marker, fmt_linestyle)
-                if (len_trim(fmt_marker) > 0) final_marker = trim(fmt_marker)
-                if (len_trim(fmt_linestyle) > 0) final_linestyle = trim(fmt_linestyle)
+                if (len_trim(fmt_marker) > 0) final_mk = trim(fmt_marker)
+                if (len_trim(fmt_linestyle) > 0) final_ls = trim(fmt_linestyle)
             end if
         end if
 
         if (present(marker)) then
-            if (len_trim(marker) > 0) final_marker = trim(marker)
+            if (len_trim(marker) > 0) final_mk = trim(marker)
         end if
         if (present(linestyle)) then
-            if (len_trim(linestyle) > 0) final_linestyle = trim(linestyle)
+            if (len_trim(linestyle) > 0) final_ls = trim(linestyle)
         end if
 
-        ! Normalize linestyle names
-        select case (trim(final_linestyle))
-        case ('solid', 'Solid', 'SOLID')
-            final_linestyle = '-'
-        case ('dashed', 'Dashed', 'DASHED')
-            final_linestyle = '--'
-        case ('dotted', 'Dotted', 'DOTTED')
-            final_linestyle = ':'
-        case ('dashdot', 'Dashdot', 'DASHDOT')
-            final_linestyle = '-.'
-        case ('none', 'None', 'NONE')
-            final_linestyle = 'None'
-        end select
+        call normalize_linestyle(final_ls)
 
-        ! Parse color
         have_color = .false.
         if (present(color)) then
             call parse_color(color, color_rgb, color_ok)
-            if (color_ok) then
-                have_color = .true.
-            else
-                call log_warning('polar: unsupported color; using palette')
-            end if
+            if (color_ok) have_color = .true.
         else if (allocated(fmt_color)) then
             call parse_color(fmt_color, color_rgb, color_ok)
             if (color_ok) have_color = .true.
         end if
+        if (.not. have_color) color_rgb = next_plot_color(state)
+    end subroutine parse_polar_style
 
-        if (.not. have_color) then
-            color_rgb = next_plot_color(self%state)
-        end if
-
-        ! Check capacity and add polar plot
-        if (self%state%plot_count >= self%state%max_plots) then
-            call log_warning('polar: maximum number of plots reached')
-            return
-        end if
-        self%state%plot_count = self%state%plot_count + 1
-        self%plot_count = self%state%plot_count
-        idx = self%state%plot_count
-
-        self%plots(idx)%plot_type = PLOT_TYPE_POLAR
-        self%plots(idx)%color = color_rgb
-
-        ! Store both Cartesian (for range) and polar (for rendering) data
-        allocate (self%plots(idx)%x(n), source=x)
-        allocate (self%plots(idx)%y(n), source=y)
-        allocate (self%plots(idx)%polar_theta(n), source=theta(1:n))
-        allocate (self%plots(idx)%polar_r(n), source=r(1:n))
-
-        if (len_trim(final_linestyle) > 0) then
-            self%plots(idx)%linestyle = trim(final_linestyle)
-        end if
-        if (len_trim(final_marker) > 0) then
-            self%plots(idx)%marker = trim(final_marker)
-        end if
-        if (present(label)) then
-            self%plots(idx)%label = label
-        end if
-
-        if (allocated(fmt_work)) deallocate (fmt_work)
-        if (allocated(fmt_color)) deallocate (fmt_color)
-        deallocate (x, y)
-    end subroutine add_polar
+    subroutine normalize_linestyle(ls)
+        !! Convert linestyle names to short form
+        character(len=20), intent(inout) :: ls
+        select case (trim(ls))
+        case ('solid', 'Solid', 'SOLID')
+            ls = '-'
+        case ('dashed', 'Dashed', 'DASHED')
+            ls = '--'
+        case ('dotted', 'Dotted', 'DOTTED')
+            ls = ':'
+        case ('dashdot', 'Dashdot', 'DASHDOT')
+            ls = '-.'
+        case ('none', 'None', 'NONE')
+            ls = 'None'
+        end select
+    end subroutine normalize_linestyle
 
     module subroutine add_step(self, x, y, label, where, linestyle, color, linewidth)
         class(figure_t), intent(inout) :: self
