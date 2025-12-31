@@ -274,9 +274,8 @@ verify-artifacts: create_build_dirs
 # Create build directories for examples
 create_build_dirs:
 	@mkdir -p output/example/fortran/basic_plots
-	@mkdir -p output/example/fortran/line_styles
-	@mkdir -p output/example/fortran/marker_demo
-	@mkdir -p output/example/fortran/format_string_demo
+	@mkdir -p output/example/fortran/styling_demo
+	@mkdir -p output/example/fortran/display_demo
 	@mkdir -p output/example/fortran/contour_demo
 	@mkdir -p output/example/fortran/pcolormesh_demo
 	@mkdir -p output/example/fortran/streamplot_demo
@@ -285,8 +284,6 @@ create_build_dirs:
 	@mkdir -p output/example/fortran/legend_demo
 	@mkdir -p output/example/fortran/legend_box_demo
 	@mkdir -p output/example/fortran/unicode_demo
-	@mkdir -p output/example/fortran/show_viewer_demo
-	@mkdir -p output/example/fortran/smart_show_demo
 	@mkdir -p output/example/fortran/animation
 	@mkdir -p output/example/fortran/annotation_demo
 	@mkdir -p output/example/fortran/histogram_demo
