@@ -575,12 +575,14 @@ contains
     subroutine svg_draw_axes_labels(this, xscale, yscale, symlog_threshold, &
                                     x_min, x_max, y_min, y_max, &
                                     title, xlabel, ylabel, &
+                                    x_date_format, y_date_format, &
                                     z_min, z_max, has_3d_plots)
         class(svg_context), intent(inout) :: this
         character(len=*), intent(in) :: xscale, yscale
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in), optional :: z_min, z_max
         logical, intent(in) :: has_3d_plots
         character(len=1024) :: elem
@@ -592,6 +594,12 @@ contains
         associate (xs => xscale, ys => yscale, st => symlog_threshold, &
                    zmi => z_min, zma => z_max, h3d => has_3d_plots)
         end associate
+        if (present(x_date_format)) then
+            associate (unused_xfmt => len_trim(x_date_format)); end associate
+        end if
+        if (present(y_date_format)) then
+            associate (unused_yfmt => len_trim(y_date_format)); end associate
+        end if
 
         left = real(this%plot_area%left, wp)
         right = left + real(this%plot_area%width, wp)

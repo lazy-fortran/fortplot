@@ -92,6 +92,7 @@ contains
     subroutine generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                   x_positions, y_positions, x_labels, y_labels, &
                                   num_x_ticks, num_y_ticks, xscale, yscale, &
+                                  x_date_format, y_date_format, &
                                   plot_area_left, plot_area_bottom, plot_area_width, &
                                   plot_area_height, &
                                   symlog_threshold)
@@ -100,9 +101,10 @@ contains
         type(pdf_context_core), intent(in) :: ctx
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
-        character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
+        character(len=50), allocatable, intent(out) :: x_labels(:), y_labels(:)
         integer, intent(out) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: xscale, yscale
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
         real(wp), intent(in), optional :: symlog_threshold
@@ -117,13 +119,15 @@ contains
         call generate_x_axis_ticks(data_x_min, data_x_max, num_x_ticks, &
                                    plot_area_left, &
                                    plot_area_width, x_positions, x_labels, xscale, &
-                                   symlog_threshold)
+                                   date_format=x_date_format, &
+                                   symlog_threshold=symlog_threshold)
 
         ! Generate Y axis ticks
         call generate_y_axis_ticks(data_y_min, data_y_max, num_y_ticks, &
                                    plot_area_bottom, &
                                    plot_area_height, y_positions, y_labels, yscale, &
-                                   symlog_threshold)
+                                   date_format=y_date_format, &
+                                   symlog_threshold=symlog_threshold)
 
     end subroutine generate_tick_data
 
@@ -134,7 +138,7 @@ contains
         real(wp), intent(in) :: plot_width, plot_height
         integer, intent(out) :: num_x_ticks, num_y_ticks
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
-        character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
+        character(len=50), allocatable, intent(out) :: x_labels(:), y_labels(:)
 
         integer, parameter :: TARGET_TICKS = 8
 
@@ -151,48 +155,54 @@ contains
 
     subroutine generate_x_axis_ticks(data_min, data_max, num_ticks, plot_left, &
                                      plot_width, &
-                                     positions, labels, scale_type, symlog_threshold)
+                                     positions, labels, scale_type, date_format, &
+                                     symlog_threshold)
         !! Generate X axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_left, plot_width
         integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
-        character(len=32), intent(out) :: labels(:)
+        character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_left, &
                                           plot_width, &
-                                          positions, labels, scale_type, &
+                                          positions, labels, scale_type, date_format, &
                                           symlog_threshold, 'x')
     end subroutine generate_x_axis_ticks
 
     subroutine generate_y_axis_ticks(data_min, data_max, num_ticks, plot_bottom, &
                                      plot_height, &
-                                     positions, labels, scale_type, symlog_threshold)
+                                     positions, labels, scale_type, date_format, &
+                                     symlog_threshold)
         !! Generate Y axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_bottom, plot_height
         integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
-        character(len=32), intent(out) :: labels(:)
+        character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
 
         call generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_bottom, &
                                           plot_height, &
-                                          positions, labels, scale_type, &
+                                          positions, labels, scale_type, date_format, &
                                           symlog_threshold, 'y')
     end subroutine generate_y_axis_ticks
 
     subroutine generate_axis_ticks_internal(data_min, data_max, num_ticks, plot_start, &
                                             plot_size, &
                                             positions, labels, scale_type, &
+                                            date_format, &
                                             symlog_threshold, axis)
         !! Internal helper to generate axis tick positions and labels
         real(wp), intent(in) :: data_min, data_max, plot_start, plot_size
         integer, intent(inout) :: num_ticks
         real(wp), intent(out) :: positions(:)
-        character(len=32), intent(out) :: labels(:)
+        character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        character(len=*), intent(in), optional :: date_format
         real(wp), intent(in), optional :: symlog_threshold
         character, intent(in) :: axis  ! 'x' or 'y'
 
@@ -216,7 +226,7 @@ contains
             end if
             call handle_zero_range_ticks(data_min, num_ticks, plot_start + &
                                          plot_size*0.5_wp, &
-                                         positions, labels, scale)
+                                         positions, labels, scale, date_format)
             return
         end if
 
@@ -228,21 +238,23 @@ contains
 
         call fill_tick_positions_and_labels(tvals, nt, data_min, data_max, plot_start, &
                                             plot_size, &
-                                            used_ticks, positions, labels, scale, thr)
+                                            used_ticks, positions, labels, scale, thr, &
+                                            date_format)
         num_ticks = used_ticks
     end subroutine generate_axis_ticks_internal
 
     subroutine fill_tick_positions_and_labels(tvals, nt, data_min, data_max, &
                                               plot_start, plot_size, &
                                               num_ticks, positions, labels, &
-                                              scale, threshold)
+                                              scale, threshold, date_format)
         !! Fill tick positions and labels arrays
         real(wp), intent(in) :: tvals(:), data_min, data_max, plot_start, &
                                 plot_size, threshold
         integer, intent(in) :: nt, num_ticks
         real(wp), intent(out) :: positions(:)
-        character(len=32), intent(out) :: labels(:)
+        character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in) :: scale
+        character(len=*), intent(in), optional :: date_format
 
         real(wp) :: min_t, max_t, tv_t
         integer :: i, limit, decimals
@@ -267,7 +279,10 @@ contains
             if (trim(scale) == 'linear') then
                 labels(i) = adjustl(format_tick_value_consistent(tvals(i), decimals))
             else
-                labels(i) = adjustl(format_tick_label(tvals(i), scale))
+                labels(i) = adjustl(format_tick_label(tvals(i), scale, &
+                                                      date_format=date_format, &
+                                                      data_min=data_min, &
+                                                      data_max=data_max))
             end if
         end do
         do i = nt + 1, limit
@@ -276,20 +291,24 @@ contains
     end subroutine fill_tick_positions_and_labels
 
     subroutine handle_zero_range_ticks(data_value, num_ticks, center_position, &
-                                       positions, labels, scale_type)
+                                       positions, labels, scale_type, date_format)
         !! Handle ticks for zero or near-zero range data
         real(wp), intent(in) :: data_value, center_position
         integer, intent(in) :: num_ticks
         real(wp), intent(out) :: positions(:)
-        character(len=32), intent(out) :: labels(:)
+        character(len=50), intent(out) :: labels(:)
         character(len=*), intent(in), optional :: scale_type
+        character(len=*), intent(in), optional :: date_format
 
         integer :: i
 
         do i = 1, num_ticks
             positions(i) = center_position
             if (present(scale_type)) then
-                labels(i) = adjustl(format_tick_label(data_value, scale_type))
+                labels(i) = adjustl(format_tick_label(data_value, scale_type, &
+                                                      date_format=date_format, &
+                                                      data_min=data_value, &
+                                                      data_max=data_value))
             else
                 labels(i) = adjustl(format_tick_label(data_value, 'linear'))
             end if
@@ -299,6 +318,7 @@ contains
     subroutine draw_pdf_axes_and_labels(ctx, xscale, yscale, symlog_threshold, &
                                         data_x_min, data_x_max, data_y_min, &
                                         data_y_max, title, xlabel, ylabel, &
+                                        x_date_format, y_date_format, &
                                         plot_area_left, plot_area_bottom, &
                                         plot_area_width, plot_area_height)
         !! Draw complete axes system with labels using actual plot area coordinates
@@ -307,11 +327,12 @@ contains
         real(wp), intent(in), optional :: symlog_threshold
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         character(len=*), intent(in), optional :: title, xlabel, ylabel
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
 
         real(wp), allocatable :: x_positions(:), y_positions(:)
-        character(len=32), allocatable :: x_labels(:), y_labels(:)
+        character(len=50), allocatable :: x_labels(:), y_labels(:)
         integer :: num_x_ticks, num_y_ticks
         real(wp) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
 
@@ -320,6 +341,7 @@ contains
                                x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
                                x_positions, y_positions, x_labels, y_labels, &
                                num_x_ticks, num_y_ticks, xscale, yscale, &
+                               x_date_format, y_date_format, &
                                plot_area_left, plot_area_bottom, plot_area_width, &
                                plot_area_height, &
                                symlog_threshold)
@@ -335,6 +357,7 @@ contains
                                  x_min_adj, x_max_adj, y_min_adj, y_max_adj, &
                                  x_positions, y_positions, x_labels, y_labels, &
                                  num_x_ticks, num_y_ticks, xscale, yscale, &
+                                 x_date_format, y_date_format, &
                                  plot_area_left, plot_area_bottom, plot_area_width, &
                                  plot_area_height, &
                                  symlog_threshold)
@@ -343,9 +366,10 @@ contains
         real(wp), intent(in) :: data_x_min, data_x_max, data_y_min, data_y_max
         real(wp), intent(out) :: x_min_adj, x_max_adj, y_min_adj, y_max_adj
         real(wp), allocatable, intent(out) :: x_positions(:), y_positions(:)
-        character(len=32), allocatable, intent(out) :: x_labels(:), y_labels(:)
+        character(len=50), allocatable, intent(out) :: x_labels(:), y_labels(:)
         integer, intent(out) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: xscale, yscale
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height
         real(wp), intent(in), optional :: symlog_threshold
@@ -358,6 +382,7 @@ contains
         call generate_tick_data(ctx, data_x_min, data_x_max, data_y_min, data_y_max, &
                                 x_positions, y_positions, x_labels, y_labels, &
                                 num_x_ticks, num_y_ticks, xscale, yscale, &
+                                x_date_format, y_date_format, &
                                 plot_area_left, plot_area_bottom, plot_area_width, &
                                 plot_area_height, &
                                 symlog_threshold)
@@ -370,7 +395,7 @@ contains
         !! Draw axes frame, ticks, and labels
         type(pdf_context_core), intent(inout) :: ctx
         real(wp), intent(in) :: x_positions(:), y_positions(:)
-        character(len=32), intent(in) :: x_labels(:), y_labels(:)
+        character(len=50), intent(in) :: x_labels(:), y_labels(:)
         integer, intent(in) :: num_x_ticks, num_y_ticks
         character(len=*), intent(in), optional :: title, xlabel, ylabel
         real(wp), intent(in) :: plot_area_left, plot_area_bottom, plot_area_width, &
