@@ -5,6 +5,7 @@ program test_suptitle
     use iso_fortran_env, only: wp => real64
     use fortplot, only: figure_t, subplots, suptitle, plot, savefig, &
                         subplot, xlabel, ylabel, title
+    use test_output_helpers, only: ensure_test_output_dir
     implicit none
 
     logical :: all_passed
@@ -120,8 +121,12 @@ contains
         real(wp), parameter :: y(5) = [1.0_wp, 4.0_wp, 9.0_wp, 16.0_wp, 25.0_wp]
         logical :: file_exists
         integer :: status
+        character(len=:), allocatable :: output_dir, output_file
 
         print *, 'Testing: suptitle rendering to PNG'
+
+        call ensure_test_output_dir('suptitle', output_dir)
+        output_file = output_dir // 'test_suptitle.png'
 
         call fig%initialize(800, 600, backend='png')
         call fig%subplots(2, 2)
@@ -139,10 +144,10 @@ contains
         call fig%subplot_plot(2, 2, x, y*1.5_wp, label='Plot 4')
         call fig%subplot_set_title(2, 2, 'Subplot 4')
 
-        call fig%savefig_with_status('/tmp/test_suptitle.png', status)
+        call fig%savefig_with_status(output_file, status)
 
         if (status == 0) then
-            inquire(file='/tmp/test_suptitle.png', exist=file_exists)
+            inquire(file=output_file, exist=file_exists)
             if (file_exists) then
                 print *, '  PASS: PNG file created with suptitle'
             else
