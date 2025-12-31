@@ -25,6 +25,7 @@ module fortplot_matplotlib_axes
     public :: get_active_axis
     public :: minorticks_on
     public :: axis
+    public :: tight_layout
 
     interface axis
         !! Set aspect ratio: axis('equal'), axis('auto'), or axis(2.0)
@@ -42,7 +43,7 @@ contains
         ncols = fig%subplot_cols
         idx = fig%current_subplot
         if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
-            row = (idx - 1) / ncols + 1
+            row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_set_xlabel(row, col, label_text)
         else
@@ -58,7 +59,7 @@ contains
         ncols = fig%subplot_cols
         idx = fig%current_subplot
         if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
-            row = (idx - 1) / ncols + 1
+            row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_set_ylabel(row, col, label_text)
         else
@@ -74,7 +75,7 @@ contains
         ncols = fig%subplot_cols
         idx = fig%current_subplot
         if (nrows > 0 .and. ncols > 0 .and. idx >= 1 .and. idx <= nrows*ncols) then
-            row = (idx - 1) / ncols + 1
+            row = (idx - 1)/ncols + 1
             col = mod(idx - 1, ncols) + 1
             call fig%subplot_set_title(row, col, title_text)
         else
@@ -114,7 +115,7 @@ contains
 
         call ensure_fig_init()
         call fig%grid(enabled=enabled, which=which, axis=axis, alpha=alpha, &
-                     linestyle=linestyle)
+                      linestyle=linestyle)
     end subroutine grid
 
     subroutine xlim(xmin, xmax)
@@ -186,5 +187,18 @@ contains
         call ensure_fig_init()
         call fig%set_aspect(ratio)
     end subroutine axis_num
+
+    subroutine tight_layout(pad, w_pad, h_pad)
+        !! Automatically adjust subplot parameters to give specified padding
+        !!
+        !! Enables tight layout mode which optimizes the figure layout to
+        !! minimize overlap between subplots, titles, and axis labels.
+        real(wp), intent(in), optional :: pad
+        real(wp), intent(in), optional :: w_pad
+        real(wp), intent(in), optional :: h_pad
+
+        call ensure_fig_init()
+        call fig%tight_layout(pad, w_pad, h_pad)
+    end subroutine tight_layout
 
 end module fortplot_matplotlib_axes

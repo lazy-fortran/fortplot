@@ -141,9 +141,15 @@ module fortplot_figure_initialization
         ! Aspect ratio control (auto, equal, or numeric ratio)
         character(len=10) :: aspect_mode = 'auto'
         real(wp) :: aspect_ratio = 1.0_wp
+
+        ! Tight layout configuration
+        logical :: tight_layout_enabled = .false.
+        real(wp) :: tight_pad = 1.08_wp
+        real(wp) :: tight_w_pad = 0.0_wp
+        real(wp) :: tight_h_pad = 0.0_wp
     end type figure_state_t
 
-    contains
+contains
 
     subroutine initialize_figure_state(state, width, height, backend, dpi)
         !! Initialize figure state with specified parameters
@@ -293,8 +299,8 @@ module fortplot_figure_initialization
             call move_alloc(state%colorbar_label, scratch)
         state%colorbar_ticks_set = .false.
         state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate(state%colorbar_ticks)
-        if (allocated(state%colorbar_ticklabels)) deallocate(state%colorbar_ticklabels)
+        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
+        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
         state%colorbar_label_fontsize = 10.0_wp
 
         if (allocated(state%suptitle)) call move_alloc(state%suptitle, scratch)
@@ -310,16 +316,21 @@ module fortplot_figure_initialization
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
         if (allocated(state%custom_xtick_positions)) &
-            deallocate(state%custom_xtick_positions)
+            deallocate (state%custom_xtick_positions)
         if (allocated(state%custom_ytick_positions)) &
-            deallocate(state%custom_ytick_positions)
+            deallocate (state%custom_ytick_positions)
         if (allocated(state%custom_xtick_labels)) &
-            deallocate(state%custom_xtick_labels)
+            deallocate (state%custom_xtick_labels)
         if (allocated(state%custom_ytick_labels)) &
-            deallocate(state%custom_ytick_labels)
+            deallocate (state%custom_ytick_labels)
 
         state%aspect_mode = 'auto'
         state%aspect_ratio = 1.0_wp
+
+        state%tight_layout_enabled = .false.
+        state%tight_pad = 1.08_wp
+        state%tight_w_pad = 0.0_wp
+        state%tight_h_pad = 0.0_wp
     end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
@@ -344,7 +355,7 @@ module fortplot_figure_initialization
         state%title = ''
         state%xlabel = ''
         state%ylabel = ''
-        if (allocated(state%suptitle)) deallocate(state%suptitle)
+        if (allocated(state%suptitle)) deallocate (state%suptitle)
         state%suptitle_fontsize = 14.0_wp
 
         state%active_axis = AXIS_PRIMARY
@@ -376,8 +387,8 @@ module fortplot_figure_initialization
             call move_alloc(state%colorbar_label, scratch)
         state%colorbar_ticks_set = .false.
         state%colorbar_ticklabels_set = .false.
-        if (allocated(state%colorbar_ticks)) deallocate(state%colorbar_ticks)
-        if (allocated(state%colorbar_ticklabels)) deallocate(state%colorbar_ticklabels)
+        if (allocated(state%colorbar_ticks)) deallocate (state%colorbar_ticks)
+        if (allocated(state%colorbar_ticklabels)) deallocate (state%colorbar_ticklabels)
         state%colorbar_label_fontsize = 10.0_wp
 
         state%has_error = .false.
@@ -392,16 +403,21 @@ module fortplot_figure_initialization
         state%custom_xticks_set = .false.
         state%custom_yticks_set = .false.
         if (allocated(state%custom_xtick_positions)) &
-            deallocate(state%custom_xtick_positions)
+            deallocate (state%custom_xtick_positions)
         if (allocated(state%custom_ytick_positions)) &
-            deallocate(state%custom_ytick_positions)
+            deallocate (state%custom_ytick_positions)
         if (allocated(state%custom_xtick_labels)) &
-            deallocate(state%custom_xtick_labels)
+            deallocate (state%custom_xtick_labels)
         if (allocated(state%custom_ytick_labels)) &
-            deallocate(state%custom_ytick_labels)
+            deallocate (state%custom_ytick_labels)
 
         state%aspect_mode = 'auto'
         state%aspect_ratio = 1.0_wp
+
+        state%tight_layout_enabled = .false.
+        state%tight_pad = 1.08_wp
+        state%tight_w_pad = 0.0_wp
+        state%tight_h_pad = 0.0_wp
     end subroutine reset_figure_state
 
     subroutine setup_figure_backend(state, backend_name)
