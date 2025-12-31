@@ -272,11 +272,11 @@ contains
     end subroutine add_pcolormesh
 
     subroutine add_surface(x, y, z, colormap, show_colorbar, alpha, edgecolor, &
-                              linewidth, label)
+                           linewidth, label, filled)
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: z(:,:)
         character(len=*), intent(in), optional :: colormap, label
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
@@ -298,7 +298,8 @@ contains
 
         call fig%add_surface(x, y, z, label=label, colormap=colormap, &
                              show_colorbar=show_colorbar, alpha=alpha, &
-                             edgecolor=edgecolor, linewidth=linewidth)
+                             edgecolor=edgecolor, linewidth=linewidth, &
+                             filled=filled)
     end subroutine add_surface
 
     subroutine convert_contour_arrays(x, y, z, levels, wp_x, wp_y, wp_z, &

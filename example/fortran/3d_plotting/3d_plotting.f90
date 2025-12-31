@@ -136,42 +136,77 @@ contains
         type(figure_t) :: fig
         real(wp), allocatable :: x_grid(:), y_grid(:), z_grid(:,:)
         integer :: i, j, n
-        
+
         print *, "=== 3D Surface Plots Demo ==="
-        
-        ! Paraboloid surface
+
+        ! Paraboloid surface (wireframe only)
         n = 21
         allocate(x_grid(n), y_grid(n), z_grid(n, n))
-        
+
         do i = 1, n
             x_grid(i) = -2.0_wp + (i-1) * 4.0_wp / real(n-1, wp)
             y_grid(i) = -2.0_wp + (i-1) * 4.0_wp / real(n-1, wp)
         end do
-        
+
         do i = 1, n
             do j = 1, n
                 z_grid(i,j) = x_grid(i)**2 + y_grid(j)**2
             end do
         end do
-        
+
         call figure(figsize=[8.0_wp, 6.0_wp])
         call add_surface(x_grid, y_grid, z_grid, label="Paraboloid")
-        call title("3D Surface Plot - Paraboloid")
+        call title("3D Surface Plot - Paraboloid (wireframe)")
         call savefig('output/example/fortran/3d_plotting/surface_paraboloid.png')
-        
-        ! Gaussian surface
+
+        ! Gaussian surface (wireframe only)
         do i = 1, n
             do j = 1, n
                 z_grid(i,j) = exp(-(x_grid(i)**2 + y_grid(j)**2))
             end do
         end do
-        
+
         call figure(figsize=[8.0_wp, 6.0_wp])
         call add_surface(x_grid, y_grid, z_grid, label="Gaussian")
-        call title("3D Surface Plot - Gaussian")
+        call title("3D Surface Plot - Gaussian (wireframe)")
         call savefig('output/example/fortran/3d_plotting/surface_gaussian.png')
-        
+
+        ! Filled surface with viridis colormap
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, colormap='viridis', &
+                        filled=.true., alpha=0.9_wp)
+        call title("3D Filled Surface - Gaussian (viridis)")
+        call savefig('output/example/fortran/3d_plotting/surface_filled_viridis.png')
+
+        ! Saddle surface with plasma colormap
+        do i = 1, n
+            do j = 1, n
+                z_grid(i,j) = x_grid(i)**2 - y_grid(j)**2
+            end do
+        end do
+
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, colormap='plasma', &
+                        filled=.true., alpha=0.85_wp)
+        call title("3D Filled Surface - Saddle (plasma)")
+        call savefig('output/example/fortran/3d_plotting/surface_filled_plasma.png')
+
+        ! Ripple surface with jet colormap
+        do i = 1, n
+            do j = 1, n
+                z_grid(i,j) = sin(sqrt(x_grid(i)**2 + y_grid(j)**2) * 2.0_wp)
+            end do
+        end do
+
+        call figure(figsize=[8.0_wp, 6.0_wp])
+        call add_surface(x_grid, y_grid, z_grid, colormap='jet', &
+                        filled=.true., alpha=0.9_wp)
+        call title("3D Filled Surface - Ripple (jet)")
+        call savefig('output/example/fortran/3d_plotting/surface_filled_jet.png')
+
         print *, "Created: surface_paraboloid.png, surface_gaussian.png"
+        print *, "Created: surface_filled_viridis.png, surface_filled_plasma.png"
+        print *, "Created: surface_filled_jet.png"
         deallocate(x_grid, y_grid, z_grid)
     end subroutine demo_3d_surface_plots
 

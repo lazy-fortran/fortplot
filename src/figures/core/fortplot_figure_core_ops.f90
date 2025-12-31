@@ -213,19 +213,20 @@ contains
     end subroutine core_add_contour_filled
 
     subroutine core_add_surface(plots, state, x_grid, y_grid, z_grid, label, colormap, &
-                                show_colorbar, alpha, edgecolor, linewidth, plot_count)
+                                show_colorbar, alpha, edgecolor, linewidth, filled, &
+                                plot_count)
         type(plot_data_t), allocatable, intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, colormap
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
         integer, intent(inout) :: plot_count
 
         call figure_add_surface_operation(plots, state, x_grid, y_grid, z_grid, label, &
                                           colormap, show_colorbar, alpha, &
-                                          edgecolor, linewidth)
+                                          edgecolor, linewidth, filled)
         plot_count = state%plot_count
         call update_data_ranges_figure(plots, state, state%plot_count)
     end subroutine core_add_surface

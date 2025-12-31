@@ -101,19 +101,20 @@ contains
     end subroutine figure_add_contour_filled
 
     subroutine figure_add_surface(plots, state, x_grid, y_grid, z_grid, label, colormap, &
-                                  show_colorbar, alpha, edgecolor, linewidth)
+                                  show_colorbar, alpha, edgecolor, linewidth, filled)
         !! Add a 3D surface plot to the figure
         type(plot_data_t), intent(inout) :: plots(:)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
         character(len=*), intent(in), optional :: label, colormap
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
         call add_surface_plot_data(plots, state%plot_count, state%max_plots, &
                                    state%colors, x_grid, y_grid, z_grid, label, &
-                                   colormap, show_colorbar, alpha, edgecolor, linewidth)
+                                   colormap, show_colorbar, alpha, edgecolor, &
+                                   linewidth, filled)
     end subroutine figure_add_surface
 
     subroutine figure_add_pcolormesh(plots, state, x, y, c, colormap, vmin, vmax, &

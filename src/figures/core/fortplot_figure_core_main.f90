@@ -300,17 +300,17 @@ contains
     end subroutine add_contour_filled
 
     subroutine add_surface(self, x_grid, y_grid, z_grid, label, colormap, &
-                           show_colorbar, alpha, edgecolor, linewidth)
+                           show_colorbar, alpha, edgecolor, linewidth, filled)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
         character(len=*), intent(in), optional :: label, colormap
-        logical, intent(in), optional :: show_colorbar
+        logical, intent(in), optional :: show_colorbar, filled
         real(wp), intent(in), optional :: alpha, linewidth
         real(wp), intent(in), optional :: edgecolor(3)
 
         call core_add_surface(self%plots, self%state, x_grid, y_grid, z_grid, &
                               label, colormap, show_colorbar, alpha, edgecolor, &
-                              linewidth, self%plot_count)
+                              linewidth, filled, self%plot_count)
     end subroutine add_surface
 
     subroutine add_pcolormesh(self, x, y, c, colormap, vmin, vmax, edgecolors, &
