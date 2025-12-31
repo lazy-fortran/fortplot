@@ -152,7 +152,9 @@ contains
     subroutine raster_draw_axis_labels_only(raster, width, height, plot_area, &
                                             xscale, yscale, symlog_threshold, &
                                             x_min, x_max, y_min, y_max, &
-                                            title, xlabel, ylabel)
+                                            title, xlabel, ylabel, &
+                                            custom_xticks, custom_xtick_labels, &
+                                            custom_yticks, custom_ytick_labels)
         !! Draw ONLY axis labels and tick labels (for proper drawing order)
         type(raster_image_t), intent(inout) :: raster
         integer, intent(in) :: width, height
@@ -161,16 +163,38 @@ contains
         real(wp), intent(in) :: symlog_threshold
         real(wp), intent(in) :: x_min, x_max, y_min, y_max
         character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+        real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
+        character(len=*), intent(in), optional :: custom_xtick_labels(:)
+        character(len=*), intent(in), optional :: custom_ytick_labels(:)
 
         ! Draw tick labels (delegate to ticks module via wrapper)
-        call raster_draw_x_axis_tick_labels_only_wrapper(raster, width, height, &
-                                                         plot_area, xscale, &
-                                                         symlog_threshold, &
-                                                         x_min, x_max, y_min, y_max)
-        call raster_draw_y_axis_tick_labels_only_wrapper(raster, width, height, &
-                                                         plot_area, yscale, &
-                                                         symlog_threshold, &
-                                                         x_min, x_max, y_min, y_max)
+        if (present(custom_xticks) .and. present(custom_xtick_labels)) then
+            call raster_draw_x_axis_tick_labels_only_custom(raster, width, height, &
+                                                             plot_area, xscale, &
+                                                             symlog_threshold, &
+                                                             x_min, x_max, &
+                                                             custom_xticks, &
+                                                             custom_xtick_labels)
+        else
+            call raster_draw_x_axis_tick_labels_only_wrapper(raster, width, height, &
+                                                             plot_area, xscale, &
+                                                             symlog_threshold, &
+                                                             x_min, x_max, y_min, y_max)
+        end if
+
+        if (present(custom_yticks) .and. present(custom_ytick_labels)) then
+            call raster_draw_y_axis_tick_labels_only_custom(raster, width, height, &
+                                                             plot_area, yscale, &
+                                                             symlog_threshold, &
+                                                             y_min, y_max, &
+                                                             custom_yticks, &
+                                                             custom_ytick_labels)
+        else
+            call raster_draw_y_axis_tick_labels_only_wrapper(raster, width, height, &
+                                                             plot_area, yscale, &
+                                                             symlog_threshold, &
+                                                             x_min, x_max, y_min, y_max)
+        end if
 
         ! Draw axis labels and title
         call raster_draw_axis_labels_wrapper(raster, width, height, plot_area, title, &
@@ -463,6 +487,70 @@ contains
                                                      y_min, y_max)
         end if
     end subroutine raster_draw_y_axis_tick_labels_only_wrapper
+
+    subroutine raster_draw_x_axis_tick_labels_only_custom(raster, width, height, &
+                                                           plot_area, xscale, &
+                                                           symlog_threshold, &
+                                                           x_min, x_max, &
+                                                           positions, labels)
+        !! Draw x-axis tick labels at custom positions with custom labels
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max
+        real(wp), intent(in) :: positions(:)
+        character(len=*), intent(in) :: labels(:)
+
+        character(len=50) :: tick_labels(size(positions))
+        integer :: i, n
+
+        n = size(positions)
+        if (n == 0) return
+        if (size(labels) /= n) return
+
+        do i = 1, n
+            tick_labels(i) = trim(labels(i))
+        end do
+
+        call raster_draw_x_axis_tick_labels_only(raster, width, height, plot_area, &
+                                                 xscale, symlog_threshold, &
+                                                 positions, tick_labels, &
+                                                 x_min, x_max)
+    end subroutine raster_draw_x_axis_tick_labels_only_custom
+
+    subroutine raster_draw_y_axis_tick_labels_only_custom(raster, width, height, &
+                                                           plot_area, yscale, &
+                                                           symlog_threshold, &
+                                                           y_min, y_max, &
+                                                           positions, labels)
+        !! Draw y-axis tick labels at custom positions with custom labels
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: y_min, y_max
+        real(wp), intent(in) :: positions(:)
+        character(len=*), intent(in) :: labels(:)
+
+        character(len=50) :: tick_labels(size(positions))
+        integer :: i, n
+
+        n = size(positions)
+        if (n == 0) return
+        if (size(labels) /= n) return
+
+        do i = 1, n
+            tick_labels(i) = trim(labels(i))
+        end do
+
+        call raster_draw_y_axis_tick_labels_only(raster, width, height, plot_area, &
+                                                 yscale, symlog_threshold, &
+                                                 positions, tick_labels, &
+                                                 y_min, y_max)
+    end subroutine raster_draw_y_axis_tick_labels_only_custom
 
     subroutine raster_draw_axis_labels_wrapper(raster, width, height, plot_area, &
                                                title, xlabel, ylabel)
