@@ -110,8 +110,11 @@ contains
 
     subroutine streamplot(x, y, u, v, density, linewidth_scale, arrow_scale, &
                              colormap, label, arrowsize, arrowstyle)
-        use fortplot_streamplot_matplotlib, only: streamplot_matplotlib
-
+        !! Stateful streamplot wrapper - delegates to OO interface
+        !!
+        !! Parameters linewidth_scale, arrow_scale, colormap, label, arrowsize,
+        !! and arrowstyle are accepted for API compatibility but not yet fully
+        !! supported by the underlying OO implementation.
         real(wp), intent(in) :: x(:), y(:)
         real(wp), intent(in) :: u(:,:), v(:,:)
         real(wp), intent(in), optional :: density, linewidth_scale, arrow_scale
@@ -119,88 +122,8 @@ contains
         real(wp), intent(in), optional :: arrowsize
         character(len=*), intent(in), optional :: arrowstyle
 
-        real(wp) :: density_local
-        real(wp) :: line_color(3)
-        real(wp), allocatable :: traj_x(:), traj_y(:)
-        real(wp) :: xp, yp, x2, y2
-        real, allocatable :: trajectories(:,:,:)
-        integer, allocatable :: traj_lengths(:)
-        integer :: n_traj, i, j
-        integer :: nx, ny
-        real(wp) :: asize
-        character(len=16) :: astyle
-
         call ensure_fig_init()
-
-        nx = size(x)
-        ny = size(y)
-        if (size(u, 1) /= nx .or. size(u, 2) /= ny) then
-            call log_error("streamplot: u dimensions must match x and y")
-            return
-        end if
-        if (size(v, 1) /= nx .or. size(v, 2) /= ny) then
-            call log_error("streamplot: v dimensions must match x and y")
-            return
-        end if
-
-        density_local = 1.0_wp
-        if (present(density)) density_local = density
-
-        line_color = [0.0_wp, 0.447_wp, 0.698_wp]
-
-        call streamplot_matplotlib(x, y, u, v, density_local, trajectories, &
-                                     n_traj, traj_lengths)
-
-        do i = 1, n_traj
-            if (traj_lengths(i) <= 1) cycle
-            allocate(traj_x(traj_lengths(i)), traj_y(traj_lengths(i)))
-            do j = 1, traj_lengths(i)
-                traj_x(j) = x(1) + real(trajectories(i, j, 1), wp) * (x(nx) - x(1)) / &
-                    real(nx - 1, wp)
-                traj_y(j) = y(1) + real(trajectories(i, j, 2), wp) * (y(ny) - y(1)) / &
-                    real(ny - 1, wp)
-            end do
-            call fig%add_plot(traj_x, traj_y, color=line_color)
-            deallocate(traj_x, traj_y)
-        end do
-
-        call fig%clear_backend_arrows()
-
-        asize = 1.0_wp
-        if (present(arrowsize)) then
-            asize = arrowsize
-        else if (present(arrow_scale)) then
-            asize = arrow_scale
-        end if
-
-        if (asize > 0.0_wp) then
-            ! Always enqueue arrows unless explicitly disabled via zero size
-            astyle = '->'
-            if (present(arrowstyle)) then
-                astyle = trim(adjustl(arrowstyle))
-            end if
-            if (astyle == 'filled') astyle = '->'
-            do i = 1, n_traj
-                if (traj_lengths(i) < 5) cycle
-                ! Place ~3 arrows per trajectory, similar to core
-                j = max(1, traj_lengths(i) / 3)
-                do while (j < traj_lengths(i))
-                    ! Convert trajectory point to data coordinates
-                    xp = x(1) + real(trajectories(i, j, 1), wp) * (x(nx) - x(1)) / real(nx - 1, wp)
-                    yp = y(1) + real(trajectories(i, j, 2), wp) * (y(ny) - y(1)) / real(ny - 1, wp)
-                    ! Direction using next step when available
-                    if (j + 1 <= traj_lengths(i)) then
-                        x2 = x(1) + real(trajectories(i, j + 1, 1), wp) * (x(nx) - x(1)) / real(nx - 1, wp)
-                        y2 = y(1) + real(trajectories(i, j + 1, 2), wp) * (y(ny) - y(1)) / real(ny - 1, wp)
-                        call fig%backend_arrow(xp, yp, x2 - xp, y2 - yp, asize, astyle)
-                    end if
-                    j = j + max(1, traj_lengths(i) / 3)
-                end do
-            end do
-        end if
-
-        if (allocated(trajectories)) deallocate(trajectories)
-        if (allocated(traj_lengths)) deallocate(traj_lengths)
+        call fig%streamplot(x, y, u, v, density=density)
     end subroutine streamplot
 
     subroutine quiver(x, y, u, v, scale, color, width, headwidth, headlength, units)

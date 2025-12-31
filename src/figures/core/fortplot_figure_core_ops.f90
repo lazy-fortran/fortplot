@@ -295,6 +295,8 @@ contains
 
         call figure_streamplot_operation(plots, state, plot_count, x, y, u, v, &
                                          density, color)
+        ! Sync state%plot_count with plot_count (streamplot updates plot_count directly)
+        state%plot_count = plot_count
     end subroutine core_streamplot
 
     subroutine core_quiver(plots, state, plot_count, x, y, u, v, scale, color, &
