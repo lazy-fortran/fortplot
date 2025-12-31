@@ -115,13 +115,13 @@ contains
         if (need_backend_switch) then
             call setup_figure_backend(state, required_backend)
         end if
-        
+
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
             call render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
                                    subplots_array, subplot_rows, subplot_cols)
         end if
-        
+
         ! Save the figure with status checking
         call save_backend_with_status(state%backend, filename, status)
     end subroutine savefig_with_status_figure

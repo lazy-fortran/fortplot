@@ -147,6 +147,17 @@ module fortplot_figure_initialization
         real(wp) :: tight_pad = 1.08_wp
         real(wp) :: tight_w_pad = 0.0_wp
         real(wp) :: tight_h_pad = 0.0_wp
+
+        ! Polar projection configuration
+        logical :: polar_projection = .false.
+        real(wp) :: polar_theta_min = 0.0_wp
+        real(wp) :: polar_theta_max = 6.283185307179586_wp  ! 2*pi
+        real(wp) :: polar_r_min = 0.0_wp
+        real(wp) :: polar_r_max = 1.0_wp
+        integer :: polar_theta_gridlines = 12   ! Default: 30-degree intervals
+        integer :: polar_r_gridlines = 5        ! Default: 5 radial circles
+        logical :: polar_theta_direction_cw = .false.  ! Counter-clockwise default
+        real(wp) :: polar_theta_offset = 1.5707963267948966_wp  ! pi/2 = 90deg (top)
     end type figure_state_t
 
 contains
@@ -332,6 +343,16 @@ contains
         state%tight_pad = 1.08_wp
         state%tight_w_pad = 0.0_wp
         state%tight_h_pad = 0.0_wp
+
+        state%polar_projection = .false.
+        state%polar_theta_min = 0.0_wp
+        state%polar_theta_max = 6.283185307179586_wp
+        state%polar_r_min = 0.0_wp
+        state%polar_r_max = 1.0_wp
+        state%polar_theta_gridlines = 12
+        state%polar_r_gridlines = 5
+        state%polar_theta_direction_cw = .false.
+        state%polar_theta_offset = 1.5707963267948966_wp
     end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
@@ -419,6 +440,16 @@ contains
         state%tight_pad = 1.08_wp
         state%tight_w_pad = 0.0_wp
         state%tight_h_pad = 0.0_wp
+
+        state%polar_projection = .false.
+        state%polar_theta_min = 0.0_wp
+        state%polar_theta_max = 6.283185307179586_wp
+        state%polar_r_min = 0.0_wp
+        state%polar_r_max = 1.0_wp
+        state%polar_theta_gridlines = 12
+        state%polar_r_gridlines = 5
+        state%polar_theta_direction_cw = .false.
+        state%polar_theta_offset = 1.5707963267948966_wp
     end subroutine reset_figure_state
 
     subroutine setup_figure_backend(state, backend_name)

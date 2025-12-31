@@ -4,7 +4,7 @@ program test_pyplot_legacy_order
     use fortplot, only: fill_between, polar, pie, imshow
     use fortplot_colors, only: parse_color
     use fortplot_figure_core, only: figure_t, plot_data_t, PLOT_TYPE_FILL, &
-        PLOT_TYPE_LINE
+        PLOT_TYPE_LINE, PLOT_TYPE_POLAR
     use, intrinsic :: iso_fortran_env, only: wp => real64
     implicit none
 
@@ -305,10 +305,11 @@ contains
 
         idx = 0
         do i = 1, count
-            if (plots(i)%plot_type == PLOT_TYPE_LINE) idx = i
+            if (plots(i)%plot_type == PLOT_TYPE_LINE .or. &
+                plots(i)%plot_type == PLOT_TYPE_POLAR) idx = i
         end do
         if (idx == 0) then
-            error stop 'assert_polar_style: line plot not found'
+            error stop 'assert_polar_style: line or polar plot not found'
         end if
 
         do i = 1, 3
