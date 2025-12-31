@@ -2,7 +2,8 @@ program test_matplotlib_new_functions_oo
     !! Validate OO API coverage for matplotlib-compatible helpers
     use fortplot
     use iso_fortran_env, only: real64
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_errors, only: SUCCESS
+    use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
     type(figure_t) :: fig
@@ -11,7 +12,7 @@ program test_matplotlib_new_functions_oo
     real(real64), allocatable :: values(:)
     logical, allocatable :: mask(:)
     character(len=:), allocatable :: output_dir
-    integer :: i, j
+    integer :: i, j, status
 
     print *, 'Testing OO matplotlib-compatible functions...'
 
@@ -46,6 +47,11 @@ program test_matplotlib_new_functions_oo
     call fig%add_polar(theta, r)
     call fig%set_title('OO add_polar() test - Polar plot')
     call fig%savefig(trim(output_dir)//'test_polar_oo.png')
+    call fig%savefig_with_status(trim(output_dir)//'test_polar_oo.pdf', status)
+    if (status /= SUCCESS) then
+        error stop 'FAIL: OO add_polar() PDF savefig_with_status returned error'
+    end if
+    call assert_pdf_file_valid(trim(output_dir)//'test_polar_oo.pdf')
     call fig%clear()
 
     allocate(x(20), y(20))

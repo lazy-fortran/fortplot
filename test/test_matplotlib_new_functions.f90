@@ -4,7 +4,8 @@ program test_matplotlib_new_functions
     use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_matplotlib_session, only: get_global_figure
     use iso_fortran_env, only: real64
-    use test_output_helpers, only: ensure_test_output_dir
+    use fortplot_errors, only: SUCCESS
+    use test_output_helpers, only: ensure_test_output_dir, assert_pdf_file_valid
     implicit none
 
     real(real64), allocatable :: x(:), y(:), z(:,:)
@@ -14,7 +15,7 @@ program test_matplotlib_new_functions
     class(figure_t), pointer :: fig_ptr
     logical, allocatable :: mask(:)
     character(len=:), allocatable :: output_dir
-    integer :: i, j
+    integer :: i, j, status
 
     call ensure_test_output_dir('matplotlib_new_functions', output_dir)
 
@@ -55,6 +56,11 @@ program test_matplotlib_new_functions
     call polar(theta, r)
     call title("polar() test - Polar plot")
     call savefig(trim(output_dir)//'test_polar.png')
+    call savefig_with_status(trim(output_dir)//'test_polar.pdf', status)
+    if (status /= SUCCESS) then
+        error stop 'FAIL: polar() PDF savefig_with_status returned error'
+    end if
+    call assert_pdf_file_valid(trim(output_dir)//'test_polar.pdf')
     print *, "PASS: polar() function works"
     
     ! Test step plot
