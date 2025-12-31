@@ -34,6 +34,9 @@ module fortplot_pdf_axes
     public :: setup_axes_data_ranges
     public :: generate_tick_data
     public :: render_mixed_text
+    public :: draw_pdf_minor_tick_marks
+
+    real(wp), parameter :: PDF_MINOR_TICK_SIZE = 3.0_wp
 
 contains
 
@@ -802,5 +805,39 @@ contains
 
         ctx%stream_data = ctx%stream_data//'ET'//new_line('a')
     end subroutine draw_rotated_pdf_mathtext
+
+    subroutine draw_pdf_minor_tick_marks(ctx, x_minor_positions, y_minor_positions, &
+                                         num_x_minor, num_y_minor, &
+                                         plot_left, plot_bottom)
+        !! Draw minor tick marks (shorter than major ticks)
+        type(pdf_context_core), intent(inout) :: ctx
+        real(wp), intent(in) :: x_minor_positions(:), y_minor_positions(:)
+        integer, intent(in) :: num_x_minor, num_y_minor
+        real(wp), intent(in) :: plot_left, plot_bottom
+
+        integer :: i
+        character(len=2048) :: tick_cmd
+        real(wp) :: bottom_y
+
+        call ctx%set_color(0.0_wp, 0.0_wp, 0.0_wp)
+        call ctx%set_line_width(0.5_wp)
+        ctx%stream_data = ctx%stream_data//'[] 0 d'//new_line('a')
+
+        bottom_y = plot_bottom
+
+        do i = 1, num_x_minor
+            write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                x_minor_positions(i), bottom_y, &
+                x_minor_positions(i), bottom_y + PDF_MINOR_TICK_SIZE
+            ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
+        end do
+
+        do i = 1, num_y_minor
+            write (tick_cmd, '(F0.3, 1X, F0.3, " m ", F0.3, 1X, F0.3, " l S")') &
+                plot_left, y_minor_positions(i), &
+                plot_left + PDF_MINOR_TICK_SIZE, y_minor_positions(i)
+            ctx%stream_data = ctx%stream_data//trim(adjustl(tick_cmd))//new_line('a')
+        end do
+    end subroutine draw_pdf_minor_tick_marks
 
 end module fortplot_pdf_axes

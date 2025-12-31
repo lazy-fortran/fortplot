@@ -16,6 +16,8 @@ module fortplot_tick_calculation
     public :: find_nice_tick_locations, determine_decimal_places_from_step
     public :: determine_decimals_from_ticks
     public :: format_tick_value_consistent
+    public :: calculate_minor_tick_positions
+    public :: calculate_log_minor_tick_positions
 
 contains
 
@@ -211,7 +213,7 @@ contains
         !! Ensure numbers like .5 become 0.5 for readability
         character(len=*), intent(inout) :: str
         character(len=len(str)) :: temp
-        
+
         str = adjustl(str)  ! Remove leading spaces
         if (len_trim(str) > 0) then
             if (str(1:1) == '.') then
@@ -223,5 +225,70 @@ contains
             end if
         end if
     end subroutine ensure_leading_zero
+
+    subroutine calculate_minor_tick_positions(major_ticks, num_major, minor_count, &
+                                              data_min, data_max, &
+                                              minor_ticks, num_minor)
+        !! Calculate minor tick positions between major ticks
+        !! Places minor_count minor ticks between each pair of major ticks
+        real(wp), intent(in) :: major_ticks(:)
+        integer, intent(in) :: num_major
+        integer, intent(in) :: minor_count
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(out) :: minor_ticks(:)
+        integer, intent(out) :: num_minor
+
+        integer :: i, j
+        real(wp) :: step, pos
+
+        num_minor = 0
+        if (num_major < 2 .or. minor_count < 1) return
+
+        do i = 1, num_major - 1
+            step = (major_ticks(i + 1) - major_ticks(i)) / real(minor_count + 1, wp)
+            do j = 1, minor_count
+                pos = major_ticks(i) + real(j, wp) * step
+                if (pos > data_min .and. pos < data_max) then
+                    if (num_minor < size(minor_ticks)) then
+                        num_minor = num_minor + 1
+                        minor_ticks(num_minor) = pos
+                    end if
+                end if
+            end do
+        end do
+    end subroutine calculate_minor_tick_positions
+
+    subroutine calculate_log_minor_tick_positions(major_ticks, num_major, &
+                                                  data_min, data_max, &
+                                                  minor_ticks, num_minor)
+        !! Calculate minor tick positions for log scale at 2,3,4,5,6,7,8,9 within decades
+        real(wp), intent(in) :: major_ticks(:)
+        integer, intent(in) :: num_major
+        real(wp), intent(in) :: data_min, data_max
+        real(wp), intent(out) :: minor_ticks(:)
+        integer, intent(out) :: num_minor
+
+        integer :: i, mult
+        real(wp) :: decade_start, pos
+        real(wp), parameter :: log_minors(8) = [2.0_wp, 3.0_wp, 4.0_wp, 5.0_wp, &
+                                                6.0_wp, 7.0_wp, 8.0_wp, 9.0_wp]
+
+        num_minor = 0
+        if (num_major < 1 .or. data_min <= 0.0_wp) return
+
+        do i = 1, num_major
+            decade_start = major_ticks(i)
+            if (decade_start <= 0.0_wp) cycle
+            do mult = 1, 8
+                pos = decade_start * log_minors(mult)
+                if (pos > data_min .and. pos < data_max) then
+                    if (num_minor < size(minor_ticks)) then
+                        num_minor = num_minor + 1
+                        minor_ticks(num_minor) = pos
+                    end if
+                end if
+            end do
+        end do
+    end subroutine calculate_log_minor_tick_positions
 
 end module fortplot_tick_calculation

@@ -17,7 +17,12 @@ module fortplot_figure_rendering_pipeline
                                   AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
-                                     raster_draw_secondary_x_axis_top
+                                     raster_draw_secondary_x_axis_top, &
+                                     raster_draw_x_minor_ticks, &
+                                     raster_draw_y_minor_ticks
+    use fortplot_tick_calculation, only: calculate_minor_tick_positions, &
+                                         calculate_log_minor_tick_positions
+    use fortplot_axes, only: compute_scale_ticks, MAX_TICKS
     use fortplot_projection, only: project_3d_to_2d, get_default_view_angles
     use fortplot_rendering, only: render_line_plot, render_contour_plot, &
                                  render_pcolormesh_plot, render_fill_between_plot, &
@@ -59,7 +64,7 @@ contains
                                  x_min, x_max, y_min, y_max, title, xlabel, ylabel, &
                                  plots, plot_count, has_twinx, twinx_y_min, twinx_y_max, &
                                  twinx_ylabel, twinx_yscale, has_twiny, twiny_x_min, twiny_x_max, &
-                                 twiny_xlabel, twiny_xscale)
+                                 twiny_xlabel, twiny_xscale, state)
         !! Render figure axes and labels
         !! For raster backends, split rendering to prevent label overlap issues
         use fortplot_raster, only: raster_context
@@ -75,6 +80,7 @@ contains
         real(wp), intent(in), optional :: twiny_x_min, twiny_x_max
         character(len=:), allocatable, intent(in), optional :: twinx_ylabel, twiny_xlabel
         character(len=*), intent(in), optional :: twinx_yscale, twiny_xscale
+        type(figure_state_t), intent(in), optional :: state
         logical :: has_3d
         real(wp) :: zmin, zmax
         logical :: has_twinx_local, has_twiny_local
@@ -134,6 +140,13 @@ contains
                                                       symlog_threshold, &
                                                       x_min, x_max, &
                                                       y_min, y_max)
+                ! Draw minor ticks if enabled
+                if (present(state)) then
+                    call render_minor_ticks_raster(backend, xscale, yscale, &
+                                                   symlog_threshold, &
+                                                   x_min, x_max, y_min, y_max, &
+                                                   state)
+                end if
             end if
         class default
             ! For non-raster backends, use standard rendering
@@ -147,6 +160,72 @@ contains
                                                      has_3d_plots=has_3d)
         end select
     end subroutine render_figure_axes
+
+    subroutine render_minor_ticks_raster(backend, xscale, yscale, symlog_threshold, &
+                                          x_min, x_max, y_min, y_max, state)
+        !! Render minor ticks for raster backends when enabled
+        use fortplot_raster, only: raster_context
+        type(raster_context), intent(inout) :: backend
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        type(figure_state_t), intent(in) :: state
+
+        real(wp) :: major_x(MAX_TICKS), major_y(MAX_TICKS)
+        real(wp) :: minor_x(MAX_TICKS*10), minor_y(MAX_TICKS*10)
+        integer :: num_major_x, num_major_y, num_minor_x, num_minor_y
+
+        if (.not. state%minor_ticks_x .and. .not. state%minor_ticks_y) return
+
+        ! Get major tick positions
+        if (state%minor_ticks_x) then
+            call compute_scale_ticks(xscale, x_min, x_max, symlog_threshold, &
+                                     major_x, num_major_x)
+            if (num_major_x >= 2) then
+                if (trim(xscale) == 'log') then
+                    call calculate_log_minor_tick_positions(major_x, num_major_x, &
+                                                            x_min, x_max, &
+                                                            minor_x, num_minor_x)
+                else
+                    call calculate_minor_tick_positions(major_x, num_major_x, &
+                                                        state%minor_tick_count, &
+                                                        x_min, x_max, &
+                                                        minor_x, num_minor_x)
+                end if
+                if (num_minor_x > 0) then
+                    call raster_draw_x_minor_ticks(backend%raster, backend%width, &
+                                                   backend%height, backend%plot_area, &
+                                                   xscale, symlog_threshold, &
+                                                   minor_x(1:num_minor_x), &
+                                                   x_min, x_max)
+                end if
+            end if
+        end if
+
+        if (state%minor_ticks_y) then
+            call compute_scale_ticks(yscale, y_min, y_max, symlog_threshold, &
+                                     major_y, num_major_y)
+            if (num_major_y >= 2) then
+                if (trim(yscale) == 'log') then
+                    call calculate_log_minor_tick_positions(major_y, num_major_y, &
+                                                            y_min, y_max, &
+                                                            minor_y, num_minor_y)
+                else
+                    call calculate_minor_tick_positions(major_y, num_major_y, &
+                                                        state%minor_tick_count, &
+                                                        y_min, y_max, &
+                                                        minor_y, num_minor_y)
+                end if
+                if (num_minor_y > 0) then
+                    call raster_draw_y_minor_ticks(backend%raster, backend%width, &
+                                                   backend%height, backend%plot_area, &
+                                                   yscale, symlog_threshold, &
+                                                   minor_y(1:num_minor_y), &
+                                                   y_min, y_max)
+                end if
+            end if
+        end if
+    end subroutine render_minor_ticks_raster
 
     subroutine render_figure_axes_labels_only(backend, xscale, yscale, symlog_threshold, &
                                              x_min, x_max, y_min, y_max, &

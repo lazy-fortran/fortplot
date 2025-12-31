@@ -29,12 +29,16 @@ module fortplot_raster_ticks
     public :: raster_draw_x_axis_ticks_top
     public :: raster_draw_x_axis_tick_marks_only_top
     public :: raster_draw_x_axis_tick_labels_only_top
+    public :: raster_draw_x_minor_ticks
+    public :: raster_draw_y_minor_ticks
     public :: last_y_tick_max_width
     public :: last_y_tick_max_width_right
     public :: last_x_tick_max_height_top
     public :: X_TICK_LABEL_PAD, Y_TICK_LABEL_RIGHT_PAD
     public :: Y_TICK_LABEL_LEFT_PAD, X_TICK_LABEL_TOP_PAD
     public :: compute_non_overlapping_mask
+
+    integer, parameter :: MINOR_TICK_LENGTH = 4
 
     ! Cache the maximum Y-tick label width measured during the last
     ! raster_draw_y_axis_ticks() call so ylabel placement can avoid overlap
@@ -660,5 +664,87 @@ contains
 
         deallocate (label_lefts, label_rights)
     end subroutine compute_non_overlapping_mask
+
+    subroutine raster_draw_x_minor_ticks(raster, width, height, plot_area, &
+                                          xscale, symlog_threshold, &
+                                          minor_ticks, x_min, x_max)
+        !! Draw minor tick marks on the x-axis (shorter than major ticks)
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: xscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: minor_ticks(:)
+        real(wp), intent(in) :: x_min, x_max
+
+        integer :: tick_x, tick_top, tick_bottom, j
+        real(wp) :: min_t, max_t, tick_t
+        real(wp) :: dummy_pattern(1), pattern_dist
+
+        min_t = apply_scale_transform(x_min, xscale, symlog_threshold)
+        max_t = apply_scale_transform(x_max, xscale, symlog_threshold)
+
+        dummy_pattern = 0.0_wp
+        pattern_dist = 0.0_wp
+
+        do j = 1, size(minor_ticks)
+            tick_t = apply_scale_transform(minor_ticks(j), xscale, symlog_threshold)
+            if (max_t > min_t) then
+                tick_x = plot_area%left + int((tick_t - min_t)/(max_t - min_t)* &
+                                              plot_area%width)
+            else
+                tick_x = plot_area%left
+            end if
+            tick_top = plot_area%bottom + plot_area%height
+            tick_bottom = min(height, tick_top + MINOR_TICK_LENGTH)
+            call draw_styled_line(raster%image_data, width, height, &
+                                  real(tick_x, wp), real(tick_top, wp), &
+                                  real(tick_x, wp), real(tick_bottom, wp), &
+                                  0.0_wp, 0.0_wp, 0.0_wp, &
+                                  1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, &
+                                  pattern_dist)
+        end do
+    end subroutine raster_draw_x_minor_ticks
+
+    subroutine raster_draw_y_minor_ticks(raster, width, height, plot_area, &
+                                          yscale, symlog_threshold, &
+                                          minor_ticks, y_min, y_max)
+        !! Draw minor tick marks on the y-axis (shorter than major ticks)
+        type(raster_image_t), intent(inout) :: raster
+        integer, intent(in) :: width, height
+        type(plot_area_t), intent(in) :: plot_area
+        character(len=*), intent(in) :: yscale
+        real(wp), intent(in) :: symlog_threshold
+        real(wp), intent(in) :: minor_ticks(:)
+        real(wp), intent(in) :: y_min, y_max
+
+        integer :: tick_y, tick_left, tick_right, j
+        real(wp) :: min_t, max_t, tick_t
+        real(wp) :: dummy_pattern(1), pattern_dist
+
+        min_t = apply_scale_transform(y_min, yscale, symlog_threshold)
+        max_t = apply_scale_transform(y_max, yscale, symlog_threshold)
+
+        dummy_pattern = 0.0_wp
+        pattern_dist = 0.0_wp
+
+        do j = 1, size(minor_ticks)
+            tick_t = apply_scale_transform(minor_ticks(j), yscale, symlog_threshold)
+            if (max_t > min_t) then
+                tick_y = plot_area%bottom + plot_area%height - &
+                         int((tick_t - min_t)/(max_t - min_t)*plot_area%height)
+            else
+                tick_y = plot_area%bottom
+            end if
+            tick_left = max(1, plot_area%left - MINOR_TICK_LENGTH)
+            tick_right = plot_area%left
+            call draw_styled_line(raster%image_data, width, height, &
+                                  real(tick_left, wp), real(tick_y, wp), &
+                                  real(tick_right, wp), real(tick_y, wp), &
+                                  0.0_wp, 0.0_wp, 0.0_wp, &
+                                  1.0_wp, 'solid', dummy_pattern, 0, 0.0_wp, &
+                                  pattern_dist)
+        end do
+    end subroutine raster_draw_y_minor_ticks
 
 end module fortplot_raster_ticks

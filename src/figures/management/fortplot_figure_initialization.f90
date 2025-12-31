@@ -118,6 +118,11 @@ module fortplot_figure_initialization
 
         ! Streamplot arrow storage (rendered after plots)
         type(arrow_data_t), allocatable :: stream_arrows(:)
+
+        ! Minor ticks configuration
+        logical :: minor_ticks_x = .false.
+        logical :: minor_ticks_y = .false.
+        integer :: minor_tick_count = 5
     end type figure_state_t
 
     contains
@@ -274,6 +279,10 @@ module fortplot_figure_initialization
 
         if (allocated(state%stream_arrows)) &
             call move_alloc(state%stream_arrows, scratch_arrows)
+
+        state%minor_ticks_x = .false.
+        state%minor_ticks_y = .false.
+        state%minor_tick_count = 5
     end subroutine reset_state_for_initialization
 
     subroutine reset_figure_state(state)
@@ -333,6 +342,10 @@ module fortplot_figure_initialization
 
         if (allocated(state%stream_arrows)) &
             call move_alloc(state%stream_arrows, scratch_arrows)
+
+        state%minor_ticks_x = .false.
+        state%minor_ticks_y = .false.
+        state%minor_tick_count = 5
     end subroutine reset_figure_state
 
     subroutine setup_figure_backend(state, backend_name)

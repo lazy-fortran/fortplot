@@ -100,7 +100,7 @@ module fortplot
                                    add_3d_plot, add_surface, add_scatter, &
                                    set_xscale, set_yscale, xlim, ylim, &
                                    set_line_width, set_ydata, use_axis, &
-                                   get_active_axis, &
+                                   get_active_axis, minorticks_on, &
                                    show, show_viewer, &
                                    ensure_global_figure_initialized, get_global_figure
 
@@ -136,7 +136,7 @@ module fortplot
     public :: figure, subplot, subplots, subplots_grid
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
-    public :: set_line_width, set_ydata, use_axis, get_active_axis
+    public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on
     public :: savefig, savefig_with_status
 
     ! Extended plotting functions
