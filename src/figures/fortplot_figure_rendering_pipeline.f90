@@ -12,8 +12,8 @@ module fortplot_figure_rendering_pipeline
                                   PLOT_TYPE_SCATTER, PLOT_TYPE_FILL, &
                                   PLOT_TYPE_BOXPLOT, PLOT_TYPE_ERRORBAR, &
                                   PLOT_TYPE_SURFACE, PLOT_TYPE_PIE, &
-                                  PLOT_TYPE_BAR, AXIS_PRIMARY, AXIS_TWINX, &
-                                  AXIS_TWINY
+                                  PLOT_TYPE_BAR, PLOT_TYPE_REFLINE, &
+                                  AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     use fortplot_figure_initialization, only: figure_state_t
     use fortplot_raster_axes, only: raster_draw_secondary_y_axis, &
                                      raster_draw_secondary_x_axis_top
@@ -648,12 +648,18 @@ contains
             case (PLOT_TYPE_ERRORBAR)
                 call render_errorbar_plot(backend, plots(i), xscale_curr, yscale_curr, &
                                           symlog_threshold, default_line_width)
-                ! Always attempt to render markers for errorbar plots; 
+                ! Always attempt to render markers for errorbar plots;
                 ! render_markers internally validates presence/emptiness.
                 call render_markers(backend, plots(i), &
                                    x_min_curr, x_max_curr, &
                                    y_min_curr, y_max_curr, &
                                    xscale_curr, yscale_curr, symlog_threshold)
+
+            case (PLOT_TYPE_REFLINE)
+                call render_refline_plot(backend, plots(i), &
+                                        x_min_curr, x_max_curr, &
+                                        y_min_curr, y_max_curr, &
+                                        xscale_curr, yscale_curr, symlog_threshold)
 
             end select
 
@@ -666,6 +672,83 @@ contains
             call backend%set_coordinates(primary_x_min, primary_x_max, primary_y_min, primary_y_max)
         end if
     end subroutine render_all_plots
+
+    subroutine render_refline_plot(backend, plot, x_min, x_max, y_min, y_max, &
+                                   xscale, yscale, symlog_threshold)
+        !! Render a reference line (horizontal or vertical)
+        !! Reference lines store normalized coordinates for axis-spanning lines
+        !! or actual data coordinates for hlines/vlines
+        use fortplot_scales, only: apply_scale_transform
+        class(plot_context), intent(inout) :: backend
+        type(plot_data_t), intent(in) :: plot
+        real(wp), intent(in) :: x_min, x_max, y_min, y_max
+        character(len=*), intent(in) :: xscale, yscale
+        real(wp), intent(in) :: symlog_threshold
+
+        real(wp) :: x1, y1, x2, y2
+        real(wp) :: x1_scaled, y1_scaled, x2_scaled, y2_scaled
+        logical :: is_normalized_x, is_normalized_y
+
+        if (.not. allocated(plot%x) .or. .not. allocated(plot%y)) return
+        if (size(plot%x) < 2 .or. size(plot%y) < 2) return
+
+        call backend%color(plot%color(1), plot%color(2), plot%color(3))
+
+        if (allocated(plot%linestyle) .and. len_trim(plot%linestyle) > 0) then
+            call backend%set_line_style(trim(plot%linestyle))
+        else
+            call backend%set_line_style('-')
+        end if
+
+        x1 = plot%x(1)
+        x2 = plot%x(2)
+        y1 = plot%y(1)
+        y2 = plot%y(2)
+
+        ! Detect if coordinates are normalized (0-1 range for axis-spanning)
+        ! axhline/axvline store xmin/xmax or ymin/ymax as 0-1 normalized values
+        is_normalized_x = (x1 >= 0.0_wp .and. x1 <= 1.0_wp .and. &
+                          x2 >= 0.0_wp .and. x2 <= 1.0_wp .and. &
+                          abs(x1 - x2) < 1.0e-9_wp .or. &
+                          abs(y1 - y2) < 1.0e-9_wp)
+        is_normalized_y = (y1 >= 0.0_wp .and. y1 <= 1.0_wp .and. &
+                          y2 >= 0.0_wp .and. y2 <= 1.0_wp .and. &
+                          abs(y1 - y2) < 1.0e-9_wp .or. &
+                          abs(x1 - x2) < 1.0e-9_wp)
+
+        ! For horizontal lines (y1 == y2), x values may be normalized
+        if (abs(y1 - y2) < 1.0e-9_wp) then
+            ! Horizontal line: check if x values are normalized (0-1)
+            if (x1 >= 0.0_wp .and. x1 <= 1.0_wp .and. &
+                x2 >= 0.0_wp .and. x2 <= 1.0_wp .and. &
+                (x1 < 0.01_wp .or. x2 > 0.99_wp)) then
+                ! Convert normalized x to data coordinates
+                x1 = x_min + x1 * (x_max - x_min)
+                x2 = x_min + x2 * (x_max - x_min)
+            end if
+        end if
+
+        ! For vertical lines (x1 == x2), y values may be normalized
+        if (abs(x1 - x2) < 1.0e-9_wp) then
+            ! Vertical line: check if y values are normalized (0-1)
+            if (y1 >= 0.0_wp .and. y1 <= 1.0_wp .and. &
+                y2 >= 0.0_wp .and. y2 <= 1.0_wp .and. &
+                (y1 < 0.01_wp .or. y2 > 0.99_wp)) then
+                ! Convert normalized y to data coordinates
+                y1 = y_min + y1 * (y_max - y_min)
+                y2 = y_min + y2 * (y_max - y_min)
+            end if
+        end if
+
+        ! Apply scale transformations
+        x1_scaled = apply_scale_transform(x1, xscale, symlog_threshold)
+        x2_scaled = apply_scale_transform(x2, xscale, symlog_threshold)
+        y1_scaled = apply_scale_transform(y1, yscale, symlog_threshold)
+        y2_scaled = apply_scale_transform(y2, yscale, symlog_threshold)
+
+        ! Draw the line
+        call backend%line(x1_scaled, y1_scaled, x2_scaled, y2_scaled)
+    end subroutine render_refline_plot
 
     subroutine render_streamplot_arrows(backend, arrows)
         !! Render queued streamplot arrows after plot lines are drawn
