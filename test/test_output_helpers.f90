@@ -7,7 +7,8 @@ module test_output_helpers
     implicit none
     private
 
-    character(len=*), parameter :: base_output_dir = 'test/output/'
+    character(len=*), parameter :: preferred_output_dir = 'build/test/output/'
+    character(len=*), parameter :: fallback_output_dir = 'test/output/'
 
     public :: ensure_test_output_dir
     public :: assert_pdf_file_valid
@@ -19,32 +20,53 @@ contains
         character(len=*), intent(in) :: subdir
         character(len=:), allocatable, intent(out) :: dir
         character(len=:), allocatable :: target
-        logical :: ok
-        integer :: last
+        character(len=:), allocatable :: fallback_target
+        logical :: ok, fallback_ok
 
-        target = base_output_dir
-        if (len_trim(subdir) > 0) then
-            target = target // trim(subdir)
-        end if
-
-        last = len_trim(target)
-        if (last == 0) then
-            write(error_unit, '(A)') 'ERROR: base output directory path is empty'
-            error stop 1
-        end if
-
-        if (target(last:last) /= '/') then
-            target = target // '/'
-        end if
-
+        call build_target_path(preferred_output_dir, subdir, target)
         call create_directory_runtime(target, ok)
-        if (.not. ok) then
-            write(error_unit, '(A)') &
-                'ERROR: failed to create test output directory: ' // trim(target)
+        if (ok) then
+            dir = target
+            return
+        end if
+
+        call build_target_path(fallback_output_dir, subdir, fallback_target)
+        call create_directory_runtime(fallback_target, fallback_ok)
+        if (.not. fallback_ok) then
+            write (error_unit, '(A)') &
+                'ERROR: failed to create test output directory: '// &
+                trim(target)
+            write (error_unit, '(A)') &
+                'ERROR: failed to create fallback test output directory: '// &
+                trim(fallback_target)
             error stop 1
         end if
 
-        dir = target
+        dir = fallback_target
+    contains
+
+        subroutine build_target_path(base_dir, subdir_name, path)
+            character(len=*), intent(in) :: base_dir
+            character(len=*), intent(in) :: subdir_name
+            character(len=:), allocatable, intent(out) :: path
+            integer :: last_char
+
+            path = trim(base_dir)
+            if (len_trim(subdir_name) > 0) then
+                path = path//trim(subdir_name)
+            end if
+
+            last_char = len_trim(path)
+            if (last_char == 0) then
+                write (error_unit, '(A)') &
+                    'ERROR: computed output directory path is empty'
+                error stop 1
+            end if
+
+            if (path(last_char:last_char) /= '/') then
+                path = path//'/'
+            end if
+        end subroutine build_target_path
     end subroutine ensure_test_output_dir
 
     subroutine assert_pdf_file_valid(path)
@@ -59,7 +81,7 @@ contains
 
         inquire (file=trim(path), exist=exists, size=size_bytes)
         if (.not. exists) then
-            write (error_unit, '(A)') 'ERROR: expected PDF file missing: ' // &
+            write (error_unit, '(A)') 'ERROR: expected PDF file missing: '// &
                 trim(path)
             error stop 1
         end if
@@ -67,7 +89,7 @@ contains
         if (size_bytes < 512_int64) then
             write (error_unit, '(A,I0)') &
                 'ERROR: PDF file too small (bytes): ', size_bytes
-            write (error_unit, '(A)') 'Path: ' // trim(path)
+            write (error_unit, '(A)') 'Path: '//trim(path)
             error stop 1
         end if
 
@@ -76,7 +98,7 @@ contains
         if (io_stat /= 0) then
             write (error_unit, '(A,I0)') &
                 'ERROR: failed to open PDF file for reading, iostat: ', io_stat
-            write (error_unit, '(A)') 'Path: ' // trim(path)
+            write (error_unit, '(A)') 'Path: '//trim(path)
             error stop 1
         end if
 
@@ -85,19 +107,19 @@ contains
         if (io_read /= 0) then
             write (error_unit, '(A,I0)') &
                 'ERROR: failed to read PDF header, iostat: ', io_read
-            write (error_unit, '(A)') 'Path: ' // trim(path)
+            write (error_unit, '(A)') 'Path: '//trim(path)
             error stop 1
         end if
         if (io_stat /= 0) then
             write (error_unit, '(A,I0)') &
                 'ERROR: failed to close PDF file, iostat: ', io_stat
-            write (error_unit, '(A)') 'Path: ' // trim(path)
+            write (error_unit, '(A)') 'Path: '//trim(path)
             error stop 1
         end if
 
         if (header /= '%PDF-') then
             write (error_unit, '(A)') &
-                'ERROR: file does not look like a PDF: ' // trim(path)
+                'ERROR: file does not look like a PDF: '//trim(path)
             error stop 1
         end if
     end subroutine assert_pdf_file_valid
