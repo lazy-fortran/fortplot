@@ -5,7 +5,7 @@ title: Pcolormesh Demo
 
 Source: [pcolormesh_demo.f90](https://github.com/lazy-fortran/fortplot/blob/main/example/fortran/pcolormesh_demo/pcolormesh_demo.f90)
 
-Comprehensive pcolormesh heatmaps with colormaps, shading, and negative coordinates.
+Pcolormesh heatmaps with colormaps and shading.
 
 ## Files
 
@@ -61,6 +61,48 @@ Y coordinate
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_basic.txt)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_basic.pdf)
+
+### Pcolormesh Negative
+
+![pcolormesh_negative.png](../../media/examples/pcolormesh_demo/pcolormesh_negative.png)
+
+ASCII output:
+```
+
+                Pcolormesh with Negative Coordinates and Values
++--------------------------------------------------------------------------------+
+| 2.0                                                                            |
+| *++*****###%%%%%########+++++=======++++++#######%%%%%###*****++++++++++++++++ |
+| +++*****###%%%%%########+++++=======++++++#######%%%%%###*****++++++++++++++++ |
+| 1.5+++**###%%%%%#####+++==-------------===++#####%%%%%###***+++++============= |
+| ===+++**###%%%%%#####===-----:::::::------==#####%%%%%###***++===------------- |
+| *==+++++***%%########===--:::::::::::::---==########%%***+++++===------------- |
+| *==+++**###%%%%%#####===-----:::::::------==#####%%%%%###***++=====--------=== |
+| 1.0+++**###%%%%%#####+++=====-------======++#####%%%%%###***+++++============= |
+| ******#####%%%%%##***########+++++++########***##%%%%%######*****+++++++++++++ |
+| ########%%%%%%%%%%#############################%%%%%%%%%%##################### |
+| *%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% |
+| 0.5########%%%%%%%########*************########%%%%%%%######################## |
+| +++########%%%%%##******++++++++++++++++++*****##%%%%%########+++++========+++ |
+| *==+++#####%%%%%##***+++++=============+++++***##%%%%%######++===------------- |
+| *--===#####%%%%%##***+++==-------------===++***##%%%%%######==-----::::::::--- |
+| 0.0===#######%%%**++++++==-------------===+++++**%%%########==---::::::::::::: |
+| *--===#####%%%%%##***+++=====-------======++***##%%%%%######==-----::::::::--- |
+| ===+++#####%%%%%##***+++++=============+++++***##%%%%%######++=====--------=== |
+| *#####**###%%%%%#####*****+++++++++++++*****#####%%%%%###***#######++++++++### |
+| -0.5####%%%%%%%%%%#############################%%%%%%%%%%##################### |
+| %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% |
+| *#######%%%%%%%%#################################%%%%%%%%########************* |
+| *####*##%%%*%%%%#*#####*#####*#####*#####*#####*#%%%%*%%%##*#####************* |
+|-2.0        -1.5          -1.0         -0.5         0.0           0.5       1.0 |
++--------------------------------------------------------------------------------+
+                                       X
+Y
+```
+
+[Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_negative.txt)
+
+[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_negative.pdf)
 
 ### Pcolormesh Plasma
 
@@ -145,12 +187,4 @@ Y coordinate
 [Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.txt)
 
 [Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_sinusoidal.pdf)
-
-### Pcolormesh Negative Coordinates
-
-![pcolormesh_negative.png](../../media/examples/pcolormesh_demo/pcolormesh_negative.png)
-
-[Download ASCII](../../media/examples/pcolormesh_demo/pcolormesh_negative.txt)
-
-[Download PDF](../../media/examples/pcolormesh_demo/pcolormesh_negative.pdf)
 
