@@ -87,7 +87,7 @@ module fortplot
 
     ! Matplotlib-compatible API (all pyplot-style functions)
     use fortplot_matplotlib, only: plot, contour, contour_filled, pcolormesh, &
-                                   streamplot, &
+                                   streamplot, quiver, add_quiver, &
                                    hist, histogram, scatter, errorbar, boxplot, &
                                    bar, barh, text, annotate, &
                                    imshow, pie, polar, step, stem, &
@@ -123,7 +123,8 @@ module fortplot
     public :: COORD_DATA, COORD_FIGURE, COORD_AXIS
 
     ! Matplotlib-compatible plotting functions
-    public :: plot, contour, contour_filled, pcolormesh, streamplot
+    public :: plot, contour, contour_filled, pcolormesh, streamplot, quiver
+    public :: add_quiver
     public :: hist, histogram, scatter, errorbar, boxplot
     public :: bar, barh
     public :: imshow, pie, polar, step, stem

@@ -5,8 +5,8 @@ module fortplot_matplotlib_advanced
         plot, scatter, errorbar, boxplot, bar, barh, hist, histogram, add_plot, &
         add_errorbar, add_scatter, add_3d_plot
     use fortplot_matplotlib_field_wrappers, only: &
-        contour, contour_filled, pcolormesh, streamplot, add_contour, &
-        add_contour_filled, add_pcolormesh, add_surface
+        contour, contour_filled, pcolormesh, streamplot, quiver, add_quiver, &
+        add_contour, add_contour_filled, add_pcolormesh, add_surface
     use fortplot_matplotlib_axes, only: &
         xlabel, ylabel, title, legend, grid, xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata, use_axis, get_active_axis
@@ -27,8 +27,9 @@ module fortplot_matplotlib_advanced
     public :: imshow, pie, polar, step, stem
     public :: fill, fill_between, twinx, twiny
 
-    public :: contour, contour_filled, pcolormesh, streamplot
+    public :: contour, contour_filled, pcolormesh, streamplot, quiver
     public :: add_contour, add_contour_filled, add_pcolormesh, add_surface
+    public :: add_quiver
 
     public :: xlabel, ylabel, title, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
