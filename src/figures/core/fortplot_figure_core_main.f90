@@ -134,6 +134,9 @@ module fortplot_figure_core
         procedure :: set_yticks
         procedure :: set_xtick_labels
         procedure :: set_ytick_labels
+        procedure, private :: set_aspect_str
+        procedure, private :: set_aspect_num
+        generic :: set_aspect => set_aspect_str, set_aspect_num
         final :: destroy
     end type figure_t
 
@@ -942,5 +945,43 @@ contains
         self%state%minor_ticks_y = .true.
         self%state%rendered = .false.
     end subroutine minorticks_on
+
+    subroutine set_aspect_str(self, aspect)
+        !! Set aspect ratio using a string mode: equal or auto
+        class(figure_t), intent(inout) :: self
+        character(len=*), intent(in) :: aspect
+        character(len=:), allocatable :: aspect_lower
+
+        aspect_lower = to_lowercase(trim(aspect))
+
+        select case (aspect_lower)
+        case ('equal')
+            self%state%aspect_mode = 'equal'
+            self%state%aspect_ratio = 1.0_wp
+        case ('auto')
+            self%state%aspect_mode = 'auto'
+        case default
+            call log_warning('set_aspect: unknown mode "'//trim(aspect)// &
+                           '"; use "equal", "auto", or numeric value')
+            return
+        end select
+
+        self%state%rendered = .false.
+    end subroutine set_aspect_str
+
+    subroutine set_aspect_num(self, ratio)
+        !! Set aspect ratio using a numeric value (y-scale = ratio * x-scale)
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: ratio
+
+        if (ratio <= 0.0_wp) then
+            call log_warning('set_aspect: ratio must be positive')
+            return
+        end if
+
+        self%state%aspect_mode = 'numeric'
+        self%state%aspect_ratio = ratio
+        self%state%rendered = .false.
+    end subroutine set_aspect_num
 
 end module fortplot_figure_core

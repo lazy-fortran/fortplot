@@ -19,7 +19,7 @@ module fortplot_figure_render_engine
     use fortplot_figure_grid, only: render_grid_lines
     use fortplot_annotation_rendering, only: render_figure_annotations
     use fortplot_figure_aspect, only: contains_pie_plot, enforce_pie_axis_equal, &
-                                      only_pie_plots
+                                      only_pie_plots, enforce_aspect_ratio
     use fortplot_margins, only: calculate_plot_area, plot_area_t
     use fortplot_pdf_coordinate, only: calculate_pdf_plot_area
     use fortplot_figure_colorbar, only: prepare_colorbar_layout, &
@@ -197,6 +197,8 @@ contains
                 call enforce_pie_axis_equal(state)
             end if
             pie_only = only_pie_plots(plots, plot_count)
+        else
+            call apply_aspect_ratio_if_needed(state, has_pie_plots)
         end if
 
         have_colorbar = state%colorbar_enabled
@@ -438,5 +440,32 @@ contains
                                      plots, plot_count, 'east', state%backend_name)
         end if
     end subroutine regenerate_pie_legend_for_backend
+
+    subroutine apply_aspect_ratio_if_needed(state, has_pie_plots)
+        !! Apply aspect ratio enforcement if configured and not handled by pie logic.
+        type(figure_state_t), intent(inout) :: state
+        logical, intent(in) :: has_pie_plots
+
+        real(wp) :: plot_width_px, plot_height_px
+
+        if (has_pie_plots) return
+        if (state%aspect_mode == 'auto') return
+
+        select type (bk => state%backend)
+        class is (png_context)
+            plot_width_px = real(max(1, bk%plot_area%width), wp)
+            plot_height_px = real(max(1, bk%plot_area%height), wp)
+        class is (pdf_context)
+            plot_width_px = real(max(1, bk%plot_area%width), wp)
+            plot_height_px = real(max(1, bk%plot_area%height), wp)
+        class is (ascii_context)
+            plot_width_px = real(max(1, bk%plot_width - 3), wp)
+            plot_height_px = real(max(1, bk%plot_height - 3), wp) * ASCII_CHAR_ASPECT
+        class default
+            return
+        end select
+
+        call enforce_aspect_ratio(state, plot_width_px, plot_height_px)
+    end subroutine apply_aspect_ratio_if_needed
 
 end module fortplot_figure_render_engine
