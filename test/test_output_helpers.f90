@@ -53,6 +53,8 @@ contains
         character(len=5) :: header
         integer :: unit
         integer(int64) :: size_bytes
+        integer :: io_read
+        integer :: io_stat
         logical :: exists
 
         inquire (file=trim(path), exist=exists, size=size_bytes)
@@ -70,13 +72,32 @@ contains
         end if
 
         open (newunit=unit, file=trim(path), access='stream', &
-              form='unformatted', status='old', action='read')
-        read (unit) header
-        close (unit)
+              form='unformatted', status='old', action='read', iostat=io_stat)
+        if (io_stat /= 0) then
+            write (error_unit, '(A,I0)') &
+                'ERROR: failed to open PDF file for reading, iostat: ', io_stat
+            write (error_unit, '(A)') 'Path: ' // trim(path)
+            error stop 1
+        end if
+
+        read (unit, iostat=io_read) header
+        close (unit, iostat=io_stat)
+        if (io_read /= 0) then
+            write (error_unit, '(A,I0)') &
+                'ERROR: failed to read PDF header, iostat: ', io_read
+            write (error_unit, '(A)') 'Path: ' // trim(path)
+            error stop 1
+        end if
+        if (io_stat /= 0) then
+            write (error_unit, '(A,I0)') &
+                'ERROR: failed to close PDF file, iostat: ', io_stat
+            write (error_unit, '(A)') 'Path: ' // trim(path)
+            error stop 1
+        end if
 
         if (header /= '%PDF-') then
-            write (error_unit, '(A)') 'ERROR: file does not look like a PDF: ' // &
-                trim(path)
+            write (error_unit, '(A)') &
+                'ERROR: file does not look like a PDF: ' // trim(path)
             error stop 1
         end if
     end subroutine assert_pdf_file_valid
