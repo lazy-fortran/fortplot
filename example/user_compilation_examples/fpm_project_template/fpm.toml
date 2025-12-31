@@ -10,6 +10,5 @@ auto-executables = true
 [fortran]
 implicit-typing = false
 
-# Fortplot dependency - users should copy this to their projects
-[[dependencies]]
+[dependencies]
 fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
