@@ -392,11 +392,13 @@ contains
         call escape_unicode_for_raster(math_ready(1:math_len), escaped_text)
 
         scaled_font_size = real(TITLE_FONT_SIZE, wp) * font_scale
-        title_width = calculate_text_width_with_size(trim(escaped_text), scaled_font_size)
+        title_width = calculate_text_width_with_size(trim(escaped_text), &
+                                                     scaled_font_size)
         title_px = center_x - title_width / 2
 
-        call render_text_with_size(raster%image_data, width, height, title_px, title_y, &
-                                   trim(escaped_text), 0_1, 0_1, 0_1, scaled_font_size)
+        call render_text_with_size(raster%image_data, width, height, title_px, &
+                                   title_y, trim(escaped_text), 0_1, 0_1, 0_1, &
+                                   scaled_font_size)
     end subroutine render_title_centered_with_size
 
 end module fortplot_raster_labels
