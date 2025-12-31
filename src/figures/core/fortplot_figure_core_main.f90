@@ -17,6 +17,8 @@ module fortplot_figure_core
     use fortplot_figure_comprehensive_operations, only: figure_backend_color, &
                                                         figure_backend_associated, &
                                                         figure_backend_line
+    use fortplot_figure_reflines, only: core_axhline, core_axvline, &
+                                        core_hlines, core_vlines
     use fortplot_string_utils, only: to_lowercase
     implicit none
 
@@ -119,6 +121,10 @@ module fortplot_figure_core
         procedure :: get_y_max
         procedure :: get_dpi
         procedure :: set_dpi
+        procedure :: axhline
+        procedure :: axvline
+        procedure :: hlines
+        procedure :: vlines
         final :: destroy
     end type figure_t
 
@@ -794,5 +800,55 @@ contains
         title = figure_subplot_title(self%subplots_array, self%subplot_rows, &
                                      self%subplot_cols, row, col)
     end function subplot_title
+
+    !! REFERENCE LINES - Horizontal and vertical reference lines
+
+    subroutine axhline(self, y, xmin, xmax, color, linestyle, linewidth, label)
+        !! Draw a horizontal line spanning the axes at y position
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: y
+        real(wp), intent(in), optional :: xmin, xmax
+        character(len=*), intent(in), optional :: color, linestyle, label
+        real(wp), intent(in), optional :: linewidth
+
+        call core_axhline(self%plots, self%state, self%plot_count, y, &
+                          xmin, xmax, color, linestyle, linewidth, label)
+    end subroutine axhline
+
+    subroutine axvline(self, x, ymin, ymax, color, linestyle, linewidth, label)
+        !! Draw a vertical line spanning the axes at x position
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x
+        real(wp), intent(in), optional :: ymin, ymax
+        character(len=*), intent(in), optional :: color, linestyle, label
+        real(wp), intent(in), optional :: linewidth
+
+        call core_axvline(self%plots, self%state, self%plot_count, x, &
+                          ymin, ymax, color, linestyle, linewidth, label)
+    end subroutine axvline
+
+    subroutine hlines(self, y, xmin, xmax, colors, linestyles, linewidth, label)
+        !! Draw horizontal lines at each y position from xmin to xmax
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: y(:)
+        real(wp), intent(in) :: xmin, xmax
+        character(len=*), intent(in), optional :: colors, linestyles, label
+        real(wp), intent(in), optional :: linewidth
+
+        call core_hlines(self%plots, self%state, self%plot_count, y, &
+                         xmin, xmax, colors, linestyles, linewidth, label)
+    end subroutine hlines
+
+    subroutine vlines(self, x, ymin, ymax, colors, linestyles, linewidth, label)
+        !! Draw vertical lines at each x position from ymin to ymax
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in) :: x(:)
+        real(wp), intent(in) :: ymin, ymax
+        character(len=*), intent(in), optional :: colors, linestyles, label
+        real(wp), intent(in), optional :: linewidth
+
+        call core_vlines(self%plots, self%state, self%plot_count, x, &
+                         ymin, ymax, colors, linestyles, linewidth, label)
+    end subroutine vlines
 
 end module fortplot_figure_core
