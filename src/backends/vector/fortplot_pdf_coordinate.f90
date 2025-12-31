@@ -2,7 +2,7 @@ module fortplot_pdf_coordinate
     !! PDF coordinate transformation and polymorphic method support
     !! Handles coordinate normalization and backend-specific method implementations
 
-    use iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_pdf_core, only: pdf_context_core
     use fortplot_pdf_text, only: draw_mixed_font_text, draw_rotated_mixed_font_text, &
                                  draw_pdf_mathtext
@@ -83,17 +83,23 @@ contains
     end subroutine normalize_to_pdf_coords
 
     real(wp) function pdf_get_width_scale(ctx) result(scale)
-        !! Get width scale - now returns 1.0 since page size matches figure size
+        !! Get width scale in drawing units per data unit.
         type(pdf_context_handle), intent(in) :: ctx
-        associate (dummy_ctxw => ctx%plot_area%width); end associate
-        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
+        real(wp) :: x_range
+
+        x_range = ctx%x_max - ctx%x_min
+        if (abs(x_range) < 1.0e-12_wp) x_range = 1.0_wp
+        scale = real(ctx%plot_area%width, wp)/x_range
     end function pdf_get_width_scale
 
     real(wp) function pdf_get_height_scale(ctx) result(scale)
-        !! Get height scale - now returns 1.0 since page size matches figure size
+        !! Get height scale in drawing units per data unit.
         type(pdf_context_handle), intent(in) :: ctx
-        associate (dummy_h => ctx%plot_area%height); end associate
-        scale = 1.0_wp  ! No scaling needed - PDF page size matches figure size
+        real(wp) :: y_range
+
+        y_range = ctx%y_max - ctx%y_min
+        if (abs(y_range) < 1.0e-12_wp) y_range = 1.0_wp
+        scale = real(ctx%plot_area%height, wp)/y_range
     end function pdf_get_height_scale
 
     ! Removed unused pdf_fill_quad/pdf_fill_heatmap helpers (deprecated, not referenced)
@@ -102,11 +108,7 @@ contains
         type(pdf_context_handle), intent(in) :: ctx
         integer, intent(in) :: width, height
         real(wp), intent(out) :: rgb_data(width, height, 3)
-        associate (dummy_ctxw => ctx%plot_area%width, dummy_w => width, &
-                   dummy_h => height)
-        end associate
-
-        ! PDF doesn't have RGB pixel data - return white
+        ! PDF does not have RGB pixel data, return white.
         rgb_data = 1.0_wp
     end subroutine pdf_extract_rgb_data
 
@@ -115,11 +117,7 @@ contains
         integer, intent(in) :: width, height
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        associate (dummy_ctxw => ctx%plot_area%width, dummy_w => width, &
-                   dummy_h => height)
-        end associate
-
-        ! PDF doesn't generate PNG data
+        ! PDF does not generate PNG data.
         allocate (png_data(0))
         status = -1
     end subroutine pdf_get_png_data
@@ -127,7 +125,6 @@ contains
     subroutine pdf_prepare_3d_data(ctx, plots)
         type(pdf_context_handle), intent(inout) :: ctx
         type(plot_data_t), intent(in) :: plots(:)
-        associate (dummy_w => ctx%plot_area%width, dummy_n => size(plots)); end associate
     end subroutine pdf_prepare_3d_data
 
     subroutine pdf_render_ylabel(ctx, ylabel)

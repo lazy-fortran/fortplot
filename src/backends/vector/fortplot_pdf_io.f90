@@ -2,9 +2,8 @@ module fortplot_pdf_io
     !! PDF file I/O operations
     !! Handles PDF document structure, writing, and file management
 
-    use iso_fortran_env, only: wp => real64
+    use, intrinsic :: iso_fortran_env, only: wp => real64, int8, int64
     use fortplot_pdf_core, only: pdf_context_core
-    use, intrinsic :: iso_fortran_env, only: int8, int64
     use fortplot_zlib_core, only: zlib_compress_into
     use fortplot_logging, only: log_error
     implicit none
@@ -12,7 +11,6 @@ module fortplot_pdf_io
 
     ! Public procedures
     public :: write_pdf_file
-    public :: create_pdf_document
     public :: write_string_to_unit
     public :: write_binary_to_unit
 
@@ -51,7 +49,7 @@ contains
         end if
 
         ! Write PDF document
-        call create_pdf_document(unit, filename, this)
+        call create_pdf_document(unit, this)
 
         ! Close file
         close (unit)
@@ -59,14 +57,11 @@ contains
         if (present(success)) success = .true.
     end subroutine write_pdf_file
 
-    subroutine create_pdf_document(unit, filename, ctx)
+    subroutine create_pdf_document(unit, ctx)
         !! Create complete PDF document structure
         integer, intent(in) :: unit
-        character(len=*), intent(in) :: filename  ! Placeholder for future use
         type(pdf_context_core), intent(inout) :: ctx
         character(len=5) :: bin_line
-        ! Reference unused argument to keep interface stable
-        associate (unused_fn_len => len_trim(filename)); end associate
 
         ! Write PDF header
         call write_pdf_line(unit, '%PDF-1.4')
@@ -105,7 +100,7 @@ contains
         call write_catalog_object(unit, positions(PDF_CATALOG_OBJ))
 
         ! Write pages object
-        call write_pages_object(unit, ctx, positions(PDF_PAGES_OBJ))
+        call write_pages_object(unit, positions(PDF_PAGES_OBJ))
 
         ! Write page object
         call write_page_object(unit, ctx, positions(PDF_PAGE_OBJ))
@@ -137,7 +132,7 @@ contains
 
         ! Write xref header
         call write_pdf_line(unit, 'xref')
-        write (line, '(A, I0, 1X, I0)') '0 ', num_objects + 1
+        write (line, '(I0, 1X, I0)') 0, num_objects + 1
         call write_pdf_line(unit, trim(line))
 
         ! Write xref entries
@@ -178,14 +173,11 @@ contains
         call write_pdf_line(unit, 'endobj')
     end subroutine write_catalog_object
 
-    subroutine write_pages_object(unit, ctx, pos)
+    subroutine write_pages_object(unit, pos)
         !! Write PDF pages object
         integer, intent(in) :: unit
-        type(pdf_context_core), intent(in) :: ctx
         integer(int64), intent(out) :: pos
         character(len=64) :: line
-        ! Reference ctx to keep interface stable
-        associate (unused_w => ctx%width); end associate
 
         pos = stream_pos0(unit)
         write (line, '(I0, A)') PDF_PAGES_OBJ, ' 0 obj'
@@ -369,7 +361,7 @@ contains
     end function stream_pos0
 
     subroutine write_pdf_line(unit, line)
-        !! Write a single PDF line terminated by LF.
+        !! Write a single PDF line terminated by CRLF.
         integer, intent(in) :: unit
         character(len=*), intent(in) :: line
         character(len=2), parameter :: crlf = achar(13)//achar(10)
@@ -384,16 +376,18 @@ contains
         character(len=*), intent(in) :: str
         integer :: i, chunk_size
         integer :: str_len
+        character(len=16) :: file_form
 
         str_len = len_trim(str)
         chunk_size = 1000  ! Write in chunks to avoid line length issues
+        inquire (unit=unit, form=file_form)
 
         ! Write string in chunks
         do i = 1, str_len, chunk_size
             if (i + chunk_size - 1 <= str_len) then
-                write (unit) str(i:i + chunk_size - 1)
+                call write_unit_chunk(unit, file_form, str(i:i + chunk_size - 1))
             else
-                write (unit) str(i:str_len)
+                call write_unit_chunk(unit, file_form, str(i:str_len))
             end if
         end do
     end subroutine write_string_to_unit
@@ -404,14 +398,28 @@ contains
         character(len=*), intent(in) :: str
         integer, intent(in) :: nbytes
         integer :: i, chunk_size, last
+        character(len=16) :: file_form
         chunk_size = 1000
         if (nbytes <= 0) return
+        inquire (unit=unit, form=file_form)
         i = 1
         do while (i <= nbytes)
             last = min(nbytes, i + chunk_size - 1)
-            write (unit) str(i:last)
+            call write_unit_chunk(unit, file_form, str(i:last))
             i = last + 1
         end do
     end subroutine write_binary_to_unit
+
+    subroutine write_unit_chunk(unit, file_form, chunk)
+        integer, intent(in) :: unit
+        character(len=*), intent(in) :: file_form
+        character(len=*), intent(in) :: chunk
+
+        if (trim(file_form) == 'FORMATTED') then
+            write (unit, '(A)', advance='no') chunk
+        else
+            write (unit) chunk
+        end if
+    end subroutine write_unit_chunk
 
 end module fortplot_pdf_io

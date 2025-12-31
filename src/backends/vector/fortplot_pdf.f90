@@ -310,7 +310,7 @@ contains
             '[] 0 d'//new_line('a')//trim(this%core_ctx%stream_data)
 
         ! Balance top-level PDF graphics state saves. Both the PDF core stream and
-        ! the vector stream writer introduce a top-level 'q' save operator; close
+        ! the vector stream writer introduce a top-level q save operator; close
         ! them here so consumers like Ghostscript do not need to repair the file.
         this%core_ctx%stream_data = trim(this%core_ctx%stream_data)// &
                                     new_line('a')//'Q'//new_line('a')//'Q'
@@ -447,7 +447,7 @@ contains
             write (cmd, '(F0.3,1X,F0.3)') maxx + eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') minx - eps, maxy + eps; call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')
         else
             write (cmd, '(F0.3,1X,F0.3)') px(1), py(1); call this%stream_writer%add_to_stream(trim(cmd)//' m')
@@ -455,7 +455,7 @@ contains
             write (cmd, '(F0.3,1X,F0.3)') px(3), py(3); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             write (cmd, '(F0.3,1X,F0.3)') px(4), py(4); call this%stream_writer%add_to_stream(trim(cmd)//' l')
             call this%stream_writer%add_to_stream('h')
-            ! Use 'B' (fill and stroke) instead of 'f*' to eliminate anti-aliasing gaps
+            ! Use B (fill and stroke) instead of f-star to eliminate anti-aliasing gaps
             call this%stream_writer%add_to_stream('B')
         end if
     end subroutine fill_quad_wrapper
