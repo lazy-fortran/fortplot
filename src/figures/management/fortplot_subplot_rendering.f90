@@ -132,7 +132,55 @@ contains
                                                     has_twiny=.false.)
             end do
         end do
+
+        call render_suptitle(state)
     end subroutine render_subplots
+
+    subroutine render_suptitle(state)
+        !! Render the figure-level suptitle above all subplots
+        use fortplot_raster_labels, only: render_title_centered_with_size
+        use fortplot_pdf_text, only: estimate_pdf_text_width
+        use fortplot_pdf_core, only: PDF_TITLE_SIZE
+        type(figure_state_t), intent(inout) :: state
+
+        real(wp) :: suptitle_y_frac, center_x
+        integer :: suptitle_y_px
+        real(wp) :: font_scale
+
+        if (.not. allocated(state%suptitle)) return
+        if (len_trim(state%suptitle) == 0) return
+
+        font_scale = state%suptitle_fontsize / 12.0_wp
+
+        select type (bk => state%backend)
+        class is (png_context)
+            suptitle_y_frac = 0.96_wp
+            suptitle_y_px = int(real(bk%height, wp) * suptitle_y_frac)
+            center_x = real(bk%width, wp) / 2.0_wp
+            call render_title_centered_with_size(bk%raster, bk%width, bk%height, &
+                                                 int(center_x), suptitle_y_px, &
+                                                 trim(state%suptitle), font_scale)
+        class is (pdf_context)
+            block
+                real(wp) :: title_width, x_center, y_pos
+                real(wp) :: scaled_font_size
+                real(wp) :: black_color(3)
+
+                scaled_font_size = PDF_TITLE_SIZE * font_scale
+                title_width = estimate_pdf_text_width(trim(state%suptitle), &
+                                                      scaled_font_size)
+                x_center = real(bk%width, wp) / 2.0_wp
+                y_pos = real(bk%height, wp) * 0.96_wp
+                black_color = [0.0_wp, 0.0_wp, 0.0_wp]
+                call bk%draw_text_styled(x_center, y_pos, trim(state%suptitle), &
+                                         scaled_font_size, 0.0_wp, 'center', 'bottom', &
+                                         .false., black_color)
+            end block
+        class is (ascii_context)
+            call bk%set_title(trim(state%suptitle))
+        class default
+        end select
+    end subroutine render_suptitle
 
     subroutine set_subplot_margins(backend, left_f, right_f, bottom_f, top_f)
         class(*), intent(inout) :: backend
