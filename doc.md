@@ -1,4 +1,3 @@
-# fortplot
 
 
 Fortran plotting. No dependencies. PNG/PDF/ASCII output.
