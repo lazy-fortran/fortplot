@@ -90,7 +90,7 @@ module fortplot_plot_data
         ! Pcolormesh data
         type(pcolormesh_t) :: pcolormesh_data
         ! Bar chart data
-        real(wp), allocatable :: bar_x(:), bar_heights(:)
+        real(wp), allocatable :: bar_x(:), bar_heights(:), bar_bottom(:)
         real(wp) :: bar_width = 0.8_wp
         logical :: bar_horizontal = .false.
         ! Histogram data

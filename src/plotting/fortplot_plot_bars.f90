@@ -19,61 +19,80 @@ module fortplot_plot_bars
     
 contains
     
-    subroutine bar_impl(self, x, heights, width, label, color)
+    subroutine bar_impl(self, x, heights, width, bottom, label, color)
         !! Add vertical bar plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), heights(:)
         real(wp), intent(in), optional :: width
+        real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
-        call add_bar_plot_data(self, x, heights, width, label, color, horizontal=.false.)
+
+        call add_bar_plot_data(self, x, heights, width, bottom, label, color, horizontal=.false.)
     end subroutine bar_impl
     
-    subroutine barh_impl(self, y, widths, height, label, color)
+    subroutine barh_impl(self, y, widths, height, left, label, color)
         !! Add horizontal bar plot
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: y(:), widths(:)
         real(wp), intent(in), optional :: height
+        real(wp), intent(in), optional :: left(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
-        
-        call add_bar_plot_data(self, y, widths, height, label, color, horizontal=.true.)
+
+        call add_bar_plot_data(self, y, widths, height, left, label, color, horizontal=.true.)
     end subroutine barh_impl
     
     ! Private helper subroutines
     
-    subroutine add_bar_plot_data(self, positions, values, bar_size, label, color, horizontal)
+    subroutine add_bar_plot_data(self, positions, values, bar_size, bottom, label, color, &
+                                   horizontal)
         !! Add bar plot data (handles both vertical and horizontal)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: positions(:), values(:)
         real(wp), intent(in), optional :: bar_size
+        real(wp), intent(in), optional :: bottom(:)
         character(len=*), intent(in), optional :: label
         real(wp), intent(in), optional :: color(3)
         logical, intent(in) :: horizontal
-        
-        integer :: plot_idx, color_idx, i
+
+        integer :: plot_idx, color_idx, i, n
         real(wp), parameter :: DEFAULT_BAR_WIDTH = 0.8_wp
         real(wp), parameter :: HUGE_SPACING = huge(1.0_wp)
         real(wp) :: min_spacing
-        
+
         self%plot_count = self%plot_count + 1
         plot_idx = self%plot_count
-        
+
         ! Ensure plots array is allocated
         if (.not. allocated(self%plots)) then
             allocate(self%plots(self%state%max_plots))
         else if (plot_idx > size(self%plots)) then
             return
         end if
-        
+
         self%plots(plot_idx)%plot_type = PLOT_TYPE_BAR
-        
-        allocate(self%plots(plot_idx)%bar_x(size(positions)))
+        n = size(positions)
+
+        allocate(self%plots(plot_idx)%bar_x(n))
         allocate(self%plots(plot_idx)%bar_heights(size(values)))
-        
+        allocate(self%plots(plot_idx)%bar_bottom(n))
+
         self%plots(plot_idx)%bar_x = positions
         self%plots(plot_idx)%bar_heights = values
+
+        ! Set bottom offset (for vertical bars) or left offset (for horizontal bars)
+        if (present(bottom)) then
+            if (size(bottom) == n) then
+                self%plots(plot_idx)%bar_bottom = bottom
+            else if (size(bottom) == 1) then
+                self%plots(plot_idx)%bar_bottom = bottom(1)
+            else
+                self%plots(plot_idx)%bar_bottom = 0.0_wp
+            end if
+        else
+            self%plots(plot_idx)%bar_bottom = 0.0_wp
+        end if
         
         if (present(bar_size)) then
             self%plots(plot_idx)%bar_width = abs(bar_size)

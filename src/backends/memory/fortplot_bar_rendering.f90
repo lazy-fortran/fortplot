@@ -28,6 +28,7 @@ contains
         real(wp) :: x_data(4), y_data(4)
         real(wp) :: x_screen(4), y_screen(4)
         real(wp) :: effective_width
+        real(wp) :: base_val, top_val
 
         if (.not. allocated(plot_data%bar_x)) return
         if (.not. allocated(plot_data%bar_heights)) return
@@ -42,24 +43,28 @@ contains
         call backend%color(plot_data%color(1), plot_data%color(2), plot_data%color(3))
 
         do i = 1, n
+            ! Get base offset (bottom for vertical, left for horizontal)
+            if (allocated(plot_data%bar_bottom) .and. i <= size(plot_data%bar_bottom)) then
+                base_val = plot_data%bar_bottom(i)
+            else
+                base_val = 0.0_wp
+            end if
+            top_val = base_val + plot_data%bar_heights(i)
+
             if (plot_data%bar_horizontal) then
-                x_data = [min(0.0_wp, plot_data%bar_heights(i)), &
-                          max(0.0_wp, plot_data%bar_heights(i)), &
-                          max(0.0_wp, plot_data%bar_heights(i)), &
-                          min(0.0_wp, plot_data%bar_heights(i))]
+                ! Horizontal bars: base_val is left edge, top_val is right edge
+                x_data = [base_val, top_val, top_val, base_val]
                 y_data = [plot_data%bar_x(i) - half_width, &
                           plot_data%bar_x(i) - half_width, &
                           plot_data%bar_x(i) + half_width, &
                           plot_data%bar_x(i) + half_width]
             else
+                ! Vertical bars: base_val is bottom, top_val is top
                 x_data = [plot_data%bar_x(i) - half_width, &
                           plot_data%bar_x(i) + half_width, &
                           plot_data%bar_x(i) + half_width, &
                           plot_data%bar_x(i) - half_width]
-                y_data = [min(0.0_wp, plot_data%bar_heights(i)), &
-                          min(0.0_wp, plot_data%bar_heights(i)), &
-                          max(0.0_wp, plot_data%bar_heights(i)), &
-                          max(0.0_wp, plot_data%bar_heights(i))]
+                y_data = [base_val, base_val, top_val, top_val]
             end if
 
             do j = 1, 4
