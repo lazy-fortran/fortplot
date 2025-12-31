@@ -267,6 +267,7 @@ contains
         state%has_error = .false.
 
         state%legend_data%num_entries = 0
+        if (allocated(state%legend_data%entries)) deallocate (state%legend_data%entries)
         allocate (new_entries(0))
         call move_alloc(new_entries, state%legend_data%entries)
 
