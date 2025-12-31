@@ -1,3 +1,3 @@
 title: Contour Demo
 
-Contour line plots from gridded data.
+Comprehensive contour plotting examples: line contours, filled contours, custom levels, colormaps.

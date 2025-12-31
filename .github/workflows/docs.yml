@@ -99,7 +99,7 @@ jobs:
           
           # Verify all example pages were generated
           echo "Checking generated example pages..."
-          expected_pages="animation annotation_demo ascii_heatmap basic_plots colored_contours contour_demo format_string_demo legend_demo line_styles marker_demo pcolormesh_demo scale_examples show_viewer_demo smart_show_demo streamplot_demo unicode_demo"
+          expected_pages="animation annotation_demo ascii_heatmap basic_plots contour_demo format_string_demo legend_demo line_styles marker_demo pcolormesh_demo scale_examples show_viewer_demo smart_show_demo streamplot_demo unicode_demo"
           expected_count=$(echo $expected_pages | wc -w)
           echo "Expecting $expected_count example pages"
           

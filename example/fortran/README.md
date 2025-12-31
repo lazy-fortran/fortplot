@@ -31,8 +31,7 @@ make example ARGS="example_name"
 
 ### Advanced Plotting
 - [3d_plotting](./3d_plotting/) - 3D surface and line plots
-- [contour_demo](./contour_demo/) - Contour plots with levels
-- [colored_contours](./colored_contours/) - Filled contours with colormaps
+- [contour_demo](./contour_demo/) - Line contours, filled contours, and colormaps
 - [pcolormesh_demo](./pcolormesh_demo/) - Pseudocolor mesh plots
 - [streamplot_demo](./streamplot_demo/) - Vector field visualization
 
