@@ -6,10 +6,20 @@ Fortran plotting. No dependencies. PNG/PDF/ASCII output.
 
 ## Install
 
+**fpm:**
 ```toml
-# fpm.toml
 [dependencies]
 fortplot = { git = "https://github.com/lazy-fortran/fortplot" }
+```
+
+**CMake:** ([full template](example/user_compilation_examples/cmake_project_template/))
+```cmake
+include(FetchContent)
+FetchContent_Declare(fortplot
+    GIT_REPOSITORY https://github.com/lazy-fortran/fortplot
+    GIT_TAG main)
+FetchContent_MakeAvailable(fortplot)
+target_link_libraries(your_target PRIVATE fortplot::fortplot)
 ```
 
 ## Usage
@@ -21,6 +31,14 @@ call figure()
 call plot(x, sin(x), label="sin(x)")
 call title("Plot")
 call savefig("plot.png")
+```
+
+**Object-oriented API** (for multiple independent figures):
+```fortran
+type(figure_t) :: fig
+call fig%initialize(800, 600)
+call fig%add_plot(x, y, label="data")
+call fig%savefig("plot.png")
 ```
 
 ## Plot Types
@@ -59,6 +77,16 @@ call savefig("plot.pdf")   ! vector
 call savefig("plot.txt")   ! ASCII
 call show()                ! viewer
 ```
+
+## Animation
+
+```fortran
+use fortplot_animation
+
+anim = FuncAnimation(update_frame, frames=100, interval=50, fig=fig)
+call anim%save("movie.mp4", fps=24, status=status)
+```
+Requires ffmpeg: `apt install ffmpeg` / `brew install ffmpeg` / `choco install ffmpeg`
 
 ## Build
 
