@@ -127,16 +127,18 @@ contains
     end subroutine resolve_colorbar_mappable
 
     subroutine render_colorbar(backend, plot_area, vmin, vmax, colormap, &
-                               location, label)
+                               location, label, custom_ticks, custom_ticklabels)
         class(plot_context), intent(inout) :: backend
         type(plot_area_t), intent(in) :: plot_area
         real(wp), intent(in) :: vmin, vmax
         character(len=*), intent(in) :: colormap
         character(len=*), intent(in) :: location
         character(len=*), intent(in), optional :: label
+        real(wp), intent(in), optional :: custom_ticks(:)
+        character(len=*), intent(in), optional :: custom_ticklabels(:)
 
         type(plot_area_t) :: saved_area
-        logical :: supported
+        logical :: supported, use_custom_ticks, use_custom_labels
         real(wp) :: x_min_saved, x_max_saved, y_min_saved, y_max_saved
         character(len=32) :: loc
         logical :: vertical
@@ -145,15 +147,20 @@ contains
         real(wp) :: x0, x1, y0, y1
         real(wp) :: quad_x(4), quad_y(4)
         real(wp) :: tick_locations(20), nice_min, nice_max, nice_step
-        integer :: n_ticks
+        integer :: n_ticks, n_custom_ticks
         real(wp) :: tick, tick_len
-        character(len=20) :: tick_label
+        character(len=50) :: tick_label
         real(wp) :: mid_val
         real(wp) :: range_val
 
         supported = .false.
         call get_backend_plot_area(backend, saved_area, supported)
         if (.not. supported) return
+
+        use_custom_ticks = present(custom_ticks)
+        if (use_custom_ticks) use_custom_ticks = size(custom_ticks) > 0
+        use_custom_labels = present(custom_ticklabels)
+        if (use_custom_labels) use_custom_labels = size(custom_ticklabels) > 0
 
         call backend%save_coordinates(x_min_saved, x_max_saved, y_min_saved, &
                                       y_max_saved)
@@ -215,20 +222,41 @@ contains
             call backend%line(vmax, 0.0_wp, vmax, 1.0_wp)
         end if
 
-        call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, nice_step, &
-                                      tick_locations, n_ticks)
         tick_len = 0.08_wp
-        do i = 1, n_ticks
-            tick = tick_locations(i)
-            tick_label = format_tick_value_smart(tick, 10)
-            if (vertical) then
-                call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
-                call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
-            else
-                call backend%line(tick, 0.0_wp, tick, -tick_len)
-                call backend%text(tick, -0.18_wp, trim(tick_label))
-            end if
-        end do
+
+        if (use_custom_ticks) then
+            n_custom_ticks = size(custom_ticks)
+            do i = 1, n_custom_ticks
+                tick = custom_ticks(i)
+                if (tick < vmin .or. tick > vmax) cycle
+                if (use_custom_labels .and. i <= size(custom_ticklabels)) then
+                    tick_label = trim(custom_ticklabels(i))
+                else
+                    tick_label = format_tick_value_smart(tick, 10)
+                end if
+                if (vertical) then
+                    call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
+                    call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
+                else
+                    call backend%line(tick, 0.0_wp, tick, -tick_len)
+                    call backend%text(tick, -0.18_wp, trim(tick_label))
+                end if
+            end do
+        else
+            call find_nice_tick_locations(vmin, vmax, 5, nice_min, nice_max, &
+                                          nice_step, tick_locations, n_ticks)
+            do i = 1, n_ticks
+                tick = tick_locations(i)
+                tick_label = format_tick_value_smart(tick, 10)
+                if (vertical) then
+                    call backend%line(1.0_wp, tick, 1.0_wp + tick_len, tick)
+                    call backend%text(1.0_wp + 0.12_wp, tick, trim(tick_label))
+                else
+                    call backend%line(tick, 0.0_wp, tick, -tick_len)
+                    call backend%text(tick, -0.18_wp, trim(tick_label))
+                end if
+            end do
+        end if
 
         if (present(label)) then
             if (len_trim(label) > 0) then
