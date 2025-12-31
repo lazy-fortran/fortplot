@@ -137,6 +137,7 @@ module fortplot_figure_core
         procedure, private :: set_aspect_str
         procedure, private :: set_aspect_num
         generic :: set_aspect => set_aspect_str, set_aspect_num
+        procedure :: tight_layout
         final :: destroy
     end type figure_t
 
@@ -967,7 +968,7 @@ contains
             self%state%aspect_mode = 'auto'
         case default
             call log_warning('set_aspect: unknown mode "'//trim(aspect)// &
-                           '"; use "equal", "auto", or numeric value')
+                             '"; use "equal", "auto", or numeric value')
             return
         end select
 
@@ -988,5 +989,52 @@ contains
         self%state%aspect_ratio = ratio
         self%state%rendered = .false.
     end subroutine set_aspect_num
+
+    subroutine tight_layout(self, pad, w_pad, h_pad)
+        !! Automatically adjust subplot parameters to give specified padding
+        !!
+        !! This method enables tight layout mode which optimizes the figure
+        !! layout to minimize overlap between subplots, titles, and axis labels.
+        !! The actual margin computation happens during rendering.
+        !!
+        !! @param pad Padding between the figure edge and subplot borders,
+        !!            as a multiple of font size. Default is 1.08.
+        !! @param w_pad Horizontal spacing between subplots (in fraction).
+        !!              If zero, uses default spacing. Default is 0.0.
+        !! @param h_pad Vertical spacing between subplots (in fraction).
+        !!              If zero, uses default spacing. Default is 0.0.
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in), optional :: pad
+        real(wp), intent(in), optional :: w_pad
+        real(wp), intent(in), optional :: h_pad
+
+        self%state%tight_layout_enabled = .true.
+
+        if (present(pad)) then
+            if (pad > 0.0_wp) then
+                self%state%tight_pad = pad
+            else
+                call log_warning('tight_layout: pad must be positive')
+            end if
+        end if
+
+        if (present(w_pad)) then
+            if (w_pad >= 0.0_wp) then
+                self%state%tight_w_pad = w_pad
+            else
+                call log_warning('tight_layout: w_pad must be non-negative')
+            end if
+        end if
+
+        if (present(h_pad)) then
+            if (h_pad >= 0.0_wp) then
+                self%state%tight_h_pad = h_pad
+            else
+                call log_warning('tight_layout: h_pad must be non-negative')
+            end if
+        end if
+
+        self%state%rendered = .false.
+    end subroutine tight_layout
 
 end module fortplot_figure_core
