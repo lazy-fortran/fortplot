@@ -40,6 +40,9 @@ contains
         call savefig_with_status('output/example/fortran/fill_between_demo/' // &
                                  'stateful_fill_between.txt', status)
         if (status /= SUCCESS) ok = .false.
+        call savefig_with_status('output/example/fortran/fill_between_demo/' // &
+                                 'stateful_fill_between.pdf', status)
+        if (status /= SUCCESS) ok = .false.
         if (.not. ok) then
             print *, 'WARNING: Failed to write stateful fill_between outputs'
         end if
@@ -69,6 +72,9 @@ contains
         if (status /= SUCCESS) ok = .false.
         call fig%savefig_with_status('output/example/fortran/fill_between_demo/' // &
                                      'oo_fill_between.txt', status)
+        if (status /= SUCCESS) ok = .false.
+        call fig%savefig_with_status('output/example/fortran/fill_between_demo/' // &
+                                     'oo_fill_between.pdf', status)
         if (status /= SUCCESS) ok = .false.
         if (.not. ok) then
             print *, 'WARNING: Failed to write OO fill_between outputs'
