@@ -2,7 +2,7 @@ module test_output_helpers
     !! Utilities for directing test artifact output into structured directories
 
     use fortplot_system_runtime, only: create_directory_runtime
-    use, intrinsic :: iso_fortran_env, only: error_unit
+    use, intrinsic :: iso_fortran_env, only: error_unit, int64
 
     implicit none
     private
@@ -10,6 +10,7 @@ module test_output_helpers
     character(len=*), parameter :: base_output_dir = 'test/output/'
 
     public :: ensure_test_output_dir
+    public :: assert_pdf_file_valid
 
 contains
 
@@ -45,5 +46,39 @@ contains
 
         dir = target
     end subroutine ensure_test_output_dir
+
+    subroutine assert_pdf_file_valid(path)
+        character(len=*), intent(in) :: path
+
+        character(len=5) :: header
+        integer :: unit
+        integer(int64) :: size_bytes
+        logical :: exists
+
+        inquire (file=trim(path), exist=exists, size=size_bytes)
+        if (.not. exists) then
+            write (error_unit, '(A)') 'ERROR: expected PDF file missing: ' // &
+                trim(path)
+            error stop 1
+        end if
+
+        if (size_bytes < 512_int64) then
+            write (error_unit, '(A,I0)') &
+                'ERROR: PDF file too small (bytes): ', size_bytes
+            write (error_unit, '(A)') 'Path: ' // trim(path)
+            error stop 1
+        end if
+
+        open (newunit=unit, file=trim(path), access='stream', &
+              form='unformatted', status='old', action='read')
+        read (unit) header
+        close (unit)
+
+        if (header /= '%PDF-') then
+            write (error_unit, '(A)') 'ERROR: file does not look like a PDF: ' // &
+                trim(path)
+            error stop 1
+        end if
+    end subroutine assert_pdf_file_valid
 
 end module test_output_helpers
