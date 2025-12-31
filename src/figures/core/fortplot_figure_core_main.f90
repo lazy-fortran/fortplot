@@ -130,8 +130,36 @@ module fortplot_figure_core
         procedure :: set_minor_ticks
         procedure :: set_minor_tick_count
         procedure :: minorticks_on
+        procedure :: set_xticks
+        procedure :: set_yticks
+        procedure :: set_xtick_labels
+        procedure :: set_ytick_labels
         final :: destroy
     end type figure_t
+
+    interface
+        module subroutine set_xticks(self, positions, labels)
+            class(figure_t), intent(inout) :: self
+            real(wp), intent(in) :: positions(:)
+            character(len=*), intent(in), optional :: labels(:)
+        end subroutine set_xticks
+
+        module subroutine set_yticks(self, positions, labels)
+            class(figure_t), intent(inout) :: self
+            real(wp), intent(in) :: positions(:)
+            character(len=*), intent(in), optional :: labels(:)
+        end subroutine set_yticks
+
+        module subroutine set_xtick_labels(self, labels)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: labels(:)
+        end subroutine set_xtick_labels
+
+        module subroutine set_ytick_labels(self, labels)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: labels(:)
+        end subroutine set_ytick_labels
+    end interface
 
     interface
         module subroutine add_imshow(self, z, xlim, ylim, cmap, alpha, vmin, vmax, &
