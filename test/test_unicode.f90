@@ -3,11 +3,12 @@ program test_unicode
     !! Consolidates: test_unicode_corruption_853, test_unicode_detection,
     !! test_unicode_issue_1138, test_unicode_superscript
     use fortplot_unicode, only: unicode_codepoint_to_ascii, is_unicode_char, &
-        check_utf8_sequence, utf8_char_length, utf8_to_codepoint, &
-        is_greek_letter_codepoint, contains_unicode
+                                check_utf8_sequence, utf8_char_length, &
+                                    utf8_to_codepoint, &
+                                is_greek_letter_codepoint, contains_unicode
     use fortplot_latex_parser, only: process_latex_in_text
     use fortplot, only: figure, plot, title, xlabel, ylabel, savefig, &
-        add_plot, legend
+                        add_plot, legend
     use test_output_helpers, only: ensure_test_output_dir
     use, intrinsic :: iso_fortran_env, only: dp => real64
     implicit none
@@ -155,7 +156,7 @@ contains
             return
         end if
 
-        is_uni = is_unicode_char(achar(206) // achar(177))
+        is_uni = is_unicode_char(achar(206)//achar(177))
         if (.not. is_uni) then
             print *, 'FAIL: test_is_unicode_char - alpha not detected'
             return
@@ -180,14 +181,14 @@ contains
             return
         end if
 
-        test_str = achar(206) // achar(177)
+        test_str = achar(206)//achar(177)
         call check_utf8_sequence(test_str, 1, is_valid, seq_len)
         if (.not. is_valid .or. seq_len /= 2) then
             print *, 'FAIL: test_utf8_sequence_detection - Greek alpha'
             return
         end if
 
-        test_str = achar(206) // 'A'
+        test_str = achar(206)//'A'
         call check_utf8_sequence(test_str, 1, is_valid, seq_len)
         if (is_valid) then
             print *, 'FAIL: test_utf8_sequence_detection - invalid sequence'
@@ -246,14 +247,14 @@ contains
             return
         end if
 
-        utf8_char = achar(206) // achar(177)
+        utf8_char = achar(206)//achar(177)
         codepoint = utf8_to_codepoint(utf8_char, 1)
         if (codepoint /= 945) then
             print *, 'FAIL: test_codepoint_extraction - Greek alpha'
             return
         end if
 
-        utf8_char = achar(206) // achar(169)
+        utf8_char = achar(206)//achar(169)
         codepoint = utf8_to_codepoint(utf8_char, 1)
         if (codepoint /= 937) then
             print *, 'FAIL: test_codepoint_extraction - Greek Omega'
@@ -341,7 +342,8 @@ contains
 
     subroutine test_ascii_backend_handling()
         !! Test the actual ASCII backend handling of Unicode text
-        character(len=256) :: test_filename
+        character(len=:), allocatable :: output_dir
+        character(len=:), allocatable :: test_filename
         real(dp), parameter :: x_data(3) = [1.0_dp, 2.0_dp, 3.0_dp]
         real(dp), parameter :: y_data(3) = [1.0_dp, 4.0_dp, 9.0_dp]
         integer :: unit, ios
@@ -350,7 +352,8 @@ contains
 
         total_tests = total_tests + 1
 
-        test_filename = 'test/output/test_unicode_853_bug.txt'
+        call ensure_test_output_dir('unicode_ascii_backend', output_dir)
+        test_filename = output_dir//'test_unicode_853_bug.txt'
 
         call figure(figsize=[8.0_dp, 6.0_dp])
         call title('Test: a b c d Greek Letters')
