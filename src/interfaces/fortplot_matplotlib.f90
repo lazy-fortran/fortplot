@@ -19,6 +19,7 @@ module fortplot_matplotlib
         xlabel, ylabel, title, suptitle, legend, grid, &
         xlim, ylim, set_xscale, set_yscale, &
         set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis, &
+        tight_layout, &
         figure, subplot, subplots, subplots_grid, savefig, savefig_with_status, &
         show, show_viewer, get_global_figure, ensure_global_figure_initialized
 
@@ -45,6 +46,7 @@ module fortplot_matplotlib
     public :: xlabel, ylabel, title, suptitle, legend, grid
     public :: xlim, ylim, set_xscale, set_yscale
     public :: set_line_width, set_ydata, use_axis, get_active_axis, minorticks_on, axis
+    public :: tight_layout
     public :: text, annotate
 
     ! Figure management functions

@@ -137,6 +137,7 @@ module fortplot_figure_core
         procedure, private :: set_aspect_str
         procedure, private :: set_aspect_num
         generic :: set_aspect => set_aspect_str, set_aspect_num
+        procedure :: tight_layout
         final :: destroy
     end type figure_t
 
@@ -890,7 +891,6 @@ contains
         real(wp), intent(in), optional :: ymin, ymax
         character(len=*), intent(in), optional :: color, linestyle, label
         real(wp), intent(in), optional :: linewidth
-
         call core_axvline(self%plots, self%state, self%plot_count, x, &
                           ymin, ymax, color, linestyle, linewidth, label)
     end subroutine axvline
@@ -902,7 +902,6 @@ contains
         real(wp), intent(in) :: xmin, xmax
         character(len=*), intent(in), optional :: colors, linestyles, label
         real(wp), intent(in), optional :: linewidth
-
         call core_hlines(self%plots, self%state, self%plot_count, y, &
                          xmin, xmax, colors, linestyles, linewidth, label)
     end subroutine hlines
@@ -923,7 +922,6 @@ contains
         !! Enable or disable minor ticks on x and/or y axes
         class(figure_t), intent(inout) :: self
         logical, intent(in), optional :: x, y
-
         if (present(x)) self%state%minor_ticks_x = x
         if (present(y)) self%state%minor_ticks_y = y
         self%state%rendered = .false.
@@ -933,7 +931,6 @@ contains
         !! Set the number of minor ticks between each pair of major ticks
         class(figure_t), intent(inout) :: self
         integer, intent(in) :: count
-
         if (count >= 1 .and. count <= 20) then
             self%state%minor_tick_count = count
             self%state%rendered = .false.
@@ -945,7 +942,6 @@ contains
     subroutine minorticks_on(self)
         !! Enable minor ticks on both axes (matplotlib-compatible convenience method)
         class(figure_t), intent(inout) :: self
-
         self%state%minor_ticks_x = .true.
         self%state%minor_ticks_y = .true.
         self%state%rendered = .false.
@@ -956,9 +952,7 @@ contains
         class(figure_t), intent(inout) :: self
         character(len=*), intent(in) :: aspect
         character(len=:), allocatable :: aspect_lower
-
         aspect_lower = to_lowercase(trim(aspect))
-
         select case (aspect_lower)
         case ('equal')
             self%state%aspect_mode = 'equal'
@@ -967,10 +961,9 @@ contains
             self%state%aspect_mode = 'auto'
         case default
             call log_warning('set_aspect: unknown mode "'//trim(aspect)// &
-                           '"; use "equal", "auto", or numeric value')
+                             '"; use "equal", "auto", or numeric value')
             return
         end select
-
         self%state%rendered = .false.
     end subroutine set_aspect_str
 
@@ -978,15 +971,30 @@ contains
         !! Set aspect ratio using a numeric value (y-scale = ratio * x-scale)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: ratio
-
         if (ratio <= 0.0_wp) then
             call log_warning('set_aspect: ratio must be positive')
             return
         end if
-
         self%state%aspect_mode = 'numeric'
         self%state%aspect_ratio = ratio
         self%state%rendered = .false.
     end subroutine set_aspect_num
+
+    subroutine tight_layout(self, pad, w_pad, h_pad)
+        !! Enable tight layout to minimize subplot overlap
+        class(figure_t), intent(inout) :: self
+        real(wp), intent(in), optional :: pad, w_pad, h_pad
+        self%state%tight_layout_enabled = .true.
+        if (present(pad)) then
+            if (pad > 0.0_wp) self%state%tight_pad = pad
+        end if
+        if (present(w_pad)) then
+            if (w_pad >= 0.0_wp) self%state%tight_w_pad = w_pad
+        end if
+        if (present(h_pad)) then
+            if (h_pad >= 0.0_wp) self%state%tight_h_pad = h_pad
+        end if
+        self%state%rendered = .false.
+    end subroutine tight_layout
 
 end module fortplot_figure_core
