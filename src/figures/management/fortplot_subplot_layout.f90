@@ -220,7 +220,9 @@ contains
                     x_labels(i) = format_tick_value_consistent(x_tick_positions(i), &
                                                                decimals)
                 else
-                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale)
+                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
+                                                    data_min=subplot%x_min, &
+                                                    data_max=subplot%x_max)
                 end if
                 max_x_h = max(max_x_h, measure_raster_height(trim(x_labels(i))))
             end do
@@ -236,7 +238,9 @@ contains
                     y_labels(i) = format_tick_value_consistent(y_tick_positions(i), &
                                                                decimals)
                 else
-                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale)
+                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
+                                                    data_min=subplot%y_min, &
+                                                    data_max=subplot%y_max)
                 end if
                 max_y_w = max(max_y_w, measure_raster_width(trim(y_labels(i))))
             end do
@@ -320,7 +324,9 @@ contains
                     x_labels(i) = format_tick_value_consistent(x_tick_positions(i), &
                                                                decimals)
                 else
-                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale)
+                    x_labels(i) = format_tick_label(x_tick_positions(i), xscale, &
+                                                    data_min=subplot%x_min, &
+                                                    data_max=subplot%x_max)
                 end if
                 max_x_h = max(max_x_h, PDF_TICK_LABEL_SIZE*1.2_wp)
             end do
@@ -336,7 +342,9 @@ contains
                     y_labels(i) = format_tick_value_consistent(y_tick_positions(i), &
                                                                decimals)
                 else
-                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale)
+                    y_labels(i) = format_tick_label(y_tick_positions(i), yscale, &
+                                                    data_min=subplot%y_min, &
+                                                    data_max=subplot%y_max)
                 end if
                 max_y_w = max(max_y_w, estimate_pdf_text_width(trim(y_labels(i)), &
                                                                PDF_TICK_LABEL_SIZE))

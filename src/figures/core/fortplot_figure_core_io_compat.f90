@@ -4,7 +4,7 @@
 
 module fortplot_figure_core_io
     !! Figure I/O and rendering operations module
-    !! 
+    !!
     !! This module contains figure save/show/render functionality
     !! extracted from fortplot_figure_core for architectural compliance
     !!
@@ -29,11 +29,13 @@ module fortplot_figure_core_io
     implicit none
 
     private
-    public :: savefig_figure, savefig_with_status_figure, show_figure, render_figure_impl
+    public :: savefig_figure, savefig_with_status_figure, show_figure, &
+              render_figure_impl
 
 contains
 
-    subroutine savefig_figure(state, plots, plot_count, filename, blocking, annotations, annotation_count, &
+    subroutine savefig_figure(state, plots, plot_count, filename, blocking, &
+                              annotations, annotation_count, &
                               subplots_array, subplot_rows, subplot_cols)
         !! Save figure to file (backward compatibility version)
         use fortplot_annotations, only: text_annotation_t
@@ -45,27 +47,33 @@ contains
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
         ! Optional subplot data for multi-axes rendering
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
+
         integer :: status
-        
+
         ! Delegate to version with status reporting
-        call savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
-                                        annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
-        
+        call savefig_with_status_figure(state, plots, plot_count, filename, status, &
+                                        blocking, &
+                                        annotations, annotation_count, subplots_array, &
+                                        subplot_rows, subplot_cols)
+
         ! Log error if save failed (maintains existing behavior)
         if (status /= SUCCESS) then
-            call log_error("Failed to save figure to '" // trim(filename) // "'")
+            call log_error("Failed to save figure to '"//trim(filename)//"'")
         end if
     end subroutine savefig_figure
-    
-    subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, blocking, &
-                                          annotations, annotation_count, subplots_array, subplot_rows, subplot_cols)
+
+    subroutine savefig_with_status_figure(state, plots, plot_count, filename, status, &
+                                          blocking, &
+                                          annotations, annotation_count, &
+                                          subplots_array, subplot_rows, &
+                                          subplot_cols)
         !! Save figure to file with error status reporting
         !! Added Issue #854: File path validation for user input safety
         use fortplot_annotations, only: text_annotation_t
-        use fortplot_parameter_validation, only: validate_file_path, parameter_validation_result_t
+        use fortplot_parameter_validation, only: validate_file_path, &
+                                                 parameter_validation_result_t
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
@@ -75,29 +83,30 @@ contains
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
         ! Optional subplot data for multi-axes rendering
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
+
         character(len=20) :: required_backend, current_backend
         logical :: block, need_backend_switch
         type(parameter_validation_result_t) :: path_validation
-        
+
         ! Initialize success status
         status = SUCCESS
-        
+
         ! Validate filename path before proceeding
-        path_validation = validate_file_path(filename, check_parent=.true., context="savefig")
+        path_validation = validate_file_path(filename, check_parent=.true., &
+                                             context="savefig")
         if (.not. path_validation%is_valid) then
             status = ERROR_FILE_IO
             return
         end if
-        
+
         block = .true.
         if (present(blocking)) block = blocking
-        
+
         ! Determine required backend from filename extension
         required_backend = get_backend_from_filename(filename)
-        
+
         ! Determine current backend type
         select type (backend => state%backend)
         type is (png_context)
@@ -111,25 +120,27 @@ contains
         class default
             current_backend = 'unknown'
         end select
-        
+
         ! Check if we need to switch backends
         need_backend_switch = (trim(required_backend) /= trim(current_backend))
-        
+
         if (need_backend_switch) then
             call setup_figure_backend(state, required_backend)
         end if
 
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
-                                   subplots_array, subplot_rows, subplot_cols)
+            call render_figure_impl(state, plots, plot_count, annotations, &
+                                    annotation_count, &
+                                    subplots_array, subplot_rows, subplot_cols)
         end if
 
         ! Save the figure with status checking
         call save_backend_with_status(state%backend, filename, status)
     end subroutine savefig_with_status_figure
 
-    subroutine show_figure(state, plots, plot_count, blocking, annotations, annotation_count, &
+    subroutine show_figure(state, plots, plot_count, blocking, annotations, &
+                           annotation_count, &
                            subplots_array, subplot_rows, subplot_cols)
         !! Display the figure
         use fortplot_annotations, only: text_annotation_t
@@ -140,32 +151,34 @@ contains
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
         ! Optional subplot data for multi-axes rendering
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
+
         logical :: block
-        
+
         ! Default to non-blocking behavior to prevent hangs in automated environments
         ! Users can explicitly set blocking=true for interactive sessions
         block = .false.
         if (present(blocking)) block = blocking
-        
+
         ! Render if not already rendered (with annotations if provided)
         if (.not. state%rendered) then
-            call render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
-                                   subplots_array, subplot_rows, subplot_cols)
+            call render_figure_impl(state, plots, plot_count, annotations, &
+                                    annotation_count, &
+                                    subplots_array, subplot_rows, subplot_cols)
         end if
-        
+
         ! Display the figure
         call state%backend%save("terminal")
-        
+
         ! Handle blocking behavior - when blocking=true, wait for user input
         if (block) then
             call wait_for_user_input()
         end if
     end subroutine show_figure
 
-    subroutine render_figure_impl(state, plots, plot_count, annotations, annotation_count, &
+    subroutine render_figure_impl(state, plots, plot_count, annotations, &
+                                  annotation_count, &
                                   subplots_array, subplot_rows, subplot_cols)
         !! Main rendering pipeline implementation
         !! Fixed Issue #432: Always render axes/labels even with no plot data
@@ -177,12 +190,15 @@ contains
         type(text_annotation_t), intent(in), optional :: annotations(:)
         integer, intent(in), optional :: annotation_count
         ! Optional subplot data for multi-axes rendering
-        type(subplot_data_t), intent(in), optional :: subplots_array(:,:)
+        type(subplot_data_t), intent(in), optional :: subplots_array(:, :)
         integer, intent(in), optional :: subplot_rows, subplot_cols
-        
-        if (present(subplots_array) .and. present(subplot_rows) .and. present(subplot_cols)) then
-            call figure_render(state, plots, plot_count, annotations, annotation_count, &
-                               subplots_array=subplots_array, subplot_rows=subplot_rows, &
+
+        if (present(subplots_array) .and. present(subplot_rows) .and. &
+            present(subplot_cols)) then
+            call figure_render(state, plots, plot_count, annotations, &
+                               annotation_count, &
+                               subplots_array=subplots_array, &
+                               subplot_rows=subplot_rows, &
                                subplot_cols=subplot_cols)
         else
             call figure_render(state, plots, plot_count, annotations, annotation_count)
@@ -196,7 +212,7 @@ end module fortplot_figure_core_io
 
 module fortplot_figure_core_config
     !! Figure configuration operations module
-    !! 
+    !!
     !! This module contains figure configuration functionality (labels, scales, limits)
     !! extracted from fortplot_figure_core for architectural compliance
     !!
@@ -208,15 +224,18 @@ module fortplot_figure_core_config
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_figure_initialization
     use fortplot_figure_grid
+    use fortplot_plot_data, only: AXIS_PRIMARY, AXIS_TWINX, AXIS_TWINY
     implicit none
 
     private
     public :: set_xlabel_figure, set_ylabel_figure, set_title_figure
     public :: set_xscale_figure, set_yscale_figure, set_xlim_figure, set_ylim_figure
+    public :: set_xaxis_date_format_figure, set_yaxis_date_format_figure
     public :: set_line_width_figure, grid_figure
     ! Configuration wrapper procedures for core module delegation
     public :: core_set_xlabel, core_set_ylabel, core_set_title
     public :: core_set_xscale, core_set_yscale, core_set_xlim, core_set_ylim
+    public :: core_set_xaxis_date_format, core_set_yaxis_date_format
     public :: core_set_line_width, core_grid
 
 contains
@@ -256,7 +275,7 @@ contains
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
-        
+
         call set_figure_scales(state, xscale=scale, threshold=threshold)
     end subroutine set_xscale_figure
 
@@ -265,15 +284,47 @@ contains
         type(figure_state_t), intent(inout) :: state
         character(len=*), intent(in) :: scale
         real(wp), intent(in), optional :: threshold
-        
+
         call set_figure_scales(state, yscale=scale, threshold=threshold)
     end subroutine set_yscale_figure
+
+    subroutine set_xaxis_date_format_figure(state, format)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: format
+
+        select case (state%active_axis)
+        case (AXIS_TWINY)
+            if (trim(state%twiny_xscale) /= 'date_jd') state%twiny_xscale = 'date'
+            state%twiny_xaxis_date_format = trim(format)
+        case default
+            if (trim(state%xscale) /= 'date_jd') state%xscale = 'date'
+            state%xaxis_date_format = trim(format)
+        end select
+
+        state%rendered = .false.
+    end subroutine set_xaxis_date_format_figure
+
+    subroutine set_yaxis_date_format_figure(state, format)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: format
+
+        select case (state%active_axis)
+        case (AXIS_TWINX)
+            if (trim(state%twinx_yscale) /= 'date_jd') state%twinx_yscale = 'date'
+            state%twinx_yaxis_date_format = trim(format)
+        case default
+            if (trim(state%yscale) /= 'date_jd') state%yscale = 'date'
+            state%yaxis_date_format = trim(format)
+        end select
+
+        state%rendered = .false.
+    end subroutine set_yaxis_date_format_figure
 
     subroutine set_xlim_figure(state, x_min, x_max)
         !! Set x-axis limits
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_min, x_max
-        
+
         call set_figure_limits(state, x_min=x_min, x_max=x_max)
     end subroutine set_xlim_figure
 
@@ -281,7 +332,7 @@ contains
         !! Set y-axis limits
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: y_min, y_max
-        
+
         call set_figure_limits(state, y_min=y_min, y_max=y_max)
     end subroutine set_ylim_figure
 
@@ -298,10 +349,11 @@ contains
         logical, intent(in), optional :: enabled
         character(len=*), intent(in), optional :: which, axis, linestyle
         real(wp), intent(in), optional :: alpha
-        
+
         call configure_grid(state%grid_enabled, state%grid_which, &
-                           state%grid_axis, state%grid_alpha, &
-                           state%grid_linestyle, enabled, which, axis, alpha, linestyle)
+                            state%grid_axis, state%grid_alpha, &
+                            state%grid_linestyle, enabled, which, axis, &
+                            alpha, linestyle)
     end subroutine grid_figure
 
     !!=============================================================================
@@ -344,6 +396,18 @@ contains
         call set_yscale_figure(state, scale, threshold)
     end subroutine core_set_yscale
 
+    subroutine core_set_xaxis_date_format(state, format)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: format
+        call set_xaxis_date_format_figure(state, format)
+    end subroutine core_set_xaxis_date_format
+
+    subroutine core_set_yaxis_date_format(state, format)
+        type(figure_state_t), intent(inout) :: state
+        character(len=*), intent(in) :: format
+        call set_yaxis_date_format_figure(state, format)
+    end subroutine core_set_yaxis_date_format
+
     subroutine core_set_xlim(state, x_min, x_max)
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x_min, x_max
@@ -377,7 +441,7 @@ end module fortplot_figure_core_config
 
 module fortplot_figure_core_compat
     !! Figure backward compatibility and animation support module
-    !! 
+    !!
     !! This module contains backward compatibility and animation methods
     !! extracted from fortplot_figure_core for architectural compliance
     !!
@@ -395,9 +459,11 @@ module fortplot_figure_core_compat
     implicit none
 
     private
-    public :: get_width_figure, get_height_figure, get_rendered_figure, set_rendered_figure
+    public :: get_width_figure, get_height_figure, get_rendered_figure, &
+              set_rendered_figure
     public :: get_plot_count_figure, setup_png_backend_for_animation_figure
-    public :: extract_rgb_data_for_animation_figure, extract_png_data_for_animation_figure
+    public :: extract_rgb_data_for_animation_figure, &
+              extract_png_data_for_animation_figure
     public :: backend_color_figure, backend_associated_figure, backend_line_figure
     public :: get_x_min_figure, get_x_max_figure, get_y_min_figure, get_y_max_figure
 
@@ -409,114 +475,113 @@ contains
         integer :: width
         width = get_figure_width_compat(state)
     end function get_width_figure
-    
+
     function get_height_figure(state) result(height)
         !! Get figure height
         type(figure_state_t), intent(in) :: state
         integer :: height
         height = get_figure_height_compat(state)
     end function get_height_figure
-    
+
     function get_rendered_figure(state) result(rendered)
         !! Get rendered state
         type(figure_state_t), intent(in) :: state
         logical :: rendered
         rendered = get_figure_rendered_compat(state)
     end function get_rendered_figure
-    
+
     subroutine set_rendered_figure(state, rendered)
         !! Set rendered state
         type(figure_state_t), intent(inout) :: state
         logical, intent(in) :: rendered
         call set_figure_rendered_compat(state, rendered)
     end subroutine set_rendered_figure
-    
+
     function get_plot_count_figure(state) result(plot_count)
         !! Get number of plots
         type(figure_state_t), intent(in) :: state
         integer :: plot_count
         plot_count = get_figure_plot_count_compat(state)
     end function get_plot_count_figure
-    
+
     subroutine setup_png_backend_for_animation_figure(state)
         !! Setup PNG backend for animation (temporary method)
         type(figure_state_t), intent(inout) :: state
         call setup_png_backend_for_animation_compat(state)
     end subroutine setup_png_backend_for_animation_figure
-    
+
     subroutine extract_rgb_data_for_animation_figure(state, plots, plot_count, rgb_data)
         !! Extract RGB data for animation
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
-        real(wp), intent(out) :: rgb_data(:,:,:)
-        
-        
+        real(wp), intent(out) :: rgb_data(:, :, :)
+
         if (.not. state%rendered) then
             call render_figure_impl(state, plots, plot_count)
         end if
-        
+
         call extract_rgb_data_for_animation_compat(state, rgb_data)
     end subroutine extract_rgb_data_for_animation_figure
-    
-    subroutine extract_png_data_for_animation_figure(state, plots, plot_count, png_data, status)
+
+    subroutine extract_png_data_for_animation_figure(state, plots, plot_count, &
+                                                     png_data, status)
         !! Extract PNG data for animation
         type(figure_state_t), intent(inout) :: state
         type(plot_data_t), intent(inout) :: plots(:)
         integer, intent(in) :: plot_count
         integer(1), allocatable, intent(out) :: png_data(:)
         integer, intent(out) :: status
-        
-        
+
         if (.not. state%rendered) then
             call render_figure_impl(state, plots, plot_count)
         end if
-        
+
         call extract_png_data_for_animation_compat(state, png_data, status)
     end subroutine extract_png_data_for_animation_figure
-    
+
     subroutine backend_color_figure(state, r, g, b)
         !! Set backend color
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: r, g, b
         call backend_color_compat(state, r, g, b)
     end subroutine backend_color_figure
-    
+
     function backend_associated_figure(state) result(is_associated)
         !! Check if backend is allocated
         type(figure_state_t), intent(in) :: state
         logical :: is_associated
         is_associated = backend_associated_compat(state)
     end function backend_associated_figure
-    
+
     subroutine backend_line_figure(state, x1, y1, x2, y2)
         !! Draw line using backend
         type(figure_state_t), intent(inout) :: state
         real(wp), intent(in) :: x1, y1, x2, y2
         call backend_line_compat(state, x1, y1, x2, y2)
     end subroutine backend_line_figure
-    
+
     function get_x_min_figure(state) result(x_min)
         !! Get x minimum value
         type(figure_state_t), intent(in) :: state
         real(wp) :: x_min
         x_min = get_figure_x_min_compat(state)
     end function get_x_min_figure
-    
+
     function get_x_max_figure(state) result(x_max)
         !! Get x maximum value
         type(figure_state_t), intent(in) :: state
         real(wp) :: x_max
         x_max = get_figure_x_max_compat(state)
     end function get_x_max_figure
-    
+
     function get_y_min_figure(state) result(y_min)
         !! Get y minimum value
         type(figure_state_t), intent(in) :: state
         real(wp) :: y_min
         y_min = get_figure_y_min_compat(state)
     end function get_y_min_figure
-    
+
     function get_y_max_figure(state) result(y_max)
         !! Get y maximum value
         type(figure_state_t), intent(in) :: state

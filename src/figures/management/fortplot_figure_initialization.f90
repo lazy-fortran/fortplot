@@ -41,6 +41,8 @@ module fortplot_figure_initialization
         character(len=10) :: xscale = 'linear'
         character(len=10) :: yscale = 'linear'
         real(wp) :: symlog_threshold = 1.0_wp
+        character(len=:), allocatable :: xaxis_date_format
+        character(len=:), allocatable :: yaxis_date_format
 
         ! Axis limits
         real(wp) :: x_min, x_max, y_min, y_max
@@ -56,6 +58,8 @@ module fortplot_figure_initialization
         character(len=:), allocatable :: twiny_xlabel
         character(len=10) :: twinx_yscale = 'linear'
         character(len=10) :: twiny_xscale = 'linear'
+        character(len=:), allocatable :: twinx_yaxis_date_format
+        character(len=:), allocatable :: twiny_xaxis_date_format
         logical :: twinx_ylim_set = .false.
         logical :: twiny_xlim_set = .false.
         real(wp) :: twinx_y_min = 0.0_wp
@@ -289,6 +293,14 @@ contains
         state%twiny_xlim_set = .false.
         state%twinx_yscale = 'linear'
         state%twiny_xscale = 'linear'
+        if (allocated(state%xaxis_date_format)) &
+            call move_alloc(state%xaxis_date_format, scratch)
+        if (allocated(state%yaxis_date_format)) &
+            call move_alloc(state%yaxis_date_format, scratch)
+        if (allocated(state%twinx_yaxis_date_format)) &
+            call move_alloc(state%twinx_yaxis_date_format, scratch)
+        if (allocated(state%twiny_xaxis_date_format)) &
+            call move_alloc(state%twiny_xaxis_date_format, scratch)
         state%twinx_y_min = 0.0_wp
         state%twinx_y_max = 1.0_wp
         state%twiny_x_min = 0.0_wp

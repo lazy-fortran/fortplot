@@ -84,6 +84,7 @@ module fortplot_figure_comprehensive_operations
     ! Configuration operations from core_config module
     public :: core_set_xlabel, core_set_ylabel, core_set_title
     public :: core_set_xscale, core_set_yscale, core_set_xlim, core_set_ylim
+    public :: core_set_xaxis_date_format, core_set_yaxis_date_format
     public :: core_set_line_width, core_grid
 
     ! Advanced plotting operations from core_advanced module

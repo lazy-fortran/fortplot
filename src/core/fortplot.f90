@@ -55,6 +55,7 @@ module fortplot
 
     ! Core types and constants
     use fortplot_figure_core, only: figure_t
+    use fortplot_datetime, only: datetime_t
     use fortplot_constants, only: EPSILON_COMPARE, EPSILON_GEOMETRY, &
                                   XLABEL_VERTICAL_OFFSET, YLABEL_HORIZONTAL_OFFSET, &
                                   TICK_MARK_LENGTH, TITLE_VERTICAL_OFFSET
@@ -112,7 +113,7 @@ module fortplot
     ! =========================================================================
 
     ! Core types and constants
-    public :: figure_t, wp
+    public :: figure_t, datetime_t, wp
 
     ! Numerical constants
     public :: EPSILON_COMPARE, EPSILON_GEOMETRY, &

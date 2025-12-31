@@ -20,6 +20,7 @@ module fortplot_figure_core
     use fortplot_figure_reflines, only: core_axhline, core_axvline, &
                                         core_hlines, core_vlines
     use fortplot_string_utils, only: to_lowercase
+    use fortplot_datetime, only: datetime_t, datetime_to_unix_seconds
     implicit none
 
     private
@@ -53,8 +54,10 @@ module fortplot_figure_core
 
     contains
         procedure :: initialize
-        procedure :: add_plot
-        procedure :: plot => add_plot
+        procedure, private :: add_plot_real
+        procedure, private :: add_plot_datetime
+        generic :: add_plot => add_plot_real, add_plot_datetime
+        generic :: plot => add_plot_real, add_plot_datetime
         procedure :: add_contour
         procedure :: add_contour_filled
         procedure :: add_surface
@@ -69,6 +72,8 @@ module fortplot_figure_core
         procedure :: set_title
         procedure :: set_xscale
         procedure :: set_yscale
+        procedure :: set_xaxis_date_format
+        procedure :: set_yaxis_date_format
         procedure :: set_xlim
         procedure :: set_ylim
         procedure :: set_line_width
@@ -233,6 +238,44 @@ module fortplot_figure_core
         end subroutine add_pie
     end interface
 
+    interface
+        module subroutine add_plot_datetime(self, x, y, label, linestyle, color)
+            class(figure_t), intent(inout) :: self
+            type(datetime_t), intent(in) :: x(:)
+            real(wp), intent(in) :: y(:)
+            character(len=*), intent(in), optional :: label, linestyle
+            real(wp), intent(in), optional :: color(3)
+        end subroutine add_plot_datetime
+
+        module subroutine savefig(self, filename, blocking)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: filename
+            logical, intent(in), optional :: blocking
+        end subroutine savefig
+
+        module subroutine savefig_with_status(self, filename, status, blocking)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: filename
+            integer, intent(out) :: status
+            logical, intent(in), optional :: blocking
+        end subroutine savefig_with_status
+
+        module subroutine show(self, blocking)
+            class(figure_t), intent(inout) :: self
+            logical, intent(in), optional :: blocking
+        end subroutine show
+
+        module subroutine set_xaxis_date_format(self, format)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: format
+        end subroutine set_xaxis_date_format
+
+        module subroutine set_yaxis_date_format(self, format)
+            class(figure_t), intent(inout) :: self
+            character(len=*), intent(in) :: format
+        end subroutine set_yaxis_date_format
+    end interface
+
 contains
 
     !! CORE OPERATIONS - Delegated to specialized modules
@@ -253,7 +296,7 @@ contains
                              self%plot_count, width, height, backend, dpi)
     end subroutine initialize
 
-    subroutine add_plot(self, x, y, label, linestyle, color)
+    subroutine add_plot_real(self, x, y, label, linestyle, color)
         class(figure_t), intent(inout) :: self
         real(wp), intent(in) :: x(:), y(:)
         character(len=*), intent(in), optional :: label, linestyle
@@ -261,7 +304,7 @@ contains
 
         call core_add_plot(self%plots, self%state, x, y, label, linestyle, color, &
                            self%plot_count)
-    end subroutine add_plot
+    end subroutine add_plot_real
 
     subroutine colorbar(self, plot_index, label, location, fraction, pad, shrink, &
                         ticks, ticklabels, label_fontsize)
@@ -369,66 +412,6 @@ contains
     end subroutine quiver
 
     !! I/O OPERATIONS - Delegated to core I/O module
-
-    subroutine savefig(self, filename, blocking)
-        !! Save figure to file (backward compatibility version)
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: filename
-        logical, intent(in), optional :: blocking
-
-        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
-            self%subplot_cols > 0) then
-            call core_savefig(self%state, self%plots, self%plot_count, filename, &
-                              blocking, self%annotations, self%annotation_count, &
-                              subplots_array=self%subplots_array, &
-                              subplot_rows=self%subplot_rows, &
-                              subplot_cols=self%subplot_cols)
-        else
-            call core_savefig(self%state, self%plots, self%plot_count, filename, &
-                              blocking, self%annotations, self%annotation_count)
-        end if
-    end subroutine savefig
-
-    subroutine savefig_with_status(self, filename, status, blocking)
-        !! Save figure to file with error status reporting
-        class(figure_t), intent(inout) :: self
-        character(len=*), intent(in) :: filename
-        integer, intent(out) :: status
-        logical, intent(in), optional :: blocking
-
-        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
-            self%subplot_cols > 0) then
-            call core_savefig_with_status(self%state, self%plots, self%plot_count, &
-                                          filename, status, blocking, &
-                                          self%annotations, self%annotation_count, &
-                                          subplots_array=self%subplots_array, &
-                                          subplot_rows=self%subplot_rows, &
-                                          subplot_cols=self%subplot_cols)
-        else
-            call core_savefig_with_status(self%state, self%plots, self%plot_count, &
-                                          filename, status, blocking, &
-                                          self%annotations, self%annotation_count)
-        end if
-    end subroutine savefig_with_status
-
-    subroutine show(self, blocking)
-        !! Display the figure
-        class(figure_t), intent(inout) :: self
-        logical, intent(in), optional :: blocking
-
-        if (allocated(self%subplots_array) .and. self%subplot_rows > 0 .and. &
-            self%subplot_cols > 0) then
-            call core_show(self%state, self%plots, self%plot_count, blocking, &
-                           self%annotations, self%annotation_count, &
-                           subplots_array=self%subplots_array, &
-                           subplot_rows=self%subplot_rows, &
-                           subplot_cols=self%subplot_cols)
-        else
-            call core_show(self%state, self%plots, self%plot_count, blocking, &
-                           self%annotations, self%annotation_count)
-        end if
-    end subroutine show
-
     !! CONFIGURATION METHODS - Delegated to core config module
 
     subroutine grid(self, enabled, which, axis, alpha, linestyle)

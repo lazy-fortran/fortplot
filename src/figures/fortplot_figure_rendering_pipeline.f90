@@ -136,14 +136,26 @@ contains
         class is (raster_context)
             if (has_3d) then
                 ! For 3D, delegate full axes (3D frame + labels) to backend
-                call backend%draw_axes_and_labels_backend(xscale, yscale, &
-                                                          symlog_threshold, &
-                                                          x_min, x_max, &
-                                                          y_min, y_max, &
-                                                          title, xlabel, &
-                                                          ylabel, &
-                                                          z_min=zmin, z_max=zmax, &
-                                                          has_3d_plots=.true.)
+                block
+                    character(len=64) :: xfmt, yfmt
+
+                    xfmt = ''
+                    yfmt = ''
+                    if (present(state)) then
+                        if (allocated(state%xaxis_date_format)) then
+                            xfmt = state%xaxis_date_format
+                        end if
+                        if (allocated(state%yaxis_date_format)) then
+                            yfmt = state%yaxis_date_format
+                        end if
+                    end if
+
+                    call backend%draw_axes_and_labels_backend( &
+                        xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
+                        title, xlabel, ylabel, x_date_format=trim(xfmt), &
+                        y_date_format=trim(yfmt), z_min=zmin, z_max=zmax, &
+                        has_3d_plots=.true.)
+                end block
             else
                 ! For raster backends, only draw axes lines and tick marks here
                 ! Labels will be drawn later after plots to prevent overlap
@@ -161,14 +173,23 @@ contains
             end if
         class default
             ! For non-raster backends, use standard rendering
-            call backend%draw_axes_and_labels_backend(xscale, yscale, &
-                                                      symlog_threshold, &
-                                                      x_min, x_max, &
-                                                      y_min, y_max, &
-                                                      title, xlabel, &
-                                                      ylabel, &
-                                                      z_min=zmin, z_max=zmax, &
-                                                      has_3d_plots=has_3d)
+            block
+                character(len=64) :: xfmt, yfmt
+
+                xfmt = ''
+                yfmt = ''
+                if (present(state)) then
+                    if (allocated(state%xaxis_date_format)) xfmt = &
+                        state%xaxis_date_format
+                    if (allocated(state%yaxis_date_format)) yfmt = &
+                        state%yaxis_date_format
+                end if
+
+                call backend%draw_axes_and_labels_backend( &
+                    xscale, yscale, symlog_threshold, x_min, x_max, y_min, y_max, &
+                    title, xlabel, ylabel, x_date_format=xfmt, y_date_format=yfmt, &
+                    z_min=zmin, z_max=zmax, has_3d_plots=has_3d)
+            end block
         end select
     end subroutine render_figure_axes
 
@@ -248,7 +269,9 @@ contains
                                               twiny_x_min, twiny_x_max, &
                                               twiny_xlabel, twiny_xscale, &
                                               custom_xticks, custom_xtick_labels, &
-                                              custom_yticks, custom_ytick_labels)
+                                              custom_yticks, custom_ytick_labels, &
+                                              x_date_format, y_date_format, &
+                                              twinx_y_date_format, twiny_x_date_format)
         !! Render ONLY axis labels (for raster and PDF backends after plots are drawn)
         use fortplot_raster, only: raster_context
         use fortplot_pdf, only: pdf_context
@@ -268,6 +291,9 @@ contains
         real(wp), intent(in), optional :: custom_xticks(:), custom_yticks(:)
         character(len=*), intent(in), optional :: custom_xtick_labels(:)
         character(len=*), intent(in), optional :: custom_ytick_labels(:)
+        character(len=*), intent(in), optional :: x_date_format, y_date_format
+        character(len=*), intent(in), optional :: twinx_y_date_format, &
+                                                  twiny_x_date_format
         logical :: has_3d
         real(wp) :: zmin_dummy, zmax_dummy
         logical :: has_twinx_local, has_twiny_local
@@ -320,67 +346,53 @@ contains
                                                    title, xlabel, &
                                                    ylabel, &
                                                    custom_xticks, custom_xtick_labels, &
-                                                   custom_yticks, custom_ytick_labels)
+                                                   custom_yticks, custom_ytick_labels, &
+                                                   x_date_format=x_date_format, &
+                                                   y_date_format=y_date_format)
                 if (has_twinx_local) then
                     if (present(twinx_ylabel)) then
-                        call raster_draw_secondary_y_axis(backend%raster, &
-                                                          backend%width, &
-                                                          backend%height, &
-                                                          backend%plot_area, &
-                                                          twinx_scale_local, &
-                                                          symlog_threshold, &
-                                                          twinx_y_min_local, &
-                                                          twinx_y_max_local, &
-                                                          ylabel=twinx_ylabel)
+                        call raster_draw_secondary_y_axis( &
+                            backend%raster, backend%width, backend%height, &
+                            backend%plot_area, twinx_scale_local, symlog_threshold, &
+                            twinx_y_min_local, twinx_y_max_local, ylabel=twinx_ylabel, &
+                            date_format=twinx_y_date_format)
                     else
-                        call raster_draw_secondary_y_axis(backend%raster, &
-                                                          backend%width, &
-                                                          backend%height, &
-                                                          backend%plot_area, &
-                                                          twinx_scale_local, &
-                                                          symlog_threshold, &
-                                                          twinx_y_min_local, &
-                                                          twinx_y_max_local)
+                        call raster_draw_secondary_y_axis( &
+                            backend%raster, backend%width, backend%height, &
+                            backend%plot_area, twinx_scale_local, symlog_threshold, &
+                            twinx_y_min_local, twinx_y_max_local, &
+                            date_format=twinx_y_date_format)
                     end if
                 end if
                 if (has_twiny_local) then
                     if (present(twiny_xlabel)) then
-                        call raster_draw_secondary_x_axis_top(backend%raster, &
-                                                              backend%width, &
-                                                              backend%height, &
-                                                              backend%plot_area, &
-                                                              twiny_scale_local, &
-                                                              symlog_threshold, &
-                                                              twiny_x_min_local, &
-                                                              twiny_x_max_local, &
-                                                              xlabel=twiny_xlabel)
+                        call raster_draw_secondary_x_axis_top( &
+                            backend%raster, backend%width, backend%height, &
+                            backend%plot_area, twiny_scale_local, symlog_threshold, &
+                            twiny_x_min_local, twiny_x_max_local, xlabel=twiny_xlabel, &
+                            date_format=twiny_x_date_format)
                     else
-                        call raster_draw_secondary_x_axis_top(backend%raster, &
-                                                              backend%width, &
-                                                              backend%height, &
-                                                              backend%plot_area, &
-                                                              twiny_scale_local, &
-                                                              symlog_threshold, &
-                                                              twiny_x_min_local, &
-                                                              twiny_x_max_local)
+                        call raster_draw_secondary_x_axis_top( &
+                            backend%raster, backend%width, backend%height, &
+                            backend%plot_area, twiny_scale_local, symlog_threshold, &
+                            twiny_x_min_local, twiny_x_max_local, &
+                            date_format=twiny_x_date_format)
                     end if
                 end if
             end if
         type is (pdf_context)
             if (.not. has_3d) then
                 if (has_twinx_local) then
-                    call backend%draw_secondary_y_axis(twinx_scale_local, &
-                                                       symlog_threshold, &
-                                                       twinx_y_min_local, &
-                                                       twinx_y_max_local, &
-                                                       twinx_ylabel)
+                    call backend%draw_secondary_y_axis( &
+                        twinx_scale_local, symlog_threshold, twinx_y_min_local, &
+                        twinx_y_max_local, twinx_ylabel, &
+                        date_format=twinx_y_date_format)
                 end if
                 if (has_twiny_local) then
-                    call backend%draw_secondary_x_axis_top(twiny_scale_local, &
-                                                           symlog_threshold, &
-                                                           twiny_x_min_local, &
-                                                           twiny_x_max_local, &
-                                                           twiny_xlabel)
+                    call backend%draw_secondary_x_axis_top( &
+                        twiny_scale_local, symlog_threshold, twiny_x_min_local, &
+                        twiny_x_max_local, twiny_xlabel, &
+                        date_format=twiny_x_date_format)
                 end if
             end if
         end select

@@ -6,11 +6,11 @@ module fortplot_context
     !! for unified plotting operations across different output formats.
     !!
     !! Author: fortplot contributors
-    
+
     use, intrinsic :: iso_fortran_env, only: wp => real64
     use fortplot_plot_data, only: plot_data_t
     implicit none
-    
+
     private
     public :: plot_context, setup_canvas
     type, abstract :: plot_context
@@ -29,10 +29,11 @@ module fortplot_context
         procedure(line_style_interface), deferred :: set_line_style
         procedure(marker_interface), deferred :: draw_marker
         procedure(marker_colors_interface), deferred :: set_marker_colors
-        procedure(marker_colors_alpha_interface), deferred :: set_marker_colors_with_alpha
+        procedure(marker_colors_alpha_interface), deferred :: &
+            set_marker_colors_with_alpha
         procedure(arrow_interface), deferred :: draw_arrow
         procedure(ascii_output_interface), deferred :: get_ascii_output
-        
+
         !! Additional polymorphic methods to eliminate SELECT TYPE violations
         procedure(get_width_scale_interface), deferred :: get_width_scale
         procedure(get_height_scale_interface), deferred :: get_height_scale
@@ -42,38 +43,39 @@ module fortplot_context
         procedure(get_png_data_interface), deferred :: get_png_data_backend
         procedure(prepare_3d_data_interface), deferred :: prepare_3d_data
         procedure(render_ylabel_interface), deferred :: render_ylabel
-        procedure(draw_axes_and_labels_interface), deferred :: draw_axes_and_labels_backend
+        procedure(draw_axes_and_labels_interface), deferred :: &
+            draw_axes_and_labels_backend
         procedure(save_coordinates_interface), deferred :: save_coordinates
         procedure(set_coordinates_interface), deferred :: set_coordinates
         procedure(render_axes_interface), deferred :: render_axes
     end type plot_context
-    
+
     abstract interface
         subroutine line_interface(this, x1, y1, x2, y2)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: x1, y1, x2, y2
         end subroutine line_interface
-        
+
         subroutine color_interface(this, r, g, b)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: r, g, b
         end subroutine color_interface
-        
+
         subroutine text_interface(this, x, y, text)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: x, y
             character(len=*), intent(in) :: text
         end subroutine text_interface
-        
+
         subroutine save_interface(this, filename)
             import :: plot_context
             class(plot_context), intent(inout) :: this
             character(len=*), intent(in) :: filename
         end subroutine save_interface
-        
+
         subroutine line_width_interface(this, width)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
@@ -93,14 +95,17 @@ module fortplot_context
             character(len=*), intent(in) :: style
         end subroutine marker_interface
 
-        subroutine marker_colors_interface(this, edge_r, edge_g, edge_b, face_r, face_g, face_b)
+        subroutine marker_colors_interface(this, edge_r, edge_g, edge_b, face_r, &
+                                           face_g, face_b)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: edge_r, edge_g, edge_b
             real(wp), intent(in) :: face_r, face_g, face_b
         end subroutine marker_colors_interface
 
-        subroutine marker_colors_alpha_interface(this, edge_r, edge_g, edge_b, edge_alpha, face_r, face_g, face_b, face_alpha)
+        subroutine marker_colors_alpha_interface(this, edge_r, edge_g, edge_b, &
+                                                 edge_alpha, face_r, face_g, face_b, &
+                                                 face_alpha)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             real(wp), intent(in) :: edge_r, edge_g, edge_b, edge_alpha
@@ -141,10 +146,9 @@ module fortplot_context
         subroutine fill_heatmap_interface(this, x_grid, y_grid, z_grid, z_min, z_max)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
-            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:,:)
+            real(wp), intent(in) :: x_grid(:), y_grid(:), z_grid(:, :)
             real(wp), intent(in) :: z_min, z_max
         end subroutine fill_heatmap_interface
-
 
         subroutine extract_rgb_data_interface(this, width, height, rgb_data)
             import :: plot_context, wp
@@ -173,16 +177,19 @@ module fortplot_context
             character(len=*), intent(in) :: ylabel
         end subroutine render_ylabel_interface
 
-        subroutine draw_axes_and_labels_interface(this, xscale, yscale, symlog_threshold, &
-                                                x_min, x_max, y_min, y_max, &
-                                                title, xlabel, ylabel, &
-                                                z_min, z_max, has_3d_plots)
+        subroutine draw_axes_and_labels_interface(this, xscale, yscale, &
+                                                  symlog_threshold, &
+                                                  x_min, x_max, y_min, y_max, &
+                                                  title, xlabel, ylabel, &
+                                                  x_date_format, y_date_format, &
+                                                  z_min, z_max, has_3d_plots)
             import :: plot_context, wp
             class(plot_context), intent(inout) :: this
             character(len=*), intent(in) :: xscale, yscale
             real(wp), intent(in) :: symlog_threshold
             real(wp), intent(in) :: x_min, x_max, y_min, y_max
             character(len=:), allocatable, intent(in), optional :: title, xlabel, ylabel
+            character(len=*), intent(in), optional :: x_date_format, y_date_format
             real(wp), intent(in), optional :: z_min, z_max
             logical, intent(in) :: has_3d_plots
         end subroutine draw_axes_and_labels_interface
@@ -202,7 +209,8 @@ module fortplot_context
         subroutine render_axes_interface(this, title_text, xlabel_text, ylabel_text)
             import :: plot_context
             class(plot_context), intent(inout) :: this
-            character(len=*), intent(in), optional :: title_text, xlabel_text, ylabel_text
+            character(len=*), intent(in), optional :: title_text, xlabel_text, &
+                                                      ylabel_text
         end subroutine render_axes_interface
     end interface
 
@@ -211,7 +219,7 @@ contains
     subroutine setup_canvas(ctx, width, height)
         class(plot_context), intent(inout) :: ctx
         integer, intent(in) :: width, height
-        
+
         ctx%width = width
         ctx%height = height
         ctx%x_min = -1.0_wp
